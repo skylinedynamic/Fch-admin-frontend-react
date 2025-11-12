@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import logoImg from '../../../assets/images/logo.png'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../../lib/authApi'
 
@@ -71,7 +72,7 @@ export default function SignIn() {
                 <div>
                   <a href="/" className="d-inline-block auth-logo">
                     {/* Use FourCorner logo while keeping design markup */}
-                    <img src="/assets/images/logo.png" alt="FourCorner" height="40" />
+                    <img src={logoImg} alt="FourCorner" height="40" />
                   </a>
                 </div>
               </div>

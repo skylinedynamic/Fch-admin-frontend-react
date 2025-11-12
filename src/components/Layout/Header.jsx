@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { clearAuth, getUser } from '../../lib/auth'
 import { logout } from '../../lib/authApi'
+import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate } from 'react-router-dom'
 
 export default function Header() {
@@ -25,7 +26,7 @@ export default function Header() {
     }
   }
 
-  const avatarSrc = user?.image || '/assets/images/users/avatar-1.jpg'
+  const avatarSrc = user?.image || avatarDefault
   const displayName = user?.name 
   const displayRole = user?.role 
   return (
