@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../../lib/apiClient'
+import { login } from '../../lib/authApi'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -20,23 +20,27 @@ export default function SignIn() {
   setLoading(true)
 
   try {
-    const res = await api.post('/auth/login', { email, password })
-    const data = res?.data
-
-    if (data?.status === true) {
-      const token = data?.data?.token
-      const user = data?.data?.user
-      if (token) localStorage.setItem('auth_token', token)
-      if (user) localStorage.setItem('auth_user', JSON.stringify(user))
-      navigate('/')
-    } 
+    // Call centralized auth service; rely on Laravel validation
+    await login(email, password)
+    navigate('/')
   } catch (err) {
     const data = err?.response?.data
 
     if (data) {
-      if (data?.field === 'email') setEmailError(data?.message ?? '')
-      if (data?.field === 'password') setPasswordError(data?.message ?? '')
-      setFormError(data?.message ?? 'Unable to sign in.')
+      // Laravel validation format: { status:false, message, errors: { email: string|array, password: string|array } }
+      const errors = data?.errors
+      if (errors) {
+        const emailMsg = Array.isArray(errors.email) ? errors.email?.[0] : errors.email
+        const passwordMsg = Array.isArray(errors.password) ? errors.password?.[0] : errors.password
+        if (emailMsg) setEmailError(emailMsg)
+        if (passwordMsg) setPasswordError(passwordMsg)
+        setFormError(data?.message ?? '')
+      } else {
+        // Fallback to field/message format if API returns a different shape
+        if (data?.field === 'email') setEmailError(data?.message ?? '')
+        if (data?.field === 'password') setPasswordError(data?.message ?? '')
+        setFormError(data?.message ?? 'Unable to sign in.')
+      }
     } else {
       setFormError('Network error, please try again.')
     }
@@ -152,7 +156,7 @@ export default function SignIn() {
           <div className="row">
             <div className="col-lg-12">
               <div className="text-center">
-                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()} Velzon. Crafted with <i className="mdi mdi-heart text-danger"></i> by Themesbrand</p>
+                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()} Four Corner Holding. All rights reserved.</p>
               </div>
             </div>
           </div>

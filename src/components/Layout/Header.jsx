@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { clearAuth, getUser } from '../../lib/auth'
+import { logout } from '../../lib/authApi'
 import { useNavigate } from 'react-router-dom'
 
 export default function Header() {
@@ -10,10 +11,18 @@ export default function Header() {
     setUser(getUser())
   }, [])
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e?.preventDefault?.()
-    clearAuth()
-    navigate('/login', { replace: true })
+    try {
+      // Call API to invalidate server session/token
+      await logout()
+    } catch (err) {
+      // Even if API fails, proceed to clear local auth
+      console.error('Logout request failed', err)
+    } finally {
+      clearAuth()
+      navigate('/login', { replace: true })
+    }
   }
 
   const avatarSrc = user?.image || '/assets/images/users/avatar-1.jpg'

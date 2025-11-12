@@ -1,0 +1,4 @@
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr > td
+ {
+    padding: 1rem 0.5rem;
+}
