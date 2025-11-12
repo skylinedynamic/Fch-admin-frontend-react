@@ -1,11 +1,11 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
-import Layout from './Fch/layout/Layout.jsx'
-import Dashboard from './Fch/pages/Dashboard.jsx'
-import Employees from './Fch/pages/Employees.jsx'
-import EmployeeDetails from './Fch/pages/EmployeeDetails.jsx'
-import SignIn from './Fch/pages/SignIn.jsx'
-import Users from './Fch/pages/Users.jsx'
+import Layout from '../src/components/Layout/Layout.jsx'
+import Dashboard from '../src/pages/dashboard/Dashboard.jsx'
+import Employees from '../src/pages/employees/Employees.jsx'
+import EmployeeDetails from '../src/pages/employees/EmployeeDetails.jsx'
+import SignIn from '../src/pages/singin/SignIn.jsx'
+import Users from '../src/pages/users/Users.jsx'
 import ProtectedRoute from './lib/ProtectedRoute'
 
 function DashboardPage() {
