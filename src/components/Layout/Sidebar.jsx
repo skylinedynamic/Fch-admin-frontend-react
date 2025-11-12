@@ -1,5 +1,8 @@
 import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
+import faviconImg from '../../../assets/images/Favicon.png'
+import logoImg from '../../../assets/images/logo.png'
+import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 
 export default function Sidebar() {
   return (
@@ -7,18 +10,18 @@ export default function Sidebar() {
       <div className="navbar-brand-box">
         <a href="/" className="logo logo-dark">
           <span className="logo-sm">
-            <img src="/assets/images/Favicon.png" alt="" height="22" />
+            <img src={faviconImg} alt="" height="22" />
           </span>
           <span className="logo-lg">
-            <img src="/assets/images/logo.png" alt="" height="17" />
+            <img src={logoImg} alt="" height="17" />
           </span>
         </a>
         <a href="/" className="logo logo-light">
           <span className="logo-sm">
-            <img src="/assets/images/Favicon.png" alt="" height="40" />
+            <img src={faviconImg} alt="" height="40" />
           </span>
           <span className="logo-lg">
-            <img src="/assets/images/logo.png" alt="" height="30" />
+            <img src={logoImg} alt="" height="30" />
           </span>
         </a>
         <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
@@ -29,7 +32,7 @@ export default function Sidebar() {
       <div className="dropdown sidebar-user m-1 rounded">
         <button type="button" className="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <span className="d-flex align-items-center gap-2">
-            <img className="rounded header-profile-user" src="/assets/images/users/avatar-1.jpg" alt="Header Avatar" />
+            <img className="rounded header-profile-user" src={avatarDefault} alt="Header Avatar" />
             <span className="text-start">
               <span className="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
               <span className="d-block fs-14 sidebar-user-name-sub-text"><i className="ri ri-circle-fill fs-10 text-success align-baseline"></i> <span className="align-middle">Online</span></span>
