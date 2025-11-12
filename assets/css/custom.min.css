@@ -1,0 +1,240 @@
+
+/*# sourceMappingURL=custom.min.css.map */
+
+/* Scoped styles for partner sidebar redesign */
+
+.row>* {
+    padding-right: calc(var(--vz-gutter-x) * .3);
+    padding-left: calc(var(--vz-gutter-x) * .3);
+
+}
+
+.partner-sidebar {
+  padding-top: 8px;
+}
+
+.partner-sidebar .menu-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a93a6;
+  padding: 14px 18px 6px;
+}
+.navbar-menu .navbar-nav .nav-link {
+    font-size: 15px !important;
+}
+.kpi-title {
+    font-size:clamp(15px, 1.25vw, 16px);
+}
+.customer_name a {
+    color: rgb(13, 110, 161) !important;
+}
+.status span {
+        font-size: 11px;
+    padding: 7px 15px;
+    border-radius: 12px;
+}
+.topbar-user .dropdown-menu {
+    top: 6px !important;
+    width: 100%;
+    border-radius: 0px 0px 5px 5px;
+}
+.partner-sidebar .nav-item .menu-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 18px;
+  color: #d3d8e5;
+}
+
+.partner-sidebar .nav-item .menu-link i {
+    font-size: 20px;
+    color: #D4AF37;
+}
+
+.partner-sidebar .nav-item .menu-link .badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 4px 4px;
+  border-radius: 8px;
+}
+
+.partner-sidebar .nav-item .menu-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.partner-sidebar .nav-item .menu-link:hover i {
+  color: #ffffff;
+}
+
+.partner-sidebar .nav-item .menu-link.active {
+  background: #D4AF37;
+  color: #001F3F;
+}
+
+.partner-sidebar .nav-item .menu-link.active i {
+  color: #ffffff;
+}
+
+/* Nested dropdowns (if present) */
+.partner-sidebar .menu-dropdown .nav-link {
+  padding: 8px 18px 8px 42px;
+  color: #cbd3e2;
+}
+
+.partner-sidebar .menu-dropdown .nav-link:hover {
+  color: #ffffff;
+}
+
+/* Section spacing tweaks */
+.partner-sidebar .menu-title + .nav-item {
+  margin-top: 4px;
+}
+
+/* Divider-like subtle separators (optional) */
+.partner-sidebar .menu-title:not(:first-child) {
+  margin-top: 8px;
+}
+
+.navbar-menu {
+    background: #001F3F;
+}
+.nav-link {
+    font-size: 16px !important;
+    font-weight: 500;
+    color: var(--vz-nav-link-color);
+
+}
+.menu-title span {
+    padding: 8px 1px;
+    display: inline-block;
+}
+.partner-sidebar .menu-title {
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.company-image{
+    height: 40px;
+    width: 150px;
+    object-fit: contain;
+     object-position: left;
+}
+.datatable label{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 8px;
+}
+.profile-wid-bg::before {
+  
+    background: #001F3F;
+}
+.navbar-menu {
+    background: #001F3F;
+}
+
+/* Metrics Component: Consistent Design */
+.metrics-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+ 
+}
+#back-to-top {
+    bottom: 65px;
+}
+
+/* Scoped hover effect for activity chips */
+      .chip-actions a {
+        transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, border-color .15s ease;
+      }
+      .chip-actions a:hover {
+        background-color: var(--bs-light);
+        border-color: var(--bs-light);
+        box-shadow: 0 2px 6px rgba(16, 24, 40, 0.08);
+        text-decoration: none;
+      }
+
+      /* Sticky subheader (below top navbar) */
+      .page-subheader-sticky {
+        position: sticky;
+        top: 70px; /* adjust if the top navbar height differs */
+        z-index: 900; /* keeps it above content, below modals */
+        background-color: var(--bs-body-bg);
+        transition: background-color .25s ease, top .25s ease, padding .25s ease;
+        will-change: top, background-color, padding;
+      }
+      .page-subheader-sticky.is-stuck {
+        padding-top: 0.8rem; 
+        padding-bottom: 0.8rem !important; /* extra top padding only when sticking */
+      }
+
+.card-title {
+    font-size: 16px;
+    margin: 0 0 7px 0;
+    color: #405189;
+}
+
+.metrics-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.50rem 1rem;
+  min-width: 160px;
+  min-height: 50px;
+  background-color: var(--vz-card-bg, #fff);
+  border: 1px solid var(--vz-border-color, #e9ecef);
+  border-radius: 0.5rem;
+  box-shadow: none;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.metrics-item i {
+  font-size: 30px;
+  color: var(--vz-primary, #4056D8);
+}
+
+.metrics-item .metrics-content {
+  line-height: 1.1;
+}
+
+.metrics-item .metrics-label {
+  font-size: 14px;
+  color: var(--vz-secondary-color, #6c757d);
+  padding-bottom: 2px;
+}
+
+.metrics-item .metrics-value {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--vz-body-color, #212529);
+}
+
+.metrics-item:hover {
+  border-color: var(--vz-primary, #4056D8);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+ #pills-bill-info-tab,
+   #pills-bill-address-tab,
+   #pills-payment-tab,
+   #pills-finish-tab {
+     font-size: 14px !important;
+   }
+
+.profile-image {
+    height: 96px;
+    width: 84px;
+    object-fit: cover;
+    object-position: center;
+}
+
+@media (max-width: 576px) {
+  .metrics-item {
+    min-width: 140px;
+  }
+}

@@ -1,0 +1,153 @@
+import React from 'react'
+import { NavLink, Link } from 'react-router-dom'
+
+export default function Sidebar() {
+  return (
+    <div className="app-menu navbar-menu">
+      <div className="navbar-brand-box">
+        <a href="/" className="logo logo-dark">
+          <span className="logo-sm">
+            <img src="/assets/images/Favicon.png" alt="" height="22" />
+          </span>
+          <span className="logo-lg">
+            <img src="/assets/images/logo.png" alt="" height="17" />
+          </span>
+        </a>
+        <a href="/" className="logo logo-light">
+          <span className="logo-sm">
+            <img src="/assets/images/Favicon.png" alt="" height="40" />
+          </span>
+          <span className="logo-lg">
+            <img src="/assets/images/logo.png" alt="" height="30" />
+          </span>
+        </a>
+        <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
+          <i className="ri-record-circle-line"></i>
+        </button>
+      </div>
+
+      <div className="dropdown sidebar-user m-1 rounded">
+        <button type="button" className="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span className="d-flex align-items-center gap-2">
+            <img className="rounded header-profile-user" src="/assets/images/users/avatar-1.jpg" alt="Header Avatar" />
+            <span className="text-start">
+              <span className="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
+              <span className="d-block fs-14 sidebar-user-name-sub-text"><i className="ri ri-circle-fill fs-10 text-success align-baseline"></i> <span className="align-middle">Online</span></span>
+            </span>
+          </span>
+        </button>
+        <div className="dropdown-menu dropdown-menu-end">
+          <h6 className="dropdown-header">Welcome Anna!</h6>
+          <a className="dropdown-item" href="#"><i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Profile</span></a>
+          <a className="dropdown-item" href="#"><i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Messages</span></a>
+          <a className="dropdown-item" href="#"><i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Help</span></a>
+          <div className="dropdown-divider"></div>
+          <a className="dropdown-item" href="#"><i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Balance : <b>$5971.67</b></span></a>
+          <a className="dropdown-item" href="#"><span className="badge bg-success-subtle text-success mt-1 float-end">New</span><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a>
+          <a className="dropdown-item" href="#"><i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span></a>
+        </div>
+      </div>
+
+      <div id="scrollbar" data-simplebar className="h-100">
+        <div className="container-fluid">
+          <div id="two-column-menu"></div>
+          <ul className="navbar-nav partner-sidebar" id="navbar-nav">
+            <li className="nav-item">
+              <NavLink end className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/">
+                <i className="ri-dashboard-2-line"></i> <span>Dashboard</span>
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/partners">
+                <i className="las la-handshake"></i> <span>Partners</span>
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="las la-calendar-check"></i> <span>Demo Requests</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="las la-chart-pie"></i> <span>Leads</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="las la-clipboard-list"></i> <span>Contacts</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="las la-user-friends"></i> <span>Clients</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="bx bx-dollar"></i> <span>Commisions</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="bx bx-credit-card"></i> <span>Payments</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="bx bx-file"></i> <span>Invoices</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="bx bx-sync"></i> <span>Subscriptions</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="ri-calendar-2-line"></i> <span>Appointments</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="ri-live-fill"></i> <span>Training &amp; Courses</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/support-tickets">
+                <i className="las la-life-ring"></i> <span>Support Tickets</span>
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="ri-folder-fill"></i> <span>Resources</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/employees">
+                <i className="ri-user-2-fill"></i> <span>Employees</span>
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/users">
+                <i className="ri-user-3-fill"></i> <span>Users</span>
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="ri-shield-user-fill"></i> <span>Roles &amp; Permissions</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link menu-link" href="#">
+                <i className="ri-file-settings-fill"></i> <span>Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="sidebar-background"></div>
+      <div className="vertical-overlay"></div>
+    </div>
+  )
+}
