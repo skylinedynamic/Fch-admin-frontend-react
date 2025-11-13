@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios'
+import { toast } from 'react-toastify'
 import { getToken, clearAuth } from './auth'
 
-const api: AxiosInstance = axios.create({
+export const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
   headers: {
     'Content-Type': 'application/json',
@@ -10,7 +11,7 @@ const api: AxiosInstance = axios.create({
 })
 
 // Attach Authorization header if token exists
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   if (token) {
     config.headers = config.headers || {}
@@ -19,23 +20,38 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Global 401/403 handling: clear auth and redirect to login
-api.interceptors.response.use(
+// Global 401/403 handling: 401 => logout + redirect; 403 => toast only
+apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     const status = error?.response?.status
-    if (status === 401 || status === 403) {
+
+    // Toast for network connectivity issues (no response or network error)
+    if (!error.response || (error.code && error.code === 'ERR_NETWORK')) {
+      if (typeof window !== 'undefined') {
+        const offline = typeof navigator !== 'undefined' && !navigator.onLine
+        const message = offline
+          ? 'You appear to be offline. Please reconnect and try again.'
+          : 'Network error: Unable to reach the server. Please try again later.'
+        toast(message, { toastId: 'network-error' })
+      }
+    }
+
+    if (status === 401) {
+      // Unauthorized: clear auth and redirect to login
       clearAuth()
-      // Use hard redirect to ensure app state resets
       if (typeof window !== 'undefined') {
         const current = window.location.pathname
         if (current !== '/login') {
-          window.location.href = '/login'
+          window.location.assign('/login')
         }
       }
+    } else if (status === 403) {
+      // Forbidden: keep auth, show informative toast, do not redirect
+      const serverMessage = (error.response?.data as any)?.message
+      const message = serverMessage || 'You do not have permission to perform this action.'
+      toast.error(message, { toastId: 'forbidden-error' })
     }
     return Promise.reject(error)
   }
 )
-
-export default api

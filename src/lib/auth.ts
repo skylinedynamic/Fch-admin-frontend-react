@@ -1,6 +1,39 @@
-// Lightweight auth utilities: token/user storage, read helpers, and logout
-export const AUTH_TOKEN_KEY = 'auth_token'
-export const AUTH_USER_KEY = 'auth_user'
+// Auth utilities backed by Zustand store with persist
+import { getAuthState, setAuthState, clearAuthState } from '../store/authStore'
+
+const SESSION_KEY = 'auth_session'
+
+function readSession(): { token?: string; user?: AuthUser | null } {
+  try {
+    if (typeof window === 'undefined') return {}
+    const raw = window.sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    const token = typeof parsed?.token === 'string' ? parsed.token : undefined
+    const user = parsed?.user ?? null
+    return { token, user }
+  } catch {
+    return {}
+  }
+}
+
+function writeSession(payload: { token?: string; user?: AuthUser | null }) {
+  try {
+    if (typeof window === 'undefined') return
+    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload))
+  } catch {
+    // ignore quota/storage errors
+  }
+}
+
+function clearSession() {
+  try {
+    if (typeof window === 'undefined') return
+    window.sessionStorage.removeItem(SESSION_KEY)
+  } catch {
+    // ignore
+  }
+}
 
 export type AuthUser = {
   id?: string
@@ -13,34 +46,38 @@ export type AuthUser = {
 }
 
 export function getToken(): string {
-  try {
-    return localStorage.getItem(AUTH_TOKEN_KEY) || ''
-  } catch {
-    return ''
+  const { token, rememberMe } = getAuthState()
+  if (token) return token
+  if (rememberMe === false) {
+    const fromSession = readSession().token
+    return fromSession ?? ''
   }
+  return ''
 }
 
 export function getUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(AUTH_USER_KEY)
-    return raw ? (JSON.parse(raw) as AuthUser) : null
-  } catch {
-    return null
+  const { user, rememberMe } = getAuthState()
+  if (user) return user as AuthUser
+  if (rememberMe === false) {
+    const fromSession = readSession().user
+    return (fromSession as AuthUser | null) ?? null
+  }
+  return null
+}
+
+export function setAuth(token?: string | null, user?: AuthUser | null, rememberMe: boolean = true): void {
+  setAuthState({ token: token || undefined, user: user ?? null, rememberMe })
+  if (rememberMe === false) {
+    writeSession({ token: token || undefined, user: user ?? null })
+  } else {
+    // ensure no stale session data remains
+    clearSession()
   }
 }
 
-export function setAuth(token?: string | null, user?: AuthUser | null): void {
-  try {
-    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token)
-    if (user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
-  } catch {}
-}
-
 export function clearAuth(): void {
-  try {
-    localStorage.removeItem(AUTH_TOKEN_KEY)
-    localStorage.removeItem(AUTH_USER_KEY)
-  } catch {}
+  clearAuthState()
+  clearSession()
 }
 
 export function isAuthenticated(): boolean {

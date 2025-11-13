@@ -7,6 +7,8 @@ import EmployeeDetails from '../src/pages/employees/EmployeeDetails.jsx'
 import SignIn from '../src/pages/singin/SignIn.jsx'
 import Users from '../src/pages/users/Users.jsx'
 import ProtectedRoute from './lib/ProtectedRoute'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 function DashboardPage() {
   return (
@@ -32,6 +34,8 @@ function PartnersPage() {
 
 export default function App() {
   return (
+    <>
+    <ToastContainer theme="colored" />
     <Routes>
       <Route path="login" element={<SignIn />} />
       <Route element={<ProtectedRoute />}> 
@@ -44,5 +48,6 @@ export default function App() {
         </Route>
       </Route>
     </Routes>
+    </>
   )
 }

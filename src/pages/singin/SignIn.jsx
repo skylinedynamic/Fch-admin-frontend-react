@@ -12,6 +12,7 @@ export default function SignIn() {
   const [passwordError, setPasswordError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState('')
+  const [remember, setRemember] = useState(true)
 
  const handleSubmit = async (e) => {
   e.preventDefault()
@@ -22,7 +23,7 @@ export default function SignIn() {
 
   try {
     // Call centralized auth service; rely on Laravel validation
-    await login(email, password)
+    await login(email, password, remember)
     navigate('/')
   } catch (err) {
     const data = err?.response?.data
@@ -107,6 +108,8 @@ export default function SignIn() {
                       </div>
 
                       <div className="mb-3">
+                        <div className="float-end"><a className="text-muted" href="/forgot-password">Forgot password?</a></div>
+
                         <label className="form-label" htmlFor="password-input">Password</label>
                         <div className="position-relative auth-pass-inputgroup">
                           <input
@@ -130,11 +133,26 @@ export default function SignIn() {
                         </div>
                       </div>
 
+                      <div className="block mt-4">
+                          <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="rememberMe"
+                                checked={remember}
+                                onChange={(e)=>setRemember(e.target.checked)}
+                            />
+                            <label htmlFor="auth-remember-check" className="form-check-label">
+                              <span className="ms-2">Remember me</span>
+                            </label>
+                          </label>
+                      </div>
+
+                    
+
                       <div className="mt-4">
                         <button className="btn btn-success w-100" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
                       </div>
-
-        
                     </form>
                   </div>
                 </div>

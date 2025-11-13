@@ -1,11 +1,11 @@
-import api from './apiClient'
+import { apiClient } from './apiClient'
 import { setAuth, AuthUser } from './auth'
 
 export type LoginSuccess = { token: string; user: AuthUser }
 
-export async function login(email: string, password: string): Promise<LoginSuccess> {
+export async function login(email: string, password: string, remember: boolean = true): Promise<LoginSuccess> {
   try {
-    const res = await api.post('/auth/login', { email, password })
+    const res = await apiClient.post('/auth/login', { email, password, remember })
     const data = res?.data
 
     if (data?.status === true) {
@@ -17,7 +17,7 @@ export async function login(email: string, password: string): Promise<LoginSucce
         error.response = { data }
         throw error
       }
-      setAuth(token, user)
+      setAuth(token, user, remember)
       return { token, user }
     }
 
@@ -34,7 +34,7 @@ export async function login(email: string, password: string): Promise<LoginSucce
 
 export async function logout(): Promise<{ status?: boolean; message?: string; data?: any }> {
   try {
-    const res = await api.post('/auth/logout')
+    const res = await apiClient.post('/auth/logout')
     return res?.data ?? { status: true }
   } catch (err) {
     throw err
