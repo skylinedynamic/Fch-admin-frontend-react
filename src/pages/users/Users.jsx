@@ -1,4 +1,3 @@
-// src/Fch/pages/Users.tsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
@@ -15,28 +14,28 @@ export default function Users() {
   const [filters, setFilters] = useState({});
   const [globalFilterValue, setGlobalFilterValue] = useState('');
   const [selection, setSelection] = useState([]);
-  const [selectedRole, setSelectedRole] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-
-  // Roles for filter & add user
-  const [roles, setRoles] = useState([]);
 
   // Add User Modal
   const [showAddUser, setShowAddUser] = useState(false);
+  const [roles, setRoles] = useState([]);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     phone_number: '',
-    role_id: '',
+    role_id: '', // ✅ changed to role_id
     password: '',
   });
 
-  // Load roles and users on mount
   useEffect(() => {
     initFilters();
-    loadRoles();
     loadUsers();
+    loadRoles();
   }, []);
+
+  const loadRoles = async () => {
+    const roleList = await fetchRoles();
+    setRoles(roleList); // [{id, name}, ...]
+  };
 
   const initFilters = () => {
     setFilters({
@@ -50,19 +49,9 @@ export default function Users() {
     setGlobalFilterValue('');
   };
 
-  const loadRoles = async () => {
-    const roleList = await fetchRoles();
-    setRoles(roleList); // [{id, name}, ...]
-  };
-
-  const loadUsers = async (
-    page = 1,
-    search = '',
-    role_id = selectedRole,
-    status = selectedStatus
-  ) => {
+  const loadUsers = async (page = 1, search = '') => {
     try {
-      const response = await fetchUsers({ page, per_page: 10, search, role_id, status });
+      const response = await fetchUsers({ page, per_page: 10, search });
       setUsers(response.data || []);
       setPagination(response.pagination);
     } catch (error) {
@@ -70,23 +59,13 @@ export default function Users() {
     }
   };
 
-  // Handlers for search and filters
   const onGlobalFilterChange = (e) => {
     const value = e.target.value;
+    const _filters = { ...filters };
+    _filters['global'].value = value;
+    setFilters(_filters);
     setGlobalFilterValue(value);
-    loadUsers(1, value, selectedRole, selectedStatus);
-  };
-
-  const onRoleFilterChange = (e) => {
-    const value = e.target.value;
-    setSelectedRole(value);
-    loadUsers(1, globalFilterValue, value, selectedStatus);
-  };
-
-  const onStatusFilterChange = (e) => {
-    const value = e.target.value;
-    setSelectedStatus(value);
-    loadUsers(1, globalFilterValue, selectedRole, value);
+    loadUsers(1, value);
   };
 
   const handleAddUserInput = (e) => {
@@ -118,11 +97,6 @@ export default function Users() {
     return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
   };
 
-  const roleBodyTemplate = (rowData) => {
-    const role = roles.find((r) => r.id === rowData.role_id);
-    return role ? role.name : '-';
-  };
-
   return (
     <div className="page-content">
       <div className="container-fluid">
@@ -146,7 +120,7 @@ export default function Users() {
           </div>
         </div>
 
-        {/* Search & Filters */}
+        {/* Filters */}
         <div className="row g-3 mb-3">
           <div className="col-md-4">
             <input
@@ -158,7 +132,7 @@ export default function Users() {
             />
           </div>
           <div className="col-md-3">
-            <select className="form-control" value={selectedRole} onChange={onRoleFilterChange}>
+            <select className="form-control">
               <option value="">Select Role</option>
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>{role.name}</option>
@@ -166,24 +140,15 @@ export default function Users() {
             </select>
           </div>
           <div className="col-md-3">
-            <select className="form-control" value={selectedStatus} onChange={onStatusFilterChange}>
+            <select className="form-control">
               <option value="">Select Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
           <div className="col-md-2">
-            <button
-              type="button"
-              className="btn btn-warning w-100"
-              onClick={() => {
-                setGlobalFilterValue('');
-                setSelectedRole('');
-                setSelectedStatus('');
-                loadUsers(1);
-              }}
-            >
-              <i className="ri-equalizer-fill me-1 align-bottom"></i> Reset
+            <button type="button" className="btn btn-warning w-100">
+              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
             </button>
           </div>
         </div>
@@ -199,7 +164,7 @@ export default function Users() {
                 rows={pagination?.per_page || 10}
                 totalRecords={pagination?.total || 0}
                 lazy
-                onPage={(e) => loadUsers(e.first / e.rows + 1, globalFilterValue, selectedRole, selectedStatus)}
+                onPage={(e) => loadUsers(e.first / e.rows + 1, globalFilterValue)}
                 sortMode="multiple"
                 filterDisplay="menu"
                 filters={filters}
@@ -216,7 +181,7 @@ export default function Users() {
                 <Column field="name" header="Name" sortable filter body={nameBodyTemplate} />
                 <Column field="email" header="Email" sortable filter />
                 <Column field="phone_number" header="Phone" sortable filter />
-                <Column field="role_id" header="Role" sortable filter body={roleBodyTemplate} />
+                <Column field="role" header="Role" sortable filter />
                 <Column field="status" header="Status" sortable filter body={statusBodyTemplate} />
               </DataTable>
             </div>
@@ -227,7 +192,7 @@ export default function Users() {
       {/* Add User Modal */}
       {showAddUser && (
         <>
-          <div className="modal fade show d-block" tabIndex={-1} role="dialog">
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 <div className="modal-header">
