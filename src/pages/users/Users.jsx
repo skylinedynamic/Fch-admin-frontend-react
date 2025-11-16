@@ -3,31 +3,12 @@ import { Link } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { fetchUsers } from '../../modules/user/services';
 import '../../../assets/css/bootstrap.min.css';
 
 export default function Users() {
-const [users, setUsers] = useState([
-  { id: 'USR001', name: 'Kazi Arafat', email: 'arafat@example.com', phone: '+880123456001', role: 'Admin', status: 'Active' },
-  { id: 'USR002', name: 'Sabbir Hossain', email: 'sabbir@example.com', phone: '+880123456002', role: 'User', status: 'Inactive' },
-  { id: 'USR003', name: 'Mina Akter', email: 'mina@example.com', phone: '+880123456003', role: 'Moderator', status: 'Active' },
-  { id: 'USR004', name: 'Rahim Uddin', email: 'rahim@example.com', phone: '+880123456004', role: 'User', status: 'Active' },
-  { id: 'USR005', name: 'Anika Rahman', email: 'anika@example.com', phone: '+880123456005', role: 'User', status: 'Inactive' },
-  { id: 'USR006', name: 'Tariq Islam', email: 'tariq@example.com', phone: '+880123456006', role: 'Admin', status: 'Active' },
-  { id: 'USR007', name: 'Nabila Sultana', email: 'nabila@example.com', phone: '+880123456007', role: 'User', status: 'Active' },
-  { id: 'USR008', name: 'Imran Khan', email: 'imran@example.com', phone: '+880123456008', role: 'Moderator', status: 'Inactive' },
-  { id: 'USR009', name: 'Farhana Khatun', email: 'farhana@example.com', phone: '+880123456009', role: 'User', status: 'Active' },
-  { id: 'USR010', name: 'Rafiq Ahmed', email: 'rafiq@example.com', phone: '+880123456010', role: 'User', status: 'Active' },
-  { id: 'USR011', name: 'Sadia Akter', email: 'sadia@example.com', phone: '+880123456011', role: 'User', status: 'Inactive' },
-  { id: 'USR012', name: 'Jamil Hossain', email: 'jamil@example.com', phone: '+880123456012', role: 'Admin', status: 'Active' },
-  { id: 'USR013', name: 'Rumana Begum', email: 'rumana@example.com', phone: '+880123456013', role: 'Moderator', status: 'Active' },
-  { id: 'USR014', name: 'Sakib Khan', email: 'sakib@example.com', phone: '+880123456014', role: 'User', status: 'Inactive' },
-  { id: 'USR015', name: 'Mousumi Sultana', email: 'mousumi@example.com', phone: '+880123456015', role: 'User', status: 'Active' },
-  { id: 'USR016', name: 'Fahim Ahmed', email: 'fahim@example.com', phone: '+880123456016', role: 'Admin', status: 'Active' },
-  { id: 'USR017', name: 'Lamia Akter', email: 'lamia@example.com', phone: '+880123456017', role: 'User', status: 'Inactive' },
-  { id: 'USR018', name: 'Shahriar Khan', email: 'shahriar@example.com', phone: '+880123456018', role: 'Moderator', status: 'Active' },
-  { id: 'USR019', name: 'Tanjim Hossain', email: 'tanjim@example.com', phone: '+880123456019', role: 'User', status: 'Active' },
-  { id: 'USR020', name: 'Anwar Ali', email: 'anwar@example.com', phone: '+880123456020', role: 'User', status: 'Inactive' },
-]);
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState(null);
 
   // Filters & selection
   const [filters, setFilters] = useState({});
@@ -39,7 +20,7 @@ const [users, setUsers] = useState([
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    phone: '',
+    phone_number: '',
     role: '',
     password: '',
   });
@@ -49,14 +30,32 @@ const [users, setUsers] = useState([
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
       name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
       email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
       status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
     });
     setGlobalFilterValue('');
   };
 
-  useEffect(() => initFilters(), []);
+  // Fetch users on component mount
+  useEffect(() => {
+    initFilters();
+    loadUsers();
+  }, []);
+
+  const loadUsers = async (page = 1, search = '') => {
+    try {
+      const response = await fetchUsers({
+        page,
+        per_page: 10,
+        search,
+      });
+      setUsers(response.data || []);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
 
   const onGlobalFilterChange = (e) => {
     const value = e.target.value;
@@ -64,23 +63,37 @@ const [users, setUsers] = useState([
     _filters['global'].value = value;
     setFilters(_filters);
     setGlobalFilterValue(value);
+    loadUsers(1, value);
   };
 
   const nameBodyTemplate = (rowData) => (
     <Link to="/user-details" className="fw-medium link-primary">{rowData.name}</Link>
   );
 
+const statusBodyTemplate = (rowData) => {
+  let badgeClass = '';
+  if (rowData.status === 'active') badgeClass = 'success'; // green
+  else if (rowData.status === 'inactive') badgeClass = 'danger'; // red
+  else badgeClass = 'secondary'; // fallback color
+
+  return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
+};
+
   const handleAddUserInput = (e) => {
     const { name, value } = e.target;
     setNewUser({ ...newUser, [name]: value });
   };
 
-  const handleAddUserSubmit = (e) => {
+  const handleAddUserSubmit = async (e) => {
     e.preventDefault();
-    const id = `USR${(users.length + 1).toString().padStart(3, '0')}`;
-    setUsers([...users, { id, ...newUser, status: 'Active' }]);
-    setNewUser({ name: '', email: '', phone: '', role: '', password: '' });
-    setShowAddUser(false);
+    try {
+      await fetchUsers({}, '/users'); // Adjust endpoint as needed
+      loadUsers();
+      setNewUser({ name: '', email: '', phone_number: '', role: '', password: '' });
+      setShowAddUser(false);
+    } catch (error) {
+      console.error('Failed to add user:', error);
+    }
   };
 
   return (
@@ -149,13 +162,19 @@ const [users, setUsers] = useState([
               <DataTable
                 value={users}
                 paginator
-                rows={10}
-                rowsPerPageOptions={[10, 25, 50, 100]}
+                first={(pagination?.current_page - 1) * pagination?.per_page || 0}
+                rows={pagination?.per_page || 10}
+                totalRecords={pagination?.total || 0}
+                lazy
+                onPage={(e) => {
+                  const pageNumber = e.first / e.rows + 1;
+                  loadUsers(pageNumber, globalFilterValue);
+                }}
                 sortMode="multiple"
                 filterDisplay="menu"
                 filters={filters}
                 onFilter={(e) => setFilters(e.filters)}
-                globalFilterFields={['name', 'email', 'phone', 'role', 'status']}
+                globalFilterFields={['name', 'email', 'phone_number', 'role', 'status']}
                 selection={selection}
                 onSelectionChange={(e) => setSelection(e.value)}
                 dataKey="id"
@@ -166,9 +185,9 @@ const [users, setUsers] = useState([
                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                 <Column field="name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBodyTemplate} />
                 <Column field="email" header="Email" sortable filter showFilterMatchModes />
-                <Column field="phone" header="Phone" sortable filter showFilterMatchModes />
+                <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes />
                 <Column field="role" header="Role" sortable filter showFilterMatchModes />
-                <Column field="status" header="Status" sortable filter showFilterMatchModes />
+                <Column field="status" header="Status" sortable filter showFilterMatchModes body={statusBodyTemplate} />
               </DataTable>
             </div>
           </div>
@@ -197,7 +216,7 @@ const [users, setUsers] = useState([
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Phone</label>
-                      <input type="text" name="phone" className="form-control" value={newUser.phone} onChange={handleAddUserInput} required />
+                      <input type="text" name="phone_number" className="form-control" value={newUser.phone_number} onChange={handleAddUserInput} required />
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Role</label>
