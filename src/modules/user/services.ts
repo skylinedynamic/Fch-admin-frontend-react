@@ -9,18 +9,29 @@ interface UsersPayload {
 }
 
 export type Role = {
-  id: number | string
-  name: string
-  partner_id?: string
-  guard_name?: string
-  [key: string]: unknown
-}
+  id: number | string;
+  name: string;
+};
 
-// Fetch roles (all, no pagination, partner_id wise)
+// Fetch roles (pluck id and name only)
 export const fetchRoles = async (partner_id?: string): Promise<Role[]> => {
-  const res = await apiClient.post('/common/roles', partner_id ? { partner_id } : {})
-  return res.data.data || [] // return roles array
-}
+  try {
+    const res = await apiClient.get('/common/roles', {
+      params: partner_id ? { partner_id } : {},
+    });
+
+    // Pluck only id and name
+    const roles = (res.data.data || []).map((role) => ({
+      id: role.id,
+      name: role.name,
+    }));
+
+    return roles;
+  } catch (error) {
+    console.error('Failed to fetch roles:', error);
+    return [];
+  }
+};
 
 
 export const fetchUsers = async (payload?: UsersPayload) => {

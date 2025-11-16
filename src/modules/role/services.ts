@@ -8,10 +8,10 @@ interface RolePayload {
   search?: string
 }
 
-export const fetchRoles = async (payload?: RolePayload) => {
-  const res = await apiClient.post('/common/roles', payload || {})
-  return res.data // { status, message, data, links, pagination }
-}
+// export const fetchRoles = async (payload?: RolePayload) => {
+//   const res = await apiClient.post('/common/roles', payload || {})
+//   return res.data // { status, message, data, links, pagination }
+// }
 
 // export const fetchUserById = async (id: number | string) => {
 //   const res = await apiClient.get(`/users/${id}`)

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchUsers } from '../../modules/user/services';
+import { fetchUsers, createUser, fetchRoles } from '../../modules/user/services';
 import '../../../assets/css/bootstrap.min.css';
 
 export default function Users() {
@@ -17,13 +17,25 @@ export default function Users() {
 
   // Add User Modal
   const [showAddUser, setShowAddUser] = useState(false);
+  const [roles, setRoles] = useState([]);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     phone_number: '',
-    role: '',
+    role_id: '', // ✅ changed to role_id
     password: '',
   });
+
+  useEffect(() => {
+    initFilters();
+    loadUsers();
+    loadRoles();
+  }, []);
+
+  const loadRoles = async () => {
+    const roleList = await fetchRoles();
+    setRoles(roleList); // [{id, name}, ...]
+  };
 
   const initFilters = () => {
     setFilters({
@@ -37,19 +49,9 @@ export default function Users() {
     setGlobalFilterValue('');
   };
 
-  // Fetch users on component mount
-  useEffect(() => {
-    initFilters();
-    loadUsers();
-  }, []);
-
   const loadUsers = async (page = 1, search = '') => {
     try {
-      const response = await fetchUsers({
-        page,
-        per_page: 10,
-        search,
-      });
+      const response = await fetchUsers({ page, per_page: 10, search });
       setUsers(response.data || []);
       setPagination(response.pagination);
     } catch (error) {
@@ -59,25 +61,12 @@ export default function Users() {
 
   const onGlobalFilterChange = (e) => {
     const value = e.target.value;
-    let _filters = { ...filters };
+    const _filters = { ...filters };
     _filters['global'].value = value;
     setFilters(_filters);
     setGlobalFilterValue(value);
     loadUsers(1, value);
   };
-
-  const nameBodyTemplate = (rowData) => (
-    <Link to="/user-details" className="fw-medium link-primary">{rowData.name}</Link>
-  );
-
-const statusBodyTemplate = (rowData) => {
-  let badgeClass = '';
-  if (rowData.status === 'active') badgeClass = 'success'; // green
-  else if (rowData.status === 'inactive') badgeClass = 'danger'; // red
-  else badgeClass = 'secondary'; // fallback color
-
-  return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
-};
 
   const handleAddUserInput = (e) => {
     const { name, value } = e.target;
@@ -87,13 +76,25 @@ const statusBodyTemplate = (rowData) => {
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetchUsers({}, '/users'); // Adjust endpoint as needed
-      loadUsers();
-      setNewUser({ name: '', email: '', phone_number: '', role: '', password: '' });
+      await createUser(newUser); // ✅ API call with role_id
+      loadUsers(); // Refresh table
+      setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '' });
       setShowAddUser(false);
     } catch (error) {
       console.error('Failed to add user:', error);
     }
+  };
+
+  const nameBodyTemplate = (rowData) => (
+    <Link to="/user-details" className="fw-medium link-primary">{rowData.name}</Link>
+  );
+
+  const statusBodyTemplate = (rowData) => {
+    let badgeClass = '';
+    if (rowData.status === 'active') badgeClass = 'success';
+    else if (rowData.status === 'inactive') badgeClass = 'danger';
+    else badgeClass = 'secondary';
+    return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
   };
 
   return (
@@ -112,10 +113,7 @@ const statusBodyTemplate = (rowData) => {
               </nav>
             </div>
             <div>
-              <button
-                className="btn btn-primary fw-medium"
-                onClick={() => setShowAddUser(true)}
-              >
+              <button className="btn btn-primary fw-medium" onClick={() => setShowAddUser(true)}>
                 <i className="ri-add-fill me-1 align-bottom"></i> Add User
               </button>
             </div>
@@ -136,9 +134,9 @@ const statusBodyTemplate = (rowData) => {
           <div className="col-md-3">
             <select className="form-control">
               <option value="">Select Role</option>
-              <option value="Admin">Admin</option>
-              <option value="User">User</option>
-              <option value="Moderator">Moderator</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>{role.name}</option>
+              ))}
             </select>
           </div>
           <div className="col-md-3">
@@ -166,10 +164,7 @@ const statusBodyTemplate = (rowData) => {
                 rows={pagination?.per_page || 10}
                 totalRecords={pagination?.total || 0}
                 lazy
-                onPage={(e) => {
-                  const pageNumber = e.first / e.rows + 1;
-                  loadUsers(pageNumber, globalFilterValue);
-                }}
+                onPage={(e) => loadUsers(e.first / e.rows + 1, globalFilterValue)}
                 sortMode="multiple"
                 filterDisplay="menu"
                 filters={filters}
@@ -183,11 +178,11 @@ const statusBodyTemplate = (rowData) => {
                 emptyMessage="No users found"
               >
                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                <Column field="name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBodyTemplate} />
-                <Column field="email" header="Email" sortable filter showFilterMatchModes />
-                <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes />
-                <Column field="role" header="Role" sortable filter showFilterMatchModes />
-                <Column field="status" header="Status" sortable filter showFilterMatchModes body={statusBodyTemplate} />
+                <Column field="name" header="Name" sortable filter body={nameBodyTemplate} />
+                <Column field="email" header="Email" sortable filter />
+                <Column field="phone_number" header="Phone" sortable filter />
+                <Column field="role" header="Role" sortable filter />
+                <Column field="status" header="Status" sortable filter body={statusBodyTemplate} />
               </DataTable>
             </div>
           </div>
@@ -220,11 +215,17 @@ const statusBodyTemplate = (rowData) => {
                     </div>
                     <div className="mb-3">
                       <label className="form-label">Role</label>
-                      <select name="role" className="form-control" value={newUser.role} onChange={handleAddUserInput} required>
+                      <select
+                        name="role_id"
+                        className="form-control"
+                        value={newUser.role_id}
+                        onChange={handleAddUserInput}
+                        required
+                      >
                         <option value="">Select Role</option>
-                        <option value="Admin">Admin</option>
-                        <option value="User">User</option>
-                        <option value="Moderator">Moderator</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>{role.name}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="mb-3">
