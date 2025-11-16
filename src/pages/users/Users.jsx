@@ -1,428 +1,229 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import '../../../assets/css/bootstrap.min.css';
 
 export default function Users() {
-  useEffect(() => {
-    // Row click: navigate to a details page (placeholder for now)
-    const tbody = document.getElementById('users-list-data')
-    if (tbody) {
-      Array.prototype.forEach.call(tbody.querySelectorAll('tr'), (tr) => {
-        tr.classList.add('cursor-pointer')
-      })
-      const onTbodyClick = (e) => {
-        const target = e.target
-        if (target.closest('a, button, input, label, [data-bs-toggle], .remove-item-btn')) return
-        const row = target.closest('tr')
-        if (!row) return
-        // Navigate to details (could be /user-details in future)
-        window.location.href = '/employees' // keep navigation consistent until user-details exists
-      }
-      tbody.addEventListener('click', onTbodyClick)
-      return () => tbody.removeEventListener('click', onTbodyClick)
-    }
-  }, [])
+const [users, setUsers] = useState([
+  { id: 'USR001', name: 'Kazi Arafat', email: 'arafat@example.com', phone: '+880123456001', role: 'Admin', status: 'Active' },
+  { id: 'USR002', name: 'Sabbir Hossain', email: 'sabbir@example.com', phone: '+880123456002', role: 'User', status: 'Inactive' },
+  { id: 'USR003', name: 'Mina Akter', email: 'mina@example.com', phone: '+880123456003', role: 'Moderator', status: 'Active' },
+  { id: 'USR004', name: 'Rahim Uddin', email: 'rahim@example.com', phone: '+880123456004', role: 'User', status: 'Active' },
+  { id: 'USR005', name: 'Anika Rahman', email: 'anika@example.com', phone: '+880123456005', role: 'User', status: 'Inactive' },
+  { id: 'USR006', name: 'Tariq Islam', email: 'tariq@example.com', phone: '+880123456006', role: 'Admin', status: 'Active' },
+  { id: 'USR007', name: 'Nabila Sultana', email: 'nabila@example.com', phone: '+880123456007', role: 'User', status: 'Active' },
+  { id: 'USR008', name: 'Imran Khan', email: 'imran@example.com', phone: '+880123456008', role: 'Moderator', status: 'Inactive' },
+  { id: 'USR009', name: 'Farhana Khatun', email: 'farhana@example.com', phone: '+880123456009', role: 'User', status: 'Active' },
+  { id: 'USR010', name: 'Rafiq Ahmed', email: 'rafiq@example.com', phone: '+880123456010', role: 'User', status: 'Active' },
+  { id: 'USR011', name: 'Sadia Akter', email: 'sadia@example.com', phone: '+880123456011', role: 'User', status: 'Inactive' },
+  { id: 'USR012', name: 'Jamil Hossain', email: 'jamil@example.com', phone: '+880123456012', role: 'Admin', status: 'Active' },
+  { id: 'USR013', name: 'Rumana Begum', email: 'rumana@example.com', phone: '+880123456013', role: 'Moderator', status: 'Active' },
+  { id: 'USR014', name: 'Sakib Khan', email: 'sakib@example.com', phone: '+880123456014', role: 'User', status: 'Inactive' },
+  { id: 'USR015', name: 'Mousumi Sultana', email: 'mousumi@example.com', phone: '+880123456015', role: 'User', status: 'Active' },
+  { id: 'USR016', name: 'Fahim Ahmed', email: 'fahim@example.com', phone: '+880123456016', role: 'Admin', status: 'Active' },
+  { id: 'USR017', name: 'Lamia Akter', email: 'lamia@example.com', phone: '+880123456017', role: 'User', status: 'Inactive' },
+  { id: 'USR018', name: 'Shahriar Khan', email: 'shahriar@example.com', phone: '+880123456018', role: 'Moderator', status: 'Active' },
+  { id: 'USR019', name: 'Tanjim Hossain', email: 'tanjim@example.com', phone: '+880123456019', role: 'User', status: 'Active' },
+  { id: 'USR020', name: 'Anwar Ali', email: 'anwar@example.com', phone: '+880123456020', role: 'User', status: 'Inactive' },
+]);
 
-  useEffect(() => {
-    // Initialize Choices.js for selects when available
-    const selects = document.querySelectorAll('[data-choices]')
-    selects.forEach((el) => {
-      try {
-        if (window.Choices && typeof window.Choices === 'function') {
-          if (!el._choicesInstance) {
-            const instance = new window.Choices(el, { searchEnabled: false })
-            el._choicesInstance = instance
-          }
-        }
-      } catch (_) {}
-    })
-  }, [])
+  // Filters & selection
+  const [filters, setFilters] = useState({});
+  const [globalFilterValue, setGlobalFilterValue] = useState('');
+  const [selection, setSelection] = useState([]);
 
-  useEffect(() => {
-    // Select All checkbox and actions dropdown
-    const headerCheck = document.getElementById('checkAllUsers')
-    let tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all-users')
-    let rowChecks = (tbody
-      ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]')
-      : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]'))
-    const primaryBtn = document.getElementById('primaryActionBtnUsers')
-    const originalHref = primaryBtn ? primaryBtn.getAttribute('href') : null
-    const toggleBtn = document.getElementById('primaryActionToggleBtnUsers')
-    const actionMenu = document.getElementById('primaryActionMenuUsers')
+  // Add User Modal
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+    password: '',
+  });
 
-    const preventPrimaryNavigate = (e) => e.preventDefault()
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+    });
+    setGlobalFilterValue('');
+  };
 
-    const syncHeaderState = () => {
-      if (!tbody || !headerCheck) return
-      const total = rowChecks.length
-      const checked = (tbody
-        ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]:checked').length
-        : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]:checked').length)
-      headerCheck.checked = checked === total && total > 0
-      headerCheck.indeterminate = checked > 0 && checked < total
-    }
+  useEffect(() => initFilters(), []);
 
-    const updatePrimaryBtnLabel = () => {
-      if (!primaryBtn) return
-      const selected = (tbody
-        ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]:checked').length
-        : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]:checked').length)
-      if (selected > 0) {
-        primaryBtn.innerHTML = ' Actions'
-        primaryBtn.classList.remove('btn-primary')
-        primaryBtn.classList.add('bg-success', 'text-white', 'fw-medium')
-        primaryBtn.addEventListener('click', preventPrimaryNavigate)
-        if (toggleBtn) {
-          toggleBtn.classList.remove('d-none', 'btn-primary')
-          toggleBtn.classList.add('bg-success', 'text-white', 'fw-medium')
-        }
-        if (actionMenu) actionMenu.classList.remove('d-none')
-      } else {
-        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add User'
-        if (originalHref) primaryBtn.setAttribute('href', originalHref)
-        primaryBtn.classList.remove('bg-success', 'text-white')
-        primaryBtn.classList.add('btn-primary')
-        primaryBtn.removeEventListener('click', preventPrimaryNavigate)
-        if (toggleBtn) {
-          toggleBtn.classList.add('d-none')
-          toggleBtn.setAttribute('aria-expanded', 'false')
-          toggleBtn.classList.remove('bg-success', 'text-white', 'fw-medium')
-          toggleBtn.classList.add('btn-primary')
-        }
-        if (actionMenu) actionMenu.classList.add('d-none')
-      }
-    }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value;
+    let _filters = { ...filters };
+    _filters['global'].value = value;
+    setFilters(_filters);
+    setGlobalFilterValue(value);
+  };
 
-    const onHeaderChange = () => {
-      const on = headerCheck.checked
-      rowChecks.forEach((cb) => { cb.checked = on })
-      syncHeaderState(); updatePrimaryBtnLabel()
-    }
-    const onRowChange = () => { syncHeaderState(); updatePrimaryBtnLabel() }
+  const nameBodyTemplate = (rowData) => (
+    <Link to="/user-details" className="fw-medium link-primary">{rowData.name}</Link>
+  );
 
-    if (headerCheck) headerCheck.addEventListener('change', onHeaderChange)
-    rowChecks.forEach((cb) => cb.addEventListener('change', onRowChange))
-    syncHeaderState(); updatePrimaryBtnLabel()
+  const handleAddUserInput = (e) => {
+    const { name, value } = e.target;
+    setNewUser({ ...newUser, [name]: value });
+  };
 
-    // Export/Delete actions (IDs scoped for Users)
-    const getSelectedRows = () => {
-      const scope = tbody || document
-      const selector = tbody
-        ? 'input.form-check-input[name="chk_child_users"]:checked'
-        : '.form-check-all-users input.form-check-input[name="chk_child_users"]:checked'
-      return Array.from(scope.querySelectorAll(selector)).map((cb) => cb.closest('tr'))
-    }
-    const getRowData = (tr) => Array.from(tr.querySelectorAll('td')).map((td) => td.innerText.trim().replace(/\s+/g, ' '))
-    const download = (filename, text) => {
-      const a = document.createElement('a')
-      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
-      a.setAttribute('download', filename)
-      a.style.display = 'none'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a)
-    }
-    const exportCsvBtn = document.getElementById('exportCsvUsers')
-    const exportExcelBtn = document.getElementById('exportExcelUsers')
-    const exportPdfBtn = document.getElementById('exportPdfUsers')
-    const deleteSelectedBtn = document.getElementById('deleteSelectedUsers')
-
-    const onExportCsv = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const csv = rows.map((tr) => getRowData(tr).join(',')).join('\n'); download('users.csv', csv) }
-    const onExportExcel = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const tsv = rows.map((tr) => getRowData(tr).join('\t')).join('\n'); download('users.xls', tsv) }
-    const onExportPdf = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const text = rows.map((tr) => getRowData(tr).join(' | ')).join('\n'); download('users.txt', text) }
-    const onDeleteSelected = (e) => { e.preventDefault(); const rows = getSelectedRows(); if (!rows.length) return; const modalEl = document.getElementById('deleteOrder'); if (!modalEl || !window.bootstrap) return; const modal = new window.bootstrap.Modal(modalEl); modal.show(); const confirmBtn = document.getElementById('delete-record'); const closeBtn = document.getElementById('deleteRecord-close'); const onConfirm = () => { rows.forEach((tr) => tr.remove()); tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all-users'); rowChecks = (tbody ? tbody.querySelectorAll('input.form-check-input[name="chk_child_users"]') : document.querySelectorAll('.form-check-all-users input.form-check-input[name="chk_child_users"]')); syncHeaderState(); updatePrimaryBtnLabel(); modal.hide(); confirmBtn && confirmBtn.removeEventListener('click', onConfirm); closeBtn && closeBtn.removeEventListener('click', onClose) }; const onClose = () => { modal.hide(); confirmBtn && confirmBtn.removeEventListener('click', onConfirm); closeBtn && closeBtn.removeEventListener('click', onClose) }; confirmBtn && confirmBtn.addEventListener('click', onConfirm); closeBtn && closeBtn.addEventListener('click', onClose) }
-
-    exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
-    exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
-    exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
-    deleteSelectedBtn && deleteSelectedBtn.addEventListener('click', onDeleteSelected)
-
-    // Sticky subheader
-    const sticky = document.querySelector('.page-subheader-sticky')
-    let observer
-    if (sticky) {
-      let topOffset = parseInt(getComputedStyle(sticky).top, 10)
-      if (isNaN(topOffset)) topOffset = 70
-      const sentinel = document.createElement('div')
-      sentinel.className = 'sticky-sentinel'
-      sentinel.setAttribute('aria-hidden', 'true')
-      sentinel.style.position = 'relative'; sentinel.style.height = '1px'
-      sticky.parentNode && sticky.parentNode.insertBefore(sentinel, sticky)
-      observer = new IntersectionObserver((entries) => {
-        const e = entries[0]
-        if (e.isIntersecting) sticky.classList.remove('is-stuck')
-        else sticky.classList.add('is-stuck')
-      }, { rootMargin: '-' + topOffset + 'px 0px 0px 0px', threshold: [0, 1] })
-      observer.observe(sentinel)
-    }
-
-    return () => {
-      if (headerCheck) headerCheck.removeEventListener('change', onHeaderChange)
-      rowChecks.forEach((cb) => cb.removeEventListener('change', onRowChange))
-      exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
-      exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
-      exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
-      deleteSelectedBtn && deleteSelectedBtn.removeEventListener('click', onDeleteSelected)
-      observer && observer.disconnect()
-    }
-  }, [])
-
-  useEffect(() => {
-    // Sorting and search using List.js; alias classes to header data-sort
-    const initSorting = () => {
-      const valueNames = ['name', 'email', 'phone', 'role', 'status']
-      try {
-        const list = new window.List('usersTable', {
-          listClass: 'list',
-          valueNames,
-          searchClass: 'search'
-        })
-        const container = document.getElementById('usersTable')
-        if (container) container._listInstance = list
-      } catch (_) {}
-    }
-    if (window.List) { initSorting(); return }
-    const script = document.createElement('script')
-    script.src = '/assets/libs/list.js/list.min.js'
-    script.async = true
-    script.onload = initSorting
-    document.body.appendChild(script)
-    return () => { try { document.body.removeChild(script) } catch(_) {} }
-  }, [])
-
-  useEffect(() => {
-    // Role/Status filters: show rows matching selected values (or all)
-    const roleSelect = document.getElementById('userRole')
-    const statusSelect = document.getElementById('userStatus')
-    const tbody = document.getElementById('users-list-data')
-    if (!tbody) return
-
-    const applyFilters = () => {
-      const role = roleSelect ? roleSelect.value : 'all'
-      const status = statusSelect ? statusSelect.value : 'all'
-      Array.from(tbody.querySelectorAll('tr')).forEach((tr) => {
-        const roleText = (tr.querySelector('.role')?.textContent || '').trim()
-        const statusText = (tr.querySelector('.status')?.textContent || '').trim()
-        const roleOk = role === 'all' || roleText === role
-        // status badge may contain extra text; check includes
-        const statusOk = status === 'all' || statusText.includes(status)
-        tr.style.display = roleOk && statusOk ? '' : 'none'
-      })
-    }
-
-    const onChange = () => applyFilters()
-    roleSelect && roleSelect.addEventListener('change', onChange)
-    statusSelect && statusSelect.addEventListener('change', onChange)
-    applyFilters()
-
-    return () => {
-      roleSelect && roleSelect.removeEventListener('change', onChange)
-      statusSelect && statusSelect.removeEventListener('change', onChange)
-    }
-  }, [])
+  const handleAddUserSubmit = (e) => {
+    e.preventDefault();
+    const id = `USR${(users.length + 1).toString().padStart(3, '0')}`;
+    setUsers([...users, { id, ...newUser, status: 'Active' }]);
+    setNewUser({ name: '', email: '', phone: '', role: '', password: '' });
+    setShowAddUser(false);
+  };
 
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
-          <div className="col">
-            <div className="h-100">
-              <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-                <div className="col-12">
-                  <div className="d-flex align-items-center justify-content-between flex-row">
-                    <div className="flex-grow-1">
-                      <h4 className="fs-20 mb-1">Users</h4>
-                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                        <ol className="breadcrumb m-0">
-                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                          <li className="breadcrumb-item active" aria-current="page">Users</li>
-                        </ol>
-                      </nav>
-                    </div>
-                    <div className="mt-0">
-                      <form onSubmit={(e) => e.preventDefault()}>
-                        <div className="row g-3 mb-0 align-items-center">
-                          <div className="col-sm-auto">
-                            <div className="btn-group">
-                              <a href="/employees" id="primaryActionBtnUsers" className="btn btn-primary fw-medium waves-effect waves-light">
-                                <i className="ri-add-fill me-1 align-bottom"></i> Add User
-                              </a>
-                              <button type="button" id="primaryActionToggleBtnUsers" className="btn btn-primary waves-effect waves-light dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span className="visually-hidden">Toggle dropdown</span>
-                              </button>
-                              <ul className="dropdown-menu dropdown-menu-end d-none" id="primaryActionMenuUsers">
-                                <li><a className="dropdown-item" href="#" id="exportCsvUsers"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportExcelUsers"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportPdfUsers"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                <li><hr className="dropdown-divider" /></li>
-                                <li><a className="dropdown-item text-danger" href="#" id="deleteSelectedUsers"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Page Header */}
+        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+          <div className="col-12 d-flex align-items-center justify-content-between">
+            <div>
+              <h4 className="fs-20 mb-1">Users</h4>
+              <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <ol className="breadcrumb m-0">
+                  <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
+                  <li className="breadcrumb-item active" aria-current="page">Users</li>
+                </ol>
+              </nav>
+            </div>
+            <div>
+              <button
+                className="btn btn-primary fw-medium"
+                onClick={() => setShowAddUser(true)}
+              >
+                <i className="ri-add-fill me-1 align-bottom"></i> Add User
+              </button>
+            </div>
+          </div>
+        </div>
 
-              <div className="row">
-                <div className="col-lg-12">
-                  <div className="card">
-                    <div className="card-body">
-                      <form>
-                        <div className="row g-3 mb-3">
-                          <div className="col-xxl-4 col-sm-12">
-                            <div className="search-box">
-                              <input type="text" className="form-control search bg-light border-light" id="searchUser" autoComplete="off" placeholder="Search here..." />
-                              <i className="ri-search-line search-icon"></i>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                            <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-userRole" id="userRole">
-                                <option value="all" defaultValue>Select Role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Manager">Manager</option>
-                                <option value="Staff">Staff</option>
-                                <option value="Guest">Guest</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                            <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-userStatus" id="userStatus">
-                                <option value="all" defaultValue>Select Status</option>
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Suspended">Suspended</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="col-xxl-2 col-sm-4">
-                            <button type="button" className="btn btn-warning w-100">
-                              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                            </button>
-                          </div>
-                        </div>
-                      </form>
-                      <div>
-                        <div className="table-responsive table-card mt-1">
-                          <style>{`
-      /* Increase users table row height by ~10px total */
-      #usersTable > :not(caption) > * > * {
-        padding-top: calc(.75rem + 5px);
-        padding-bottom: calc(.75rem + 5px);
-      }
-    `}</style>
-                          <table className="table align-middle table-nowrap table-hover table-striped" id="usersTable">
-                            <thead className="table-light">
-                              <tr>
-                                <th scope="col" style={{ width: '50px' }}>
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" id="checkAllUsers" value="option" />
-                                  </div>
-                                </th>
-                                <th className="text-uppercase" data-sort="name">Name</th>
-                                <th className="text-uppercase" data-sort="email">Email</th>
-                                <th className="text-uppercase" data-sort="phone">Phone Number</th>
-                                <th className="text-uppercase" data-sort="role">Role</th>
-                                <th className="text-uppercase" data-sort="status">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="list form-check-all-users" id="users-list-data">
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0001" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Alex Johnson</a></td>
-                                <td className="email">alex.johnson@example.com</td>
-                                <td className="phone">(415) 555-1001</td>
-                                <td className="role">Admin</td>
-                                <td className="status"><span className="badge rounded-pill bg-success text-white text-uppercase fw-semibold px-3 py-1">Active</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0002" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Maria Gomez</a></td>
-                                <td className="email">maria.gomez@example.com</td>
-                                <td className="phone">(312) 555-2235</td>
-                                <td className="role">Manager</td>
-                                <td className="status"><span className="badge rounded-pill bg-success text-white text-uppercase fw-semibold px-3 py-1">Active</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0003" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Chen Wu</a></td>
-                                <td className="email">chen.wu@example.com</td>
-                                <td className="phone">(206) 555-7803</td>
-                                <td className="role">Staff</td>
-                                <td className="status"><span className="badge rounded-pill bg-warning text-dark text-uppercase fw-semibold px-3 py-1">Inactive</span></td>
-                              </tr>
-                              <tr>
-                                <th scope="row">
-                                  <div className="form-check">
-                                    <input className="form-check-input" type="checkbox" name="chk_child_users" value="#USR0004" />
-                                  </div>
-                                </th>
-                                <td className="name"><a href="/employees" className="fw-medium link-primary">Nora Patel</a></td>
-                                <td className="email">nora.patel@example.com</td>
-                                <td className="phone">(512) 555-5523</td>
-                                <td className="role">Guest</td>
-                                <td className="status"><span className="badge rounded-pill bg-danger text-white text-uppercase fw-semibold px-3 py-1">Suspended</span></td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+        {/* Filters */}
+        <div className="row g-3 mb-3">
+          <div className="col-md-4">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search users..."
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+            />
+          </div>
+          <div className="col-md-3">
+            <select className="form-control">
+              <option value="">Select Role</option>
+              <option value="Admin">Admin</option>
+              <option value="User">User</option>
+              <option value="Moderator">Moderator</option>
+            </select>
+          </div>
+          <div className="col-md-3">
+            <select className="form-control">
+              <option value="">Select Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div className="col-md-2">
+            <button type="button" className="btn btn-warning w-100">
+              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+            </button>
+          </div>
+        </div>
 
-                      {/* Footer / Pagination placeholder to match design */}
-                      <div className="row align-items-center mt-4">
-                        <div className="col-sm-6">
-                          <div className="text-muted">
-                            <p className="mb-sm-0 text-muted">Showing <span className="fw-semibold">1</span> to <span className="fw-semibold">4</span> of <span className="fw-semibold text-decoration-underline">4</span> entries</p>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="d-flex justify-content-center justify-content-sm-end align-items-baseline gap-2">
-                            <div className="datatable me-2">
-                              <label className="mb-0 text-muted d-flex align-items-baseline gap-2 fw-normal">Show
-                                <select name="users-rows_length" className="form-select form-select-sm d-inline-block w-auto align-middle pt-1 pb-1">
-                                  <option value="10" defaultValue>10</option>
-                                  <option value="25">25</option>
-                                  <option value="50">50</option>
-                                  <option value="100">100</option>
-                                </select>
-                                entries
-                              </label>
-                            </div>
-                            <ul className="pagination pagination-separated justify-content-center justify-content-sm-end mb-0">
-                              <li className="page-item disabled">
-                                <a href="#" className="page-link">Previous</a>
-                              </li>
-                              <li className="page-item active">
-                                <a href="#" className="page-link">1</a>
-                              </li>
-                              <li className="page-item">
-                                <a href="#" className="page-link">Next</a>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+        {/* DataTable */}
+        <div className="card">
+          <div className="card-body">
+            <div className="table-responsive table-card mt-1">
+              <DataTable
+                value={users}
+                paginator
+                rows={10}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                sortMode="multiple"
+                filterDisplay="menu"
+                filters={filters}
+                onFilter={(e) => setFilters(e.filters)}
+                globalFilterFields={['name', 'email', 'phone', 'role', 'status']}
+                selection={selection}
+                onSelectionChange={(e) => setSelection(e.value)}
+                dataKey="id"
+                responsiveLayout="scroll"
+                className="p-datatable-sm"
+                emptyMessage="No users found"
+              >
+                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                <Column field="name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBodyTemplate} />
+                <Column field="email" header="Email" sortable filter showFilterMatchModes />
+                <Column field="phone" header="Phone" sortable filter showFilterMatchModes />
+                <Column field="role" header="Role" sortable filter showFilterMatchModes />
+                <Column field="status" header="Status" sortable filter showFilterMatchModes />
+              </DataTable>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add User</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowAddUser(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <form onSubmit={handleAddUserSubmit}>
+                    <div className="mb-3">
+                      <label className="form-label">Name</label>
+                      <input type="text" name="name" className="form-control" value={newUser.name} onChange={handleAddUserInput} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Email</label>
+                      <input type="email" name="email" className="form-control" value={newUser.email} onChange={handleAddUserInput} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Phone</label>
+                      <input type="text" name="phone" className="form-control" value={newUser.phone} onChange={handleAddUserInput} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Role</label>
+                      <select name="role" className="form-control" value={newUser.role} onChange={handleAddUserInput} required>
+                        <option value="">Select Role</option>
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                        <option value="Moderator">Moderator</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Password</label>
+                      <input type="password" name="password" className="form-control" value={newUser.password} onChange={handleAddUserInput} required />
+                    </div>
+                    <div className="d-flex justify-content-end">
+                      <button type="button" className="btn btn-secondary me-2" onClick={() => setShowAddUser(false)}>Cancel</button>
+                      <button type="submit" className="btn btn-primary">Add User</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show"></div>
+        </>
+      )}
     </div>
-  )
+  );
 }
