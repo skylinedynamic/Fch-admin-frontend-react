@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/apiClient'
+import { apiClient } from '../../lib/http/apiClient'
 import type { Employee } from './types'
 
 export const fetchEmployees = async (): Promise<Employee[]> => {
