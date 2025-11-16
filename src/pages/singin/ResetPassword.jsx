@@ -13,10 +13,10 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [remember, setRemember] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const rules = useMemo(() => {
     const hasLength = password.length >= 8
@@ -27,14 +27,9 @@ export default function ResetPassword() {
   }, [password])
 
   const validate = () => {
+    // Minimal client-side validation; rely on server for field-level checks
     if (!token || !emailParam) {
       return 'Reset link is invalid or expired. Please use the link from your email.'
-    }
-    if (!rules.hasLength || !rules.hasLower || !rules.hasUpper || !rules.hasNumber) {
-      return 'Password does not meet the requirements.'
-    }
-    if (password !== confirmPassword) {
-      return 'Passwords do not match.'
     }
     return null
   }
@@ -43,6 +38,7 @@ export default function ResetPassword() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setFieldErrors({})
     const validationMsg = validate()
     if (validationMsg) {
       setError(validationMsg)
@@ -59,10 +55,12 @@ export default function ResetPassword() {
       const message = res?.message || 'Password has been reset successfully.'
       setSuccess(message)
       // Optional: navigate to login after a short delay
-      // setTimeout(() => navigate('/login'), 1500)
+       setTimeout(() => navigate('/login'), 1000)
     } catch (err) {
       const data = err?.response?.data
       const msg = data?.message || 'Unable to reset password.'
+      const errs = data?.errors || data?.data?.errors || {}
+      setFieldErrors(errs)
       setError(msg)
     } finally {
       setLoading(false)
@@ -84,7 +82,7 @@ export default function ResetPassword() {
           {success}
         </div>
       )}
-      {error && (
+      {error && !Object.keys(fieldErrors).length && (
         <div role="alert" className="alert alert-danger border-0 text-center mb-2 mx-2 fade show">
           {error}
         </div>
@@ -92,6 +90,27 @@ export default function ResetPassword() {
 
       <div className="p-2">
         <form noValidate onSubmit={handleSubmit}>
+          {/* Hidden token field to carry token from URL */}
+          <input type="hidden" name="token" value={token} />
+
+          {/* Email field populated from URL (read-only) */}
+          <div className="mb-3">
+            <label className="form-label" htmlFor="email-input">Email</label>
+            <input
+              placeholder="Email"
+              name="email"
+              type="email"
+              id="email-input"
+              className={`form-control ${fieldErrors?.email ? 'is-invalid' : ''}`}
+              value={emailParam}
+              readOnly
+            />
+            {fieldErrors?.email && (
+              <div className="invalid-feedback">
+                {Array.isArray(fieldErrors.email) ? fieldErrors.email[0] : String(fieldErrors.email)}
+              </div>
+            )}
+          </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="password-input">Password</label>
             <div className="position-relative auth-pass-inputgroup">
@@ -100,7 +119,11 @@ export default function ResetPassword() {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 id="password-input"
-                className="form-control pe-5 password-input"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className={`form-control pe-5 password-input ${fieldErrors?.password ? 'is-invalid' : ''}`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -108,6 +131,11 @@ export default function ResetPassword() {
               <button type="button" className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none" onClick={() => setShowPassword((s) => !s)}>
                 <i className="ri-eye-fill align-middle"></i>
               </button>
+              {fieldErrors?.password && (
+                <div className="invalid-feedback">
+                  {Array.isArray(fieldErrors.password) ? fieldErrors.password[0] : String(fieldErrors.password)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -119,7 +147,11 @@ export default function ResetPassword() {
                 name="confirm_password"
                 type={showConfirm ? 'text' : 'password'}
                 id="confirm-password-input"
-                className="form-control pe-5 password-input"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className={`form-control pe-5 password-input ${fieldErrors?.password_confirmation || fieldErrors?.confirm_password ? 'is-invalid' : ''}`}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -127,10 +159,19 @@ export default function ResetPassword() {
               <button type="button" className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none" onClick={() => setShowConfirm((s) => !s)}>
                 <i className="ri-eye-fill align-middle"></i>
               </button>
+              {(fieldErrors?.password_confirmation || fieldErrors?.confirm_password) && (
+                <div className="invalid-feedback">
+                  {fieldErrors?.password_confirmation && Array.isArray(fieldErrors.password_confirmation)
+                    ? fieldErrors.password_confirmation[0]
+                    : fieldErrors?.confirm_password && Array.isArray(fieldErrors.confirm_password)
+                      ? fieldErrors.confirm_password[0]
+                      : String(fieldErrors?.password_confirmation || fieldErrors?.confirm_password)}
+                </div>
+              )}
             </div>
           </div>
-
-          <div id="password-contain" className="p-3 bg-light mb-2 rounded">
+ 
+          <div id="password-contain" className="p-3 bg-light mb-2 rounded d-block">
             <h5 className="fs-13">Password must contain:</h5>
             <p className={`${rules.hasLength ? 'valid' : 'invalid'} fs-12 mb-2`}>Minimum <b>8 characters</b></p>
             <p className={`${rules.hasLower ? 'valid' : 'invalid'} fs-12 mb-2`}>At <b>lowercase</b> letter (a-z)</p>
@@ -138,10 +179,7 @@ export default function ResetPassword() {
             <p className={`${rules.hasNumber ? 'valid' : 'invalid'} fs-12 mb-0`}>A least <b>number</b> (0-9)</p>
           </div>
 
-          <div className="form-check">
-            <input type="checkbox" id="auth-remember-check" className="form-check-input" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            <label htmlFor="auth-remember-check" className="form-check-label">Remember me</label>
-          </div>
+          {/* Removed Remember me checkbox as it is not needed here */}
 
           <div className="mt-4">
             <button type="submit" className="btn btn-success w-100" disabled={loading}>

@@ -65,7 +65,7 @@ export async function resetPassword(payload: {
   password_confirmation: string
 }): Promise<any> {
   try {
-    const res = await apiClient.post('/auth/reset-password', payload)
+    const res = await apiClient.post('/auth/reset', payload)
     const data = res?.data
     if (data?.status === true) {
       return data
