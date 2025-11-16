@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
 import { createEmployee, deleteEmployee, fetchEmployeeById, fetchEmployees, updateEmployee } from './services'
-import type { Employee } from './types'
+import type { Employee, EmployeeListResponse } from './types'
 
 export const useEmployees = () => {
-  return useQuery({
+  return useQuery<EmployeeListResponse>({
     queryKey: queryKeys.employee.list(),
-    queryFn: fetchEmployees,
+    queryFn: () => fetchEmployees(),
   })
 }
 

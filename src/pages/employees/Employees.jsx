@@ -1,41 +1,46 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DataTable } from 'primereact/datatable'
+import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
+import { fetchEmployees } from '../../modules/employee'
 
 export default function Employees() {
-  // Sample employees data (from existing static table)
-  const employees = [
-    { id: 'EMP0001', employee_name: 'Alexis Reed', work_phone: '(415) 555-1010', work_email: 'alexis.reed@company.example', dept: 'Engineering', job_position: 'Software Engineer', location: 'San Francisco, CA', status: 'Full Time' },
-    { id: 'EMP0002', employee_name: 'Miguel Alvarez', work_phone: '(312) 555-2234', work_email: 'miguel.alvarez@company.example', dept: 'Sales', job_position: 'Sales Associate', location: 'Chicago, IL', status: 'Part Time' },
-    { id: 'EMP0003', employee_name: 'Serena Patel', work_phone: '(503) 555-9933', work_email: 'serena.patel@company.example', dept: 'Marketing', job_position: 'Content Strategist', location: 'Portland, OR', status: 'Contractor' },
-    { id: 'EMP0004', employee_name: 'Liam Brooks', work_phone: '(828) 555-4300', work_email: 'liam.brooks@company.example', dept: 'Operations', job_position: 'Project Manager', location: 'Asheville, NC', status: 'Full Time' },
-    { id: 'EMP0005', employee_name: 'Chloe Nguyen', work_phone: '(206) 555-7802', work_email: 'chloe.nguyen@company.example', dept: 'HR', job_position: 'Recruiter', location: 'Seattle, WA', status: 'Archived' },
-    { id: 'EMP0006', employee_name: 'Ethan Carter', work_phone: '(503) 555-1122', work_email: 'ethan.carter@company.example', dept: 'Product', job_position: 'Product Manager', location: 'Portland, OR', status: 'Full Time' },
-    { id: 'EMP0007', employee_name: 'Zara Khan', work_phone: '(415) 555-6700', work_email: 'zara.khan@company.example', dept: 'Data', job_position: 'Data Analyst', location: 'San Francisco, CA', status: 'Contractor' },
-    { id: 'EMP0008', employee_name: 'Noah Williams', work_phone: '(313) 555-2299', work_email: 'noah.williams@company.example', dept: 'Manufacturing', job_position: 'Line Supervisor', location: 'Detroit, MI', status: 'Part Time' },
-    { id: 'EMP0009', employee_name: 'Isabella Flores', work_phone: '(312) 555-8800', work_email: 'isabella.flores@company.example', dept: 'Logistics', job_position: 'Coordinator', location: 'Chicago, IL', status: 'Full Time' },
-    { id: 'EMP0010', employee_name: 'Oliver James', work_phone: '(512) 555-5522', work_email: 'oliver.james@company.example', dept: 'Hospitality', job_position: 'Cafe Manager', location: 'Austin, TX', status: 'Full Time' }
-  ]
 
   // PrimeReact DataTable filters and selection
   const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState('')
   const [selection, setSelection] = useState([])
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [deptFilter, setDeptFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [sortField, setSortField] = useState('id')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [totalRecords, setTotalRecords] = useState(0)
+  // Applied filters state (only changes when user clicks Filters)
+  const [appliedFilters, setAppliedFilters] = useState({})
+  const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
   const initFilters = () => {
-    setFilters({
+    const initial = {
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-      employee_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-      work_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      work_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      dept: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-      job_position: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      location: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
-    })
+      full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      department: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      designation: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      address: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      job_status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    }
+    setFilters(initial)
+    setAppliedFilters(initial)
     setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
   }
 
   useEffect(() => {
@@ -51,8 +56,76 @@ export default function Employees() {
   }
 
   const nameBody = (rowData) => (
-    <Link to="/employee-details" className="fw-medium link-primary">{rowData.employee_name}</Link>
+    <Link to="/employee-details" className="fw-medium link-primary">{rowData.full_name}</Link>
   )
+
+  const onJobStatusChange = (e) => {
+    const val = e.target.value
+    setStatusFilter(val === 'Select Employee Status' ? '' : val)
+  }
+
+  const onDeptChange = (e) => {
+    const val = e.target.value
+    setDeptFilter(val === 'all' || val === 'Select Department' ? '' : val)
+  }
+
+  const onApplyFilters = () => {
+    setAppliedGlobalFilterValue(globalFilterValue || '')
+    setAppliedDeptFilter(deptFilter || '')
+    setAppliedStatusFilter(statusFilter || '')
+    setAppliedFilters(filters)
+    setPage(1)
+  }
+
+  useEffect(() => {
+    // Only fetch when filters are applied (via button) or table interactions
+    if (!appliedFilters || Object.keys(appliedFilters).length === 0) return
+    setLoading(true) // show skeleton before API call
+    const timeout = setTimeout(() => {
+      const payload = {
+        department: appliedDeptFilter || '',
+        job_status: appliedStatusFilter || '',
+        search: appliedGlobalFilterValue || '',
+        filters: appliedFilters,
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+      }
+      fetchEmployees(payload)
+        .then((res) => {
+          const next = Array.isArray(res) ? res : (res?.employees ?? [])
+          const meta = Array.isArray(res) ? undefined : res?.meta
+          setRows(next)
+          if (meta) {
+            setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+            if (typeof meta.current_page === 'number') setPage(meta.current_page)
+            if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+          } else {
+            setTotalRecords(next.length)
+          }
+        })
+        .catch((_err) => {
+          // keep existing rows on error
+        })
+        .finally(() => setLoading(false))
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [appliedDeptFilter, appliedStatusFilter, appliedGlobalFilterValue, appliedFilters, page, perPage, sortField, sortOrder])
+
+  const onPage = (event) => {
+    const nextPerPage = event.rows
+    const nextPage = Math.floor(event.first / event.rows) + 1
+    setPerPage(nextPerPage)
+    setPage(nextPage)
+  }
+
+  const onSort = (event) => {
+    const field = event.sortField
+    const order = event.sortOrder === 1 ? 'asc' : 'desc'
+    setSortField(field || sortField)
+    setSortOrder(order)
+  }
   useEffect(() => {
     // Add cursor-pointer on table rows and handle row click -> navigate to details
     const tbody = document.getElementById('employees-list-data')
@@ -76,6 +149,7 @@ export default function Employees() {
       }
     }
   }, [])
+
 
   useEffect(() => {
     // Initialize Choices.js for selects when available (matches template behavior)
@@ -313,20 +387,28 @@ export default function Employees() {
                       <form onSubmit={(e) => e.preventDefault()}>
                         <div className="row g-3 mb-0 align-items-center">
                           <div className="col-sm-auto">
-                            <div className="btn-group">
-                              <a href="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
-                                <i className="ri-add-fill me-1 align-bottom"></i> Add Candidate
-                              </a>
-                              <button type="button" id="primaryActionToggleBtn" className="btn btn-primary waves-effect waves-light dropdown-toggle dropdown-toggle-split d-none" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span className="visually-hidden">Toggle dropdown</span>
-                              </button>
-                              <ul className="dropdown-menu dropdown-menu-end d-none" id="primaryActionMenu">
-                                <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                <li><hr className="dropdown-divider" /></li>
-                                <li><a className="dropdown-item text-danger" href="#" id="deleteSelected"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
-                              </ul>
+                          <div className="btn-group">
+                              {Array.isArray(selection) && selection.length > 0 ? (
+                                <>
+                                  <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                    Actions
+                                  </button>
+                                  <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                  </button>
+                                  <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
+                                    <li><hr className="dropdown-divider" /></li>
+                                    <li><a className="dropdown-item text-danger" href="#" id="deleteSelected"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
+                                  </ul>
+                                </>
+                              ) : (
+                                <a href="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                  <i className="ri-add-fill me-1 align-bottom"></i> Add Candidate
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -358,18 +440,16 @@ export default function Employees() {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType">
+                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onJobStatusChange}>
                                 <option value="Select Employee Status" defaultValue>Job Status</option>
-                                <option value="Active">Full Time</option>
-                                <option value="New">Part Time</option>
-                                <option value="Close">Contractor</option>
-                                <option value="Close">Archived</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
                               </select>
                             </div>
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-single-default" id="idStatus">
+                              <select className="form-control" data-choices data-choices-search-false name="choices-single-default" id="idStatus" onChange={onDeptChange}>
                                 <option value="all" defaultValue>Select Department</option>
                                 <option value="Active">Engineering</option>
                                 <option value="New">Sales</option>
@@ -381,7 +461,7 @@ export default function Employees() {
                             </div>
                           </div>
                           <div className="col-xxl-2 col-sm-4">
-                            <button type="button" className="btn btn-warning w-100">
+                            <button type="button" className="btn btn-warning w-100" onClick={onApplyFilters}>
                               <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                             </button>
                           </div>
@@ -390,38 +470,46 @@ export default function Employees() {
                       <div>
                         <div className="table-responsive table-card mt-1">
                           <DataTable
-                            value={employees}
+                            value={rows}
                             paginator
-                            rows={10}
+                            lazy
+                            totalRecords={totalRecords}
+                            first={(page - 1) * perPage}
+                            rows={perPage}
                             rowsPerPageOptions={[10, 25, 50, 100]}
-                            sortMode="multiple"
+                            sortMode="single"
+                            sortField={sortField}
+                            sortOrder={sortOrder === 'asc' ? 1 : -1}
                             filterDisplay="menu"
                             filters={filters}
-                            onFilter={(e) => setFilters(e.filters)}
+                            onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                            onPage={onPage}
+                            onSort={onSort}
                             globalFilterFields={[
-                              'employee_name',
-                              'work_phone',
-                              'work_email',
-                              'dept',
-                              'job_position',
-                              'location',
-                              'status'
+                              'full_name',
+                              'phone_number',
+                              'email',
+                              'department',
+                              'designation',
+                              'address',
+                              'job_status'
                             ]}
                             selection={selection}
                             onSelectionChange={(e) => setSelection(e.value)}
                             dataKey="id"
                             responsiveLayout="scroll"
                             className="p-datatable-sm"
+                            loading={loading}
                             emptyMessage="No employees found"
                           >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="employee_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
-                            <Column field="work_phone" header="Work Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
-                            <Column field="work_email" header="Work Email" sortable filter showFilterMatchModes></Column>
-                            <Column field="dept" header="Department" sortable filter showFilterMatchModes></Column>
-                            <Column field="job_position" header="Job Position" sortable filter showFilterMatchModes></Column>
-                            <Column field="location" header="Location" sortable filter showFilterMatchModes></Column>
-                            <Column field="status" header="Job Status" sortable filter showFilterMatchModes></Column>
+                            <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                            <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                            <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
+                            <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
+                            <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
+                            <Column field="job_status" header="Job Status" sortable filter showFilterMatchModes filterPlaceholder="Search job status"></Column>
                           </DataTable>
                         </div>
                       </div>
