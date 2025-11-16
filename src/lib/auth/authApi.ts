@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient'
+import { apiClient } from '../http'
 import { setAuth, AuthUser } from './auth'
 
 export type LoginSuccess = { token: string; user: AuthUser }
@@ -36,6 +36,43 @@ export async function logout(): Promise<{ status?: boolean; message?: string; da
   try {
     const res = await apiClient.post('/auth/logout')
     return res?.data ?? { status: true }
+  } catch (err) {
+    throw err
+  }
+}
+
+// Send password reset link
+export async function forgotPassword(email: string): Promise<any> {
+  try {
+    const res = await apiClient.post('/auth/forgot', { email })
+    const data = res?.data
+    if (data?.status === true) {
+      return data
+    }
+    const error: any = new Error(data?.message ?? 'Unable to process request.')
+    error.response = { data }
+    throw error
+  } catch (err) {
+    throw err
+  }
+}
+
+// Reset password using token + email
+export async function resetPassword(payload: {
+  token: string
+  email: string
+  password: string
+  password_confirmation: string
+}): Promise<any> {
+  try {
+    const res = await apiClient.post('/auth/reset-password', payload)
+    const data = res?.data
+    if (data?.status === true) {
+      return data
+    }
+    const error: any = new Error(data?.message ?? 'Unable to reset password.')
+    error.response = { data }
+    throw error
   } catch (err) {
     throw err
   }

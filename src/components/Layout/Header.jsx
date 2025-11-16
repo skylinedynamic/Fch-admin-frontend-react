@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { clearAuth, getUser } from '../../lib/auth'
-import { logout } from '../../lib/authApi'
+import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate } from 'react-router-dom'
 

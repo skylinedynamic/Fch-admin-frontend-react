@@ -1,5 +1,5 @@
 // Auth utilities backed by Zustand store with persist
-import { getAuthState, setAuthState, clearAuthState } from '../store/authStore'
+import { getAuthState, setAuthState, clearAuthState } from '../../store/authStore'
 
 const SESSION_KEY = 'auth_session'
 

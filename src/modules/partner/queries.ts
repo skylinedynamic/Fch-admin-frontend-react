@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '../../lib/queryKeys'
+import { queryKeys } from '../../lib/query'
 import { createPartner, deletePartner, fetchPartnerById, fetchPartners, updatePartner } from './services'
 import type { Partner } from './types'
 

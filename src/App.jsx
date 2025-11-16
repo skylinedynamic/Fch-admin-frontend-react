@@ -5,8 +5,10 @@ import Dashboard from '../src/pages/dashboard/Dashboard.jsx'
 import Employees from '../src/pages/employees/Employees.jsx'
 import EmployeeDetails from '../src/pages/employees/EmployeeDetails.jsx'
 import SignIn from '../src/pages/singin/SignIn.jsx'
+import ForgotPassword from '../src/pages/singin/ForgotPassword.jsx'
+import ResetPassword from '../src/pages/singin/ResetPassword.jsx'
 import Users from '../src/pages/users/Users.jsx'
-import ProtectedRoute from './lib/ProtectedRoute'
+import { ProtectedRoute, GuestRoute } from './lib/auth'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -37,7 +39,11 @@ export default function App() {
     <>
     <ToastContainer theme="colored" />
     <Routes>
-      <Route path="login" element={<SignIn />} />
+      <Route element={<GuestRoute />}> 
+        <Route path="login" element={<SignIn />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
+      </Route>
       <Route element={<ProtectedRoute />}> 
         <Route element={<Layout />}> 
           <Route index element={<Dashboard />} />

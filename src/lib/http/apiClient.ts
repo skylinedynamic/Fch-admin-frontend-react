@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios'
 import { toast } from 'react-toastify'
-import { getToken, clearAuth } from './auth'
+import { getToken, clearAuth } from '../auth'
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
