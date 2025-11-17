@@ -11,13 +11,17 @@
     padding-left: 0 !important;
 }
 
-/* .p-column-filter-add-rule{
+.p-column-filter-add-rule, .p-column-filter-operator{
     display: none !important;
-} */
+}
  .p-column-filter-remove-button{
     margin-top: 1rem !important;
  }
 
  .p-column-filter-remove-button .p-button-label{
     margin-left: 5px !important;
+ }
+
+ .p-column-filter-constraint{
+    padding-bottom: 0!important;
  }

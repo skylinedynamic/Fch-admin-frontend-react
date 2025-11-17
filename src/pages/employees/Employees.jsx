@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
+import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchEmployees } from '../../modules/employee'
 
@@ -25,6 +26,12 @@ export default function Employees() {
   const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
+
+  // Status options for filtering
+  const statusOptions = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' }
+  ]
 
   const initFilters = () => {
     const initial = {
@@ -58,6 +65,26 @@ export default function Employees() {
   const nameBody = (rowData) => (
     <Link to="/employee-details" className="fw-medium link-primary">{rowData.full_name}</Link>
   )
+
+  // Status column body template
+  const statusBodyTemplate = (rowData) => {
+    const value = rowData?.job_status || rowData?.status || ''
+    return value ? (<span>{value}</span>) : (<span className="text-muted">—</span>)
+  }
+
+  // Status filter dropdown (used in column filter menu)
+  const statusRowFilterTemplate = (options) => {
+    return (
+      <Dropdown
+        value={options.value}
+        options={statusOptions}
+        onChange={(e) => options.filterCallback(e.value)}
+        placeholder="Select status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
 
   const onJobStatusChange = (e) => {
     const val = e.target.value
@@ -470,6 +497,8 @@ export default function Employees() {
                       <div>
                         <div className="table-responsive table-card mt-1">
                           <DataTable
+                            scrollable 
+                            scrollHeight="510px"  
                             value={rows}
                             paginator
                             lazy
@@ -509,7 +538,15 @@ export default function Employees() {
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
                             <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
                             <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
-                            <Column field="job_status" header="Job Status" sortable filter showFilterMatchModes filterPlaceholder="Search job status"></Column>
+                            <Column
+                              field="job_status"
+                              header="Status"
+                              showFilterMenu
+                              filterMenuStyle={{ width: '14rem' }}
+                              body={statusBodyTemplate}
+                              filter
+                              filterElement={statusRowFilterTemplate}
+                            />
                           </DataTable>
                         </div>
                       </div>
