@@ -104,6 +104,30 @@ export default function Employees() {
     setPage(1)
   }
 
+  const onClearFilters = () => {
+    // Clear global and column filters, but preserve department and job_status selections
+    const preservedDept = filters?.department
+    const preservedJobStatus = filters?.job_status
+
+    const reset = {
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      department: preservedDept ?? { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      designation: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      address: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      job_status: preservedJobStatus ?? { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    }
+
+    setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
+    setFilters(reset)
+    setAppliedFilters(reset)
+    // Do NOT change department/status selections or their applied values
+    setPage(1)
+  }
+
   useEffect(() => {
     // Only fetch when filters are applied (via button) or table interactions
     if (!appliedFilters || Object.keys(appliedFilters).length === 0) return
@@ -488,9 +512,14 @@ export default function Employees() {
                             </div>
                           </div>
                           <div className="col-xxl-2 col-sm-4">
-                            <button type="button" className="btn btn-warning w-100" onClick={onApplyFilters}>
-                              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                            </button>
+                            <div className="d-flex gap-2">
+                              <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                              </button>
+                              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={onClearFilters}>
+                                <i className="ri-close-line me-1 align-bottom"></i> Clear
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </form>
