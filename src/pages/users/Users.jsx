@@ -1,20 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { DataTable } from '../../components/Table/DataTableWrapper'
+import { Column } from 'primereact/column'
+import { Dropdown } from 'primereact/dropdown'
+import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchUsers, createUser, fetchRoles, updateUser, deleteUser } from '../../modules/user/services';
 import '../../../assets/css/bootstrap.min.css';
+
 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState(null);
 
-  const [filters, setFilters] = useState({});
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [selection, setSelection] = useState([]);
+  // PrimeReact DataTable filters and selection
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState('')
+  const [selection, setSelection] = useState([])
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [deptFilter, setDeptFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [sortField, setSortField] = useState('id')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalRecords, setTotalRecords] = useState(0)
+  // Applied filters state (only changes when user clicks Filters)
+  const [appliedFilters, setAppliedFilters] = useState({})
+  const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [appliedRoleFilter, setappliedRoleFilter] = useState('')
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -33,282 +49,710 @@ export default function Users() {
     confirm_password: '',
   });
 
+
+  // Status options for filtering
+  const statusOptions = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' }
+  ]
+
+  
+
+  const initFilters = () => {
+    const initial = {
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    }
+    setFilters(initial)
+    setAppliedFilters(initial)
+    setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
+  }
+
   useEffect(() => {
-    initFilters();
-    loadUsers();
+    initFilters()
     loadRoles();
-  }, []);
+  }, [])
 
   const loadRoles = async () => {
     const roleList = await fetchRoles();
     setRoles(roleList);
   };
 
-  const initFilters = () => {
-    setFilters({
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters = { ...filters }
+    _filters['global'].value = value
+    setFilters(_filters)
+    setGlobalFilterValue(value)
+  }
+
+  const nameBody = (rowData) => (
+    <Link to="/users-details" className="fw-medium link-primary">{rowData.name}</Link>
+  )
+
+  // Status column body template
+  const statusBodyTemplate = (rowData) => {
+    const value = rowData?.status || rowData?.status || ''
+    return value ? (<span>{value}</span>) : (<span className="text-muted">—</span>)
+  }
+
+  // Status filter dropdown (used in column filter menu)
+  const statusRowFilterTemplate = (options) => {
+    return (
+      <Dropdown
+        value={options.value}
+        options={statusOptions}
+        onChange={(e) => options.filterCallback(e.value)}
+        placeholder="Select status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+
+  const onJobStatusChange = (e) => {
+    const val = e.target.value
+    setStatusFilter(val === 'Select User Status' ? '' : val)
+  }
+
+  const onDeptChange = (e) => {
+    const val = e.target.value
+    setDeptFilter(val === 'all' || val === 'Select Department' ? '' : val)
+  }
+
+  const onApplyFilters = () => {
+    setAppliedGlobalFilterValue(globalFilterValue || '')
+    setappliedRoleFilter(deptFilter || '')
+    setAppliedStatusFilter(statusFilter || '')
+    setAppliedFilters(filters)
+    setPage(1)
+  }
+
+  const onClearFilters = () => {
+    // Clear global and column filters, but preserve department and job_status selections
+    const preservedRole = filters?.role
+    const preservedStatus = filters?.status
+
+    const reset = {
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
       name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    });
-    setGlobalFilterValue('');
-  };
-
-  const loadUsers = async (page = 1, search = '') => {
-    try {
-      const response = await fetchUsers({ page, per_page: 10, search });
-      setUsers(response.data || []);
-      setPagination(response.pagination);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      role: preservedRole ?? { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      status: preservedStatus ?? { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     }
-  };
 
-  const onGlobalFilterChange = (e) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
-    _filters['global'].value = value;
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-    loadUsers(1, value);
-  };
+    setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
+    setFilters(reset)
+    setAppliedFilters(reset)
+    // Do NOT change department/status selections or their applied values
+    setPage(1)
+  }
 
-  const handleAddUserInput = (e) => {
-    const { name, value } = e.target;
-    setNewUser({ ...newUser, [name]: value });
-  };
+  useEffect(() => {
+    // Only fetch when filters are applied (via button) or table interactions
+    if (!appliedFilters || Object.keys(appliedFilters).length === 0) return
+    setLoading(true) // show skeleton before API call
+    const timeout = setTimeout(() => {
+      const payload = {
+        role: appliedRoleFilter || '',
+        status: appliedStatusFilter || '',
+        search: appliedGlobalFilterValue || '',
+        filters: appliedFilters,
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+      }
+      fetchUsers(payload)
+        .then((res) => {
+          console.log(res);
+          const next = Array.isArray(res) ? res : (res?.data ?? [])
+          const meta = Array.isArray(res) ? undefined : res?.meta
+          setRows(next)
+          if (meta) {
+            setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+            if (typeof meta.current_page === 'number') setPage(meta.current_page)
+            if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+          } else {
+            setTotalRecords(next.length)
+          }
+        })
+        .catch((_err) => {
+          // keep existing rows on error
+        })
+        .finally(() => setLoading(false))
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [appliedRoleFilter, appliedStatusFilter, appliedGlobalFilterValue, appliedFilters, page, perPage, sortField, sortOrder])
 
-  const handleAddUserSubmit = async (e) => {
-    e.preventDefault();
+  const onPage = (event) => {
+    const nextPerPage = event.rows
+    const nextPage = Math.floor(event.first / event.rows) + 1
+    setPerPage(nextPerPage)
+    setPage(nextPage)
+  }
 
-    // Password validation only if new password is provided
-    if (editingUserId && newUser.new_password) {
-      if (newUser.new_password !== newUser.confirm_password) {
-        toast.error("New password and confirm password do not match");
-        return;
+  const onSort = (event) => {
+    const field = event.sortField
+    const order = event.sortOrder === 1 ? 'asc' : 'desc'
+    setSortField(field || sortField)
+    setSortOrder(order)
+  }
+  useEffect(() => {
+    // Add cursor-pointer on table rows and handle row click -> navigate to details
+    const tbody = document.getElementById('users-list-data')
+    if (tbody) {
+      Array.prototype.forEach.call(tbody.querySelectorAll('tr'), (tr) => {
+        tr.classList.add('cursor-pointer')
+      })
+      const onTbodyClick = (e) => {
+        const target = e.target
+        if (target.closest('a, button, input, label, [data-bs-toggle], .remove-item-btn')) return
+        const row = target.closest('tr')
+        if (!row) return
+        // Navigate to user details (React route)
+        window.location.href = '/user-details'
+      }
+      tbody.addEventListener('click', onTbodyClick)
+
+      // Cleanup
+      return () => {
+        tbody.removeEventListener('click', onTbodyClick)
+      }
+    }
+  }, [])
+
+
+  useEffect(() => {
+    // Initialize Choices.js for selects when available (matches template behavior)
+    const selects = document.querySelectorAll('[data-choices]')
+    selects.forEach((el) => {
+      try {
+        if (window.Choices && typeof window.Choices === 'function') {
+          // Avoid double-initialization
+          if (!el._choicesInstance) {
+            const instance = new window.Choices(el, { searchEnabled: false })
+            el._choicesInstance = instance
+          }
+        }
+      } catch (err) {
+        // no-op; plugin load is handled by global assets/js/plugins.js when data-choices exists
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    // Select All checkbox behavior and actions dropdown
+    const headerCheck = document.getElementById('checkAll')
+    let tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all')
+    let rowChecks = (tbody
+      ? tbody.querySelectorAll('input.form-check-input[name="chk_child"]')
+      : document.querySelectorAll('.form-check-all input.form-check-input[name="chk_child"]'))
+    const primaryBtn = document.getElementById('primaryActionBtn')
+    const originalHref = primaryBtn ? primaryBtn.getAttribute('href') : null
+    const toggleBtn = document.getElementById('primaryActionToggleBtn')
+    const actionMenu = document.getElementById('primaryActionMenu')
+
+    // Prevent anchor navigation when actions are active
+    const preventPrimaryNavigate = (e) => {
+      e.preventDefault()
+    }
+
+    const syncHeaderState = () => {
+      if (!tbody || !headerCheck) return
+      const total = rowChecks.length
+      const checked = (tbody
+        ? tbody.querySelectorAll('input.form-check-input[name="chk_child"]:checked').length
+        : document.querySelectorAll('.form-check-all input.form-check-input[name="chk_child"]:checked').length)
+      headerCheck.checked = checked === total && total > 0
+      headerCheck.indeterminate = checked > 0 && checked < total
+    }
+
+    const updatePrimaryBtnLabel = () => {
+      if (!primaryBtn) return
+      const selected = (tbody
+        ? tbody.querySelectorAll('input.form-check-input[name="chk_child"]:checked').length
+        : document.querySelectorAll('.form-check-all input.form-check-input[name="chk_child"]:checked').length)
+      if (selected > 0) {
+        primaryBtn.innerHTML = ' Actions'
+        primaryBtn.classList.remove('btn-primary')
+        primaryBtn.classList.add('bg-success', 'text-white', 'fw-medium')
+        // Prevent navigation when actions are active
+        if (preventPrimaryNavigate) {
+          primaryBtn.addEventListener('click', preventPrimaryNavigate)
+        }
+        if (toggleBtn) {
+          toggleBtn.classList.remove('d-none', 'btn-primary')
+          toggleBtn.classList.add('bg-success', 'text-white', 'fw-medium')
+        }
+        if (actionMenu) actionMenu.classList.remove('d-none')
+      } else {
+        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add User'
+        if (originalHref) primaryBtn.setAttribute('href', originalHref)
+        primaryBtn.classList.remove('bg-success', 'text-white')
+        primaryBtn.classList.add('btn-primary')
+        // Restore default navigation when no selection
+        if (preventPrimaryNavigate) {
+          primaryBtn.removeEventListener('click', preventPrimaryNavigate)
+        }
+        if (toggleBtn) {
+          toggleBtn.classList.add('d-none')
+          toggleBtn.setAttribute('aria-expanded', 'false')
+          toggleBtn.classList.remove('bg-success', 'text-white', 'fw-medium')
+          toggleBtn.classList.add('btn-primary')
+        }
+        if (actionMenu) actionMenu.classList.add('d-none')
       }
     }
 
-    // Prepare payload, only send new_password if filled
-    const payload = {
-      name: newUser.name,
-      email: newUser.email,
-      phone_number: newUser.phone_number,
-      role_id: newUser.role_id,
-      status: newUser.status,
+    const onHeaderChange = () => {
+      const on = headerCheck.checked
+      rowChecks.forEach((cb) => { cb.checked = on })
+      syncHeaderState()
+      updatePrimaryBtnLabel()
+    }
+    const onRowChange = () => {
+      syncHeaderState()
+      updatePrimaryBtnLabel()
+    }
+
+    if (headerCheck) headerCheck.addEventListener('change', onHeaderChange)
+    rowChecks.forEach((cb) => cb.addEventListener('change', onRowChange))
+    syncHeaderState()
+    updatePrimaryBtnLabel()
+
+    // Export/Delete actions
+    const getSelectedRows = () => {
+      const scope = tbody || document
+      const selector = tbody
+        ? 'input.form-check-input[name="chk_child"]:checked'
+        : '.form-check-all input.form-check-input[name="chk_child"]:checked'
+      return Array.from(scope.querySelectorAll(selector)).map((cb) => cb.closest('tr'))
+    }
+    const getRowData = (tr) => {
+      const cells = tr.querySelectorAll('td')
+      return Array.from(cells).map((td) => td.innerText.trim().replace(/\s+/g, ' '))
+    }
+    const download = (filename, text) => {
+      const a = document.createElement('a')
+      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
+      a.setAttribute('download', filename)
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+    const exportCsvBtn = document.getElementById('exportCsv')
+    const exportExcelBtn = document.getElementById('exportExcel')
+    const exportPdfBtn = document.getElementById('exportPdf')
+    const deleteSelectedBtn = document.getElementById('deleteSelected')
+
+    const onExportCsv = (e) => {
+      e.preventDefault()
+      const rows = getSelectedRows()
+      if (!rows.length) return
+      const csv = rows.map((tr) => getRowData(tr).join(',')).join('\n')
+      download('users.csv', csv)
+    }
+    const onExportExcel = (e) => {
+      e.preventDefault()
+      const rows = getSelectedRows()
+      if (!rows.length) return
+      const tsv = rows.map((tr) => getRowData(tr).join('\t')).join('\n')
+      download('users.xls', tsv)
+    }
+    const onExportPdf = (e) => {
+      e.preventDefault()
+      const rows = getSelectedRows()
+      if (!rows.length) return
+      const text = rows.map((tr) => getRowData(tr).join(' | ')).join('\n')
+      download('users.txt', text)
+    }
+    const onDeleteSelected = (e) => {
+      e.preventDefault()
+      const rows = getSelectedRows()
+      if (!rows.length) return
+      const modalEl = document.getElementById('deleteOrder')
+      if (!modalEl || !window.bootstrap) return
+      const modal = new window.bootstrap.Modal(modalEl)
+      modal.show()
+      const confirmBtn = document.getElementById('delete-record')
+      const closeBtn = document.getElementById('deleteRecord-close')
+      const onConfirm = () => {
+        rows.forEach((tr) => tr.remove())
+        // refresh rowChecks after deletion
+        tbody = document.getElementById('users-list-data') || document.querySelector('.form-check-all')
+        rowChecks = (tbody
+          ? tbody.querySelectorAll('input.form-check-input[name="chk_child"]')
+          : document.querySelectorAll('.form-check-all input.form-check-input[name="chk_child"]'))
+        syncHeaderState()
+        updatePrimaryBtnLabel()
+        modal.hide()
+        confirmBtn && confirmBtn.removeEventListener('click', onConfirm)
+        closeBtn && closeBtn.removeEventListener('click', onClose)
+      }
+      const onClose = () => {
+        modal.hide()
+        confirmBtn && confirmBtn.removeEventListener('click', onConfirm)
+        closeBtn && closeBtn.removeEventListener('click', onClose)
+      }
+      confirmBtn && confirmBtn.addEventListener('click', onConfirm)
+      closeBtn && closeBtn.addEventListener('click', onClose)
+    }
+
+    exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
+    exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
+    exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
+    deleteSelectedBtn && deleteSelectedBtn.addEventListener('click', onDeleteSelected)
+
+    // Sticky subheader
+    const sticky = document.querySelector('.page-subheader-sticky')
+    let observer
+    if (sticky) {
+      let topOffset = parseInt(getComputedStyle(sticky).top, 10)
+      if (isNaN(topOffset)) topOffset = 70
+      const sentinel = document.createElement('div')
+      sentinel.className = 'sticky-sentinel'
+      sentinel.setAttribute('aria-hidden', 'true')
+      sentinel.style.position = 'relative'
+      sentinel.style.height = '1px'
+      sticky.parentNode && sticky.parentNode.insertBefore(sentinel, sticky)
+      observer = new IntersectionObserver((entries) => {
+        const e = entries[0]
+        if (e.isIntersecting) sticky.classList.remove('is-stuck')
+        else sticky.classList.add('is-stuck')
+      }, { rootMargin: '-' + topOffset + 'px 0px 0px 0px', threshold: [0, 1] })
+      observer.observe(sentinel)
+    }
+
+    // Cleanup
+    return () => {
+      if (headerCheck) headerCheck.removeEventListener('change', onHeaderChange)
+      rowChecks.forEach((cb) => cb.removeEventListener('change', onRowChange))
+      exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
+      exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
+      exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
+      deleteSelectedBtn && deleteSelectedBtn.removeEventListener('click', onDeleteSelected)
+      observer && observer.disconnect()
+    }
+  }, [])
+
+    const handleAddUserSubmit = async (e) => {
+      e.preventDefault();
+  
+      // Password validation only if new password is provided
+      if (editingUserId && newUser.new_password) {
+        if (newUser.new_password !== newUser.confirm_password) {
+          toast.error("New password and confirm password do not match");
+          return;
+        }
+      }
+  
+      // Prepare payload, only send new_password if filled
+      const payload = {
+        name: newUser.name,
+        email: newUser.email,
+        phone_number: newUser.phone_number,
+        role_id: newUser.role_id,
+        status: newUser.status,
+      };
+  
+      if (editingUserId && newUser.new_password) {
+        payload.password = newUser.new_password;
+      }
+  
+      if (!editingUserId) {
+        payload.password = newUser.old_password; // For new user, password is required
+      }
+  
+      try {
+        if (editingUserId) {
+          await updateUser(editingUserId, payload);
+          toast.success("User updated successfully");
+        } else {
+          await createUser(payload);
+          toast.success("User created successfully");
+        }
+  
+        // loadUsers();
+        // setNewUser({
+        //   name: '',
+        //   email: '',
+        //   phone_number: '',
+        //   role_id: '',
+        //   status: 'active',
+        //   old_password: '',
+        //   new_password: '',
+        //   confirm_password: '',
+        // });
+        setShowAddUser(false);
+        setEditingUserId(null);
+      } catch (error) {
+        toast.error("Failed to save user");
+        console.error(error);
+      }
     };
 
-    if (editingUserId && newUser.new_password) {
-      payload.password = newUser.new_password;
-    }
-
-    if (!editingUserId) {
-      payload.password = newUser.old_password; // For new user, password is required
-    }
-
-    try {
-      if (editingUserId) {
-        await updateUser(editingUserId, payload);
-        toast.success("User updated successfully");
-      } else {
-        await createUser(payload);
-        toast.success("User created successfully");
-      }
-
-      loadUsers();
-      setNewUser({
-        name: '',
-        email: '',
-        phone_number: '',
-        role_id: '',
-        status: 'active',
-        old_password: '',
-        new_password: '',
-        confirm_password: '',
-      });
-      setShowAddUser(false);
-      setEditingUserId(null);
-    } catch (error) {
-      toast.error("Failed to save user");
-      console.error(error);
-    }
-  };
-
-  const handleDeleteUser = async () => {
-    try {
-      await deleteUser(deletingUserId);
-      toast.success("User deleted successfully");
-      setShowDeleteModal(false);
-      setDeletingUserId(null);
-      loadUsers();
-    } catch (error) {
-      toast.error("Failed to delete user");
-      console.error(error);
-    }
-  };
-
-  const nameBodyTemplate = (rowData) => (
-    <span
-      className="fw-medium link-primary"
-      style={{ cursor: 'pointer' }}
-      onClick={() => {
-        setEditingUserId(rowData.id);
-        setNewUser({
-          name: rowData.name || '',
-          email: rowData.email || '',
-          phone_number: rowData.phone_number || '',
-          role_id: rowData.role_id || '',
-          status: rowData.status || 'active',
-          old_password: '',
-          new_password: '',
-          confirm_password: '',
-        });
-        setShowAddUser(true);
-      }}
-    >
-      {rowData.name}
-    </span>
-  );
-
-  const statusBodyTemplate = (rowData) => {
-    let badgeClass = '';
-    if (rowData.status === 'active') badgeClass = 'success';
-    else if (rowData.status === 'inactive') badgeClass = 'danger';
-    else badgeClass = 'secondary';
-    return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
-  };
+      const handleAddUserInput = (e) => {
+        const { name, value } = e.target;
+        setNewUser({ ...newUser, [name]: value });
+      };
+    
+      const handleDeleteUser = async () => {
+        try {
+          await deleteUser(deletingUserId);
+          toast.success("User deleted successfully");
+          setShowDeleteModal(false);
+          setDeletingUserId(null);
+        } catch (error) {
+          toast.error("Failed to delete user");
+          console.error(error);
+        }
+      };
+    
+      const nameBodyTemplate = (rowData) => (
+        <span
+          className="fw-medium link-primary"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            setEditingUserId(rowData.id);
+            setNewUser({
+              name: rowData.name || '',
+              email: rowData.email || '',
+              phone_number: rowData.phone_number || '',
+              role_id: rowData.role_id || '',
+              status: rowData.status || 'active',
+              old_password: '',
+              new_password: '',
+              confirm_password: '',
+            });
+            setShowAddUser(true);
+          }}
+        >
+          {rowData.name}
+        </span>
+      );
+  
 
   return (
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
-
       <div className="container-fluid">
-        {/* Page Header */}
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-          <div className="col-12 d-flex align-items-center justify-content-between">
-            <div>
-              <h4 className="fs-20 mb-1">Users</h4>
-            </div>
-            <div>
-              <button className="btn btn-primary fw-medium" onClick={() => {
+        <div className="row mb-3 pb-1 bg-body">
+          <div className="col">
+            <div className="h-100">
+              <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="col-12">
+                  <div className="d-flex align-items-center justify-content-between flex-row">
+                    <div className="flex-grow-1">
+                      <h4 className="fs-20 mb-1">Users</h4>
+                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                        <ol className="breadcrumb m-0">
+                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
+                          <li className="breadcrumb-item active" aria-current="page">Users</li>
+                        </ol>
+                      </nav>
+                    </div>
+                    <div className="mt-0">
+                      <form onSubmit={(e) => e.preventDefault()}>
+                        <div className="row g-3 mb-0 align-items-center">
+                          <div className="col-sm-auto">
+                          <div className="btn-group">
+                              {Array.isArray(selection) && selection.length > 0 ? (
+                                <>
+                                  <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                    Actions
+                                  </button>
+                                  <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                  </button>
+                                  <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
+                                    <li><hr className="dropdown-divider" /></li>
+                                    <li><a className="dropdown-item text-danger" href="#" id="deleteSelected"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
+                                  </ul>
+                                </>
+                              ) : (
+                               <button className="btn btn-primary fw-medium" onClick={() => {
                 setShowAddUser(true);
                 setEditingUserId(null);
                 setNewUser({ name: '', email: '', phone_number: '', role_id: '', status: 'active', old_password: '', new_password: '', confirm_password: '' });
               }}>
                 <i className="ri-add-fill me-1 align-bottom"></i> Add User
               </button>
-            </div>
-          </div>
-        </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        {/* Filters */}
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search users..."
-              value={globalFilterValue}
-              onChange={onGlobalFilterChange}
-            />
-          </div>
-          <div className="col-md-3">
-            <select className="form-control">
-              <option value="">Select Role</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>{role.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-3">
-            <select className="form-control">
-              <option value="">Select Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          <div className="col-md-2">
-            <button type="button" className="btn btn-warning w-100">
-              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-            </button>
-          </div>
-        </div>
+              <div className="row">
+                <div className="col-lg-12">
+                  <div className="card">
+                    <div className="card-body">
+                      <form>
+                        <div className="row g-3 mb-3">
+                          <div className="col-xxl-4 col-sm-12">
+                            <div className="search-box">
+                              <input
+                                type="text"
+                                className="form-control search bg-light border-light"
+                                id="searchJob"
+                                autoComplete="off"
+                                placeholder="Search here..."
+                                value={globalFilterValue}
+                                onChange={onGlobalFilterChange}
+                              />
+                              <i className="ri-search-line search-icon"></i>
+                            </div>
+                          </div>
+                          <div className="col-xxl-3 col-sm-4">
+                            <div className="input-light">
+                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onJobStatusChange}>
+                                <option value="Select User Status" defaultValue>Job Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="col-xxl-3 col-sm-4">
+                            <div className="input-light">
+                              <select className="form-control" data-choices data-choices-search-false name="choices-single-default" id="idStatus" onChange={onDeptChange}>
+                                <option value="all" defaultValue>Select Department</option>
+                                <option value="Active">Engineering</option>
+                                <option value="New">Sales</option>
+                                <option value="Close">Marketing</option>
+                                <option value="Active">Opetations</option>
+                                <option value="New">HR</option>
+                                <option value="Close">Product</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="col-xxl-2 col-sm-4">
+                            <div className="d-flex gap-2">
+                              <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                              </button>
+                              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={onClearFilters}>
+                                <i className="ri-close-line me-1 align-bottom"></i> Clear
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                      <div>
+                        <div className="table-responsive table-card mt-1">
+                          <DataTable
+                            scrollable 
+                            scrollHeight="510px"  
+                            value={rows}
+                            paginator
+                            lazy
+                            totalRecords={totalRecords}
+                            first={(page - 1) * perPage}
+                            rows={perPage}
+                            rowsPerPageOptions={[10, 25, 50, 100]}
+                            sortMode="single"
+                            sortField={sortField}
+                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                            filterDisplay="menu"
+                            filters={filters}
+                            onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                            onPage={onPage}
+                            onSort={onSort}
+                            globalFilterFields={[
+                              'full_name',
+                              'phone_number',
+                              'email',
+                              'department',
+                              'designation',
+                              'address',
+                              'job_status'
+                            ]}
+                            selection={selection}
+                            onSelectionChange={(e) => setSelection(e.value)}
+                            dataKey="id"
+                            responsiveLayout="scroll"
+                            className="p-datatable-sm"
+                            loading={loading}
+                            emptyMessage="No Users found"
+                          >
+                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                            <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                            <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                            <Column field="role" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column>
 
-        {/* DataTable */}
-        <div className="card">
-          <div className="card-body">
-            <div className="table-responsive table-card mt-1">
-              <DataTable
-                value={users}
-                paginator
-                first={(pagination?.current_page - 1) * pagination?.per_page || 0}
-                rows={pagination?.per_page || 10}
-                totalRecords={pagination?.total || 0}
-                lazy
-                onPage={(e) => loadUsers(e.first / e.rows + 1, globalFilterValue)}
-                sortMode="multiple"
-                filterDisplay="menu"
-                filters={filters}
-                onFilter={(e) => setFilters(e.filters)}
-                globalFilterFields={['name', 'email', 'phone_number', 'role', 'status']}
-                selection={selection}
-                onSelectionChange={(e) => setSelection(e.value)}
-                dataKey="id"
-                responsiveLayout="scroll"
-                className="p-datatable-sm"
-                emptyMessage="No users found"
-              >
-                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                <Column field="name" header="Name" sortable filter body={nameBodyTemplate} />
-                <Column field="email" header="Email" sortable filter />
-                <Column field="phone_number" header="Phone" sortable filter />
-                <Column field="role" header="Role" sortable filter />
-                <Column field="status" header="Status" sortable filter body={statusBodyTemplate} />
-                <Column
-                  header="Action"
-                  body={(rowData) => (
-                    <>
-                      <button
-                        className="btn btn-sm btn-primary me-2"
-                        onClick={() => {
-                          setEditingUserId(rowData.id);
-                          setNewUser({
-                            name: rowData.name || '',
-                            email: rowData.email || '',
-                            phone_number: rowData.phone_number || '',
-                            role_id: rowData.role_id || '',
-                            status: rowData.status || 'active',
-                            old_password: '',
-                            new_password: '',
-                            confirm_password: '',
-                          });
-                          setShowAddUser(true);
-                        }}
-                      >
-                        <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => {
-                          setDeletingUserId(rowData.id);
-                          setShowDeleteModal(true);
-                        }}
-                      >
-                        <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
-                      </button>
-                    </>
-                  )}
-                  style={{ textAlign: 'center', width: '12rem' }}
-                />
-              </DataTable>
-            </div>
-          </div>
-        </div>
-      </div>
+                            <Column
+                              field="status"
+                              header="Status"
+                              showFilterMenu
+                              filterMenuStyle={{ width: '14rem' }}
+                              body={statusBodyTemplate}
+                              filter
+                              filterElement={statusRowFilterTemplate}
+                            />
+                            <Column
+                              header="Action"
+                              body={(rowData) => (
+                                <>
+                                  <button
+                                    className="btn btn-sm btn-primary me-2"
+                                    onClick={() => {
+                                      setEditingUserId(rowData.id);
+                                      setNewUser({
+                                        name: rowData.name || '',
+                                        email: rowData.email || '',
+                                        phone_number: rowData.phone_number || '',
+                                        role_id: rowData.role_id || '',
+                                        status: rowData.status || 'active',
+                                        old_password: '',
+                                        new_password: '',
+                                        confirm_password: '',
+                                      });
+                                      setShowAddUser(true);
+                                    }}
+                                  >
+                                    <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => {
+                                      setDeletingUserId(rowData.id);
+                                      setShowDeleteModal(true);
+                                    }}
+                                  >
+                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                  </button>
+                                </>
+                              )}
+                              style={{ textAlign: 'center', width: '12rem' }}
+                            />
+                          </DataTable>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      {/* Add/Edit User Modal */}
+
+
+               {/* Add/Edit User Modal */}
       {showAddUser && (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog">
@@ -405,7 +849,7 @@ export default function Users() {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
+            {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog">
@@ -429,6 +873,12 @@ export default function Users() {
         </>
       )}
 
+
+
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
