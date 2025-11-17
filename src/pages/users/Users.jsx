@@ -1,29 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchUsers, createUser, fetchRoles } from '../../modules/user/services';
+import { fetchUsers, createUser, fetchRoles, updateUser, deleteUser } from '../../modules/user/services';
 import '../../../assets/css/bootstrap.min.css';
+
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState(null);
 
-  // Filters & selection
   const [filters, setFilters] = useState({});
   const [globalFilterValue, setGlobalFilterValue] = useState('');
   const [selection, setSelection] = useState([]);
 
-  // Add User Modal
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [roles, setRoles] = useState([]);
+  const [editingUserId, setEditingUserId] = useState(null); 
+  const [deletingUserId, setDeletingUserId] = useState(null);
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     phone_number: '',
-    role_id: '', // ✅ changed to role_id
-    password: '',
+    role_id: '',
+    status: 'active',
+    old_password: '',
+    new_password: '',
+    confirm_password: '',
   });
 
   useEffect(() => {
@@ -34,7 +41,7 @@ export default function Users() {
 
   const loadRoles = async () => {
     const roleList = await fetchRoles();
-    setRoles(roleList); // [{id, name}, ...]
+    setRoles(roleList);
   };
 
   const initFilters = () => {
@@ -75,18 +82,94 @@ export default function Users() {
 
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
+
+    // Password validation only if new password is provided
+    if (editingUserId && newUser.new_password) {
+      if (newUser.new_password !== newUser.confirm_password) {
+        toast.error("New password and confirm password do not match");
+        return;
+      }
+    }
+
+    // Prepare payload, only send new_password if filled
+    const payload = {
+      name: newUser.name,
+      email: newUser.email,
+      phone_number: newUser.phone_number,
+      role_id: newUser.role_id,
+      status: newUser.status,
+    };
+
+    if (editingUserId && newUser.new_password) {
+      payload.password = newUser.new_password;
+    }
+
+    if (!editingUserId) {
+      payload.password = newUser.old_password; // For new user, password is required
+    }
+
     try {
-      await createUser(newUser); // ✅ API call with role_id
-      loadUsers(); // Refresh table
-      setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '' });
+      if (editingUserId) {
+        await updateUser(editingUserId, payload);
+        toast.success("User updated successfully");
+      } else {
+        await createUser(payload);
+        toast.success("User created successfully");
+      }
+
+      loadUsers();
+      setNewUser({
+        name: '',
+        email: '',
+        phone_number: '',
+        role_id: '',
+        status: 'active',
+        old_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
       setShowAddUser(false);
+      setEditingUserId(null);
     } catch (error) {
-      console.error('Failed to add user:', error);
+      toast.error("Failed to save user");
+      console.error(error);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await deleteUser(deletingUserId);
+      toast.success("User deleted successfully");
+      setShowDeleteModal(false);
+      setDeletingUserId(null);
+      loadUsers();
+    } catch (error) {
+      toast.error("Failed to delete user");
+      console.error(error);
     }
   };
 
   const nameBodyTemplate = (rowData) => (
-    <Link to="/user-details" className="fw-medium link-primary">{rowData.name}</Link>
+    <span
+      className="fw-medium link-primary"
+      style={{ cursor: 'pointer' }}
+      onClick={() => {
+        setEditingUserId(rowData.id);
+        setNewUser({
+          name: rowData.name || '',
+          email: rowData.email || '',
+          phone_number: rowData.phone_number || '',
+          role_id: rowData.role_id || '',
+          status: rowData.status || 'active',
+          old_password: '',
+          new_password: '',
+          confirm_password: '',
+        });
+        setShowAddUser(true);
+      }}
+    >
+      {rowData.name}
+    </span>
   );
 
   const statusBodyTemplate = (rowData) => {
@@ -99,21 +182,21 @@ export default function Users() {
 
   return (
     <div className="page-content">
+      <ToastContainer position="top-right" autoClose={3000} />
+
       <div className="container-fluid">
         {/* Page Header */}
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
           <div className="col-12 d-flex align-items-center justify-content-between">
             <div>
               <h4 className="fs-20 mb-1">Users</h4>
-              <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                <ol className="breadcrumb m-0">
-                  <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                  <li className="breadcrumb-item active" aria-current="page">Users</li>
-                </ol>
-              </nav>
             </div>
             <div>
-              <button className="btn btn-primary fw-medium" onClick={() => setShowAddUser(true)}>
+              <button className="btn btn-primary fw-medium" onClick={() => {
+                setShowAddUser(true);
+                setEditingUserId(null);
+                setNewUser({ name: '', email: '', phone_number: '', role_id: '', status: 'active', old_password: '', new_password: '', confirm_password: '' });
+              }}>
                 <i className="ri-add-fill me-1 align-bottom"></i> Add User
               </button>
             </div>
@@ -183,21 +266,60 @@ export default function Users() {
                 <Column field="phone_number" header="Phone" sortable filter />
                 <Column field="role" header="Role" sortable filter />
                 <Column field="status" header="Status" sortable filter body={statusBodyTemplate} />
+                <Column
+                  header="Action"
+                  body={(rowData) => (
+                    <>
+                      <button
+                        className="btn btn-sm btn-primary me-2"
+                        onClick={() => {
+                          setEditingUserId(rowData.id);
+                          setNewUser({
+                            name: rowData.name || '',
+                            email: rowData.email || '',
+                            phone_number: rowData.phone_number || '',
+                            role_id: rowData.role_id || '',
+                            status: rowData.status || 'active',
+                            old_password: '',
+                            new_password: '',
+                            confirm_password: '',
+                          });
+                          setShowAddUser(true);
+                        }}
+                      >
+                        <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => {
+                          setDeletingUserId(rowData.id);
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                      </button>
+                    </>
+                  )}
+                  style={{ textAlign: 'center', width: '12rem' }}
+                />
               </DataTable>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add User Modal */}
+      {/* Add/Edit User Modal */}
       {showAddUser && (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Add User</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddUser(false)}></button>
+                  <h5 className="modal-title">{editingUserId ? 'Update User' : 'Add User'}</h5>
+                  <button type="button" className="btn-close" onClick={() => {
+                    setShowAddUser(false);
+                    setEditingUserId(null);
+                  }}></button>
                 </div>
                 <div className="modal-body">
                   <form onSubmit={handleAddUserSubmit}>
@@ -229,12 +351,50 @@ export default function Users() {
                       </select>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Password</label>
-                      <input type="password" name="password" className="form-control" value={newUser.password} onChange={handleAddUserInput} required />
+                      <label className="form-label">Status</label>
+                      <select
+                        name="status"
+                        className="form-control"
+                        value={newUser.status}
+                        onChange={handleAddUserInput}
+                        required
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
                     </div>
+
+                    {/* Password Fields - optional on edit */}
+                    {editingUserId ? (
+                      <>
+                        <div className="mb-3">
+                          <label className="form-label">Old Password</label>
+                          <input type="password" name="old_password" className="form-control" value={newUser.old_password} onChange={handleAddUserInput} placeholder="Optional" />
+                        </div>
+                        <div className="mb-3">
+                          <label className="form-label">New Password</label>
+                          <input type="password" name="new_password" className="form-control" value={newUser.new_password} onChange={handleAddUserInput} placeholder="Optional" />
+                        </div>
+                        <div className="mb-3">
+                          <label className="form-label">Confirm Password</label>
+                          <input type="password" name="confirm_password" className="form-control" value={newUser.confirm_password} onChange={handleAddUserInput} placeholder="Optional" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="mb-3">
+                        <label className="form-label">Password</label>
+                        <input type="password" name="old_password" className="form-control" value={newUser.old_password} onChange={handleAddUserInput} required />
+                      </div>
+                    )}
+
                     <div className="d-flex justify-content-end">
-                      <button type="button" className="btn btn-secondary me-2" onClick={() => setShowAddUser(false)}>Cancel</button>
-                      <button type="submit" className="btn btn-primary">Add User</button>
+                      <button type="button" className="btn btn-secondary me-2" onClick={() => {
+                        setShowAddUser(false);
+                        setEditingUserId(null);
+                      }}>Cancel</button>
+                      <button type="submit" className="btn btn-primary">
+                        <i className="ri-save-3-fill me-1 align-bottom"></i> {editingUserId ? 'Update' : 'Save'}
+                      </button>
                     </div>
                   </form>
                 </div>
@@ -244,6 +404,31 @@ export default function Users() {
           <div className="modal-backdrop fade show"></div>
         </>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Confirm Delete</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  Are you sure you want to delete this user?
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={handleDeleteUser}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show"></div>
+        </>
+      )}
+
     </div>
   );
 }

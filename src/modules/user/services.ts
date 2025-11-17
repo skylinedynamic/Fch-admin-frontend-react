@@ -40,7 +40,7 @@ export const fetchUsers = async (payload?: UsersPayload) => {
 }
 
 export const fetchUserById = async (id: number | string) => {
-  const res = await apiClient.get(`/users/${id}`)
+  const res = await apiClient.get(`/common/users/${id}`)
   return res.data.data
 }
 
@@ -51,11 +51,11 @@ export const createUser = async (payload: Partial<User>): Promise<User> => {
 }
 
 export const updateUser = async (id: number | string, payload: Partial<User>) => {
-  const res = await apiClient.put(`/users/${id}`, payload)
+  const res = await apiClient.put(`/common/users/${id}`, payload)
   return res.data.data
 }
 
 export const deleteUser = async (id: number | string) => {
-  await apiClient.delete(`/users/${id}`)
+  await apiClient.delete(`/common/users/${id}`)
 }
 
