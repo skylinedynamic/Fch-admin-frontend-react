@@ -39,13 +39,13 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       // Unauthorized: clear auth and redirect to login
-      // clearAuth()
-      // if (typeof window !== 'undefined') {
-      //   const current = window.location.pathname
-      //   if (current !== '/login') {
-      //     window.location.assign('/login')
-      //   }
-      // }
+      clearAuth()
+      if (typeof window !== 'undefined') {
+        const current = window.location.pathname
+        if (current !== '/login') {
+          window.location.assign('/login')
+        }
+      }
     } else if (status === 403) {
       // Forbidden: keep auth, show informative toast, do not redirect
       const serverMessage = (error.response?.data as any)?.message
