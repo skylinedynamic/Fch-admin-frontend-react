@@ -16,7 +16,7 @@ export type Role = {
 // Fetch roles (pluck id and name only)
 export const fetchRoles = async (partner_id?: string): Promise<Role[]> => {
   try {
-    const res = await apiClient.get('/common/roles', {
+    const res = await apiClient.post('/common/roles/fetch-roles', {
       params: partner_id ? { partner_id } : {},
     });
 
@@ -35,7 +35,7 @@ export const fetchRoles = async (partner_id?: string): Promise<Role[]> => {
 
 
 export const fetchUsers = async (payload?: UsersPayload) => {
-  const res = await apiClient.post('/common/all-users', payload || {})
+  const res = await apiClient.post('/common/users/fetch-users', payload || {})
   return res.data // { status, message, data, links, pagination }
 }
 
@@ -55,7 +55,8 @@ export const updateUser = async (id: number | string, payload: Partial<User>) =>
   return res.data.data
 }
 
-export const deleteUser = async (id: number | string) => {
-  await apiClient.delete(`/common/users/${id}`)
-}
+export const deleteUsers = async (ids: Array<number | string>) => {
+  const res = await apiClient.post('/common/users/multiple-delete', { ids });
+  return res.data; // API response
+};
 

@@ -1,155 +1,151 @@
-import React, { useEffect, useState } from 'react';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchUsers, createUser, fetchRoles, updateUser, deleteUser } from '../../modules/user/services';
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { DataTable } from '../../components/Table/DataTableWrapper'
+import { Column } from 'primereact/column'
+import { Dropdown } from 'primereact/dropdown'
+import { FilterMatchMode, FilterOperator } from 'primereact/api'
+import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers } from '../../modules/user/services';
 import '../../../assets/css/bootstrap.min.css';
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState(null);
-
-  const [filters, setFilters] = useState({});
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [selection, setSelection] = useState([]);
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState('')
+  const [selection, setSelection] = useState([])
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [sortField, setSortField] = useState('id')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [appliedFilters, setAppliedFilters] = useState({})
+  const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [appliedRoleFilter, setAppliedRoleFilter] = useState('')
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [roles, setRoles] = useState([]);
   const [editingUserId, setEditingUserId] = useState(null); 
   const [deletingUserId, setDeletingUserId] = useState(null);
+  const [loadingSave, setLoadingSave] = useState(false); 
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     phone_number: '',
     role_id: '',
-    status: 'active',
-    old_password: '',
+    status: '',
+    password: '',
     new_password: '',
     confirm_password: '',
   });
 
+  const statusOptions = [
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' }
+  ]
+
+  const initFilters = () => {
+    const initial = {
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    }
+    setFilters(initial)
+    setAppliedFilters(initial)
+    setGlobalFilterValue('')
+    setAppliedGlobalFilterValue('')
+  }
+
   useEffect(() => {
-    initFilters();
-    loadUsers();
+    initFilters()
     loadRoles();
-  }, []);
+  }, [])
 
   const loadRoles = async () => {
     const roleList = await fetchRoles();
     setRoles(roleList);
   };
 
-  const initFilters = () => {
-    setFilters({
-      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-      name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-      email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-      status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-    });
-    setGlobalFilterValue('');
-  };
-
-  const loadUsers = async (page = 1, search = '') => {
+  const loadUsers = async () => {
+    setLoading(true)
     try {
-      const response = await fetchUsers({ page, per_page: 10, search });
-      setUsers(response.data || []);
-      setPagination(response.pagination);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
+      const payload = {
+        role: appliedRoleFilter || '',
+        status: appliedStatusFilter || '',
+        search: appliedGlobalFilterValue || '',
+        filters: appliedFilters,
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+      }
+      const res = await fetchUsers(payload)
+      const next = Array.isArray(res) ? res : (res?.data ?? [])
+      const meta = Array.isArray(res) ? undefined : res?.meta
+
+      setRows(next)
+      if (meta) {
+        setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+        if (typeof meta.current_page === 'number') setPage(meta.current_page)
+        if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+      } else {
+        setTotalRecords(next.length)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!appliedFilters || Object.keys(appliedFilters).length === 0) return
+    const timeout = setTimeout(() => {
+      loadUsers()
+    }, 300)
+    return () => clearTimeout(timeout)
+  }, [appliedRoleFilter, appliedStatusFilter, appliedGlobalFilterValue, appliedFilters, page, perPage, sortField, sortOrder])
 
   const onGlobalFilterChange = (e) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
-    _filters['global'].value = value;
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-    loadUsers(1, value);
-  };
+    const value = e.target.value
+    setFilters(prev => ({ ...prev, global: { ...prev.global, value } }))
+    setGlobalFilterValue(value)
+  }
 
-  const handleAddUserInput = (e) => {
-    const { name, value } = e.target;
-    setNewUser({ ...newUser, [name]: value });
-  };
+  const onStatusChange = (e) => {
+    const val = e.target.value
+    setStatusFilter(val === 'Select User Status' ? '' : val)
+  }
 
-  const handleAddUserSubmit = async (e) => {
-    e.preventDefault();
+  const onDeptChange = (e) => {
+    const val = e.target.value
+    setAppliedRoleFilter(val === 'all' || val === 'Select Department' ? '' : val)
+  }
 
-    // Password validation only if new password is provided
-    if (editingUserId && newUser.new_password) {
-      if (newUser.new_password !== newUser.confirm_password) {
-        toast.error("New password and confirm password do not match");
-        return;
-      }
-    }
+  const onApplyFilters = () => {
+    setAppliedGlobalFilterValue(globalFilterValue || '')
+    setAppliedStatusFilter(statusFilter || '')
+    setAppliedFilters(filters)
+    setPage(1)
+  }
 
-    // Prepare payload, only send new_password if filled
-    const payload = {
-      name: newUser.name,
-      email: newUser.email,
-      phone_number: newUser.phone_number,
-      role_id: newUser.role_id,
-      status: newUser.status,
-    };
+  const onClearFilters = () => {
+    initFilters()
+    setAppliedRoleFilter('')
+    setAppliedStatusFilter('')
+    setPage(1)
+  }
 
-    if (editingUserId && newUser.new_password) {
-      payload.password = newUser.new_password;
-    }
-
-    if (!editingUserId) {
-      payload.password = newUser.old_password; // For new user, password is required
-    }
-
-    try {
-      if (editingUserId) {
-        await updateUser(editingUserId, payload);
-        toast.success("User updated successfully");
-      } else {
-        await createUser(payload);
-        toast.success("User created successfully");
-      }
-
-      loadUsers();
-      setNewUser({
-        name: '',
-        email: '',
-        phone_number: '',
-        role_id: '',
-        status: 'active',
-        old_password: '',
-        new_password: '',
-        confirm_password: '',
-      });
-      setShowAddUser(false);
-      setEditingUserId(null);
-    } catch (error) {
-      toast.error("Failed to save user");
-      console.error(error);
-    }
-  };
-
-  const handleDeleteUser = async () => {
-    try {
-      await deleteUser(deletingUserId);
-      toast.success("User deleted successfully");
-      setShowDeleteModal(false);
-      setDeletingUserId(null);
-      loadUsers();
-    } catch (error) {
-      toast.error("Failed to delete user");
-      console.error(error);
-    }
-  };
-
-  const nameBodyTemplate = (rowData) => (
+  const nameBody = (rowData) => (
     <span
       className="fw-medium link-primary"
       style={{ cursor: 'pointer' }}
@@ -159,9 +155,9 @@ export default function Users() {
           name: rowData.name || '',
           email: rowData.email || '',
           phone_number: rowData.phone_number || '',
-          role_id: rowData.role_id || '',
-          status: rowData.status || 'active',
-          old_password: '',
+          role_id: String(rowData.role_id) || '',
+          status: rowData.status || '',
+          password: rowData.password || '',
           new_password: '',
           confirm_password: '',
         });
@@ -170,265 +166,487 @@ export default function Users() {
     >
       {rowData.name}
     </span>
-  );
+  )
 
   const statusBodyTemplate = (rowData) => {
-    let badgeClass = '';
-    if (rowData.status === 'active') badgeClass = 'success';
-    else if (rowData.status === 'inactive') badgeClass = 'danger';
-    else badgeClass = 'secondary';
-    return <span className={`badge bg-${badgeClass}`}>{rowData.status}</span>;
+    const value = rowData?.status || ''
+    return value ? (<span>{value}</span>) : (<span className="text-muted">—</span>)
+  }
+
+  const statusRowFilterTemplate = (options) => (
+    <Dropdown
+      value={options.value}
+      options={statusOptions}
+      onChange={(e) => options.filterCallback(e.value)}
+      placeholder="Select status"
+      className="p-column-filter"
+      showClear
+    />
+  )
+
+  const onPage = (event) => {
+    setPerPage(event.rows)
+    setPage(Math.floor(event.first / event.rows) + 1)
+  }
+
+  const onSort = (event) => {
+    setSortField(event.sortField || sortField)
+    setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+  }
+
+  const handleAddUserSubmit = async (e) => {
+    e.preventDefault();
+    if (editingUserId && newUser.new_password && newUser.new_password !== newUser.confirm_password) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    const payload = {
+      name: newUser.name,
+      email: newUser.email,
+      phone_number: newUser.phone_number,
+      role_id: newUser.role_id,
+      password: newUser.password,
+      status: newUser.status,
+      ...(editingUserId
+    ? showPasswordFields && newUser.new_password
+      ? { password: newUser.new_password }
+      : {}
+    : { password: newUser.password })
+    }
+
+    try {
+       setLoadingSave(true);
+      if (editingUserId) await updateUser(editingUserId, payload)
+      else await createUser(payload)
+      toast.success(`User ${editingUserId ? 'updated' : 'created'} successfully`);
+      setShowAddUser(false)
+      setEditingUserId(null)
+      loadUsers() // refresh table
+    } catch (error) {
+      toast.error("Failed to save user")
+      console.error(error)
+    }
+     finally {
+      setLoadingSave(false); // stop loading
+    }
   };
+
+  const handleAddUserInput = (e) => {
+    const { name, value } = e.target;
+    setNewUser({ ...newUser, [name]: value });
+  };
+
+const handleDeleteSelectedUsers = async () => {
+  if (!selection || selection.length === 0) {
+    toast.info("No users selected for deletion");
+    return;
+  }
+
+  try {
+    setLoading(true); // show spinner if needed
+    const idsToDelete = selection.map(user => user.id);
+
+    // Call API to delete users
+    await deleteUsers(idsToDelete);
+
+    toast.success(`Users deleted successfully`);
+
+    setSelection([]);          // clear selected users
+    setShowDeleteModal(false); // hide modal
+    loadUsers();               // refresh table
+  } catch (error) {
+    console.error(error);
+    toast.error(error?.response?.data?.message || "Failed to delete users");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
-
       <div className="container-fluid">
-        {/* Page Header */}
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-          <div className="col-12 d-flex align-items-center justify-content-between">
-            <div>
-              <h4 className="fs-20 mb-1">Users</h4>
-            </div>
-            <div>
-              <button className="btn btn-primary fw-medium" onClick={() => {
-                setShowAddUser(true);
-                setEditingUserId(null);
-                setNewUser({ name: '', email: '', phone_number: '', role_id: '', status: 'active', old_password: '', new_password: '', confirm_password: '' });
-              }}>
-                <i className="ri-add-fill me-1 align-bottom"></i> Add User
-              </button>
-            </div>
-          </div>
-        </div>
+        <div className="row mb-3 pb-1 bg-body">
+          <div className="col">
+            <div className="h-100">
+              <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="col-12">
+                  <div className="d-flex align-items-center justify-content-between flex-row">
+                    <div className="flex-grow-1">
+                      <h4 className="fs-20 mb-1">Users</h4>
+                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                        <ol className="breadcrumb m-0">
+                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
+                          <li className="breadcrumb-item active" aria-current="page">Users</li>
+                        </ol>
+                      </nav>
+                    </div>
+                    <div className="mt-0">
+                      <form onSubmit={(e) => e.preventDefault()}>
+                        <div className="row g-3 mb-0 align-items-center">
+                          <div className="col-sm-auto">
+                          <div className="btn-group">
+                              {Array.isArray(selection) && selection.length > 0 ? (
+                                <>
+                                  <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                    Actions
+                                  </button>
+                                  <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                  </button>
+                                  <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
+                                    <li><hr className="dropdown-divider" /></li>
+                                   <li>
+                                      <button
+                                        className="dropdown-item text-danger"
+                                        type="button"
+                                        onClick={() => {
+                                          if (selection.length === 0) {
+                                            toast.warn("Please select at least one user");
+                                            return;
+                                          }
+                                          setShowDeleteModal(true);
+                                        }}
+                                      >
+                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                      </button>
+                                    </li>
+                                  </ul>
+                                </>
+                              ) : (
+                               <button className="btn btn-primary fw-medium" onClick={() => {
+                                  setShowAddUser(true);
+                                  setEditingUserId(null);
+                                  setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+                                }}>
+                                  <i className="ri-add-fill me-1 align-bottom"></i> Add User
+                              </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        {/* Filters */}
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search users..."
-              value={globalFilterValue}
-              onChange={onGlobalFilterChange}
-            />
-          </div>
-          <div className="col-md-3">
-            <select className="form-control">
-              <option value="">Select Role</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>{role.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-3">
-            <select className="form-control">
-              <option value="">Select Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          <div className="col-md-2">
-            <button type="button" className="btn btn-warning w-100">
-              <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-            </button>
-          </div>
-        </div>
+              <div className="row">
+                <div className="col-lg-12">
+                  <div className="card">
+                    <div className="card-body">
+                      <form>
+                        <div className="row g-3 mb-3">
+                          <div className="col-xxl-4 col-sm-12">
+                            <div className="search-box">
+                              <input
+                                type="text"
+                                className="form-control search bg-light border-light"
+                                id="searchStatus"
+                                autoComplete="off"
+                                placeholder="Search here..."
+                                value={globalFilterValue}
+                                onChange={onGlobalFilterChange}
+                              />
+                              <i className="ri-search-line search-icon"></i>
+                            </div>
+                          </div>
+                          <div className="col-xxl-3 col-sm-4">
+                            <div className="input-light">
+                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
+                                <option value="Select User Status" defaultValue>Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="col-xxl-3 col-sm-4">
+                              <div className="input-light">
+                                <select
+                                  className="form-control"
+                                  data-choices
+                                  data-choices-search-false
+                                  name="roleFilter"
+                                  id="roleFilter"
+                                  onChange={onDeptChange}
+                                >
+                                  <option value="all" defaultValue>Select Role</option>
+                                  {roles.map((role) => (
+                                    <option key={role.id} value={role.id}>{role.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                          </div>
+                          <div className="col-xxl-2 col-sm-4">
+                            <div className="d-flex gap-2">
+                              <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                              </button>
+                              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={onClearFilters}>
+                                <i className="ri-close-line me-1 align-bottom"></i> Clear
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                      <div>
+                        <div className="table-responsive table-card mt-1">
+                          <DataTable
+                            scrollable 
+                            scrollHeight="510px"  
+                            value={rows}
+                            paginator
+                            lazy
+                            totalRecords={totalRecords}
+                            first={(page - 1) * perPage}
+                            rows={perPage}
+                            rowsPerPageOptions={[10, 25, 50, 100]}
+                            sortMode="single"
+                            sortField={sortField}
+                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                            filterDisplay="menu"
+                            filters={filters}
+                            onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                            onPage={onPage}
+                            onSort={onSort}
+                            globalFilterFields={[
+                              'name',
+                              'phone_number',
+                              'email',
+                              'role',
+                              'status',
+                            ]}
+                            selection={selection}
+                            onSelectionChange={(e) => setSelection(e.value)}
+                            dataKey="id"
+                            responsiveLayout="scroll"
+                            className="p-datatable-sm"
+                            loading={loading}
+                            emptyMessage="No Users found"
+                          >
+                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                            <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                            <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                            <Column field="role" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            <Column
+                              field="status"
+                              header="Status"
+                              showFilterMenu
+                              filterMenuStyle={{ width: '14rem' }}
+                              body={statusBodyTemplate}
+                              filter
+                              filterElement={statusRowFilterTemplate}
+                            />
+                            <Column
+                              header="Action"
+                              body={(rowData) => (
+                                <>
+                                  <button
+                                    className="btn btn-sm btn-primary me-2"
+                                    onClick={() => {
+                                      setEditingUserId(rowData.id);
+                                      setNewUser({
+                                        name: rowData.name || '',
+                                        email: rowData.email || '',
+                                        phone_number: rowData.phone_number || '',
+                                        role_id: rowData.role || '',
+                                        password: rowData.password || '',
+                                        status: rowData.status || '',
+                                        new_password: '',
+                                        confirm_password: '',
+                                      });
+                                      setShowAddUser(true);
+                                    }}
+                                  >
+                                    <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => {
+                                      setDeletingUserId(rowData.id);
+                                      setShowDeleteModal(true);
+                                    }}
+                                  >
+                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                  </button>
+                                </>
+                              )}
+                              style={{ textAlign: 'center', width: '12rem' }}
+                            />
+                          </DataTable>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                {showAddUser && (
+                  <>
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+                      <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                          <div className="modal-header">
+                            <h5 className="modal-title">{editingUserId ? 'Update User' : 'Add User'}</h5>
+                            <button type="button" className="btn-close" onClick={() => {
+                              setShowAddUser(false);
+                              setEditingUserId(null);
+                            }}></button>
+                          </div>
+                          <div className="modal-body">
+                            <form onSubmit={handleAddUserSubmit}>
+                              <div className="mb-3">
+                                <label className="form-label">Name </label>
+                                <input type="text" name="name" className="form-control" value={newUser.name} onChange={handleAddUserInput} required />
+                              </div>
+                              <div className="mb-3">
+                                <label className="form-label">Email</label>
+                                <input type="email" name="email" className="form-control" value={newUser.email} onChange={handleAddUserInput} required />
+                              </div>
+                              <div className="mb-3">
+                                <label className="form-label">Phone</label>
+                                <input type="text" name="phone_number" className="form-control" value={newUser.phone_number} onChange={handleAddUserInput} required />
+                              </div>
+                             
+                              <div className="mb-3">
+                                <label className="form-label">Role</label>
+                                <select
+                                  name="role_id"
+                                  className="form-control"
+                                  value={String(newUser.role_id) || ''} // use role ID as string
+                                  onChange={handleAddUserInput}
+                                  required
+                                >
+                                  <option value="">Select Role</option>
+                                  {roles.map((role) => (
+                                    <option key={role.id} value={String(role.name)}> {/* value = role ID */}
+                                      {role.name} {/* displayed name */}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              {editingUserId && (
+                               <div className="mb-3">
+                                  <label className="form-label"> Status </label>
+                                  <select
+                                    name="status"
+                                    className="form-control"
+                                    value={newUser.status}
+                                    onChange={handleAddUserInput}
+                                    required
+                                  >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                  </select>
+                                </div>
+                              )}
+                            {/* ADD MODE – Password Required */}
+                            {!editingUserId && (
+                              <div className="mb-3">
+                                <label className="form-label">Password</label>
+                                <input
+                                  type="password"
+                                  name="password"
+                                  className="form-control"
+                                  value={newUser.password}
+                                  onChange={handleAddUserInput}
+                                  required
+                                />
+                              </div>
+                            )}
 
-        {/* DataTable */}
-        <div className="card">
-          <div className="card-body">
-            <div className="table-responsive table-card mt-1">
-              <DataTable
-                value={users}
-                paginator
-                first={(pagination?.current_page - 1) * pagination?.per_page || 0}
-                rows={pagination?.per_page || 10}
-                totalRecords={pagination?.total || 0}
-                lazy
-                onPage={(e) => loadUsers(e.first / e.rows + 1, globalFilterValue)}
-                sortMode="multiple"
-                filterDisplay="menu"
-                filters={filters}
-                onFilter={(e) => setFilters(e.filters)}
-                globalFilterFields={['name', 'email', 'phone_number', 'role', 'status']}
-                selection={selection}
-                onSelectionChange={(e) => setSelection(e.value)}
-                dataKey="id"
-                responsiveLayout="scroll"
-                className="p-datatable-sm"
-                emptyMessage="No users found"
-              >
-                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                <Column field="name" header="Name" sortable filter body={nameBodyTemplate} />
-                <Column field="email" header="Email" sortable filter />
-                <Column field="phone_number" header="Phone" sortable filter />
-                <Column field="role" header="Role" sortable filter />
-                <Column field="status" header="Status" sortable filter body={statusBodyTemplate} />
-                <Column
-                  header="Action"
-                  body={(rowData) => (
-                    <>
-                      <button
-                        className="btn btn-sm btn-primary me-2"
-                        onClick={() => {
-                          setEditingUserId(rowData.id);
-                          setNewUser({
-                            name: rowData.name || '',
-                            email: rowData.email || '',
-                            phone_number: rowData.phone_number || '',
-                            role_id: rowData.role_id || '',
-                            status: rowData.status || 'active',
-                            old_password: '',
-                            new_password: '',
-                            confirm_password: '',
-                          });
-                          setShowAddUser(true);
-                        }}
-                      >
-                        <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => {
-                          setDeletingUserId(rowData.id);
-                          setShowDeleteModal(true);
-                        }}
-                      >
-                        <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
-                      </button>
-                    </>
-                  )}
-                  style={{ textAlign: 'center', width: '12rem' }}
-                />
-              </DataTable>
+                            {/* EDIT MODE – Password Update Checkbox */}
+                            {editingUserId && (
+                              <div className="form-check mb-3">
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  id="changePasswordCheck"
+                                  checked={showPasswordFields}
+                                  onChange={(e) => setShowPasswordFields(e.target.checked)}
+                                />
+                                <label className="form-check-label" htmlFor="changePasswordCheck">
+                                  Change Password
+                                </label>
+                              </div>
+                            )}
+
+                            {/* EDIT MODE – Show Inputs Only When Checkbox Checked */}
+                            {editingUserId && showPasswordFields && (
+                              <>
+                                <div className="mb-3">
+                                  <label className="form-label">New Password</label>
+                                  <input
+                                    type="password"
+                                    name="new_password"
+                                    className="form-control"
+                                    value={newUser.new_password}
+                                    onChange={handleAddUserInput}
+                                    placeholder="Enter new password"
+                                  />
+                                </div>
+
+                                <div className="mb-3">
+                                  <label className="form-label">Confirm Password</label>
+                                  <input
+                                    type="password"
+                                    name="confirm_password"
+                                    className="form-control"
+                                    value={newUser.confirm_password}
+                                    onChange={handleAddUserInput}
+                                    placeholder="Re-enter new password"
+                                  />
+                                </div>
+                              </>
+                            )}
+                              <div className="d-flex justify-content-end">
+                                  <button type="button" className="btn btn-secondary me-2" onClick={() => {
+                                    setShowAddUser(false);
+                                    setEditingUserId(null);
+                                  }}>Cancel</button>
+                                  <button type="submit" className="btn btn-primary" disabled={loadingSave}>
+                                    {loadingSave && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>}
+                                    <i className="ri-save-3-fill me-1 align-bottom"></i> {editingUserId ? 'Update' : 'Save'}
+                                  </button>
+                                </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal-backdrop fade show"></div>
+                  </>
+                )}
+                {showDeleteModal && (
+                  <>
+                    <div className="modal fade show d-block">
+                      <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                          <div className="modal-header">
+                            <h5 className="modal-title">Confirm Delete</h5>
+                            <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+                          </div>
+                          <div className="modal-body">
+                            Are you sure you want to delete the selected users?
+                          </div>
+                          <div className="modal-footer">
+                            <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                            <button type="button" className="btn btn-danger" onClick={handleDeleteSelectedUsers}>Delete</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal-backdrop fade show"></div>
+                  </>
+                )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Add/Edit User Modal */}
-      {showAddUser && (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">{editingUserId ? 'Update User' : 'Add User'}</h5>
-                  <button type="button" className="btn-close" onClick={() => {
-                    setShowAddUser(false);
-                    setEditingUserId(null);
-                  }}></button>
-                </div>
-                <div className="modal-body">
-                  <form onSubmit={handleAddUserSubmit}>
-                    <div className="mb-3">
-                      <label className="form-label">Name</label>
-                      <input type="text" name="name" className="form-control" value={newUser.name} onChange={handleAddUserInput} required />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Email</label>
-                      <input type="email" name="email" className="form-control" value={newUser.email} onChange={handleAddUserInput} required />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Phone</label>
-                      <input type="text" name="phone_number" className="form-control" value={newUser.phone_number} onChange={handleAddUserInput} required />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Role</label>
-                      <select
-                        name="role_id"
-                        className="form-control"
-                        value={newUser.role_id}
-                        onChange={handleAddUserInput}
-                        required
-                      >
-                        <option value="">Select Role</option>
-                        {roles.map((role) => (
-                          <option key={role.id} value={role.id}>{role.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Status</label>
-                      <select
-                        name="status"
-                        className="form-control"
-                        value={newUser.status}
-                        onChange={handleAddUserInput}
-                        required
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-
-                    {/* Password Fields - optional on edit */}
-                    {editingUserId ? (
-                      <>
-                        <div className="mb-3">
-                          <label className="form-label">Old Password</label>
-                          <input type="password" name="old_password" className="form-control" value={newUser.old_password} onChange={handleAddUserInput} placeholder="Optional" />
-                        </div>
-                        <div className="mb-3">
-                          <label className="form-label">New Password</label>
-                          <input type="password" name="new_password" className="form-control" value={newUser.new_password} onChange={handleAddUserInput} placeholder="Optional" />
-                        </div>
-                        <div className="mb-3">
-                          <label className="form-label">Confirm Password</label>
-                          <input type="password" name="confirm_password" className="form-control" value={newUser.confirm_password} onChange={handleAddUserInput} placeholder="Optional" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="mb-3">
-                        <label className="form-label">Password</label>
-                        <input type="password" name="old_password" className="form-control" value={newUser.old_password} onChange={handleAddUserInput} required />
-                      </div>
-                    )}
-
-                    <div className="d-flex justify-content-end">
-                      <button type="button" className="btn btn-secondary me-2" onClick={() => {
-                        setShowAddUser(false);
-                        setEditingUserId(null);
-                      }}>Cancel</button>
-                      <button type="submit" className="btn btn-primary">
-                        <i className="ri-save-3-fill me-1 align-bottom"></i> {editingUserId ? 'Update' : 'Save'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Confirm Delete</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
-                </div>
-                <div className="modal-body">
-                  Are you sure you want to delete this user?
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                  <button type="button" className="btn btn-danger" onClick={handleDeleteUser}>Delete</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop fade show"></div>
-        </>
-      )}
-
     </div>
-  );
+  )
 }
