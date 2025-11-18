@@ -3,6 +3,7 @@ export type User = {
   name: string
   email?: string
   phone_number?: string
+  password?: string
   status?: string
   role?: string
   [key: string]: unknown
