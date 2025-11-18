@@ -75,6 +75,20 @@ export default function Users() {
     setRoles(roleList);
   };
 
+  // Resolve a user's role id from the row data.
+  // If backend returns `role_id` use that; otherwise attempt to match by role name
+  // against the loaded `roles` list and return the matching id as a string.
+  const resolveRoleId = (rowData) => {
+    if (!rowData) return '';
+    if (rowData.role_id != null) return String(rowData.role_id);
+    // rowData.role may be the role name; try to match it to loaded roles
+    if (rowData.role) {
+      const found = roles.find(r => r.name === rowData.role || String(r.id) === String(rowData.role));
+      if (found) return String(found.id);
+    }
+    return '';
+  };
+
   const loadUsers = async () => {
     setLoading(true)
     try {
@@ -155,7 +169,7 @@ export default function Users() {
           name: rowData.name || '',
           email: rowData.email || '',
           phone_number: rowData.phone_number || '',
-          role_id: String(rowData.role_id) || '',
+          role_id: resolveRoleId(rowData),
           status: rowData.status || '',
           password: rowData.password || '',
           new_password: '',
@@ -205,7 +219,7 @@ export default function Users() {
       name: newUser.name,
       email: newUser.email,
       phone_number: newUser.phone_number,
-      role_id: newUser.role_id,
+      role_id: newUser.role_id ? Number(newUser.role_id) : null,
       password: newUser.password,
       status: newUser.status,
       ...(editingUserId
@@ -454,7 +468,7 @@ const handleDeleteSelectedUsers = async () => {
                                         name: rowData.name || '',
                                         email: rowData.email || '',
                                         phone_number: rowData.phone_number || '',
-                                        role_id: rowData.role || '',
+                                        role_id: resolveRoleId(rowData),
                                         password: rowData.password || '',
                                         status: rowData.status || '',
                                         new_password: '',
@@ -523,8 +537,8 @@ const handleDeleteSelectedUsers = async () => {
                                 >
                                   <option value="">Select Role</option>
                                   {roles.map((role) => (
-                                    <option key={role.id} value={String(role.name)}> {/* value = role ID */}
-                                      {role.name} {/* displayed name */}
+                                    <option key={role.id} value={String(role.id)}>
+                                      {role.name}
                                     </option>
                                   ))}
                                 </select>
@@ -608,10 +622,30 @@ const handleDeleteSelectedUsers = async () => {
                                     setShowAddUser(false);
                                     setEditingUserId(null);
                                   }}>Cancel</button>
-                                  <button type="submit" className="btn btn-primary" disabled={loadingSave}>
-                                    {loadingSave && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>}
-                                    <i className="ri-save-3-fill me-1 align-bottom"></i> {editingUserId ? 'Update' : 'Save'}
-                                  </button>
+                                  <button
+                                      type="submit"
+                                      className="btn btn-primary"
+                                      disabled={loadingSave}
+                                    >
+                                      {/* Loading Spinner */}
+                                      {loadingSave && (
+                                        <span
+                                          className="spinner-border spinner-border-sm me-1"
+                                          role="status"
+                                          aria-hidden="true"
+                                        ></span>
+                                      )}
+
+                                      {/* Dynamic Icon */}
+                                      <i
+                                        className={`me-1 align-bottom ${
+                                          editingUserId ? 'ri-edit-2-fill' : 'ri-save-3-fill'
+                                        }`}
+                                      ></i>
+
+                                      {/* Dynamic Text */}
+                                      {editingUserId ? 'Update' : 'Submit'}
+                                    </button>
                                 </div>
                             </form>
                           </div>
