@@ -1,21 +1,36 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../lib/http/apiClient'
 import newDocImg from '../../../assets/images/new-document.png'
+import RolesGridLoader from '../../components/Loader/RolesGridLoader'
+import ErrorState from '../../components/Loader/ErrorState'
 
 type User = { id: number; name: string; email: string; role: string; joined: string }
-type Role = { name: string; usersCount: number; permissions: string[] }
+type ApiRole = { id: number; name: string; permissions: string[]; users_count?: number }
+type Role = { id?: number; name: string; usersCount: number; permissions: string[] }
 
 export default function RolesPermissions() {
   const navigate = useNavigate()
-  const [roles, setRoles] = useState<Role[]>([
-    {
-      name: 'Admin',
-      usersCount: 12,
-      permissions: [
-        'Delete product','Delete attribute','View blog','Edit product','View product','Manage users','Create award','Financial annual report','Delete slider','Quality audit innovation','Delete blog category','Access reports','Edit orders','Refund orders','Manage categories','Manage tags','Publish posts','Unpublish posts','Edit settings','View analytics','Manage discounts','Edit customer','Delete customer','Export data','Import data','Manage inventory','Approve reviews','Moderate comments','Access all areas','View logs','Manage roles','Assign permissions','Backup database','Restore backups','View revenue','Edit invoices','Delete invoices','Mark payments','Manage subscriptions','Cancel subscriptions','View tickets','Reply tickets','Close tickets','Create survey','Edit survey','Delete survey','View leads','Edit leads','Delete leads','Manage partners','Approve partners','Suspend partners','Create events','Edit events','Delete events'
-      ]
-    }
-  ])
+  const { data: apiRoles, isLoading, isError } = useQuery<ApiRole[]>({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const res = await apiClient.get('/common/roles')
+      const payload = res?.data
+      const list = Array.isArray(payload) ? payload : (payload?.data ?? payload?.roles ?? [])
+      return Array.isArray(list) ? list as ApiRole[] : []
+    },
+    staleTime: 60_000,
+  })
+
+  const roles: Role[] = useMemo(() => {
+    return (apiRoles || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      permissions: Array.isArray(r.permissions) ? r.permissions : [],
+      usersCount: Number(r.users_count ?? 0),
+    }))
+  }, [apiRoles])
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [showAllPerms, setShowAllPerms] = useState(false)
@@ -35,23 +50,14 @@ export default function RolesPermissions() {
     setModalOpen(true)
   }
 
-  const handleAddRole = () => {
-    const name = window.prompt('Role name') || ''
-    if (!name.trim()) return
-    const exists = roles.some(r => r.name.toLowerCase() === name.trim().toLowerCase())
-    if (exists) return
-    const next: Role = { name: name.trim(), usersCount: 0, permissions: [] }
-    const insertIndex = roles.length
-    const copy = roles.slice()
-    copy.splice(insertIndex, 0, next)
-    setRoles(copy)
-  }
+  // Add-role interactions are handled via dedicated page; this grid always shows the "Add New Role" card
 
   const previewPermissions = (perms: string[]) => perms.slice(0, 6)
   const remainingCount = (perms: string[]) => Math.max(perms.length - 6, 0)
 
+
   return (
-    <div className="page-content">
+    <div id="roles-permissions-page" className="page-content">
       <div className="container-fluid">
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
@@ -65,14 +71,7 @@ export default function RolesPermissions() {
                   </ol>
                 </nav>
               </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
-                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                </button>
-                <button type="button" className="btn btn-primary w-lg">
-                  <i className="ri-save-3-line align-middle me-1"></i> Save
-                </button>
-              </div>
+             
             </div>
           </div>
         </div>
@@ -81,64 +80,38 @@ export default function RolesPermissions() {
           <div className="col-xxl-12">
             <div className="card">
               <div className="card-body" style={{ minHeight: '73vh' }}>
-                <style>{`
-                  .roles-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
-                  @media (max-width:1399.98px){.roles-grid{grid-template-columns:repeat(2,1fr)}}
-                  @media (max-width:767.98px){.roles-grid{grid-template-columns:1fr}}
-                  .role-summary-card{border:1px solid var(--vz-border-color);box-shadow:0 2px 6px rgba(0,0,0,.06);border-radius:.75rem;background:var(--bs-body-bg);padding:24px}
-                  .role-summary-card h5{font-weight:700;margin-bottom:12px}
-                  .role-meta{color:var(--vz-gray)}
-                  .role-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-                  .count-badge{background:var(--bs-primary-bg-subtle);color:var(--bs-primary);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600}
-                  .count-badge.solid{background:#d4af37;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-                  .bullet-list{list-style:none;padding-left:0;margin:16px 0}
-                  .bullet-list li{display:flex;align-items:center;gap:10px;padding:8px 0;color:var(--vz-body-color)}
-                  .bullet-list li::before{content:'•';color:var(--bs-primary)}
-                  .card-actions{display:flex;gap:12px}
-                  .add-role-card{border:1px dashed var(--vz-border-color);border-radius:.75rem;box-shadow: 0 2px 6px rgba(0, 0, 0, .06);background:var(--bs-body-bg);padding:24px;display:flex;align-items:center;justify-content:center;min-height:220px;flex-direction:column}
-                  .add-role-card img{max-width:120px;opacity:.9;margin-bottom:12px}
-                  .users-modal .card{border:1px solid var(--vz-border-color);box-shadow:0 4px 14px rgba(0,0,0,0.06);border-radius:12px}
-                  .section-title{font-weight:600;font-size:16px;margin:0}
-                  .user-table{width:100%;border-collapse:separate;border-spacing:0 10px}
-                  .user-table thead th{font-size:12px;text-transform:uppercase;color:#6b7280;font-weight:600;border-bottom:1px solid #e5e7eb;padding:10px 12px}
-                  .user-table tbody tr{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
-                  .user-table tbody td{padding:12px;border-top:1px solid #f3f4f6;vertical-align:middle}
-                  .avatar-dot{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;color:#fff;background:linear-gradient(135deg,#ef4444,#f59e0b);margin-right:10px}
-                  .user-identity{display:flex;align-items:center;gap:10px}
-                  .user-identity .name{font-weight:600;color:#111827}
-                  .user-identity .email{color:#6b7280;font-size:12px}
-                  .table-actions .btn{padding:6px 10px}
-                  .modal-header .badge-count{font-size:12px;color:#6b7280;margin-left:8px}
-                  .permissions-scroll{max-height:300px;overflow:auto;border:1px solid var(--vz-border-color);border-radius:.5rem;padding:12px;background:var(--bs-body-bg)}
-                  .modal-backdrop-custom{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1040}
-                  .users-modal{z-index:1055}
-                `}</style>
 
-                <div className="roles-grid">
-                  {roles.map((r, idx) => (
-                    <div className="role-summary-card" key={r.name + idx}>
-                      <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid">{r.usersCount} users</span></div>
-                      <p className="role-meta mb-2">Total users with this role: <strong>{r.usersCount}</strong></p>
-                      <ul className="bullet-list">
-                        {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
-                        {remainingCount(r.permissions) > 0 && (
-                          <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
-                        )}
-                      </ul>
-                      <div className="card-actions">
-                        <button className="btn btn-light" onClick={() => handleViewUsers(r)}>View All Users</button>
-                        <button className="btn btn-primary">Edit Role</button>
+                {isLoading ? (
+                  <RolesGridLoader />
+                ) : isError ? (
+                  <ErrorState message="Failed to load roles. Please try again." />
+                ) : (
+                  <div className="roles-grid">
+                    {roles.map((r, idx) => (
+                      <div className="role-summary-card" key={r.name + idx}>
+                        <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid">{r.usersCount} users</span></div>
+                        <p className="role-meta mb-2">Total users with this role: <strong>{r.usersCount}</strong></p>
+                        <ul className="bullet-list">
+                          {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
+                          {remainingCount(r.permissions) > 0 && (
+                            <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
+                          )}
+                        </ul>
+                        <div className="card-actions">
+                          <button className="btn btn-light" onClick={() => handleViewUsers(r)}>View All Users</button>
+                          <button className="btn btn-primary">Edit Role</button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="add-role-card text-center">
-                    <img src={newDocImg} alt="Add role" />
-                    <h6 className="mb-1">Add New Role</h6>
-                    <p className="text-muted mb-3">Create a role and assign permissions.</p>
-                    <Link to="/roles-permissions/create" className="btn btn-outline-primary"><i className="ri-add-line me-1"></i> New Role</Link>
+                    <div className="add-role-card text-center">
+                      <img src={newDocImg} alt="Add role" />
+                      <h6 className="mb-1">Add New Role</h6>
+                      <p className="text-muted mb-3">Create a role and assign permissions.</p>
+                      <Link to="/roles-permissions/create" className="btn btn-outline-primary"><i className="ri-add-line me-1"></i> New Role</Link>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {modalOpen && selectedRole && (
                   <>

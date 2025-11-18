@@ -113,30 +113,6 @@ export default function CreateRole() {
           <div className="col-xxl-12">
             <div className="card">
               <div className="card-body" style={{ minHeight: '73vh' }}>
-                <style>{`
-                  .role-form .section-title{font-weight:600;font-size:16px;margin:0}
-                  .perm-card{border:1px solid var(--vz-border-color);border-radius:.75rem;background:var(--bs-body-bg);box-shadow:0 2px 6px rgba(0,0,0,.06);padding:16px}
-                  .perm-header{background:var(--bs-light);border:1px solid var(--vz-border-color);border-radius:.5rem;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
-                  .perm-header .title-wrap{display:flex;align-items:center;gap:10px}
-                  .module-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-primary-bg-subtle);color:var(--bs-primary)}
-                  .perm-header .desc{margin-top:2px;color:var(--vz-gray)}
-                  .perm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px 0}
-                  .checkbox-pill{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e9edf3;border-radius:999px;padding:8px 12px;transition:background .15s,box-shadow .15s}
-                  .checkbox-pill:hover{background:#f8fafc;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-                  .checkbox-pill i{color:var(--bs-primary)}
-                  .module-grid{margin-top:6px}
-                  .module-card{border:1px solid var(--vz-border-color);border-radius:.75rem;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.06);overflow:hidden}
-                  .module-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eef0f4;cursor:pointer}
-                  .module-header .title-wrap{display:flex;align-items:center;gap:10px}
-                  .module-body{padding:12px 14px;overflow:hidden;height:0;opacity:0;transition:height 180ms ease-out,opacity 180ms ease-out}
-                  .module-accent{position:relative}
-                  .module-accent::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bs-primary);opacity:.25}
-                  .accordion-actions{display:flex;align-items:center;gap:12px}
-                  .accordion-caret{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bs-light);color:var(--vz-gray);transition:transform 180ms ease-out,background 150ms ease-out}
-                  .module-card.open .accordion-caret{transform:rotate(180deg);background:#eef0f4}
-                  .module-card.open .module-body{opacity:1}
-                `}</style>
-
                 <div className="role-form">
                   <div className="mb-4">
                     <label className="form-label">Role name *</label>
