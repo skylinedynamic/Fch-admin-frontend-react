@@ -9,7 +9,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export default function PermissionGuard({ any, all, role, fallback = null, children }: Props): JSX.Element {
+export default function PermissionGuard({ any, all, role, fallback = null, children }: Props) {
   const okAny = any ? hasAnyPermission(any) : true
   const okAll = all ? hasAllPermissions(all) : true
   const okRole = role ? hasRole(role) : true

@@ -1,12 +1,36 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import faviconImg from '../../../assets/images/Favicon.png'
 import logoImg from '../../../assets/images/logo.png'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 
 export default function Sidebar() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 992 : false)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 992
+      setIsMobile(mobile)
+      if (!mobile) setOpen(false)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const menuClass = useMemo(() => {
+    const base = 'app-menu navbar-menu'
+    if (isMobile && open) return base + ' open'
+    return base
+  }, [isMobile, open])
+
   return (
-    <div className="app-menu navbar-menu">
+    <div className={menuClass} style={isMobile ? { position: 'fixed', left: 0, top: 0, bottom: 0, width: 280, transform: open ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 180ms ease', zIndex: 1040, background: 'var(--bs-body-bg)' } : undefined}>
+      <style>{`
+        @media (max-width: 991.98px){
+          .navbar-brand-box{position:sticky;top:0;z-index:1;background:var(--bs-body-bg)}
+        }
+      `}</style>
       <div className="navbar-brand-box">
         <a href="/" className="logo logo-dark">
           <span className="logo-sm">
@@ -24,8 +48,8 @@ export default function Sidebar() {
             <img src={logoImg} alt="" height="30" />
           </span>
         </a>
-        <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
-          <i className="ri-record-circle-line"></i>
+        <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={open}>
+          <i className="ri-menu-line"></i>
         </button>
       </div>
 
@@ -66,64 +90,64 @@ export default function Sidebar() {
               </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/demo-requests">
                 <i className="las la-calendar-check"></i> <span>Demo Requests</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/leads">
                 <i className="las la-chart-pie"></i> <span>Leads</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/contacts">
                 <i className="las la-clipboard-list"></i> <span>Contacts</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/clients">
                 <i className="las la-user-friends"></i> <span>Clients</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/commissions">
                 <i className="bx bx-dollar"></i> <span>Commisions</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/payments">
                 <i className="bx bx-credit-card"></i> <span>Payments</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/invoices">
                 <i className="bx bx-file"></i> <span>Invoices</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/subscriptions">
                 <i className="bx bx-sync"></i> <span>Subscriptions</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/appointments">
                 <i className="ri-calendar-2-line"></i> <span>Appointments</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/training-courses">
                 <i className="ri-live-fill"></i> <span>Training &amp; Courses</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/support-tickets">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/support-tickets">
                 <i className="las la-life-ring"></i> <span>Support Tickets</span>
               </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/resources">
                 <i className="ri-folder-fill"></i> <span>Resources</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
               <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/employees">
@@ -136,21 +160,21 @@ export default function Sidebar() {
               </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/roles-permissions">
                 <i className="ri-shield-user-fill"></i> <span>Roles &amp; Permissions</span>
-              </a>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link menu-link" href="#">
+              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/settings">
                 <i className="ri-file-settings-fill"></i> <span>Settings</span>
-              </a>
+              </NavLink>
             </li>
           </ul>
         </div>
       </div>
 
       <div className="sidebar-background"></div>
-      <div className="vertical-overlay"></div>
+      <div className="vertical-overlay" onClick={() => setOpen(false)} style={isMobile ? { display: open ? 'block' : 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,.35)', zIndex: 1039 } : undefined}></div>
     </div>
   )
 }

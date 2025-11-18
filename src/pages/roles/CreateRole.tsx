@@ -1,0 +1,214 @@
+import React, { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+
+type PermissionItem = { key: string; label: string; icon: string }
+type ModuleDef = { key: string; name: string; icon: string; desc: string; permissions: PermissionItem[] }
+
+export default function CreateRole() {
+  const navigate = useNavigate()
+  const modules: ModuleDef[] = useMemo(() => ([
+    {
+      key: 'partners', name: 'Partners', icon: 'ri-handshake-line', desc: 'Manage partner directory and profiles',
+      permissions: [
+        { key: 'view', label: 'View Partners', icon: 'ri-eye-line' },
+        { key: 'create', label: 'Create Partner', icon: 'ri-add-line' },
+        { key: 'edit', label: 'Edit Partner', icon: 'ri-edit-line' },
+        { key: 'delete', label: 'Delete Partner', icon: 'ri-delete-bin-line' }
+      ]
+    },
+    {
+      key: 'demo', name: 'Demo Requests', icon: 'ri-clipboard-line', desc: 'Capture and manage demo inquiries',
+      permissions: [
+        { key: 'view', label: 'View Demo Requests', icon: 'ri-eye-line' },
+        { key: 'create', label: 'Create Demo Request', icon: 'ri-add-line' },
+        { key: 'edit', label: 'Edit Demo Request', icon: 'ri-edit-line' },
+        { key: 'delete', label: 'Delete Demo Request', icon: 'ri-delete-bin-line' }
+      ]
+    },
+    {
+      key: 'leads', name: 'Leads', icon: 'ri-user-2-line', desc: 'Track and update potential customers',
+      permissions: [
+        { key: 'view', label: 'View Leads', icon: 'ri-eye-line' },
+        { key: 'create', label: 'Create Lead', icon: 'ri-add-line' },
+        { key: 'edit', label: 'Edit Lead', icon: 'ri-edit-line' },
+        { key: 'delete', label: 'Delete Lead', icon: 'ri-delete-bin-line' }
+      ]
+    },
+    {
+      key: 'contacts', name: 'Contacts', icon: 'ri-contacts-line', desc: 'Maintain contact records and updates',
+      permissions: [
+        { key: 'view', label: 'View Contacts', icon: 'ri-eye-line' },
+        { key: 'create', label: 'Create Contact', icon: 'ri-add-line' },
+        { key: 'edit', label: 'Edit Contact', icon: 'ri-edit-line' },
+        { key: 'delete', label: 'Delete Contact', icon: 'ri-delete-bin-line' }
+      ]
+    }
+  ]), [])
+
+  const [roleName, setRoleName] = useState('')
+  const [adminAccess, setAdminAccess] = useState(false)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
+
+  const toggleExpand = (key: string) => {
+    setExpanded((e) => ({ ...e, [key]: !e[key] }))
+  }
+
+  const toggleModuleAll = (mod: ModuleDef, checked: boolean) => {
+    setSelected((sel) => ({
+      ...sel,
+      [mod.key]: mod.permissions.reduce((acc, p) => ({ ...acc, [p.key]: checked }), {})
+    }))
+  }
+
+  const togglePerm = (mod: ModuleDef, permKey: string, checked: boolean) => {
+    setSelected((sel) => ({
+      ...sel,
+      [mod.key]: { ...(sel[mod.key] || {}), [permKey]: checked }
+    }))
+  }
+
+  const isModuleAllChecked = (mod: ModuleDef) => {
+    const s = selected[mod.key] || {}
+    return mod.permissions.every((p) => s[p.key])
+  }
+
+  const handleSave = () => {
+    const payload = {
+      name: roleName.trim(),
+      admin_access: adminAccess,
+      permissions: Object.fromEntries(modules.map((m) => [m.key, Object.keys(selected[m.key] || {}).filter((k) => selected[m.key]?.[k])]))
+    }
+    console.log('create-role', payload)
+  }
+
+  return (
+    <div className="page-content">
+      <div className="container-fluid">
+        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+          <div className="col-12">
+            <div className="d-flex align-items-center justify-content-between flex-row">
+              <div className="flex-grow-1">
+                <h4 className="fs-20 mb-1">Create Roles &amp; Permissions</h4>
+                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                  <ol className="breadcrumb m-0">
+                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
+                    <li className="breadcrumb-item active" aria-current="page">Create Roles &amp; Permissions</li>
+                  </ol>
+                </nav>
+              </div>
+              <div className="page-actions d-flex align-items-center gap-2 mt-0">
+                <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
+                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                </button>
+                <button type="button" className="btn btn-primary w-lg" onClick={handleSave}>
+                  <i className="ri-save-3-line align-middle me-1"></i> Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="col-xxl-12">
+            <div className="card">
+              <div className="card-body" style={{ minHeight: '73vh' }}>
+                <style>{`
+                  .role-form .section-title{font-weight:600;font-size:16px;margin:0}
+                  .perm-card{border:1px solid var(--vz-border-color);border-radius:.75rem;background:var(--bs-body-bg);box-shadow:0 2px 6px rgba(0,0,0,.06);padding:16px}
+                  .perm-header{background:var(--bs-light);border:1px solid var(--vz-border-color);border-radius:.5rem;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+                  .perm-header .title-wrap{display:flex;align-items:center;gap:10px}
+                  .module-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-primary-bg-subtle);color:var(--bs-primary)}
+                  .perm-header .desc{margin-top:2px;color:var(--vz-gray)}
+                  .perm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px 0}
+                  .checkbox-pill{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e9edf3;border-radius:999px;padding:8px 12px;transition:background .15s,box-shadow .15s}
+                  .checkbox-pill:hover{background:#f8fafc;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+                  .checkbox-pill i{color:var(--bs-primary)}
+                  .module-grid{margin-top:6px}
+                  .module-card{border:1px solid var(--vz-border-color);border-radius:.75rem;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.06);overflow:hidden}
+                  .module-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eef0f4;cursor:pointer}
+                  .module-header .title-wrap{display:flex;align-items:center;gap:10px}
+                  .module-body{padding:12px 14px;overflow:hidden;height:0;opacity:0;transition:height 180ms ease-out,opacity 180ms ease-out}
+                  .module-accent{position:relative}
+                  .module-accent::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bs-primary);opacity:.25}
+                  .accordion-actions{display:flex;align-items:center;gap:12px}
+                  .accordion-caret{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bs-light);color:var(--vz-gray);transition:transform 180ms ease-out,background 150ms ease-out}
+                  .module-card.open .accordion-caret{transform:rotate(180deg);background:#eef0f4}
+                  .module-card.open .module-body{opacity:1}
+                `}</style>
+
+                <div className="role-form">
+                  <div className="mb-4">
+                    <label className="form-label">Role name *</label>
+                    <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Role Permissions</label>
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="form-check form-switch">
+                        <input className="form-check-input" type="checkbox" id="adminAccessToggle" checked={adminAccess} onChange={(e) => setAdminAccess(e.target.checked)} />
+                        <label className="form-check-label" htmlFor="adminAccessToggle">Administrator Access</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="row g-4">
+                    <div className="col-lg-12">
+                      <div className="perm-card">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <h6 className="section-title">Module Permissions</h6>
+                        </div>
+                        <div className="row g-3 module-grid">
+                          {modules.map((mod) => {
+                            const allChecked = isModuleAllChecked(mod)
+                            return (
+                              <div className="col-xl-6 col-lg-6" key={mod.key}>
+                                <div className={`module-card perm-section module-accent ${expanded[mod.key] ? 'open' : ''}`}>
+                                  <div className="module-header" role="button" aria-expanded={expanded[mod.key] ? 'true' : 'false'} onClick={() => toggleExpand(mod.key)}>
+                                    <div className="title-wrap">
+                                      <span className="module-icon"><i className={mod.icon}></i></span>
+                                      <div>
+                                        <strong>{mod.name}</strong>
+                                        <div className="desc small">{mod.desc}</div>
+                                      </div>
+                                    </div>
+                                    <div className="accordion-actions">
+                                      <div className="form-check form-switch m-0" onClick={(e) => e.stopPropagation()}>
+                                        <input className="form-check-input" type="checkbox" id={`selectAll-${mod.key}`} checked={allChecked} onChange={(e) => toggleModuleAll(mod, e.target.checked)} />
+                                        <label className="form-check-label" htmlFor={`selectAll-${mod.key}`}>Select all</label>
+                                      </div>
+                                      <span className="accordion-caret"><i className="ri-arrow-down-s-line"></i></span>
+                                    </div>
+                                  </div>
+                                  <div className="module-body" style={{ height: expanded[mod.key] ? 'auto' : '0px', opacity: expanded[mod.key] ? 1 : 0 }}>
+                                    <div className="perm-grid">
+                                      {mod.permissions.map((p) => {
+                                        const checked = !!selected[mod.key]?.[p.key]
+                                        return (
+                                          <label className="checkbox-pill" key={mod.key + '-' + p.key}>
+                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /> <i className={p.icon}></i><span>{p.label}</span>
+                                          </label>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
