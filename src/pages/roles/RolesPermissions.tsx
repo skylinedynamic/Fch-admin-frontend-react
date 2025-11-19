@@ -84,7 +84,11 @@ export default function RolesPermissions() {
                   </ol>
                 </nav>
               </div>
-             
+              <div className="mt-0">
+                <Link to="/roles-permissions/create" className="btn btn-primary fw-medium">
+                  <i className="ri-add-fill me-1 align-bottom"></i> Add Role
+                </Link>
+              </div>
             </div>
           </div>
         </div>

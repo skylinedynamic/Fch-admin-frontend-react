@@ -318,19 +318,19 @@ const handleDeleteUsers = async () => {
                                     <li><hr className="dropdown-divider" /></li>
                                    <li>
                                         <button
-  className="dropdown-item text-danger"
-  type="button"
-  onClick={() => {
-    if (!selection || selection.length === 0) {
-      toast.warn("No users selected for deletion");
-      return;
-    }
-    setDeletingUserId(null);       // clear single row
-    setShowDeleteModal(true);      // show modal
-  }}
->
-  <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-</button>
+                                            className="dropdown-item text-danger"
+                                            type="button"
+                                            onClick={() => {
+                                              if (!selection || selection.length === 0) {
+                                                toast.warn("No users selected for deletion");
+                                                return;
+                                              }
+                                              setDeletingUserId(null);       // clear single row
+                                              setShowDeleteModal(true);      // show modal
+                                            }}
+                                          >
+                                          <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                        </button>
                                     </li>
                                   </ul>
                                 </>
