@@ -7,6 +7,12 @@ import { useNavigate } from 'react-router-dom'
 export default function Header() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return (document.documentElement.getAttribute('data-sidebar-size') || 'lg') === 'sm'
+    }
+    return false
+  })
 
   useEffect(() => {
     setUser(getUser())
@@ -29,6 +35,24 @@ export default function Header() {
   const avatarSrc = user?.image || avatarDefault
   const displayName = user?.name 
   const displayRole = user?.role 
+
+  const toggleSidebar = () => {
+    const docEl = document.documentElement
+    const current = docEl.getAttribute('data-sidebar-size') || 'lg'
+    const next = current === 'lg' ? 'sm' : 'lg'
+    docEl.setAttribute('data-sidebar-size', next)
+    setIsSidebarCollapsed(next === 'sm')
+    try {
+      sessionStorage.setItem('data-sidebar-size', next)
+    } catch (e) {
+      // ignore storage failures
+    }
+
+    // For small screens, also toggle overlay class to enable mobile sidebar behavior
+    if (window.innerWidth < 992) {
+      document.body.classList.toggle('vertical-sidebar-enable')
+    }
+  }
   return (
     <header id="page-topbar">
       <div className="layout-width">
@@ -54,12 +78,16 @@ export default function Header() {
               </a>
             </div>
 
-            <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon">
-              <span className="hamburger-icon">
-                <span></span>
-                <span></span>
-                <span></span>
-              </span>
+            <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon" onClick={toggleSidebar}>
+              {isSidebarCollapsed ? (
+                <i className="bx bx-chevron-right fs-20"></i>
+              ) : (
+                <span className="hamburger-icon">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </span>
+              )}
             </button>
 
             <form className="app-search d-none d-md-block">

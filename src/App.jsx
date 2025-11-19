@@ -8,6 +8,9 @@ import SignIn from '../src/pages/singin/SignIn.jsx'
 import ForgotPassword from '../src/pages/singin/ForgotPassword.jsx'
 import ResetPassword from '../src/pages/singin/ResetPassword.jsx'
 import Users from '../src/pages/users/Users.jsx'
+import UnderConstruction from '../src/pages/UnderConstruction.jsx'
+import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx'
+import CreateRole from '../src/pages/roles/CreateRole.tsx'
 import { ProtectedRoute, GuestRoute } from './lib/auth'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -51,6 +54,9 @@ export default function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="users" element={<Users />} />
           <Route path="employee-details" element={<EmployeeDetails />} />
+          <Route path="under-construction/:feature" element={<UnderConstruction />} />
+          <Route path="roles-permissions" element={<RolesPermissions />} />
+          <Route path="roles-permissions/create" element={<CreateRole />} />
         </Route>
       </Route>
     </Routes>

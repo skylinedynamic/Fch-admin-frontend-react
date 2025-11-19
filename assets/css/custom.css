@@ -9,3 +9,43 @@ File: Custom Css File
 .navbar-menu {
     background: #001F3F;
 }
+
+
+/* Roles & Permissions page scoped styles */
+
+#roles-permissions-page .roles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 1399.98px) { #roles-permissions-page .roles-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 767.98px) { #roles-permissions-page .roles-grid { grid-template-columns: 1fr; } }
+
+#roles-permissions-page .role-summary-card { border: 1px solid var(--vz-border-color); box-shadow: 0 2px 6px rgba(0,0,0,.06); border-radius: .75rem; background: var(--bs-body-bg); padding: 24px; display: flex; flex-direction: column; height: 425px; }
+#roles-permissions-page .role-summary-card h5 { font-weight: 700; margin-bottom: 12px; }
+#roles-permissions-page .role-meta { color: var(--vz-gray); }
+#roles-permissions-page .role-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#roles-permissions-page .count-badge { background: var(--bs-primary-bg-subtle); color: var(--bs-primary); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+#roles-permissions-page .count-badge.solid { background: #d4af37; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+#roles-permissions-page .bullet-list { list-style: none; padding-left: 0; margin: 16px 0; flex: 0 0 auto; }
+#roles-permissions-page .bullet-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--vz-body-color); }
+#roles-permissions-page .bullet-list li::before { content: '•'; color: var(--bs-primary); }
+#roles-permissions-page .card-actions { display: flex; gap: 12px; margin-top: auto; }
+
+#roles-permissions-page .add-role-card { border: 1px dashed var(--vz-border-color); border-radius: .75rem; box-shadow: 0 2px 6px rgba(0,0,0,.06); background: var(--bs-body-bg); padding: 24px; display: flex; align-items: center; justify-content: center; flex-direction: column; height: 425px; }
+#roles-permissions-page .add-role-card img { max-width: 120px; opacity: .9; margin-bottom: 12px; }
+
+/* Fixed height for role cards in the grid */
+#roles-permissions-page .card .card-body { overflow: auto; }
+
+#roles-permissions-page .users-modal .card { border: 1px solid var(--vz-border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.06); border-radius: 12px; }
+#roles-permissions-page .section-title { font-weight: 600; font-size: 16px; margin: 0; }
+#roles-permissions-page .user-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+#roles-permissions-page .user-table thead th { font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding: 10px 12px; }
+#roles-permissions-page .user-table tbody tr { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+#roles-permissions-page .user-table tbody td { padding: 12px; border-top: 1px solid #f3f4f6; vertical-align: middle; }
+#roles-permissions-page .avatar-dot { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; color: #fff; background: linear-gradient(135deg, #ef4444, #f59e0b); margin-right: 10px; }
+#roles-permissions-page .user-identity { display: flex; align-items: center; gap: 10px; }
+#roles-permissions-page .user-identity .name { font-weight: 600; color: #111827; }
+#roles-permissions-page .user-identity .email { color: #6b7280; font-size: 12px; }
+#roles-permissions-page .table-actions .btn { padding: 6px 10px; }
+#roles-permissions-page .modal-header .badge-count { font-size: 12px; color: #6b7280; margin-left: 8px; }
+#roles-permissions-page .permissions-scroll { max-height: 300px; overflow: auto; border: 1px solid var(--vz-border-color); border-radius: .5rem; padding: 12px; background: var(--bs-body-bg); }
+#roles-permissions-page .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 1040; }
+#roles-permissions-page .users-modal { z-index: 1055; }

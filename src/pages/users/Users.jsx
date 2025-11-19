@@ -34,6 +34,7 @@ export default function Users() {
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [loadingSave, setLoadingSave] = useState(false); 
   const [showPasswordFields, setShowPasswordFields] = useState(false);
+  
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -74,6 +75,17 @@ export default function Users() {
   const loadRoles = async () => {
     const roleList = await fetchRoles();
     setRoles(roleList);
+  };
+
+  const resolveRoleId = (rowData) => {
+    if (!rowData) return '';
+    if (rowData.role_id != null) return String(rowData.role_id);
+    // rowData.role may be the role name; try to match it to loaded roles
+    if (rowData.role) {
+      const found = roles.find(r => r.name === rowData.role || String(r.id) === String(rowData.role));
+      if (found) return String(found.id);
+    }
+    return '';
   };
 
   const loadUsers = async () => {
@@ -158,7 +170,7 @@ export default function Users() {
           name: rowData.name || '',
           email: rowData.email || '',
           phone_number: rowData.phone_number || '',
-          role_id: rowData.role_id != null ? String(rowData.role_id) : '',
+          role_id: resolveRoleId(rowData),
           status: rowData.status || '',
           password: rowData.password || '',
           new_password: '',
@@ -195,10 +207,7 @@ export default function Users() {
     setPerPage(event.rows)
     setPage(Math.floor(event.first / event.rows) + 1)
   }
-
   const onSort = (event) => {
-    // setSortField(event.sortField || sortField)
-    // setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
       setSortField(event.sortField || sortField)
       setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
   }
@@ -215,6 +224,7 @@ export default function Users() {
       email: newUser.email,
       phone_number: newUser.phone_number,
       role_id: newUser.role_id ? Number(newUser.role_id) : null,
+      password: newUser.password,
       status: newUser.status,
       ...(editingUserId
     ? showPasswordFields && newUser.new_password
@@ -245,24 +255,22 @@ export default function Users() {
     setNewUser({ ...newUser, [name]: value });
   };
 
-const handleDeleteSelectedUsers = async () => {
-  if (!selection || selection.length === 0) {
-    toast.info("No users selected for deletion");
+const handleDeleteUsers = async () => {
+  const idsToDelete = deletingUserId ? [deletingUserId] : selection.map(u => u.id);
+
+  if (idsToDelete.length === 0) {
+    toast.warn("No users selected for deletion");
     return;
   }
 
   try {
-    setLoading(true); // show spinner if needed
-    const idsToDelete = selection.map(user => user.id);
-
-    // Call API to delete users
-    await deleteUsers(idsToDelete);
-
-    toast.success(`Users deleted successfully`);
-
-    setSelection([]);          // clear selected users
-    setShowDeleteModal(false); // hide modal
-    loadUsers();               // refresh table
+    setLoading(true);
+    await deleteUsers(idsToDelete); // call API
+    toast.success("Users deleted successfully");
+    setSelection([]);
+    setDeletingUserId(null);
+    setShowDeleteModal(false);
+    loadUsers();
   } catch (error) {
     console.error(error);
     toast.error(error?.response?.data?.message || "Failed to delete users");
@@ -309,19 +317,20 @@ const handleDeleteSelectedUsers = async () => {
                                     <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
                                     <li><hr className="dropdown-divider" /></li>
                                    <li>
-                                      <button
-                                        className="dropdown-item text-danger"
-                                        type="button"
-                                        onClick={() => {
-                                          if (selection.length === 0) {
-                                            toast.warn("Please select at least one user");
-                                            return;
-                                          }
-                                          setShowDeleteModal(true);
-                                        }}
-                                      >
-                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                      </button>
+                                        <button
+  className="dropdown-item text-danger"
+  type="button"
+  onClick={() => {
+    if (!selection || selection.length === 0) {
+      toast.warn("No users selected for deletion");
+      return;
+    }
+    setDeletingUserId(null);       // clear single row
+    setShowDeleteModal(true);      // show modal
+  }}
+>
+  <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+</button>
                                     </li>
                                   </ul>
                                 </>
@@ -467,7 +476,7 @@ const handleDeleteSelectedUsers = async () => {
                                         name: rowData.name || '',
                                         email: rowData.email || '',
                                         phone_number: rowData.phone_number || '',
-                                        role_id: rowData.role_id != null ? String(rowData.role_id) : '',
+                                        role_id: resolveRoleId(rowData),
                                         password: rowData.password || '',
                                         status: rowData.status || '',
                                         new_password: '',
@@ -480,16 +489,15 @@ const handleDeleteSelectedUsers = async () => {
                                     <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
-                                    className="btn btn-sm btn-danger me-2"
-                                    aria-label="Delete user"
-                                    onClick={() => {
-                                      setDeletingUserId(rowData.id);
-                                      setShowDeleteModal(true);
-                                    }}
-                                  >
-                                     <i className="ri-delete-bin-6-fill align-bottom"></i>
-                                    <span className="d-none d-sm-inline ms-1">Delete</span>
-                                  </button>
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setDeletingUserId(rowData.id);  // set single user id
+                                        setShowDeleteModal(true);       // show modal
+                                      }}
+                                    >
+                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                      <span className="d-none d-sm-inline ms-1">Delete</span>
+                                    </button>
                                </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
@@ -624,10 +632,30 @@ const handleDeleteSelectedUsers = async () => {
                                     setShowAddUser(false);
                                     setEditingUserId(null);
                                   }}>Cancel</button>
-                                  <button type="submit" className="btn btn-primary" disabled={loadingSave}>
-                                    {loadingSave && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>}
-                                    <i className="ri-save-3-fill me-1 align-bottom"></i> {editingUserId ? 'Update' : 'Save'}
-                                  </button>
+                                  <button
+                                      type="submit"
+                                      className="btn btn-primary"
+                                      disabled={loadingSave}
+                                    >
+                                      {/* Loading Spinner */}
+                                      {loadingSave && (
+                                        <span
+                                          className="spinner-border spinner-border-sm me-1"
+                                          role="status"
+                                          aria-hidden="true"
+                                        ></span>
+                                      )}
+
+                                      {/* Dynamic Icon */}
+                                      <i
+                                        className={`me-1 align-bottom ${
+                                          editingUserId ? 'ri-edit-2-fill' : 'ri-save-3-fill'
+                                        }`}
+                                      ></i>
+
+                                      {/* Dynamic Text */}
+                                      {editingUserId ? 'Update' : 'Submit'}
+                                    </button>
                                 </div>
                             </form>
                           </div>
@@ -637,21 +665,42 @@ const handleDeleteSelectedUsers = async () => {
                     <div className="modal-backdrop fade show"></div>
                   </>
                 )}
-                {showDeleteModal && (
+               {showDeleteModal && (
                   <>
-                    <div className="modal fade show d-block">
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
                       <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
-                          <div className="modal-header">
-                            <h5 className="modal-title">Confirm Delete</h5>
-                            <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
-                          </div>
-                          <div className="modal-body">
-                            Are you sure you want to delete the selected users?
-                          </div>
-                          <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                            <button type="button" className="btn btn-danger" onClick={handleDeleteSelectedUsers}>Delete</button>
+                          <div className="modal-body p-5 text-center">
+                            <lord-icon
+                              src="https://cdn.lordicon.com/gsqxdxog.json"
+                              trigger="loop"
+                              colors="primary:#405189,secondary:#f06548"
+                              style={{ width: '90px', height: '90px' }}
+                            ></lord-icon>
+                            <div className="mt-4">
+                              <h4>Are you sure?</h4>
+                              <p className="text-muted fs-15 mb-4">
+                                {deletingUserId
+                                  ? "Deleting this user will remove all information."
+                                  : "Deleting selected users will remove all information."}
+                              </p>
+                              <div className="hstack gap-2 justify-content-center">
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => setShowDeleteModal(false)}
+                                >
+                                  <i className="ri-close-line me-1 align-middle"></i> Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger"
+                                  onClick={handleDeleteUsers}
+                                >
+                                  <i className="ri-delete-bin-6-line me-1 align-middle"></i> Yes, Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
