@@ -371,7 +371,7 @@ const handleDeleteSelectedUsers = async () => {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
+                              <select className="form-control bg-light border-light" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
                                 <option value="Select User Status" defaultValue>Status</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -381,7 +381,7 @@ const handleDeleteSelectedUsers = async () => {
                           <div className="col-xxl-3 col-sm-4">
                               <div className="input-light">
                                 <select
-                                  className="form-control"
+                                  className="form-control bg-light border-light"
                                   data-choices
                                   data-choices-search-false
                                   name="roleFilter"
