@@ -27,7 +27,6 @@ export default function Employees() {
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
   const [departments, setDepartments] = useState([]);
-  const [primaryBtnLabel, setPrimaryBtnLabel] = useState('Add Candidate');
 
 
   // Status options for filtering
@@ -234,14 +233,6 @@ const loadDepartments = async () => {
   }, [])
 
   useEffect(() => {
-  if (Array.isArray(selection) && selection.length > 0) {
-    setPrimaryBtnLabel('Actions');
-  } else {
-    setPrimaryBtnLabel('Add Candidate');
-  }
-}, [selection]);
-
-  useEffect(() => {
     // Select All checkbox behavior and actions dropdown
     const headerCheck = document.getElementById('checkAll')
     let tbody = document.getElementById('employees-list-data') || document.querySelector('.form-check-all')
@@ -287,10 +278,7 @@ const loadDepartments = async () => {
         }
         if (actionMenu) actionMenu.classList.remove('d-none')
       } else {
-       <a href="/employee-details" className={`btn ${selection.length > 0 ? 'bg-success text-white fw-medium' : 'btn-primary'} fw-medium waves-effect waves-light`}>
-          {selection.length === 0 && <i className="ri-add-fill me-1 align-bottom"></i>}
-          {primaryBtnLabel}
-        </a>
+        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add Candidate'
         if (originalHref) primaryBtn.setAttribute('href', originalHref)
         primaryBtn.classList.remove('bg-success', 'text-white')
         primaryBtn.classList.add('btn-primary')
@@ -485,7 +473,7 @@ const loadDepartments = async () => {
                                   </ul>
                                 </>
                               ) : (
-                                <a href="/employee-details"  className="btn btn-primary fw-medium waves-effect waves-light">
+                                <a href="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                   <i className="ri-add-fill me-1 align-bottom"></i> Add Candidate
                                 </a>
                               )}
