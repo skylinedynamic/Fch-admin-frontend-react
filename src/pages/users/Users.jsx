@@ -281,7 +281,7 @@ const handleDeleteSelectedUsers = async () => {
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
+        <div className="row bg-body">
           <div className="col">
             <div className="h-100">
               <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -352,7 +352,7 @@ const handleDeleteSelectedUsers = async () => {
               <div className="row">
                 <div className="col-lg-12">
                   <div className="card">
-                    <div className="card-body">
+                    <div className="card-body list-fluid-card">
                       <form>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
@@ -411,7 +411,7 @@ const handleDeleteSelectedUsers = async () => {
                         <div className="table-responsive table-card mt-1">
                           <DataTable
                             scrollable 
-                            scrollHeight="510px"  
+                            scrollHeight="calc(100vh - 370px)"  
                             value={rows}
                             paginator
                             lazy
@@ -459,9 +459,10 @@ const handleDeleteSelectedUsers = async () => {
                             <Column
                               header="Action"
                               body={(rowData) => (
-                                <>
+                                <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
                                   <button
-                                    className="btn btn-sm btn-primary me-2"
+                                    className="btn btn-sm btn-primary"
+                                    aria-label="Edit user"
                                     onClick={() => {
                                       setEditingUserId(rowData.id);
                                       setNewUser({
@@ -477,18 +478,21 @@ const handleDeleteSelectedUsers = async () => {
                                       setShowAddUser(true);
                                     }}
                                   >
-                                    <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                                    <i className="ri-edit-2-fill align-bottom"></i>
+                                    <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
                                     className="btn btn-sm btn-danger"
+                                    aria-label="Delete user"
                                     onClick={() => {
                                       setDeletingUserId(rowData.id);
                                       setShowDeleteModal(true);
                                     }}
                                   >
-                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                    <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                    <span className="d-none d-sm-inline ms-1">Delete</span>
                                   </button>
-                                </>
+                                </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
                             />

@@ -79,7 +79,7 @@ export default function RolesPermissions() {
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body" style={{ minHeight: '73vh' }}>
+              <div className="card-body fluid-card">
 
                 {isLoading ? (
                   <RolesGridLoader />

@@ -112,7 +112,7 @@ export default function CreateRole() {
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body" style={{ minHeight: '73vh' }}>
+              <div className="card-body fluid-card">
                 <div className="role-form">
                   <div className="mb-4">
                     <label className="form-label">Role name *</label>
