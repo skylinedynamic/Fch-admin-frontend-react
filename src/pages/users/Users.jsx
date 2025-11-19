@@ -23,6 +23,7 @@ export default function Users() {
   const [totalRecords, setTotalRecords] = useState(0)
   const [appliedFilters, setAppliedFilters] = useState({})
   const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [appliedRoleFilter, setAppliedRoleFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
@@ -56,7 +57,7 @@ export default function Users() {
       name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
       phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      role_name: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
       status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     }
     setFilters(initial)
@@ -126,14 +127,15 @@ export default function Users() {
     setStatusFilter(val === 'Select User Status' ? '' : val)
   }
 
-  const onDeptChange = (e) => {
+  const onRoleChange = (e) => {
     const val = e.target.value
-    setAppliedRoleFilter(val === 'all' || val === 'Select Department' ? '' : val)
+    setRoleFilter(val === 'all' || val === 'Select Role' ? '' : val)
   }
 
   const onApplyFilters = () => {
     setAppliedGlobalFilterValue(globalFilterValue || '')
     setAppliedStatusFilter(statusFilter || '')
+    setAppliedRoleFilter(roleFilter || '')
     setAppliedFilters(filters)
     setPage(1)
   }
@@ -142,6 +144,7 @@ export default function Users() {
     initFilters()
     setAppliedRoleFilter('')
     setAppliedStatusFilter('')
+    setRoleFilter('')
     setPage(1)
   }
 
@@ -155,7 +158,7 @@ export default function Users() {
           name: rowData.name || '',
           email: rowData.email || '',
           phone_number: rowData.phone_number || '',
-          role_id: String(rowData.role_id) || '',
+          role_id: rowData.role_id != null ? String(rowData.role_id) : '',
           status: rowData.status || '',
           password: rowData.password || '',
           new_password: '',
@@ -169,8 +172,12 @@ export default function Users() {
   )
 
   const statusBodyTemplate = (rowData) => {
-    const value = rowData?.status || ''
-    return value ? (<span>{value}</span>) : (<span className="text-muted">—</span>)
+      const active = rowData?.status === 'active';
+      return (
+        <span className={`badge ${active ? 'border border-success text-success' : 'badge border border-danger text-danger'}`}>
+        {active ? 'Active' : 'Inactive'}
+        </span>
+      );
   }
 
   const statusRowFilterTemplate = (options) => (
@@ -190,8 +197,10 @@ export default function Users() {
   }
 
   const onSort = (event) => {
-    setSortField(event.sortField || sortField)
-    setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+    // setSortField(event.sortField || sortField)
+    // setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+      setSortField(event.sortField || sortField)
+      setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
   }
 
   const handleAddUserSubmit = async (e) => {
@@ -205,8 +214,7 @@ export default function Users() {
       name: newUser.name,
       email: newUser.email,
       phone_number: newUser.phone_number,
-      role_id: newUser.role_id,
-      password: newUser.password,
+      role_id: newUser.role_id ? Number(newUser.role_id) : null,
       status: newUser.status,
       ...(editingUserId
     ? showPasswordFields && newUser.new_password
@@ -267,7 +275,7 @@ const handleDeleteSelectedUsers = async () => {
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
+        <div className="row bg-body">
           <div className="col">
             <div className="h-100">
               <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -338,7 +346,7 @@ const handleDeleteSelectedUsers = async () => {
               <div className="row">
                 <div className="col-lg-12">
                   <div className="card">
-                    <div className="card-body">
+                    <div className="card-body list-fluid-card">
                       <form>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
@@ -372,7 +380,8 @@ const handleDeleteSelectedUsers = async () => {
                                   data-choices-search-false
                                   name="roleFilter"
                                   id="roleFilter"
-                                  onChange={onDeptChange}
+                                  value={roleFilter || 'all'}
+                                   onChange={onRoleChange}
                                 >
                                   <option value="all" defaultValue>Select Role</option>
                                   {roles.map((role) => (
@@ -397,7 +406,7 @@ const handleDeleteSelectedUsers = async () => {
                         <div className="table-responsive table-card mt-1">
                           <DataTable
                             scrollable 
-                            scrollHeight="510px"  
+                            scrollHeight="calc(100vh - 370px)"   
                             value={rows}
                             paginator
                             lazy
@@ -432,8 +441,11 @@ const handleDeleteSelectedUsers = async () => {
                             <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
-                            <Column field="role" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                            <Column
+                            <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
+                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
+                            <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                            {/* <Column
                               field="status"
                               header="Status"
                               showFilterMenu
@@ -441,20 +453,21 @@ const handleDeleteSelectedUsers = async () => {
                               body={statusBodyTemplate}
                               filter
                               filterElement={statusRowFilterTemplate}
-                            />
+                            /> */}
                             <Column
                               header="Action"
                               body={(rowData) => (
-                                <>
+                                <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
                                   <button
-                                    className="btn btn-sm btn-primary me-2"
+                                    className="btn btn-sm btn-primary"
+                                    aria-label="Edit user"
                                     onClick={() => {
                                       setEditingUserId(rowData.id);
                                       setNewUser({
                                         name: rowData.name || '',
                                         email: rowData.email || '',
                                         phone_number: rowData.phone_number || '',
-                                        role_id: rowData.role || '',
+                                        role_id: rowData.role_id != null ? String(rowData.role_id) : '',
                                         password: rowData.password || '',
                                         status: rowData.status || '',
                                         new_password: '',
@@ -463,18 +476,21 @@ const handleDeleteSelectedUsers = async () => {
                                       setShowAddUser(true);
                                     }}
                                   >
-                                    <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                                     <i className="ri-edit-2-fill align-bottom"></i>
+                                    <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
-                                    className="btn btn-sm btn-danger"
+                                    className="btn btn-sm btn-danger me-2"
+                                    aria-label="Delete user"
                                     onClick={() => {
                                       setDeletingUserId(rowData.id);
                                       setShowDeleteModal(true);
                                     }}
                                   >
-                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                     <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                    <span className="d-none d-sm-inline ms-1">Delete</span>
                                   </button>
-                                </>
+                               </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
                             />
@@ -517,14 +533,14 @@ const handleDeleteSelectedUsers = async () => {
                                 <select
                                   name="role_id"
                                   className="form-control"
-                                  value={String(newUser.role_id) || ''} // use role ID as string
+                                  value={newUser.role_id || ''}
                                   onChange={handleAddUserInput}
                                   required
                                 >
                                   <option value="">Select Role</option>
                                   {roles.map((role) => (
-                                    <option key={role.id} value={String(role.name)}> {/* value = role ID */}
-                                      {role.name} {/* displayed name */}
+                                    <option key={role.id} value={String(role.id)}>
+                                      {role.name}
                                     </option>
                                   ))}
                                 </select>

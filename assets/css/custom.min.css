@@ -238,3 +238,10 @@
     min-width: 140px;
   }
 }
+
+.fluid-card {
+    min-height: calc(100vh - 250px);
+}
+.list-fluid-card {
+    min-height: calc(100vh - 250px);
+}
