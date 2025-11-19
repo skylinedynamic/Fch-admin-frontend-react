@@ -11,6 +11,7 @@ import Users from '../src/pages/users/Users.jsx'
 import UnderConstruction from '../src/pages/UnderConstruction.jsx'
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx'
 import CreateRole from '../src/pages/roles/CreateRole.tsx'
+import EditRole from '../src/pages/roles/EditRole.tsx'
 import { ProtectedRoute, GuestRoute } from './lib/auth'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="under-construction/:feature" element={<UnderConstruction />} />
           <Route path="roles-permissions" element={<RolesPermissions />} />
           <Route path="roles-permissions/create" element={<CreateRole />} />
+          <Route path="roles-permissions/edit/:id" element={<EditRole />} />
         </Route>
       </Route>
     </Routes>

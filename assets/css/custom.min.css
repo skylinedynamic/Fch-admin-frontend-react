@@ -302,3 +302,12 @@
                   .accordion-caret{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bs-light);color:var(--vz-gray);transition:transform 180ms ease-out,background 150ms ease-out}
                   .module-card.open .accordion-caret{transform:rotate(180deg);background:#eef0f4}
                   .module-card.open .module-body{opacity:1}
+/* Roles & Permissions: inline styles moved to classes */
+#roles-permissions-page .main-card-body{min-height:73vh}
+#roles-permissions-page .users-modal .modal-dialog.users-modal-dialog{max-width:980px}
+#roles-permissions-page .users-modal .modal-content.enhanced-shadow{box-shadow:0 12px 28px rgba(16,24,40,.18)}
+#roles-permissions-page .modal-loading{min-height:200px}
+#roles-permissions-page .detail-badge{right:16px;top:16px}
+#roles-permissions-page .user-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}
+#roles-permissions-page .user-identity.compact{gap:4px}
+#roles-permissions-page .user-table .empty-row td{text-align:center;color:#6b7280;padding:18px}

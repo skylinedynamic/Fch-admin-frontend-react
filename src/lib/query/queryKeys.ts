@@ -20,4 +20,12 @@ export const queryKeys = {
     list: () => [...queryKeys.appointment.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.appointment.all, 'detail', id] as const,
   },
+  role: {
+    all: ['role'] as const,
+    list: () => [...queryKeys.role.all, 'list'] as const,
+    detail: (id: string | number) => [...queryKeys.role.all, 'detail', id] as const,
+    permissionsGrouped: () => [...queryKeys.role.all, 'permissions', 'grouped'] as const,
+    // Distinct key for edit pages to avoid reading cached grouped permissions
+    permissionsGroupedFresh: () => [...queryKeys.role.all, 'permissions', 'grouped', 'edit'] as const,
+  },
 } as const
