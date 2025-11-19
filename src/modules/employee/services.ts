@@ -28,7 +28,7 @@ export const fetchEmployeeById = async (id: string | number): Promise<Employee> 
 }
 
 export const createEmployee = async (payload: Partial<Employee>): Promise<Employee> => {
-  const { data } = await apiClient.post('/employees', payload)
+  const { data } = await apiClient.post('/common/employees', payload)
   return data
 }
 

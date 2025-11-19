@@ -27,6 +27,7 @@ export default function Employees() {
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
   const [departments, setDepartments] = useState([]);
+  const [primaryBtnLabel, setPrimaryBtnLabel] = useState('Add Candidate');
 
 
   // Status options for filtering
@@ -203,7 +204,6 @@ const loadDepartments = async () => {
         const row = target.closest('tr')
         if (!row) return
         // Navigate to employee details (React route)
-        window.location.href = '/employee-details'
       }
       tbody.addEventListener('click', onTbodyClick)
 
@@ -232,6 +232,14 @@ const loadDepartments = async () => {
       }
     })
   }, [])
+
+  useEffect(() => {
+  if (Array.isArray(selection) && selection.length > 0) {
+    setPrimaryBtnLabel('Actions');
+  } else {
+    setPrimaryBtnLabel('Add Candidate');
+  }
+}, [selection]);
 
   useEffect(() => {
     // Select All checkbox behavior and actions dropdown
@@ -279,7 +287,10 @@ const loadDepartments = async () => {
         }
         if (actionMenu) actionMenu.classList.remove('d-none')
       } else {
-        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add Candidate'
+       <a href="/employee-details" className={`btn ${selection.length > 0 ? 'bg-success text-white fw-medium' : 'btn-primary'} fw-medium waves-effect waves-light`}>
+          {selection.length === 0 && <i className="ri-add-fill me-1 align-bottom"></i>}
+          {primaryBtnLabel}
+        </a>
         if (originalHref) primaryBtn.setAttribute('href', originalHref)
         primaryBtn.classList.remove('bg-success', 'text-white')
         primaryBtn.classList.add('btn-primary')
@@ -474,7 +485,7 @@ const loadDepartments = async () => {
                                   </ul>
                                 </>
                               ) : (
-                                <a href="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                <a href="/employee-details"  className="btn btn-primary fw-medium waves-effect waves-light">
                                   <i className="ri-add-fill me-1 align-bottom"></i> Add Candidate
                                 </a>
                               )}
@@ -509,19 +520,27 @@ const loadDepartments = async () => {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onJobStatusChange}>
+                              <select className="form-control"  id="idType" onChange={onJobStatusChange}>
                                 <option value="Select Employee Status" defaultValue>Job Status</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                               </select>
                             </div>
                           </div>
+                          
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                             <select className="form-control" data-choices data-choices-search-false name="department" id="idDepartment" onChange={onDeptChange}>
-                                <option value="all" defaultValue>Select Department</option>
+                            <select
+                                className="form-control"
+                                name="department"
+                                id="idDepartment"
+                                onChange={onDeptChange}
+                              >
+                                 <option value="" defaultValue>Select Department</option>
                                 {departments.map((dept) => (
-                                  <option key={dept.value} value={dept.value}>{dept.label}</option>
+                                  <option key={dept.id} value={dept.department}>
+                                    {dept.department}
+                                  </option>
                                 ))}
                               </select>
                             </div>
@@ -576,7 +595,7 @@ const loadDepartments = async () => {
                             emptyMessage="No employees found"
                           >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="full_name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
