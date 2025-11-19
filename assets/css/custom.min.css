@@ -70,7 +70,7 @@
 
 .partner-sidebar .nav-item .menu-link.active {
   background: #D4AF37;
-  color: #001F3F;
+  color: #ffffff;
 }
 
 .partner-sidebar .nav-item .menu-link.active i {
@@ -291,7 +291,8 @@
 .perm-card{border:1px solid var(--vz-border-color);border-radius:.75rem;background:var(--bs-body-bg);box-shadow:0 2px 6px rgba(0,0,0,.06);padding:16px}
 .perm-header{background:var(--bs-light);border:1px solid var(--vz-border-color);border-radius:.5rem;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
 .perm-header .title-wrap{display:flex;align-items:center;gap:10px}
- .module-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-primary-bg-subtle);color:var(--bs-primary)}
+ .module-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-primary-bg-subtle);color:var(--bs-primary)}
+ .module-icon i{font-size:18px}
                   .perm-header .desc{margin-top:2px;color:var(--vz-gray)}
                   .perm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px 0}
                   .checkbox-pill{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e9edf3;border-radius:999px;padding:8px 12px;transition:background .15s,box-shadow .15s}
@@ -307,4 +308,11 @@
                   .accordion-actions{display:flex;align-items:center;gap:12px}
                   .accordion-caret{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bs-light);color:var(--vz-gray);transition:transform 180ms ease-out,background 150ms ease-out}
                   .module-card.open .accordion-caret{transform:rotate(180deg);background:#eef0f4}
-                  .module-card.open .module-body{opacity:1}
+.module-card.open .module-body{opacity:1}
+.module-header .title-wrap strong{font-size:.90rem}
+.module-header .desc{font-size:0.78rem !important}
+.perm-card .form-check-label{font-size:0.75rem}
+.checkbox-pill span{font-size:0.75rem}
+
+#roles-permissions-page .module-header .title-wrap strong{font-size:1.06rem !important;}
+#roles-permissions-page .module-header .desc{font-size:0.95rem !important}

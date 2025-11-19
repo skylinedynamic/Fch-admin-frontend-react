@@ -1,46 +1,46 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-type PermissionItem = { key: string; label: string; icon: string }
-type ModuleDef = { key: string; name: string; icon: string; desc: string; permissions: PermissionItem[] }
+type PermissionItem = { key: string; label: string}
+type ModuleDef = { key: string; name: string; desc: string; icon: string; permissions: PermissionItem[] }
 
 export default function CreateRole() {
   const navigate = useNavigate()
   const modules: ModuleDef[] = useMemo(() => ([
     {
-      key: 'partners', name: 'Partners', icon: 'ri-handshake-line', desc: 'Manage partner directory and profiles',
+      key: 'partners', name: 'Partners', icon: 'las la-handshake', desc: 'Manage partner directory and profiles',
       permissions: [
-        { key: 'view', label: 'View Partners', icon: 'ri-eye-line' },
-        { key: 'create', label: 'Create Partner', icon: 'ri-add-line' },
-        { key: 'edit', label: 'Edit Partner', icon: 'ri-edit-line' },
-        { key: 'delete', label: 'Delete Partner', icon: 'ri-delete-bin-line' }
+        { key: 'view', label: 'View Partners' },
+        { key: 'create', label: 'Create Partner' },
+        { key: 'edit', label: 'Edit Partner' },
+        { key: 'delete', label: 'Delete Partner' }
       ]
     },
     {
       key: 'demo', name: 'Demo Requests', icon: 'ri-clipboard-line', desc: 'Capture and manage demo inquiries',
       permissions: [
-        { key: 'view', label: 'View Demo Requests', icon: 'ri-eye-line' },
-        { key: 'create', label: 'Create Demo Request', icon: 'ri-add-line' },
-        { key: 'edit', label: 'Edit Demo Request', icon: 'ri-edit-line' },
-        { key: 'delete', label: 'Delete Demo Request', icon: 'ri-delete-bin-line' }
+        { key: 'view', label: 'View Demo Requests' },
+        { key: 'create', label: 'Create Demo Request' },
+        { key: 'edit', label: 'Edit Demo Request' },
+        { key: 'delete', label: 'Delete Demo Request' }
       ]
     },
     {
       key: 'leads', name: 'Leads', icon: 'ri-user-2-line', desc: 'Track and update potential customers',
       permissions: [
-        { key: 'view', label: 'View Leads', icon: 'ri-eye-line' },
-        { key: 'create', label: 'Create Lead', icon: 'ri-add-line' },
-        { key: 'edit', label: 'Edit Lead', icon: 'ri-edit-line' },
-        { key: 'delete', label: 'Delete Lead', icon: 'ri-delete-bin-line' }
+        { key: 'view', label: 'View Leads' },
+        { key: 'create', label: 'Create Lead'},
+        { key: 'edit', label: 'Edit Lead'},
+        { key: 'delete', label: 'Delete Lead'}
       ]
     },
     {
       key: 'contacts', name: 'Contacts', icon: 'ri-contacts-line', desc: 'Maintain contact records and updates',
       permissions: [
-        { key: 'view', label: 'View Contacts', icon: 'ri-eye-line' },
-        { key: 'create', label: 'Create Contact', icon: 'ri-add-line' },
-        { key: 'edit', label: 'Edit Contact', icon: 'ri-edit-line' },
-        { key: 'delete', label: 'Delete Contact', icon: 'ri-delete-bin-line' }
+        { key: 'view', label: 'View Contacts'},
+        { key: 'create', label: 'Create Contact' },   
+        { key: 'edit', label: 'Edit Contact' },
+        { key: 'delete', label: 'Delete Contact' }
       ]
     }
   ]), [])
@@ -115,12 +115,12 @@ export default function CreateRole() {
               <div className="card-body fluid-card">
                 <div className="role-form">
                   <div className="mb-4">
-                    <label className="form-label">Role name *</label>
+                    <label className="form-label" style={{ fontSize: '.90rem' }}>Role name *</label>
                     <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Role Permissions</label>
+                    <label className="form-label" style={{ fontSize: '.90rem' }}>Role Permissions</label>
                     <div className="d-flex align-items-center gap-3">
                       <div className="form-check form-switch">
                         <input className="form-check-input" type="checkbox" id="adminAccessToggle" checked={adminAccess} onChange={(e) => setAdminAccess(e.target.checked)} />
@@ -163,7 +163,7 @@ export default function CreateRole() {
                                         const checked = !!selected[mod.key]?.[p.key]
                                         return (
                                           <label className="checkbox-pill" key={mod.key + '-' + p.key}>
-                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /> <i className={p.icon}></i><span>{p.label}</span>
+                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /><span>{p.label}</span>
                                           </label>
                                         )
                                       })}

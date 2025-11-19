@@ -8,9 +8,13 @@ export default function Layout() {
   return (
     <div id="layout-wrapper">
       <Header />
-      <div className="app-menu">
-        <Sidebar />
-      </div>
+      <Sidebar />
+      <div
+        className="vertical-overlay"
+        onClick={() => {
+          document.body.classList.remove('vertical-sidebar-enable')
+        }}
+      />
       <div className="main-content">
         <Outlet />
         <Footer />
