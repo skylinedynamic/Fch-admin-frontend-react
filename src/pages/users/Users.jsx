@@ -318,19 +318,19 @@ const handleDeleteUsers = async () => {
                                     <li><hr className="dropdown-divider" /></li>
                                    <li>
                                         <button
-  className="dropdown-item text-danger"
-  type="button"
-  onClick={() => {
-    if (!selection || selection.length === 0) {
-      toast.warn("No users selected for deletion");
-      return;
-    }
-    setDeletingUserId(null);       // clear single row
-    setShowDeleteModal(true);      // show modal
-  }}
->
-  <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-</button>
+                                            className="dropdown-item text-danger"
+                                            type="button"
+                                            onClick={() => {
+                                              if (!selection || selection.length === 0) {
+                                                toast.warn("No users selected for deletion");
+                                                return;
+                                              }
+                                              setDeletingUserId(null);       // clear single row
+                                              setShowDeleteModal(true);      // show modal
+                                            }}
+                                          >
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                          </button>
                                     </li>
                                   </ul>
                                 </>
@@ -451,18 +451,7 @@ const handleDeleteUsers = async () => {
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
-                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
                             <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                            {/* <Column
-                              field="status"
-                              header="Status"
-                              showFilterMenu
-                              filterMenuStyle={{ width: '14rem' }}
-                              body={statusBodyTemplate}
-                              filter
-                              filterElement={statusRowFilterTemplate}
-                            /> */}
                             <Column
                               header="Action"
                               body={(rowData) => (

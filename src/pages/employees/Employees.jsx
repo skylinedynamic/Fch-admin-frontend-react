@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
-import { fetchEmployees } from '../../modules/employee'
+import { fetchEmployees, fetchDepartmentStatus } from '../../modules/employee'
 
 export default function Employees() {
 
@@ -26,6 +26,8 @@ export default function Employees() {
   const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
+  const [departments, setDepartments] = useState([]);
+
 
   // Status options for filtering
   const statusOptions = [
@@ -52,8 +54,18 @@ export default function Employees() {
 
   useEffect(() => {
     initFilters()
+    loadDepartments();
   }, [])
 
+const loadDepartments = async () => {
+  try {
+    const departmentList = await fetchDepartmentStatus({ type: 'department' })
+    console.log(departmentList,'asas');
+    setDepartments(departmentList)
+  } catch (error) {
+    console.error('Failed to load departments', error)
+  }
+}
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
     let _filters = { ...filters }
@@ -145,6 +157,7 @@ export default function Employees() {
       }
       fetchEmployees(payload)
         .then((res) => {
+          console.log(res);
           const next = Array.isArray(res) ? res : (res?.employees ?? [])
           const meta = Array.isArray(res) ? undefined : res?.meta
           setRows(next)
@@ -282,6 +295,11 @@ export default function Employees() {
         }
         if (actionMenu) actionMenu.classList.add('d-none')
       }
+    }
+
+    const onDeptChange = (e) => {
+      const val = e.target.value
+      setDeptFilter(val === 'all' ? '' : val)
     }
 
     const onHeaderChange = () => {
@@ -500,14 +518,11 @@ export default function Employees() {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-single-default" id="idStatus" onChange={onDeptChange}>
+                             <select className="form-control" data-choices data-choices-search-false name="department" id="idDepartment" onChange={onDeptChange}>
                                 <option value="all" defaultValue>Select Department</option>
-                                <option value="Active">Engineering</option>
-                                <option value="New">Sales</option>
-                                <option value="Close">Marketing</option>
-                                <option value="Active">Opetations</option>
-                                <option value="New">HR</option>
-                                <option value="Close">Product</option>
+                                {departments.map((dept) => (
+                                  <option key={dept.value} value={dept.value}>{dept.label}</option>
+                                ))}
                               </select>
                             </div>
                           </div>
@@ -567,15 +582,7 @@ export default function Employees() {
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
                             <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
                             <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
-                            <Column
-                              field="job_status"
-                              header="Status"
-                              showFilterMenu
-                              filterMenuStyle={{ width: '14rem' }}
-                              body={statusBodyTemplate}
-                              filter
-                              filterElement={statusRowFilterTemplate}
-                            />
+                             <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
                           </DataTable>
                         </div>
                       </div>
