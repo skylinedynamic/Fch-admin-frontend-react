@@ -23,6 +23,7 @@ export default function Users() {
   const [totalRecords, setTotalRecords] = useState(0)
   const [appliedFilters, setAppliedFilters] = useState({})
   const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [appliedRoleFilter, setAppliedRoleFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
 
@@ -33,6 +34,7 @@ export default function Users() {
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [loadingSave, setLoadingSave] = useState(false); 
   const [showPasswordFields, setShowPasswordFields] = useState(false);
+  
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -56,7 +58,7 @@ export default function Users() {
       name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
       phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-      role: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      role_name: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
       status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     }
     setFilters(initial)
@@ -75,9 +77,6 @@ export default function Users() {
     setRoles(roleList);
   };
 
-  // Resolve a user's role id from the row data.
-  // If backend returns `role_id` use that; otherwise attempt to match by role name
-  // against the loaded `roles` list and return the matching id as a string.
   const resolveRoleId = (rowData) => {
     if (!rowData) return '';
     if (rowData.role_id != null) return String(rowData.role_id);
@@ -140,14 +139,15 @@ export default function Users() {
     setStatusFilter(val === 'Select User Status' ? '' : val)
   }
 
-  const onDeptChange = (e) => {
+  const onRoleChange = (e) => {
     const val = e.target.value
-    setAppliedRoleFilter(val === 'all' || val === 'Select Department' ? '' : val)
+    setRoleFilter(val === 'all' || val === 'Select Role' ? '' : val)
   }
 
   const onApplyFilters = () => {
     setAppliedGlobalFilterValue(globalFilterValue || '')
     setAppliedStatusFilter(statusFilter || '')
+    setAppliedRoleFilter(roleFilter || '')
     setAppliedFilters(filters)
     setPage(1)
   }
@@ -156,6 +156,7 @@ export default function Users() {
     initFilters()
     setAppliedRoleFilter('')
     setAppliedStatusFilter('')
+    setRoleFilter('')
     setPage(1)
   }
 
@@ -183,8 +184,12 @@ export default function Users() {
   )
 
   const statusBodyTemplate = (rowData) => {
-    const value = rowData?.status || ''
-    return value ? (<span>{value}</span>) : (<span className="text-muted">—</span>)
+      const active = rowData?.status === 'active';
+      return (
+        <span className={`badge ${active ? 'border border-success text-success' : 'badge border border-danger text-danger'}`}>
+        {active ? 'Active' : 'Inactive'}
+        </span>
+      );
   }
 
   const statusRowFilterTemplate = (options) => (
@@ -202,10 +207,9 @@ export default function Users() {
     setPerPage(event.rows)
     setPage(Math.floor(event.first / event.rows) + 1)
   }
-
   const onSort = (event) => {
-    setSortField(event.sortField || sortField)
-    setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+      setSortField(event.sortField || sortField)
+      setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
   }
 
   const handleAddUserSubmit = async (e) => {
@@ -251,24 +255,22 @@ export default function Users() {
     setNewUser({ ...newUser, [name]: value });
   };
 
-const handleDeleteSelectedUsers = async () => {
-  if (!selection || selection.length === 0) {
-    toast.info("No users selected for deletion");
+const handleDeleteUsers = async () => {
+  const idsToDelete = deletingUserId ? [deletingUserId] : selection.map(u => u.id);
+
+  if (idsToDelete.length === 0) {
+    toast.warn("No users selected for deletion");
     return;
   }
 
   try {
-    setLoading(true); // show spinner if needed
-    const idsToDelete = selection.map(user => user.id);
-
-    // Call API to delete users
-    await deleteUsers(idsToDelete);
-
-    toast.success(`Users deleted successfully`);
-
-    setSelection([]);          // clear selected users
-    setShowDeleteModal(false); // hide modal
-    loadUsers();               // refresh table
+    setLoading(true);
+    await deleteUsers(idsToDelete); // call API
+    toast.success("Users deleted successfully");
+    setSelection([]);
+    setDeletingUserId(null);
+    setShowDeleteModal(false);
+    loadUsers();
   } catch (error) {
     console.error(error);
     toast.error(error?.response?.data?.message || "Failed to delete users");
@@ -281,7 +283,7 @@ const handleDeleteSelectedUsers = async () => {
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
+        <div className="row bg-body">
           <div className="col">
             <div className="h-100">
               <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -315,19 +317,20 @@ const handleDeleteSelectedUsers = async () => {
                                     <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
                                     <li><hr className="dropdown-divider" /></li>
                                    <li>
-                                      <button
-                                        className="dropdown-item text-danger"
-                                        type="button"
-                                        onClick={() => {
-                                          if (selection.length === 0) {
-                                            toast.warn("Please select at least one user");
-                                            return;
-                                          }
-                                          setShowDeleteModal(true);
-                                        }}
-                                      >
-                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                      </button>
+                                        <button
+  className="dropdown-item text-danger"
+  type="button"
+  onClick={() => {
+    if (!selection || selection.length === 0) {
+      toast.warn("No users selected for deletion");
+      return;
+    }
+    setDeletingUserId(null);       // clear single row
+    setShowDeleteModal(true);      // show modal
+  }}
+>
+  <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+</button>
                                     </li>
                                   </ul>
                                 </>
@@ -352,7 +355,7 @@ const handleDeleteSelectedUsers = async () => {
               <div className="row">
                 <div className="col-lg-12">
                   <div className="card">
-                    <div className="card-body">
+                    <div className="card-body list-fluid-card">
                       <form>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
@@ -386,7 +389,8 @@ const handleDeleteSelectedUsers = async () => {
                                   data-choices-search-false
                                   name="roleFilter"
                                   id="roleFilter"
-                                  onChange={onDeptChange}
+                                  value={roleFilter || 'all'}
+                                   onChange={onRoleChange}
                                 >
                                   <option value="all" defaultValue>Select Role</option>
                                   {roles.map((role) => (
@@ -411,7 +415,7 @@ const handleDeleteSelectedUsers = async () => {
                         <div className="table-responsive table-card mt-1">
                           <DataTable
                             scrollable 
-                            scrollHeight="510px"  
+                            scrollHeight="calc(100vh - 370px)"   
                             value={rows}
                             paginator
                             lazy
@@ -446,8 +450,11 @@ const handleDeleteSelectedUsers = async () => {
                             <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
-                            <Column field="role" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                            <Column
+                            <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
+                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
+                            <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                            {/* <Column
                               field="status"
                               header="Status"
                               showFilterMenu
@@ -455,13 +462,14 @@ const handleDeleteSelectedUsers = async () => {
                               body={statusBodyTemplate}
                               filter
                               filterElement={statusRowFilterTemplate}
-                            />
+                            /> */}
                             <Column
                               header="Action"
                               body={(rowData) => (
-                                <>
+                                <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
                                   <button
-                                    className="btn btn-sm btn-primary me-2"
+                                    className="btn btn-sm btn-primary"
+                                    aria-label="Edit user"
                                     onClick={() => {
                                       setEditingUserId(rowData.id);
                                       setNewUser({
@@ -477,18 +485,20 @@ const handleDeleteSelectedUsers = async () => {
                                       setShowAddUser(true);
                                     }}
                                   >
-                                    <i className="ri-edit-2-fill me-1 align-bottom"></i> Edit
+                                     <i className="ri-edit-2-fill align-bottom"></i>
+                                    <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
-                                    className="btn btn-sm btn-danger"
-                                    onClick={() => {
-                                      setDeletingUserId(rowData.id);
-                                      setShowDeleteModal(true);
-                                    }}
-                                  >
-                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
-                                  </button>
-                                </>
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setDeletingUserId(rowData.id);  // set single user id
+                                        setShowDeleteModal(true);       // show modal
+                                      }}
+                                    >
+                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                      <span className="d-none d-sm-inline ms-1">Delete</span>
+                                    </button>
+                               </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
                             />
@@ -531,7 +541,7 @@ const handleDeleteSelectedUsers = async () => {
                                 <select
                                   name="role_id"
                                   className="form-control"
-                                  value={String(newUser.role_id) || ''} // use role ID as string
+                                  value={newUser.role_id || ''}
                                   onChange={handleAddUserInput}
                                   required
                                 >
@@ -655,21 +665,42 @@ const handleDeleteSelectedUsers = async () => {
                     <div className="modal-backdrop fade show"></div>
                   </>
                 )}
-                {showDeleteModal && (
+               {showDeleteModal && (
                   <>
-                    <div className="modal fade show d-block">
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
                       <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
-                          <div className="modal-header">
-                            <h5 className="modal-title">Confirm Delete</h5>
-                            <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
-                          </div>
-                          <div className="modal-body">
-                            Are you sure you want to delete the selected users?
-                          </div>
-                          <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                            <button type="button" className="btn btn-danger" onClick={handleDeleteSelectedUsers}>Delete</button>
+                          <div className="modal-body p-5 text-center">
+                            <lord-icon
+                              src="https://cdn.lordicon.com/gsqxdxog.json"
+                              trigger="loop"
+                              colors="primary:#405189,secondary:#f06548"
+                              style={{ width: '90px', height: '90px' }}
+                            ></lord-icon>
+                            <div className="mt-4">
+                              <h4>Are you sure?</h4>
+                              <p className="text-muted fs-15 mb-4">
+                                {deletingUserId
+                                  ? "Deleting this user will remove all information."
+                                  : "Deleting selected users will remove all information."}
+                              </p>
+                              <div className="hstack gap-2 justify-content-center">
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => setShowDeleteModal(false)}
+                                >
+                                  <i className="ri-close-line me-1 align-middle"></i> Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger"
+                                  onClick={handleDeleteUsers}
+                                >
+                                  <i className="ri-delete-bin-6-line me-1 align-middle"></i> Yes, Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

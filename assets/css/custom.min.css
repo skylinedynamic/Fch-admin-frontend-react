@@ -239,6 +239,12 @@
   }
 }
 
+.fluid-card {
+    min-height: calc(100vh - 250px);
+}
+.list-fluid-card {
+    min-height: calc(100vh - 250px);
+}
 
 
 /* Roles & Permissions page scoped styles */
