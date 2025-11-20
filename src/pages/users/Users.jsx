@@ -284,6 +284,7 @@ const handleDeleteUsers = async () => {
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row bg-body">
+        <div className="row bg-body">
           <div className="col">
             <div className="h-100">
               <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -374,7 +375,7 @@ const handleDeleteUsers = async () => {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
+                              <select className="form-control bg-light border-light" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
                                 <option value="Select User Status" defaultValue>Status</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -384,7 +385,7 @@ const handleDeleteUsers = async () => {
                           <div className="col-xxl-3 col-sm-4">
                               <div className="input-light">
                                 <select
-                                  className="form-control"
+                                  className="form-control bg-light border-light"
                                   data-choices
                                   data-choices-search-false
                                   name="roleFilter"
@@ -415,7 +416,7 @@ const handleDeleteUsers = async () => {
                         <div className="table-responsive table-card mt-1">
                           <DataTable
                             scrollable 
-                            scrollHeight="calc(100vh - 370px)"   
+                            scrollHeight="calc(100vh - 370px)"  
                             value={rows}
                             paginator
                             lazy

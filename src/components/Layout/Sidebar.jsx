@@ -18,17 +18,24 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const menuClass = useMemo(() => {
-    const base = 'app-menu navbar-menu'
-    if (isMobile && open) return base + ' open'
-    return base
-  }, [isMobile, open])
+  const menuClass = useMemo(() => 'app-menu navbar-menu', [])
+
+  const toggleOpen = () => {
+    const body = typeof document !== 'undefined' ? document.body : null
+    const cls = 'vertical-sidebar-enable'
+    const next = !open
+    setOpen(next)
+    if (body) {
+      if (next) body.classList.add(cls)
+      else body.classList.remove(cls)
+    }
+  }
 
   return (
-    <div className={menuClass} style={isMobile ? { position: 'fixed', left: 0, top: 0, bottom: 0, width: 280, transform: open ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 180ms ease', zIndex: 1040, background: 'var(--bs-body-bg)' } : undefined}>
+    <div className={menuClass}>
       <style>{`
         @media (max-width: 991.98px){
-          .navbar-brand-box{position:sticky;top:0;z-index:1;background:var(--bs-body-bg)}
+          .navbar-brand-box{position:sticky;top:0;z-index:1;background:var(--bs-body-bg);display:block!important}
         }
       `}</style>
       <div className="navbar-brand-box">
@@ -48,7 +55,7 @@ export default function Sidebar() {
             <img src={logoImg} alt="" height="30" />
           </span>
         </a>
-        <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" aria-expanded={open}>
+        <button type="button" className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" onClick={toggleOpen} aria-label="Toggle menu" aria-expanded={open}>
           <i className="ri-menu-line"></i>
         </button>
       </div>
@@ -174,7 +181,6 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-background"></div>
-      <div className="vertical-overlay" onClick={() => setOpen(false)} style={isMobile ? { display: open ? 'block' : 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,.35)', zIndex: 1039 } : undefined}></div>
     </div>
   )
 }

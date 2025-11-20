@@ -96,7 +96,7 @@ export default function RolesPermissions() {
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body main-card-body">
+              <div className="card-body fluid-card">
 
                 {isLoading ? (
                   <RolesGridLoader />

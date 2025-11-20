@@ -37,6 +37,12 @@ export default function Header() {
   const displayRole = user?.role 
 
   const toggleSidebar = () => {
+    const w = window.innerWidth
+    if (w < 768) {
+      document.body.classList.toggle('vertical-sidebar-enable')
+      return
+    }
+    document.body.classList.remove('vertical-sidebar-enable')
     const docEl = document.documentElement
     const current = docEl.getAttribute('data-sidebar-size') || 'lg'
     const next = current === 'lg' ? 'sm' : 'lg'
@@ -44,17 +50,26 @@ export default function Header() {
     setIsSidebarCollapsed(next === 'sm')
     try {
       sessionStorage.setItem('data-sidebar-size', next)
-    } catch (e) {
-      // ignore storage failures
-    }
-
-    // For small screens, also toggle overlay class to enable mobile sidebar behavior
-    if (window.innerWidth < 992) {
-      document.body.classList.toggle('vertical-sidebar-enable')
-    }
+    } catch (e) {}
   }
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        document.body.classList.remove('vertical-sidebar-enable')
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   return (
     <header id="page-topbar">
+      <style>{`
+        #page-topbar .app-search .form-control{background-color:var(--vz-topbar-search-bg);color:var(--vz-topbar-search-color)}
+        #page-topbar .app-search .form-control:focus{background-color:var(--vz-topbar-search-bg);box-shadow:none}
+        #page-topbar .btn-topbar{display:inline-flex;align-items:center;justify-content:center;padding:0}
+        #page-topbar .btn-topbar:hover,#page-topbar .btn-topbar:focus{background-color:var(--vz-header-item-bg)}
+      `}</style>
       <div className="layout-width">
         <div className="navbar-header">
           <div className="d-flex">
