@@ -15,7 +15,7 @@ export default function Users() {
   const [globalFilterValue, setGlobalFilterValue] = useState('')
   const [selection, setSelection] = useState([])
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
@@ -147,6 +147,7 @@ export default function Users() {
   }
 
   const onApplyFilters = () => {
+    setLoading(true)
     setAppliedGlobalFilterValue(globalFilterValue || '')
     setAppliedStatusFilter(statusFilter || '')
     setAppliedRoleFilter(roleFilter || '')
@@ -177,6 +178,7 @@ export default function Users() {
 };
 
   const onClearFilters = () => {
+    setLoading(true)
     initFilters()
     setAppliedRoleFilter('')
     setAppliedStatusFilter('')
