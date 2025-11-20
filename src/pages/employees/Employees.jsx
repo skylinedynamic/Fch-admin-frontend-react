@@ -433,6 +433,20 @@ const loadDepartments = async () => {
     }
   }, [])
 
+  const triggerSearch = () => {
+    const updated = {
+      ...filters,
+      global: {
+        value: globalFilterValue,
+        matchMode: FilterMatchMode.CONTAINS
+      }
+    };
+    setFilters(updated);
+    setAppliedFilters(updated);
+    setAppliedGlobalFilterValue(globalFilterValue);
+    setPage(1);
+  };
+
   return (
     <div className="page-content">
       <div className="container-fluid">
@@ -497,18 +511,29 @@ const loadDepartments = async () => {
                               <input
                                 type="text"
                                 className="form-control search bg-light border-light"
-                                id="searchJob"
+                               
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
                                 onChange={onGlobalFilterChange}
+                                  onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const params = new URLSearchParams();
+                                    if (globalFilterValue) params.set('search', globalFilterValue);
+                                    if (deptFilter) params.set('department', deptFilter);
+                                    if (statusFilter) params.set('job_status', statusFilter);
+
+                                    navigate(`/users?${params.toString()}`);
+                                  }
+                                }}
                               />
                               <i className="ri-search-line search-icon"></i>
                             </div>
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control"  id="idType" onChange={onJobStatusChange}>
+                              <select className="form-control" onChange={onJobStatusChange}>
                                 <option value="Select Employee Status" defaultValue>Job Status</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
