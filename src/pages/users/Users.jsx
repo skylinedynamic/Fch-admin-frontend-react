@@ -8,6 +8,7 @@ import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers } from '../
 import '../../../assets/css/bootstrap.min.css';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -34,7 +35,8 @@ export default function Users() {
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [loadingSave, setLoadingSave] = useState(false); 
   const [showPasswordFields, setShowPasswordFields] = useState(false);
-  
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -151,6 +153,29 @@ export default function Users() {
     setAppliedFilters(filters)
     setPage(1)
   }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Apply filters in state
+      onApplyFilters();
+
+      // Update URL query params
+      const params = new URLSearchParams(location.search);
+
+      if (globalFilterValue) params.set('search', globalFilterValue);
+      else params.delete('search');
+
+      if (statusFilter && statusFilter !== 'Select User Status') params.set('status', statusFilter);
+      else params.delete('status');
+
+      if (roleFilter && roleFilter !== 'all') params.set('role', roleFilter);
+      else params.delete('role');
+
+      navigate(`/users?${params.toString()}`);
+    }
+};
 
   const onClearFilters = () => {
     initFilters()
@@ -356,7 +381,10 @@ const handleDeleteUsers = async () => {
                 <div className="col-lg-12">
                   <div className="card">
                     <div className="card-body list-fluid-card">
-                      <form>
+                      <form onSubmit={(e) => {
+                          e.preventDefault(); // prevent page reload
+                          onApplyFilters();   // trigger your search function
+                        }}>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
                             <div className="search-box">
@@ -367,7 +395,13 @@ const handleDeleteUsers = async () => {
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
-                                onChange={onGlobalFilterChange}
+                                onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();       // prevent page reload
+                                    onApplyFilters();         // trigger your filter/search
+                                  }
+                                }}
                               />
                               <i className="ri-search-line search-icon"></i>
                             </div>
@@ -387,7 +421,7 @@ const handleDeleteUsers = async () => {
                                   className="form-control"
                                   data-choices
                                   data-choices-search-false
-                                  name="roleFilter"
+                                  name="role_id"
                                   id="roleFilter"
                                   value={roleFilter || 'all'}
                                    onChange={onRoleChange}
@@ -451,18 +485,7 @@ const handleDeleteUsers = async () => {
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
-                            {/* <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status"></Column> */}
                             <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                            {/* <Column
-                              field="status"
-                              header="Status"
-                              showFilterMenu
-                              filterMenuStyle={{ width: '14rem' }}
-                              body={statusBodyTemplate}
-                              filter
-                              filterElement={statusRowFilterTemplate}
-                            /> */}
                             <Column
                               header="Action"
                               body={(rowData) => (

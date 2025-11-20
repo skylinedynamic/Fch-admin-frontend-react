@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
-import { fetchEmployees } from '../../modules/employee'
+import { fetchEmployees, fetchDepartmentStatus } from '../../modules/employee'
 
 export default function Employees() {
 
@@ -26,6 +26,8 @@ export default function Employees() {
   const [appliedGlobalFilterValue, setAppliedGlobalFilterValue] = useState('')
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
+  const [departments, setDepartments] = useState([]);
+
 
   // Status options for filtering
   const statusOptions = [
@@ -52,8 +54,18 @@ export default function Employees() {
 
   useEffect(() => {
     initFilters()
+    loadDepartments();
   }, [])
 
+const loadDepartments = async () => {
+  try {
+    const departmentList = await fetchDepartmentStatus({ type: 'department' })
+    console.log(departmentList,'asas');
+    setDepartments(departmentList)
+  } catch (error) {
+    console.error('Failed to load departments', error)
+  }
+}
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
     let _filters = { ...filters }
@@ -145,6 +157,7 @@ export default function Employees() {
       }
       fetchEmployees(payload)
         .then((res) => {
+          console.log(res);
           const next = Array.isArray(res) ? res : (res?.employees ?? [])
           const meta = Array.isArray(res) ? undefined : res?.meta
           setRows(next)
@@ -190,7 +203,6 @@ export default function Employees() {
         const row = target.closest('tr')
         if (!row) return
         // Navigate to employee details (React route)
-        window.location.href = '/employee-details'
       }
       tbody.addEventListener('click', onTbodyClick)
 
@@ -282,6 +294,11 @@ export default function Employees() {
         }
         if (actionMenu) actionMenu.classList.add('d-none')
       }
+    }
+
+    const onDeptChange = (e) => {
+      const val = e.target.value
+      setDeptFilter(val === 'all' ? '' : val)
     }
 
     const onHeaderChange = () => {
@@ -416,6 +433,20 @@ export default function Employees() {
     }
   }, [])
 
+  const triggerSearch = () => {
+    const updated = {
+      ...filters,
+      global: {
+        value: globalFilterValue,
+        matchMode: FilterMatchMode.CONTAINS
+      }
+    };
+    setFilters(updated);
+    setAppliedFilters(updated);
+    setAppliedGlobalFilterValue(globalFilterValue);
+    setPage(1);
+  };
+
   return (
     <div className="page-content">
       <div className="container-fluid">
@@ -480,34 +511,50 @@ export default function Employees() {
                               <input
                                 type="text"
                                 className="form-control search bg-light border-light"
-                                id="searchJob"
+                               
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
                                 onChange={onGlobalFilterChange}
+                                  onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const params = new URLSearchParams();
+                                    if (globalFilterValue) params.set('search', globalFilterValue);
+                                    if (deptFilter) params.set('department', deptFilter);
+                                    if (statusFilter) params.set('job_status', statusFilter);
+
+                                    navigate(`/users?${params.toString()}`);
+                                  }
+                                }}
                               />
                               <i className="ri-search-line search-icon"></i>
                             </div>
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onJobStatusChange}>
+                              <select className="form-control" onChange={onJobStatusChange}>
                                 <option value="Select Employee Status" defaultValue>Job Status</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                               </select>
                             </div>
                           </div>
+                          
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-single-default" id="idStatus" onChange={onDeptChange}>
-                                <option value="all" defaultValue>Select Department</option>
-                                <option value="Active">Engineering</option>
-                                <option value="New">Sales</option>
-                                <option value="Close">Marketing</option>
-                                <option value="Active">Opetations</option>
-                                <option value="New">HR</option>
-                                <option value="Close">Product</option>
+                            <select
+                                className="form-control"
+                                name="department"
+                                id="idDepartment"
+                                onChange={onDeptChange}
+                              >
+                                 <option value="" defaultValue>Select Department</option>
+                                {departments.map((dept) => (
+                                  <option key={dept.id} value={dept.department}>
+                                    {dept.department}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           </div>
@@ -561,21 +608,13 @@ export default function Employees() {
                             emptyMessage="No employees found"
                           >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="full_name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
                             <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
                             <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
-                            <Column
-                              field="job_status"
-                              header="Status"
-                              showFilterMenu
-                              filterMenuStyle={{ width: '14rem' }}
-                              body={statusBodyTemplate}
-                              filter
-                              filterElement={statusRowFilterTemplate}
-                            />
+                             <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
                           </DataTable>
                         </div>
                       </div>
