@@ -61,3 +61,8 @@ export const fetchDepartmentStatus = async (
     return []
   }
 }
+
+export const deleteEmployees = async (ids: Array<number | string>) => {
+  const res = await apiClient.post('/common/employees/multiple-delete', { ids });
+  return res.data; // API response
+};
