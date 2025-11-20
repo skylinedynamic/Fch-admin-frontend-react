@@ -42,7 +42,6 @@ export default function EmployeeDetails() {
     employee_code: "",
     create_account: false,
     role_id: "",
-    address: "",
   });
 
   useEffect(() => {
