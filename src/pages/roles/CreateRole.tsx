@@ -196,16 +196,16 @@ export default function CreateRole() {
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body" style={{ minHeight: '73vh'}}>
+              <div className="card-body fluid-card">
                 <div className="role-form">
                   <div className="mb-4">
-                    <label className="form-label">Role name <span className="text-danger">*</span></label>
+                    <label className="form-label" style={{ fontSize: '.90rem' }}>Role name *</label>
                     <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Role Permissions</label>
+                    <label className="form-label" style={{ fontSize: '.90rem' }}>Role Permissions</label>
                     <div className="d-flex align-items-center gap-3">
                       <div className="form-check form-switch">
                         <input
@@ -261,7 +261,7 @@ export default function CreateRole() {
                                         const checked = !!selected[mod.key]?.[p.key]
                                         return (
                                           <label className="checkbox-pill" key={mod.key + '-' + p.key}>
-                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /> <i className={p.icon}></i><span>{p.label}</span>
+                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /><span>{p.label}</span>
                                           </label>
                                         )
                                       })}

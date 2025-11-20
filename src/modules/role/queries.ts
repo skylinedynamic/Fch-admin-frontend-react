@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { fetchGroupedPermissions, createRole, updateRole } from './services'
-import type { ApiModulePermissions, CreateRolePayload } from './types'
+import { fetchGroupedPermissions, createRole, updateRole, fetchRoles, deleteRole } from './services'
+import type { ApiModulePermissions, CreateRolePayload, Role } from './types'
 
 // Grouped permissions by module
 export const useGroupedPermissions = (opts?: { fresh?: boolean }) => {
@@ -39,6 +39,24 @@ export const useUpdateRole = () => {
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.role.list() })
       qc.invalidateQueries({ queryKey: queryKeys.role.detail(variables.id) })
+    },
+  })
+}
+
+export const useRoles = () => {
+  return useQuery<Role[]>({
+    queryKey: queryKeys.role.list(),
+    queryFn: () => fetchRoles(),
+    staleTime: 60_000,
+  })
+}
+
+export const useDeleteRole = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number | string) => deleteRole(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.role.list() })
     },
   })
 }

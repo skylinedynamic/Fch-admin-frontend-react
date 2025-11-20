@@ -1,44 +1,28 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../../lib/http/apiClient'
+import { useRoles, useDeleteRole } from '../../modules/role/queries'
 import newDocImg from '../../../assets/images/new-document.png'
 import RolesGridLoader from '../../components/Loader/RolesGridLoader'
 import ErrorState from '../../components/Loader/ErrorState'
 import { fetchRoleDetail } from '../../modules/role/services'
-import type { RoleDetail, RoleDetailUser } from '../../modules/role/types'
+import type { RoleDetail, RoleDetailUser, Role } from '../../modules/role/types'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 type User = { id: number; name: string; email: string; role: string; joined: string }
-type ApiRole = { id: number; name: string; permissions: string[]; users_count?: number }
-type Role = { id?: number; name: string; usersCount: number; permissions: string[] }
 
 export default function RolesPermissions() {
   const navigate = useNavigate()
-  const { data: apiRoles, isLoading, isError } = useQuery<ApiRole[]>({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const res = await apiClient.get('/common/roles')
-      const payload = res?.data
-      const list = Array.isArray(payload) ? payload : (payload?.data ?? payload?.roles ?? [])
-      return Array.isArray(list) ? list as ApiRole[] : []
-    },
-    staleTime: 60_000,
-  })
+  const { data: apiRoles, isLoading, isError, refetch } = useRoles()
 
-  const roles: Role[] = useMemo(() => {
-    return (apiRoles || []).map(r => ({
-      id: r.id,
-      name: r.name,
-      permissions: Array.isArray(r.permissions) ? r.permissions : [],
-      usersCount: Number(r.users_count ?? 0),
-    }))
-  }, [apiRoles])
+  const roles: Role[] = useMemo(() => (apiRoles || []), [apiRoles])
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [showAllPerms, setShowAllPerms] = useState(false)
   const [roleDetail, setRoleDetail] = useState<RoleDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const { mutateAsync: deleteRoleMutate, isPending: deletingRole } = useDeleteRole()
 
   // Users will be pulled from API response (roleDetail.users)
 
@@ -68,9 +52,53 @@ export default function RolesPermissions() {
   const previewPermissions = (perms: string[]) => perms.slice(0, 6)
   const remainingCount = (perms: string[]) => Math.max(perms.length - 6, 0)
 
+  const handleDeleteRole = async (role: Role) => {
+    if (!role.id) return
+    const ok = window.confirm(`Delete role "${role.name}"?`)
+    if (!ok) return
+    try {
+      const res: any = await deleteRoleMutate(role.id)
+      if (res && typeof res === 'object') {
+        if (res.status === true) {
+          toast.success(String(res.message ?? 'Role deleted successfully.'))
+          refetch()
+          return
+        }
+        if (res.status === false) {
+          const msg = res.message
+          const errors = res.errors
+          if (errors && typeof errors === 'object') {
+            const firstKey = Object.keys(errors)[0]
+            const firstMsg = firstKey ? (errors as any)[firstKey] : msg
+            toast.error(String(firstMsg ?? msg ?? 'Validation failed.'))
+          } else {
+            toast.error(String(msg ?? 'Operation failed.'))
+          }
+          return
+        }
+      }
+      toast.success('Role deleted successfully.')
+      refetch()
+    } catch (err: any) {
+      const data = err?.response?.data
+      const msg = data?.message
+      const errors = data?.errors
+      if (errors && typeof errors === 'object') {
+        const firstKey = Object.keys(errors)[0]
+        const firstMsg = firstKey ? (errors as any)[firstKey] : msg
+        toast.error(String(firstMsg ?? msg ?? 'Validation failed.'))
+      } else if (typeof msg === 'string') {
+        toast.error(String(msg))
+      } else {
+        toast.error('Failed to delete role.')
+      }
+    }
+  }
+
 
   return (
     <div id="roles-permissions-page" className="page-content">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
@@ -96,7 +124,7 @@ export default function RolesPermissions() {
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body main-card-body">
+              <div className="card-body fluid-card">
 
                 {isLoading ? (
                   <RolesGridLoader />
@@ -105,18 +133,27 @@ export default function RolesPermissions() {
                 ) : (
                   <div className="roles-grid">
                     {roles.map((r, idx) => (
-                      <div className="role-summary-card" key={r.name + idx}>
-                        <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid">{r.usersCount} users</span></div>
-                        <p className="role-meta mb-2">Total users with this role: <strong>{r.usersCount}</strong></p>
+                      <div className="role-summary-card" key={(r.id ?? r.name) + String(idx)} style={{ position: 'relative' }}>
+                        <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid text-white">{Number(r.users_count ?? 0)} users</span></div>
+                        <p className="role-meta mb-2">Total users with this role: <strong>{Number(r.users_count ?? 0)}</strong></p>
                         <ul className="bullet-list">
                           {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
                           {remainingCount(r.permissions) > 0 && (
                             <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
                           )}
                         </ul>
-                        <div className="card-actions">
+                        <div className="card-actions d-flex align-items-center">
                           <button className="btn btn-light" onClick={() => handleViewUsers(r)}>View All Users</button>
-                          <button className="btn btn-primary" onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)} disabled={!r.id}>Edit Role</button>
+                          <button className="btn btn-primary ms-2" onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)} disabled={!r.id}>Edit Role</button>
+                          {!r.is_static && (
+                            <button
+                              className="btn btn-outline-danger ms-auto"
+                              onClick={() => handleDeleteRole(r)}
+                              disabled={deletingRole}
+                            >
+                              <i className="ri-delete-bin-6-line align-bottom"></i>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -134,7 +171,7 @@ export default function RolesPermissions() {
                   <>
                     <div className="modal-backdrop-custom" onClick={() => setModalOpen(false)}></div>
                     <div className="modal d-block users-modal" tabIndex={-1} role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false) }}>
-                      <div className="modal-dialog modal-lg users-modal-dialog">
+                      <div className="modal-dialog modal-xl users-modal-dialog">
                         <div className="modal-content border-0 enhanced-shadow">
                           <div className="modal-header">
                             <h5 className="modal-title d-flex align-items-center gap-2">
@@ -155,7 +192,6 @@ export default function RolesPermissions() {
                               <div className="col-lg-4">
                                 <div className="card">
                                   <div className="card-body position-relative">
-                                    <span className="badge bg-warning-subtle text-warning position-absolute detail-badge">Details</span>
                                     <h6 className="section-title mb-3">{roleDetail?.name || selectedRole.name}</h6>
                                     <div className="permissions-scroll mt-2">
                                       <div className="d-flex align-items-center justify-content-between mb-2">
@@ -171,8 +207,9 @@ export default function RolesPermissions() {
                               </div>
                               <div className="col-lg-8">
                                 <div className="card">
-                                  <div className="card-body">
-                                    <table className="user-table w-100">
+                                  <div className="card-body permissions-user-scroll">
+                                    <div className="user-table-wrapper">
+                                      <table className="user-table w-100">
                                       <thead>
                                         <tr>
                                           <th>ID</th>
@@ -211,7 +248,8 @@ export default function RolesPermissions() {
                                           ))
                                         )}
                                       </tbody>
-                                    </table>
+                                      </table>
+                                    </div>
                                   </div>
                                 </div>
                               </div>

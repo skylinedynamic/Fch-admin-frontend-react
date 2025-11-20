@@ -308,6 +308,7 @@ const handleDeleteUsers = async () => {
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row bg-body">
+        <div className="row bg-body">
           <div className="col">
             <div className="h-100">
               <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -407,7 +408,7 @@ const handleDeleteUsers = async () => {
                           </div>
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                              <select className="form-control" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
+                              <select className="form-control bg-light border-light" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
                                 <option value="Select User Status" defaultValue>Status</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -417,7 +418,7 @@ const handleDeleteUsers = async () => {
                           <div className="col-xxl-3 col-sm-4">
                               <div className="input-light">
                                 <select
-                                  className="form-control"
+                                  className="form-control bg-light border-light"
                                   data-choices
                                   data-choices-search-false
                                   name="role_id"
@@ -448,7 +449,7 @@ const handleDeleteUsers = async () => {
                         <div className="table-responsive table-card mt-1">
                           <DataTable
                             scrollable 
-                            scrollHeight="calc(100vh - 370px)"   
+                            scrollHeight="calc(100vh - 370px)"  
                             value={rows}
                             paginator
                             lazy
@@ -511,16 +512,15 @@ const handleDeleteUsers = async () => {
                                     <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
-                                      className="btn btn-sm btn-danger"
-                                      onClick={() => {
-                                        setDeletingUserId(rowData.id);  // set single user id
-                                        setShowDeleteModal(true);       // show modal
-                                      }}
-                                    >
-                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
-                                      <span className="d-none d-sm-inline ms-1">Delete</span>
-                                    </button>
-                               </div>
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => {
+                                      setDeletingUserId(rowData.id);
+                                      setShowDeleteModal(true);
+                                    }}
+                                  >
+                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                  </button>
+                                </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
                             />
@@ -732,6 +732,7 @@ const handleDeleteUsers = async () => {
                 )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
