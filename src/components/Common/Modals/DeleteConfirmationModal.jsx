@@ -1,21 +1,45 @@
 import React, { useEffect, useRef } from 'react';
+import Modal from 'bootstrap/js/dist/modal';
 
 export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading }) {
   const modalRef = useRef(null);
+  const modalInstanceRef = useRef(null);
+
+  // Initialize Bootstrap Modal instance once
   useEffect(() => {
     if (!modalRef.current) return;
-    const modal = new window.bootstrap.Modal(modalRef.current, {
-      backdrop: 'static',
-      keyboard: false,
-    });
+    if (!modalInstanceRef.current) {
+      modalInstanceRef.current = new Modal(modalRef.current, {
+        backdrop: 'static',
+        keyboard: false,
+      });
+    }
+  }, []);
 
+  // Show/hide based on `show` prop
+  useEffect(() => {
+    const modal = modalInstanceRef.current;
+    if (!modal) return;
     if (show) {
       modal.show();
     } else {
       modal.hide();
     }
-    return () => modal.hide();
   }, [show]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      const modal = modalInstanceRef.current;
+      if (modal) {
+        try {
+          modal.hide();
+          if (typeof modal.dispose === 'function') modal.dispose();
+        } catch (_) {}
+      }
+      modalInstanceRef.current = null;
+    };
+  }, []);
 
   return (
     <div

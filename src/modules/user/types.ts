@@ -5,6 +5,7 @@ export type User = {
   phone_number?: string
   password?: string
   status?: string
+  entity_type?: string
   role?: string
   [key: string]: unknown
 }
