@@ -338,9 +338,9 @@ const loadDepartments = async () => {
       a.click()
       document.body.removeChild(a)
     }
-    const exportCsvBtn = document.getElementById('exportCsv')
-    const exportExcelBtn = document.getElementById('exportExcel')
-    const exportPdfBtn = document.getElementById('exportPdf')
+    // const exportCsvBtn = document.getElementById('exportCsv')
+    // const exportExcelBtn = document.getElementById('exportExcel')
+    // const exportPdfBtn = document.getElementById('exportPdf')
     const deleteSelectedBtn = document.getElementById('deleteSelected')
 
     const onExportCsv = (e) => {
@@ -396,9 +396,9 @@ const loadDepartments = async () => {
       closeBtn && closeBtn.addEventListener('click', onClose)
     }
 
-    exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
-    exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
-    exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
+    // exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
+    // exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
+    // exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
     deleteSelectedBtn && deleteSelectedBtn.addEventListener('click', onDeleteSelected)
 
     // Sticky subheader
@@ -425,9 +425,9 @@ const loadDepartments = async () => {
     return () => {
       if (headerCheck) headerCheck.removeEventListener('change', onHeaderChange)
       rowChecks.forEach((cb) => cb.removeEventListener('change', onRowChange))
-      exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
-      exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
-      exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
+      // exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
+      // exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
+      // exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
       deleteSelectedBtn && deleteSelectedBtn.removeEventListener('click', onDeleteSelected)
       observer && observer.disconnect()
     }
@@ -446,6 +446,29 @@ const loadDepartments = async () => {
     setAppliedGlobalFilterValue(globalFilterValue);
     setPage(1);
   };
+
+const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Apply filters in state
+      onApplyFilters();
+
+      // Update URL query params
+      const params = new URLSearchParams(location.search);
+
+      if (globalFilterValue) params.set('search', globalFilterValue);
+      else params.delete('search');
+
+      if (statusFilter && statusFilter !== 'Select User Status') params.set('status', statusFilter);
+      else params.delete('status');
+
+      if (roleFilter && roleFilter !== 'all') params.set('role', roleFilter);
+      else params.delete('role');
+
+      navigate(`/users?${params.toString()}`);
+    }
+};
 
   return (
     <div className="page-content">
@@ -479,10 +502,10 @@ const loadDepartments = async () => {
                                     <span className="visually-hidden">Toggle dropdown</span>
                                   </button>
                                   <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                    <li><hr className="dropdown-divider" /></li>
+                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li> */}
+                                    {/* <li><hr className="dropdown-divider" /></li> */}
                                     <li><a className="dropdown-item text-danger" href="#" id="deleteSelected"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
                                   </ul>
                                 </>
@@ -504,7 +527,10 @@ const loadDepartments = async () => {
                 <div className="col-lg-12">
                   <div className="card">
                     <div className="card-body">
-                      <form>
+                      <form onSubmit={(e) => {
+                          e.preventDefault(); // prevent page reload
+                          onApplyFilters();   // trigger your search function
+                        }}>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
                             <div className="search-box">
@@ -515,16 +541,11 @@ const loadDepartments = async () => {
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
-                                onChange={onGlobalFilterChange}
-                                  onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const params = new URLSearchParams();
-                                    if (globalFilterValue) params.set('search', globalFilterValue);
-                                    if (deptFilter) params.set('department', deptFilter);
-                                    if (statusFilter) params.set('job_status', statusFilter);
-
-                                    navigate(`/users?${params.toString()}`);
+                                onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();       // prevent page reload
+                                    onApplyFilters();         // trigger your filter/search
                                   }
                                 }}
                               />
@@ -608,7 +629,7 @@ const loadDepartments = async () => {
                             emptyMessage="No employees found"
                           >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="full_name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
