@@ -1,6 +1,6 @@
 // src/modules/role/services.ts
 import { apiClient } from '../../lib/http/apiClient'
-import type { ApiModulePermissions, GroupedPermissionsObject, CreateRolePayload, RoleDetail } from './types'
+import type { ApiModulePermissions, GroupedPermissionsObject, CreateRolePayload, RoleDetail, Role } from './types'
 
 // Fetch permissions grouped by module via POST with { is_groupby: true }
 export const fetchGroupedPermissions = async (): Promise<ApiModulePermissions[]> => {
@@ -36,6 +36,43 @@ export const fetchGroupedPermissions = async (): Promise<ApiModulePermissions[]>
 // Create a role with { name, permission_ids }
 export const createRole = async (payload: CreateRolePayload) => {
   const res = await apiClient.post('/common/roles', payload)
+  return res.data
+}
+
+export const fetchRoles = async (): Promise<Role[]> => {
+  const res = await apiClient.get('/common/roles')
+  const payload = res?.data
+  const list = Array.isArray(payload) ? payload : (payload?.data ?? payload?.roles ?? [])
+
+  if (!Array.isArray(list)) return []
+
+  return list.map((r: any) => {
+    const perms = Array.isArray(r.permissions)
+      ? r.permissions
+      : (r.permissions && typeof r.permissions === 'object' && !Array.isArray(r.permissions)
+          ? Object.values(r.permissions as Record<string | number, string>)
+          : [])
+
+    const isStaticRaw = r.is_static
+    const isStatic = typeof isStaticRaw === 'boolean'
+      ? isStaticRaw
+      : (typeof isStaticRaw === 'number' ? isStaticRaw === 1 : false)
+
+    return {
+      id: r.id,
+      name: r.name,
+      code: String(r.code ?? ''),
+      is_static: isStatic,
+      permissions: perms,
+      users_count: Number(r.users_count ?? r.usersCount ?? 0),
+    } as Role
+  })
+}
+
+export const deleteRole = async (id: number | string) => {
+  const numericId = typeof id === 'string' ? Number(id) : id
+  const payload = { ids: [numericId] }
+  const res = await apiClient.post('/common/roles/destroy', payload)
   return res.data
 }
 

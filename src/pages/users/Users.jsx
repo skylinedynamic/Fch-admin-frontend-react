@@ -490,16 +490,15 @@ const handleDeleteUsers = async () => {
                                     <span className="d-none d-sm-inline ms-1">Edit</span>
                                   </button>
                                   <button
-                                      className="btn btn-sm btn-danger"
-                                      onClick={() => {
-                                        setDeletingUserId(rowData.id);  // set single user id
-                                        setShowDeleteModal(true);       // show modal
-                                      }}
-                                    >
-                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
-                                      <span className="d-none d-sm-inline ms-1">Delete</span>
-                                    </button>
-                               </div>
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => {
+                                      setDeletingUserId(rowData.id);
+                                      setShowDeleteModal(true);
+                                    }}
+                                  >
+                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                  </button>
+                                </div>
                               )}
                               style={{ textAlign: 'center', width: '12rem' }}
                             />
@@ -711,6 +710,7 @@ const handleDeleteUsers = async () => {
                 )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

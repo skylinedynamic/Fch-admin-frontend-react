@@ -3,6 +3,8 @@
 export type Role = {
   id: number | string
   name: string
+  code: string,
+  is_static: boolean,
   permissions: string[]
   users_count?: number
 }
