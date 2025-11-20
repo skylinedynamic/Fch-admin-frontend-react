@@ -158,7 +158,6 @@ export default function Users() {
     if (e.key === 'Enter') {
       e.preventDefault();
       
-      // Apply filters in state
       onApplyFilters();
 
       // Update URL query params
@@ -337,10 +336,10 @@ const handleDeleteUsers = async () => {
                                     <span className="visually-hidden">Toggle dropdown</span>
                                   </button>
                                   <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                    <li><hr className="dropdown-divider" /></li>
+                                    <li><hr className="dropdown-divider" /></li> */}
                                    <li>
                                         <button
                                             className="dropdown-item text-danger"

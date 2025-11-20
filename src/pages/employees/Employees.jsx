@@ -4,7 +4,9 @@ import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
-import { fetchEmployees, fetchDepartmentStatus } from '../../modules/employee'
+import { fetchEmployees, fetchDepartmentStatus, deleteEmployees } from '../../modules/employee'
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal.jsx'
+import { ToastContainer, toast } from "react-toastify";
 
 export default function Employees() {
 
@@ -27,13 +29,17 @@ export default function Employees() {
   const [appliedDeptFilter, setAppliedDeptFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
   const [departments, setDepartments] = useState([]);
-
+  const [deleteRows, setDeleteRows] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Status options for filtering
   const statusOptions = [
     { label: 'Active', value: 'Active' },
     { label: 'Inactive', value: 'Inactive' }
   ]
+
+
+
 
   const initFilters = () => {
     const initial = {
@@ -60,7 +66,6 @@ export default function Employees() {
 const loadDepartments = async () => {
   try {
     const departmentList = await fetchDepartmentStatus({ type: 'department' })
-    console.log(departmentList,'asas');
     setDepartments(departmentList)
   } catch (error) {
     console.error('Failed to load departments', error)
@@ -157,7 +162,6 @@ const loadDepartments = async () => {
       }
       fetchEmployees(payload)
         .then((res) => {
-          console.log(res);
           const next = Array.isArray(res) ? res : (res?.employees ?? [])
           const meta = Array.isArray(res) ? undefined : res?.meta
           setRows(next)
@@ -170,7 +174,7 @@ const loadDepartments = async () => {
           }
         })
         .catch((_err) => {
-          // keep existing rows on error
+          
         })
         .finally(() => setLoading(false))
     }, 300)
@@ -191,7 +195,6 @@ const loadDepartments = async () => {
     setSortOrder(order)
   }
   useEffect(() => {
-    // Add cursor-pointer on table rows and handle row click -> navigate to details
     const tbody = document.getElementById('employees-list-data')
     if (tbody) {
       Array.prototype.forEach.call(tbody.querySelectorAll('tr'), (tr) => {
@@ -202,7 +205,6 @@ const loadDepartments = async () => {
         if (target.closest('a, button, input, label, [data-bs-toggle], .remove-item-btn')) return
         const row = target.closest('tr')
         if (!row) return
-        // Navigate to employee details (React route)
       }
       tbody.addEventListener('click', onTbodyClick)
 
@@ -296,11 +298,6 @@ const loadDepartments = async () => {
       }
     }
 
-    const onDeptChange = (e) => {
-      const val = e.target.value
-      setDeptFilter(val === 'all' ? '' : val)
-    }
-
     const onHeaderChange = () => {
       const on = headerCheck.checked
       rowChecks.forEach((cb) => { cb.checked = on })
@@ -316,89 +313,8 @@ const loadDepartments = async () => {
     rowChecks.forEach((cb) => cb.addEventListener('change', onRowChange))
     syncHeaderState()
     updatePrimaryBtnLabel()
-
-    // Export/Delete actions
-    const getSelectedRows = () => {
-      const scope = tbody || document
-      const selector = tbody
-        ? 'input.form-check-input[name="chk_child"]:checked'
-        : '.form-check-all input.form-check-input[name="chk_child"]:checked'
-      return Array.from(scope.querySelectorAll(selector)).map((cb) => cb.closest('tr'))
-    }
-    const getRowData = (tr) => {
-      const cells = tr.querySelectorAll('td')
-      return Array.from(cells).map((td) => td.innerText.trim().replace(/\s+/g, ' '))
-    }
-    const download = (filename, text) => {
-      const a = document.createElement('a')
-      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text))
-      a.setAttribute('download', filename)
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    }
-    const exportCsvBtn = document.getElementById('exportCsv')
-    const exportExcelBtn = document.getElementById('exportExcel')
-    const exportPdfBtn = document.getElementById('exportPdf')
     const deleteSelectedBtn = document.getElementById('deleteSelected')
 
-    const onExportCsv = (e) => {
-      e.preventDefault()
-      const rows = getSelectedRows()
-      if (!rows.length) return
-      const csv = rows.map((tr) => getRowData(tr).join(',')).join('\n')
-      download('employees.csv', csv)
-    }
-    const onExportExcel = (e) => {
-      e.preventDefault()
-      const rows = getSelectedRows()
-      if (!rows.length) return
-      const tsv = rows.map((tr) => getRowData(tr).join('\t')).join('\n')
-      download('employees.xls', tsv)
-    }
-    const onExportPdf = (e) => {
-      e.preventDefault()
-      const rows = getSelectedRows()
-      if (!rows.length) return
-      const text = rows.map((tr) => getRowData(tr).join(' | ')).join('\n')
-      download('employees.txt', text)
-    }
-    const onDeleteSelected = (e) => {
-      e.preventDefault()
-      const rows = getSelectedRows()
-      if (!rows.length) return
-      const modalEl = document.getElementById('deleteOrder')
-      if (!modalEl || !window.bootstrap) return
-      const modal = new window.bootstrap.Modal(modalEl)
-      modal.show()
-      const confirmBtn = document.getElementById('delete-record')
-      const closeBtn = document.getElementById('deleteRecord-close')
-      const onConfirm = () => {
-        rows.forEach((tr) => tr.remove())
-        // refresh rowChecks after deletion
-        tbody = document.getElementById('employees-list-data') || document.querySelector('.form-check-all')
-        rowChecks = (tbody
-          ? tbody.querySelectorAll('input.form-check-input[name="chk_child"]')
-          : document.querySelectorAll('.form-check-all input.form-check-input[name="chk_child"]'))
-        syncHeaderState()
-        updatePrimaryBtnLabel()
-        modal.hide()
-        confirmBtn && confirmBtn.removeEventListener('click', onConfirm)
-        closeBtn && closeBtn.removeEventListener('click', onClose)
-      }
-      const onClose = () => {
-        modal.hide()
-        confirmBtn && confirmBtn.removeEventListener('click', onConfirm)
-        closeBtn && closeBtn.removeEventListener('click', onClose)
-      }
-      confirmBtn && confirmBtn.addEventListener('click', onConfirm)
-      closeBtn && closeBtn.addEventListener('click', onClose)
-    }
-
-    exportCsvBtn && exportCsvBtn.addEventListener('click', onExportCsv)
-    exportExcelBtn && exportExcelBtn.addEventListener('click', onExportExcel)
-    exportPdfBtn && exportPdfBtn.addEventListener('click', onExportPdf)
     deleteSelectedBtn && deleteSelectedBtn.addEventListener('click', onDeleteSelected)
 
     // Sticky subheader
@@ -425,30 +341,79 @@ const loadDepartments = async () => {
     return () => {
       if (headerCheck) headerCheck.removeEventListener('change', onHeaderChange)
       rowChecks.forEach((cb) => cb.removeEventListener('change', onRowChange))
-      exportCsvBtn && exportCsvBtn.removeEventListener('click', onExportCsv)
-      exportExcelBtn && exportExcelBtn.removeEventListener('click', onExportExcel)
-      exportPdfBtn && exportPdfBtn.removeEventListener('click', onExportPdf)
       deleteSelectedBtn && deleteSelectedBtn.removeEventListener('click', onDeleteSelected)
       observer && observer.disconnect()
     }
   }, [])
 
-  const triggerSearch = () => {
-    const updated = {
-      ...filters,
-      global: {
-        value: globalFilterValue,
-        matchMode: FilterMatchMode.CONTAINS
-      }
-    };
-    setFilters(updated);
-    setAppliedFilters(updated);
-    setAppliedGlobalFilterValue(globalFilterValue);
-    setPage(1);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteRows || deleteRows.length === 0) return;
+
+    const ids = deleteRows.map(e => e.id);
+    try {
+      setLoading(true);
+      await deleteEmployees(ids);
+      toast.success("Employees deleted successfully");
+      setShowDeleteModal(false); // ✅ Close modal
+      setSelection([]);           // ✅ Clear selection
+      loadEmployees();            // ✅ Refresh table
+    } catch (err) {
+      toast.error('Failed to delete employees. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+const loadEmployees = () => {
+  setLoading(true)
+  const payload = {
+    department: appliedDeptFilter || '',
+    job_status: appliedStatusFilter || '',
+    search: appliedGlobalFilterValue || '',
+    filters: appliedFilters,
+    page,
+    per_page: perPage,
+    sort_field: sortField,
+    sort_order: sortOrder,
+  }
+
+  fetchEmployees(payload)
+    .then((res) => {
+      const next = Array.isArray(res) ? res : res?.employees ?? []
+      const meta = Array.isArray(res) ? undefined : res?.meta
+      setRows(next)
+      if (meta) {
+        setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+        if (typeof meta.current_page === 'number') setPage(meta.current_page)
+        if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+      } else {
+        setTotalRecords(next.length)
+      }
+    })
+    .catch((_err) => {
+      console.error('Failed to fetch employees', _err)
+    })
+    .finally(() => setLoading(false))
+  }
+
+
+const openDeleteModal = () => {
+  if (!selection || selection.length === 0) {
+    toast.warn('Please select at least one employee to delete.');
+    return;
+  }
+  setDeleteRows(selection); // store selected rows
+  setShowDeleteModal(true); // ✅ React modal will now open correctly
+};
+
+const closeDeleteModal = () => {
+  setShowDeleteModal(false);
+};
 
   return (
     <div className="page-content">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row mb-3 pb-1 bg-body">
           <div className="col">
@@ -479,11 +444,19 @@ const loadDepartments = async () => {
                                     <span className="visually-hidden">Toggle dropdown</span>
                                   </button>
                                   <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                    <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+                                    {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                    <li><hr className="dropdown-divider" /></li>
-                                    <li><a className="dropdown-item text-danger" href="#" id="deleteSelected"><i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected</a></li>
+                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li> */}
+                                    {/* <li><hr className="dropdown-divider" /></li> */}
+                                   <li>
+                                        <button
+                                          type="button"
+                                          className="dropdown-item text-danger"
+                                          onClick={openDeleteModal} // ✅ React state handles modal
+                                        >
+                                          <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                        </button>
+                                      </li>
                                   </ul>
                                 </>
                               ) : (
@@ -504,7 +477,10 @@ const loadDepartments = async () => {
                 <div className="col-lg-12">
                   <div className="card">
                     <div className="card-body">
-                      <form>
+                      <form onSubmit={(e) => {
+                          e.preventDefault(); // prevent page reload
+                          onApplyFilters();   // trigger your search function
+                        }}>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
                             <div className="search-box">
@@ -515,16 +491,11 @@ const loadDepartments = async () => {
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
-                                onChange={onGlobalFilterChange}
-                                  onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const params = new URLSearchParams();
-                                    if (globalFilterValue) params.set('search', globalFilterValue);
-                                    if (deptFilter) params.set('department', deptFilter);
-                                    if (statusFilter) params.set('job_status', statusFilter);
-
-                                    navigate(`/users?${params.toString()}`);
+                                onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();       // prevent page reload
+                                    onApplyFilters();         // trigger your filter/search
                                   }
                                 }}
                               />
@@ -608,7 +579,7 @@ const loadDepartments = async () => {
                             emptyMessage="No employees found"
                           >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="full_name" header="Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
@@ -618,30 +589,16 @@ const loadDepartments = async () => {
                           </DataTable>
                         </div>
                       </div>
-
-                      {/* Delete Confirmation Modal */}
-                      <div className="modal fade flip" id="deleteOrder" tabIndex="-1" aria-labelledby="deleteOrderLabel" aria-hidden="true" role="dialog">
-                        <div className="modal-dialog modal-dialog-centered">
-                          <div className="modal-content">
-                            <div className="modal-body p-5 text-center">
-                              <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop" colors="primary:#405189,secondary:#f06548" style={{ width: '90px', height: '90px' }}></lord-icon>
-                              <div className="mt-4 text-center">
-                                <h4 id="deleteOrderLabel">Are you sure ?</h4>
-                                <p className="text-muted fs-15 mb-4">Deleting your demo request will remove all of information from our database.</p>
-                                <div className="hstack gap-2 justify-content-center remove">
-                                  <button className="btn btn-link link-success fw-medium text-decoration-none" id="deleteRecord-close" data-bs-dismiss="modal"><i className="ri-close-line me-1 align-middle"></i> Close</button>
-                                  <button className="btn btn-danger" id="delete-record">Yes, Delete It</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-
+              <DeleteConfirmationModal
+                  show={showDeleteModal}
+                  onConfirm={handleDeleteConfirm}
+                  onClose={closeDeleteModal}
+                  loading={loading}
+                />
             </div>
           </div>
         </div>
