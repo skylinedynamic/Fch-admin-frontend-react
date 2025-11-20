@@ -8,6 +8,8 @@ import { fetchRoleDetail } from '../../modules/role/services'
 import type { RoleDetail, RoleDetailUser, Role } from '../../modules/role/types'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+// @ts-ignore
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal.jsx'
 
 type User = { id: number; name: string; email: string; role: string; joined: string }
 
@@ -23,6 +25,8 @@ export default function RolesPermissions() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const { mutateAsync: deleteRoleMutate, isPending: deletingRole } = useDeleteRole()
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null)
 
   // Users will be pulled from API response (roleDetail.users)
 
@@ -52,17 +56,15 @@ export default function RolesPermissions() {
   const previewPermissions = (perms: string[]) => perms.slice(0, 6)
   const remainingCount = (perms: string[]) => Math.max(perms.length - 6, 0)
 
-  const handleDeleteRole = async (role: Role) => {
-    if (!role.id) return
-    const ok = window.confirm(`Delete role "${role.name}"?`)
-    if (!ok) return
+  const handleDeleteRole = async (role: Role): Promise<boolean> => {
+    if (!role.id) return false
     try {
       const res: any = await deleteRoleMutate(role.id)
       if (res && typeof res === 'object') {
         if (res.status === true) {
           toast.success(String(res.message ?? 'Role deleted successfully.'))
           refetch()
-          return
+          return true
         }
         if (res.status === false) {
           const msg = res.message
@@ -74,11 +76,12 @@ export default function RolesPermissions() {
           } else {
             toast.error(String(msg ?? 'Operation failed.'))
           }
-          return
+          return false
         }
       }
       toast.success('Role deleted successfully.')
       refetch()
+      return true
     } catch (err: any) {
       const data = err?.response?.data
       const msg = data?.message
@@ -92,6 +95,28 @@ export default function RolesPermissions() {
       } else {
         toast.error('Failed to delete role.')
       }
+      return false
+    }
+  }
+
+  const openDeleteModal = (role: Role) => {
+    setRoleToDelete(role)
+    setDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    if (!deletingRole) {
+      setDeleteModalOpen(false)
+      setRoleToDelete(null)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!roleToDelete) return
+    const ok = await handleDeleteRole(roleToDelete)
+    if (ok) {
+      setDeleteModalOpen(false)
+      setRoleToDelete(null)
     }
   }
 
@@ -148,7 +173,7 @@ export default function RolesPermissions() {
                           {!r.is_static && (
                             <button
                               className="btn btn-outline-danger ms-auto"
-                              onClick={() => handleDeleteRole(r)}
+                              onClick={() => openDeleteModal(r)}
                               disabled={deletingRole}
                             >
                               <i className="ri-delete-bin-6-line align-bottom"></i>
@@ -268,6 +293,12 @@ export default function RolesPermissions() {
         </div>
 
       </div>
+      <DeleteConfirmationModal
+        show={deleteModalOpen}
+        onConfirm={confirmDelete}
+        onClose={closeDeleteModal}
+        loading={deletingRole}
+      />
     </div>
   )
 }
