@@ -33,9 +33,10 @@ export const createEmployee = async (payload: Partial<Employee>): Promise<Employ
 }
 
 export const updateEmployee = async (id: string | number, payload: Partial<Employee>): Promise<Employee> => {
-  const { data } = await apiClient.put(`/employees/${id}`, payload)
+  const { data } = await apiClient.put(`/common/employees/${id}`, payload)
   return data
 }
+
 
 export const deleteEmployee = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/employees/${id}`)
