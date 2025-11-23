@@ -41,27 +41,27 @@ function PartnersPage() {
 export default function App() {
   return (
     <>
-    <ToastContainer theme="colored" />
-    <Routes>
-      <Route element={<GuestRoute />}> 
-        <Route path="login" element={<SignIn />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="reset-password" element={<ResetPassword />} />
-      </Route>
-      <Route element={<ProtectedRoute />}> 
-        <Route element={<Layout />}> 
-          <Route index element={<Dashboard />} />
-          <Route path="partners" element={<PartnersPage />} />
-          <Route path="employees" element={<Employees />} />
-          <Route path="users" element={<Users />} />
-          <Route path="employee-details" element={<EmployeeDetails />} />
-          <Route path="under-construction/:feature" element={<UnderConstruction />} />
-          <Route path="roles-permissions" element={<RolesPermissions />} />
-          <Route path="roles-permissions/create" element={<CreateRole />} />
-          <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+      <ToastContainer theme="colored" />
+      <Routes>
+        <Route element={<GuestRoute />}>
+          <Route path="login" element={<SignIn />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
         </Route>
-      </Route>
-    </Routes>
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="partners" element={<PartnersPage />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="users" element={<Users />} />
+            <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+            <Route path="under-construction/:feature" element={<UnderConstruction />} />
+            <Route path="roles-permissions" element={<RolesPermissions />} />
+            <Route path="roles-permissions/create" element={<CreateRole />} />
+            <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+          </Route>
+        </Route>
+      </Routes>
     </>
   )
 }

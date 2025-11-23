@@ -332,3 +332,25 @@
 .permissions-scroll::-webkit-scrollbar-thumb:hover,.permissions-user-scroll::-webkit-scrollbar-thumb:hover{background:#555}
 
 
+.p-dropdown:not(.p-disabled).p-focus {
+  box-shadow: none !important;
+  border-color: var(--vz-border-width) solid var(--vz-input-border-custom);
+  border: var(--vz-border-width) solid var(--vz-input-border-custom);
+}
+
+.p-dropdown:not(.p-disabled):hover {
+  border-color: var(--vz-border-width) solid var(--vz-input-border-custom);
+  border: var(--vz-border-width) solid var(--vz-input-border-custom);
+}
+
+.p-inputtext:enabled,
+.p-inputtext:enabled:focus {
+  box-shadow: none !important;
+  border-color: var(--vz-border-width) solid var(--vz-input-border-custom);
+  border: var(--vz-border-width) solid var(--vz-input-border-custom);
+  height: 37.5px !important;
+}
+
+.signup-page-form .p-dropdown-label.p-inputtext {
+  font-size: .9rem !important;
+}

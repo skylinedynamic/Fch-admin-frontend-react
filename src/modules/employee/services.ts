@@ -1,6 +1,8 @@
 import { apiClient } from '../../lib/http/apiClient'
 import type { Employee, EmployeeSearchPayload, EmployeeListResponse } from './types'
+
 export type DepartmentStatusType = 'department' | 'status'
+
 export const fetchEmployees = async (payload: EmployeeSearchPayload = {}): Promise<EmployeeListResponse> => {
   // Ensure required fields are always present in POST body
   const body: EmployeeSearchPayload = {
@@ -14,7 +16,6 @@ export const fetchEmployees = async (payload: EmployeeSearchPayload = {}): Promi
     sort_order: payload.sort_order,
   }
 
-  
   const { data } = await apiClient.post('/common/employees/fetch-employees', body)
   const employees = Array.isArray(data.data) ? data.data : []
   const meta = data.meta ?? {}
@@ -23,8 +24,8 @@ export const fetchEmployees = async (payload: EmployeeSearchPayload = {}): Promi
 }
 
 export const fetchEmployeeById = async (id: string | number): Promise<Employee> => {
-  const { data } = await apiClient.get(`/employees/${id}`)
-  return data
+  const { data } = await apiClient.get(`/common/employees/${id}`)
+  return data.data
 }
 
 export const createEmployee = async (payload: Partial<Employee>): Promise<Employee> => {
@@ -37,11 +38,9 @@ export const updateEmployee = async (id: string | number, payload: Partial<Emplo
   return data
 }
 
-
 export const deleteEmployee = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/employees/${id}`)
 }
-
 
 export const fetchDepartmentStatus = async (
   payload: { type: 'department' | 'status' }
@@ -66,4 +65,14 @@ export const fetchDepartmentStatus = async (
 export const deleteEmployees = async (ids: Array<number | string>) => {
   const res = await apiClient.post('/common/employees/multiple-delete', { ids });
   return res.data; // API response
+};
+
+export const fetchDepartments = async () => {
+  const res = await apiClient.post('/common/departments/fetch-departments');
+  return res.data.data;
+};
+
+export const saveDepartment = async (payload: { name: string }) => {
+  const res = await apiClient.post('/common/departments', payload);
+  return res.data;
 };

@@ -63,14 +63,14 @@ export default function Employees() {
     loadDepartments();
   }, [])
 
-const loadDepartments = async () => {
-  try {
-    const departmentList = await fetchDepartmentStatus({ type: 'department' })
-    setDepartments(departmentList)
-  } catch (error) {
-    console.error('Failed to load departments', error)
+  const loadDepartments = async () => {
+    try {
+      const departmentList = await fetchDepartmentStatus({ type: 'department' })
+      setDepartments(departmentList)
+    } catch (error) {
+      console.error('Failed to load departments', error)
+    }
   }
-}
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
     let _filters = { ...filters }
@@ -80,7 +80,7 @@ const loadDepartments = async () => {
   }
 
   const nameBody = (rowData) => (
-    <Link to="/employee-details" className="fw-medium link-primary">{rowData.full_name}</Link>
+    <Link to={`/employee-details/${rowData.id}`} className="fw-medium link-primary"> {rowData.full_name}</Link>
   )
 
   // Status column body template
@@ -174,7 +174,7 @@ const loadDepartments = async () => {
           }
         })
         .catch((_err) => {
-          
+
         })
         .finally(() => setLoading(false))
     }, 300)
@@ -280,8 +280,7 @@ const loadDepartments = async () => {
         }
         if (actionMenu) actionMenu.classList.remove('d-none')
       } else {
-        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add Candidate'
-        if (originalHref) primaryBtn.setAttribute('href', originalHref)
+        primaryBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Add Employee'
         primaryBtn.classList.remove('bg-success', 'text-white')
         primaryBtn.classList.add('btn-primary')
         // Restore default navigation when no selection
@@ -365,51 +364,51 @@ const loadDepartments = async () => {
     }
   };
 
-const loadEmployees = () => {
-  setLoading(true)
-  const payload = {
-    department: appliedDeptFilter || '',
-    job_status: appliedStatusFilter || '',
-    search: appliedGlobalFilterValue || '',
-    filters: appliedFilters,
-    page,
-    per_page: perPage,
-    sort_field: sortField,
-    sort_order: sortOrder,
+  const loadEmployees = () => {
+    setLoading(true)
+    const payload = {
+      department: appliedDeptFilter || '',
+      job_status: appliedStatusFilter || '',
+      search: appliedGlobalFilterValue || '',
+      filters: appliedFilters,
+      page,
+      per_page: perPage,
+      sort_field: sortField,
+      sort_order: sortOrder,
+    }
+
+    fetchEmployees(payload)
+      .then((res) => {
+        const next = Array.isArray(res) ? res : res?.employees ?? []
+        const meta = Array.isArray(res) ? undefined : res?.meta
+        setRows(next)
+        if (meta) {
+          setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
+          if (typeof meta.current_page === 'number') setPage(meta.current_page)
+          if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
+        } else {
+          setTotalRecords(next.length)
+        }
+      })
+      .catch((_err) => {
+        console.error('Failed to fetch employees', _err)
+      })
+      .finally(() => setLoading(false))
   }
 
-  fetchEmployees(payload)
-    .then((res) => {
-      const next = Array.isArray(res) ? res : res?.employees ?? []
-      const meta = Array.isArray(res) ? undefined : res?.meta
-      setRows(next)
-      if (meta) {
-        setTotalRecords(typeof meta.total === 'number' ? meta.total : next.length)
-        if (typeof meta.current_page === 'number') setPage(meta.current_page)
-        if (typeof meta.per_page === 'number') setPerPage(meta.per_page)
-      } else {
-        setTotalRecords(next.length)
-      }
-    })
-    .catch((_err) => {
-      console.error('Failed to fetch employees', _err)
-    })
-    .finally(() => setLoading(false))
-  }
 
+  const openDeleteModal = () => {
+    if (!selection || selection.length === 0) {
+      toast.warn('Please select at least one employee to delete.');
+      return;
+    }
+    setDeleteRows(selection); // store selected rows
+    setShowDeleteModal(true); // ✅ React modal will now open correctly
+  };
 
-const openDeleteModal = () => {
-  if (!selection || selection.length === 0) {
-    toast.warn('Please select at least one employee to delete.');
-    return;
-  }
-  setDeleteRows(selection); // store selected rows
-  setShowDeleteModal(true); // ✅ React modal will now open correctly
-};
-
-const closeDeleteModal = () => {
-  setShowDeleteModal(false);
-};
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+  };
 
   return (
     <div className="page-content">
@@ -434,7 +433,7 @@ const closeDeleteModal = () => {
                       <form onSubmit={(e) => e.preventDefault()}>
                         <div className="row g-3 mb-0 align-items-center">
                           <div className="col-sm-auto">
-                          <div className="btn-group">
+                            <div className="btn-group">
                               {Array.isArray(selection) && selection.length > 0 ? (
                                 <>
                                   <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
@@ -448,21 +447,21 @@ const closeDeleteModal = () => {
                                     <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li> */}
                                     {/* <li><hr className="dropdown-divider" /></li> */}
-                                   <li>
-                                        <button
-                                          type="button"
-                                          className="dropdown-item text-danger"
-                                          onClick={openDeleteModal} // ✅ React state handles modal
-                                        >
-                                          <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                        </button>
-                                      </li>
+                                    <li>
+                                      <button
+                                        type="button"
+                                        className="dropdown-item text-danger"
+                                        onClick={openDeleteModal} // ✅ React state handles modal
+                                      >
+                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                      </button>
+                                    </li>
                                   </ul>
                                 </>
                               ) : (
-                                <a href="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
-                                  <i className="ri-add-fill me-1 align-bottom"></i> Add Candidate
-                                </a>
+                                <Link to="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                  <i className="ri-add-fill me-1 align-bottom"></i> Add Employee
+                                </Link>
                               )}
                             </div>
                           </div>
@@ -478,16 +477,16 @@ const closeDeleteModal = () => {
                   <div className="card">
                     <div className="card-body">
                       <form onSubmit={(e) => {
-                          e.preventDefault(); // prevent page reload
-                          onApplyFilters();   // trigger your search function
-                        }}>
+                        e.preventDefault(); // prevent page reload
+                        onApplyFilters();   // trigger your search function
+                      }}>
                         <div className="row g-3 mb-3">
                           <div className="col-xxl-4 col-sm-12">
                             <div className="search-box">
                               <input
                                 type="text"
                                 className="form-control search bg-light border-light"
-                               
+
                                 autoComplete="off"
                                 placeholder="Search here..."
                                 value={globalFilterValue}
@@ -511,16 +510,16 @@ const closeDeleteModal = () => {
                               </select>
                             </div>
                           </div>
-                          
+
                           <div className="col-xxl-3 col-sm-4">
                             <div className="input-light">
-                            <select
+                              <select
                                 className="form-control"
                                 name="department"
                                 id="idDepartment"
                                 onChange={onDeptChange}
                               >
-                                 <option value="" defaultValue>Select Department</option>
+                                <option value="" defaultValue>Select Department</option>
                                 {departments.map((dept) => (
                                   <option key={dept.id} value={dept.department}>
                                     {dept.department}
@@ -544,8 +543,8 @@ const closeDeleteModal = () => {
                       <div>
                         <div className="table-responsive table-card mt-1">
                           <DataTable
-                            scrollable 
-                            scrollHeight="510px"  
+                            scrollable
+                            scrollHeight="510px"
                             value={rows}
                             paginator
                             lazy
@@ -585,7 +584,7 @@ const closeDeleteModal = () => {
                             <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
                             <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
                             <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
-                             <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                            <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
                           </DataTable>
                         </div>
                       </div>
@@ -594,11 +593,11 @@ const closeDeleteModal = () => {
                 </div>
               </div>
               <DeleteConfirmationModal
-                  show={showDeleteModal}
-                  onConfirm={handleDeleteConfirm}
-                  onClose={closeDeleteModal}
-                  loading={loading}
-                />
+                show={showDeleteModal}
+                onConfirm={handleDeleteConfirm}
+                onClose={closeDeleteModal}
+                loading={loading}
+              />
             </div>
           </div>
         </div>

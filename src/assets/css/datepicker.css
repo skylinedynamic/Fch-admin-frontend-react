@@ -1,0 +1,77 @@
+/* Custom DatePicker Styles */
+.custom-datepicker .p-datepicker {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.custom-datepicker .p-datepicker-header {
+    background-color: #3b5998; /* Dark blue header matching the image */
+    color: #ffffff;
+    padding: 1rem;
+    border-bottom: none;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-title {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev,
+.custom-datepicker .p-datepicker-header .p-datepicker-next {
+    color: #ffffff;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev:hover,
+.custom-datepicker .p-datepicker-header .p-datepicker-next:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.custom-datepicker table th {
+    color: #ffffff; /* Weekday headers in white if inside header, or adjust if below */
+    background-color: #3b5998; /* Match header background */
+    padding: 0.5rem;
+    font-weight: 500;
+}
+
+.custom-datepicker table td {
+    padding: 0.5rem;
+}
+
+.custom-datepicker table td > span {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.custom-datepicker table td > span.p-highlight {
+    background-color: #3b5998;
+    color: #ffffff;
+}
+
+.custom-datepicker .p-datepicker-today > span {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+/* Month/Year Navigator Styles */
+.custom-datepicker .p-datepicker-header .p-dropdown {
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.custom-datepicker .p-datepicker-header .p-dropdown .p-inputtext {
+    color: #ffffff;
+}
+
+.custom-datepicker .p-datepicker-header .p-dropdown .p-dropdown-trigger {
+    color: #ffffff;
+}
