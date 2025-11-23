@@ -603,54 +603,30 @@ export default function EmployeeDetails() {
                           </div>
                         </div>
 
-                        {/* ===== Create Account Checkbox (Works for both Create & Edit) ===== */}
-                        <div className="col-lg-6">
-                          <div className="mb-3 pt-3">
-                            <div className="form-check">
-                              <input
-                                id="createAccountCheckbox"
-                                type="checkbox"
-                                className="form-check-input"
-                                name="create_account"
-                                checked={!!employee.user}    // ➝ true if user exists
-                                onChange={handleChange}
-                              />
-                              <label className="form-check-label" htmlFor="createAccountCheckbox">
-                                Create account
-                              </label>
+                          {/* ===== Create Account Checkbox (Works for both Create & Edit) ===== */}
+                          <div className="col-lg-6">
+                            <div className="mb-3 pt-3">
+                              <div className="form-check">
+                                <input
+                                  id="createAccountCheckbox"
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  name="create_account"
+                                  checked={employee.user}    // ✅ controlled by state
+                                  onChange={handleChange}
+                                />
+                                <label className="form-check-label" htmlFor="createAccountCheckbox">
+                                  Create account
+                                </label>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* ===== Role Dropdown Logic ===== */}
-                        <div className="col-lg-6">
-                          {employee.id ? (
-                            /* ================== EDIT MODE ================== */
-                            employee.user && (
+                          {/* ===== Role Dropdown Logic ===== */}
+                          <div className="col-lg-6">
+                            {employee.create_account && (
                               <div className="mb-3">
                                 <label htmlFor="roleSelect" className="form-label">Assign role</label>
-
-                                <select
-                                  name="role_id"
-                                  value={employee.user?.role_id ?? ""}
-                                  className="form-control"
-                                  onChange={handleChange}
-                                >
-                                  <option value="">Select role</option>
-                                  {roles.map((role) => (
-                                    <option key={role.id} value={role.id}>
-                                      {role.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )
-                          ) : (
-                            /* ================== CREATE MODE ================== */
-                            employee.create_account && (
-                              <div className="mb-3">
-                                <label htmlFor="roleSelect" className="form-label">Assign role</label>
-
                                 <select
                                   name="role_id"
                                   value={employee.role_id ?? ""}
@@ -665,9 +641,8 @@ export default function EmployeeDetails() {
                                   ))}
                                 </select>
                               </div>
-                            )
-                          )}
-                        </div>
+                            )}
+                          </div>
 
                         <div className="col-lg-6">
                           <div className="mb-3">
