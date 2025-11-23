@@ -88,10 +88,10 @@ export default function EmployeeDetails() {
           // Convert string booleans to actual booleans
           const normalizedData = {
             ...data,
-            create_account: data.create_account === true || data.create_account === "true" || data.create_account === 1
+            create_account: data.create_account === true || data.create_account === "true" || data.create_account === 1,
+            role_id: data.user?.role_id ?? "",
+            image: data.image || null,
           };
-          console.log(data, 'araft');
-
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
           // Initialize states and cities if country/state exists
           if (data.country && locationData[data.country]) {
@@ -153,6 +153,16 @@ export default function EmployeeDetails() {
       newValue = files[0]; // this is a File object
     } else {
       newValue = value;
+    }
+
+    if (name === "create_account") {
+      setEmployee(prev => ({
+        ...prev,
+        create_account: checked
+      }));
+      return; // skip the rest of handleChange
+    } else if (type === "checkbox") {
+      newValue = checked;
     }
 
     if (name === 'country') {
@@ -231,10 +241,13 @@ export default function EmployeeDetails() {
       const formData = new FormData();
       Object.entries(employee).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          if (key === 'image' && value instanceof File) {
-            formData.append(key, value);
+          if (key === 'image') {
+            if (value instanceof File) {
+              formData.append(key, value); // new file
+            } else if (typeof value === 'string' && value.startsWith('http')) {
+              // optional: skip appending if not changed
+            }
           } else if (key === 'create_account') {
-            // Convert boolean to 1 or 0 for backend
             formData.append(key, value ? '1' : '0');
           } else {
             formData.append(key, value);
@@ -309,10 +322,10 @@ export default function EmployeeDetails() {
                           <div className="card">
                             <div className="profile-user position-relative d-inline-block mx-auto mb-4">
                               <img
-                                src={employee.image ? URL.createObjectURL(employee.image) : "assets/images/users/avatar-1.jpg"}
-                                className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
-                                alt="user-profile"
-                              />
+                                  src={employee.image instanceof File ? URL.createObjectURL(employee.image) : employee.image || "assets/images/users/avatar-1.jpg"}
+                                  className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
+                                  alt="user-profile"
+                                />
                               <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
                                 <input id="profile-img-file-input" type="file" className="profile-img-file-input" name="image" onChange={handleChange} />
                                 <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
@@ -590,6 +603,7 @@ export default function EmployeeDetails() {
                           </div>
                         </div>
 
+                        {/* ===== Create Account Checkbox (Works for both Create & Edit) ===== */}
                         <div className="col-lg-6">
                           <div className="mb-3 pt-3">
                             <div className="form-check">
@@ -598,7 +612,7 @@ export default function EmployeeDetails() {
                                 type="checkbox"
                                 className="form-check-input"
                                 name="create_account"
-                                checked={employee.user} // ✅ check both
+                                checked={!!employee.user}    // ➝ true if user exists
                                 onChange={handleChange}
                               />
                               <label className="form-check-label" htmlFor="createAccountCheckbox">
@@ -608,22 +622,50 @@ export default function EmployeeDetails() {
                           </div>
                         </div>
 
+                        {/* ===== Role Dropdown Logic ===== */}
                         <div className="col-lg-6">
-                          {employee.id && (
-                            <div className="mb-3">
-                              <label htmlFor="roleSelect" className="form-label">Assign role</label>
-                              <select
-                                name="role_id"
-                                value={employee.user.role_id}
-                                className="form-control"
-                                onChange={handleChange}
-                              >
-                                <option value="">Select role</option>
-                                {roles.map((role) => (
-                                  <option key={role.id} value={role.id}>{role.name}</option>
-                                ))}
-                              </select>
-                            </div>
+                          {employee.id ? (
+                            /* ================== EDIT MODE ================== */
+                            employee.user && (
+                              <div className="mb-3">
+                                <label htmlFor="roleSelect" className="form-label">Assign role</label>
+
+                                <select
+                                  name="role_id"
+                                  value={employee.user?.role_id ?? ""}
+                                  className="form-control"
+                                  onChange={handleChange}
+                                >
+                                  <option value="">Select role</option>
+                                  {roles.map((role) => (
+                                    <option key={role.id} value={role.id}>
+                                      {role.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )
+                          ) : (
+                            /* ================== CREATE MODE ================== */
+                            employee.create_account && (
+                              <div className="mb-3">
+                                <label htmlFor="roleSelect" className="form-label">Assign role</label>
+
+                                <select
+                                  name="role_id"
+                                  value={employee.role_id ?? ""}
+                                  className="form-control"
+                                  onChange={handleChange}
+                                >
+                                  <option value="">Select role</option>
+                                  {roles.map((role) => (
+                                    <option key={role.id} value={role.id}>
+                                      {role.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )
                           )}
                         </div>
 
