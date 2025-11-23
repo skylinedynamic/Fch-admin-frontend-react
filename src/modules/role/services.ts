@@ -61,6 +61,7 @@ export const fetchRoles = async (): Promise<Role[]> => {
     return {
       id: r.id,
       name: r.name,
+      description: r.description,
       code: String(r.code ?? ''),
       is_static: isStatic,
       permissions: perms,
@@ -96,6 +97,7 @@ export const fetchRoleDetail = async (id: number | string): Promise<RoleDetail> 
   const normalized: RoleDetail & { permission_ids?: number[] } = {
     id: data.id,
     name: data.name,
+    description: data.description,
     // Normalize permission names to string[] for UI
     permission: permissionArray,
     users: Array.isArray(data.users) ? data.users : [],

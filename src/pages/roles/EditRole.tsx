@@ -53,12 +53,13 @@ export default function EditRole() {
 
   const [modules, setModules] = useState<ModuleDef[]>([])
   const [roleName, setRoleName] = useState('')
+  const [description, setDescription] = useState('')
   const [adminAccess, setAdminAccess] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
   const [errors, setErrors] = useState<{ name?: string; permission_ids?: string }>({})
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [detail, setDetail] = useState<{ id: number | string; name: string; permission: string[]; permission_ids?: number[] } | null>(null)
+  const [detail, setDetail] = useState<{ id: number | string; name: string; description?: string; permission: string[]; permission_ids?: number[] } | null>(null)
   const hasFetchedDetailRef = React.useRef<boolean>(false)
 
   const { data: groupedPerms, isLoading: permsLoading, isError: permsError } = useGroupedPermissions({ fresh: true })
@@ -88,6 +89,7 @@ export default function EditRole() {
         if (cancelled) return
         setDetail(d)
         setRoleName(d.name || '')
+        setDescription(d.description || '')
       } catch (err: any) {
         setDetailError(err?.response?.data?.message || 'Failed to load role details.')
       }
@@ -214,7 +216,7 @@ export default function EditRole() {
     setErrors({})
     if (!name) return
     try {
-      const res = await updateRole({ id: roleId, payload: { name, permission_ids: permissionIds } })
+      const res = await updateRole({ id: roleId, payload: { name, description, permission_ids: permissionIds } })
       const msg = (res as any)?.message || 'Role updated successfully.'
       toast(msg)
       navigate('/roles-permissions')
@@ -278,6 +280,11 @@ export default function EditRole() {
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
                     <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label">Description</label>
+                    <textarea className="form-control" placeholder="Enter role description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
                   </div>
 
                   <div className="mb-3">

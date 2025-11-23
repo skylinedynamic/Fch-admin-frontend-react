@@ -31,12 +31,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth',
       storage: createJSONStorage(() => localStorage),
-      // Persist token only when rememberMe is true; always persist rememberMe flag
-      partialize: (state) => (
-        state.rememberMe
-          ? { token: state.token, user: state.user, rememberMe: state.rememberMe }
-          : { rememberMe: state.rememberMe }
-      ),
+      // Always persist token and user, regardless of rememberMe
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        rememberMe: state.rememberMe
+      }),
     }
   )
 )
