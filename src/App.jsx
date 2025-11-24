@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from '../src/components/Layout/Layout.jsx'
 import Dashboard from '../src/pages/dashboard/Dashboard.jsx'
@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx'
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx'
 import CreateRole from '../src/pages/roles/CreateRole.tsx'
 import EditRole from '../src/pages/roles/EditRole.tsx'
-import { ProtectedRoute, GuestRoute } from './lib/auth'
+import { ProtectedRoute, GuestRoute, checkSession } from './lib/auth'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -39,6 +39,10 @@ function PartnersPage() {
 }
 
 export default function App() {
+  useEffect(() => {
+    checkSession()
+  }, [])
+
   return (
     <>
       <ToastContainer theme="colored" />

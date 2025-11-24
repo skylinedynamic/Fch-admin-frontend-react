@@ -160,7 +160,7 @@ export default function RolesPermissions() {
                     {roles.map((r, idx) => (
                       <div className="role-summary-card" key={(r.id ?? r.name) + String(idx)} style={{ position: 'relative' }}>
                         <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid text-white">{Number(r.users_count ?? 0)} users</span></div>
-                        <p className="role-meta mb-2">Total users with this role: <strong>{Number(r.users_count ?? 0)}</strong></p>
+                        {r.description && <p className="text-muted fs-14 mb-2">{r.description}</p>}
                         <ul className="bullet-list">
                           {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
                           {remainingCount(r.permissions) > 0 && (

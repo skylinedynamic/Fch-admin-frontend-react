@@ -3,6 +3,7 @@
 export type Role = {
   id: number | string
   name: string
+  description?: string
   code: string,
   is_static: boolean,
   permissions: string[]
@@ -27,6 +28,7 @@ export type GroupedPermissionsObject = Record<string, Array<string | ApiPermissi
 // Payload for creating a role
 export type CreateRolePayload = {
   name: string
+  description?: string
   permission_ids: number[]
 }
 
@@ -44,6 +46,7 @@ export type RoleDetailUser = {
 export type RoleDetail = {
   id: number | string
   name: string
+  description?: string
   permission: string[]
   // Optional permission IDs when backend provides an id->name map
   permission_ids?: number[]

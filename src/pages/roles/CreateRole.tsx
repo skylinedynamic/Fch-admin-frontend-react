@@ -42,6 +42,7 @@ export default function CreateRole() {
   const [modules, setModules] = useState<ModuleDef[]>([])
 
   const [roleName, setRoleName] = useState('')
+  const [description, setDescription] = useState('')
   const [adminAccess, setAdminAccess] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
@@ -139,7 +140,7 @@ export default function CreateRole() {
     }
 
     try {
-      const res = await createRole({ name, permission_ids: permissionIds })
+      const res = await createRole({ name, description, permission_ids: permissionIds })
       const successMsg = (res as any)?.message || 'Role created successfully.'
       toast(successMsg,)
       navigate('/roles-permissions')
@@ -202,6 +203,11 @@ export default function CreateRole() {
                     <label className="form-label" style={{ fontSize: '.90rem' }}>Role name *</label>
                     <input type="text" className="form-control" placeholder="Enter a role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
                     {errors.name && <div className="text-danger mt-1 small">{errors.name}</div>}
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label" style={{ fontSize: '.90rem' }}>Description</label>
+                    <textarea className="form-control" placeholder="Enter role description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
                   </div>
 
                   <div className="mb-3">
