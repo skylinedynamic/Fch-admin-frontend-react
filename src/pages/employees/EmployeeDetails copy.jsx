@@ -81,19 +81,6 @@ export default function EmployeeDetails() {
                         <div className="col-lg-6">
                           <div className="mb-3">
                             <label htmlFor="positionInput" className="form-label">Position</label>
-                            <input type="text" className="form-control" id="positionInput" placeholder="Enter position" defaultValue="Sales Manager" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="jobStatusInput" className="form-label">Job Status</label>
-                            <input type="text" className="form-control" id="jobStatusInput" placeholder="Enter job status" defaultValue="Full Time" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
                             <label htmlFor="workPhoneInput" className="form-label">Work Phone</label>
                             <input type="text" className="form-control" id="workPhoneInput" placeholder="Enter phone number" defaultValue="+(1) 987 6543" />
                           </div>
@@ -185,23 +172,6 @@ export default function EmployeeDetails() {
                           <div className="mb-3">
                             <label htmlFor="passportInput" className="form-label">Passport No</label>
                             <input type="text" className="form-control" id="passportInput" placeholder="Enter Passport No" />
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
-                            <label htmlFor="genderInput" className="form-label">Gender</label>
-                            <select className="form-select" id="genderInput" name="gender" data-choices>
-                              <option value="">Select gender</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                          <div className="mb-3">
                             <label htmlFor="bloodGroupInput" className="form-label">Blood Group</label>
                             <input type="text" className="form-control" id="bloodGroupInput" placeholder="Enter Blood Group" />
                           </div>

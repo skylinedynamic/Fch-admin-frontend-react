@@ -1,4 +1,5 @@
 import React from 'react';
+import { MARITAL_STATUS_OPTIONS } from '../../../../config/maritalStatusOptions';
 
 export default function EmergencyContactSection({ employee, onChange }) {
     return (
@@ -42,7 +43,7 @@ export default function EmergencyContactSection({ employee, onChange }) {
                         <div className="mb-3">
                             <label className="form-label">Marital Status</label>
                             <select
-                                className="form-select"
+                                className="form-control"
                                 data-choices
                                 data-choices-search-false
                                 name="marital_status"
@@ -50,10 +51,11 @@ export default function EmergencyContactSection({ employee, onChange }) {
                                 onChange={onChange}
                             >
                                 <option value="">Select</option>
-                                <option value="single">Single</option>
-                                <option value="married">Married</option>
-                                <option value="divorced">Divorced</option>
-                                <option value="widowed">Widowed</option>
+                                {MARITAL_STATUS_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>

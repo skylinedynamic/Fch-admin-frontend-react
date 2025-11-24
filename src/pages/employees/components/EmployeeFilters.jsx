@@ -1,4 +1,5 @@
 import React from 'react';
+import { STATUS } from '../../../config/statusOptions';
 
 export default function EmployeeFilters({
     globalFilterValue,
@@ -49,8 +50,11 @@ export default function EmployeeFilters({
                             onChange={(e) => onStatusChange({ target: { value: e.target.value } })}
                         >
                             <option value="">Job Status</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
+                            {STATUS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>

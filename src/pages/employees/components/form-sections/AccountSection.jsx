@@ -1,4 +1,5 @@
 import React from 'react';
+import { STATUS } from '../../../../config/statusOptions';
 
 export default function AccountSection({ employee, roles, onChange, isEditMode }) {
     return (
@@ -58,7 +59,7 @@ export default function AccountSection({ employee, roles, onChange, isEditMode }
                 <div className="mb-3">
                     <label className="form-label">Job Status</label>
                     <select
-                        className="form-select"
+                        className="form-control"
                         data-choices
                         data-choices-search-false
                         name="job_status"
@@ -66,8 +67,11 @@ export default function AccountSection({ employee, roles, onChange, isEditMode }
                         onChange={onChange}
                     >
                         <option value="">Select</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
+                        {STATUS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
