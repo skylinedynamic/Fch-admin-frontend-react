@@ -2,7 +2,6 @@ export type Employee = {
   id: number | string
 
   // Basic Info
-  full_name: string
   first_name?: string | null
   last_name?: string | null
   email?: string | null

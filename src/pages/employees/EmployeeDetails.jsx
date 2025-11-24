@@ -24,14 +24,12 @@ import { validateRequired, validateEmail, validatePhone, validateDate, validateS
 export default function EmployeeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState("");
 
-  // Location states
   const [countries] = useState(Object.keys(locationData).map(key => ({ label: locationData[key].name, value: key })));
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
@@ -85,7 +83,6 @@ export default function EmployeeDetails() {
     if (id) {
       fetchEmployeeById(id)
         .then((data) => {
-          // Convert string booleans to actual booleans
           const normalizedData = {
             ...data,
             create_account: data.create_account === true || data.create_account === "true" || data.create_account === 1,
@@ -149,7 +146,6 @@ export default function EmployeeDetails() {
     if (type === "checkbox") {
       newValue = checked;
     } else if (type === "file") {
-      // handle single file upload
       newValue = files[0]; // this is a File object
     } else {
       newValue = value;
@@ -160,7 +156,7 @@ export default function EmployeeDetails() {
         ...prev,
         create_account: checked
       }));
-      return; // skip the rest of handleChange
+      return;
     } else if (type === "checkbox") {
       newValue = checked;
     }
@@ -230,12 +226,8 @@ export default function EmployeeDetails() {
 
     if (!isValid) {
       setErrors(newErrors);
-      // toast.error("Please fill up the required fields");
       return;
     }
-
-
-
 
     try {
       const formData = new FormData();
@@ -265,8 +257,16 @@ export default function EmployeeDetails() {
 
       setTimeout(() => navigate("/employees"), 800);
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to save employee");
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        Object.entries(errors).forEach(([field, errorMsg]) => {
+          toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
+        });
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error(id ? "Failed to update employee" : "Failed to save employee");
+      }
     }
   };
 

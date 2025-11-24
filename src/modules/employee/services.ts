@@ -28,14 +28,25 @@ export const fetchEmployeeById = async (id: string | number): Promise<Employee> 
   return data.data
 }
 
-export const createEmployee = async (payload: Partial<Employee>): Promise<Employee> => {
-  const { data } = await apiClient.post('/common/employees', payload)
+export const createEmployee = async (payload: Partial<Employee> | FormData): Promise<Employee> => {
+  const config = payload instanceof FormData
+    ? { headers: { 'Content-Type': 'multipart/form-data' } }
+    : {};
+  const { data } = await apiClient.post('/common/employees', payload, config)
   return data
 }
 
-export const updateEmployee = async (id: string | number, payload: Partial<Employee>): Promise<Employee> => {
-  const { data } = await apiClient.put(`/common/employees/${id}`, payload)
-  return data
+export const updateEmployee = async (id: string | number, payload: Partial<Employee> | FormData): Promise<Employee> => {
+  // Laravel doesn't support file uploads via PUT, so we use POST with _method override
+  if (payload instanceof FormData) {
+    payload.append('_method', 'PUT');
+    const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+    const { data } = await apiClient.post(`/common/employees/${id}`, payload, config);
+    return data;
+  } else {
+    const { data } = await apiClient.put(`/common/employees/${id}`, payload);
+    return data;
+  }
 }
 
 export const deleteEmployee = async (id: string | number): Promise<void> => {
