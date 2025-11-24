@@ -322,10 +322,10 @@ export default function EmployeeDetails() {
                           <div className="card">
                             <div className="profile-user position-relative d-inline-block mx-auto mb-4">
                               <img
-                                  src={employee.image instanceof File ? URL.createObjectURL(employee.image) : employee.image || "assets/images/users/avatar-1.jpg"}
-                                  className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
-                                  alt="user-profile"
-                                />
+                                src={employee.image instanceof File ? URL.createObjectURL(employee.image) : employee.image || "assets/images/users/avatar-1.jpg"}
+                                className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
+                                alt="user-profile"
+                              />
                               <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
                                 <input id="profile-img-file-input" type="file" className="profile-img-file-input" name="image" onChange={handleChange} />
                                 <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
@@ -603,46 +603,64 @@ export default function EmployeeDetails() {
                           </div>
                         </div>
 
-                          {/* ===== Create Account Checkbox (Works for both Create & Edit) ===== */}
-                          <div className="col-lg-6">
-                            <div className="mb-3 pt-3">
-                              <div className="form-check">
-                                <input
-                                  id="createAccountCheckbox"
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  name="create_account"
-                                  checked={employee.user}    // ✅ controlled by state
-                                  onChange={handleChange}
-                                />
-                                <label className="form-check-label" htmlFor="createAccountCheckbox">
-                                  Create account
-                                </label>
-                              </div>
+                        {/* ===== Create Account Checkbox (Works for both Create & Edit) ===== */}
+                        <div className="col-lg-6">
+                          <div className="mb-3 pt-3">
+                            <div className="form-check">
+                              <input
+                                id="createAccountCheckbox"
+                                type="checkbox"
+                                className="form-check-input"
+                                name="create_account"
+                                checked={id ? !!employee.user : employee.create_account}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+
+                                  if (!id) {
+                                    // For new employees, toggle create_account state
+                                    setEmployee((prev) => ({
+                                      ...prev,
+                                      create_account: checked,
+                                      role_id: checked ? prev.role_id : "" // Clear role if unchecked
+                                    }));
+                                  } else {
+                                    // For existing employees, toggle user object
+                                    setEmployee((prev) => ({
+                                      ...prev,
+                                      user: checked ? (prev.user || {}) : null,
+                                      role_id: checked ? prev.role_id : "" // Clear role if unchecked
+                                    }));
+                                  }
+                                }}
+                              />
+                              <label className="form-check-label" htmlFor="createAccountCheckbox">
+                                Create account
+                              </label>
                             </div>
                           </div>
+                        </div>
 
-                          {/* ===== Role Dropdown Logic ===== */}
-                          <div className="col-lg-6">
-                            {employee.create_account && (
-                              <div className="mb-3">
-                                <label htmlFor="roleSelect" className="form-label">Assign role</label>
-                                <select
-                                  name="role_id"
-                                  value={employee.role_id ?? ""}
-                                  className="form-control"
-                                  onChange={handleChange}
-                                >
-                                  <option value="">Select role</option>
-                                  {roles.map((role) => (
-                                    <option key={role.id} value={role.id}>
-                                      {role.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-                          </div>
+                        {/* ===== Role Dropdown Logic ===== */}
+                        <div className="col-lg-6">
+                          {((id && employee.user) || (!id && employee.create_account)) && (
+                            <div className="mb-3 pt-3">
+                              <label htmlFor="roleSelect" className="form-label">Assign role</label>
+                              <select
+                                name="role_id"
+                                value={employee.role_id ?? ""}
+                                className="form-control"
+                                onChange={handleChange}
+                              >
+                                <option value="">Select role</option>
+                                {roles.map((role) => (
+                                  <option key={role.id} value={role.id}>
+                                    {role.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
 
                         <div className="col-lg-6">
                           <div className="mb-3">
