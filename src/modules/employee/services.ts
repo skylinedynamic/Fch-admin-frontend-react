@@ -57,16 +57,8 @@ export const fetchDepartmentStatus = async (
   payload: { type: 'department' | 'status' }
 ): Promise<{ label: string; value: string }[]> => {
   try {
-    const response = await apiClient.post('/common/employees/fetch-department-status', payload)
-
-    // Extract the data array from response
-    const data = response?.data?.data ?? []
-
-    // Map to { label, value } format
-    return data.map((item: any) => ({
-      id: item.id,  // for 'status' type, change to item.status
-      department: item.department,  // for 'status' type, change to item.status
-    }))
+    const response = await apiClient.post('/common/departments/fetch-departments', payload)
+    return response.data.data
   } catch (error) {
     console.error('Failed to fetch department/status', error)
     return []

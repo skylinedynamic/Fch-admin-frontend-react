@@ -1,0 +1,87 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
+import { Column } from 'primereact/column';
+
+export default function EmployeeTable({
+    rows,
+    loading,
+    totalRecords,
+    page,
+    perPage,
+    sortField,
+    sortOrder,
+    filters,
+    selection,
+    onSelectionChange,
+    onFilter,
+    onPage,
+    onSort
+}) {
+    // Name column body template
+    const nameBody = (rowData) => (
+        <Link to={`/employee-details/${rowData.id}`} className="fw-medium link-primary">
+            {rowData.full_name}
+        </Link>
+    );
+
+    // Status column body template
+    const statusBodyTemplate = (rowData) => {
+        const value = rowData?.job_status || rowData?.status || '';
+        const active = value === 'Active';
+        return (
+            <span className={`badge ${active ? 'border border-success text-success' : 'border border-danger text-danger'}`}>
+                {value || 'Inactive'}
+            </span>
+        );
+    };
+
+    return (
+        <div className="table-responsive table-card mt-1">
+            <DataTable
+                scrollable
+                scrollHeight="510px"
+                value={rows}
+                paginator
+                lazy
+                totalRecords={totalRecords}
+                first={(page - 1) * perPage}
+                rows={perPage}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                sortMode="single"
+                sortField={sortField}
+                sortOrder={sortOrder === 'asc' ? 1 : -1}
+                filterDisplay="menu"
+                filters={filters}
+                onFilter={onFilter}
+                onPage={onPage}
+                onSort={onSort}
+                globalFilterFields={[
+                    'full_name',
+                    'phone_number',
+                    'email',
+                    'department',
+                    'designation',
+                    'address',
+                    'job_status'
+                ]}
+                selection={selection}
+                onSelectionChange={onSelectionChange}
+                dataKey="id"
+                responsiveLayout="scroll"
+                className="p-datatable-sm"
+                loading={loading}
+                emptyMessage="No employees found"
+            >
+                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
+                <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
+                <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
+                <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+            </DataTable>
+        </div>
+    );
+}
