@@ -57,7 +57,7 @@ export default function EditRole() {
   const [adminAccess, setAdminAccess] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
-  const [errors, setErrors] = useState<{ name?: string; permission_ids?: string }>({})
+  const [errors, setErrors] = useState<{ name?: string; description?: string; permission_ids?: string }>({})
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detail, setDetail] = useState<{ id: number | string; name: string; description?: string; permission: string[]; permission_ids?: number[] } | null>(null)
   const hasFetchedDetailRef = React.useRef<boolean>(false)
@@ -223,9 +223,12 @@ export default function EditRole() {
     } catch (err: any) {
       const data = err?.response?.data
       const serverErrors = data?.errors || {}
-      const nextErrors: { name?: string; permission_ids?: string } = {}
+      const nextErrors: { name?: string; description?: string; permission_ids?: string } = {}
       if (serverErrors.name) {
         nextErrors.name = Array.isArray(serverErrors.name) ? serverErrors.name[0] : String(serverErrors.name)
+      }
+      if (serverErrors.description) {
+        nextErrors.description = Array.isArray(serverErrors.description) ? serverErrors.description[0] : String(serverErrors.description)
       }
       if (serverErrors.permission_ids) {
         nextErrors.permission_ids = Array.isArray(serverErrors.permission_ids) ? serverErrors.permission_ids[0] : String(serverErrors.permission_ids)
@@ -269,12 +272,12 @@ export default function EditRole() {
               </div>
             </div>
           </div>
-        </div>
+        </div >
 
         <div className="row">
           <div className="col-xxl-12">
             <div className="card">
-              <div className="card-body" style={{ minHeight: '73vh'}}>
+              <div className="card-body" style={{ minHeight: '73vh' }}>
                 <div className="role-form">
                   <div className="mb-4">
                     <label className="form-label">Role name <span className="text-danger">*</span></label>
@@ -285,6 +288,7 @@ export default function EditRole() {
                   <div className="mb-4">
                     <label className="form-label">Description</label>
                     <textarea className="form-control" placeholder="Enter role description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                    {errors.description && <div className="text-danger mt-1 small">{errors.description}</div>}
                   </div>
 
                   <div className="mb-3">
@@ -363,10 +367,10 @@ export default function EditRole() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div >
+        </div >
 
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
