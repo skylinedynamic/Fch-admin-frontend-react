@@ -19,8 +19,9 @@ export default function PersonalInfoSection({
         if (employee.image instanceof File) {
             return URL.createObjectURL(employee.image);
         }
-        if (employee.image && typeof employee.image === 'string' && employee.image.trim() !== '') {
-            return `${BASE_URL}/storage/${employee.image}`;
+
+        if (typeof employee.image === 'string' && employee.image.trim() !== '') {
+            return employee.image;
         }
         return '/assets/images/users/avatar-1.jpg';
     };

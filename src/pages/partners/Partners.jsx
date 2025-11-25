@@ -1,0 +1,447 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { DataTable } from '../../components/Table/DataTableWrapper';
+import { Column } from 'primereact/column';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { fetchPartners, allUsers } from '../../modules/partner/services';
+
+export default function Partners() {
+    // State for partners
+    const [partners, setPartners] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [totalRecords, setTotalRecords] = useState(0);
+
+    // Sorting state
+    const [sortField, setSortField] = useState('id');
+    const [sortOrder, setSortOrder] = useState('asc');
+
+    // Filter states
+    const [filters, setFilters] = useState({});
+    const [searchText, setSearchText] = useState('');
+    const [selectedCompany, setSelectedCompany] = useState('');
+    const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
+    const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [appliedCompany, setAppliedCompany] = useState('');
+    const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
+    const [appliedFilters, setAppliedFilters] = useState({});
+
+    // Checkbox selection state
+    const [selectedPartners, setSelectedPartners] = useState([]);
+
+    // Dropdown data
+    const [allPartnersList, setAllPartnersList] = useState([]);
+    const [assignedUsersList, setAssignedUsersList] = useState([]);
+
+    // Initialize filters
+    const initFilters = () => {
+        const initial = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            company_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+            owner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            contact_person: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            company_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            company_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            assigned_user_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            partner_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+        };
+        setFilters(initial);
+        setAppliedFilters(initial);
+    };
+
+    // Initialize filters on mount
+    useEffect(() => {
+        initFilters();
+    }, []);
+
+    // Load all partners for dropdown
+    useEffect(() => {
+        const loadAllPartners = async () => {
+            try {
+                const result = await fetchPartners();
+                if (result.status) {
+                    setAllPartnersList(result.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load partners list:', err);
+            }
+        };
+        loadAllPartners();
+    }, []);
+
+    // Load all assigned users for dropdown
+    useEffect(() => {
+        const loadAssignedUsers = async () => {
+            try {
+                const result = await allUsers();
+                if (result.status) {
+                    setAssignedUsersList(result.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load assigned users:', err);
+            }
+        };
+        loadAssignedUsers();
+    }, []);
+
+    // Load partners data with filters
+    useEffect(() => {
+        if (!appliedFilters || Object.keys(appliedFilters).length === 0) return;
+
+        const load = async () => {
+            setLoading(true);
+            try {
+                const payload = {
+                    search: appliedSearchText || '',
+                    partner_id: appliedCompany || '',
+                    assigned_user_id: appliedAssignedUser || '',
+                    filters: appliedFilters,
+                    page,
+                    per_page: perPage,
+                    sort_field: sortField,
+                    sort_order: sortOrder,
+                };
+
+                const result = await fetchPartners(payload);
+                if (result.status) {
+                    const data = result.data || [];
+                    const meta = result.meta;
+
+                    setPartners(data);
+                    setError(null);
+
+                    // Update pagination info from backend
+                    if (meta) {
+                        setTotalRecords(typeof meta.total === 'number' ? meta.total : data.length);
+                        if (typeof meta.current_page === 'number') setPage(meta.current_page);
+                        if (typeof meta.per_page === 'number') setPerPage(meta.per_page);
+                    } else {
+                        setTotalRecords(data.length);
+                    }
+                } else {
+                    setError(result.message || 'Failed to fetch partners');
+                }
+            } catch (err) {
+                setError(err.message || 'Failed to fetch partners');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const timeout = setTimeout(() => {
+            load();
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [appliedSearchText, appliedCompany, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
+
+    // Filter handlers
+    const handleApplyFilters = () => {
+        setAppliedSearchText(searchText);
+        setAppliedCompany(selectedCompany);
+        setAppliedAssignedUser(selectedAssignedUser);
+        setAppliedFilters(filters);
+        setPage(1); // Reset to first page when applying filters
+    };
+
+    const handleClearFilters = () => {
+        setSearchText('');
+        setSelectedCompany('');
+        setSelectedAssignedUser('');
+        setAppliedSearchText('');
+        setAppliedCompany('');
+        setAppliedAssignedUser('');
+        initFilters();
+        setPage(1); // Reset to first page when clearing filters
+    };
+
+    // Pagination handler
+    const onPage = (event) => {
+        const nextPerPage = event.rows;
+        const nextPage = Math.floor(event.first / event.rows) + 1;
+        setPerPage(nextPerPage);
+        setPage(nextPage);
+    };
+
+    // Sort handler
+    const onSort = (event) => {
+        const field = event.sortField;
+        const order = event.sortOrder === 1 ? 'asc' : 'desc';
+        setSortField(field || sortField);
+        setSortOrder(order);
+    };
+
+    // Filter handler
+    const onFilter = (e) => {
+        setFilters(e.filters);
+        setAppliedFilters(e.filters); // Apply filters immediately
+        setPage(1); // Reset to first page when filtering
+    };
+
+    // Column body templates
+    const companyNameBody = (rowData) => (
+        <Link to={`/partners/${rowData.id}`} className="fw-medium link-primary">
+            {rowData.company_name}
+        </Link>
+    );
+
+    return (
+        <div className="page-content">
+            {/* Header */}
+            <div className="container-fluid">
+                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                    <div className="col-12">
+                        <div className="d-flex align-items-center justify-content-between flex-row">
+                            <div className="flex-grow-1">
+                                <h4 className="fs-20 mb-1">Partners</h4>
+                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                    <ol className="breadcrumb m-0">
+                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
+                                        <li className="breadcrumb-item active" aria-current="page">Partners</li>
+                                    </ol>
+                                </nav>
+                            </div>
+                            <div className="mt-0">
+                                <form onSubmit={(e) => e.preventDefault()}>
+                                    <div className="row g-3 mb-0 align-items-center">
+                                        <div className="col-sm-auto">
+                                            <div className="btn-group">
+                                                {Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
+                                                    <>
+                                                        <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                                            Actions
+                                                        </button>
+                                                        <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <span className="visually-hidden">Toggle dropdown</span>
+                                                        </button>
+                                                        <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                                            <li>
+                                                                <button
+                                                                    type="button"
+                                                                    className="dropdown-item text-danger"
+                                                                    onClick={() => alert('Delete functionality coming soon!')}
+                                                                >
+                                                                    <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                                </button>
+                                                            </li>
+                                                        </ul>
+                                                    </>
+                                                ) : (
+                                                    <Link to="/partners/create" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                                        <i className="ri-add-fill me-1 align-bottom"></i> Add Partner
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters and Table */}
+                <div className="row">
+                    <div className="col-lg-12">
+                        <div className="card">
+                            <div className="card-body">
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleApplyFilters();
+                                }}>
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-xxl-4 col-sm-12">
+                                            <div className="search-box">
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    id="searchJob"
+                                                    placeholder="Search here..."
+                                                    autoComplete="off"
+                                                    value={searchText}
+                                                    onChange={(e) => setSearchText(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            handleApplyFilters();
+                                                        }
+                                                    }}
+                                                />
+                                                <i className="ri-search-line search-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-3 col-sm-4">
+                                            <div className="input-light">
+                                                <select
+                                                    className="form-control"
+                                                    data-choices
+                                                    data-choices-search-false
+                                                    name="partnerCompany"
+                                                    id="partnerCompany"
+                                                    value={selectedCompany}
+                                                    onChange={(e) => setSelectedCompany(e.target.value)}
+                                                >
+                                                    <option value="">All Partners</option>
+                                                    {allPartnersList.map((partner) => (
+                                                        <option key={partner.id} value={partner.id}>
+                                                            {partner.company_name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-3 col-sm-4">
+                                            <div className="input-light">
+                                                <select
+                                                    className="form-control"
+                                                    data-choices
+                                                    data-choices-search-false
+                                                    name="assignedUserFilter"
+                                                    id="assignedUserFilter"
+                                                    value={selectedAssignedUser}
+                                                    onChange={(e) => setSelectedAssignedUser(e.target.value)}
+                                                >
+                                                    <option value="">Assigned Users</option>
+                                                    {assignedUsersList.map((user) => (
+                                                        <option key={user.id} value={user.id}>
+                                                            {user.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                </button>
+                                                <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+
+                                {/* DataTable with Skeleton Loader */}
+                                <div className="table-responsive table-card mt-1">
+                                    <DataTable
+                                        scrollable
+                                        scrollHeight="510px"
+                                        value={partners}
+                                        paginator
+                                        lazy
+                                        totalRecords={totalRecords}
+                                        first={(page - 1) * perPage}
+                                        rows={perPage}
+                                        rowsPerPageOptions={[10, 25, 50, 100]}
+                                        sortMode="single"
+                                        sortField={sortField}
+                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                        filterDisplay="menu"
+                                        filters={filters}
+                                        onFilter={onFilter}
+                                        onPage={onPage}
+                                        onSort={onSort}
+                                        globalFilterFields={[
+                                            'company_name',
+                                            'owner_name',
+                                            'contact_person',
+                                            'company_email',
+                                            'company_phone',
+                                            'assigned_user_name',
+                                            'partner_type'
+                                        ]}
+                                        selection={selectedPartners}
+                                        onSelectionChange={(e) => setSelectedPartners(e.value)}
+                                        dataKey="id"
+                                        responsiveLayout="scroll"
+                                        className="p-datatable-sm"
+                                        loading={loading}
+                                        emptyMessage="No partners found"
+                                    >
+                                        <Column
+                                            selectionMode="multiple"
+                                            headerStyle={{ width: '3rem' }}
+                                            exportable={false}
+                                        />
+                                        <Column
+                                            field="company_name"
+                                            header="Company Name"
+                                            body={companyNameBody}
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by company"
+                                            style={{ minWidth: '200px' }}
+                                        />
+                                        <Column
+                                            field="owner_name"
+                                            header="Owner Name"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by owner"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="contact_person"
+                                            header="Contact Person"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by contact"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="company_email"
+                                            header="Email"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by email"
+                                            style={{ minWidth: '200px' }}
+                                        />
+                                        <Column
+                                            field="company_phone"
+                                            header="Phone Number"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by phone"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="assigned_user_name"
+                                            header="Assigned User"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by user"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="partner_type"
+                                            header="Partner Type"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by type"
+                                            style={{ minWidth: '120px' }}
+                                        />
+                                    </DataTable>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+}
