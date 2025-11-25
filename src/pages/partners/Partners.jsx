@@ -1,32 +1,107 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-// Placeholder data for partners - can be replaced with API calls later
-const partnerData = [
-    {
-        id: 'P001',
-        company: 'Nova Systems Inc.',
-        owner: 'Alex Novak',
-        contact: 'Jordan Kim',
-        email: 'jordan.kim@novasystems.io',
-        phone: '(415) 555-0123',
-        agent: 'Sam Lee',
-        level: 'Normal',
-    },
-    {
-        id: 'P002',
-        company: 'Pioneer Logistics',
-        owner: 'Anil Reddy',
-        contact: 'Priya Shah',
-        email: 'priya@pioneerlogistics.com',
-        phone: '(312) 555-0199',
-        agent: 'Ava Morgan',
-        level: 'White Level',
-    },
-    // Add more rows as needed
-];
+import { DataTable } from '../../components/Table/DataTableWrapper';
+import { Column } from 'primereact/column';
+import { fetchPartners, allUsers } from '../../modules/partner/services';
 
 export default function Partners() {
+    // State for partners
+    const [partners, setPartners] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Filter states
+    const [searchText, setSearchText] = useState('');
+    const [selectedCompany, setSelectedCompany] = useState('');
+    const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
+    const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [appliedCompany, setAppliedCompany] = useState('');
+    const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
+
+    // Dropdown data
+    const [allPartnersList, setAllPartnersList] = useState([]);
+    const [assignedUsersList, setAssignedUsersList] = useState([]);
+
+    // Load all partners for dropdown
+    useEffect(() => {
+        const loadAllPartners = async () => {
+            try {
+                const result = await fetchPartners();
+                if (result.status) {
+                    setAllPartnersList(result.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load partners list:', err);
+            }
+        };
+        loadAllPartners();
+    }, []);
+
+    // Load all assigned users for dropdown
+    useEffect(() => {
+        const loadAssignedUsers = async () => {
+            try {
+                const result = await allUsers();
+                if (result.status) {
+                    setAssignedUsersList(result.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load assigned users:', err);
+            }
+        };
+        loadAssignedUsers();
+    }, []);
+
+    // Load partners data with filters
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                const payload = {
+                    search: appliedSearchText || '',
+                    partner_id: appliedCompany || '',
+                    assigned_user_id: appliedAssignedUser || '',
+                };
+
+                const result = await fetchPartners(payload);
+                if (result.status) {
+                    setPartners(result.data || []);
+                    setError(null);
+                } else {
+                    setError(result.message || 'Failed to fetch partners');
+                }
+            } catch (err) {
+                setError(err.message || 'Failed to fetch partners');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [appliedSearchText, appliedCompany, appliedAssignedUser]);
+
+    // Filter handlers
+    const handleApplyFilters = () => {
+        setAppliedSearchText(searchText);
+        setAppliedCompany(selectedCompany);
+        setAppliedAssignedUser(selectedAssignedUser);
+    };
+
+    const handleClearFilters = () => {
+        setSearchText('');
+        setSelectedCompany('');
+        setSelectedAssignedUser('');
+        setAppliedSearchText('');
+        setAppliedCompany('');
+        setAppliedAssignedUser('');
+    };
+
+    // Column body templates
+    const companyNameBody = (rowData) => (
+        <Link to={`/partners/${rowData.id}`} className="fw-medium link-primary">
+            {rowData.company_name}
+        </Link>
+    );
+
     return (
         <div className="page-content">
             {/* Header */}
@@ -52,186 +127,142 @@ export default function Partners() {
                     </div>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="row">
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-primary-subtle text-primary rounded-2 fs-2">
-                                            <i className="ri-ticket-line text-primary" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Active Partners</p>
-                                        <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="82">82</span></h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-warning-subtle text-warning rounded-2 fs-2">
-                                            <i className="ri-folder-open-line text-warning" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">New This Month</p>
-                                        <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="22">22</span></h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-info-subtle text-info rounded-2 fs-2">
-                                            <i className="ri-time-line text-info" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Pending Requests</p>
-                                        <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="68">68</span></h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-success-subtle text-success rounded-2 fs-2">
-                                            <i className="ri-star-line text-success" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Inactive</p>
-                                        <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="4">4</span></h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Filters and Table */}
                 <div className="row">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                <form>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleApplyFilters();
+                                }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-xxl-4 col-sm-12">
                                             <div className="search-box">
-                                                <input type="text" className="form-control search bg-light border-light" id="searchJob" placeholder="Search here..." />
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    id="searchJob"
+                                                    placeholder="Search here..."
+                                                    autoComplete="off"
+                                                    value={searchText}
+                                                    onChange={(e) => setSearchText(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            handleApplyFilters();
+                                                        }
+                                                    }}
+                                                />
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
+                                        <div className="col-xxl-2 col-sm-4">
                                             <div className="input-light">
-                                                <select className="form-control" data-choices data-choices-search-false name="partnerStatus" id="partnerStatus">
-                                                    <option value="" selected>All Partners</option>
-                                                    <option value="Active">Active</option>
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Inactive">Inactive</option>
+                                                <select
+                                                    className="form-control"
+                                                    data-choices
+                                                    data-choices-search-false
+                                                    name="partnerCompany"
+                                                    id="partnerCompany"
+                                                    value={selectedCompany}
+                                                    onChange={(e) => setSelectedCompany(e.target.value)}
+                                                >
+                                                    <option value="">All Partners</option>
+                                                    {allPartnersList.map((partner) => (
+                                                        <option key={partner.id} value={partner.id}>
+                                                            {partner.company_name}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
+                                        <div className="col-xxl-2 col-sm-4">
                                             <div className="input-light">
-                                                <select className="form-control" data-choices data-choices-search-false name="salesperson" id="salesperson">
-                                                    <option value="" selected>All Salespeople</option>
-                                                    <option value="Donald Risher">Donald Risher</option>
-                                                    <option value="Sofia Cunha">Sofia Cunha</option>
-                                                    <option value="Luis Rocha">Luis Rocha</option>
+                                                <select
+                                                    className="form-control"
+                                                    data-choices
+                                                    data-choices-search-false
+                                                    name="assignedUserFilter"
+                                                    id="assignedUserFilter"
+                                                    value={selectedAssignedUser}
+                                                    onChange={(e) => setSelectedAssignedUser(e.target.value)}
+                                                >
+                                                    <option value="">All Assigned Users</option>
+                                                    {assignedUsersList.map((user) => (
+                                                        <option key={user.id} value={user.id}>
+                                                            {user.name}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
-                                            <button type="button" className="btn btn-warning w-100" onClick={() => {/* TODO: implement filter logic */ }}>
-                                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <button type="button" className="btn btn-warning w-100" onClick={handleApplyFilters}>
+                                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Apply
+                                            </button>
+                                        </div>
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <button type="button" className="btn btn-outline-secondary w-100" onClick={handleClearFilters}>
+                                                <i className="ri-close-line me-1 align-bottom"></i> Clear
                                             </button>
                                         </div>
                                     </div>
                                 </form>
-                                <div className="table-responsive table-card mt-1">
-                                    <table className="table align-middle table-nowrap table-hover table-striped" id="partnerTable">
-                                        <thead className="table-light">
-                                            <tr>
-                                                <th scope="col" style={{ width: '50px' }}>
-                                                    <div className="form-check">
-                                                        <input className="form-check-input" type="checkbox" id="checkAll" />
-                                                    </div>
-                                                </th>
-                                                <th className="text-uppercase">Company Name</th>
-                                                <th className="text-uppercase">Owner Name</th>
-                                                <th className="text-uppercase">Contact Person</th>
-                                                <th className="text-uppercase">Email</th>
-                                                <th className="text-uppercase">Phone Number</th>
-                                                <th className="text-uppercase">Agent</th>
-                                                <th className="text-uppercase">Level</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="list form-check-all" id="partner-list-data">
-                                            {partnerData.map((p) => (
-                                                <tr key={p.id}>
-                                                    <th scope="row">
-                                                        <div className="form-check">
-                                                            <input className="form-check-input" type="checkbox" name="chk_partner" value={p.id} />
-                                                        </div>
-                                                    </th>
-                                                    <td>{p.company}</td>
-                                                    <td>{p.owner}</td>
-                                                    <td>{p.contact}</td>
-                                                    <td>{p.email}</td>
-                                                    <td>{p.phone}</td>
-                                                    <td>{p.agent}</td>
-                                                    <td>
-                                                        <span className={`level-badge ${p.level === 'Normal' ? 'level-normal' : 'level-white'}`}>{p.level}</span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Pagination */}
-                <div className="row g-0 text-center text-sm-start align-items-center">
-                    <div className="col-sm-6">
-                        <p className="mb-sm-0 text-muted">Showing <span className="fw-semibold">1</span> to <span className="fw-semibold">10</span> of <span className="fw-semibold text-decoration-underline">10</span> entries</p>
-                    </div>
-                    <div className="col-sm-6">
-                        <div className="d-flex justify-content-center justify-content-sm-end align-items-baseline gap-2">
-                            <div className="datatable me-2">
-                                <label className="mb-0 text-muted d-flex align-items-baseline gap-2 fw-normal">Show
-                                    <select name="add-rows_length" className="form-select form-select-sm d-inline-block w-auto align-middle pt-1 pb-1">
-                                        <option value="10" selected>10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </select>
-                                    entries
-                                </label>
+                                {/* DataTable with Skeleton Loader */}
+                                <div className="table-responsive table-card mt-1">
+                                    <DataTable
+                                        scrollable
+                                        scrollHeight="510px"
+                                        value={partners}
+                                        dataKey="id"
+                                        responsiveLayout="scroll"
+                                        className="p-datatable-sm"
+                                        loading={loading}
+                                        emptyMessage="No partners found"
+                                        rows={10}
+                                    >
+                                        <Column
+                                            field="company_name"
+                                            header="Company Name"
+                                            body={companyNameBody}
+                                            style={{ minWidth: '200px' }}
+                                        />
+                                        <Column
+                                            field="owner_name"
+                                            header="Owner Name"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="contact_person"
+                                            header="Contact Person"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="company_email"
+                                            header="Email"
+                                            style={{ minWidth: '200px' }}
+                                        />
+                                        <Column
+                                            field="company_phone"
+                                            header="Phone Number"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="assigned_user_name"
+                                            header="Assigned User"
+                                            style={{ minWidth: '150px' }}
+                                        />
+                                        <Column
+                                            field="partner_type"
+                                            header="Partner Type"
+                                            style={{ minWidth: '120px' }}
+                                        />
+                                    </DataTable>
+                                </div>
+
                             </div>
-                            <ul className="pagination pagination-separated justify-content-center justify-content-sm-end mb-0">
-                                <li className="page-item disabled"><a href="#" className="page-link">Previous</a></li>
-                                <li className="page-item active"><a href="#" className="page-link">1</a></li>
-                                <li className="page-item"><a href="#" className="page-link">Next</a></li>
-                            </ul>
                         </div>
                     </div>
                 </div>
