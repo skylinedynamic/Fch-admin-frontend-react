@@ -1,5 +1,6 @@
 import React from 'react';
 import { STATUS } from '../../../config/statusOptions';
+import { Dropdown } from 'primereact/dropdown';
 
 export default function EmployeeFilters({
     globalFilterValue,
@@ -39,45 +40,27 @@ export default function EmployeeFilters({
                 </div>
 
                 <div className="col-xxl-3 col-sm-4">
-                    <div className="input-light">
-                        <select
-                            className="form-control"
-                            data-choices
-                            data-choices-search-false
-                            name="choices-status"
-                            id="idStatus"
-                            value={statusFilter}
-                            onChange={(e) => onStatusChange({ target: { value: e.target.value } })}
-                        >
-                            <option value="">Job Status</option>
-                            {STATUS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <Dropdown
+                        value={statusFilter}
+                        onChange={(e) => onStatusChange({ target: { value: e.value } })}
+                        options={STATUS}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Job Status"
+                        className="w-100"
+                    />
                 </div>
 
                 <div className="col-xxl-3 col-sm-4">
-                    <div className="input-light">
-                        <select
-                            className="form-control"
-                            data-choices
-                            data-choices-search-false
-                            name="choices-department"
-                            id="idDepartment"
-                            value={deptFilter}
-                            onChange={(e) => onDeptChange({ target: { value: e.target.value } })}
-                        >
-                            <option value="">Select Department</option>
-                            {departments.map((dept) => (
-                                <option key={dept.name} value={dept.name}>
-                                    {dept.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <Dropdown
+                        value={deptFilter}
+                        onChange={(e) => onDeptChange({ target: { value: e.value } })}
+                        options={departments}
+                        optionLabel="name"
+                        optionValue="name"
+                        placeholder="Select Department"
+                        className="w-100"
+                    />
                 </div>
 
                 <div className="col-xxl-2 col-sm-4">
@@ -85,7 +68,7 @@ export default function EmployeeFilters({
                         <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
                             <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                         </button>
-                        <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={onClearFilters}>
+                        <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
                             <i className="ri-close-line me-1 align-bottom"></i> Clear
                         </button>
                     </div>
