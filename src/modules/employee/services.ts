@@ -79,3 +79,8 @@ export const saveDepartment = async (payload: { name: string }) => {
   const res = await apiClient.post('/common/departments', payload);
   return res.data;
 };
+
+export const deleteDepartment = async (id: string | number) => {
+  const res = await apiClient.delete(`/common/departments/${id}`);
+  return res.data;
+};

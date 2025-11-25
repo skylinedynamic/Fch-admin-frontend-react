@@ -388,6 +388,7 @@ export default function EmployeeDetails() {
           visible={showDepartmentModal}
           onHide={() => setShowDepartmentModal(false)}
           onSuccess={handleDepartmentSuccess}
+          departments={departments}
         />
       </div>
     </div>

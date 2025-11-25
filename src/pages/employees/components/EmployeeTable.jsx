@@ -20,7 +20,7 @@ export default function EmployeeTable({
 }) {
     // Name column body template
     const nameBody = (rowData) => (
-        <Link to={`/employee-details/${rowData.id}`} className="fw-medium link-primary">
+        <Link to={`/employee-details/${rowData.id}`} className="link-primary">
             {rowData.full_name}
         </Link>
     );

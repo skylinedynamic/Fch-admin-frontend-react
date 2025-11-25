@@ -31,9 +31,9 @@ export default function Users() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [roles, setRoles] = useState([]);
-  const [editingUserId, setEditingUserId] = useState(null); 
+  const [editingUserId, setEditingUserId] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
-  const [loadingSave, setLoadingSave] = useState(false); 
+  const [loadingSave, setLoadingSave] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,7 +159,7 @@ export default function Users() {
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
+
       onApplyFilters();
 
       // Update URL query params
@@ -176,7 +176,7 @@ export default function Users() {
 
       navigate(`/users?${params.toString()}`);
     }
-};
+  };
 
   const onClearFilters = () => {
     setLoading(true)
@@ -189,7 +189,7 @@ export default function Users() {
 
   const nameBody = (rowData) => (
     <span
-      className="fw-medium link-primary"
+      className="link-primary"
       style={{ cursor: 'pointer' }}
       onClick={() => {
         setEditingUserId(rowData.id);
@@ -211,12 +211,12 @@ export default function Users() {
   )
 
   const statusBodyTemplate = (rowData) => {
-      const active = rowData?.status === 'active';
-      return (
-        <span className={`badge ${active ? 'border border-success text-success' : 'badge border border-danger text-danger'}`}>
+    const active = rowData?.status === 'active';
+    return (
+      <span className={`badge ${active ? 'border border-success text-success' : 'badge border border-danger text-danger'}`}>
         {active ? 'Active' : 'Inactive'}
-        </span>
-      );
+      </span>
+    );
   }
 
   const statusRowFilterTemplate = (options) => (
@@ -235,8 +235,8 @@ export default function Users() {
     setPage(Math.floor(event.first / event.rows) + 1)
   }
   const onSort = (event) => {
-      setSortField(event.sortField || sortField)
-      setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
+    setSortField(event.sortField || sortField)
+    setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc')
   }
 
   const handleAddUserSubmit = async (e) => {
@@ -254,14 +254,14 @@ export default function Users() {
       password: newUser.password,
       status: newUser.status,
       ...(editingUserId
-    ? showPasswordFields && newUser.new_password
-      ? { password: newUser.new_password }
-      : {}
-    : { password: newUser.password })
+        ? showPasswordFields && newUser.new_password
+          ? { password: newUser.new_password }
+          : {}
+        : { password: newUser.password })
     }
 
     try {
-       setLoadingSave(true);
+      setLoadingSave(true);
       if (editingUserId) await updateUser(editingUserId, payload)
       else await createUser(payload)
       toast.success(`User ${editingUserId ? 'updated' : 'created'} successfully`);
@@ -272,7 +272,7 @@ export default function Users() {
       toast.error("Failed to save user")
       console.error(error)
     }
-     finally {
+    finally {
       setLoadingSave(false); // stop loading
     }
   };
@@ -282,260 +282,275 @@ export default function Users() {
     setNewUser({ ...newUser, [name]: value });
   };
 
-const handleDeleteUsers = async () => {
-  const idsToDelete = deletingUserId ? [deletingUserId] : selection.map(u => u.id);
+  const handleDeleteUsers = async () => {
+    const idsToDelete = deletingUserId ? [deletingUserId] : selection.map(u => u.id);
 
-  if (idsToDelete.length === 0) {
-    toast.warn("No users selected for deletion");
-    return;
-  }
+    if (idsToDelete.length === 0) {
+      toast.warn("No users selected for deletion");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    await deleteUsers(idsToDelete); // call API
-    toast.success("Users deleted successfully");
-    setSelection([]);
-    setDeletingUserId(null);
-    setShowDeleteModal(false);
-    loadUsers();
-  } catch (error) {
-    console.error(error);
-    toast.error(error?.response?.data?.message || "Failed to delete users");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      await deleteUsers(idsToDelete); // call API
+      toast.success("Users deleted successfully");
+      setSelection([]);
+      setDeletingUserId(null);
+      setShowDeleteModal(false);
+      loadUsers();
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to delete users");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row bg-body">
-        <div className="row bg-body">
-          <div className="col">
-            <div className="h-100">
-              <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
-                <div className="col-12">
-                  <div className="d-flex align-items-center justify-content-between flex-row">
-                    <div className="flex-grow-1">
-                      <h4 className="fs-20 mb-1">Users</h4>
-                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                        <ol className="breadcrumb m-0">
-                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                          <li className="breadcrumb-item active" aria-current="page">Users</li>
-                        </ol>
-                      </nav>
-                    </div>
-                    <div className="mt-0">
-                      <form onSubmit={(e) => e.preventDefault()}>
-                        <div className="row g-3 mb-0 align-items-center">
-                          <div className="col-sm-auto">
-                          <div className="btn-group">
-                              {Array.isArray(selection) && selection.length > 0 ? (
-                                <>
-                                  <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
-                                    Actions
-                                  </button>
-                                  <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span className="visually-hidden">Toggle dropdown</span>
-                                  </button>
-                                  <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                    {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
+          <div className="row bg-body">
+            <div className="col">
+              <div className="h-100">
+                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                  <div className="col-12">
+                    <div className="d-flex align-items-center justify-content-between flex-row">
+                      <div className="flex-grow-1">
+                        <h4 className="fs-20 mb-1">Users</h4>
+                        <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                          <ol className="breadcrumb m-0">
+                            <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
+                            <li className="breadcrumb-item active" aria-current="page">Users</li>
+                          </ol>
+                        </nav>
+                      </div>
+                      <div className="mt-0">
+                        <form onSubmit={(e) => e.preventDefault()}>
+                          <div className="row g-3 mb-0 align-items-center">
+                            <div className="col-sm-auto">
+                              <div className="btn-group">
+                                {Array.isArray(selection) && selection.length > 0 ? (
+                                  <>
+                                    <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                      Actions
+                                    </button>
+                                    <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                      <span className="visually-hidden">Toggle dropdown</span>
+                                    </button>
+                                    <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                      {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
                                     <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
                                     <li><hr className="dropdown-divider" /></li> */}
-                                   <li>
+                                      <li>
                                         <button
-                                            className="dropdown-item text-danger"
-                                            type="button"
-                                            onClick={() => {
-                                              if (!selection || selection.length === 0) {
-                                                toast.warn("No users selected for deletion");
-                                                return;
-                                              }
-                                              setDeletingUserId(null);       // clear single row
-                                              setShowDeleteModal(true);      // show modal
-                                            }}
-                                          >
+                                          className="dropdown-item text-danger"
+                                          type="button"
+                                          onClick={() => {
+                                            if (!selection || selection.length === 0) {
+                                              toast.warn("No users selected for deletion");
+                                              return;
+                                            }
+                                            setDeletingUserId(null);       // clear single row
+                                            setShowDeleteModal(true);      // show modal
+                                          }}
+                                        >
                                           <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                         </button>
-                                    </li>
-                                  </ul>
-                                </>
-                              ) : (
-                               <button className="btn btn-primary fw-medium" onClick={() => {
-                                  setShowAddUser(true);
-                                  setEditingUserId(null);
-                                  setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
-                                }}>
-                                  <i className="ri-add-fill me-1 align-bottom"></i> Add User
-                              </button>
-                              )}
+                                      </li>
+                                    </ul>
+                                  </>
+                                ) : (
+                                  <button className="btn btn-primary fw-medium" onClick={() => {
+                                    setShowAddUser(true);
+                                    setEditingUserId(null);
+                                    setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+                                  }}>
+                                    <i className="ri-add-fill me-1 align-bottom"></i> Add User
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </form>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="row">
-                <div className="col-lg-12">
-                  <div className="card">
-                    <div className="card-body list-fluid-card">
-                      <form onSubmit={(e) => {
+                <div className="row">
+                  <div className="col-lg-12">
+                    <div className="card">
+                      <div className="card-body list-fluid-card">
+                        <form onSubmit={(e) => {
                           e.preventDefault(); // prevent page reload
                           onApplyFilters();   // trigger your search function
                         }}>
-                        <div className="row g-3 mb-3">
-                          <div className="col-xxl-4 col-sm-12">
-                            <div className="search-box">
-                              <input
-                                type="text"
-                                className="form-control search bg-light border-light"
-                                id="searchStatus"
-                                autoComplete="off"
-                                placeholder="Search here..."
-                                value={globalFilterValue}
-                                onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();       // prevent page reload
-                                    onApplyFilters();         // trigger your filter/search
-                                  }
-                                }}
-                              />
-                              <i className="ri-search-line search-icon"></i>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                            <div className="input-light">
-                              <select className="form-control bg-light border-light" data-choices data-choices-search-false name="choices-idType" id="idType" onChange={onStatusChange}>
-                                <option value="Select User Status" defaultValue>Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="col-xxl-3 col-sm-4">
-                              <div className="input-light">
-                                <select
-                                  className="form-control bg-light border-light"
-                                  data-choices
-                                  data-choices-search-false
-                                  name="role_id"
-                                  id="roleFilter"
-                                  value={roleFilter || 'all'}
-                                   onChange={onRoleChange}
-                                >
-                                  <option value="all" defaultValue>Select Role</option>
-                                  {roles.map((role) => (
-                                    <option key={role.id} value={role.id}>{role.name}</option>
-                                  ))}
-                                </select>
+                          <div className="row g-3 mb-3">
+                            <div className="col-xxl-4 col-sm-12">
+                              <div className="search-box">
+                                <input
+                                  type="text"
+                                  className="form-control search bg-light border-light"
+                                  id="searchStatus"
+                                  autoComplete="off"
+                                  placeholder="Search here..."
+                                  value={globalFilterValue}
+                                  onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();       // prevent page reload
+                                      onApplyFilters();         // trigger your filter/search
+                                    }
+                                  }}
+                                />
+                                <i className="ri-search-line search-icon"></i>
                               </div>
-                          </div>
-                          <div className="col-xxl-2 col-sm-4">
-                            <div className="d-flex gap-2">
-                              <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
-                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                              </button>
-                              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={onClearFilters}>
-                                <i className="ri-close-line me-1 align-bottom"></i> Clear
-                              </button>
+                            </div>
+                            <div className="col-xxl-3 col-sm-4">
+
+                              <Dropdown
+
+                                value={statusFilter}
+
+                                onChange={(e) => onStatusChange({ target: { value: e.value } })}
+
+                                options={statusOptions}
+
+                                optionLabel="label"
+
+                                optionValue="value"
+
+                                placeholder="Status"
+
+                                className="w-100"
+
+                              />
+
+                            </div>
+                            <div className="col-xxl-3 col-sm-4">
+
+                              <Dropdown
+
+                                value={roleFilter || ''}
+
+                                onChange={(e) => onRoleChange({ target: { value: e.value } })}
+
+                                options={[{ id: '', name: 'Select Role' }, ...roles]}
+
+                                optionLabel="name"
+
+                                optionValue="id"
+
+                                placeholder="Select Role"
+
+                                className="w-100"
+
+                              />
+
+                            </div>
+                            <div className="col-xxl-2 col-sm-4">
+                              <div className="d-flex gap-2">
+                                <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                  <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                </button>
+                                <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
+                                  <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </form>
-                      <div>
-                        <div className="table-responsive table-card mt-1">
-                          <DataTable
-                            scrollable 
-                            scrollHeight="calc(100vh - 370px)"  
-                            value={rows}
-                            paginator
-                            lazy
-                            totalRecords={totalRecords}
-                            first={(page - 1) * perPage}
-                            rows={perPage}
-                            rowsPerPageOptions={[10, 25, 50, 100]}
-                            sortMode="single"
-                            sortField={sortField}
-                            sortOrder={sortOrder === 'asc' ? 1 : -1}
-                            filterDisplay="menu"
-                            filters={filters}
-                            onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
-                            onPage={onPage}
-                            onSort={onSort}
-                            globalFilterFields={[
-                              'name',
-                              'phone_number',
-                              'email',
-                              'entity_type',
-                              'role',
-                              'status',
-                            ]}
-                            selection={selection}
-                            onSelectionChange={(e) => setSelection(e.value)}
-                            dataKey="id"
-                            responsiveLayout="scroll"
-                            className="p-datatable-sm"
-                            loading={loading}
-                            emptyMessage="No Users found"
-                          >
-                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                            <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
-                            <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
-                            <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
-                            <Column field="entity_type" header="Entity Type" sortable filter showFilterMatchModes filterPlaceholder="Search Entity Type"></Column>
-                            <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                            <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                            <Column
-                              header="Action"
-                              body={(rowData) => (
-                                <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
-                                  <button
-                                    className="btn btn-sm btn-primary"
-                                    aria-label="Edit user"
-                                    onClick={() => {
-                                      setEditingUserId(rowData.id);
-                                      setNewUser({
-                                        name: rowData.name || '',
-                                        email: rowData.email || '',
-                                        phone_number: rowData.phone_number || '',
-                                        role_id: resolveRoleId(rowData),
-                                        password: rowData.password || '',
-                                        status: rowData.status || '',
-                                        new_password: '',
-                                        confirm_password: '',
-                                      });
-                                      setShowAddUser(true);
-                                    }}
-                                  >
-                                     <i className="ri-edit-2-fill align-bottom"></i>
-                                    <span className="d-none d-sm-inline ms-1">Edit</span>
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-danger"
-                                    onClick={() => {
-                                      setDeletingUserId(rowData.id);
-                                      setShowDeleteModal(true);
-                                    }}
-                                  >
-                                    <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
-                                  </button>
-                                </div>
-                              )}
-                              style={{ textAlign: 'center', width: '12rem' }}
-                            />
-                          </DataTable>
+                        </form>
+                        <div>
+                          <div className="table-responsive table-card mt-1">
+                            <DataTable
+                              scrollable
+                              scrollHeight="calc(100vh - 370px)"
+                              value={rows}
+                              paginator
+                              lazy
+                              totalRecords={totalRecords}
+                              first={(page - 1) * perPage}
+                              rows={perPage}
+                              rowsPerPageOptions={[10, 25, 50, 100]}
+                              sortMode="single"
+                              sortField={sortField}
+                              sortOrder={sortOrder === 'asc' ? 1 : -1}
+                              filterDisplay="menu"
+                              filters={filters}
+                              onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                              onPage={onPage}
+                              onSort={onSort}
+                              globalFilterFields={[
+                                'name',
+                                'phone_number',
+                                'email',
+                                'entity_type',
+                                'role',
+                                'status',
+                              ]}
+                              selection={selection}
+                              onSelectionChange={(e) => setSelection(e.value)}
+                              dataKey="id"
+                              responsiveLayout="scroll"
+                              className="p-datatable-sm"
+                              loading={loading}
+                              emptyMessage="No Users found"
+                            >
+                              <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                              <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                              <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                              <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                              <Column field="entity_type" header="Entity Type" sortable filter showFilterMatchModes filterPlaceholder="Search Entity Type"></Column>
+                              <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                              <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                              <Column
+                                header="Action"
+                                body={(rowData) => (
+                                  <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
+                                    <button
+                                      className="btn btn-sm btn-primary"
+                                      aria-label="Edit user"
+                                      onClick={() => {
+                                        setEditingUserId(rowData.id);
+                                        setNewUser({
+                                          name: rowData.name || '',
+                                          email: rowData.email || '',
+                                          phone_number: rowData.phone_number || '',
+                                          role_id: resolveRoleId(rowData),
+                                          password: rowData.password || '',
+                                          status: rowData.status || '',
+                                          new_password: '',
+                                          confirm_password: '',
+                                        });
+                                        setShowAddUser(true);
+                                      }}
+                                    >
+                                      <i className="ri-edit-2-fill align-bottom"></i>
+                                      <span className="d-none d-sm-inline ms-1">Edit</span>
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => {
+                                        setDeletingUserId(rowData.id);
+                                        setShowDeleteModal(true);
+                                      }}
+                                    >
+                                      <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                    </button>
+                                  </div>
+                                )}
+                                style={{ textAlign: 'center', width: '12rem' }}
+                              />
+                            </DataTable>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
                 {showAddUser && (
                   <>
                     <div className="modal fade show d-block" tabIndex="-1" role="dialog">
@@ -562,7 +577,7 @@ const handleDeleteUsers = async () => {
                                 <label className="form-label">Phone</label>
                                 <input type="text" name="phone_number" className="form-control" value={newUser.phone_number} onChange={handleAddUserInput} required />
                               </div>
-                             
+
                               <div className="mb-3">
                                 <label className="form-label">Role</label>
                                 <select
@@ -581,7 +596,7 @@ const handleDeleteUsers = async () => {
                                 </select>
                               </div>
                               {editingUserId && (
-                               <div className="mb-3">
+                                <div className="mb-3">
                                   <label className="form-label"> Status </label>
                                   <select
                                     name="status"
@@ -595,95 +610,94 @@ const handleDeleteUsers = async () => {
                                   </select>
                                 </div>
                               )}
-                            {/* ADD MODE – Password Required */}
-                            {!editingUserId && (
-                              <div className="mb-3">
-                                <label className="form-label">Password</label>
-                                <input
-                                  type="password"
-                                  name="password"
-                                  className="form-control"
-                                  value={newUser.password}
-                                  onChange={handleAddUserInput}
-                                  required
-                                />
-                              </div>
-                            )}
-
-                            {/* EDIT MODE – Password Update Checkbox */}
-                            {editingUserId && (
-                              <div className="form-check mb-3">
-                                <input
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  id="changePasswordCheck"
-                                  checked={showPasswordFields}
-                                  onChange={(e) => setShowPasswordFields(e.target.checked)}
-                                />
-                                <label className="form-check-label" htmlFor="changePasswordCheck">
-                                  Change Password
-                                </label>
-                              </div>
-                            )}
-
-                            {/* EDIT MODE – Show Inputs Only When Checkbox Checked */}
-                            {editingUserId && showPasswordFields && (
-                              <>
+                              {/* ADD MODE – Password Required */}
+                              {!editingUserId && (
                                 <div className="mb-3">
-                                  <label className="form-label">New Password</label>
+                                  <label className="form-label">Password</label>
                                   <input
                                     type="password"
-                                    name="new_password"
+                                    name="password"
                                     className="form-control"
-                                    value={newUser.new_password}
+                                    value={newUser.password}
                                     onChange={handleAddUserInput}
-                                    placeholder="Enter new password"
+                                    required
                                   />
                                 </div>
+                              )}
 
-                                <div className="mb-3">
-                                  <label className="form-label">Confirm Password</label>
+                              {/* EDIT MODE – Password Update Checkbox */}
+                              {editingUserId && (
+                                <div className="form-check mb-3">
                                   <input
-                                    type="password"
-                                    name="confirm_password"
-                                    className="form-control"
-                                    value={newUser.confirm_password}
-                                    onChange={handleAddUserInput}
-                                    placeholder="Re-enter new password"
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id="changePasswordCheck"
+                                    checked={showPasswordFields}
+                                    onChange={(e) => setShowPasswordFields(e.target.checked)}
                                   />
+                                  <label className="form-check-label" htmlFor="changePasswordCheck">
+                                    Change Password
+                                  </label>
                                 </div>
-                              </>
-                            )}
+                              )}
+
+                              {/* EDIT MODE – Show Inputs Only When Checkbox Checked */}
+                              {editingUserId && showPasswordFields && (
+                                <>
+                                  <div className="mb-3">
+                                    <label className="form-label">New Password</label>
+                                    <input
+                                      type="password"
+                                      name="new_password"
+                                      className="form-control"
+                                      value={newUser.new_password}
+                                      onChange={handleAddUserInput}
+                                      placeholder="Enter new password"
+                                    />
+                                  </div>
+
+                                  <div className="mb-3">
+                                    <label className="form-label">Confirm Password</label>
+                                    <input
+                                      type="password"
+                                      name="confirm_password"
+                                      className="form-control"
+                                      value={newUser.confirm_password}
+                                      onChange={handleAddUserInput}
+                                      placeholder="Re-enter new password"
+                                    />
+                                  </div>
+                                </>
+                              )}
                               <div className="d-flex justify-content-end">
-                                  <button type="button" className="btn btn-secondary me-2" onClick={() => {
-                                    setShowAddUser(false);
-                                    setEditingUserId(null);
-                                  }}>Cancel</button>
-                                  <button
-                                      type="submit"
-                                      className="btn btn-primary"
-                                      disabled={loadingSave}
-                                    >
-                                      {/* Loading Spinner */}
-                                      {loadingSave && (
-                                        <span
-                                          className="spinner-border spinner-border-sm me-1"
-                                          role="status"
-                                          aria-hidden="true"
-                                        ></span>
-                                      )}
+                                <button type="button" className="btn btn-secondary me-2" onClick={() => {
+                                  setShowAddUser(false);
+                                  setEditingUserId(null);
+                                }}>Cancel</button>
+                                <button
+                                  type="submit"
+                                  className="btn btn-primary"
+                                  disabled={loadingSave}
+                                >
+                                  {/* Loading Spinner */}
+                                  {loadingSave && (
+                                    <span
+                                      className="spinner-border spinner-border-sm me-1"
+                                      role="status"
+                                      aria-hidden="true"
+                                    ></span>
+                                  )}
 
-                                      {/* Dynamic Icon */}
-                                      <i
-                                        className={`me-1 align-bottom ${
-                                          editingUserId ? 'ri-edit-2-fill' : 'ri-save-3-fill'
-                                        }`}
-                                      ></i>
+                                  {/* Dynamic Icon */}
+                                  <i
+                                    className={`me-1 align-bottom ${editingUserId ? 'ri-edit-2-fill' : 'ri-save-3-fill'
+                                      }`}
+                                  ></i>
 
-                                      {/* Dynamic Text */}
-                                      {editingUserId ? 'Update' : 'Submit'}
-                                    </button>
-                                </div>
+                                  {/* Dynamic Text */}
+                                  {editingUserId ? 'Update' : 'Submit'}
+                                </button>
+                              </div>
                             </form>
                           </div>
                         </div>
@@ -692,7 +706,7 @@ const handleDeleteUsers = async () => {
                     <div className="modal-backdrop fade show"></div>
                   </>
                 )}
-               {showDeleteModal && (
+                {showDeleteModal && (
                   <>
                     <div className="modal fade show d-block" tabIndex="-1" role="dialog">
                       <div className="modal-dialog modal-dialog-centered">
@@ -735,9 +749,9 @@ const handleDeleteUsers = async () => {
                     <div className="modal-backdrop fade show"></div>
                   </>
                 )}
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
