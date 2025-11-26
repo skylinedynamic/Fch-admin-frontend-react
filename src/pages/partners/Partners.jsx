@@ -407,7 +407,7 @@ export default function Partners() {
                                             style={{ minWidth: '200px' }}
                                         />
                                         <Column
-                                            field="company_phone"
+                                            field="company_phone_number"
                                             header="Phone Number"
                                             sortable
                                             filter
