@@ -42,10 +42,10 @@ export default function Partners() {
         const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             company_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-            owner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             contact_person: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            company_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            company_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             assigned_user_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             partner_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
@@ -184,7 +184,7 @@ export default function Partners() {
 
     // Column body templates
     const companyNameBody = (rowData) => (
-        <Link to={`/partners/${rowData.id}`} className="fw-medium link-primary">
+        <Link to={`/partners-profile/${rowData.id}`} className="fw-medium link-primary">
             {rowData.company_name}
         </Link>
     );
@@ -231,7 +231,7 @@ export default function Partners() {
                                                         </ul>
                                                     </>
                                                 ) : (
-                                                    <Link to="/partners/create" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                                    <Link to="/partners-profile" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                                         <i className="ri-add-fill me-1 align-bottom"></i> Add Partner
                                                     </Link>
                                                 )}
@@ -239,6 +239,89 @@ export default function Partners() {
                                         </div>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Statistics Cards */}
+                <div className="row">
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card card-animate">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm flex-shrink-0">
+                                        <span className="avatar-title bg-primary-subtle text-primary rounded-2 fs-2">
+                                            <i className="ri-ticket-line text-primary" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                    <div className="flex-grow-1 overflow-hidden ms-3">
+                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Active Partners</p>
+                                        <div className="d-flex align-items-center mb-1">
+                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="82">82</span></h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card card-animate">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm flex-shrink-0">
+                                        <span className="avatar-title bg-warning-subtle text-warning rounded-2 fs-2">
+                                            <i className="ri-folder-open-line text-warning" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                    <div className="flex-grow-1 ms-3">
+                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">New This Month</p>
+                                        <div className="d-flex align-items-center mb-1">
+                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="22">22</span></h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card card-animate">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm flex-shrink-0">
+                                        <span className="avatar-title bg-info-subtle text-info rounded-2 fs-2">
+                                            <i className="ri-time-line text-info" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                    <div className="flex-grow-1 overflow-hidden ms-3">
+                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Pending Requests</p>
+                                        <div className="d-flex align-items-center mb-1">
+                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="68">68</span></h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card card-animate">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-sm flex-shrink-0">
+                                        <span className="avatar-title bg-success-subtle text-success rounded-2 fs-2">
+                                            <i className="ri-star-line text-success" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                    <div className="flex-grow-1 overflow-hidden ms-3">
+                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Inactive</p>
+                                        <div className="d-flex align-items-center mb-1">
+                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="4">4</span></h4>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -349,10 +432,10 @@ export default function Partners() {
                                         onSort={onSort}
                                         globalFilterFields={[
                                             'company_name',
-                                            'owner_name',
+                                            'full_name',
                                             'contact_person',
-                                            'company_email',
-                                            'company_phone',
+                                            'email',
+                                            'phone_number',
                                             'assigned_user_name',
                                             'partner_type'
                                         ]}
@@ -380,12 +463,31 @@ export default function Partners() {
                                             style={{ minWidth: '200px' }}
                                         />
                                         <Column
-                                            field="owner_name"
-                                            header="Owner Name"
+                                            field="full_name"
+                                            header="Partner Name"
                                             sortable
                                             filter
                                             showFilterMatchModes
-                                            filterPlaceholder="Search by owner"
+                                            filterPlaceholder="Search by Name"
+                                            style={{ minWidth: '150px' }}
+                                        />
+
+                                        <Column
+                                            field="email"
+                                            header="Email"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by email"
+                                            style={{ minWidth: '200px' }}
+                                        />
+                                        <Column
+                                            field="phone_number"
+                                            header="Phone Number"
+                                            sortable
+                                            filter
+                                            showFilterMatchModes
+                                            filterPlaceholder="Search by phone"
                                             style={{ minWidth: '150px' }}
                                         />
                                         <Column
@@ -395,24 +497,6 @@ export default function Partners() {
                                             filter
                                             showFilterMatchModes
                                             filterPlaceholder="Search by contact"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="company_email"
-                                            header="Email"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by email"
-                                            style={{ minWidth: '200px' }}
-                                        />
-                                        <Column
-                                            field="company_phone_number"
-                                            header="Phone Number"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by phone"
                                             style={{ minWidth: '150px' }}
                                         />
                                         <Column

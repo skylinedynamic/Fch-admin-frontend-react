@@ -16,6 +16,7 @@ import { ProtectedRoute, GuestRoute, checkSession } from './lib/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
+import PartnerProfile from './pages/partners/PartnerProfile.jsx';
 
 export default function App() {
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="partners" element={<Partners />} />
+            <Route path="partners-profile/:id?" element={<PartnerProfile />} />
             <Route path="employees" element={<Employees />} />
             <Route path="users" element={<Users />} />
             <Route path="employee-details/:id?" element={<EmployeeDetails />} />
