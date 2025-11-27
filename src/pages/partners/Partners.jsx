@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers, allPartners } from '../../modules/partner/services';
+import { fetchPartners, allUsers } from '../../modules/partner/services';
 
 export default function Partners() {
     // State for partners

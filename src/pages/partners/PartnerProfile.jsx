@@ -42,8 +42,7 @@ export default function PartnerProfile() {
         city: '',
         country: '',
         postal_code: '',
-        address: '',
-        address_line_2: '',
+        address_line_1: '',
         tax_id: '',
         website: '',
         joining_date: '',
@@ -117,15 +116,15 @@ export default function PartnerProfile() {
                     ...prev,
                     ...data, // Keep all existing backend fields
                     agent: data.assigned_user_id?.toString() || '', // Map assigned_user_id → agent for frontend
-                    address: data.address_line_1 || '', // Map address_line_1 → address
-                    partner_image: data.company_logo || '', // Map company_logo → partner_image
+                    address_line_1: data.address_line_1 || '', // Map address_line_1 → address
+                    partner_image: data.partner_image || '', // Map company_logo → partner_image
                 }));
 
                 console.log('Form data after setting:', formData); // Debug log
 
                 // Set profile image from company_logo field
-                if (data.company_logo) {
-                    setProfileImage(data.company_logo);
+                if (data.partner_image) {
+                    setProfileImage(data.partner_image);
                 }
 
             } catch (error) {

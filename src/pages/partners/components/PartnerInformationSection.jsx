@@ -196,7 +196,7 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Address</label>
-                    <input type="text" className="form-control" name="address" placeholder="Enter address" value={formData.address} onChange={handleInputChange} />
+                    <input type="text" className="form-control" name="address_line_1" placeholder="Enter address" value={formData.address_line_1} onChange={handleInputChange} />
                 </div>
             </div>
 
