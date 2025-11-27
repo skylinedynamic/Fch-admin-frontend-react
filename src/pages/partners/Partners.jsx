@@ -4,23 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers } from '../../modules/partner/services';
-
-// Partner type options
-const PARTNER_TYPES = [
-    { label: 'Select Partner Type', value: '' },
-    { label: 'Agency', value: 'agency' },
-    { label: 'Individual', value: 'individual' },
-    { label: 'Corporate', value: 'corporate' }
-];
-
-// Status options
-const STATUS_OPTIONS = [
-    { label: 'Select Status', value: '' },
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' },
-    { label: 'Pending', value: 'pending' }
-];
+import { fetchPartners, allUsers, allPartners } from '../../modules/partner/services';
 
 export default function Partners() {
     // State for partners
@@ -40,12 +24,10 @@ export default function Partners() {
     // Filter states
     const [filters, setFilters] = useState({});
     const [searchText, setSearchText] = useState('');
-    const [selectedPartnerType, setSelectedPartnerType] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
+    const [selectedPartner, setSelectedPartner] = useState('');
     const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [appliedPartnerType, setAppliedPartnerType] = useState('');
-    const [appliedStatus, setAppliedStatus] = useState('');
+    const [appliedPartner, setAppliedPartner] = useState('');
     const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
 
@@ -53,6 +35,7 @@ export default function Partners() {
     const [selectedPartners, setSelectedPartners] = useState([]);
 
     // Dropdown data
+    const [partnersList, setPartnersList] = useState([]);
     const [assignedUsersList, setAssignedUsersList] = useState([]);
 
     // Initialize filters
@@ -76,13 +59,41 @@ export default function Partners() {
         initFilters();
     }, []);
 
+    // Load all partners for dropdown
+    useEffect(() => {
+        const loadPartners = async () => {
+            try {
+                const result = await fetchPartners();
+                if (result.status) {
+
+                    // Map partners to include id and full_name for display
+                    const formattedPartners = (result.data || []).map(partner => ({
+                        id: partner.id,
+                        full_name: partner.full_name,
+                        displayLabel: `${partner.full_name}`
+                    }));
+                    setPartnersList(formattedPartners);
+                }
+            } catch (err) {
+                console.error('Failed to load partners:', err);
+            }
+        };
+        loadPartners();
+    }, []);
+
     // Load all assigned users for dropdown
     useEffect(() => {
         const loadAssignedUsers = async () => {
             try {
                 const result = await allUsers();
                 if (result.status) {
-                    setAssignedUsersList(result.data || []);
+                    // Map users to include id and full_name for display
+                    const formattedUsers = (result.data || []).map(user => ({
+                        id: user.id,
+                        full_name: user.name,
+                        displayLabel: ` ${user.name}`
+                    }));
+                    setAssignedUsersList(formattedUsers);
                 }
             } catch (err) {
                 console.error('Failed to load assigned users:', err);
@@ -100,8 +111,7 @@ export default function Partners() {
             try {
                 const payload = {
                     search: appliedSearchText || '',
-                    partner_type: appliedPartnerType || '',
-                    status: appliedStatus || '',
+                    partner_id: appliedPartner || '',
                     assigned_user_id: appliedAssignedUser || '',
                     filters: appliedFilters,
                     page,
@@ -141,13 +151,12 @@ export default function Partners() {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedPartnerType, appliedStatus, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
 
     // Filter handlers
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
-        setAppliedPartnerType(selectedPartnerType);
-        setAppliedStatus(selectedStatus);
+        setAppliedPartner(selectedPartner);
         setAppliedAssignedUser(selectedAssignedUser);
         setAppliedFilters(filters);
         setPage(1); // Reset to first page when applying filters
@@ -155,12 +164,10 @@ export default function Partners() {
 
     const handleClearFilters = () => {
         setSearchText('');
-        setSelectedPartnerType('');
-        setSelectedStatus('');
+        setSelectedPartner('');
         setSelectedAssignedUser('');
         setAppliedSearchText('');
-        setAppliedPartnerType('');
-        setAppliedStatus('');
+        setAppliedPartner('');
         setAppliedAssignedUser('');
         initFilters();
         setPage(1); // Reset to first page when clearing filters
@@ -365,37 +372,34 @@ export default function Partners() {
                                             </div>
                                         </div>
 
-                                        <div className="col-xxl-2 col-sm-4">
+                                        <div className="col-xxl-3 col-sm-4">
                                             <Dropdown
-                                                value={selectedPartnerType}
-                                                onChange={(e) => setSelectedPartnerType(e.value)}
-                                                options={PARTNER_TYPES}
+                                                value={selectedPartner}
+                                                onChange={(e) => setSelectedPartner(e.value)}
+                                                options={[
+                                                    { label: 'All Partners', value: '' },
+                                                    ...partnersList.map(partner => ({
+                                                        label: partner.displayLabel,
+                                                        value: partner.id
+                                                    }))
+                                                ]}
                                                 optionLabel="label"
                                                 optionValue="value"
-                                                placeholder="Select Partner Type"
+                                                placeholder="All Partners"
                                                 className="w-100"
                                             />
                                         </div>
 
-                                        <div className="col-xxl-2 col-sm-4">
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                options={STATUS_OPTIONS}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                placeholder="Select Status"
-                                                className="w-100"
-                                            />
-                                        </div>
-
-                                        <div className="col-xxl-2 col-sm-4">
+                                        <div className="col-xxl-3 col-sm-4">
                                             <Dropdown
                                                 value={selectedAssignedUser}
                                                 onChange={(e) => setSelectedAssignedUser(e.value)}
                                                 options={[
                                                     { label: 'Assigned Users', value: '' },
-                                                    ...assignedUsersList.map(user => ({ label: user.name, value: user.id }))
+                                                    ...assignedUsersList.map(user => ({
+                                                        label: user.displayLabel,
+                                                        value: user.id
+                                                    }))
                                                 ]}
                                                 optionLabel="label"
                                                 optionValue="value"
