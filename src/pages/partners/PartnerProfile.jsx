@@ -278,7 +278,7 @@ export default function PartnerProfile() {
                         // Only append if it's a File object (user selected a new image)
                         if (value instanceof File) {
                             // Send as 'company_logo' - the backend field name
-                            formDataToSend.append('company_logo', value);
+                            // formDataToSend.append('company_logo', value);
                         }
                         // Skip if it's a URL string (existing image from server)
                     } else if (key === 'agent') {
