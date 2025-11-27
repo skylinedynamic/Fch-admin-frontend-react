@@ -39,3 +39,8 @@ export const allUsers = async (): Promise<any> => {
   const { data } = await apiClient.post('/admin/partners/get-all-users', {});
   return data;
 };
+
+export const fetchBorrowers = async (payload: any = {}) => {
+  const { data } = await apiClient.post('/admin/partners/fetch-borrowers', payload);
+  return data;
+};

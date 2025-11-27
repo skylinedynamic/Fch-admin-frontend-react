@@ -112,10 +112,11 @@ export default function PartnerProfile() {
                 }
 
                 // Update form data - spread all backend data first, then override with mapped fields
+                // Update form data - spread all backend data first, then override with mapped fields
                 setFormData(prev => ({
                     ...prev,
                     ...data, // Keep all existing backend fields
-                    agent: data.assign_to?.toString() || '', // Map assign_to → agent for frontend
+                    agent: data.assigned_user_id?.toString() || '', // Map assigned_user_id → agent for frontend
                     address: data.address_line_1 || '', // Map address_line_1 → address
                     partner_image: data.company_logo || '', // Map company_logo → partner_image
                 }));
@@ -135,6 +136,20 @@ export default function PartnerProfile() {
 
         fetchPartnerData();
     }, [id]);
+
+    // Update Agent Email/Phone when Agent or Users change
+    useEffect(() => {
+        if (formData.agent && users.length > 0) {
+            const selectedUser = users.find(user => user.id.toString() === formData.agent.toString());
+            if (selectedUser) {
+                setFormData(prev => ({
+                    ...prev,
+                    agentEmail: selectedUser.email || '',
+                    agentPhone: selectedUser.phone_number || ''
+                }));
+            }
+        }
+    }, [formData.agent, users]);
 
     // Validation function
     const validateField = (name, value) => {
@@ -272,8 +287,10 @@ export default function PartnerProfile() {
                         if (value !== '') {
                             formDataToSend.append('assign_to', value);
                         }
-                    } else if (key === 'agentEmail' || key === 'agentPhone') {
-                        // Skip these - they're frontend-only display fields
+                    } else if (key === 'agentEmail' || key === 'agentPhone' || key === 'company_logo') {
+                        // Skip these:
+                        // - agentEmail/Phone are frontend-only
+                        // - company_logo (string) should not be sent back; we only send it if it's a File (handled above)
                     } else if (value !== '') {
                         formDataToSend.append(key, value);
                     }
