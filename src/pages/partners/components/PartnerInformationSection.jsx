@@ -12,15 +12,47 @@ export default function PartnerInformationSection({
     states,
     cities
 }) {
+    // Helper function to get image source - matches EmployeeDetails pattern
+    const getImageSrc = () => {
+        // If user selected a new image file
+        if (formData.partner_image instanceof File) {
+            return URL.createObjectURL(formData.partner_image);
+        }
+
+        // If there's an existing image URL from formData
+        if (typeof formData.partner_image === 'string' && formData.partner_image.trim() !== '') {
+            return formData.partner_image;
+        }
+
+        // Fall back to profileImage prop
+        if (typeof profileImage === 'string' && profileImage.trim() !== '') {
+            return profileImage;
+        }
+
+        // Default avatar
+        return '/assets/images/users/avatar-1.jpg';
+    };
+
     return (
         <>
             {/* Profile Image */}
             <div className="col-lg-12">
                 <div className="card">
                     <div className="profile-user position-relative d-inline-block mx-auto mb-4">
-                        <img src={profileImage} className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow" alt="user-profile-image" />
+                        <img
+                            src={getImageSrc()}
+                            className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
+                            alt="user-profile-image"
+                        />
                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                            <input id="profile-img-file-input" type="file" className="profile-img-file-input" onChange={handleInputChange} name="partner_image" accept="image/*" />
+                            <input
+                                id="profile-img-file-input"
+                                type="file"
+                                className="profile-img-file-input"
+                                onChange={handleInputChange}
+                                name="partner_image"
+                                accept="image/*"
+                            />
                             <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>

@@ -7,7 +7,7 @@ export const fetchPartners = async (payload: any = {}) => {
 };
 
 export const getPartner = async (id: string | number): Promise<Partner> => {
-  const { data } = await apiClient.get(`/admin/partners/${id}`);
+  const { data } = await apiClient.get(`/admin/partners-details/${id}`);
   return data;
 };
 
@@ -20,12 +20,16 @@ export const createPartner = async (payload: Partial<Partner> | FormData): Promi
 };
 
 export const updatePartner = async (id: string | number, payload: Partial<Partner> | FormData): Promise<Partner> => {
-  const config = payload instanceof FormData
-    ? { headers: { 'Content-Type': 'multipart/form-data' } }
-    : {};
-  const { data } = await apiClient.put(`/admin/partners/${id}`, payload, config);
-  return data;
-};
+  if (payload instanceof FormData) {
+    payload.append('_method', 'PUT');
+    const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+    const { data } = await apiClient.post(`/admin/partners/${id}`, payload, config);
+    return data;
+  } else {
+    const { data } = await apiClient.put(`/admin/partners/${id}`, payload);
+    return data;
+  }
+}
 
 export const deletePartner = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/admin/partners/${id}`);

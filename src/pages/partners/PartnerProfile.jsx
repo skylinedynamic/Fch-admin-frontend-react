@@ -47,6 +47,7 @@ export default function PartnerProfile() {
         tax_id: '',
         website: '',
         joining_date: '',
+        partner_image: '',
         // Agent fields
         agent: '',
         agentEmail: '',
@@ -84,14 +85,16 @@ export default function PartnerProfile() {
     }, []);
 
     const [profileImage, setProfileImage] = useState('/assets/images/users/avatar-1.jpg');
-    const [imageFile, setImageFile] = useState(null);
 
     // Fetch partner data if ID exists
     useEffect(() => {
         const fetchPartnerData = async () => {
             if (!id) return;
             try {
-                const data = await getPartner(id);
+                const response = await getPartner(id);
+                const data = response.data || response; // Handle both response.data and direct data
+
+                console.log('Fetched partner data:', data); // Debug log
 
                 // Handle location cascading first to ensure options are available
                 if (data.country && locationData[data.country]) {
@@ -108,14 +111,20 @@ export default function PartnerProfile() {
                     }
                 }
 
-                // Update form data
+                // Update form data - spread all backend data first, then override with mapped fields
                 setFormData(prev => ({
                     ...prev,
-                    ...data,
+                    ...data, // Keep all existing backend fields
+                    agent: data.assign_to?.toString() || '', // Map assign_to → agent for frontend
+                    address: data.address_line_1 || '', // Map address_line_1 → address
+                    partner_image: data.company_logo || '', // Map company_logo → partner_image
                 }));
 
-                if (data.partner_image) {
-                    setProfileImage(data.partner_image);
+                console.log('Form data after setting:', formData); // Debug log
+
+                // Set profile image from company_logo field
+                if (data.company_logo) {
+                    setProfileImage(data.company_logo);
                 }
 
             } catch (error) {
@@ -162,7 +171,9 @@ export default function PartnerProfile() {
         if (type === 'file') {
             const file = files[0];
             if (file) {
-                setImageFile(file);
+                // Store the File object in formData
+                setFormData(prev => ({ ...prev, partner_image: file }));
+                // Create preview
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setProfileImage(reader.result);
@@ -246,16 +257,33 @@ export default function PartnerProfile() {
 
             const formDataToSend = new FormData();
 
-            // Append all form fields
+            // Append all form fields with proper field name mapping
             Object.entries(formData).forEach(([key, value]) => {
-                if (value !== null && value !== undefined && value !== '') {
-                    formDataToSend.append(key, value);
+                if (value !== null && value !== undefined) {
+                    if (key === 'partner_image') {
+                        // Only append if it's a File object (user selected a new image)
+                        if (value instanceof File) {
+                            // Send as 'company_logo' - the backend field name
+                            formDataToSend.append('company_logo', value);
+                        }
+                        // Skip if it's a URL string (existing image from server)
+                    } else if (key === 'agent') {
+                        // Map 'agent' to 'assign_to' for backend
+                        if (value !== '') {
+                            formDataToSend.append('assign_to', value);
+                        }
+                    } else if (key === 'agentEmail' || key === 'agentPhone') {
+                        // Skip these - they're frontend-only display fields
+                    } else if (value !== '') {
+                        formDataToSend.append(key, value);
+                    }
                 }
             });
 
-            // Append image file if selected
-            if (imageFile) {
-                formDataToSend.append('partner_image', imageFile);
+            // Debug: Log what we're sending
+            console.log('Sending FormData with:');
+            for (let pair of formDataToSend.entries()) {
+                console.log(pair[0] + ': ', pair[1]);
             }
 
             if (id) {
@@ -268,6 +296,7 @@ export default function PartnerProfile() {
 
             setTimeout(() => navigate('/partners'), 800);
         } catch (error) {
+            console.error('Save error:', error);
             if (error.response?.data?.errors) {
                 const errors = error.response.data.errors;
                 Object.entries(errors).forEach(([field, errorMsg]) => {
@@ -436,14 +465,14 @@ export default function PartnerProfile() {
                                                                     <h6 className="fs-14 mb-1">
                                                                         Jacqueline Steve
                                                                     </h6>
-                                                                    <small className="text-muted">Lead status updated: moved to “Proposal” — 05:16 PM</small>
+                                                                    <small className="text-muted">Lead status updated: moved to "Proposal" — 05:16 PM</small>
                                                                 </div>
                                                             </div>
                                                         </a>
                                                     </div>
                                                     <div id="collapseOne" className="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                                                         <div className="accordion-body ms-2 ps-5">
-                                                            <p className="text-muted mb-0">Lead update: changed stage from “Qualified” to “Proposal”. Next: follow-up call scheduled.</p>
+                                                            <p className="text-muted mb-0">Lead update: changed stage from "Qualified" to "Proposal". Next: follow-up call scheduled.</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -456,6 +485,6 @@ export default function PartnerProfile() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

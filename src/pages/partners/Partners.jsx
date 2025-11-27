@@ -2,8 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchPartners, allUsers } from '../../modules/partner/services';
+
+// Partner type options
+const PARTNER_TYPES = [
+    { label: 'Select Partner Type', value: '' },
+    { label: 'Agency', value: 'agency' },
+    { label: 'Individual', value: 'individual' },
+    { label: 'Corporate', value: 'corporate' }
+];
+
+// Status options
+const STATUS_OPTIONS = [
+    { label: 'Select Status', value: '' },
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+    { label: 'Pending', value: 'pending' }
+];
 
 export default function Partners() {
     // State for partners
@@ -23,10 +40,12 @@ export default function Partners() {
     // Filter states
     const [filters, setFilters] = useState({});
     const [searchText, setSearchText] = useState('');
-    const [selectedCompany, setSelectedCompany] = useState('');
+    const [selectedPartnerType, setSelectedPartnerType] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
     const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [appliedCompany, setAppliedCompany] = useState('');
+    const [appliedPartnerType, setAppliedPartnerType] = useState('');
+    const [appliedStatus, setAppliedStatus] = useState('');
     const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
 
@@ -34,7 +53,6 @@ export default function Partners() {
     const [selectedPartners, setSelectedPartners] = useState([]);
 
     // Dropdown data
-    const [allPartnersList, setAllPartnersList] = useState([]);
     const [assignedUsersList, setAssignedUsersList] = useState([]);
 
     // Initialize filters
@@ -56,21 +74,6 @@ export default function Partners() {
     // Initialize filters on mount
     useEffect(() => {
         initFilters();
-    }, []);
-
-    // Load all partners for dropdown
-    useEffect(() => {
-        const loadAllPartners = async () => {
-            try {
-                const result = await fetchPartners();
-                if (result.status) {
-                    setAllPartnersList(result.data || []);
-                }
-            } catch (err) {
-                console.error('Failed to load partners list:', err);
-            }
-        };
-        loadAllPartners();
     }, []);
 
     // Load all assigned users for dropdown
@@ -97,7 +100,8 @@ export default function Partners() {
             try {
                 const payload = {
                     search: appliedSearchText || '',
-                    partner_id: appliedCompany || '',
+                    partner_type: appliedPartnerType || '',
+                    status: appliedStatus || '',
                     assigned_user_id: appliedAssignedUser || '',
                     filters: appliedFilters,
                     page,
@@ -137,12 +141,13 @@ export default function Partners() {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedCompany, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedPartnerType, appliedStatus, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
 
     // Filter handlers
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
-        setAppliedCompany(selectedCompany);
+        setAppliedPartnerType(selectedPartnerType);
+        setAppliedStatus(selectedStatus);
         setAppliedAssignedUser(selectedAssignedUser);
         setAppliedFilters(filters);
         setPage(1); // Reset to first page when applying filters
@@ -150,10 +155,12 @@ export default function Partners() {
 
     const handleClearFilters = () => {
         setSearchText('');
-        setSelectedCompany('');
+        setSelectedPartnerType('');
+        setSelectedStatus('');
         setSelectedAssignedUser('');
         setAppliedSearchText('');
-        setAppliedCompany('');
+        setAppliedPartnerType('');
+        setAppliedStatus('');
         setAppliedAssignedUser('');
         initFilters();
         setPage(1); // Reset to first page when clearing filters
@@ -357,52 +364,52 @@ export default function Partners() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
-                                            <div className="input-light">
-                                                <select
-                                                    className="form-control"
-                                                    data-choices
-                                                    data-choices-search-false
-                                                    name="partnerCompany"
-                                                    id="partnerCompany"
-                                                    value={selectedCompany}
-                                                    onChange={(e) => setSelectedCompany(e.target.value)}
-                                                >
-                                                    <option value="">All Partners</option>
-                                                    {allPartnersList.map((partner) => (
-                                                        <option key={partner.id} value={partner.id}>
-                                                            {partner.company_name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <Dropdown
+                                                value={selectedPartnerType}
+                                                onChange={(e) => setSelectedPartnerType(e.value)}
+                                                options={PARTNER_TYPES}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="Select Partner Type"
+                                                className="w-100"
+                                            />
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
-                                            <div className="input-light">
-                                                <select
-                                                    className="form-control"
-                                                    data-choices
-                                                    data-choices-search-false
-                                                    name="assignedUserFilter"
-                                                    id="assignedUserFilter"
-                                                    value={selectedAssignedUser}
-                                                    onChange={(e) => setSelectedAssignedUser(e.target.value)}
-                                                >
-                                                    <option value="">Assigned Users</option>
-                                                    {assignedUsersList.map((user) => (
-                                                        <option key={user.id} value={user.id}>
-                                                            {user.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.value)}
+                                                options={STATUS_OPTIONS}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="Select Status"
+                                                className="w-100"
+                                            />
                                         </div>
+
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <Dropdown
+                                                value={selectedAssignedUser}
+                                                onChange={(e) => setSelectedAssignedUser(e.value)}
+                                                options={[
+                                                    { label: 'Assigned Users', value: '' },
+                                                    ...assignedUsersList.map(user => ({ label: user.name, value: user.id }))
+                                                ]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="Assigned Users"
+                                                className="w-100"
+                                            />
+                                        </div>
+
                                         <div className="col-xxl-2 col-sm-4">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={handleClearFilters}>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
                                                     <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                 </button>
                                             </div>
