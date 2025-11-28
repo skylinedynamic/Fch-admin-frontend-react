@@ -198,7 +198,12 @@ export default function Partners() {
 
     // Column body templates
     const companyNameBody = (rowData) => (
-        <Link to={`/partners-profile/${rowData.id}`} className="fw-medium link-primary">
+        <Link
+            to={`/partners-profile/${rowData.id}`}
+            state={{ activeTab: 'personalDetails' }}
+            className="fw-medium link-primary"
+            onClick={(e) => e.stopPropagation()}
+        >
             {rowData.company_name}
         </Link>
     );

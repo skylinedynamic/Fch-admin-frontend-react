@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../assets/css/dropdown-validation.css';
@@ -11,9 +11,20 @@ import PartnerForm from './components/PartnerForm';
 export default function PartnerProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
-    // Default to 'statusAgent' for existing partners, 'personalDetails' for new partners
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || (id ? 'statusAgent' : 'personalDetails'));
+
+    // Determine initial active tab based on navigation state or defaults
+    const getInitialTab = () => {
+        // Priority 1: URL query parameter
+        if (searchParams.get('tab')) return searchParams.get('tab');
+        // Priority 2: Navigation state (from Link)
+        if (location.state?.activeTab) return location.state.activeTab;
+        // Priority 3: Default based on whether it's a new partner or existing
+        return id ? 'statusAgent' : 'personalDetails';
+    };
+
+    const [activeTab, setActiveTab] = useState(getInitialTab());
     const [errors, setErrors] = useState({});
 
     // Location states
@@ -85,19 +96,23 @@ export default function PartnerProfile() {
         fetchUsers();
     }, []);
 
-    // Update active tab when URL search params change or when ID changes
+    // Update active tab when URL search params, location state, or ID changes
     useEffect(() => {
         const tabParam = searchParams.get('tab');
         if (tabParam) {
+            // Priority 1: URL query parameter
             setActiveTab(tabParam);
+        } else if (location.state?.activeTab) {
+            // Priority 2: Navigation state (from Link)
+            setActiveTab(location.state.activeTab);
         } else if (id) {
-            // If there's an ID but no tab parameter, default to statusAgent
+            // Priority 3: If there's an ID but no explicit tab, default to statusAgent
             setActiveTab('statusAgent');
         } else {
-            // New partner creation, default to personalDetails
+            // Priority 4: New partner creation, default to personalDetails
             setActiveTab('personalDetails');
         }
-    }, [searchParams, id]);
+    }, [searchParams, location.state, id]);
 
     const [profileImage, setProfileImage] = useState('/assets/images/users/avatar-1.jpg');
 
