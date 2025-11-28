@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../assets/css/dropdown-validation.css';
@@ -11,7 +11,9 @@ import PartnerForm from './components/PartnerForm';
 export default function PartnerProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('personalDetails');
+    const [searchParams] = useSearchParams();
+    // Default to 'statusAgent' for existing partners, 'personalDetails' for new partners
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || (id ? 'statusAgent' : 'personalDetails'));
     const [errors, setErrors] = useState({});
 
     // Location states
@@ -82,6 +84,20 @@ export default function PartnerProfile() {
         };
         fetchUsers();
     }, []);
+
+    // Update active tab when URL search params change or when ID changes
+    useEffect(() => {
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+            setActiveTab(tabParam);
+        } else if (id) {
+            // If there's an ID but no tab parameter, default to statusAgent
+            setActiveTab('statusAgent');
+        } else {
+            // New partner creation, default to personalDetails
+            setActiveTab('personalDetails');
+        }
+    }, [searchParams, id]);
 
     const [profileImage, setProfileImage] = useState('/assets/images/users/avatar-1.jpg');
 
@@ -305,12 +321,23 @@ export default function PartnerProfile() {
             if (id) {
                 await updatePartner(id, formDataToSend);
                 toast.success('Partner updated successfully');
+                setTimeout(() => navigate('/partners'), 800);
             } else {
-                await createPartner(formDataToSend);
+                const response = await createPartner(formDataToSend);
                 toast.success('Partner created successfully');
+
+                // Get the newly created partner ID from response
+                const newPartnerId = response?.data?.id || response?.id;
+
+                if (newPartnerId) {
+                    // Redirect to the partner profile (Status & Agent tab will be active by default)
+                    setTimeout(() => navigate(`/partners-profile/${newPartnerId}`), 800);
+                } else {
+                    // Fallback to partners list if no ID returned
+                    setTimeout(() => navigate('/partners'), 800);
+                }
             }
 
-            setTimeout(() => navigate('/partners'), 800);
         } catch (error) {
             console.error('Save error:', error);
             if (error.response?.data?.errors) {
@@ -411,22 +438,42 @@ export default function PartnerProfile() {
                                         </a>
                                     </li>
                                     <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'statusAgent' ? 'active' : ''}`} onClick={() => setActiveTab('statusAgent')} role="tab" style={{ cursor: 'pointer' }}>
-                                            <i className="far fa-user"></i> Status & Agent
+                                        <a
+                                            className={`nav-link ${activeTab === 'statusAgent' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('statusAgent')}
+                                            role="tab"
+                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                        >
+                                            <i className="far fa-user"></i> Status &amp; Agent
                                         </a>
                                     </li>
                                     <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')} role="tab" style={{ cursor: 'pointer' }}>
+                                        <a
+                                            className={`nav-link ${activeTab === 'documents' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('documents')}
+                                            role="tab"
+                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                        >
                                             <i className="far fa-envelope"></i> Documents
                                         </a>
                                     </li>
                                     <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'clientList' ? 'active' : ''}`} onClick={() => setActiveTab('clientList')} role="tab" style={{ cursor: 'pointer' }}>
+                                        <a
+                                            className={`nav-link ${activeTab === 'clientList' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('clientList')}
+                                            role="tab"
+                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                        >
                                             <i className="far fa-list-alt"></i> Client List
                                         </a>
                                     </li>
                                     <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'subscription' ? 'active' : ''}`} onClick={() => setActiveTab('subscription')} role="tab" style={{ cursor: 'pointer' }}>
+                                        <a
+                                            className={`nav-link ${activeTab === 'subscription' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('subscription')}
+                                            role="tab"
+                                            style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                        >
                                             <i className="far fa-credit-card"></i> Subscription details
                                         </a>
                                     </li>
