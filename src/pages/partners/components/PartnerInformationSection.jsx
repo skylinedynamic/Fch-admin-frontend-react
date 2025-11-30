@@ -2,6 +2,7 @@ import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config/relations';
+import { PARTNER_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
 
 export default function PartnerInformationSection({
     formData,
@@ -131,6 +132,62 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
+            {/* Partner Type */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">Partner Type <span className="text-danger">*</span></label>
+                    <select
+                        className={`form-select ${errors.partner_type ? 'is-invalid' : ''}`}
+                        name="partner_type"
+                        value={formData.partner_type}
+                        onChange={handleInputChange}
+                        required
+                    >
+                        <option value="">Select partner type...</option>
+                        {PARTNER_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    {errors.partner_type && <div className="invalid-feedback">{errors.partner_type}</div>}
+                </div>
+            </div>
+
+            {/* Address */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">Address <span className="text-danger">*</span></label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.address_line_1 ? 'is-invalid' : ''}`}
+                        name="address_line_1"
+                        placeholder="Enter address"
+                        value={formData.address_line_1}
+                        onChange={handleInputChange}
+                        required
+                    />
+                    {errors.address_line_1 && <div className="invalid-feedback">{errors.address_line_1}</div>}
+                </div>
+            </div>
+
+            {/* City - Input Field */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">City <span className="text-danger">*</span></label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.city ? 'is-invalid' : ''}`}
+                        name="city"
+                        placeholder="Enter city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                    />
+                    {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                </div>
+            </div>
+
             {/* Country - PrimeReact Dropdown */}
             <div className="col-lg-6">
                 <div className="mb-3">
@@ -166,23 +223,7 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* City - PrimeReact Dropdown */}
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">City <span className="text-danger">*</span></label>
-                    <Dropdown
-                        value={formData.city}
-                        options={cities}
-                        onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
-                        optionLabel="label"
-                        placeholder="Select City"
-                        filter
-                        className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
-                        disabled={!formData.state}
-                    />
-                    {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
-                </div>
-            </div>
+
 
             {/* Zip Code */}
             <div className="col-lg-6">
@@ -192,13 +233,7 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Address */}
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">Address</label>
-                    <input type="text" className="form-control" name="address_line_1" placeholder="Enter address" value={formData.address_line_1} onChange={handleInputChange} />
-                </div>
-            </div>
+
 
             {/* Joining Date - Flatpickr */}
             <div className="col-lg-6">

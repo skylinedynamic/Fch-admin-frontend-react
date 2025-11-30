@@ -62,17 +62,7 @@ export default function StatusAgentSection({
             </div>
 
             {/* Partner Type - Moved here */}
-            <div className="col-lg-4 col-12">
-                <div className="mb-3">
-                    <label className="form-label">Partner Type</label>
-                    <select className="form-select" name="partner_type" value={formData.partner_type} onChange={handleInputChange}>
-                        <option value="">Select partner type...</option>
-                        <option value="agency">Agency</option>
-                        <option value="individual">Individual</option>
-                        <option value="reseller">Reseller</option>
-                    </select>
-                </div>
-            </div>
+
         </>
     );
 }

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
+import { Column } from 'primereact/column';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowers } from '../../../modules/partner/services';
 import { toast } from 'react-toastify';
 
@@ -7,32 +10,50 @@ export default function ClientListSection() {
     const { id } = useParams();
     const [borrowers, setBorrowers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({
-        current_page: 1,
-        last_page: 1,
-        total: 0
-    });
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [sortField, setSortField] = useState('id');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [filters, setFilters] = useState({});
 
-    const loadBorrowers = async (page = 1) => {
+    useEffect(() => {
+        initFilters();
+    }, []);
+
+    const initFilters = () => {
+        const initial = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+            company_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+        };
+        setFilters(initial);
+    };
+
+    const loadBorrowers = async () => {
         try {
             setLoading(true);
             const response = await fetchBorrowers({
                 partner_id: id,
                 page: page,
-                per_page: 10
+                per_page: perPage,
+                sort_field: sortField,
+                sort_order: sortOrder
             });
 
             if (response && response.status) {
                 setBorrowers(response.data || []);
                 if (response.meta) {
-                    setPagination({
-                        current_page: response.meta.current_page || 1,
-                        last_page: response.meta.last_page || 1,
-                        total: response.meta.total || 0
-                    });
+                    setTotalRecords(response.meta.total || 0);
+                    setPage(response.meta.current_page || 1);
+                    setPerPage(response.meta.per_page || 10);
                 }
             } else if (Array.isArray(response)) {
                 setBorrowers(response);
+                setTotalRecords(response.length);
             }
         } catch (error) {
             console.error('Failed to fetch borrowers', error);
@@ -46,91 +67,102 @@ export default function ClientListSection() {
         if (id) {
             loadBorrowers();
         }
-    }, [id]);
+    }, [id, page, perPage, sortField, sortOrder]);
 
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= pagination.last_page) {
-            loadBorrowers(page);
-        }
+    const onPage = (event) => {
+        setPerPage(event.rows);
+        setPage(Math.floor(event.first / event.rows) + 1);
+    };
+
+    const onSort = (event) => {
+        setSortField(event.sortField || sortField);
+        setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
+    };
+
+    const onFilter = (e) => {
+        setFilters(e.filters);
+        setPage(1);
     };
 
     return (
-        <div className="table-responsive table-card">
-            <table className="table table-borderless table-hover table-nowrap align-middle mb-0">
-                <thead className="table-light">
-                    <tr className="text-muted">
-                        <th scope="col">Name</th>
-                        <th scope="col">Company Name</th>
-                        <th scope="col">Email Address</th>
-                        <th scope="col">Phone Number</th>
-                        <th scope="col">Joining Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading ? (
-                        <tr>
-                            <td colSpan="5" className="text-center py-5">
-                                <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Loading...</span>
-                                </div>
-                                <div className="mt-2 text-muted">Loading clients...</div>
-                            </td>
-                        </tr>
-                    ) : borrowers.length > 0 ? (
-                        borrowers.map((borrower, index) => (
-                            <tr key={borrower.id || index}>
-                                <td>{borrower.full_name || borrower.name || 'N/A'}</td>
-                                <td>{borrower.company_name || 'N/A'}</td>
-                                <td>{borrower.business_email || 'N/A'}</td>
-                                <td>{borrower.business_phone || 'N/A'}</td>
-                                <td>{borrower.business_start_date || 'Invalid Date'}</td>
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan="5" className="text-center py-4">No clients found</td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {/* Pagination */}
-            {pagination.last_page > 1 && (
-                <div className="d-flex justify-content-end mt-3">
-                    <nav>
-                        <ul className="pagination pagination-sm mb-0">
-                            <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
-                                <button
-                                    className="page-link"
-                                    onClick={() => handlePageChange(pagination.current_page - 1)}
-                                    disabled={pagination.current_page === 1}
-                                >
-                                    Previous
-                                </button>
-                            </li>
-                            {[...Array(pagination.last_page)].map((_, i) => (
-                                <li key={i + 1} className={`page-item ${pagination.current_page === i + 1 ? 'active' : ''}`}>
-                                    <button
-                                        className="page-link"
-                                        onClick={() => handlePageChange(i + 1)}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                </li>
-                            ))}
-                            <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
-                                <button
-                                    className="page-link"
-                                    onClick={() => handlePageChange(pagination.current_page + 1)}
-                                    disabled={pagination.current_page === pagination.last_page}
-                                >
-                                    Next
-                                </button>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            )}
+        <div className="table-responsive table-card mt-1">
+            <DataTable
+                scrollable
+                scrollHeight="510px"
+                value={borrowers}
+                paginator
+                lazy
+                totalRecords={totalRecords}
+                first={(page - 1) * perPage}
+                rows={perPage}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                sortMode="single"
+                sortField={sortField}
+                sortOrder={sortOrder === 'asc' ? 1 : -1}
+                filterDisplay="menu"
+                filters={filters}
+                onFilter={onFilter}
+                onPage={onPage}
+                onSort={onSort}
+                globalFilterFields={[
+                    'full_name',
+                    'company_name',
+                    'business_email',
+                    'business_phone',
+                    'business_start_date'
+                ]}
+                dataKey="id"
+                responsiveLayout="scroll"
+                className="p-datatable-sm"
+                loading={loading}
+                emptyMessage="No clients found"
+            >
+                <Column
+                    field="full_name"
+                    header="Name"
+                    sortable
+                    filter
+                    showFilterMatchModes
+                    filterPlaceholder="Search by name"
+                    style={{ minWidth: '150px' }}
+                />
+                <Column
+                    field="company_name"
+                    header="Company Name"
+                    sortable
+                    filter
+                    showFilterMatchModes
+                    filterPlaceholder="Search by company"
+                    style={{ minWidth: '200px' }}
+                />
+                <Column
+                    field="business_email"
+                    header="Email Address"
+                    sortable
+                    filter
+                    showFilterMatchModes
+                    filterPlaceholder="Search by email"
+                    style={{ minWidth: '200px' }}
+                />
+                <Column
+                    field="business_phone"
+                    header="Phone Number"
+                    sortable
+                    filter
+                    showFilterMatchModes
+                    filterPlaceholder="Search by phone"
+                    style={{ minWidth: '150px' }}
+                />
+                <Column
+                    field="business_start_date"
+                    header="Joining Date"
+                    sortable
+                    filter
+                    showFilterMatchModes
+                    filterPlaceholder="Search by date"
+                    style={{ minWidth: '150px' }}
+                />
+            </DataTable>
         </div>
     );
 }

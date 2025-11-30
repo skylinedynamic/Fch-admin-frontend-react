@@ -190,7 +190,11 @@ export default function PartnerProfile() {
             case 'country':
             case 'state':
             case 'city':
+            case 'partner_type':
                 error = validateRequired(value, name.replace('_', ' '));
+                break;
+            case 'address_line_1':
+                error = validateRequired(value, 'Address');
                 break;
             case 'email':
                 if (!value || (typeof value === 'string' && value.trim() === '')) {
@@ -281,6 +285,8 @@ export default function PartnerProfile() {
                 company_name: formData.company_name,
                 phone_number: formData.phone_number,
                 email: formData.email,
+                partner_type: formData.partner_type,
+                address_line_1: formData.address_line_1,
                 country: formData.country,
                 state: formData.state,
                 city: formData.city
@@ -506,6 +512,7 @@ export default function PartnerProfile() {
                                     states={states}
                                     cities={cities}
                                     users={users}
+                                    partnerId={id}
                                 />
                             </div>
                         </div>

@@ -15,7 +15,8 @@ export default function PartnerForm({
     countries,
     states,
     cities,
-    users
+    users,
+    partnerId
 }) {
     return (
         <div className="tab-content">
@@ -57,7 +58,7 @@ export default function PartnerForm({
             {/* Documents Tab */}
             {activeTab === 'documents' && (
                 <div className="tab-pane active show">
-                    <DocumentsSection />
+                    <DocumentsSection partnerId={partnerId} />
                 </div>
             )}
 

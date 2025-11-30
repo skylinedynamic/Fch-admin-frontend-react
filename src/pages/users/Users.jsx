@@ -9,6 +9,8 @@ import '../../../assets/css/bootstrap.min.css';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useLocation } from 'react-router-dom';
+import UserModal from './components/UserModal';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -340,10 +342,6 @@ export default function Users() {
                                       <span className="visually-hidden">Toggle dropdown</span>
                                     </button>
                                     <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                      {/* <li><a className="dropdown-item" href="#" id="exportCsv"><i className="ri-file-text-line me-1 align-bottom"></i> Export CSV</a></li>
-                                    <li><a className="dropdown-item" href="#" id="exportExcel"><i className="ri-file-excel-2-line me-1 align-bottom"></i> Export Excel</a></li>
-                                    <li><a className="dropdown-item" href="#" id="exportPdf"><i className="ri-file-pdf-2-line me-1 align-bottom"></i> Export PDF</a></li>
-                                    <li><hr className="dropdown-divider" /></li> */}
                                       <li>
                                         <button
                                           className="dropdown-item text-danger"
@@ -410,46 +408,26 @@ export default function Users() {
                               </div>
                             </div>
                             <div className="col-xxl-3 col-sm-4">
-
                               <Dropdown
-
                                 value={statusFilter}
-
                                 onChange={(e) => onStatusChange({ target: { value: e.value } })}
-
                                 options={statusOptions}
-
                                 optionLabel="label"
-
                                 optionValue="value"
-
                                 placeholder="Status"
-
                                 className="w-100"
-
                               />
-
                             </div>
                             <div className="col-xxl-3 col-sm-4">
-
                               <Dropdown
-
                                 value={roleFilter || ''}
-
                                 onChange={(e) => onRoleChange({ target: { value: e.value } })}
-
                                 options={[{ id: '', name: 'Select Role' }, ...roles]}
-
                                 optionLabel="name"
-
                                 optionValue="id"
-
                                 placeholder="Select Role"
-
                                 className="w-100"
-
                               />
-
                             </div>
                             <div className="col-xxl-2 col-sm-4">
                               <div className="d-flex gap-2">
@@ -551,204 +529,39 @@ export default function Users() {
                     </div>
                   </div>
                 </div>
-                {showAddUser && (
-                  <>
-                    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-                      <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                          <div className="modal-header">
-                            <h5 className="modal-title">{editingUserId ? 'Update User' : 'Add User'}</h5>
-                            <button type="button" className="btn-close" onClick={() => {
-                              setShowAddUser(false);
-                              setEditingUserId(null);
-                            }}></button>
-                          </div>
-                          <div className="modal-body">
-                            <form onSubmit={handleAddUserSubmit}>
-                              <div className="mb-3">
-                                <label className="form-label">Name </label>
-                                <input type="text" name="name" className="form-control" value={newUser.name} onChange={handleAddUserInput} required />
-                              </div>
-                              <div className="mb-3">
-                                <label className="form-label">Email</label>
-                                <input type="email" name="email" className="form-control" value={newUser.email} onChange={handleAddUserInput} required />
-                              </div>
-                              <div className="mb-3">
-                                <label className="form-label">Phone</label>
-                                <input type="text" name="phone_number" className="form-control" value={newUser.phone_number} onChange={handleAddUserInput} required />
-                              </div>
 
-                              <div className="mb-3">
-                                <label className="form-label">Role</label>
-                                <select
-                                  name="role_id"
-                                  className="form-control"
-                                  value={newUser.role_id || ''}
-                                  onChange={handleAddUserInput}
-                                  required
-                                >
-                                  <option value="">Select Role</option>
-                                  {roles.map((role) => (
-                                    <option key={role.id} value={String(role.id)}>
-                                      {role.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              {editingUserId && (
-                                <div className="mb-3">
-                                  <label className="form-label"> Status </label>
-                                  <select
-                                    name="status"
-                                    className="form-control"
-                                    value={newUser.status}
-                                    onChange={handleAddUserInput}
-                                    required
-                                  >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                  </select>
-                                </div>
-                              )}
-                              {/* ADD MODE – Password Required */}
-                              {!editingUserId && (
-                                <div className="mb-3">
-                                  <label className="form-label">Password</label>
-                                  <input
-                                    type="password"
-                                    name="password"
-                                    className="form-control"
-                                    value={newUser.password}
-                                    onChange={handleAddUserInput}
-                                    required
-                                  />
-                                </div>
-                              )}
+                <UserModal
+                  show={showAddUser}
+                  onHide={() => {
+                    setShowAddUser(false);
+                    setEditingUserId(null);
+                    setShowPasswordFields(false);
+                  }}
+                  onSubmit={handleAddUserSubmit}
+                  user={newUser}
+                  onChange={handleAddUserInput}
+                  roles={roles}
+                  isEdit={!!editingUserId}
+                  loadingSave={loadingSave}
+                  showPasswordFields={showPasswordFields}
+                  onPasswordFieldsToggle={setShowPasswordFields}
+                />
 
-                              {/* EDIT MODE – Password Update Checkbox */}
-                              {editingUserId && (
-                                <div className="form-check mb-3">
-                                  <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    id="changePasswordCheck"
-                                    checked={showPasswordFields}
-                                    onChange={(e) => setShowPasswordFields(e.target.checked)}
-                                  />
-                                  <label className="form-check-label" htmlFor="changePasswordCheck">
-                                    Change Password
-                                  </label>
-                                </div>
-                              )}
-
-                              {/* EDIT MODE – Show Inputs Only When Checkbox Checked */}
-                              {editingUserId && showPasswordFields && (
-                                <>
-                                  <div className="mb-3">
-                                    <label className="form-label">New Password</label>
-                                    <input
-                                      type="password"
-                                      name="new_password"
-                                      className="form-control"
-                                      value={newUser.new_password}
-                                      onChange={handleAddUserInput}
-                                      placeholder="Enter new password"
-                                    />
-                                  </div>
-
-                                  <div className="mb-3">
-                                    <label className="form-label">Confirm Password</label>
-                                    <input
-                                      type="password"
-                                      name="confirm_password"
-                                      className="form-control"
-                                      value={newUser.confirm_password}
-                                      onChange={handleAddUserInput}
-                                      placeholder="Re-enter new password"
-                                    />
-                                  </div>
-                                </>
-                              )}
-                              <div className="d-flex justify-content-end">
-                                <button type="button" className="btn btn-secondary me-2" onClick={() => {
-                                  setShowAddUser(false);
-                                  setEditingUserId(null);
-                                }}>Cancel</button>
-                                <button
-                                  type="submit"
-                                  className="btn btn-primary"
-                                  disabled={loadingSave}
-                                >
-                                  {/* Loading Spinner */}
-                                  {loadingSave && (
-                                    <span
-                                      className="spinner-border spinner-border-sm me-1"
-                                      role="status"
-                                      aria-hidden="true"
-                                    ></span>
-                                  )}
-
-                                  {/* Dynamic Icon */}
-                                  <i
-                                    className={`me-1 align-bottom ${editingUserId ? 'ri-edit-2-fill' : 'ri-save-3-fill'
-                                      }`}
-                                  ></i>
-
-                                  {/* Dynamic Text */}
-                                  {editingUserId ? 'Update' : 'Submit'}
-                                </button>
-                              </div>
-                            </form>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="modal-backdrop fade show"></div>
-                  </>
-                )}
-                {showDeleteModal && (
-                  <>
-                    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-                      <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                          <div className="modal-body p-5 text-center">
-                            <lord-icon
-                              src="https://cdn.lordicon.com/gsqxdxog.json"
-                              trigger="loop"
-                              colors="primary:#405189,secondary:#f06548"
-                              style={{ width: '90px', height: '90px' }}
-                            ></lord-icon>
-                            <div className="mt-4">
-                              <h4>Are you sure?</h4>
-                              <p className="text-muted fs-15 mb-4">
-                                {deletingUserId
-                                  ? "Deleting this user will remove all information."
-                                  : "Deleting selected users will remove all information."}
-                              </p>
-                              <div className="hstack gap-2 justify-content-center">
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  onClick={() => setShowDeleteModal(false)}
-                                >
-                                  <i className="ri-close-line me-1 align-middle"></i> Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-danger"
-                                  onClick={handleDeleteUsers}
-                                >
-                                  <i className="ri-delete-bin-6-line me-1 align-middle"></i> Yes, Delete
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="modal-backdrop fade show"></div>
-                  </>
-                )}
+                <DeleteConfirmationModal
+                  show={showDeleteModal}
+                  onHide={() => {
+                    setShowDeleteModal(false);
+                    setDeletingUserId(null);
+                  }}
+                  onConfirm={handleDeleteUsers}
+                  title="Are you sure?"
+                  message={
+                    deletingUserId
+                      ? "Deleting this user will remove all information."
+                      : "Deleting selected users will remove all information."
+                  }
+                  isBulk={!deletingUserId}
+                />
               </div>
             </div>
           </div>

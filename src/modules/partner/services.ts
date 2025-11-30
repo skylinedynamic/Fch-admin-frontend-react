@@ -44,3 +44,27 @@ export const fetchBorrowers = async (payload: any = {}) => {
   const { data } = await apiClient.post('/admin/partners/fetch-borrowers', payload);
   return data;
 };
+
+export const fetchPartnerDocuments = async (partnerId: string | number) => {
+  const { data } = await apiClient.post('/admin/partners/fetch-all-documents', { partner_id: partnerId });
+  return data;
+};
+
+export const downloadPartnerDocument = async (docId: string | number) => {
+  const response = await apiClient.get(`/admin/partners/documents/download/${docId}`, {
+    responseType: 'blob', // Important for file downloads
+  });
+  return response;
+};
+
+export const uploadPartnerDocument = async (partnerId: string | number, formData: FormData) => {
+  const { data } = await apiClient.post(`/admin/partners/documents`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return data;
+};
+
+export const deletePartnerDocument = async (docId: string | number) => {
+  const { data } = await apiClient.delete(`/admin/partners/documents/${docId}`);
+  return data;
+};
