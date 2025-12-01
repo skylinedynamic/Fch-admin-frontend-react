@@ -150,7 +150,7 @@ export default function DocumentsSection({ partnerId }) {
                 </button>
             </div>
 
-            <div className="table-responsive">
+            <div className="table-responsive" style={{ overflow: 'visible' }}>
                 <table className="table table-borderless align-middle mb-0">
                     <thead className="table-light">
                         <tr>
