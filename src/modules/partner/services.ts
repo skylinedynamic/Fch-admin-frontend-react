@@ -65,7 +65,7 @@ export const uploadPartnerDocument = async (partnerId: string | number, formData
 };
 
 export const deletePartnerDocument = async (docId: string | number) => {
-  const { data } = await apiClient.delete(`/admin/partners/documents/${docId}`);
+  const { data } = await apiClient.post(`/admin/partners/documents/delete/${docId}`);
   return data;
 };
 

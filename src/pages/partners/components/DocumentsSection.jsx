@@ -206,11 +206,6 @@ export default function DocumentsSection({ partnerId }) {
                                                     <i className="ri-equalizer-fill"></i>
                                                 </a>
                                                 <ul className="dropdown-menu dropdown-menu-end" aria-labelledby={`dropdownMenuLink${doc.id}`}>
-                                                    {/* <li>
-                                                        <a className="dropdown-item" href={doc.file_path} target="_blank" rel="noreferrer">
-                                                            <i className="ri-eye-fill me-2 align-middle text-muted"></i>View
-                                                        </a>
-                                                    </li> */}
                                                     <li>
                                                         <a className="dropdown-item" href="javascript:void(0);" onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path); }}>
                                                             <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
@@ -314,13 +309,12 @@ export default function DocumentsSection({ partnerId }) {
 
             <DeleteConfirmationModal
                 show={showDeleteModal}
-                onHide={() => {
+                onClose={() => {
                     setShowDeleteModal(false);
                     setDeletingDocId(null);
                 }}
                 onConfirm={handleDeleteDocument}
-                title="Delete Document"
-                message="Are you sure you want to delete this document?"
+                loading={loading}
             />
         </div>
     );
