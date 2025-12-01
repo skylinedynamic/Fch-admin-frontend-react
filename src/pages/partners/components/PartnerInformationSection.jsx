@@ -52,15 +52,30 @@ export default function PartnerInformationSection({
                                 className="profile-img-file-input"
                                 onChange={handleInputChange}
                                 name="partner_image"
-                                accept="image/*"
+                                accept=".jpg, .jpeg, .png"
                             />
-                            <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
+                            <label
+                                htmlFor="profile-img-file-input"
+                                className="profile-photo-edit avatar-xs"
+                                title="Upload profile image"
+                            >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>
                                 </span>
                             </label>
                         </div>
                     </div>
+                    <div className="text-center mb-3">
+                        <span className="badge bg-light text-muted border">
+                            <i className="ri-information-line me-1"></i>
+                            JPG, JPEG, PNG - Max 1MB
+                        </span>
+                    </div>
+                    {errors.partner_image && (
+                        <div className="alert alert-danger mt-2 text-center p-1">
+                            <small>{errors.partner_image}</small>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -223,8 +238,6 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-
-
             {/* Zip Code */}
             <div className="col-lg-6">
                 <div className="mb-3">
@@ -232,8 +245,6 @@ export default function PartnerInformationSection({
                     <input type="text" className="form-control" name="postal_code" placeholder="Enter zip code" value={formData.postal_code} onChange={handleInputChange} />
                 </div>
             </div>
-
-
 
             {/* Joining Date - Flatpickr */}
             <div className="col-lg-6">

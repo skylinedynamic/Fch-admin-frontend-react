@@ -18,7 +18,8 @@ export { bloodGroups, type BloodGroupOption } from './bloodGroups';
 export { relationOptions, type RelationOption } from './relations';
 
 // General configurations
-export { STATUS, type StatusOption } from './statusOptions';
+export { PARTNER_STATUS, type PartnerStatusOption } from './partnerStatus';
 
 // Location configurations
 export { locationData, type LocationData, type Country, type StatesMap, type StateOrProvince } from './locations';
+export { BILLING_OPTIONS } from './billingOptions';

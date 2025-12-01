@@ -204,7 +204,7 @@ export default function Partners() {
 
         return (
             <Link
-                to={`/partners-profile/${rowData.id}`}
+                to={`/partners/${rowData.id}`}
                 state={{ activeTab: 'personalDetails' }}
                 className="fw-medium link-primary"
                 onClick={handleClick}
@@ -256,7 +256,7 @@ export default function Partners() {
                                                         </ul>
                                                     </>
                                                 ) : (
-                                                    <Link to="/partners-profile" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                                    <Link to="/partners/create" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                                         <i className="ri-add-fill me-1 align-bottom"></i> Add Partner
                                                     </Link>
                                                 )}

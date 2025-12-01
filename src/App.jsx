@@ -36,7 +36,8 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="partners" element={<Partners />} />
-            <Route path="partners-profile/:id?" element={<PartnerProfile />} />
+            <Route path="partners/create" element={<PartnerProfile />} />
+            <Route path="partners/:id" element={<PartnerProfile />} />
             <Route path="employees" element={<Employees />} />
             <Route path="users" element={<Users />} />
             <Route path="employee-details/:id?" element={<EmployeeDetails />} />

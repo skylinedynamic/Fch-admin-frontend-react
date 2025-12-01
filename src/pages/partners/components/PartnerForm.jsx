@@ -49,6 +49,7 @@ export default function PartnerForm({
                                 handleInputChange={handleInputChange}
                                 handleAgentChange={handleAgentChange}
                                 users={users}
+                                errors={errors}
                             />
                         </div>
                     </form>
@@ -77,6 +78,7 @@ export default function PartnerForm({
                             <SubscriptionSection
                                 formData={formData}
                                 handleInputChange={handleInputChange}
+                                errors={errors}
                             />
                         </div>
                     </form>

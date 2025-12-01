@@ -68,3 +68,13 @@ export const deletePartnerDocument = async (docId: string | number) => {
   const { data } = await apiClient.delete(`/admin/partners/documents/${docId}`);
   return data;
 };
+
+export const getSubscription = async (partnerId: string | number) => {
+  const { data } = await apiClient.get(`/admin/partners/subscription/${partnerId}`);
+  return data;
+};
+
+export const saveSubscription = async (payload: any) => {
+  const { data } = await apiClient.post('/admin/partners/subscription', payload);
+  return data;
+};
