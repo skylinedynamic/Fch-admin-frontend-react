@@ -68,7 +68,7 @@ export default function PartnerInformationSection({
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border">
                             <i className="ri-information-line me-1"></i>
-                            JPG, JPEG, PNG - Max 1MB
+                            Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
                         </span>
                     </div>
                     {errors.partner_image && (
