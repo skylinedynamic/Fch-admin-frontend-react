@@ -4,6 +4,7 @@ import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config/relations';
 import { PARTNER_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
+import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 
 export default function PartnerInformationSection({
     formData,
@@ -31,8 +32,8 @@ export default function PartnerInformationSection({
             return profileImage;
         }
 
-        // Default avatar
-        return '/assets/images/users/avatar-1.jpg';
+        // Default avatar - using static import
+        return avatarDefault;
     };
 
     return (

@@ -7,6 +7,7 @@ import { createPartner, updatePartner, getPartner, allUsers, getSubscription, sa
 import { locationData } from '../../config/locations';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
+import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -127,7 +128,7 @@ export default function PartnerProfile() {
         }
     }, [searchParams, location.state, id]);
 
-    const [profileImage, setProfileImage] = useState('/assets/images/users/avatar-1.jpg');
+    const [profileImage, setProfileImage] = useState(avatarDefault);
 
     // Fetch partner data if ID exists
     useEffect(() => {
