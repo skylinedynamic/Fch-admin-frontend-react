@@ -5,6 +5,7 @@ import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers } from '../../modules/user/services';
+import { formatPhoneNumber } from '../../utils/formatters';
 import '../../../assets/css/bootstrap.min.css';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -36,6 +37,7 @@ export default function Users() {
   const [editingUserId, setEditingUserId] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,6 +54,7 @@ export default function Users() {
   });
 
   const statusOptions = [
+    { label: 'All Status', value: '' },
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' }
   ]
@@ -85,7 +88,6 @@ export default function Users() {
   const resolveRoleId = (rowData) => {
     if (!rowData) return '';
     if (rowData.role_id != null) return String(rowData.role_id);
-    // rowData.role may be the role name; try to match it to loaded roles
     if (rowData.role) {
       const found = roles.find(r => r.name === rowData.role || String(r.id) === String(rowData.role));
       if (found) return String(found.id);
@@ -141,12 +143,12 @@ export default function Users() {
 
   const onStatusChange = (e) => {
     const val = e.target.value
-    setStatusFilter(val === 'Select User Status' ? '' : val)
+    setStatusFilter(val)
   }
 
   const onRoleChange = (e) => {
     const val = e.target.value
-    setRoleFilter(val === 'all' || val === 'Select Role' ? '' : val)
+    setRoleFilter(val)
   }
 
   const onApplyFilters = () => {
@@ -161,21 +163,14 @@ export default function Users() {
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-
       onApplyFilters();
-
-      // Update URL query params
       const params = new URLSearchParams(location.search);
-
       if (globalFilterValue) params.set('search', globalFilterValue);
       else params.delete('search');
-
-      if (statusFilter && statusFilter !== 'Select User Status') params.set('status', statusFilter);
+      if (statusFilter) params.set('status', statusFilter);
       else params.delete('status');
-
-      if (roleFilter && roleFilter !== 'all') params.set('role', roleFilter);
+      if (roleFilter) params.set('role', roleFilter);
       else params.delete('role');
-
       navigate(`/users?${params.toString()}`);
     }
   };
@@ -186,6 +181,7 @@ export default function Users() {
     setAppliedRoleFilter('')
     setAppliedStatusFilter('')
     setRoleFilter('')
+    setStatusFilter('')
     setPage(1)
   }
 
@@ -221,17 +217,6 @@ export default function Users() {
     );
   }
 
-  const statusRowFilterTemplate = (options) => (
-    <Dropdown
-      value={options.value}
-      options={statusOptions}
-      onChange={(e) => options.filterCallback(e.value)}
-      placeholder="Select status"
-      className="p-column-filter"
-      showClear
-    />
-  )
-
   const onPage = (event) => {
     setPerPage(event.rows)
     setPage(Math.floor(event.first / event.rows) + 1)
@@ -251,7 +236,7 @@ export default function Users() {
     const payload = {
       name: newUser.name,
       email: newUser.email,
-      phone_number: newUser.phone_number,
+      phone_number: newUser.phone_number.replace(/\D/g, ''), // Remove formatting before sending
       role_id: newUser.role_id ? Number(newUser.role_id) : null,
       password: newUser.password,
       status: newUser.status,
@@ -269,19 +254,23 @@ export default function Users() {
       toast.success(`User ${editingUserId ? 'updated' : 'created'} successfully`);
       setShowAddUser(false)
       setEditingUserId(null)
-      loadUsers() // refresh table
+      loadUsers()
     } catch (error) {
       toast.error("Failed to save user")
       console.error(error)
     }
     finally {
-      setLoadingSave(false); // stop loading
+      setLoadingSave(false);
     }
   };
 
   const handleAddUserInput = (e) => {
     const { name, value } = e.target;
-    setNewUser({ ...newUser, [name]: value });
+    if (name === 'phone_number') {
+      setNewUser({ ...newUser, [name]: formatPhoneNumber(value) });
+    } else {
+      setNewUser({ ...newUser, [name]: value });
+    }
   };
 
   const handleDeleteUsers = async () => {
@@ -293,8 +282,8 @@ export default function Users() {
     }
 
     try {
-      setLoading(true);
-      await deleteUsers(idsToDelete); // call API
+      setLoadingDelete(true);
+      await deleteUsers(idsToDelete);
       toast.success("Users deleted successfully");
       setSelection([]);
       setDeletingUserId(null);
@@ -304,7 +293,7 @@ export default function Users() {
       console.error(error);
       toast.error(error?.response?.data?.message || "Failed to delete users");
     } finally {
-      setLoading(false);
+      setLoadingDelete(false);
     }
   };
 
@@ -351,8 +340,8 @@ export default function Users() {
                                               toast.warn("No users selected for deletion");
                                               return;
                                             }
-                                            setDeletingUserId(null);       // clear single row
-                                            setShowDeleteModal(true);      // show modal
+                                            setDeletingUserId(null);
+                                            setShowDeleteModal(true);
                                           }}
                                         >
                                           <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
@@ -383,8 +372,8 @@ export default function Users() {
                     <div className="card">
                       <div className="card-body list-fluid-card">
                         <form onSubmit={(e) => {
-                          e.preventDefault(); // prevent page reload
-                          onApplyFilters();   // trigger your search function
+                          e.preventDefault();
+                          onApplyFilters();
                         }}>
                           <div className="row g-3 mb-3">
                             <div className="col-xxl-4 col-sm-12">
@@ -396,11 +385,11 @@ export default function Users() {
                                   autoComplete="off"
                                   placeholder="Search here..."
                                   value={globalFilterValue}
-                                  onChange={(e) => setGlobalFilterValue(e.target.value)}  // ✅ keep state updated
+                                  onChange={(e) => setGlobalFilterValue(e.target.value)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                      e.preventDefault();       // prevent page reload
-                                      onApplyFilters();         // trigger your filter/search
+                                      e.preventDefault();
+                                      onApplyFilters();
                                     }
                                   }}
                                 />
@@ -414,7 +403,7 @@ export default function Users() {
                                 options={statusOptions}
                                 optionLabel="label"
                                 optionValue="value"
-                                placeholder="Status"
+                                placeholder="All Status"
                                 className="w-100"
                               />
                             </div>
@@ -422,10 +411,10 @@ export default function Users() {
                               <Dropdown
                                 value={roleFilter || ''}
                                 onChange={(e) => onRoleChange({ target: { value: e.value } })}
-                                options={[{ id: '', name: 'Select Role' }, ...roles]}
+                                options={[{ id: '', name: 'All Role' }, ...roles]}
                                 optionLabel="name"
                                 optionValue="id"
-                                placeholder="Select Role"
+                                placeholder="All Role"
                                 className="w-100"
                               />
                             </div>
@@ -511,12 +500,14 @@ export default function Users() {
                                     </button>
                                     <button
                                       className="btn btn-sm btn-danger"
+                                      aria-label="Delete user"
                                       onClick={() => {
                                         setDeletingUserId(rowData.id);
                                         setShowDeleteModal(true);
                                       }}
                                     >
-                                      <i className="ri-delete-bin-6-fill me-1 align-bottom"></i> Delete
+                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                      <span className="d-none d-sm-inline ms-1">Delete</span>
                                     </button>
                                   </div>
                                 )}
@@ -549,18 +540,17 @@ export default function Users() {
 
                 <DeleteConfirmationModal
                   show={showDeleteModal}
-                  onHide={() => {
+                  onConfirm={handleDeleteUsers}
+                  onClose={() => {
                     setShowDeleteModal(false);
                     setDeletingUserId(null);
                   }}
-                  onConfirm={handleDeleteUsers}
-                  title="Are you sure?"
-                  message={
+                  loading={loadingDelete}
+                  text={
                     deletingUserId
                       ? "Deleting this user will remove all information."
                       : "Deleting selected users will remove all information."
                   }
-                  isBulk={!deletingUserId}
                 />
               </div>
             </div>

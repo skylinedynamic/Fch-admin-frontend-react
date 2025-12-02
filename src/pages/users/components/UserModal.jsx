@@ -12,6 +12,71 @@ const UserModal = ({
     showPasswordFields,
     onPasswordFieldsToggle
 }) => {
+    const [errors, setErrors] = React.useState({});
+
+    // Reset errors when modal opens/closes
+    React.useEffect(() => {
+        if (show) {
+            setErrors({});
+        }
+    }, [show]);
+
+    const validate = () => {
+        let tempErrors = {};
+        let isValid = true;
+
+        if (!user.name) {
+            tempErrors.name = "Name is required";
+            isValid = false;
+        }
+
+        if (!user.email) {
+            tempErrors.email = "Email is required";
+            isValid = false;
+        } else if (!/\S+@\S+\.\S+/.test(user.email)) {
+            tempErrors.email = "Email is invalid";
+            isValid = false;
+        }
+
+        if (!user.phone_number) {
+            tempErrors.phone_number = "Phone number is required";
+            isValid = false;
+        }
+
+        if (!user.role_id) {
+            tempErrors.role_id = "Role is required";
+            isValid = false;
+        }
+
+        if (isEdit) {
+            if (!user.status) {
+                tempErrors.status = "Status is required";
+                isValid = false;
+            }
+            if (showPasswordFields) {
+                if (user.new_password && user.new_password !== user.confirm_password) {
+                    tempErrors.confirm_password = "Passwords do not match";
+                    isValid = false;
+                }
+            }
+        } else {
+            if (!user.password) {
+                tempErrors.password = "Password is required";
+                isValid = false;
+            }
+        }
+
+        setErrors(tempErrors);
+        return isValid;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (validate()) {
+            onSubmit(e);
+        }
+    };
+
     if (!show) return null;
 
     return (
@@ -24,28 +89,49 @@ const UserModal = ({
                             <button type="button" className="btn-close" onClick={onHide}></button>
                         </div>
                         <div className="modal-body">
-                            <form onSubmit={onSubmit}>
+                            <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
-                                    <label className="form-label">Name </label>
-                                    <input type="text" name="name" className="form-control" value={user.name} onChange={onChange} required />
+                                    <label className="form-label">Name <span className="text-danger">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        value={user.name}
+                                        onChange={onChange}
+                                    />
+                                    {errors.name && <div className="invalid-feedback">{errors.name}</div>}
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Email</label>
-                                    <input type="email" name="email" className="form-control" value={user.email} onChange={onChange} required />
+                                    <label className="form-label">Email <span className="text-danger">*</span></label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        value={user.email}
+                                        onChange={onChange}
+                                    />
+                                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Phone</label>
-                                    <input type="text" name="phone_number" className="form-control" value={user.phone_number} onChange={onChange} required />
+                                    <label className="form-label">Phone <span className="text-danger">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="phone_number"
+                                        className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
+                                        value={user.phone_number}
+                                        onChange={onChange}
+                                        placeholder="Enter phone number"
+                                    />
+                                    {errors.phone_number && <div className="invalid-feedback">{errors.phone_number}</div>}
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label">Role</label>
+                                    <label className="form-label">Role <span className="text-danger">*</span></label>
                                     <select
                                         name="role_id"
-                                        className="form-control"
+                                        className={`form-control ${errors.role_id ? 'is-invalid' : ''}`}
                                         value={user.role_id || ''}
                                         onChange={onChange}
-                                        required
                                     >
                                         <option value="">Select Role</option>
                                         {roles.map((role) => (
@@ -54,34 +140,35 @@ const UserModal = ({
                                             </option>
                                         ))}
                                     </select>
+                                    {errors.role_id && <div className="invalid-feedback">{errors.role_id}</div>}
                                 </div>
                                 {isEdit && (
                                     <div className="mb-3">
-                                        <label className="form-label"> Status </label>
+                                        <label className="form-label"> Status <span className="text-danger">*</span></label>
                                         <select
                                             name="status"
-                                            className="form-control"
+                                            className={`form-control ${errors.status ? 'is-invalid' : ''}`}
                                             value={user.status}
                                             onChange={onChange}
-                                            required
                                         >
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                         </select>
+                                        {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                                     </div>
                                 )}
                                 {/* ADD MODE – Password Required */}
                                 {!isEdit && (
                                     <div className="mb-3">
-                                        <label className="form-label">Password</label>
+                                        <label className="form-label">Password <span className="text-danger">*</span></label>
                                         <input
                                             type="password"
                                             name="password"
-                                            className="form-control"
+                                            className={`form-control ${errors.password ? 'is-invalid' : ''}`}
                                             value={user.password}
                                             onChange={onChange}
-                                            required
                                         />
+                                        {errors.password && <div className="invalid-feedback">{errors.password}</div>}
                                     </div>
                                 )}
 
@@ -121,16 +208,17 @@ const UserModal = ({
                                             <input
                                                 type="password"
                                                 name="confirm_password"
-                                                className="form-control"
+                                                className={`form-control ${errors.confirm_password ? 'is-invalid' : ''}`}
                                                 value={user.confirm_password}
                                                 onChange={onChange}
                                                 placeholder="Re-enter new password"
                                             />
+                                            {errors.confirm_password && <div className="invalid-feedback">{errors.confirm_password}</div>}
                                         </div>
                                     </>
                                 )}
                                 <div className="d-flex justify-content-end">
-                                    <button type="button" className="btn btn-secondary me-2" onClick={onHide}>Cancel</button>
+                                    <button type="button" className="btn btn-light me-2" onClick={onHide}>Cancel</button>
                                     <button
                                         type="submit"
                                         className="btn btn-primary"
