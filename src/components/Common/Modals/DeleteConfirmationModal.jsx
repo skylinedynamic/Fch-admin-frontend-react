@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 
-export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading }) {
+export default function DeleteConfirmationModal({ show, onConfirm, onClose, loading, text }) {
   const modalRef = useRef(null);
   const modalInstanceRef = useRef(null);
 
@@ -35,7 +35,7 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
         try {
           modal.hide();
           if (typeof modal.dispose === 'function') modal.dispose();
-        } catch (_) {}
+        } catch (_) { }
       }
       modalInstanceRef.current = null;
     };
@@ -60,7 +60,7 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
             <div className="mt-4 text-center">
               <h4>Are you sure?</h4>
               <p className="text-muted fs-15 mb-4">
-                Deleting employees will remove all information.
+                {text || "Deleting employees will remove all information."}
               </p>
               <div className="hstack gap-2 justify-content-center remove">
                 <button

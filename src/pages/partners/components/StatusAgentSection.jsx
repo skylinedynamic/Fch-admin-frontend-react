@@ -41,6 +41,7 @@ export default function StatusAgentSection({
                             handleInputChange({ target: { name: 'agent', value: formData.agent } })
                         }
                         placeholder="Select agent..."
+                        filter
                         className={`w-100 ${errors.agent ? 'p-invalid' : ''}`}
                     />
                     {errors.agent && (
@@ -55,7 +56,7 @@ export default function StatusAgentSection({
                     <label className="form-label">E-mail</label>
                     <input
                         type="email"
-                        className={`form-control ${errors.agentEmail ? 'is-invalid' : ''}`}
+                        className={`form-control bg-light ${errors.agentEmail ? 'is-invalid' : ''}`}
                         name="agentEmail"
                         placeholder="Auto-filled"
                         value={formData.agentEmail}
@@ -73,7 +74,7 @@ export default function StatusAgentSection({
                     <label className="form-label">Mobile</label>
                     <input
                         type="text"
-                        className={`form-control ${errors.agentPhone ? 'is-invalid' : ''}`}
+                        className={`form-control bg-light ${errors.agentPhone ? 'is-invalid' : ''}`}
                         name="agentPhone"
                         placeholder="Auto-filled"
                         value={formData.agentPhone}

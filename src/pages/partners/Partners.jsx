@@ -4,7 +4,10 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers } from '../../modules/partner/services';
+import { fetchPartners, allUsers, deletePartners } from '../../modules/partner/services';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Partners() {
     // State for partners
@@ -33,6 +36,8 @@ export default function Partners() {
 
     // Checkbox selection state
     const [selectedPartners, setSelectedPartners] = useState([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteRows, setDeleteRows] = useState([]);
 
     // Dropdown data
     const [partnersList, setPartnersList] = useState([]);
@@ -196,10 +201,46 @@ export default function Partners() {
         setPage(1); // Reset to first page when filtering
     };
 
+    // Delete handlers
+    const openDeleteModal = () => {
+        if (!selectedPartners || selectedPartners.length === 0) {
+            toast.warn('Please select at least one partner to delete.');
+            return;
+        }
+        setDeleteRows(selectedPartners);
+        setShowDeleteModal(true);
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(false);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteRows || deleteRows.length === 0) return;
+
+        const ids = deleteRows.map(p => p.id);
+        try {
+            setLoading(true);
+            await deletePartners(ids);
+            toast.success("Partners deleted successfully");
+            setShowDeleteModal(false);
+            setSelectedPartners([]);
+
+            // Trigger reload
+            setAppliedFilters({ ...appliedFilters });
+        } catch (err) {
+            console.error('Delete error:', err);
+            toast.error(err.response?.data?.message || 'Failed to delete partners. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Column body templates
     const companyNameBody = (rowData) => {
         const handleClick = (e) => {
-            e.stopPropagation(); // Prevent row selection
+            // Prevent row selection when clicking the company name link
+            e.stopPropagation();
         };
 
         return (
@@ -216,6 +257,7 @@ export default function Partners() {
 
     return (
         <div className="page-content">
+            <ToastContainer position="top-right" autoClose={3000} />
             {/* Header */}
             <div className="container-fluid">
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -248,7 +290,7 @@ export default function Partners() {
                                                                 <button
                                                                     type="button"
                                                                     className="dropdown-item text-danger"
-                                                                    onClick={() => alert('Delete functionality coming soon!')}
+                                                                    onClick={openDeleteModal}
                                                                 >
                                                                     <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
                                                                 </button>
@@ -464,6 +506,7 @@ export default function Partners() {
                                         selection={selectedPartners}
                                         onSelectionChange={(e) => setSelectedPartners(e.value)}
                                         dataKey="id"
+                                        metaKeySelection={false}
                                         responsiveLayout="scroll"
                                         className="p-datatable-sm"
                                         loading={loading}
@@ -546,6 +589,14 @@ export default function Partners() {
                         </div>
                     </div>
                 </div>
+
+                <DeleteConfirmationModal
+                    show={showDeleteModal}
+                    onConfirm={handleDeleteConfirm}
+                    onClose={closeDeleteModal}
+                    loading={loading}
+                    text="The selected partners and all associated data will be deleted."
+                />
 
             </div>
         </div>

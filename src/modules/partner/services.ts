@@ -74,6 +74,11 @@ export const getSubscription = async (partnerId: string | number) => {
   return data;
 };
 
+export const deletePartners = async (ids: Array<number | string>) => {
+  const res = await apiClient.post('/admin/partners/multiple-delete', { ids });
+  return res.data;
+};
+
 export const saveSubscription = async (payload: any) => {
   const { data } = await apiClient.post('/admin/partners/subscription', payload);
   return data;

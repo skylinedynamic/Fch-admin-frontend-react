@@ -3,6 +3,7 @@ import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config/relations';
 import { PARTNER_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+import { formatPhoneNumber } from '../../../utils/formatters';
 
 export default function PartnerInformationSection({
     formData,
@@ -117,16 +118,28 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Phone Number <span className="text-danger">*</span></label>
-                    <input
-                        type="text"
-                        className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
-                        name="phone_number"
-                        placeholder="Enter phone number"
-                        value={formData.phone_number}
-                        onChange={handleInputChange}
-                        required
-                    />
-                    {errors.phone_number && <div className="invalid-feedback">{errors.phone_number}</div>}
+                    <div className="input-group">
+                        {/* Country Code Display */}
+                        {(formData.country === 'USA' || formData.country === 'Canada') && (
+                            <span className="input-group-text bg-light border">
+                                <span className="me-1">{formData.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="text-muted">+1</span>
+                            </span>
+                        )}
+                        <input
+                            type="text"
+                            className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
+                            name="phone_number"
+                            placeholder="(555) 555-5555"
+                            value={formData.phone_number}
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value);
+                                handleInputChange({ target: { name: 'phone_number', value: formatted } });
+                            }}
+                            required
+                        />
+                        {errors.phone_number && <div className="invalid-feedback">{errors.phone_number}</div>}
+                    </div>
                 </div>
             </div>
 
@@ -151,21 +164,16 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
-                    <select
-                        className={`form-select ${errors.partner_type ? 'is-invalid' : ''}`}
-                        name="partner_type"
+                    <Dropdown
                         value={formData.partner_type}
-                        onChange={handleInputChange}
-                        required
-                    >
-                        <option value="">Select partner type...</option>
-                        {PARTNER_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.partner_type && <div className="invalid-feedback">{errors.partner_type}</div>}
+                        options={PARTNER_TYPE_OPTIONS}
+                        onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select partner type..."
+                        className={`w-100 ${errors.partner_type ? 'p-invalid' : ''}`}
+                    />
+                    {errors.partner_type && <div className="invalid-feedback d-block">{errors.partner_type}</div>}
                 </div>
             </div>
 
@@ -183,23 +191,6 @@ export default function PartnerInformationSection({
                         required
                     />
                     {errors.address_line_1 && <div className="invalid-feedback">{errors.address_line_1}</div>}
-                </div>
-            </div>
-
-            {/* City - Input Field */}
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">City <span className="text-danger">*</span></label>
-                    <input
-                        type="text"
-                        className={`form-control ${errors.city ? 'is-invalid' : ''}`}
-                        name="city"
-                        placeholder="Enter city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                    />
-                    {errors.city && <div className="invalid-feedback">{errors.city}</div>}
                 </div>
             </div>
 
@@ -237,6 +228,43 @@ export default function PartnerInformationSection({
                     {errors.state && <div className="invalid-feedback d-block">{errors.state}</div>}
                 </div>
             </div>
+
+            {/* City - PrimeReact Dropdown */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">City <span className="text-danger">*</span></label>
+                    <Dropdown
+                        value={formData.city}
+                        options={[...cities, { label: 'Others', value: 'Others' }]}
+                        onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
+                        optionLabel="label"
+                        placeholder="Select City"
+                        filter
+                        className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
+                        disabled={!formData.state}
+                    />
+                    {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
+                </div>
+            </div>
+
+            {/* Other City Input - Shown when "Others" is selected */}
+            {formData.city === 'Others' && (
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Other City <span className="text-danger">*</span></label>
+                        <input
+                            type="text"
+                            className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
+                            name="other_city"
+                            placeholder="Enter city name"
+                            value={formData.other_city || ''}
+                            onChange={handleInputChange}
+                            required
+                        />
+                        {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
+                    </div>
+                </div>
+            )}
 
             {/* Zip Code */}
             <div className="col-lg-6">
@@ -298,7 +326,26 @@ export default function PartnerInformationSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Phone</label>
-                    <input type="text" className="form-control" name="contact_person_phone_number" placeholder="Enter phone" value={formData.contact_person_phone_number} onChange={handleInputChange} />
+                    <div className="input-group">
+                        {/* Country Code Display */}
+                        {(formData.country === 'USA' || formData.country === 'Canada') && (
+                            <span className="input-group-text bg-light border">
+                                <span className="me-1">{formData.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="text-muted">+1</span>
+                            </span>
+                        )}
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="contact_person_phone_number"
+                            placeholder="(555) 555-5555"
+                            value={formData.contact_person_phone_number}
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value);
+                                handleInputChange({ target: { name: 'contact_person_phone_number', value: formatted } });
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 

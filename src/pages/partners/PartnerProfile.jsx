@@ -53,7 +53,9 @@ export default function PartnerProfile() {
         partner_type: '',
         state: '',
         city: '',
-        country: '',
+        other_city: '',
+        country: 'USA', // Default to USA
+        country_code: '+1', // Default to +1 for USA
         postal_code: '',
         address_line_1: '',
         tax_id: '',
@@ -96,6 +98,17 @@ export default function PartnerProfile() {
         fetchUsers();
     }, []);
 
+    // Initialize states for default country (USA) on new partner creation
+    useEffect(() => {
+        if (!id && formData.country === 'USA') {
+            const stateOptions = Object.keys(locationData['USA'].states).map((key) => ({
+                label: locationData['USA'].states[key].name,
+                value: key
+            }));
+            setStates(stateOptions);
+        }
+    }, [id]);
+
     // Update active tab when URL search params, location state, or ID changes
     useEffect(() => {
         const tabParam = searchParams.get('tab');
@@ -127,6 +140,7 @@ export default function PartnerProfile() {
                 console.log('Fetched partner data:', data); // Debug log
 
                 // Handle location cascading first to ensure options are available
+                let cityOptions = [];
                 if (data.country && locationData[data.country]) {
                     const stateOptions = Object.keys(locationData[data.country].states).map((key) => ({
                         label: locationData[data.country].states[key].name,
@@ -136,18 +150,34 @@ export default function PartnerProfile() {
 
                     if (data.state && locationData[data.country].states[data.state]) {
                         const cityList = locationData[data.country].states[data.state].cities;
-                        const cityOptions = cityList.map((city) => ({ label: city, value: city }));
+                        cityOptions = cityList.map((city) => ({ label: city, value: city }));
                         setCities(cityOptions);
                     }
+                }
+
+                // Check if the city exists in the dropdown
+                const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
+
+                // If city doesn't exist in dropdown and city has a value, it's a custom city
+                let cityValue = data.city || '';
+                let otherCityValue = '';
+
+                if (data.city && !cityExists) {
+                    // City is not in dropdown, set to "Others" and populate other_city
+                    otherCityValue = data.city;
+                    cityValue = 'Others';
                 }
 
                 // Update form data - spread all backend data first, then override with mapped fields
                 setFormData(prev => ({
                     ...prev,
                     ...data, // Keep all existing backend fields
+                    city: cityValue, // Set city (either actual city or "Others")
+                    other_city: otherCityValue, // Set other_city if applicable
                     agent: data.assigned_user_id || '', // Keep as number/string from DB
                     address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                     partner_image: data.partner_image || '', // Map company_logo → partner_image
+                    country_code: data.country_code || ((data.country === 'USA' || data.country === 'Canada') ? '+1' : ''),
                 }));
 
                 // Set profile image from company_logo field
@@ -223,9 +253,17 @@ export default function PartnerProfile() {
             case 'company_name':
             case 'country':
             case 'state':
-            case 'city':
             case 'partner_type':
                 error = validateRequired(value, name.replace('_', ' '));
+                break;
+            case 'city':
+                error = validateRequired(value, 'city');
+                break;
+            case 'other_city':
+                // Only validate other_city if city is set to "Others"
+                if (formData.city === 'Others') {
+                    error = validateRequired(value, 'Other City');
+                }
                 break;
             case 'address_line_1':
                 error = validateRequired(value, 'Address');
@@ -253,7 +291,7 @@ export default function PartnerProfile() {
                     try {
                         new URL(value);
                     } catch (_) {
-                        error = 'Please enter a valid URL (e.g., https://www.fourcornerholdings.com)';
+                        error = 'Please enter a valid URL (Example: https://www.fourcornerholdings.com)';
                     }
                 }
                 break;
@@ -338,14 +376,14 @@ export default function PartnerProfile() {
                 // Validate file type
                 const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
                 if (!validTypes.includes(file.type)) {
-                    setErrors(prev => ({ ...prev, partner_image: 'Only JPG, JPEG, and PNG images are allowed.' }));
+                    setErrors(prev => ({ ...prev, partner_image: 'Only JPG, JPEG, and PNG image formats are allowed.' }));
                     return;
                 }
 
                 // Validate file size (e.g., 2MB)
                 const maxSize = 1 * 1024 * 1024; // 1MB
                 if (file.size > maxSize) {
-                    setErrors(prev => ({ ...prev, partner_image: 'Image size must be less than 1024KB (1MB).' }));
+                    setErrors(prev => ({ ...prev, partner_image: 'The image size must not exceed 1 MB (1024 KB).' }));
                     return;
                 }
 
@@ -366,7 +404,11 @@ export default function PartnerProfile() {
 
         // Handle country/state/city cascading
         if (name === 'country') {
-            setFormData(prev => ({ ...prev, country: value, state: '', city: '' }));
+            let countryCode = '';
+            if (value === 'USA' || value === 'Canada') {
+                countryCode = '+1';
+            }
+            setFormData(prev => ({ ...prev, country: value, country_code: countryCode, state: '', city: '', other_city: '' }));
             validateField('country', value);
             if (locationData[value]) {
                 const stateOptions = Object.keys(locationData[value].states).map((key) => ({
@@ -380,7 +422,7 @@ export default function PartnerProfile() {
                 setCities([]);
             }
         } else if (name === 'state') {
-            setFormData(prev => ({ ...prev, state: value, city: '' }));
+            setFormData(prev => ({ ...prev, state: value, city: '', other_city: '' }));
             validateField('state', value);
             const countryCode = formData.country;
             if (countryCode && locationData[countryCode] && locationData[countryCode].states[value]) {
@@ -390,6 +432,14 @@ export default function PartnerProfile() {
             } else {
                 setCities([]);
             }
+        } else if (name === 'city') {
+            // If city is not "Others", clear other_city
+            if (value !== 'Others') {
+                setFormData(prev => ({ ...prev, city: value, other_city: '' }));
+            } else {
+                setFormData(prev => ({ ...prev, city: value }));
+            }
+            validateField('city', value);
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
             validateField(name, value);
@@ -540,6 +590,11 @@ export default function PartnerProfile() {
                     state: formData.state,
                     city: formData.city
                 };
+
+                // If city is "Others", also validate other_city
+                if (formData.city === 'Others') {
+                    requiredFields.other_city = formData.other_city;
+                }
             }
 
             const fieldErrors = {};
@@ -573,10 +628,26 @@ export default function PartnerProfile() {
                         if (value !== '') {
                             formDataToSend.append('assign_to', value);
                         }
+                    } else if (key === 'city') {
+                        // If city is "Others", save the other_city value to city column
+                        if (value === 'Others' && formData.other_city) {
+                            formDataToSend.append('city', formData.other_city);
+                        } else if (value !== 'Others') {
+                            // Otherwise, save the selected city
+                            formDataToSend.append('city', value);
+                        }
+                    } else if (key === 'other_city') {
+                        // Don't send other_city as a separate field to backend
+                        // It's handled in the city field logic above
                     } else if (key === 'agentEmail' || key === 'agentPhone' || key === 'company_logo') {
                         // Skip these:
                         // - agentEmail/Phone are frontend-only
                         // - company_logo (string) should not be sent back; we only send it if it's a File (handled above)
+                    } else if (key === 'country_code') {
+                        // Always send country_code if it exists
+                        if (value) {
+                            formDataToSend.append('country_code', value);
+                        }
                     } else if (value !== '') {
                         formDataToSend.append(key, value);
                     }

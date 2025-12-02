@@ -24,8 +24,8 @@ export default function ClientListSection() {
     const initFilters = () => {
         const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-            company_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
@@ -41,7 +41,8 @@ export default function ClientListSection() {
                 page: page,
                 per_page: perPage,
                 sort_field: sortField,
-                sort_order: sortOrder
+                sort_order: sortOrder,
+                filters: filters  // Add filters to API call
             });
 
             if (response && response.status) {
@@ -64,10 +65,10 @@ export default function ClientListSection() {
     };
 
     useEffect(() => {
-        if (id) {
+        if (id && Object.keys(filters).length > 0) {  // Only load when filters are initialized
             loadBorrowers();
         }
-    }, [id, page, perPage, sortField, sortOrder]);
+    }, [id, page, perPage, sortField, sortOrder, filters]);  // Add filters to dependencies
 
     const onPage = (event) => {
         setPerPage(event.rows);
@@ -106,7 +107,7 @@ export default function ClientListSection() {
                 onSort={onSort}
                 globalFilterFields={[
                     'full_name',
-                    'company_name',
+                    'business_name',
                     'business_email',
                     'business_phone',
                     'business_start_date'
@@ -127,7 +128,7 @@ export default function ClientListSection() {
                     style={{ minWidth: '150px' }}
                 />
                 <Column
-                    field="company_name"
+                    field="business_name"
                     header="Company Name"
                     sortable
                     filter
