@@ -37,7 +37,8 @@ export default function Employees() {
     onClearFilters,
     openDeleteModal,
     closeDeleteModal,
-    handleDeleteConfirm
+    handleDeleteConfirm,
+    handleColumnFilter
   } = useEmployeeList();
 
   // Event handlers
@@ -71,11 +72,6 @@ export default function Employees() {
     const order = event.sortOrder === 1 ? 'asc' : 'desc';
     setSortField(field || sortField);
     setSortOrder(order);
-  };
-
-  const onFilter = (e) => {
-    setFilters(e.filters);
-    setPage(1);
   };
 
   return (
@@ -117,7 +113,7 @@ export default function Employees() {
                         filters={filters}
                         selection={selection}
                         onSelectionChange={(e) => setSelection(e.value)}
-                        onFilter={onFilter}
+                        onFilter={handleColumnFilter}
                         onPage={onPage}
                         onSort={onSort}
                       />

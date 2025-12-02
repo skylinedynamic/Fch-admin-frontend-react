@@ -13,6 +13,18 @@ export default function EmployeeFilters({
     onApplyFilters,
     onClearFilters
 }) {
+    // Transform status options
+    const statusOptions = [
+        { label: 'All Status', value: '' },
+        ...STATUS
+    ];
+
+    // Transform department options
+    const deptOptions = [
+        { label: 'All Department', value: '' },
+        ...departments.map(dept => ({ label: dept.name, value: dept.name }))
+    ];
+
     return (
         <form onSubmit={(e) => {
             e.preventDefault();
@@ -43,10 +55,10 @@ export default function EmployeeFilters({
                     <Dropdown
                         value={statusFilter}
                         onChange={(e) => onStatusChange({ target: { value: e.value } })}
-                        options={STATUS}
+                        options={statusOptions}
                         optionLabel="label"
                         optionValue="value"
-                        placeholder="Job Status"
+                        placeholder="All Status"
                         className="w-100"
                     />
                 </div>
@@ -55,10 +67,10 @@ export default function EmployeeFilters({
                     <Dropdown
                         value={deptFilter}
                         onChange={(e) => onDeptChange({ target: { value: e.value } })}
-                        options={departments}
-                        optionLabel="name"
-                        optionValue="name"
-                        placeholder="Select Department"
+                        options={deptOptions}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="All Department"
                         className="w-100"
                     />
                 </div>

@@ -57,9 +57,11 @@ export default function EmployeeDetails() {
     job_status: '',
     address: '',
     joining_date: '',
-    country: '',
+    country: 'USA',
+    country_code: '+1',
     state: '',
     city: '',
+    other_city: '',
     postal_code: '',
     identification_number: '',
     ssn: '',
@@ -88,24 +90,24 @@ export default function EmployeeDetails() {
       .catch((err) => console.error('Failed to fetch departments', err));
   }, []);
 
+  // Initialize states for default country (USA) on new employee creation
+  useEffect(() => {
+    if (!id && employee.country === 'USA') {
+      const stateOptions = Object.keys(locationData['USA'].states).map((key) => ({
+        label: locationData['USA'].states[key].name,
+        value: key
+      }));
+      setStates(stateOptions);
+    }
+  }, [id]);
+
   // Fetch employee data if editing
   useEffect(() => {
     if (id) {
       fetchEmployeeById(id)
         .then((data) => {
-          const normalizedData = {
-            ...data,
-            create_account:
-              data.create_account === true ||
-              data.create_account === 'true' ||
-              data.create_account === 1 ||
-              !!(data.user && Object.keys(data.user).length > 0),
-            role_id: data.user?.role_id ?? '',
-            image: data.image || null
-          };
-          setEmployee((prev) => ({ ...prev, ...normalizedData }));
-
-          // Initialize states and cities if country/state exists
+          // Handle location cascading first to ensure options are available
+          let cityOptions = [];
           if (data.country && locationData[data.country]) {
             const stateOptions = Object.keys(locationData[data.country].states).map((key) => ({
               label: locationData[data.country].states[key].name,
@@ -115,10 +117,38 @@ export default function EmployeeDetails() {
 
             if (data.state && locationData[data.country].states[data.state]) {
               const cityList = locationData[data.country].states[data.state].cities;
-              const cityOptions = cityList.map((city) => ({ label: city, value: city }));
+              cityOptions = cityList.map((city) => ({ label: city, value: city }));
               setCities(cityOptions);
             }
           }
+
+          // Check if the city exists in the dropdown
+          const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
+
+          // If city doesn't exist in dropdown and city has a value, it's a custom city
+          let cityValue = data.city || '';
+          let otherCityValue = '';
+
+          if (data.city && !cityExists) {
+            // City is not in dropdown, set to "Others" and populate other_city
+            otherCityValue = data.city;
+            cityValue = 'Others';
+          }
+
+          const normalizedData = {
+            ...data,
+            city: cityValue,
+            other_city: otherCityValue,
+            country_code: data.country_code || ((data.country === 'USA' || data.country === 'Canada') ? '+1' : ''),
+            create_account:
+              data.create_account === true ||
+              data.create_account === 'true' ||
+              data.create_account === 1 ||
+              !!(data.user && Object.keys(data.user).length > 0),
+            role_id: data.user?.role_id ?? '',
+            image: data.image || null
+          };
+          setEmployee((prev) => ({ ...prev, ...normalizedData }));
         })
         .catch((err) => console.error('Failed to fetch employee', err));
     }
@@ -133,8 +163,16 @@ export default function EmployeeDetails() {
       case 'designation':
       case 'country':
       case 'state':
-      case 'city':
         error = validateRequired(value, name.replace('_', ' '));
+        break;
+      case 'city':
+        error = validateRequired(value, 'city');
+        break;
+      case 'other_city':
+        // Only validate other_city if city is set to "Others"
+        if (employee.city === 'Others') {
+          error = validateRequired(value, 'Other City');
+        }
         break;
       case 'email':
         if (!value || (typeof value === 'string' && value.trim() === '')) {
@@ -145,6 +183,12 @@ export default function EmployeeDetails() {
         break;
       case 'phone_number_1':
         error = validatePhone(value);
+        break;
+      case 'role_id':
+        // Only validate role_id if create_account is checked
+        if (employee.create_account) {
+          error = validateRequired(value, 'Role');
+        }
         break;
       default:
         break;
@@ -182,12 +226,21 @@ export default function EmployeeDetails() {
           role_id: checked ? prev.role_id : ''
         }));
       }
+      // Clear role_id error when unchecking create_account
+      if (!checked) {
+        setErrors((prev) => ({ ...prev, role_id: null }));
+      }
       return;
     }
 
     // Handle country/state/city cascading
     if (name === 'country') {
-      setEmployee((prev) => ({ ...prev, country: newValue, state: '', city: '' }));
+      let countryCode = '';
+      if (newValue === 'USA' || newValue === 'Canada') {
+        countryCode = '+1';
+      }
+      setEmployee((prev) => ({ ...prev, country: newValue, country_code: countryCode, state: '', city: '', other_city: '' }));
+      validateField('country', newValue);
       if (locationData[newValue]) {
         const stateOptions = Object.keys(locationData[newValue].states).map((key) => ({
           label: locationData[newValue].states[key].name,
@@ -200,7 +253,8 @@ export default function EmployeeDetails() {
         setCities([]);
       }
     } else if (name === 'state') {
-      setEmployee((prev) => ({ ...prev, state: newValue, city: '' }));
+      setEmployee((prev) => ({ ...prev, state: newValue, city: '', other_city: '' }));
+      validateField('state', newValue);
       const countryCode = employee.country;
       if (countryCode && locationData[countryCode] && locationData[countryCode].states[newValue]) {
         const cityList = locationData[countryCode].states[newValue].cities;
@@ -209,6 +263,37 @@ export default function EmployeeDetails() {
       } else {
         setCities([]);
       }
+    } else if (name === 'city') {
+      // If city is not "Others", clear other_city
+      if (newValue !== 'Others') {
+        setEmployee((prev) => ({ ...prev, city: newValue, other_city: '' }));
+      } else {
+        setEmployee((prev) => ({ ...prev, city: newValue }));
+      }
+      validateField('city', newValue);
+    } else if (name === 'image' && type === 'file') {
+      // Image file validation
+      const file = newValue;
+      if (file) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+          setErrors(prev => ({ ...prev, image: 'Only JPG, JPEG, and PNG image formats are allowed.' }));
+          return;
+        }
+
+        // Validate file size (1MB)
+        const maxSize = 1 * 1024 * 1024; // 1MB
+        if (file.size > maxSize) {
+          setErrors(prev => ({ ...prev, image: 'Image size must be less than 1 MB.' }));
+          return;
+        }
+
+        // Clear any previous errors
+        setErrors(prev => ({ ...prev, image: null }));
+        setEmployee((prev) => ({ ...prev, image: file }));
+      }
+      return;
     } else {
       setEmployee((prev) => ({
         ...prev,
@@ -255,7 +340,22 @@ export default function EmployeeDetails() {
             formData.append(key, value ? '1' : '0');
           } else if (key === 'user') {
             // Skip user object
-          } else {
+          } else if (key === 'city') {
+            // If city is "Others", save the other_city value to city column
+            if (value === 'Others' && employee.other_city) {
+              formData.append('city', employee.other_city);
+            } else if (value !== 'Others') {
+              // Otherwise, save the selected city
+              formData.append('city', value);
+            }
+          } else if (key === 'other_city') {
+            // Don't send other_city as a separate field to backend
+          } else if (key === 'country_code') {
+            // Always send country_code if it exists
+            if (value) {
+              formData.append('country_code', value);
+            }
+          } else if (value !== '') {
             formData.append(key, value);
           }
         }

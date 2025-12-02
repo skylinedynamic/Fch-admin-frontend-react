@@ -1,11 +1,43 @@
 import React from 'react';
+import { Dropdown } from 'primereact/dropdown';
 import { STATUS } from '../../../../config/statusOptions';
 
-export default function AccountSection({ employee, roles, onChange, isEditMode }) {
+// Transform status options to include empty option
+const jobStatusOptions = [
+    { label: 'Select', value: '' },
+    ...STATUS
+];
+
+export default function AccountSection({ employee, roles, onChange, isEditMode, errors = {} }) {
+    // Transform roles to dropdown options
+    const roleOptions = [
+        { label: 'Select role', value: '' },
+        ...roles.map(role => ({
+            label: role.name,
+            value: role.id
+        }))
+    ];
+
     return (
         <>
             <div className="col-lg-6">
-                <div className="mb-3 pt-3">
+                <div className="mb-3">
+                    <label className="form-label">Job Status</label>
+                    <Dropdown
+                        value={employee.job_status}
+                        options={jobStatusOptions}
+                        onChange={(e) => onChange({ target: { name: 'job_status', value: e.value } })}
+                        placeholder="Select Job Status"
+                        className="w-100"
+                    />
+                </div>
+            </div>
+
+            <div className="col-lg-6"></div>
+
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label d-block"></label>
                     <div className="form-check">
                         <input
                             id="createAccountCheckbox"
@@ -34,46 +66,20 @@ export default function AccountSection({ employee, roles, onChange, isEditMode }
 
             <div className="col-lg-6">
                 {((isEditMode && employee.user) || (!isEditMode && employee.create_account)) && (
-                    <div className="mb-3 pt-3">
+                    <div className="mb-3">
                         <label htmlFor="roleSelect" className="form-label">
-                            Assign role
+                            Assign role <span className="text-danger">*</span>
                         </label>
-                        <select
-                            name="role_id"
+                        <Dropdown
                             value={employee.role_id ?? ''}
-                            className="form-control"
-                            onChange={onChange}
-                        >
-                            <option value="">Select role</option>
-                            {roles.map((role) => (
-                                <option key={role.id} value={role.id}>
-                                    {role.name}
-                                </option>
-                            ))}
-                        </select>
+                            options={roleOptions}
+                            onChange={(e) => onChange({ target: { name: 'role_id', value: e.value } })}
+                            placeholder="Select role"
+                            className={`w-100 ${errors.role_id ? 'p-invalid' : ''}`}
+                        />
+                        {errors.role_id && <div className="invalid-feedback d-block">{errors.role_id}</div>}
                     </div>
                 )}
-            </div>
-
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">Job Status</label>
-                    <select
-                        className="form-control"
-                        data-choices
-                        data-choices-search-false
-                        name="job_status"
-                        value={employee.job_status}
-                        onChange={onChange}
-                    >
-                        <option value="">Select</option>
-                        {STATUS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
             </div>
         </>
     );

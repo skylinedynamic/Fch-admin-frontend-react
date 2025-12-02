@@ -1,48 +1,27 @@
 import React from 'react';
-
+import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
-import { bloodGroups } from '../../../../config/bloodGroups';
+import { GENDER_OPTIONS } from '../../../../config/genderOptions';
 
 export default function PersonalDetailsSection({ employee, onChange }) {
+    // Add empty option to gender options
+    const genderOptions = [
+        { label: 'Select', value: '' },
+        ...GENDER_OPTIONS
+    ];
+
     return (
         <>
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Gender</label>
-                    <select
-                        className="form-select"
-                        data-choices
-                        data-choices-search-false
-                        name="gender"
+                    <Dropdown
                         value={employee.gender}
-                        onChange={onChange}
-                    >
-                        <option value="">Select</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-            </div>
-
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">Blood Group</label>
-                    <select
-                        className="form-select"
-                        data-choices
-                        data-choices-search-false
-                        name="blood_group"
-                        value={employee.blood_group}
-                        onChange={onChange}
-                    >
-                        <option value="">Select Blood Group</option>
-                        {bloodGroups.map((group) => (
-                            <option key={group.value} value={group.value}>
-                                {group.label}
-                            </option>
-                        ))}
-                    </select>
+                        options={genderOptions}
+                        onChange={(e) => onChange({ target: { name: 'gender', value: e.value } })}
+                        placeholder="Select Gender"
+                        className="w-100"
+                    />
                 </div>
             </div>
 

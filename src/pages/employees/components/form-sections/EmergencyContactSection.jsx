@@ -1,5 +1,13 @@
 import React from 'react';
+import { Dropdown } from 'primereact/dropdown';
 import { MARITAL_STATUS_OPTIONS } from '../../../../config/maritalStatusOptions';
+import { formatPhoneNumber } from '../../../../utils/formatters';
+
+// Transform marital status options to include empty option
+const maritalStatusOptions = [
+    { label: 'Select', value: '' },
+    ...MARITAL_STATUS_OPTIONS
+];
 
 export default function EmergencyContactSection({ employee, onChange }) {
     return (
@@ -23,14 +31,26 @@ export default function EmergencyContactSection({ employee, onChange }) {
                     <div className="col-lg-6">
                         <div className="mb-3">
                             <label className="form-label">Phone</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                name="emergency_phone"
-                                value={employee.emergency_phone}
-                                onChange={onChange}
-                                placeholder="Enter emergency phone number"
-                            />
+                            <div className="input-group">
+                                {/* Country Code Display */}
+                                {(employee.country === 'USA' || employee.country === 'Canada') && (
+                                    <span className="input-group-text bg-light border">
+                                        <span className="me-1">{employee.country === 'USA' ? 'US' : 'CA'}</span>
+                                        <span className="text-muted">+1</span>
+                                    </span>
+                                )}
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="emergency_phone"
+                                    value={employee.emergency_phone}
+                                    onChange={(e) => {
+                                        const formatted = formatPhoneNumber(e.target.value);
+                                        onChange({ target: { name: 'emergency_phone', value: formatted } });
+                                    }}
+                                    placeholder="(555) 555-5555"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -42,21 +62,13 @@ export default function EmergencyContactSection({ employee, onChange }) {
                     <div className="col-lg-6">
                         <div className="mb-3">
                             <label className="form-label">Marital Status</label>
-                            <select
-                                className="form-control"
-                                data-choices
-                                data-choices-search-false
-                                name="marital_status"
+                            <Dropdown
                                 value={employee.marital_status}
-                                onChange={onChange}
-                            >
-                                <option value="">Select</option>
-                                {MARITAL_STATUS_OPTIONS.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
+                                options={maritalStatusOptions}
+                                onChange={(e) => onChange({ target: { name: 'marital_status', value: e.value } })}
+                                placeholder="Select Marital Status"
+                                className="w-100"
+                            />
                         </div>
                     </div>
                     <div className="col-lg-6">

@@ -151,6 +151,13 @@ export function useEmployeeList() {
         }
     };
 
+    // Column filter handler
+    const handleColumnFilter = (e) => {
+        setFilters(e.filters);
+        setAppliedFilters(e.filters);
+        setPage(1);
+    };
+
     // Initialize on mount
     useEffect(() => {
         initFilters();
@@ -197,6 +204,7 @@ export function useEmployeeList() {
         onClearFilters,
         openDeleteModal,
         closeDeleteModal,
-        handleDeleteConfirm
+        handleDeleteConfirm,
+        handleColumnFilter
     };
 }

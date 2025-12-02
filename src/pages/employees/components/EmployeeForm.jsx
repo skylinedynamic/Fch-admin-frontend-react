@@ -53,6 +53,7 @@ export default function EmployeeForm({
                     roles={roles}
                     onChange={onChange}
                     isEditMode={isEditMode}
+                    errors={errors}
                 />
 
                 <EmergencyContactSection employee={employee} onChange={onChange} />

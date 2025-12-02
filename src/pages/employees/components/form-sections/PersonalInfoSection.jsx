@@ -1,6 +1,8 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
+import { formatPhoneNumber } from '../../../../utils/formatters';
+import avatarDefault from '../../../../../assets/images/users/avatar-1.jpg';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -23,7 +25,7 @@ export default function PersonalInfoSection({
         if (typeof employee.image === 'string' && employee.image.trim() !== '') {
             return employee.image;
         }
-        return '/assets/images/users/avatar-1.jpg';
+        return avatarDefault;
     };
 
     return (
@@ -34,7 +36,7 @@ export default function PersonalInfoSection({
                         <img
                             src={getImageSrc()}
                             className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
-                            alt="user-profile"
+                            alt="user-profile-image"
                         />
                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
                             <input
@@ -42,22 +44,37 @@ export default function PersonalInfoSection({
                                 type="file"
                                 className="profile-img-file-input"
                                 name="image"
-                                accept="image/*"
+                                accept=".jpg, .jpeg, .png"
                                 onChange={onChange}
                             />
-                            <label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
+                            <label
+                                htmlFor="profile-img-file-input"
+                                className="profile-photo-edit avatar-xs"
+                                title="Upload profile image"
+                            >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>
                                 </span>
                             </label>
                         </div>
                     </div>
+                    <div className="text-center mb-3">
+                        <span className="badge bg-light text-muted border">
+                            <i className="ri-information-line me-1"></i>
+                            Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
+                        </span>
+                    </div>
+                    {errors.image && (
+                        <div className="alert alert-danger mt-2 text-center p-1">
+                            <small>{errors.image}</small>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Name</label>
+                    <label className="form-label">Name <span className="text-danger">*</span></label>
                     <input
                         type="text"
                         className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
@@ -86,7 +103,7 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Position</label>
+                    <label className="form-label">Position <span className="text-danger">*</span></label>
                     <input
                         type="text"
                         className={`form-control ${errors.designation ? 'is-invalid' : ''}`}
@@ -102,7 +119,7 @@ export default function PersonalInfoSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label d-flex justify-content-between align-items-center">
-                        Department
+                        Department <span className="text-danger">*</span>
                         <button type="button" className="btn btn-sm btn-link p-0" onClick={onAddDepartment}>
                             <i className="ri-add-circle-line"></i> Add New
                         </button>
@@ -123,27 +140,25 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Phone Number</label>
+                    <label className="form-label">Phone Number <span className="text-danger">*</span></label>
                     <div className="input-group">
-                        <select
-                            className="form-select"
-                            style={{ maxWidth: '140px' }}
-                            value={phonePrefix.phone_number_1}
-                            onChange={(e) => onPhonePrefixChange({ ...phonePrefix, phone_number_1: e.target.value })}
-                        >
-                            {countryCodeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                        {/* Country Code Display */}
+                        {(employee.country === 'USA' || employee.country === 'Canada') && (
+                            <span className="input-group-text bg-light border">
+                                <span className="me-1">{employee.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="text-muted">+1</span>
+                            </span>
+                        )}
                         <input
                             type="text"
                             className={`form-control ${errors.phone_number_1 ? 'is-invalid' : ''}`}
                             name="phone_number_1"
                             value={employee.phone_number_1}
-                            onChange={onChange}
-                            placeholder="Enter phone number"
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value);
+                                onChange({ target: { name: 'phone_number_1', value: formatted } });
+                            }}
+                            placeholder="(555) 555-5555"
                         />
                         {errors.phone_number_1 && <div className="invalid-feedback">{errors.phone_number_1}</div>}
                     </div>
@@ -154,25 +169,23 @@ export default function PersonalInfoSection({
                 <div className="mb-3">
                     <label className="form-label">Alternate Mobile</label>
                     <div className="input-group">
-                        <select
-                            className="form-select"
-                            style={{ maxWidth: '140px' }}
-                            value={phonePrefix.phone_number_2}
-                            onChange={(e) => onPhonePrefixChange({ ...phonePrefix, phone_number_2: e.target.value })}
-                        >
-                            {countryCodeOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                        {/* Country Code Display */}
+                        {(employee.country === 'USA' || employee.country === 'Canada') && (
+                            <span className="input-group-text bg-light border">
+                                <span className="me-1">{employee.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="text-muted">+1</span>
+                            </span>
+                        )}
                         <input
                             type="text"
                             className="form-control"
                             name="phone_number_2"
                             value={employee.phone_number_2}
-                            onChange={onChange}
-                            placeholder="Enter mobile number"
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value);
+                                onChange({ target: { name: 'phone_number_2', value: formatted } });
+                            }}
+                            placeholder="(555) 555-5555"
                         />
                     </div>
                 </div>
@@ -180,7 +193,7 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Email</label>
+                    <label className="form-label">Email <span className="text-danger">*</span></label>
                     <input
                         type="email"
                         className={`form-control ${errors.email ? 'is-invalid' : ''}`}
