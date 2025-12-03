@@ -59,7 +59,7 @@ export default function EmployeeFilters({
                         optionLabel="label"
                         optionValue="value"
                         placeholder="All Status"
-                        className="w-100"
+                        className="w-100 bg-light border-light employee-filter-dropdown"
                     />
                 </div>
 
@@ -71,7 +71,7 @@ export default function EmployeeFilters({
                         optionLabel="label"
                         optionValue="value"
                         placeholder="All Department"
-                        className="w-100"
+                        className="w-100 bg-light border-light employee-filter-dropdown"
                     />
                 </div>
 
