@@ -4,8 +4,10 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchPartners, allUsers, deletePartners } from '../../modules/partner/services';
+import { fetchPartners, allUsers, deletePartners, fetchPartnerStats } from '../../modules/partner/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import StatisticsCard from '../../components/Common/StatisticsCard';
+import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -42,6 +44,15 @@ export default function Partners() {
     // Dropdown data
     const [partnersList, setPartnersList] = useState([]);
     const [assignedUsersList, setAssignedUsersList] = useState([]);
+
+    // Statistics data
+    const [stats, setStats] = useState({
+        active_count: 0,
+        new_this_month: 0,
+        total_partners: 0,
+        inactive_count: 0
+    });
+    const [statsLoading, setStatsLoading] = useState(true);
 
     // Initialize filters
     const initFilters = () => {
@@ -106,6 +117,57 @@ export default function Partners() {
         };
         loadAssignedUsers();
     }, []);
+
+    // Load partner statistics
+    useEffect(() => {
+        const loadStats = async () => {
+            try {
+                setStatsLoading(true);
+                const result = await fetchPartnerStats();
+                if (result.status && result.data) {
+                    setStats({
+                        active_count: result.data.active_count || 0,
+                        new_this_month: result.data.new_this_month || 0,
+                        total_partners: result.data.total_partners || 0,
+                        inactive_count: result.data.inactive_count || 0
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to load partner statistics:', err);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        loadStats();
+    }, []);
+
+    // Statistics cards configuration
+    const statisticsConfig = [
+        {
+            title: "Active Partners",
+            dataKey: "active_count",
+            icon: "ri-ticket-line",
+            colorVariant: "primary"
+        },
+        {
+            title: "New This Month",
+            dataKey: "new_this_month",
+            icon: "ri-folder-open-line",
+            colorVariant: "warning"
+        },
+        {
+            title: "Total Partners",
+            dataKey: "total_partners",
+            icon: "ri-group-line",
+            colorVariant: "info"
+        },
+        {
+            title: "Inactive",
+            dataKey: "inactive_count",
+            icon: "ri-star-line",
+            colorVariant: "success"
+        }
+    ];
 
     // Load partners data with filters
     useEffect(() => {
@@ -313,85 +375,25 @@ export default function Partners() {
 
                 {/* Statistics Cards */}
                 <div className="row">
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-primary-subtle text-primary rounded-2 fs-2">
-                                            <i className="ri-ticket-line text-primary" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Active Partners</p>
-                                        <div className="d-flex align-items-center mb-1">
-                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="82">82</span></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-warning-subtle text-warning rounded-2 fs-2">
-                                            <i className="ri-folder-open-line text-warning" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">New This Month</p>
-                                        <div className="d-flex align-items-center mb-1">
-                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="22">22</span></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-info-subtle text-info rounded-2 fs-2">
-                                            <i className="ri-time-line text-info" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Pending Requests</p>
-                                        <div className="d-flex align-items-center mb-1">
-                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="68">68</span></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card card-animate">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm flex-shrink-0">
-                                        <span className="avatar-title bg-success-subtle text-success rounded-2 fs-2">
-                                            <i className="ri-star-line text-success" aria-hidden="true"></i>
-                                        </span>
-                                    </div>
-                                    <div className="flex-grow-1 overflow-hidden ms-3">
-                                        <p className="text-capitalize fw-medium text-muted text-truncate mb-1 kpi-title">Inactive</p>
-                                        <div className="d-flex align-items-center mb-1">
-                                            <h4 className="fs-4 flex-grow-1 mb-0"><span className="counter-value" data-target="4">4</span></h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {statsLoading ? (
+                        <>
+                            {statisticsConfig.map((_, index) => (
+                                <StatisticsCardSkeleton key={`skeleton-${index}`} />
+                            ))}
+                        </>
+                    ) : (
+                        <>
+                            {statisticsConfig.map((config, index) => (
+                                <StatisticsCard
+                                    key={`stat-${index}`}
+                                    title={config.title}
+                                    count={stats[config.dataKey] || 0}
+                                    icon={config.icon}
+                                    colorVariant={config.colorVariant}
+                                />
+                            ))}
+                        </>
+                    )}
                 </div>
 
                 {/* Filters and Table */}

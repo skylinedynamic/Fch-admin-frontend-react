@@ -83,3 +83,8 @@ export const saveSubscription = async (payload: any) => {
   const { data } = await apiClient.post('/admin/partners/subscription', payload);
   return data;
 };
+
+export const fetchPartnerStats = async () => {
+  const { data } = await apiClient.get('/admin/partners/stats');
+  return data;
+};
