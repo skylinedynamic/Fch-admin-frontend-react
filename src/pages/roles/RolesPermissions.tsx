@@ -160,7 +160,7 @@ export default function RolesPermissions() {
                     {roles.map((r, idx) => (
                       <div className="role-summary-card" key={(r.id ?? r.name) + String(idx)} style={{ position: 'relative' }}>
                         <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid text-white">{Number(r.users_count ?? 0)} users</span></div>
-                        {r.description && <p className="text-muted fs-14 mb-2">{r.description}</p>}
+                        {r.description && <p className="text-muted fs-14 mb-0 role-desc" title={r.description}>{r.description}</p>}
                         <ul className="bullet-list">
                           {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
                           {remainingCount(r.permissions) > 0 && (
@@ -168,7 +168,10 @@ export default function RolesPermissions() {
                           )}
                         </ul>
                         <div className="card-actions d-flex align-items-center">
-                          <button className="btn btn-light" onClick={() => handleViewUsers(r)}>View All Users</button>
+                          <button className="btn btn-light" onClick={() => handleViewUsers(r)}>
+                            <span className="label-full">View All Users</span>
+                            <span className="label-short">Users</span>
+                          </button>
                           <button className="btn btn-primary ms-2" onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)} disabled={!r.id}>Edit Role</button>
                           {!r.is_static && (
                             <button

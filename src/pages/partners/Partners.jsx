@@ -439,7 +439,7 @@ export default function Partners() {
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="All Partners"
-                                                className="w-100"
+                                                className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
 
@@ -457,7 +457,7 @@ export default function Partners() {
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="Assigned Users"
-                                                className="w-100"
+                                                className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
 

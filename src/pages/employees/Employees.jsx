@@ -78,7 +78,7 @@ export default function Employees() {
     <div className="page-content">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 bg-body">
+        <div className="row mb-0 pb-0 bg-body">
           <div className="col">
             <div className="h-100">
               <EmployeeListHeader
@@ -89,7 +89,7 @@ export default function Employees() {
               <div className="row">
                 <div className="col-lg-12">
                   <div className="card">
-                    <div className="card-body">
+                    <div className="card-body list-fluid-card">
                       <EmployeeFilters
                         globalFilterValue={globalFilterValue}
                         onGlobalFilterChange={onGlobalFilterChange}

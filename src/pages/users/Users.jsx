@@ -404,7 +404,7 @@ export default function Users() {
                                 optionLabel="label"
                                 optionValue="value"
                                 placeholder="All Status"
-                                className="w-100"
+                                className="w-100 employee-filter-dropdown"
                               />
                             </div>
                             <div className="col-xxl-3 col-sm-4">
@@ -415,7 +415,7 @@ export default function Users() {
                                 optionLabel="name"
                                 optionValue="id"
                                 placeholder="All Role"
-                                className="w-100"
+                                className="w-100 employee-filter-dropdown"
                               />
                             </div>
                             <div className="col-xxl-2 col-sm-4">
