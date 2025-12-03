@@ -3,7 +3,9 @@ import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'reac
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../assets/css/dropdown-validation.css';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription } from '../../modules/partner/services';
+import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
+import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
+import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats } from '../../modules/partner/services';
 import { locationData } from '../../config/locations';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
@@ -127,6 +129,49 @@ export default function PartnerProfile() {
             setActiveTab('personalDetails');
         }
     }, [searchParams, location.state, id]);
+
+    // Profile Statistics State
+    const [profileStats, setProfileStats] = useState({
+        total_meetings: 0,
+        total_clients: 0,
+        total_invoice: 0,
+        billing_term: 'N/A',
+        total_tickets: 0
+    });
+    const [profileStatsLoading, setProfileStatsLoading] = useState(true);
+
+    // Metrics Configuration
+    const metricsConfig = [
+        { label: 'Meetings', dataKey: 'total_meetings', icon: 'ri-calendar-line' },
+        { label: 'Total Clients', dataKey: 'total_clients', icon: 'ri-star-line' },
+        { label: 'Invoiced', dataKey: 'total_invoice', icon: 'ri-file-edit-line' },
+        { label: 'Subscriptions', dataKey: 'billing_term', icon: 'ri-money-dollar-circle-line' },
+        { label: 'Tickets', dataKey: 'total_tickets', icon: 'ri-lifebuoy-line' },
+    ];
+
+    // Fetch Profile Statistics
+    useEffect(() => {
+        const loadProfileStats = async () => {
+            if (!id) {
+                setProfileStatsLoading(false);
+                return;
+            }
+
+            try {
+                setProfileStatsLoading(true);
+                const result = await fetchPartnerProfileStats(id);
+                if (result.status && result.data) {
+                    setProfileStats(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load profile statistics:', error);
+            } finally {
+                setProfileStatsLoading(false);
+            }
+        };
+
+        loadProfileStats();
+    }, [id]);
 
     const [profileImage, setProfileImage] = useState(avatarDefault);
 
@@ -741,41 +786,24 @@ export default function PartnerProfile() {
                 <div className="row pt-1">
                     <div className="col-12">
                         <div className="d-flex flex-wrap metrics-strip justify-content-center">
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-calendar-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Meetings</div>
-                                    <div className="metrics-value fw-semibold">2</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-star-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Total Clients</div>
-                                    <div className="metrics-value fw-semibold">10</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-file-edit-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Invoiced</div>
-                                    <div className="metrics-value fw-semibold">2</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-money-dollar-circle-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Subscriptions</div>
-                                    <div className="metrics-value fw-semibold">Yearly</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-lifebuoy-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Tickets</div>
-                                    <div className="metrics-value fw-semibold">10</div>
-                                </div>
-                            </a>
+                            {profileStatsLoading ? (
+                                // Loading Skeletons
+                                [1, 2, 3, 4, 5].map((_, index) => (
+                                    <ProfileMetricCardSkeleton key={index} />
+                                ))
+                            ) : (
+                                // Dynamic Metrics
+                                metricsConfig.map((metric, index) => (
+                                    <ProfileMetricCard
+                                        key={index}
+                                        label={metric.label}
+                                        value={profileStats[metric.dataKey] !== undefined && profileStats[metric.dataKey] !== null
+                                            ? profileStats[metric.dataKey]
+                                            : '0'}
+                                        icon={metric.icon}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
