@@ -85,11 +85,11 @@ export const saveSubscription = async (payload: any) => {
 };
 
 export const fetchPartnerStats = async () => {
-  const { data } = await apiClient.get('/admin/partners/stats');
+  const { data } = await apiClient.post('/admin/partners-stats', {});
   return data;
 };
 
 export const fetchPartnerProfileStats = async (id: string) => {
-  const { data } = await apiClient.get(`/admin/partners/profile-states-details-count/${id}`);
+  const { data } = await apiClient.post(`/admin/partners-profile-states-details-count/${id}`, {});
   return data;
 };
