@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute } from './lib/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
@@ -35,16 +35,34 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="partners" element={<Partners />} />
-            <Route path="partners/create" element={<PartnerProfile />} />
-            <Route path="partners/:id" element={<PartnerProfile />} />
-            <Route path="employees" element={<Employees />} />
-            <Route path="users" element={<Users />} />
-            <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+
+            {/* Partners Routes - requires 'view partners' permission */}
+            <Route element={<PermissionRoute permission="view partners" />}>
+              <Route path="partners" element={<Partners />} />
+              <Route path="partners/create" element={<PartnerProfile />} />
+              <Route path="partners/:id" element={<PartnerProfile />} />
+            </Route>
+
+            {/* Employees Routes - requires 'view employees' permission */}
+            <Route element={<PermissionRoute permission="view employees" />}>
+              <Route path="employees" element={<Employees />} />
+              <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+            </Route>
+
+            {/* Users Routes - requires 'view users' permission */}
+            <Route element={<PermissionRoute permission="view users" />}>
+              <Route path="users" element={<Users />} />
+            </Route>
+
+            {/* Roles & Permissions Routes - requires 'view roles & permissions' permission */}
+            <Route element={<PermissionRoute permission="view roles & permissions" />}>
+              <Route path="roles-permissions" element={<RolesPermissions />} />
+              <Route path="roles-permissions/create" element={<CreateRole />} />
+              <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+            </Route>
+
+            {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />
-            <Route path="roles-permissions" element={<RolesPermissions />} />
-            <Route path="roles-permissions/create" element={<CreateRole />} />
-            <Route path="roles-permissions/edit/:id" element={<EditRole />} />
           </Route>
         </Route>
       </Routes>

@@ -1,12 +1,127 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
+import { usePermissions } from '../../lib/auth/usePermissions'
 import faviconImg from '../../../assets/images/Favicon.png'
 import logoImg from '../../../assets/images/logo.png'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 
+// Menu item configuration with required permissions
+const menuItems = [
+  {
+    to: '/',
+    icon: 'ri-dashboard-2-line',
+    label: 'Dashboard',
+    permission: 'view dashboard',
+    exact: true,
+  },
+  {
+    to: '/partners',
+    icon: 'las la-handshake',
+    label: 'Partners',
+    permission: 'view partners',
+  },
+  {
+    to: '/under-construction/demo-requests',
+    icon: 'las la-calendar-check',
+    label: 'Demo Requests',
+    permission: 'view demo request',
+  },
+  {
+    to: '/under-construction/leads',
+    icon: 'las la-chart-pie',
+    label: 'Leads',
+    permission: 'view leads',
+  },
+  {
+    to: '/under-construction/contacts',
+    icon: 'las la-clipboard-list',
+    label: 'Contacts',
+    permission: 'view contacts',
+  },
+  {
+    to: '/under-construction/clients',
+    icon: 'las la-user-friends',
+    label: 'Clients',
+    permission: 'view clients',
+  },
+  {
+    to: '/under-construction/commissions',
+    icon: 'bx bx-dollar',
+    label: 'Commisions',
+    permission: 'view commission',
+  },
+  {
+    to: '/under-construction/payments',
+    icon: 'bx bx-credit-card',
+    label: 'Payments',
+    permission: 'view payments',
+  },
+  {
+    to: '/under-construction/invoices',
+    icon: 'bx bx-file',
+    label: 'Invoices',
+    permission: 'view invoices',
+  },
+  {
+    to: '/under-construction/subscriptions',
+    icon: 'bx bx-sync',
+    label: 'Subscriptions',
+    permission: 'view subscriptions',
+  },
+  {
+    to: '/under-construction/appointments',
+    icon: 'ri-calendar-2-line',
+    label: 'Appointments',
+    permission: 'view appointments',
+  },
+  {
+    to: '/under-construction/training-courses',
+    icon: 'ri-live-fill',
+    label: 'Training & Courses',
+    permission: 'view training & courses',
+  },
+  {
+    to: '/under-construction/support-tickets',
+    icon: 'las la-life-ring',
+    label: 'Support Tickets',
+    permission: 'view support tickets',
+  },
+  {
+    to: '/under-construction/resources',
+    icon: 'ri-folder-fill',
+    label: 'Resources',
+    permission: 'view resources',
+  },
+  {
+    to: '/employees',
+    icon: 'ri-user-2-fill',
+    label: 'Employees',
+    permission: 'view employees',
+  },
+  {
+    to: '/users',
+    icon: 'ri-user-3-fill',
+    label: 'Users',
+    permission: 'view users',
+  },
+  {
+    to: '/roles-permissions',
+    icon: 'ri-shield-user-fill',
+    label: 'Roles & Permissions',
+    permission: 'view roles & permissions',
+  },
+  {
+    to: '/under-construction/settings',
+    icon: 'ri-file-settings-fill',
+    label: 'Settings',
+    permission: 'view settings',
+  },
+]
+
 export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 992 : false)
   const [open, setOpen] = useState(false)
+  const { hasPermission } = usePermissions()
 
   useEffect(() => {
     const onResize = () => {
@@ -30,6 +145,11 @@ export default function Sidebar() {
       else body.classList.remove(cls)
     }
   }
+
+  // Filter menu items based on permissions
+  const visibleMenuItems = useMemo(() => {
+    return menuItems.filter((item) => hasPermission(item.permission))
+  }, [hasPermission])
 
   return (
     <div className={menuClass}>
@@ -86,96 +206,17 @@ export default function Sidebar() {
         <div className="container-fluid">
           <div id="two-column-menu"></div>
           <ul className="navbar-nav partner-sidebar" id="navbar-nav">
-            <li className="nav-item">
-              <NavLink end className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/">
-                <i className="ri-dashboard-2-line"></i> <span>Dashboard</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/partners">
-                <i className="las la-handshake"></i> <span>Partners</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/demo-requests">
-                <i className="las la-calendar-check"></i> <span>Demo Requests</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/leads">
-                <i className="las la-chart-pie"></i> <span>Leads</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/contacts">
-                <i className="las la-clipboard-list"></i> <span>Contacts</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/clients">
-                <i className="las la-user-friends"></i> <span>Clients</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/commissions">
-                <i className="bx bx-dollar"></i> <span>Commisions</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/payments">
-                <i className="bx bx-credit-card"></i> <span>Payments</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/invoices">
-                <i className="bx bx-file"></i> <span>Invoices</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/subscriptions">
-                <i className="bx bx-sync"></i> <span>Subscriptions</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/appointments">
-                <i className="ri-calendar-2-line"></i> <span>Appointments</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/training-courses">
-                <i className="ri-live-fill"></i> <span>Training &amp; Courses</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/support-tickets">
-                <i className="las la-life-ring"></i> <span>Support Tickets</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/resources">
-                <i className="ri-folder-fill"></i> <span>Resources</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/employees">
-                <i className="ri-user-2-fill"></i> <span>Employees</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/users">
-                <i className="ri-user-3-fill"></i> <span>Users</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/roles-permissions">
-                <i className="ri-shield-user-fill"></i> <span>Roles &amp; Permissions</span>
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'} to="/under-construction/settings">
-                <i className="ri-file-settings-fill"></i> <span>Settings</span>
-              </NavLink>
-            </li>
+            {visibleMenuItems.map((item) => (
+              <li className="nav-item" key={item.to}>
+                <NavLink
+                  end={item.exact}
+                  className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'}
+                  to={item.to}
+                >
+                  <i className={item.icon}></i> <span>{item.label}</span>
+                </NavLink>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
