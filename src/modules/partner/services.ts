@@ -70,7 +70,7 @@ export const deletePartnerDocument = async (docId: string | number) => {
 };
 
 export const getSubscription = async (partnerId: string | number) => {
-  const { data } = await apiClient.get(`/admin/partners/subscription/${partnerId}`);
+  const { data } = await apiClient.post(`/admin/partner-subscriptions/${partnerId}`);
   return data;
 };
 
