@@ -58,11 +58,11 @@ export default function EmployeeTable({
                 onSort={onSort}
                 globalFilterFields={[
                     'full_name',
+                    'employee_code',
                     'phone_number',
                     'email',
                     'department',
                     'designation',
-                    'address',
                     'job_status'
                 ]}
                 selection={selection}
@@ -75,11 +75,11 @@ export default function EmployeeTable({
             >
                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
                 <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                <Column field="employee_code" header="Code" sortable filter showFilterMatchModes filterPlaceholder="Search code"></Column>
                 <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                 <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                 <Column field="department" header="Department" sortable filter showFilterMatchModes filterPlaceholder="Search department"></Column>
                 <Column field="designation" header="Designation" sortable filter showFilterMatchModes filterPlaceholder="Search designation"></Column>
-                <Column field="address" header="Address" sortable filter showFilterMatchModes filterPlaceholder="Search address"></Column>
                 <Column field="job_status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
             </DataTable>
         </div>

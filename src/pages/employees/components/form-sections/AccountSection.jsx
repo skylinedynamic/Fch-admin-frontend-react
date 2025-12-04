@@ -33,11 +33,13 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                 </div>
             </div>
 
-            <div className="col-lg-6"></div>
+
+
+            <div className="w-100"></div>
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label d-block"></label>
+                    <label className="form-label d-block">&nbsp;</label>
                     <div className="form-check">
                         <input
                             id="createAccountCheckbox"

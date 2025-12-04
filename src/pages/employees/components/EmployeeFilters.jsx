@@ -31,7 +31,7 @@ export default function EmployeeFilters({
             onApplyFilters();
         }}>
             <div className="row g-3 mb-3">
-                <div className="col-xxl-4 col-sm-12">
+                <div className="col-xxl-4 col-sm-6">
                     <div className="search-box">
                         <input
                             type="text"
@@ -50,6 +50,8 @@ export default function EmployeeFilters({
                         <i className="ri-search-line search-icon"></i>
                     </div>
                 </div>
+
+
 
                 <div className="col-xxl-3 col-sm-4">
                     <Dropdown

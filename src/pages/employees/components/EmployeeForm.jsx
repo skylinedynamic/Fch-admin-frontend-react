@@ -1,7 +1,7 @@
 import React from 'react';
 import PersonalInfoSection from './form-sections/PersonalInfoSection';
 import AddressSection from './form-sections/AddressSection';
-import IdentificationSection from './form-sections/IdentificationSection';
+
 import PersonalDetailsSection from './form-sections/PersonalDetailsSection';
 import AccountSection from './form-sections/AccountSection';
 import EmergencyContactSection from './form-sections/EmergencyContactSection';
@@ -44,7 +44,7 @@ export default function EmployeeForm({
                     cities={cities}
                 />
 
-                <IdentificationSection employee={employee} onChange={onChange} />
+
 
                 <PersonalDetailsSection employee={employee} onChange={onChange} />
 

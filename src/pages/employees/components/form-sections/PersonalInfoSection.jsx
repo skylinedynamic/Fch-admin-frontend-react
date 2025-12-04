@@ -89,20 +89,6 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Employee Code</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        name="employee_code"
-                        value={employee.employee_code}
-                        onChange={onChange}
-                        placeholder="Enter code"
-                    />
-                </div>
-            </div>
-
-            <div className="col-lg-6">
-                <div className="mb-3">
                     <label className="form-label">Position <span className="text-danger">*</span></label>
                     <input
                         type="text"
