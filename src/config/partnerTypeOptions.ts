@@ -1,16 +1,36 @@
 /**
  * Partner Type Options Configuration
  * 
- * Defines the available partner types in the system.
- * Used in partner registration, filtering, and profile management.
+ * Defines the available partner types with their enrollment fees
  */
 
 export interface PartnerTypeOption {
     label: string;
     value: string;
+    oneTimeFee?: number;
+    planFee?: number;
 }
 
 export const PARTNER_TYPE_OPTIONS: PartnerTypeOption[] = [
-    { label: 'Certified Partner', value: 'Certified Partner' },
-    { label: 'White-Label Partner (WL)', value: 'White-Label Partner (WL)' },
+    {
+        label: 'Referral',
+        value: 'Referral'
+    },
+    {
+        label: 'Founding Partner',
+        value: 'Founding Partner',
+        oneTimeFee: 4997,
+        planFee: 597
+    },
+    {
+        label: 'Executive Partner (White-Label)',
+        value: 'Executive Partner (White-Label)',
+        oneTimeFee: 5997,
+        planFee: 797
+    },
+];
+
+export const PAYMENT_TYPE_OPTIONS = [
+    { label: 'One-Time Payment', value: 'One-Time Payment' },
+    { label: 'Payment Plan (10-month plan)', value: 'Payment Plan (10-month plan)' },
 ];
