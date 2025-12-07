@@ -1,21 +1,22 @@
 import React, { useEffect } from 'react';
 import Flatpickr from 'react-flatpickr';
 import { Dropdown } from 'primereact/dropdown';
-import { PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+import { PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, SUBSCRIPTION_PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_STATUS_OPTIONS } from '../../../config/partnerTypeOptions';
 
 export default function SubscriptionSection({ formData, handleInputChange, errors = {} }) {
     // Helper to get selected partner type config
     const selectedPartnerType = PARTNER_TYPE_OPTIONS.find(pt => pt.value === formData.partner_type);
 
-    const isReferral = formData.partner_type === 'Referral';
-    const isFounding = formData.partner_type === 'Founding Partner';
-    const isExecutive = formData.partner_type === 'Executive Partner (White-Label)';
+    const isReferral = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.REFERRAL;
+    const isFounding = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.FOUNDING;
+    const isExecutive = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE;
     const isFoundingOrExecutive = isFounding || isExecutive;
 
-    const isOneTime = formData.payment_type === 'One-Time Payment';
-    const isPaymentPlan = formData.payment_type === 'Payment Plan (10-month plan)';
+    // Fix: Use enrollment_type instead of payment_type
+    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME;
+    const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN;
 
-    // Effect 1: Set Defaults when Partner Type or Payment Type changes
+    // Effect 1: Set Defaults when Partner Type or Enrollment Type changes
     useEffect(() => {
         if (isReferral) {
             if (formData.first_reg_amount !== 0) {
@@ -34,7 +35,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                 handleInputChange({ target: { name: 'recurring_amount', value: planFee } });
             }
         }
-    }, [formData.partner_type, formData.payment_type]);
+    }, [formData.partner_type, formData.enrollment_type]);
 
     // Effect 2: Dynamic Calculation of First Reg Amount based on Recurring Amount (for Payment Plan)
     useEffect(() => {
@@ -57,24 +58,36 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             const startDate = new Date(year, month - 1, day);
 
             let endDate = new Date(startDate);
+            let shouldUpdate = false;
 
-            // Calculate End Date based on Payment Type
+            // Calculate End Date based on Enrollment Type
             if (isPaymentPlan) {
                 // 10-month plan: Add 10 months
                 endDate.setMonth(endDate.getMonth() + 10);
+                shouldUpdate = true;
+            } else if (isOneTime) {
+                // One-Time Payment: Ensure dates are empty (nullable)
+                if (formData.subscription_end_date) {
+                    handleInputChange({ target: { name: "subscription_end_date", value: "" } });
+                }
+                if (formData.expiry_date) {
+                    handleInputChange({ target: { name: "expiry_date", value: "" } });
+                }
+                shouldUpdate = false;
             } else {
-                // Default / One-Time / Referral -> 1 Month
-                endDate.setMonth(endDate.getMonth() + 1);
+                // Default behavior for others
+                shouldUpdate = false;
             }
 
-            const dateString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
-
-            // Update only if the date has changed to avoid infinite loops
-            if (formData.subscription_end_date !== dateString) {
-                handleInputChange({ target: { name: "subscription_end_date", value: dateString } });
+            if (shouldUpdate) {
+                const dateString = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+                // Update only if the date has changed to avoid infinite loops
+                if (formData.subscription_end_date !== dateString) {
+                    handleInputChange({ target: { name: "subscription_end_date", value: dateString } });
+                }
             }
         }
-    }, [formData.subscription_start_date, formData.payment_type]);
+    }, [formData.subscription_start_date, formData.enrollment_type]);
 
     // Handle blur event for validation
     const handleBlur = (e) => {
@@ -83,15 +96,15 @@ export default function SubscriptionSection({ formData, handleInputChange, error
     };
 
     // Determine visibility of Monthly Platform Fee (Recurring Amount)
-    // Hide if Founding/Executive AND One-Time Payment
-    const showRecurringAmount = !((isFoundingOrExecutive) && isOneTime);
+    // Show ONLY if Founding/Executive AND Payment Plan
+    const showRecurringAmount = isFoundingOrExecutive && isPaymentPlan;
 
     // Determine if First Registration Amount is ReadOnly
     const isFirstRegReadOnly = isFoundingOrExecutive || isReferral;
 
     return (
         <div className="row">
-            {/* Row 1: Partner Type, Payment Type */}
+            {/* Row 1: Partner Type, Enrollment Type */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
@@ -99,31 +112,33 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                         value={formData.partner_type || ''}
                         options={PARTNER_TYPE_OPTIONS}
                         onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
-                        onBlur={() => handleInputChange({ target: { name: 'partner_type', value: formData.partner_type } })}
                         placeholder="Select partner type..."
                         className={`w-100 ${errors.partner_type ? 'p-invalid' : ''}`}
                     />
-                    {errors.partner_type && <div className="invalid-feedback d-block">{errors.partner_type}</div>}
+                    {errors.partner_type && (
+                        <div className="invalid-feedback" style={{ display: 'block' }}>
+                            {errors.partner_type}
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
-                    <label className="form-label">Payment Type <span className="text-danger">*</span></label>
+                    <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
                     <Dropdown
-                        value={formData.payment_type || ''}
+                        value={formData.enrollment_type || ''}
                         options={PAYMENT_TYPE_OPTIONS}
-                        onChange={(e) => handleInputChange({ target: { name: 'payment_type', value: e.value } })}
-                        onBlur={() => handleInputChange({ target: { name: 'payment_type', value: formData.payment_type } })}
-                        placeholder="Select payment type..."
-                        className={`w-100 ${errors.payment_type ? 'p-invalid' : ''}`}
+                        onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                        placeholder="Select enrollment type..."
+                        className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
                         disabled={!formData.partner_type}
                     />
-                    {errors.payment_type && <div className="invalid-feedback d-block">{errors.payment_type}</div>}
+                    {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
                 </div>
             </div>
 
-            {/* Row 2: Monthly Platform Fee (Recurring Amount), First Registration Amount */}
+            {/* Row 2: Monthly Platform Fee (Conditional), First Registration Amount */}
             {showRecurringAmount && (
                 <div className="col-lg-6 col-12">
                     <div className="mb-3">
@@ -166,15 +181,9 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                         />
                         {errors.first_reg_amount && <div className="invalid-feedback">{errors.first_reg_amount}</div>}
                     </div>
-                    {isPaymentPlan && isFoundingOrExecutive && (
-                        <small className="text-muted">
-                            Total: 10 × ${formData.recurring_amount || 0}
-                        </small>
-                    )}
                 </div>
             </div>
 
-            {/* Row 3: First Registration Date, First Payment Amount */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">First Registration Date <span className="text-danger">*</span></label>
@@ -186,7 +195,12 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                             const dateString = date
                                 ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
                                 : "";
+
+                            // Update First Registration Date
                             handleInputChange({ target: { name: "first_reg_date", value: dateString } });
+
+                            // Auto-fill Subscription Start Date with the same date
+                            handleInputChange({ target: { name: "subscription_start_date", value: dateString } });
                         }}
                         className={`form-control ${errors.first_reg_date ? 'is-invalid' : ''}`}
                         placeholder="d/m/y"
@@ -195,71 +209,72 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                 </div>
             </div>
 
+            {/* Row 3: Installment Checkbox */}
+            <div className="col-12">
+                <div className="mb-3 form-check">
+                    <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="installmentCheck"
+                        checked={formData.installment_type == 1}
+                        onChange={(e) => handleInputChange({ target: { name: 'installment_type', value: e.target.checked ? 1 : 0 } })}
+                    />
+                    <label className="form-check-label" htmlFor="installmentCheck">
+                        I want to pay the registration amount in two installment
+                    </label>
+                </div>
+            </div>
+
+            {/* Row 4: First Registration Payment (Installment 1), Installment 2 */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
-                    <label className="form-label">First Payment Amount <span className="text-danger">*</span></label>
+                    <label className="form-label">
+                        First Registration Payment {formData.installment_type == 1 ? '(Installment 1)' : ''} <span className="text-danger">*</span>
+                    </label>
                     <div className="input-group">
                         <span className="input-group-text">$</span>
                         <input
                             type="number"
-                            className={`form-control ${errors.first_payment_amount ? 'is-invalid' : ''}`}
-                            name="first_payment_amount"
+                            className={`form-control ${errors.first_reg_payment ? 'is-invalid' : ''}`}
+                            name="first_reg_payment"
                             placeholder="0.00"
-                            value={formData.first_payment_amount || ''}
+                            value={formData.first_reg_payment || ''}
                             onChange={handleInputChange}
                             onBlur={handleBlur}
                             min="0"
                             step="0.01"
                         />
-                        {errors.first_payment_amount && <div className="invalid-feedback">{errors.first_payment_amount}</div>}
+                        {errors.first_reg_payment && <div className="invalid-feedback">{errors.first_reg_payment}</div>}
                     </div>
                 </div>
             </div>
 
-            {/* Row 4: First Registration Amount 2, Total Amount */}
-            <div className="col-lg-6 col-12">
-                <div className="mb-3">
-                    <label className="form-label">First Registration Amount 2 <span className="text-danger">*</span></label>
-                    <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <input
-                            type="number"
-                            className={`form-control ${errors.first_reg_amount_2 ? 'is-invalid' : ''}`}
-                            name="first_reg_amount_2"
-                            placeholder="0.00"
-                            value={formData.first_reg_amount_2 || ''}
-                            onChange={handleInputChange}
-                            onBlur={handleBlur}
-                            min="0"
-                            step="0.01"
-                        />
-                        {errors.first_reg_amount_2 && <div className="invalid-feedback">{errors.first_reg_amount_2}</div>}
+            {formData.installment_type == 1 && (
+                <div className="col-lg-6 col-12">
+                    <div className="mb-3">
+                        <label className="form-label">First Registration Payment (Installment 2) <span className="text-danger">*</span></label>
+                        <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                                type="number"
+                                className={`form-control ${errors.first_reg_payment_2 ? 'is-invalid' : ''}`}
+                                name="first_reg_payment_2"
+                                placeholder="0.00"
+                                value={formData.first_reg_payment_2 || ''}
+                                onChange={handleInputChange}
+                                onBlur={handleBlur}
+                                min="0"
+                                step="0.01"
+                            />
+                            {errors.first_reg_payment_2 && <div className="invalid-feedback">{errors.first_reg_payment_2}</div>}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="col-lg-6 col-12">
-                <div className="mb-3">
-                    <label className="form-label">Total Amount <span className="text-danger">*</span></label>
-                    <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <input
-                            type="number"
-                            className={`form-control ${errors.total_amount ? 'is-invalid' : ''}`}
-                            name="total_amount"
-                            placeholder="0.00"
-                            value={formData.total_amount || ''}
-                            onChange={handleInputChange}
-                            onBlur={handleBlur}
-                            min="0"
-                            step="0.01"
-                        />
-                        {errors.total_amount && <div className="invalid-feedback">{errors.total_amount}</div>}
-                    </div>
-                </div>
-            </div>
+            {/* Row 5: Total Amount - REMOVED */}
 
-            {/* Row 5: Subscription Start Date, Subscription End Date */}
+            {/* Row 6: Subscription Start Date */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Subscription Start Date <span className="text-danger">*</span></label>
@@ -280,11 +295,15 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                 </div>
             </div>
 
+            {/* Row 6: Subscription End Date, Expiry Date */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
-                    <label className="form-label">Subscription End Date <span className="text-danger">*</span></label>
+                    <label className="form-label">Subscription End Date {!isOneTime && <span className="text-danger">*</span>}</label>
                     <Flatpickr
-                        options={{ dateFormat: "d/m/Y" }}
+                        options={{
+                            dateFormat: "d/m/Y",
+                            clickOpens: isOneTime // Only open calendar if One-Time (enabled)
+                        }}
                         value={formData.subscription_end_date ? new Date(formData.subscription_end_date) : null}
                         onChange={(dates) => {
                             const date = dates[0];
@@ -295,19 +314,33 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                         }}
                         className={`form-control ${errors.subscription_end_date ? 'is-invalid' : ''}`}
                         placeholder="d/m/y"
-                        disabled
+                        disabled={!isOneTime} // Disabled if auto-calculated (Payment Plan), Enabled if One-Time
                     />
                     {errors.subscription_end_date && <div className="invalid-feedback d-block">{errors.subscription_end_date}</div>}
-                    <small className="text-muted">
-                        {isPaymentPlan ? 'Automatically calculated (10 months)' : 'Automatically calculated (1 month)'}
-                    </small>
+                    {!isOneTime && (
+                        <small className="text-muted">
+                            {isPaymentPlan ? 'Automatically calculated (10 months)' : 'Automatically calculated (1 month)'}
+                        </small>
+                    )}
+                </div>
+            </div>
+            <div className="col-lg-6 col-12">
+                <div className="mb-3">
+                    <label className="form-label">Status <span className="text-danger">*</span></label>
+                    <Dropdown
+                        value={formData.subscription_status || ''}
+                        options={SUBSCRIPTION_STATUS_OPTIONS}
+                        onChange={(e) => handleInputChange({ target: { name: 'subscription_status', value: e.value } })}
+                        placeholder="Select status..."
+                        className={`w-100 ${errors.subscription_status ? 'p-invalid' : ''}`}
+                    />
+                    {errors.subscription_status && <div className="invalid-feedback d-block">{errors.subscription_status}</div>}
                 </div>
             </div>
 
-            {/* Row 6: Expiry Date, Termination Date */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
-                    <label className="form-label">Expiry Date <span className="text-danger">*</span></label>
+                    <label className="form-label">Expiry Date</label>
                     <Flatpickr
                         options={{
                             dateFormat: "d/m/Y",
@@ -328,9 +361,10 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                 </div>
             </div>
 
+            {/* Row 7: Termination Date, Status */}
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
-                    <label className="form-label">Termination Date <span className="text-danger">*</span></label>
+                    <label className="form-label">Termination Date</label>
                     <Flatpickr
                         options={{
                             dateFormat: "d/m/Y",

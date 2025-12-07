@@ -7,6 +7,7 @@ import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats } from '../../modules/partner/services';
 import { locationData } from '../../config/locations';
+import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
@@ -71,18 +72,20 @@ export default function PartnerProfile() {
         agentPhone: '',
         partnerStatus: '',
         // Subscription - using snake_case to match API
-        partner_url: '',
-        billing_term: '',
+        enrollment_type: '', // Replaces billing_term or adds to it
+        installment_type: 0,
         first_reg_date: '',
         first_reg_amount: '',
         first_reg_amount_2: '',
-        first_payment_amount: '',
+        first_reg_payment_2: '',
+        first_reg_payment: '',
         recurring_amount: '',
-        total_amount: '',
+        total_paid_amount: '', // Renamed from total_amount
         subscription_start_date: '',
         subscription_end_date: '',
         expiry_date: '',
-        termination_date: ''
+        termination_date: '',
+        subscription_status: ''
     });
 
     // Fetch users on mount
@@ -130,22 +133,28 @@ export default function PartnerProfile() {
         }
     }, [searchParams, location.state, id]);
 
+    // Clear errors when active tab changes
+    useEffect(() => {
+        setErrors({});
+    }, [activeTab]);
+
     // Profile Statistics State
     const [profileStats, setProfileStats] = useState({
         total_meetings: 0,
         total_clients: 0,
         total_invoice: 0,
-        billing_term: 'N/A',
+        enrollment_type: 'N/A',
         total_tickets: 0
     });
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
+    const [isPartnerLoading, setIsPartnerLoading] = useState(false);
 
     // Metrics Configuration
     const metricsConfig = [
         { label: 'Meetings', dataKey: 'total_meetings', icon: 'ri-calendar-line' },
         { label: 'Total Clients', dataKey: 'total_clients', icon: 'ri-star-line' },
         { label: 'Invoiced', dataKey: 'total_invoice', icon: 'ri-file-edit-line' },
-        { label: 'Subscriptions', dataKey: 'billing_term', icon: 'ri-money-dollar-circle-line' },
+        { label: 'Subscriptions', dataKey: 'enrollment_type', icon: 'ri-money-dollar-circle-line' },
         { label: 'Tickets', dataKey: 'total_tickets', icon: 'ri-lifebuoy-line' },
     ];
 
@@ -179,6 +188,7 @@ export default function PartnerProfile() {
     useEffect(() => {
         const fetchPartnerData = async () => {
             if (!id) return;
+            setIsPartnerLoading(true);
             try {
                 const response = await getPartner(id);
                 const data = response.data || response; // Handle both response.data and direct data
@@ -234,11 +244,13 @@ export default function PartnerProfile() {
             } catch (error) {
                 console.error("Failed to fetch partner data", error);
                 toast.error("Failed to load partner data");
+            } finally {
+                setIsPartnerLoading(false);
             }
         };
 
         fetchPartnerData();
-    }, [id]);
+    }, [id, activeTab]);
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -258,7 +270,7 @@ export default function PartnerProfile() {
     // Fetch subscription data when subscription tab is active
     useEffect(() => {
         const fetchSubscriptionData = async () => {
-            if (!id || activeTab !== 'subscription') return;
+            if (!id || activeTab !== 'subscription' || isPartnerLoading) return;
 
             try {
                 const response = await getSubscription(id);
@@ -266,30 +278,49 @@ export default function PartnerProfile() {
                     const subscriptionData = response.data;
                     setFormData(prev => ({
                         ...prev,
-                        partner_url: subscriptionData.partner_url || '',
-                        billing_term: subscriptionData.billing_term || '',
+                        partner_type: subscriptionData.partner_type || prev.partner_type,
+                        enrollment_type: subscriptionData.enrollment_type || '',
+                        installment_type: parseInt(parseFloat(subscriptionData.installment_type)) || 0,
                         first_reg_date: subscriptionData.first_reg_date || '',
                         first_reg_amount: subscriptionData.first_reg_amount || '',
                         first_reg_amount_2: subscriptionData.first_reg_amount_2 || '',
-                        first_payment_amount: subscriptionData.first_payment_amount || '',
-                        recurring_amount: subscriptionData.recurring_amount || '',
-                        total_amount: subscriptionData.total_amount || '',
+                        first_reg_payment: subscriptionData.first_reg_payment || '',
+                        first_reg_payment_2: subscriptionData.first_reg_payment_2 || '',
+                        recurring_amount: subscriptionData.monthly_platform_fee || subscriptionData.recurring_amount || '',
+                        total_paid_amount: subscriptionData.total_paid_amount || '',
                         subscription_start_date: subscriptionData.subscription_start_date || '',
                         subscription_end_date: subscriptionData.subscription_end_date || '',
                         expiry_date: subscriptionData.expiry_date || '',
-                        termination_date: subscriptionData.termination_date || ''
+                        termination_date: subscriptionData.termination_date || '',
+                        subscription_status: subscriptionData.status || ''
                     }));
                 }
             } catch (error) {
                 // console.error('Failed to fetch subscription data', error);
-                // Don't show error toast if subscription doesn't exist yet (404)
-                if (error.response?.status !== 404) {
+                // If subscription doesn't exist (404), reset subscription fields to empty
+                if (error.response?.status === 404) {
+                    setFormData(prev => ({
+                        ...prev,
+                        enrollment_type: '',
+                        installment_type: 0,
+                        first_reg_date: '',
+                        first_reg_amount: '',
+                        first_reg_payment: '',
+                        first_reg_payment_2: '',
+                        recurring_amount: '',
+                        total_paid_amount: '',
+                        subscription_start_date: '',
+                        subscription_end_date: '',
+                        expiry_date: '',
+                        termination_date: '',
+                        subscription_status: ''
+                    }));
                 }
             }
         };
 
         fetchSubscriptionData();
-    }, [id, activeTab]);
+    }, [id, activeTab, isPartnerLoading]);
 
     // Validation function
     const validateField = (name, value) => {
@@ -299,8 +330,10 @@ export default function PartnerProfile() {
             case 'company_name':
             case 'country':
             case 'state':
-            case 'partner_type':
                 error = validateRequired(value, name.replace('_', ' '));
+                break;
+            case 'partner_type':
+                error = validateRequired(value, 'Partner Type');
                 break;
             case 'city':
                 error = validateRequired(value, 'city');
@@ -331,18 +364,8 @@ export default function PartnerProfile() {
                 error = validateRequired(value, 'Agent');
                 break;
             // Subscription validations - all fields required
-            case 'partner_url':
-                error = validateRequired(value, 'Partner URL');
-                if (!error) {
-                    try {
-                        new URL(value);
-                    } catch (_) {
-                        error = 'Please enter a valid URL (Example: https://www.fourcornerholdings.com)';
-                    }
-                }
-                break;
-            case 'billing_term':
-                error = validateRequired(value, 'Billing Term');
+            case 'enrollment_type':
+                error = validateRequired(value, 'Enrollment Type');
                 break;
             case 'first_reg_date':
                 error = validateRequired(value, 'First Registration Date');
@@ -353,17 +376,19 @@ export default function PartnerProfile() {
             case 'first_reg_amount':
                 error = validateRequired(value, 'First Registration Amount');
                 break;
-            case 'first_payment_amount':
-                error = validateRequired(value, 'First Payment Amount');
+            case 'first_reg_payment':
+                error = validateRequired(value, 'First Registration Payment');
                 break;
-            case 'first_reg_amount_2':
-                error = validateRequired(value, 'First Registration Amount 2');
+            case 'first_reg_payment_2':
+                if (formData.installment_type == 1) {
+                    error = validateRequired(value, 'First Registration Payment 2');
+                }
                 break;
             case 'recurring_amount':
                 error = validateRequired(value, 'Recurring Amount');
                 break;
-            case 'total_amount':
-                error = validateRequired(value, 'Total Amount');
+            case 'total_paid_amount':
+                // Optional
                 break;
             case 'subscription_start_date':
                 error = validateRequired(value, 'Subscription Start Date');
@@ -380,30 +405,29 @@ export default function PartnerProfile() {
                 }
                 break;
             case 'subscription_end_date':
-                error = validateRequired(value, 'Subscription End Date');
-                if (!error && isNaN(new Date(value).getTime())) {
-                    error = 'Invalid Date';
-                }
-                // Also validate against start date if start date exists
-                if (!error && formData.subscription_start_date && value) {
-                    const startDate = new Date(formData.subscription_start_date);
-                    const endDate = new Date(value);
-                    if (endDate <= startDate) {
-                        error = 'Subscription End Date must be after Start Date';
+                if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME) {
+                    error = validateRequired(value, 'Subscription End Date');
+                    if (!error && isNaN(new Date(value).getTime())) {
+                        error = 'Invalid Date';
+                    }
+                    // Also validate against start date if start date exists
+                    if (!error && formData.subscription_start_date && value) {
+                        const startDate = new Date(formData.subscription_start_date);
+                        const endDate = new Date(value);
+                        if (endDate <= startDate) {
+                            error = 'Subscription End Date must be after Start Date';
+                        }
                     }
                 }
                 break;
             case 'expiry_date':
-                error = validateRequired(value, 'Expiry Date');
-                if (!error && isNaN(new Date(value).getTime())) {
-                    error = 'Invalid Date';
-                }
+                // Optional
                 break;
             case 'termination_date':
-                error = validateRequired(value, 'Termination Date');
-                if (!error && isNaN(new Date(value).getTime())) {
-                    error = 'Invalid Date';
-                }
+                // Optional
+                break;
+            case 'subscription_status':
+                error = validateRequired(value, 'Status');
                 break;
             default:
                 break;
@@ -516,19 +540,34 @@ export default function PartnerProfile() {
         try {
             // Validate all required subscription fields
             const requiredSubscriptionFields = {
-                partner_url: formData.partner_url,
-                billing_term: formData.billing_term,
+                partner_type: formData.partner_type,
+                enrollment_type: formData.enrollment_type,
                 first_reg_date: formData.first_reg_date,
                 first_reg_amount: formData.first_reg_amount,
-                first_payment_amount: formData.first_payment_amount,
-                first_reg_amount_2: formData.first_reg_amount_2,
-                recurring_amount: formData.recurring_amount,
-                total_amount: formData.total_amount,
+                first_reg_payment: formData.first_reg_payment,
                 subscription_start_date: formData.subscription_start_date,
-                subscription_end_date: formData.subscription_end_date,
-                expiry_date: formData.expiry_date,
-                termination_date: formData.termination_date
             };
+
+            // Conditional Validation
+            const isReferral = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.REFERRAL;
+            const isFounding = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.FOUNDING;
+            const isExecutive = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE;
+            const isFoundingOrExecutive = isFounding || isExecutive;
+            const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN;
+
+            // Recurring Amount is required only for Founding/Executive on Payment Plan
+            if (isFoundingOrExecutive && isPaymentPlan) {
+                requiredSubscriptionFields.recurring_amount = formData.recurring_amount;
+            }
+            if (formData.installment_type == 1) {
+                requiredSubscriptionFields.first_reg_payment_2 = formData.first_reg_payment_2;
+            }
+
+            if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME) {
+                requiredSubscriptionFields.subscription_end_date = formData.subscription_end_date;
+            }
+
+            requiredSubscriptionFields.subscription_status = formData.subscription_status;
 
             const fieldErrors = {};
             Object.entries(requiredSubscriptionFields).forEach(([field, value]) => {
@@ -550,24 +589,28 @@ export default function PartnerProfile() {
 
             // If there are validation errors, show them and stop submission
             if (Object.keys(fieldErrors).length > 0) {
-                toast.error('Please fill in all required fields correctly');
+                console.log(fieldErrors);
+                // const firstError = Object.values(fieldErrors)[0];
+                // toast.error(firstError);
                 return;
             }
 
             const subscriptionPayload = {
                 partner_id: id,
-                partner_url: formData.partner_url,
-                billing_term: formData.billing_term,
+                partner_type: formData.partner_type,
+                enrollment_type: formData.enrollment_type,
+                installment_type: formData.installment_type,
                 first_reg_date: formData.first_reg_date,
                 first_reg_amount: formData.first_reg_amount,
-                first_payment_amount: formData.first_payment_amount,
-                first_reg_amount_2: formData.first_reg_amount_2,
-                recurring_amount: formData.recurring_amount,
-                total_amount: formData.total_amount,
+                first_reg_payment: formData.first_reg_payment,
+                first_reg_payment_2: formData.first_reg_payment_2,
+                monthly_platform_fee: formData.recurring_amount,
+                total_paid_amount: formData.total_paid_amount,
                 subscription_start_date: formData.subscription_start_date,
                 subscription_end_date: formData.subscription_end_date,
                 expiry_date: formData.expiry_date,
-                termination_date: formData.termination_date
+                termination_date: formData.termination_date,
+                status: formData.subscription_status
             };
 
             await saveSubscription(subscriptionPayload);
@@ -653,7 +696,7 @@ export default function PartnerProfile() {
 
             // If there are validation errors, show them and stop submission
             if (Object.keys(fieldErrors).length > 0) {
-                toast.error('Please fill in all required fields');
+                // toast.error('Please fill in all required fields');
                 return;
             }
 

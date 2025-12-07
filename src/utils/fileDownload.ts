@@ -133,9 +133,7 @@ export const handleFileDownload = async (
 
         downloadBlob(blob, fileName);
 
-        if (showSuccess) {
-            toast.success("Download started");
-        }
+
 
         onSuccess?.();
     } catch (error) {
@@ -146,9 +144,7 @@ export const handleFileDownload = async (
             try {
                 downloadFromUrl(filePath, fileName);
 
-                if (showSuccess) {
-                    toast.success("Download started");
-                }
+
 
                 onSuccess?.();
             } catch (fallbackError) {

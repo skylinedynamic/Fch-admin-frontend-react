@@ -2,7 +2,8 @@ import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config/relations';
-import { PARTNER_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+import { PARTNER_INFORMATION_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 
@@ -167,14 +168,18 @@ export default function PartnerInformationSection({
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.partner_type}
-                        options={PARTNER_TYPE_OPTIONS}
+                        options={PARTNER_INFORMATION_TYPE_OPTIONS}
                         onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select partner type..."
                         className={`w-100 ${errors.partner_type ? 'p-invalid' : ''}`}
                     />
-                    {errors.partner_type && <div className="invalid-feedback d-block">{errors.partner_type}</div>}
+                    {errors.partner_type && (
+                        <div className="invalid-feedback" style={{ display: 'block' }}>
+                            {errors.partner_type}
+                        </div>
+                    )}
                 </div>
             </div>
 
