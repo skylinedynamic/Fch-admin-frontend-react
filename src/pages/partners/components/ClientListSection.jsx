@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowers } from '../../../modules/partner/services';
 import { toast } from 'react-toastify';
+import { Skeleton } from 'primereact/skeleton';
 
 export default function ClientListSection() {
     const { id } = useParams();
@@ -42,7 +43,7 @@ export default function ClientListSection() {
                 per_page: perPage,
                 sort_field: sortField,
                 sort_order: sortOrder,
-                filters: filters  // Add filters to API call
+                filters: filters
             });
 
             if (response && response.status) {
@@ -65,10 +66,10 @@ export default function ClientListSection() {
     };
 
     useEffect(() => {
-        if (id && Object.keys(filters).length > 0) {  // Only load when filters are initialized
+        if (id && Object.keys(filters).length > 0) {
             loadBorrowers();
         }
-    }, [id, page, perPage, sortField, sortOrder, filters]);  // Add filters to dependencies
+    }, [id, page, perPage, sortField, sortOrder, filters]);
 
     const onPage = (event) => {
         setPerPage(event.rows);
@@ -85,13 +86,20 @@ export default function ClientListSection() {
         setPage(1);
     };
 
+    // Skeleton Logic
+    const showSkeleton = loading && borrowers.length === 0;
+    const displayData = showSkeleton ? Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton_${i}` })) : borrowers;
+
+    const renderBody = (rowData, field) => {
+        if (showSkeleton) return <Skeleton width="100%" />;
+        return rowData[field];
+    };
+
     return (
         <div className="table-responsive table-card mt-1">
             <DataTable
-                scrollable
-                scrollHeight="510px"
-                value={borrowers}
-                paginator
+                value={displayData}
+                paginator={!showSkeleton}
                 lazy
                 totalRecords={totalRecords}
                 first={(page - 1) * perPage}
@@ -115,7 +123,7 @@ export default function ClientListSection() {
                 dataKey="id"
                 responsiveLayout="scroll"
                 className="p-datatable-sm"
-                loading={loading}
+                loading={false} // Disable built-in loading to show Skeleton
                 emptyMessage="No clients found"
             >
                 <Column
@@ -126,6 +134,7 @@ export default function ClientListSection() {
                     showFilterMatchModes
                     filterPlaceholder="Search by name"
                     style={{ minWidth: '150px' }}
+                    body={(r) => renderBody(r, 'full_name')}
                 />
                 <Column
                     field="business_name"
@@ -135,24 +144,27 @@ export default function ClientListSection() {
                     showFilterMatchModes
                     filterPlaceholder="Search by company"
                     style={{ minWidth: '200px' }}
+                    body={(r) => renderBody(r, 'business_name')}
                 />
                 <Column
                     field="business_email"
-                    header="Email Address"
+                    header="Email"
                     sortable
                     filter
                     showFilterMatchModes
                     filterPlaceholder="Search by email"
                     style={{ minWidth: '200px' }}
+                    body={(r) => renderBody(r, 'business_email')}
                 />
                 <Column
                     field="business_phone"
-                    header="Phone Number"
+                    header="Phone"
                     sortable
                     filter
                     showFilterMatchModes
                     filterPlaceholder="Search by phone"
                     style={{ minWidth: '150px' }}
+                    body={(r) => renderBody(r, 'business_phone')}
                 />
                 <Column
                     field="business_start_date"
@@ -162,6 +174,7 @@ export default function ClientListSection() {
                     showFilterMatchModes
                     filterPlaceholder="Search by date"
                     style={{ minWidth: '150px' }}
+                    body={(r) => renderBody(r, 'business_start_date')}
                 />
             </DataTable>
         </div>
