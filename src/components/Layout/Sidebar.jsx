@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
+import { useAuthStore } from '../../store/auth/authStore'
 import faviconImg from '../../../assets/images/Favicon.png'
 import logoImg from '../../../assets/images/logo.png'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
@@ -39,7 +40,7 @@ const menuItems = [
     permission: 'view contacts',
   },
   {
-    to: '/under-construction/clients',
+    to: '/clients',
     icon: 'las la-user-friends',
     label: 'Clients',
     permission: 'view clients',
@@ -123,6 +124,10 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false)
   const { hasPermission } = usePermissions()
 
+  // Get current user and check if is_host
+  const currentUser = useAuthStore((state) => state.user)
+  const isHost = currentUser?.is_host === 1
+
   useEffect(() => {
     const onResize = () => {
       const mobile = window.innerWidth < 992
@@ -146,10 +151,44 @@ export default function Sidebar() {
     }
   }
 
-  // Filter menu items based on permissions
+  // Filter menu items based on permissions AND special rules
   const visibleMenuItems = useMemo(() => {
-    return menuItems.filter((item) => hasPermission(item.permission))
-  }, [hasPermission])
+    const filtered = menuItems.filter((item) => {
+      // Safety check: ensure hasPermission is a function
+      if (typeof hasPermission !== 'function') {
+        console.warn('⚠️ hasPermission is not a function, showing all menus')
+        return true
+      }
+
+      // Check if user has the required permission
+      const hasRequiredPermission = hasPermission(item.permission)
+
+      if (!hasRequiredPermission) {
+        // User doesn't have permission - hide this menu
+        return false
+      }
+
+      // Special rule: Partners menu only visible if user is host (is_host === 1)
+      if (item.label === 'Partners' && !isHost) {
+        console.log(`🔒 Hiding Partners menu: user is not host (is_host: ${currentUser?.is_host})`)
+        return false
+      }
+
+      // All checks passed - show this menu
+      return true
+    })
+
+    // Debug log (remove after testing)
+    console.log('📋 Sidebar Menu Filter:', {
+      userType: currentUser?.user_type,
+      isHost: isHost,
+      totalMenus: menuItems.length,
+      visibleMenus: filtered.length,
+      hiddenMenus: menuItems.filter(item => !filtered.includes(item)).map(m => m.label)
+    })
+
+    return filtered
+  }, [hasPermission, isHost, currentUser])
 
   return (
     <div className={menuClass}>
@@ -198,7 +237,21 @@ export default function Sidebar() {
           <div className="dropdown-divider"></div>
           <a className="dropdown-item" href="#"><i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Balance : <b>$5971.67</b></span></a>
           <a className="dropdown-item" href="#"><span className="badge bg-success-subtle text-success mt-1 float-end">New</span><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a>
-          <a className="dropdown-item" href="#"><i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span></a>
+          <a
+            className="dropdown-item"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              import('../../lib/auth').then(({ logout, clearAuth }) => {
+                logout().catch(() => { }).finally(() => {
+                  clearAuth();
+                  window.location.href = '/login';
+                });
+              });
+            }}
+          >
+            <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span>
+          </a>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/apiClient'
+import { apiClient } from '../../lib/http/apiClient'
 import type { Borrower } from './types'
 
 export const fetchBorrowers = async (): Promise<Borrower[]> => {
@@ -24,3 +24,14 @@ export const updateBorrower = async (id: string | number, payload: Partial<Borro
 export const deleteBorrower = async (id: string | number): Promise<void> => {
   await apiClient.delete(`/borrowers/${id}`)
 }
+
+export const fetchAllBorrowers = async (payload: any = {}) => {
+  const { data } = await apiClient.post('/common/borrowers/fetch-all-borrowers', payload);
+  return data;
+};
+
+// Get all users (for dropdowns like sales person filter)
+export const getAllUsers = async () => {
+  const { data } = await apiClient.post('/common/borrowers/get-all-users');
+  return data;
+};

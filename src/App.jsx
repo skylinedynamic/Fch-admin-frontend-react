@@ -17,10 +17,19 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
 import PartnerProfile from './pages/partners/PartnerProfile.jsx';
+import Clients from './pages/clients/Clients.jsx';
 
 export default function App() {
   useEffect(() => {
+    // Check session immediately on app load
     checkSession();
+
+    // Optional: Set up periodic session validation (every 5 minutes)
+    const intervalId = setInterval(() => {
+      checkSession();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -47,6 +56,11 @@ export default function App() {
             <Route element={<PermissionRoute permission="view employees" />}>
               <Route path="employees" element={<Employees />} />
               <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+            </Route>
+
+            {/* Clients Routes - requires 'view clients' permission */}
+            <Route element={<PermissionRoute permission="view clients" />}>
+              <Route path="clients" element={<Clients />} />
             </Route>
 
             {/* Users Routes - requires 'view users' permission */}
