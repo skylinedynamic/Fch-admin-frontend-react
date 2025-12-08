@@ -27,8 +27,8 @@ export default function ClientListSection() {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_start_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
         setFilters(initial);
@@ -116,8 +116,8 @@ export default function ClientListSection() {
                 globalFilterFields={[
                     'full_name',
                     'business_name',
-                    'business_email',
-                    'business_phone',
+                    'email',
+                    'phone_number',
                     'business_start_date'
                 ]}
                 dataKey="id"
@@ -147,24 +147,24 @@ export default function ClientListSection() {
                     body={(r) => renderBody(r, 'business_name')}
                 />
                 <Column
-                    field="business_email"
+                    field="email"
                     header="Email"
                     sortable
                     filter
                     showFilterMatchModes
                     filterPlaceholder="Search by email"
                     style={{ minWidth: '200px' }}
-                    body={(r) => renderBody(r, 'business_email')}
+                    body={(r) => renderBody(r, 'email')}
                 />
                 <Column
-                    field="business_phone"
+                    field="phone_number"
                     header="Phone"
                     sortable
                     filter
                     showFilterMatchModes
                     filterPlaceholder="Search by phone"
                     style={{ minWidth: '150px' }}
-                    body={(r) => renderBody(r, 'business_phone')}
+                    body={(r) => renderBody(r, 'phone_number')}
                 />
                 <Column
                     field="business_start_date"
