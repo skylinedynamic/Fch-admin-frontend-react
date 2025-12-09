@@ -18,6 +18,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
 import PartnerProfile from './pages/partners/PartnerProfile.jsx';
 import Clients from './pages/clients/Clients.jsx';
+import ClientDetails from './pages/clients/ClientDetails';
 
 export default function App() {
   useEffect(() => {
@@ -61,6 +62,8 @@ export default function App() {
             {/* Clients Routes - requires 'view clients' permission */}
             <Route element={<PermissionRoute permission="view clients" />}>
               <Route path="clients" element={<Clients />} />
+              <Route path="clients/create" element={<ClientDetails />} />
+              <Route path="clients/:id" element={<ClientDetails />} />
             </Route>
 
             {/* Users Routes - requires 'view users' permission */}

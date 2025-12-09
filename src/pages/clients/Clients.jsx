@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -15,6 +15,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 export default function Clients() {
+    const navigate = useNavigate();
     // State for clients
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -455,7 +456,12 @@ export default function Clients() {
                                                         </ul>
                                                     </>
                                                 ) : (
-                                                    <button type="button" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light" disabled>
+                                                    <button
+                                                        type="button"
+                                                        id="primaryActionBtn"
+                                                        className="btn btn-primary fw-medium waves-effect waves-light"
+                                                        onClick={() => navigate('/clients/create')}
+                                                    >
                                                         <i className="ri-add-fill me-1 align-bottom"></i> Add Client
                                                     </button>
                                                 )}
@@ -620,7 +626,16 @@ export default function Clients() {
                                         selection={selectedClients}
                                         onSelectionChange={(e) => setSelectedClients(e.value)}
                                         dataKey="id"
-                                        metaKeySelection={false}
+                                        onRowClick={(e) => {
+                                            // Prevent navigation if clicking on checkbox or selection column
+                                            const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                e.originalEvent.target.closest('.p-selection-column') ||
+                                                e.originalEvent.target.tagName === 'INPUT'; // Fallback for raw inputs
+                                            if (!isCheckbox) {
+                                                navigate(`/clients/${e.data.id}`);
+                                            }
+                                        }}
+                                        // metaKeySelection={false} // Disabled to prevent row click selection
                                         responsiveLayout="scroll"
                                         className="p-datatable-sm"
                                         emptyMessage="No clients found"
