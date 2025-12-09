@@ -169,12 +169,18 @@ export default function ClientDetails() {
         setErrors({}); // Clear previous errors
         setIsLoading(true);
 
+        // Prepare payload
+        const payload = { ...formData };
+        if (payload.city === 'Others') {
+            payload.city = payload.other_city;
+        }
+
         try {
             if (id) {
-                await updateClient(id, formData);
+                await updateClient(id, payload);
                 toast.success("Client updated successfully");
             } else {
-                const response: any = await createClient(formData);
+                const response: any = await createClient(payload);
                 toast.success("Client created successfully");
 
                 // Check if response has 'data' property
