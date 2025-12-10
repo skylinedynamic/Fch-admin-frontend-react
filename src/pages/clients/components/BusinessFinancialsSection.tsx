@@ -5,9 +5,24 @@ import type { Client } from '../../../modules/client/types';
 interface BusinessFinancialsSectionProps {
     formData: Client;
     handleInputChange: (e: any) => void;
+    isLoading?: boolean;
 }
 
-export default function BusinessFinancialsSection({ formData, handleInputChange }: BusinessFinancialsSectionProps) {
+export default function BusinessFinancialsSection({ formData, handleInputChange, isLoading = false }: BusinessFinancialsSectionProps) {
+    if (isLoading) {
+        return (
+            <div className="row g-3">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div className="col-lg-4 mb-3" key={i}>
+                        <div className="placeholder-glow">
+                            <span className="placeholder col-5 mb-2"></span>
+                            <span className="placeholder col-12 p-3"></span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
     const currencyOptions = [
         { label: 'USD', value: 'USD' },
         { label: 'EUR', value: 'EUR' },

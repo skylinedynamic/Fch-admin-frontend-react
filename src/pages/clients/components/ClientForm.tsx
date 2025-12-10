@@ -3,7 +3,7 @@ import ClientInfoSection from './ClientInfoSection';
 import BusinessFinancialsSection from './BusinessFinancialsSection';
 import DocumentChecklistSection from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
-import type { Client } from '../../../modules/client/types';
+import type { Client, ChecklistItem } from '../../../modules/client/types';
 
 interface ClientFormProps {
     activeTab: string;
@@ -13,6 +13,9 @@ interface ClientFormProps {
     countries: { label: string; value: string }[];
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
+    checklist?: ChecklistItem[];
+    handleChecklistChange?: (itemId: number) => void;
+    isLoading?: boolean;
 }
 
 export default function ClientForm({
@@ -22,7 +25,10 @@ export default function ClientForm({
     handleInputChange,
     countries,
     states,
-    cities
+    cities,
+    checklist,
+    handleChecklistChange,
+    isLoading
 }: ClientFormProps) {
     return (
         <div className="tab-content">
@@ -36,6 +42,7 @@ export default function ClientForm({
                         countries={countries}
                         states={states}
                         cities={cities}
+                        isLoading={isLoading}
                     />
                 </div>
             )}
@@ -46,6 +53,7 @@ export default function ClientForm({
                     <BusinessFinancialsSection
                         formData={formData}
                         handleInputChange={handleInputChange}
+                        isLoading={isLoading}
                     />
                 </div>
             )}
@@ -53,7 +61,11 @@ export default function ClientForm({
             {/* Document Checklist Tab */}
             {activeTab === 'documentChecklist' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <DocumentChecklistSection />
+                    <DocumentChecklistSection
+                        checklist={checklist || []}
+                        handleChecklistChange={handleChecklistChange || (() => { })}
+                        isLoading={isLoading}
+                    />
                 </div>
             )}
 

@@ -3,8 +3,8 @@ import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClientForm from './components/ClientForm';
-import { createClient, updateClient, fetchClientById } from '../../modules/client/services';
-import type { Client } from '../../modules/client/types';
+import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist } from '../../modules/client/services';
+import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config/locations';
 
 export default function ClientDetails() {
@@ -13,7 +13,10 @@ export default function ClientDetails() {
     const location = useLocation();
     const [activeTab, setActiveTab] = useState('personalDetails');
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+    const [originalChecklist, setOriginalChecklist] = useState<ChecklistItem[]>([]); // To detect changes if needed
 
     // Initial form state
     const [formData, setFormData] = useState<Client>({
@@ -21,6 +24,7 @@ export default function ClientDetails() {
         first_name: '',
         last_name: '',
         phone_number: '',
+        country_code: '+1',
         email: '',
         signup_id: '',
         website: '',
@@ -106,31 +110,86 @@ export default function ClientDetails() {
 
     // Fetch client data if id exists
     useEffect(() => {
-        const fetchClient = async () => {
+        const loadData = async () => {
             if (!id) return;
 
             setIsLoading(true);
             try {
-                const response: any = await fetchClientById(id);
-                if (response) {
-                    // Check if response has 'data' property (Laravel Resource format)
-                    const clientData = response.data || response;
-
-                    setFormData(prev => ({
-                        ...prev,
-                        ...clientData,
-                    }));
-                }
+                // Fetch both in parallel
+                await Promise.all([fetchClient(), fetchChecklist()]);
             } catch (error) {
-                console.error("Failed to fetch client details", error);
-                toast.error("Failed to load client details");
+                console.error("Error loading data", error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchClient();
+        const fetchClient = async () => {
+            try {
+                const response: any = await fetchClientById(id as string);
+                if (response) {
+                    // Check if response has 'data' property (Laravel Resource format)
+                    const clientData = response.data || response;
+
+                    // Logic to handle "Others" city if the fetched city isn't in valid list
+                    let finalCity = clientData.city;
+                    let finalOtherCity = clientData.other_city;
+
+                    if (clientData.country && clientData.state && clientData.city && clientData.city !== 'Others') {
+                        const countryCode = clientData.country;
+                        const stateCode = clientData.state;
+
+                        // Reconstruct logic from useEffect that derived cities
+                        if (locationData[countryCode] && locationData[countryCode].states[stateCode]) {
+                            const validCities = locationData[countryCode].states[stateCode].cities;
+                            if (!validCities.includes(clientData.city)) {
+                                // fetched city is NOT in the accepted list -> it's an "Others" city
+                                finalCity = 'Others';
+                                finalOtherCity = clientData.city;
+                            }
+                        }
+                    }
+
+                    setFormData(prev => ({
+                        ...prev,
+                        ...clientData,
+                        city: finalCity,
+                        other_city: finalOtherCity
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch client details", error);
+                toast.error("Failed to load client details");
+            }
+        };
+
+        const fetchChecklist = async () => {
+            try {
+                const response = await fetchClientChecklist(id as string);
+                if (response && response.data) {
+                    const sortedList = response.data.sort((a: ChecklistItem, b: ChecklistItem) => a.sort_order - b.sort_order);
+                    setChecklist(sortedList);
+                    setOriginalChecklist(JSON.parse(JSON.stringify(sortedList)));
+                }
+            } catch (error) {
+                console.error("Failed to fetch checklist", error);
+            }
+        };
+
+        loadData();
     }, [id]);
+
+    const handleTabChange = (tabInfo: string) => {
+        if (activeTab === tabInfo) return;
+
+        setIsLoading(true);
+        setActiveTab(tabInfo);
+
+        // Simulate loading delay for skeleton check
+        setTimeout(() => {
+            setIsLoading(false);
+        }, 500);
+    };
 
     const handleInputChange = (e: any) => {
         // Handle both standard events and custom objects from our components
@@ -163,23 +222,27 @@ export default function ClientDetails() {
         }
     };
 
+    const handleChecklistChange = (itemId: number) => {
+        setChecklist(prev => prev.map(item =>
+            item.id === itemId ? { ...item, current_status: !item.current_status } : item
+        ));
+    };
+
     const handleSave = async (e: React.FormEvent | React.MouseEvent) => {
         if (e && e.preventDefault) e.preventDefault();
 
         setErrors({}); // Clear previous errors
-        setIsLoading(true);
-
-        // Prepare payload
-        const payload = { ...formData };
-        if (payload.city === 'Others') {
-            payload.city = payload.other_city;
-        }
+        setIsSaving(true);
 
         try {
-            if (id) {
-                await updateClient(id, payload);
-                toast.success("Client updated successfully");
-            } else {
+            if (!id) {
+                // CREATE NEW CLIENT
+                const payload = { ...formData };
+                if (payload.city === 'Others') {
+                    payload.city = payload.other_city;
+                }
+                // Ensure country_code is handled if needed, or rely on formData
+
                 const response: any = await createClient(payload);
                 toast.success("Client created successfully");
 
@@ -192,17 +255,37 @@ export default function ClientDetails() {
                 } else {
                     navigate('/clients');
                 }
+            } else {
+                // UPDATE EXISTING CLIENT
+
+                if (activeTab === 'documentChecklist') {
+                    // SAVE CHECKLIST ONLY
+                    const checkedIds = checklist.filter(item => item.current_status).map(item => item.id);
+                    await saveClientChecklist(id, checkedIds);
+                    toast.success("Document checklist saved successfully");
+                } else if (activeTab === 'documents') {
+                    // Do nothing or maybe valid saving documents logic if needed
+                    // Usually documents are uploaded individually.
+                    toast.info("Please upload documents using the specific upload buttons.");
+                } else {
+                    // SAVE CLIENT DETAILS (Info or Financials)
+                    const payload = { ...formData };
+                    if (payload.city === 'Others') {
+                        payload.city = payload.other_city;
+                    }
+
+                    await updateClient(id, payload);
+                    toast.success("Client updated successfully");
+                }
             }
         } catch (error: any) {
             console.error("Save error:", error);
 
             // Handle backend validation errors
             if (error.response && error.response.data) {
-                const { errors: backendErrors } = error.response.data;
+                const { errors: backendErrors, message } = error.response.data;
 
                 if (backendErrors) {
-                    // Map backend errors to state
-                    // The backend might return array of strings for each field or just a string
                     const mappedErrors: Record<string, string> = {};
                     Object.keys(backendErrors).forEach(key => {
                         mappedErrors[key] = Array.isArray(backendErrors[key])
@@ -210,10 +293,17 @@ export default function ClientDetails() {
                             : backendErrors[key];
                     });
                     setErrors(mappedErrors);
+
+                    // Show a general toast if there are errors, to alert user
+                    toast.error("Please check the form for errors.");
+                } else if (message) {
+                    toast.error(message);
                 }
+            } else {
+                toast.error("An error occurred while saving.");
             }
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
 
@@ -243,9 +333,9 @@ export default function ClientDetails() {
                                     type="button"
                                     className="btn btn-primary w-lg waves-effect"
                                     onClick={handleSave}
-                                    disabled={isLoading}
+                                    disabled={isSaving || isLoading}
                                 >
-                                    {isLoading ? (
+                                    {isSaving ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                                             Saving...
@@ -299,7 +389,7 @@ export default function ClientDetails() {
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === 'personalDetails' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('personalDetails')}
+                                            onClick={() => handleTabChange('personalDetails')}
                                             type="button"
                                             role="tab"
                                         >
@@ -309,7 +399,7 @@ export default function ClientDetails() {
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === 'businessFinancials' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('businessFinancials')}
+                                            onClick={() => handleTabChange('businessFinancials')}
                                             type="button"
                                             role="tab"
                                             disabled={!id}
@@ -320,7 +410,7 @@ export default function ClientDetails() {
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === 'documentChecklist' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('documentChecklist')}
+                                            onClick={() => handleTabChange('documentChecklist')}
                                             type="button"
                                             role="tab"
                                             disabled={!id}
@@ -331,7 +421,7 @@ export default function ClientDetails() {
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === 'documents' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('documents')}
+                                            onClick={() => handleTabChange('documents')}
                                             type="button"
                                             role="tab"
                                             disabled={!id}
@@ -351,6 +441,9 @@ export default function ClientDetails() {
                                     countries={countries}
                                     states={states}
                                     cities={cities}
+                                    checklist={checklist}
+                                    handleChecklistChange={handleChecklistChange}
+                                    isLoading={isLoading}
                                 />
                             </div>
                         </div>

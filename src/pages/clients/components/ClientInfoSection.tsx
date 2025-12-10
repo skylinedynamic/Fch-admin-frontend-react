@@ -23,6 +23,7 @@ interface ClientInfoSectionProps {
     countries: { label: string; value: string }[];
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
+    isLoading?: boolean;
 }
 
 export default function ClientInfoSection({
@@ -31,8 +32,24 @@ export default function ClientInfoSection({
     handleInputChange,
     countries,
     states,
-    cities
+    cities,
+    isLoading = false
 }: ClientInfoSectionProps) {
+    if (isLoading) {
+        return (
+            <div className="row">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                    <div className="col-lg-6 mb-3" key={i}>
+                        <div className="placeholder-glow">
+                            <span className="placeholder col-4 mb-2"></span>
+                            <span className="placeholder col-12 p-3"></span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <form>
             <div className="row">
@@ -108,7 +125,7 @@ export default function ClientInfoSection({
                         {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                     </div>
                 </div>
-                <div className="col-lg-6">
+                {/* <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="signup_id" className="form-label">Signup ID </label>
                         <input
@@ -122,7 +139,7 @@ export default function ClientInfoSection({
                         />
                         {errors.signup_id && <div className="invalid-feedback">{errors.signup_id}</div>}
                     </div>
-                </div>
+                </div> */}
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="website" className="form-label">Website</label>

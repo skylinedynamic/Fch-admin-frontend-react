@@ -1,60 +1,112 @@
 import React from 'react';
+import type { ChecklistItem } from '../../../modules/client/types';
 
-export default function DocumentChecklistSection() {
-    return (
-        <form>
-            <div className="row">
-                <div className="col-lg-6">
-                    <h5 className="card-title mb-3">📑 Universal Required Documents</h5>
-                    <div className="vstack gap-2">
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docApplicationReceived" />
-                            <label className="form-check-label" htmlFor="docApplicationReceived">Application Received</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docBankStatements" />
-                            <label className="form-check-label" htmlFor="docBankStatements">Bank Statements (3 Months)</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docBusinessTaxReturns" />
-                            <label className="form-check-label" htmlFor="docBusinessTaxReturns">Business Tax Returns</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docEINIRS" />
-                            <label className="form-check-label" htmlFor="docEINIRS">EIN / IRS SS-4 Document</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docPnL" />
-                            <label className="form-check-label" htmlFor="docPnL">Profit &amp; Loss / Balance Sheet</label>
+interface DocumentChecklistSectionProps {
+    checklist: ChecklistItem[];
+    handleChecklistChange: (itemId: number) => void;
+    isLoading?: boolean;
+}
+
+export default function DocumentChecklistSection({ checklist, handleChecklistChange, isLoading = false }: DocumentChecklistSectionProps) {
+    if (isLoading) {
+        return (
+            <div className="card shadow-none border">
+                <div className="card-body">
+                    <div className="row mb-3">
+                        <div className="col-12">
+                            <div className="placeholder-glow">
+                                <span className="placeholder col-6"></span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-lg-6">
-                    <h5 className="card-title mb-3">📂 ENTITY &amp; VERIFICATION DOCUMENTS</h5>
-                    <div className="vstack gap-2">
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docDriversLicense" />
-                            <label className="form-check-label" htmlFor="docDriversLicense">Driver's License</label>
+                    <div className="row">
+                        <div className="col-lg-6">
+                            <div className="vstack gap-2">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <div className="placeholder-glow d-flex align-items-center gap-2" key={i}>
+                                        <span className="placeholder col-1" style={{ width: '20px', height: '20px' }}></span>
+                                        <span className="placeholder col-8"></span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docVoidedCheck" />
-                            <label className="form-check-label" htmlFor="docVoidedCheck">Voided Check</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docArticlesOfIncorp" />
-                            <label className="form-check-label" htmlFor="docArticlesOfIncorp">Articles of Incorporation</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docBusinessLicense" />
-                            <label className="form-check-label" htmlFor="docBusinessLicense">Business License (if applicable)</label>
-                        </div>
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="docOwnershipDocs" />
-                            <label className="form-check-label" htmlFor="docOwnershipDocs">Ownership Docs (Operating Agmt / Bylaws)</label>
+                        <div className="col-lg-6">
+                            <div className="vstack gap-2">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <div className="placeholder-glow d-flex align-items-center gap-2" key={i}>
+                                        <span className="placeholder col-1" style={{ width: '20px', height: '20px' }}></span>
+                                        <span className="placeholder col-8"></span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </form>
+        );
+    }
+
+    // Split checklist into two columns
+    // Handle case where checklist might be undefined/null just in case
+    const list = checklist || [];
+    const midPoint = Math.ceil(list.length / 2);
+    const firstColumn = list.slice(0, midPoint);
+    const secondColumn = list.slice(midPoint);
+
+    return (
+        <div className="card shadow-none border">
+            <div className="card-body">
+                <div className="row mb-3">
+                    <div className="col-12">
+                        <h5 className="card-title mb-0">Required Documents Checklist</h5>
+                    </div>
+                </div>
+
+                <div className="row">
+                    <div className="col-lg-6">
+                        <div className="vstack gap-2">
+                            {firstColumn.map(item => (
+                                <div className="form-check" key={item.id}>
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id={`doc_${item.id}`}
+                                        checked={item.current_status}
+                                        onChange={() => handleChecklistChange(item.id)}
+                                    />
+                                    <label className="form-check-label cursor-pointer" htmlFor={`doc_${item.id}`}>
+                                        {item.name}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="col-lg-6">
+                        <div className="vstack gap-2">
+                            {secondColumn.map(item => (
+                                <div className="form-check" key={item.id}>
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id={`doc_${item.id}`}
+                                        checked={item.current_status}
+                                        onChange={() => handleChecklistChange(item.id)}
+                                    />
+                                    <label className="form-check-label cursor-pointer" htmlFor={`doc_${item.id}`}>
+                                        {item.name}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {list.length === 0 && (
+                    <div className="text-center text-muted py-4">
+                        Loading checklist...
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

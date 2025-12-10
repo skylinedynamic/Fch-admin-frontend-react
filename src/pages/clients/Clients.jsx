@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { deleteClients } from '../../modules/client/services';
 import { fetchAllBorrowers, deleteBorrower, getAllUsers } from '../../modules/borrower/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { getUser } from '../../lib/auth';
@@ -341,19 +342,23 @@ export default function Clients() {
         const ids = deleteRows.map(c => c.id);
         try {
             setLoading(true);
-            // Delete each borrower individually
-            for (const id of ids) {
-                await deleteBorrower(id);
-            }
-            toast.success("Clients deleted successfully");
-            setShowDeleteModal(false);
-            setSelectedClients([]);
+            const response = await deleteClients(ids);
 
-            // Trigger reload
-            setAppliedFilters({ ...appliedFilters });
+            if (response && response.status) {
+                toast.success(response.message || "Borrower(s) deleted successfully.");
+                setShowDeleteModal(false);
+                setSelectedClients([]);
+
+                // Trigger reload
+                setAppliedFilters({ ...appliedFilters });
+            } else {
+                toast.error(response?.message || "Failed to delete clients.");
+            }
         } catch (err) {
             console.error('Delete error:', err);
-            toast.error(err.response?.data?.message || 'Failed to delete clients. Please try again.');
+            // Handle error response from axios if available
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients. Please try again.';
+            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }

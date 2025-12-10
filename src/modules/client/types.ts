@@ -4,6 +4,7 @@ export type Client = {
     first_name: string;
     last_name: string;
     phone_number: string;
+    country_code?: string;
     email: string;
     signup_id?: string;
     website?: string;
@@ -45,6 +46,13 @@ export type Client = {
     created_at?: string;
     updated_at?: string;
     [key: string]: any;
+};
+
+export type ChecklistItem = {
+    id: number;
+    name: string;
+    sort_order: number;
+    current_status: boolean;
 };
 
 export type ClientFilterParams = {

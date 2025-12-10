@@ -32,12 +32,24 @@ export const deleteClient = async (id: string | number): Promise<void> => {
     await apiClient.delete(`/common/borrowers/${id}`);
 };
 
-export const deleteClients = async (ids: (string | number)[]): Promise<void> => {
-    await apiClient.post(`/common/borrowers/delete-multiple`, { ids });
+export const deleteClients = async (ids: (string | number)[]): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrowers-multiple-delete`, { ids });
+    return data;
 };
 
-// If there's a specific fetchAll for dropdowns without pagination
 export const fetchAllClients = async () => {
     const { data } = await apiClient.get(`/common/borrowers/all`);
+    return data;
+};
+
+export const fetchClientChecklist = async (borrowerId: string | number): Promise<any> => {
+    const { data } = await apiClient.get(`/common/borrower-documents-checklist/${borrowerId}`);
+    return data;
+};
+
+export const saveClientChecklist = async (borrowerId: string | number, checkedIds: number[]): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrower-documents-checklist/save/${borrowerId}`, {
+        checked_doc_type_ids: checkedIds
+    });
     return data;
 };
