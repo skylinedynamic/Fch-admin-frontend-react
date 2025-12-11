@@ -153,32 +153,6 @@ export default function PersonalInfoSection({
 
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Alternate Mobile</label>
-                    <div className="input-group">
-                        {/* Country Code Display */}
-                        {(employee.country === 'USA' || employee.country === 'Canada') && (
-                            <span className="input-group-text bg-light border">
-                                <span className="me-1">{employee.country === 'USA' ? 'USA' : 'CAN'}</span>
-                                <span className="text-muted">+1</span>
-                            </span>
-                        )}
-                        <input
-                            type="text"
-                            className="form-control"
-                            name="phone_number_2"
-                            value={employee.phone_number_2}
-                            onChange={(e) => {
-                                const formatted = formatPhoneNumber(e.target.value);
-                                onChange({ target: { name: 'phone_number_2', value: formatted } });
-                            }}
-                            placeholder="(555) 555-5555"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="col-lg-6">
-                <div className="mb-3">
                     <label className="form-label">Email <span className="text-danger">*</span></label>
                     <input
                         type="email"
@@ -192,25 +166,6 @@ export default function PersonalInfoSection({
                 </div>
             </div>
 
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">Joining Date</label>
-                    <Flatpickr
-                        options={{ dateFormat: "d M, Y" }}
-                        value={employee.joining_date ? new Date(employee.joining_date) : null}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            onChange({ target: { name: "joining_date", value: dateString } });
-                        }}
-                        className="form-control"
-                        placeholder="Select date"
-                        readOnly
-                    />
-                </div>
-            </div>
         </>
     );
 }

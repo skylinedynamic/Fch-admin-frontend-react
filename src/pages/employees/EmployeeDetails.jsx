@@ -146,8 +146,20 @@ export default function EmployeeDetails() {
     }
   }, [id]);
 
-  // Validation
+  // Validation (Disabled - Relying on backend validation)
   const validateField = (name, value) => {
+    // Client-side validation disabled - backend handles all validation
+    // Clear error for field being edited
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    return null;
+
+    /* COMMENTED OUT - CLIENT-SIDE VALIDATION DISABLED
     let error = null;
     switch (name) {
       case 'first_name':
@@ -187,6 +199,7 @@ export default function EmployeeDetails() {
     }
     setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
+    */
   };
 
   // Handle form changes
@@ -304,6 +317,11 @@ export default function EmployeeDetails() {
 
   // Handle save
   const handleSave = async () => {
+    // Clear previous errors
+    setErrors({});
+
+    // Frontend validation disabled - rely on backend validation
+    /* COMMENTED OUT - CLIENT-SIDE VALIDATION DISABLED
     const newErrors = {};
     let isValid = true;
 
@@ -319,6 +337,7 @@ export default function EmployeeDetails() {
       setErrors(newErrors);
       return;
     }
+    */
 
     try {
       const formData = new FormData();
@@ -363,12 +382,25 @@ export default function EmployeeDetails() {
 
       setTimeout(() => navigate('/employees'), 800);
     } catch (error) {
+      console.error('Save error:', error);
+
+      // Handle backend validation errors
       if (error.response?.data?.errors) {
-        const errors = error.response.data.errors;
-        Object.entries(errors).forEach(([field, errorMsg]) => {
-          toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
+        const backendErrors = error.response.data.errors;
+        const mappedErrors = {};
+
+        Object.keys(backendErrors).forEach(key => {
+          mappedErrors[key] = Array.isArray(backendErrors[key])
+            ? backendErrors[key][0]
+            : backendErrors[key];
         });
+
+        setErrors(mappedErrors);
+
+        // No toast notifications for validation errors - errors shown inline only
+        // toast.error for validation errors removed as per requirement
       } else if (error.response?.data?.message) {
+        // Only show general error message in toast (not field-specific)
         toast.error(error.response.data.message);
       } else {
         toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
