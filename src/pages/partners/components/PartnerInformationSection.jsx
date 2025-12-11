@@ -93,7 +93,6 @@ export default function PartnerInformationSection({
                         placeholder="Enter full name"
                         value={formData.full_name}
                         onChange={handleInputChange}
-                        required
                     />
                     {errors.full_name && <div className="invalid-feedback">{errors.full_name}</div>}
                 </div>
@@ -110,7 +109,6 @@ export default function PartnerInformationSection({
                         placeholder="Enter company name"
                         value={formData.company_name}
                         onChange={handleInputChange}
-                        required
                     />
                     {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
                 </div>
@@ -124,7 +122,7 @@ export default function PartnerInformationSection({
                         {/* Country Code Display */}
                         {(formData.country === 'USA' || formData.country === 'Canada') && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{formData.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
                                 <span className="text-muted">+1</span>
                             </span>
                         )}
@@ -138,7 +136,6 @@ export default function PartnerInformationSection({
                                 const formatted = formatPhoneNumber(e.target.value);
                                 handleInputChange({ target: { name: 'phone_number', value: formatted } });
                             }}
-                            required
                         />
                         {errors.phone_number && <div className="invalid-feedback">{errors.phone_number}</div>}
                     </div>
@@ -156,7 +153,6 @@ export default function PartnerInformationSection({
                         placeholder="Enter email address"
                         value={formData.email}
                         onChange={handleInputChange}
-                        required
                     />
                     {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                 </div>
@@ -173,11 +169,12 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select partner type..."
-                        className={`w-100 ${errors.partner_type ? 'p-invalid' : ''}`}
+                        className={`w-100 ${errors.partner_type || errors.partner_type_id ? 'p-invalid' : ''}`}
                     />
-                    {errors.partner_type && (
-                        <div className="invalid-feedback" style={{ display: 'block' }}>
-                            {errors.partner_type}
+                    {/* Partner Type Error Handling */}
+                    {(errors.partner_type || errors.partner_type_id) && (
+                        <div className="invalid-feedback d-block">
+                            {errors.partner_type || errors.partner_type_id}
                         </div>
                     )}
                 </div>
@@ -189,14 +186,13 @@ export default function PartnerInformationSection({
                     <label className="form-label">Address <span className="text-danger">*</span></label>
                     <input
                         type="text"
-                        className={`form-control ${errors.address_line_1 ? 'is-invalid' : ''}`}
+                        className={`form-control ${errors.address_line_1 || errors.address ? 'is-invalid' : ''}`}
                         name="address_line_1"
                         placeholder="Enter address"
                         value={formData.address_line_1}
                         onChange={handleInputChange}
-                        required
                     />
-                    {errors.address_line_1 && <div className="invalid-feedback">{errors.address_line_1}</div>}
+                    {(errors.address_line_1 || errors.address) && <div className="invalid-feedback d-block">{errors.address_line_1 || errors.address}</div>}
                 </div>
             </div>
 
@@ -211,9 +207,9 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         placeholder="Select Country"
                         filter
-                        className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
+                        className={`w-100 ${errors.country || errors.country_id ? 'p-invalid' : ''}`}
                     />
-                    {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
+                    {(errors.country || errors.country_id) && <div className="invalid-feedback d-block">{errors.country || errors.country_id}</div>}
                 </div>
             </div>
 
@@ -228,10 +224,10 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         placeholder="Select State"
                         filter
-                        className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
+                        className={`w-100 ${errors.state || errors.state_id ? 'p-invalid' : ''}`}
                         disabled={!formData.country}
                     />
-                    {errors.state && <div className="invalid-feedback d-block">{errors.state}</div>}
+                    {(errors.state || errors.state_id) && <div className="invalid-feedback d-block">{errors.state || errors.state_id}</div>}
                 </div>
             </div>
 
@@ -246,10 +242,10 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         placeholder="Select City"
                         filter
-                        className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
+                        className={`w-100 ${errors.city || errors.city_id ? 'p-invalid' : ''}`}
                         disabled={!formData.state}
                     />
-                    {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
+                    {(errors.city || errors.city_id) && <div className="invalid-feedback d-block">{errors.city || errors.city_id}</div>}
                 </div>
             </div>
 
@@ -265,7 +261,6 @@ export default function PartnerInformationSection({
                             placeholder="Enter city name"
                             value={formData.other_city || ''}
                             onChange={handleInputChange}
-                            required
                         />
                         {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
                     </div>
@@ -336,7 +331,7 @@ export default function PartnerInformationSection({
                         {/* Country Code Display */}
                         {(formData.country === 'USA' || formData.country === 'Canada') && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{formData.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
                                 <span className="text-muted">+1</span>
                             </span>
                         )}

@@ -52,6 +52,7 @@ export default function ClientForm({
                 <div className="tab-pane active show" role="tabpanel">
                     <BusinessFinancialsSection
                         formData={formData}
+                        errors={errors}
                         handleInputChange={handleInputChange}
                         isLoading={isLoading}
                     />

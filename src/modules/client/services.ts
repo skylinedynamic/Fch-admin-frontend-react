@@ -53,3 +53,38 @@ export const saveClientChecklist = async (borrowerId: string | number, checkedId
     });
     return data;
 };
+
+// Fetch borrower stats (for list page)
+export const fetchBorrowerStats = async (partnerId?: string | number): Promise<any> => {
+    const endpoint = partnerId
+        ? `/common/borrowers-stats/${partnerId}`
+        : `/common/borrowers-stats`;
+    const { data } = await apiClient.post(endpoint);
+    return data;
+};
+
+// Fetch borrower profile stats details (for detail page)
+export const fetchBorrowerProfileStats = async (borrowerId: string | number): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrowers-profile-states-details-count/${borrowerId}`);
+    return data;
+};
+
+// Fetch borrower documents
+export const fetchBorrowerDocuments = async (borrowerId: string | number): Promise<any> => {
+    const { data } = await apiClient.post(`/common/borrowers-documents/${borrowerId}`);
+    return data;
+};
+
+// Download borrower document
+export const downloadBorrowerDocument = async (documentId: string | number): Promise<any> => {
+    const response = await apiClient.get(`/common/borrowers-documents/download/${documentId}`, {
+        responseType: 'blob'
+    });
+    return response;
+};
+
+// Fetch all users for borrower module
+export const fetchBorrowerUsers = async (): Promise<any> => {
+    const { data } = await apiClient.post('/common/borrowers-get-all-users');
+    return data;
+};

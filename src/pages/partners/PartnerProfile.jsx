@@ -326,6 +326,7 @@ export default function PartnerProfile() {
     const validateField = (name, value) => {
         let error = null;
         switch (name) {
+            /* Frontend validation disabled for these fields
             case 'full_name':
             case 'company_name':
             case 'country':
@@ -338,15 +339,19 @@ export default function PartnerProfile() {
             case 'city':
                 error = validateRequired(value, 'city');
                 break;
+            */
             case 'other_city':
                 // Only validate other_city if city is set to "Others"
                 if (formData.city === 'Others') {
                     error = validateRequired(value, 'Other City');
                 }
                 break;
+            /*
             case 'address_line_1':
                 error = validateRequired(value, 'Address');
                 break;
+            */
+            /*
             case 'email':
                 if (!value || (typeof value === 'string' && value.trim() === '')) {
                     error = 'Email is required.';
@@ -357,6 +362,7 @@ export default function PartnerProfile() {
             case 'phone_number':
                 error = validatePhone(value);
                 break;
+            */
             case 'status':
                 error = validateRequired(value, 'Status');
                 break;
@@ -479,7 +485,7 @@ export default function PartnerProfile() {
                 countryCode = '+1';
             }
             setFormData(prev => ({ ...prev, country: value, country_code: countryCode, state: '', city: '', other_city: '' }));
-            validateField('country', value);
+            setErrors(prev => ({ ...prev, country: null }));
             if (locationData[value]) {
                 const stateOptions = Object.keys(locationData[value].states).map((key) => ({
                     label: locationData[value].states[key].name,
@@ -493,7 +499,7 @@ export default function PartnerProfile() {
             }
         } else if (name === 'state') {
             setFormData(prev => ({ ...prev, state: value, city: '', other_city: '' }));
-            validateField('state', value);
+            setErrors(prev => ({ ...prev, state: null }));
             const countryCode = formData.country;
             if (countryCode && locationData[countryCode] && locationData[countryCode].states[value]) {
                 const cityList = locationData[countryCode].states[value].cities;
@@ -509,10 +515,10 @@ export default function PartnerProfile() {
             } else {
                 setFormData(prev => ({ ...prev, city: value }));
             }
-            validateField('city', value);
+            setErrors(prev => ({ ...prev, city: null }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
-            validateField(name, value);
+            setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
@@ -527,7 +533,7 @@ export default function PartnerProfile() {
             agentPhone: selectedUser?.phone_number || ''
         }));
         // Validate agent field
-        validateField('agent', agentId);
+        setErrors(prev => ({ ...prev, agent: null }));
     };
 
     // Handle subscription save
@@ -637,7 +643,7 @@ export default function PartnerProfile() {
                 Object.entries(backendErrors).forEach(([field, errorMsg]) => {
                     const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
                     errorObj[field] = message;
-                    toast.error(message);
+                    // toast.error(message);
                 });
                 setErrors(prev => ({ ...prev, ...errorObj }));
             } else if (error.response?.data?.message) {
@@ -666,25 +672,9 @@ export default function PartnerProfile() {
                     status: formData.status,
                     agent: formData.agent
                 };
-            } else {
-                // Validate partner information fields for other tabs
-                requiredFields = {
-                    full_name: formData.full_name,
-                    company_name: formData.company_name,
-                    phone_number: formData.phone_number,
-                    email: formData.email,
-                    partner_type: formData.partner_type,
-                    address_line_1: formData.address_line_1,
-                    country: formData.country,
-                    state: formData.state,
-                    city: formData.city
-                };
-
-                // If city is "Others", also validate other_city
-                if (formData.city === 'Others') {
-                    requiredFields.other_city = formData.other_city;
-                }
             }
+            // Frontend validation for Partner Information removed to rely on backend validation
+
 
             const fieldErrors = {};
             Object.entries(requiredFields).forEach(([field, value]) => {
@@ -783,10 +773,14 @@ export default function PartnerProfile() {
         } catch (error) {
             console.error('Save error:', error);
             if (error.response?.data?.errors) {
-                const errors = error.response.data.errors;
-                Object.entries(errors).forEach(([field, errorMsg]) => {
-                    toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
+                const backendErrors = error.response.data.errors;
+                const newErrors = {};
+                Object.entries(backendErrors).forEach(([field, errorMsg]) => {
+                    const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
+                    // toast.error(message);
+                    newErrors[field] = message;
                 });
+                setErrors(newErrors);
             } else if (error.response?.data?.message) {
                 toast.error(error.response.data.message);
             } else {

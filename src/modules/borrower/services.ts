@@ -32,6 +32,6 @@ export const fetchAllBorrowers = async (payload: any = {}) => {
 
 // Get all users (for dropdowns like sales person filter)
 export const getAllUsers = async () => {
-  const { data } = await apiClient.post('/common/borrowers/get-all-users');
+  const { data } = await apiClient.post('/common/borrowers-get-all-users');
   return data;
 };

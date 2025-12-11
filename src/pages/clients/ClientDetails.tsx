@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClientForm from './components/ClientForm';
-import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist } from '../../modules/client/services';
+import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config/locations';
 
@@ -17,6 +17,17 @@ export default function ClientDetails() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [originalChecklist, setOriginalChecklist] = useState<ChecklistItem[]>([]); // To detect changes if needed
+
+    // Profile stats state
+    const [profileStats, setProfileStats] = useState({
+        total_meetings: 0,
+        total_invoices: 0,
+        enrollment_type: 'N/A',
+        total_prequalification: 0,
+        total_tickets: 0,
+        total_documents: 0
+    });
+    const [statsLoading, setStatsLoading] = useState(false);
 
     // Initial form state
     const [formData, setFormData] = useState<Client>({
@@ -116,7 +127,7 @@ export default function ClientDetails() {
             setIsLoading(true);
             try {
                 // Fetch both in parallel
-                await Promise.all([fetchClient(), fetchChecklist()]);
+                await Promise.all([fetchClient(), fetchChecklist(), fetchProfileStats()]);
             } catch (error) {
                 console.error("Error loading data", error);
             } finally {
@@ -173,6 +184,27 @@ export default function ClientDetails() {
                 }
             } catch (error) {
                 console.error("Failed to fetch checklist", error);
+            }
+        };
+
+        const fetchProfileStats = async () => {
+            try {
+                setStatsLoading(true);
+                const response = await fetchBorrowerProfileStats(id as string);
+                if (response && response.status && response.data) {
+                    setProfileStats({
+                        total_meetings: response.data.total_meetings || 0,
+                        total_invoices: response.data.total_invoices || 0,
+                        enrollment_type: response.data.enrollment_type || 'N/A',
+                        total_prequalification: response.data.total_prequalification || 0,
+                        total_tickets: response.data.total_tickets || 0,
+                        total_documents: response.data.total_documents || 0
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile stats", error);
+            } finally {
+                setStatsLoading(false);
             }
         };
 
@@ -279,7 +311,7 @@ export default function ClientDetails() {
                 }
             }
         } catch (error: any) {
-            console.error("Save error:", error);
+            console.error("Save erroraaaa:", error);
 
             // Handle backend validation errors
             if (error.response && error.response.data) {
@@ -294,13 +326,14 @@ export default function ClientDetails() {
                     });
                     setErrors(mappedErrors);
 
+
                     // Show a general toast if there are errors, to alert user
-                    toast.error("Please check the form for errors.");
+                    // toast.error("Please check the form for errors.");
                 } else if (message) {
-                    toast.error(message);
+                    // toast.error(message);
                 }
             } else {
-                toast.error("An error occurred while saving.");
+                // toast.error("An error occurred while saving.");
             }
         } finally {
             setIsSaving(false);
@@ -351,35 +384,72 @@ export default function ClientDetails() {
                     </div>
                 </div>
 
-                {/* Metrics Strip (Only show if editing or desired) */}
-                <div className="row pt-1">
-                    <div className="col-12">
-                        <div className="d-flex flex-wrap metrics-strip justify-content-center">
-                            {/* Metrics placeholders as per original design */}
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-calendar-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Meetings</div>
-                                    <div className="metrics-value fw-semibold">0</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-bill-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Invoiced</div>
-                                    <div className="metrics-value fw-semibold">0</div>
-                                </div>
-                            </a>
-                            <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
-                                <i className="ri-refresh-line me-2 text-warning fs-4"></i>
-                                <div className="metrics-content">
-                                    <div className="metrics-label text-muted">Subscriptions</div>
-                                    <div className="metrics-value fw-semibold">N/A</div>
-                                </div>
-                            </a>
+                {/* Metrics Strip (Only show if editing) */}
+                {id && (
+                    <div className="row pt-1">
+                        <div className="col-12">
+                            <div className="d-flex flex-wrap metrics-strip justify-content-center">
+                                {statsLoading ? (
+                                    <>
+                                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                                            <div key={`skeleton-${i}`} className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative px-3 py-2 shadow-sm">
+                                                <div className="placeholder-glow w-100">
+                                                    <span className="placeholder col-12 mb-1"></span>
+                                                    <span className="placeholder col-8"></span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-calendar-line me-2 text-warning fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Meetings</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.total_meetings}</div>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-bill-line me-2 text-warning fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Invoiced</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.total_invoices}</div>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-refresh-line me-2 text-warning fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Subscriptions</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.enrollment_type}</div>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-check-double-line me-2 text-primary fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Prequalification</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.total_prequalification}</div>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-ticket-line me-2 text-info fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Tickets</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.total_tickets}</div>
+                                            </div>
+                                        </a>
+                                        <a href="#" className="d-flex align-items-center border rounded bg-white metrics-item me-3 mb-3 position-relative text-decoration-none px-3 py-2 shadow-sm">
+                                            <i className="ri-file-text-line me-2 text-success fs-4"></i>
+                                            <div className="metrics-content">
+                                                <div className="metrics-label text-muted">Documents</div>
+                                                <div className="metrics-value fw-semibold">{profileStats.total_documents}</div>
+                                            </div>
+                                        </a>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 <div className="row">
                     <div className="col-xxl-8">

@@ -5,7 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { deleteClients } from '../../modules/client/services';
+import { deleteClients, fetchBorrowerStats } from '../../modules/client/services';
 import { fetchAllBorrowers, deleteBorrower, getAllUsers } from '../../modules/borrower/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { getUser } from '../../lib/auth';
@@ -140,29 +140,42 @@ export default function Clients() {
         loadAssignedUsers();
     }, [isHost]); // Re-run when isHost changes
 
-    // Load clients statistics (mock data for now)
+    // Load clients statistics
     useEffect(() => {
         const loadStats = async () => {
             try {
                 setStatsLoading(true);
-                // TODO: Replace with actual API call when endpoint is available
-                // For now, calculate from loaded data
-                setTimeout(() => {
+                // Fetch stats from API - pass partner ID if user is not host
+                const partnerId = !isHost && currentUser?.partner_id ? currentUser.partner_id : undefined;
+                const result = await fetchBorrowerStats(partnerId);
+
+                if (result.status && result.data) {
                     setStats({
-                        active_count: 0,
-                        new_this_month: 0,
-                        total_clients: 0,
-                        inactive_count: 0
+                        active_count: result.data.active_count || 0,
+                        new_this_month: result.data.new_this_month || 0,
+                        total_clients: result.data.total_borrowers || 0,
+                        inactive_count: result.data.inactive_count || 0
                     });
-                    setStatsLoading(false);
-                }, 500);
+                }
             } catch (err) {
                 console.error('Failed to load client statistics:', err);
+                // Set default values on error
+                setStats({
+                    active_count: 0,
+                    new_this_month: 0,
+                    total_clients: 0,
+                    inactive_count: 0
+                });
+            } finally {
                 setStatsLoading(false);
             }
         };
-        loadStats();
-    }, []);
+
+        // Only load stats when user data is available
+        if (currentUser) {
+            loadStats();
+        }
+    }, [currentUser, isHost]);
 
     // Statistics cards configuration
     const statisticsConfig = [

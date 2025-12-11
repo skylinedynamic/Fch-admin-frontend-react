@@ -131,7 +131,7 @@ export default function PersonalInfoSection({
                         {/* Country Code Display */}
                         {(employee.country === 'USA' || employee.country === 'Canada') && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{employee.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="me-1">{employee.country === 'USA' ? 'USA' : 'CAN'}</span>
                                 <span className="text-muted">+1</span>
                             </span>
                         )}
@@ -158,7 +158,7 @@ export default function PersonalInfoSection({
                         {/* Country Code Display */}
                         {(employee.country === 'USA' || employee.country === 'Canada') && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{employee.country === 'USA' ? 'US' : 'CA'}</span>
+                                <span className="me-1">{employee.country === 'USA' ? 'USA' : 'CAN'}</span>
                                 <span className="text-muted">+1</span>
                             </span>
                         )}

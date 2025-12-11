@@ -145,13 +145,14 @@ export default function ClientInfoSection({
                         <label htmlFor="website" className="form-label">Website</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.website ? 'is-invalid' : ''}`}
                             id="website"
                             name="website"
                             placeholder="www.example.com"
                             value={formData.website || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.website && <div className="invalid-feedback">{errors.website}</div>}
                     </div>
                 </div>
 
@@ -161,13 +162,14 @@ export default function ClientInfoSection({
                         <label htmlFor="legal_business_name" className="form-label">Legal Business Name</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.legal_business_name ? 'is-invalid' : ''}`}
                             id="legal_business_name"
                             name="legal_business_name"
                             placeholder="Enter legal business name"
                             value={formData.legal_business_name || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.legal_business_name && <div className="invalid-feedback">{errors.legal_business_name}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -175,7 +177,7 @@ export default function ClientInfoSection({
                         <label htmlFor="business_ein" className="form-label">Business EIN</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
                             id="business_ein"
                             name="business_ein"
                             placeholder="Enter 9-digit EIN"
@@ -183,6 +185,7 @@ export default function ClientInfoSection({
                             value={formData.business_ein || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -190,13 +193,14 @@ export default function ClientInfoSection({
                         <label htmlFor="state_file_number" className="form-label">State File Number</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`}
                             id="state_file_number"
                             name="state_file_number"
                             placeholder="Enter state file number"
                             value={formData.state_file_number || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.state_file_number && <div className="invalid-feedback">{errors.state_file_number}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -204,7 +208,7 @@ export default function ClientInfoSection({
                         <label htmlFor="duns_number" className="form-label">D-U-N-S Number</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.duns_number ? 'is-invalid' : ''}`}
                             id="duns_number"
                             name="duns_number"
                             placeholder="Enter 9-digit D-U-N-S"
@@ -212,6 +216,7 @@ export default function ClientInfoSection({
                             value={formData.duns_number || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.duns_number && <div className="invalid-feedback">{errors.duns_number}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -219,13 +224,14 @@ export default function ClientInfoSection({
                         <label htmlFor="business_address" className="form-label">Business Address</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.business_address ? 'is-invalid' : ''}`}
                             id="business_address"
                             name="business_address"
                             placeholder="Enter business address"
                             value={formData.business_address || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.business_address && <div className="invalid-feedback">{errors.business_address}</div>}
                     </div>
                 </div>
 
@@ -302,13 +308,14 @@ export default function ClientInfoSection({
                         <label htmlFor="business_zip" className="form-label">Zip Code</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.business_zip ? 'is-invalid' : ''}`}
                             id="business_zip"
                             name="business_zip"
                             placeholder="Enter zipcode"
                             value={formData.business_zip || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.business_zip && <div className="invalid-feedback">{errors.business_zip}</div>}
                     </div>
                 </div>
 
@@ -324,7 +331,7 @@ export default function ClientInfoSection({
                             )}
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control ${errors.business_phone ? 'is-invalid' : ''}`}
                                 id="business_phone"
                                 name="business_phone"
                                 placeholder="(555) 555-5555"
@@ -334,6 +341,7 @@ export default function ClientInfoSection({
                                     handleInputChange({ target: { name: 'business_phone', value: formatted } });
                                 }}
                             />
+                            {errors.business_phone && <div className="invalid-feedback">{errors.business_phone}</div>}
                         </div>
                     </div>
                 </div>
@@ -347,8 +355,9 @@ export default function ClientInfoSection({
                             onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select entity type"
-                            className="w-100"
+                            className={`w-100 ${errors.entity_type ? 'p-invalid' : ''}`}
                         />
+                        {errors.entity_type && <small className="p-error">{errors.entity_type}</small>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -360,8 +369,9 @@ export default function ClientInfoSection({
                             onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select industry type"
-                            className="w-100"
+                            className={`w-100 ${errors.industry_type ? 'p-invalid' : ''}`}
                         />
+                        {errors.industry_type && <small className="p-error">{errors.industry_type}</small>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -377,9 +387,10 @@ export default function ClientInfoSection({
                                     : "";
                                 handleInputChange({ target: { name: "business_start_date", value: dateString } });
                             }}
-                            className="form-control"
+                            className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
                             placeholder="Select date"
                         />
+                        {errors.business_start_date && <div className="invalid-feedback">{errors.business_start_date}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -387,7 +398,7 @@ export default function ClientInfoSection({
                         <label htmlFor="ssn_last_4" className="form-label">SSN Last 4</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${errors.ssn_last_4 ? 'is-invalid' : ''}`}
                             id="ssn_last_4"
                             name="ssn_last_4"
                             placeholder="Enter last 4 digits of SSN"
@@ -395,6 +406,7 @@ export default function ClientInfoSection({
                             value={formData.ssn_last_4 || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.ssn_last_4 && <div className="invalid-feedback">{errors.ssn_last_4}</div>}
                     </div>
                 </div>
 
@@ -402,7 +414,7 @@ export default function ClientInfoSection({
                     <div className="mb-3 pb-2">
                         <label htmlFor="notes" className="form-label">Notes</label>
                         <textarea
-                            className="form-control"
+                            className={`form-control ${errors.notes ? 'is-invalid' : ''}`}
                             id="notes"
                             name="notes"
                             placeholder="Enter description"
@@ -410,6 +422,7 @@ export default function ClientInfoSection({
                             value={formData.notes || ''}
                             onChange={handleInputChange}
                         />
+                        {errors.notes && <div className="invalid-feedback">{errors.notes}</div>}
                     </div>
                 </div>
             </div>
