@@ -5,7 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { deleteClients, fetchBorrowerStats } from '../../modules/client/services';
+import { deleteClients, fetchBorrowerStats, fetchBorrowerTiers } from '../../modules/client/services';
 import { fetchAllBorrowers, deleteBorrower, getAllUsers } from '../../modules/borrower/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { getUser } from '../../lib/auth';
@@ -51,13 +51,7 @@ export default function Clients() {
     // Dropdown data
     const [partnersList, setPartnersList] = useState([]);
     const [assignedUsersList, setAssignedUsersList] = useState([]);
-    const [tiersList] = useState([
-        { label: 'Tier 0', value: 'Tier 0' },
-        { label: 'Tier 1', value: 'Tier 1' },
-        { label: 'Tier 2', value: 'Tier 2' },
-        { label: 'Tier 3', value: 'Tier 3' },
-        { label: 'Tier 4', value: 'Tier 4' }
-    ]);
+    const [tiersList, setTiersList] = useState([]);
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -110,7 +104,8 @@ export default function Clients() {
                         const formattedPartners = (result.data || []).map(partner => ({
                             id: partner.id,
                             full_name: partner.full_name,
-                            displayLabel: `${partner.full_name}`
+                            company_name: partner.company_name,
+                            displayLabel: `${partner.full_name} (${partner.company_name})`
                         }));
                         setPartnersList(formattedPartners);
                     }
@@ -138,6 +133,25 @@ export default function Clients() {
             }
         };
         loadAssignedUsers();
+
+        // Load tiers
+        const loadTiers = async () => {
+            try {
+                const result = await fetchBorrowerTiers();
+                if (result.status && result.data) {
+                    const formattedTiers = (result.data || []).map(tier => ({
+                        label: tier.name,
+                        value: tier.value
+                    }));
+                    setTiersList(formattedTiers);
+                }
+            } catch (err) {
+                console.error('Failed to load tiers:', err);
+                // Set to empty array on error
+                setTiersList([]);
+            }
+        };
+        loadTiers();
     }, [isHost]); // Re-run when isHost changes
 
     // Load clients statistics
@@ -387,13 +401,14 @@ export default function Clients() {
     };
 
     const tierBody = (rowData) => {
-        const tierColors = {
-            'Tier 0': 'secondary',
-            'Tier 1': 'info',
-            'Tier 2': 'primary',
-            'Tier 3': 'warning',
-            'Tier 4': 'success'
-        };
+        // Create dynamic color mapping from tiersList
+        const colorOptions = ['secondary', 'info', 'primary', 'warning', 'success', 'danger'];
+        const tierColors = {};
+
+        tiersList.forEach((tier, index) => {
+            tierColors[tier.value] = colorOptions[index % colorOptions.length];
+        });
+
         const color = tierColors[rowData.current_tier] || 'secondary';
         return (
             <span className={`badge bg-${color}-subtle text-${color}`}>
