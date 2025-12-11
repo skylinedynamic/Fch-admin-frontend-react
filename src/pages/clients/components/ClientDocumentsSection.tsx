@@ -183,9 +183,10 @@ export default function ClientDocumentsSection() {
                                                 <td>
                                                     <button
                                                         type="button"
-                                                        className="btn btn-sm btn-link text-primary"
+                                                        className="btn btn-sm btn-primary"
                                                         onClick={() => handleDownload(doc.id, doc.document_name)}
                                                         disabled={downloadingId === doc.id}
+                                                        title="Download"
                                                     >
                                                         {downloadingId === doc.id ? (
                                                             <>
@@ -194,7 +195,8 @@ export default function ClientDocumentsSection() {
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <i className="ri-download-2-line"></i> Download
+                                                                <i className="ri-download-2-line me-1 align-bottom"></i>
+                                                                Download
                                                             </>
                                                         )}
                                                     </button>
