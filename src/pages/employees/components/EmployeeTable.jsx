@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import TableLoader from '../../../components/Loader/TableLoader';
 
 export default function EmployeeTable({
     rows,
@@ -35,6 +36,22 @@ export default function EmployeeTable({
             </span>
         );
     };
+
+    if (loading) {
+        return <TableLoader
+            rows={10}
+            columns={[
+                { style: { width: '3rem' } }, // Selection
+                { style: { minWidth: '' } }, // Name
+                { style: { minWidth: '' } }, // Code
+                { style: { minWidth: '' } }, // Phone
+                { style: { minWidth: '' } }, // Email
+                { style: { minWidth: '' } }, // Department
+                { style: { minWidth: '' } }, // Designation
+                { style: { minWidth: '' } }  // Status
+            ]}
+        />;
+    }
 
     return (
         <div className="table-responsive table-card mt-1">

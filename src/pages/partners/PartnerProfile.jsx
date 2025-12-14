@@ -911,6 +911,7 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
+                                    loading={isPartnerLoading}
                                 />
                             </div>
                         </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchBorrowerDocuments, downloadBorrowerDocument } from '../../../modules/client/services';
 import { toast } from 'react-toastify';
+// @ts-ignore
+import TableLoader from '../../../components/Loader/TableLoader';
 
 interface Document {
     id: number;
@@ -82,54 +84,16 @@ export default function ClientDocumentsSection() {
         return (
             <div className="card shadow-none border">
                 <div className="card-body">
-                    <div className="row">
-                        <div className="col-lg-12">
-                            <div className="table-responsive">
-                                <table className="table table-borderless align-middle mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th scope="col">File Name</th>
-                                            <th scope="col">Type</th>
-                                            <th scope="col">Size</th>
-                                            <th scope="col">Upload Date</th>
-                                            <th scope="col">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {[1, 2, 3].map((i) => (
-                                            <tr key={i}>
-                                                <td>
-                                                    <div className="placeholder-glow">
-                                                        <span className="placeholder col-8"></span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="placeholder-glow">
-                                                        <span className="placeholder col-6"></span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="placeholder-glow">
-                                                        <span className="placeholder col-5"></span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="placeholder-glow">
-                                                        <span className="placeholder col-7"></span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="placeholder-glow">
-                                                        <span className="placeholder col-4"></span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                    <TableLoader
+                        rows={5}
+                        columns={[
+                            { style: { width: '40%' } }, // File Name
+                            { style: { width: '15%' } }, // Type
+                            { style: { width: '15%' } }, // Size
+                            { style: { width: '15%' } }, // Upload Date
+                            { style: { width: '15%' } }  // Action
+                        ]}
+                    />
                 </div>
             </div>
         );

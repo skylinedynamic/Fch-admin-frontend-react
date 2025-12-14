@@ -6,6 +6,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import { validateRequired, validateFile, validateFileSize, validateFileType } from '../../../components/errors/validation';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { Skeleton } from 'primereact/skeleton';
+import TableLoader from '../../../components/Loader/TableLoader';
 
 
 export default function DocumentsSection({ partnerId }) {
@@ -185,103 +186,106 @@ export default function DocumentsSection({ partnerId }) {
             </div>
 
             <div className="table-responsive" style={{ overflow: 'visible' }}>
-                <table className="table table-borderless align-middle mb-0">
-                    <thead className="table-light">
-                        <tr>
-                            <th scope="col">File Name</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Size</th>
-                            <th scope="col">Upload Date</th>
-                            <th scope="col">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            Array.from({ length: 5 }).map((_, index) => (
-                                <tr key={index}>
-                                    <td><Skeleton width="100%" height="1.5rem" /></td>
-                                    <td><Skeleton width="80%" height="1.5rem" /></td>
-                                    <td><Skeleton width="60%" height="1.5rem" /></td>
-                                    <td><Skeleton width="80%" height="1.5rem" /></td>
-                                    <td><Skeleton width="40%" height="1.5rem" /></td>
-                                </tr>
-                            ))
-                        ) : documents.length === 0 ? (
+                {loading ? (
+                    <TableLoader
+                        rows={5}
+                        columns={[
+                            { style: { width: '40%' } }, // File Name
+                            { style: { width: '15%' } }, // Type
+                            { style: { width: '15%' } }, // Size
+                            { style: { width: '15%' } }, // Upload Date
+                            { style: { width: '15%' } }  // Action
+                        ]}
+                    />
+                ) : (
+                    <table className="table table-borderless align-middle mb-0">
+                        <thead className="table-light">
                             <tr>
-                                <td colSpan="5" className="text-center py-4 text-muted">
-                                    No documents found.
-                                </td>
+                                <th scope="col">File Name</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Size</th>
+                                <th scope="col">Upload Date</th>
+                                <th scope="col">Action</th>
                             </tr>
-                        ) : (
-                            documents.map((doc) => {
-                                const isLink = !doc.file_path && doc.share_link;
-                                const config = isLink
-                                    ? { icon: 'ri-link', bg: 'bg-info-subtle', color: 'text-info' }
-                                    : getFileConfig(doc.file_path || '');
+                        </thead>
+                        <tbody>
+                            {documents.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-4 text-muted">
+                                        No documents found.
+                                    </td>
+                                </tr>
+                            ) : (
+                                documents.map((doc) => {
+                                    const isLink = !doc.file_path && doc.share_link;
+                                    const config = isLink
+                                        ? { icon: 'ri-link', bg: 'bg-info-subtle', color: 'text-info' }
+                                        : getFileConfig(doc.file_path || '');
 
-                                return (
-                                    <tr key={doc.id}>
-                                        <td>
-                                            <div className="d-flex align-items-center">
-                                                <div className="avatar-sm">
-                                                    <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
-                                                        <i className={config.icon}></i>
+                                    return (
+                                        <tr key={doc.id}>
+                                            <td>
+                                                <div className="d-flex align-items-center">
+                                                    <div className="avatar-sm">
+                                                        <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
+                                                            <i className={config.icon}></i>
+                                                        </div>
+                                                    </div>
+                                                    <div className="ms-3 flex-grow-1">
+                                                        <h6 className="fs-15 mb-0">
+                                                            {isLink ? (
+                                                                <a href={doc.share_link} target="_blank" rel="noopener noreferrer" className="text-reset">
+                                                                    {doc.document_name}
+                                                                </a>
+                                                            ) : (
+                                                                <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path); }}>
+                                                                    {doc.document_name}
+                                                                </a>
+                                                            )}
+                                                        </h6>
                                                     </div>
                                                 </div>
-                                                <div className="ms-3 flex-grow-1">
-                                                    <h6 className="fs-15 mb-0">
-                                                        {isLink ? (
-                                                            <a href={doc.share_link} target="_blank" rel="noopener noreferrer" className="text-reset">
-                                                                {doc.document_name}
+                                            </td>
+                                            <td>{isLink ? 'Link' : getFileTypeLabel(doc.file_path || '')}</td>
+                                            <td>{doc.size || '-'}</td>
+                                            <td>{formatDate(doc.created_at)}</td>
+                                            <td>
+                                                <div className="dropdown">
+                                                    <a href="javascript:void(0);" className="btn btn-light btn-icon" id={`dropdownMenuLink${doc.id}`} data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i className="ri-equalizer-fill"></i>
+                                                    </a>
+                                                    <ul className="dropdown-menu dropdown-menu-end" aria-labelledby={`dropdownMenuLink${doc.id}`}>
+                                                        <li>
+                                                            {isLink ? (
+                                                                <a className="dropdown-item" href={doc.share_link} target="_blank" rel="noopener noreferrer">
+                                                                    <i className="ri-external-link-line me-2 align-middle text-muted"></i>Open Link
+                                                                </a>
+                                                            ) : (
+                                                                <a className="dropdown-item" href="javascript:void(0);" onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path); }}>
+                                                                    <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
+                                                                </a>
+                                                            )}
+                                                        </li>
+                                                        <li className="dropdown-divider"></li>
+                                                        <li>
+                                                            <a className="dropdown-item" href="javascript:void(0);" onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setDeletingDocId(doc.id);
+                                                                setShowDeleteModal(true);
+                                                            }}>
+                                                                <i className="ri-delete-bin-5-line me-2 align-middle text-muted"></i>Delete
                                                             </a>
-                                                        ) : (
-                                                            <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path); }}>
-                                                                {doc.document_name}
-                                                            </a>
-                                                        )}
-                                                    </h6>
+                                                        </li>
+                                                    </ul>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>{isLink ? 'Link' : getFileTypeLabel(doc.file_path || '')}</td>
-                                        <td>{doc.size || '-'}</td>
-                                        <td>{formatDate(doc.created_at)}</td>
-                                        <td>
-                                            <div className="dropdown">
-                                                <a href="javascript:void(0);" className="btn btn-light btn-icon" id={`dropdownMenuLink${doc.id}`} data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i className="ri-equalizer-fill"></i>
-                                                </a>
-                                                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby={`dropdownMenuLink${doc.id}`}>
-                                                    <li>
-                                                        {isLink ? (
-                                                            <a className="dropdown-item" href={doc.share_link} target="_blank" rel="noopener noreferrer">
-                                                                <i className="ri-external-link-line me-2 align-middle text-muted"></i>Open Link
-                                                            </a>
-                                                        ) : (
-                                                            <a className="dropdown-item" href="javascript:void(0);" onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path); }}>
-                                                                <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
-                                                            </a>
-                                                        )}
-                                                    </li>
-                                                    <li className="dropdown-divider"></li>
-                                                    <li>
-                                                        <a className="dropdown-item" href="javascript:void(0);" onClick={(e) => {
-                                                            e.preventDefault();
-                                                            setDeletingDocId(doc.id);
-                                                            setShowDeleteModal(true);
-                                                        }}>
-                                                            <i className="ri-delete-bin-5-line me-2 align-middle text-muted"></i>Delete
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Upload Document Modal */}

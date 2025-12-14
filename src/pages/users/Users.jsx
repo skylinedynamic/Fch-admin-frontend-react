@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
@@ -9,8 +9,8 @@ import { formatPhoneNumber } from '../../utils/formatters';
 import '../../../assets/css/bootstrap.min.css';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate, useLocation } from 'react-router-dom';
 import UserModal from './components/UserModal';
+import TableLoader from '../../components/Loader/TableLoader';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 
 export default function Users() {
@@ -430,7 +430,23 @@ export default function Users() {
                             </div>
                           </div>
                         </form>
-                        <div>
+
+                        {/* TableLoader applied here */}
+                        {loading ? (
+                          <TableLoader
+                            rows={10}
+                            columns={[
+                              { style: { width: '3rem' } }, // Selection
+                              { style: { minWidth: '' } }, // Name
+                              { style: { minWidth: '' } }, // Phone
+                              { style: { minWidth: '' } }, // Email
+                              { style: { minWidth: '' } }, // Entity Type
+                              { style: { minWidth: '' } }, // Role
+                              { style: { minWidth: '' } }, // Status
+                              { style: { width: '12rem' } } // Action
+                            ]}
+                          />
+                        ) : (
                           <div className="table-responsive table-card mt-1">
                             <DataTable
                               scrollable
@@ -463,7 +479,6 @@ export default function Users() {
                               dataKey="id"
                               responsiveLayout="scroll"
                               className="p-datatable-sm"
-                              loading={loading}
                               emptyMessage="No Users found"
                             >
                               <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
@@ -515,7 +530,8 @@ export default function Users() {
                               />
                             </DataTable>
                           </div>
-                        </div>
+                        )}
+
                       </div>
                     </div>
                   </div>

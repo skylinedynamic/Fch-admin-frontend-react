@@ -8,6 +8,7 @@ import { fetchPartners, allUsers, deletePartners, fetchPartnerStats } from '../.
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
+import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -477,115 +478,131 @@ export default function Partners() {
                                 </form>
 
                                 {/* DataTable with Skeleton Loader */}
-                                <div className="table-responsive table-card mt-1">
-                                    <DataTable
-                                        scrollable
-                                        scrollHeight="510px"
-                                        value={partners}
-                                        paginator
-                                        lazy
-                                        totalRecords={totalRecords}
-                                        first={(page - 1) * perPage}
-                                        rows={perPage}
-                                        rowsPerPageOptions={[10, 25, 50, 100]}
-                                        sortMode="single"
-                                        sortField={sortField}
-                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                        filterDisplay="menu"
-                                        filters={filters}
-                                        onFilter={onFilter}
-                                        onPage={onPage}
-                                        onSort={onSort}
-                                        globalFilterFields={[
-                                            'company_name',
-                                            'full_name',
-                                            'contact_person',
-                                            'email',
-                                            'phone_number',
-                                            'assigned_user_name',
-                                            'partner_type'
+                                {loading ? (
+                                    <TableLoader
+                                        rows={10}
+                                        columns={[
+                                            { style: { width: '3rem' } }, // Selection
+                                            { style: { minWidth: '200px' } }, // Company Name
+                                            { style: { minWidth: '150px' } }, // Partner Name
+                                            { style: { minWidth: '200px' } }, // Email
+                                            { style: { minWidth: '150px' } }, // Phone Number
+                                            { style: { minWidth: '150px' } }, // Contact Person
+                                            { style: { minWidth: '150px' } }, // Assigned User
+                                            { style: { minWidth: '120px' } }  // Partner Type
                                         ]}
-                                        selection={selectedPartners}
-                                        onSelectionChange={(e) => setSelectedPartners(e.value)}
-                                        dataKey="id"
-                                        metaKeySelection={false}
-                                        responsiveLayout="scroll"
-                                        className="p-datatable-sm"
-                                        loading={loading}
-                                        emptyMessage="No partners found"
-                                    >
-                                        <Column
-                                            selectionMode="multiple"
-                                            headerStyle={{ width: '3rem' }}
-                                            exportable={false}
-                                        />
-                                        <Column
-                                            field="company_name"
-                                            header="Company Name"
-                                            body={companyNameBody}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by company"
-                                            style={{ minWidth: '200px' }}
-                                        />
-                                        <Column
-                                            field="full_name"
-                                            header="Partner Name"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by Name"
-                                            style={{ minWidth: '150px' }}
-                                        />
+                                    />
+                                ) : (
+                                    <div className="table-responsive table-card mt-1">
+                                        <DataTable
+                                            scrollable
+                                            scrollHeight="510px"
+                                            value={partners}
+                                            paginator
+                                            lazy
+                                            totalRecords={totalRecords}
+                                            first={(page - 1) * perPage}
+                                            rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
+                                            sortMode="single"
+                                            sortField={sortField}
+                                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                            filterDisplay="menu"
+                                            filters={filters}
+                                            onFilter={onFilter}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            globalFilterFields={[
+                                                'company_name',
+                                                'full_name',
+                                                'contact_person',
+                                                'email',
+                                                'phone_number',
+                                                'assigned_user_name',
+                                                'partner_type'
+                                            ]}
+                                            selection={selectedPartners}
+                                            onSelectionChange={(e) => setSelectedPartners(e.value)}
+                                            dataKey="id"
+                                            metaKeySelection={false}
+                                            responsiveLayout="scroll"
+                                            className="p-datatable-sm"
+                                            loading={false}
+                                            emptyMessage="No partners found"
+                                        >
+                                            <Column
+                                                selectionMode="multiple"
+                                                headerStyle={{ width: '3rem' }}
+                                                exportable={false}
+                                            />
+                                            <Column
+                                                field="company_name"
+                                                header="Company Name"
+                                                body={companyNameBody}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by company"
+                                                style={{ minWidth: '200px' }}
+                                            />
+                                            <Column
+                                                field="full_name"
+                                                header="Partner Name"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by Name"
+                                                style={{ minWidth: '150px' }}
+                                            />
 
-                                        <Column
-                                            field="email"
-                                            header="Email"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by email"
-                                            style={{ minWidth: '200px' }}
-                                        />
-                                        <Column
-                                            field="phone_number"
-                                            header="Phone Number"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by phone"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="contact_person"
-                                            header="Contact Person"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by contact"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="assigned_user_name"
-                                            header="Assigned User"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by user"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="partner_type"
-                                            header="Partner Type"
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by type"
-                                            style={{ minWidth: '120px' }}
-                                        />
-                                    </DataTable>
-                                </div>
+                                            <Column
+                                                field="email"
+                                                header="Email"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by email"
+                                                style={{ minWidth: '200px' }}
+                                            />
+                                            <Column
+                                                field="phone_number"
+                                                header="Phone Number"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by phone"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="contact_person"
+                                                header="Contact Person"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by contact"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="assigned_user_name"
+                                                header="Assigned User"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by user"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="partner_type"
+                                                header="Partner Type"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by type"
+                                                style={{ minWidth: '120px' }}
+                                            />
+                                        </DataTable>
+                                    </div>
+                                )}
 
                             </div>
                         </div>

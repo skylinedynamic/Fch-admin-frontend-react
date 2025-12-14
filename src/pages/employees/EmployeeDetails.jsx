@@ -16,12 +16,14 @@ import { validateRequired, validateEmail, validatePhone } from '../../components
 
 import EmployeeForm from './components/EmployeeForm';
 import DepartmentModal from './components/DepartmentModal';
+import FormLoader from '../../components/Loader/FormLoader';
 
 export default function EmployeeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   // State
+  const [loading, setLoading] = useState(!!id);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -96,6 +98,7 @@ export default function EmployeeDetails() {
   // Fetch employee data if editing
   useEffect(() => {
     if (id) {
+      setLoading(true);
       fetchEmployeeById(id)
         .then((data) => {
           // Handle location cascading first to ensure options are available
@@ -142,7 +145,8 @@ export default function EmployeeDetails() {
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
         })
-        .catch((err) => console.error('Failed to fetch employee', err));
+        .catch((err) => console.error('Failed to fetch employee', err))
+        .finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -472,21 +476,25 @@ export default function EmployeeDetails() {
               <div className="card-body p-4">
                 <div className="tab-content">
                   <div className="tab-pane active show" id="personalDetails" role="tabpanel">
-                    <EmployeeForm
-                      employee={employee}
-                      errors={errors}
-                      onChange={handleChange}
-                      departments={departments}
-                      roles={roles}
-                      countries={countries}
-                      states={states}
-                      cities={cities}
-                      countryCodeOptions={countryCodeOptions}
-                      phonePrefix={phonePrefix}
-                      onPhonePrefixChange={setPhonePrefix}
-                      onAddDepartment={() => setShowDepartmentModal(true)}
-                      isEditMode={!!id}
-                    />
+                    {loading ? (
+                      <FormLoader count={10} />
+                    ) : (
+                      <EmployeeForm
+                        employee={employee}
+                        errors={errors}
+                        onChange={handleChange}
+                        departments={departments}
+                        roles={roles}
+                        countries={countries}
+                        states={states}
+                        cities={cities}
+                        countryCodeOptions={countryCodeOptions}
+                        phonePrefix={phonePrefix}
+                        onPhonePrefixChange={setPhonePrefix}
+                        onAddDepartment={() => setShowDepartmentModal(true)}
+                        isEditMode={!!id}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

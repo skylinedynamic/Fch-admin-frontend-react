@@ -12,6 +12,7 @@ import { getUser } from '../../lib/auth';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
+import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -417,26 +418,6 @@ export default function Clients() {
         );
     };
 
-    // Skeleton templates for loading state
-    const skeletonBody = () => {
-        return <Skeleton width="100%" height="1.5rem" />;
-    };
-
-    const skeletonBadgeBody = () => {
-        return <Skeleton width="4rem" height="1.5rem" borderRadius="16px" />;
-    };
-
-    // Create skeleton data for loading state
-    const skeletonItems = Array.from({ length: perPage }, (_, i) => ({
-        id: `skeleton-${i}`,
-        full_name: null,
-        email: null,
-        phone_number: null,
-        assign_name: null,
-        partner_name: null,
-        current_tier: null
-    }));
-
     return (
         <div className="page-content">
             <style>{`
@@ -629,117 +610,128 @@ export default function Clients() {
                                 </form>
 
                                 {/* DataTable */}
-                                <div className="table-responsive table-card mt-1">
-                                    <DataTable
-                                        scrollable
-                                        scrollHeight="510px"
-                                        value={loading ? skeletonItems : clients}
-                                        paginator
-                                        lazy
-                                        totalRecords={totalRecords}
-                                        first={(page - 1) * perPage}
-                                        rows={perPage}
-                                        rowsPerPageOptions={[10, 25, 50, 100]}
-                                        sortMode="single"
-                                        sortField={sortField}
-                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                        filterDisplay="menu"
-                                        filters={filters}
-                                        onFilter={onFilter}
-                                        onPage={onPage}
-                                        onSort={onSort}
-                                        globalFilterFields={[
-                                            'full_name',
-                                            'email',
-                                            'phone_number',
-                                            'assign_name',
-                                            'partner_name',
-                                            'current_tier'
+                                {loading ? (
+                                    <TableLoader
+                                        rows={10}
+                                        columns={[
+                                            { style: { width: '3rem' } }, // Selection
+                                            { style: { minWidth: '180px' } }, // Full Name
+                                            { style: { minWidth: '220px' } }, // Email
+                                            { style: { minWidth: '150px' } }, // Phone
+                                            { style: { minWidth: '150px' } }, // Assigned To
+                                            { style: { minWidth: '150px' } }, // Partner Name
+                                            { style: { minWidth: '130px' } }  // Current Tier
                                         ]}
-                                        selection={selectedClients}
-                                        onSelectionChange={(e) => setSelectedClients(e.value)}
-                                        dataKey="id"
-                                        onRowClick={(e) => {
-                                            // Prevent navigation if clicking on checkbox or selection column
-                                            const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
-                                                e.originalEvent.target.closest('.p-selection-column') ||
-                                                e.originalEvent.target.tagName === 'INPUT'; // Fallback for raw inputs
-                                            if (!isCheckbox) {
-                                                navigate(`/clients/${e.data.id}`);
-                                            }
-                                        }}
-                                        // metaKeySelection={false} // Disabled to prevent row click selection
-                                        responsiveLayout="scroll"
-                                        className="p-datatable-sm"
-                                        emptyMessage="No clients found"
-                                    >
-                                        <Column
-                                            selectionMode="multiple"
-                                            headerStyle={{ width: '3rem' }}
-                                            exportable={false}
-                                        />
-                                        <Column
-                                            field="full_name"
-                                            header="Full Name"
-                                            body={loading ? skeletonBody : fullNameBody}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by name"
-                                            style={{ minWidth: '180px' }}
-                                        />
-                                        <Column
-                                            field="email"
-                                            header="Email"
-                                            body={loading ? skeletonBody : null}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by email"
-                                            style={{ minWidth: '220px' }}
-                                        />
-                                        <Column
-                                            field="phone_number"
-                                            header="Phone Number"
-                                            body={loading ? skeletonBody : null}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by phone"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="assign_name"
-                                            header="Assigned To"
-                                            body={loading ? skeletonBody : null}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by assigned"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="partner_name"
-                                            header="Partner Name"
-                                            body={loading ? skeletonBody : null}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by partner"
-                                            style={{ minWidth: '150px' }}
-                                        />
-                                        <Column
-                                            field="current_tier"
-                                            header="Current Tier"
-                                            body={loading ? skeletonBadgeBody : tierBody}
-                                            sortable
-                                            filter
-                                            showFilterMatchModes
-                                            filterPlaceholder="Search by tier"
-                                            style={{ minWidth: '130px' }}
-                                        />
-                                    </DataTable>
-                                </div>
+                                    />
+                                ) : (
+                                    <div className="table-responsive table-card mt-1">
+                                        <DataTable
+                                            scrollable
+                                            scrollHeight="510px"
+                                            value={clients}
+                                            paginator
+                                            lazy
+                                            totalRecords={totalRecords}
+                                            first={(page - 1) * perPage}
+                                            rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
+                                            sortMode="single"
+                                            sortField={sortField}
+                                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                            filterDisplay="menu"
+                                            filters={filters}
+                                            onFilter={onFilter}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            globalFilterFields={[
+                                                'full_name',
+                                                'email',
+                                                'phone_number',
+                                                'assign_name',
+                                                'partner_name',
+                                                'current_tier'
+                                            ]}
+                                            selection={selectedClients}
+                                            onSelectionChange={(e) => setSelectedClients(e.value)}
+                                            dataKey="id"
+                                            onRowClick={(e) => {
+                                                // Prevent navigation if clicking on checkbox or selection column
+                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                    e.originalEvent.target.closest('.p-selection-column') ||
+                                                    e.originalEvent.target.tagName === 'INPUT'; // Fallback for raw inputs
+                                                if (!isCheckbox) {
+                                                    navigate(`/clients/${e.data.id}`);
+                                                }
+                                            }}
+                                            // metaKeySelection={false} // Disabled to prevent row click selection
+                                            responsiveLayout="scroll"
+                                            className="p-datatable-sm"
+                                            emptyMessage="No clients found"
+                                        >
+                                            <Column
+                                                selectionMode="multiple"
+                                                headerStyle={{ width: '3rem' }}
+                                                exportable={false}
+                                            />
+                                            <Column
+                                                field="full_name"
+                                                header="Full Name"
+                                                body={fullNameBody}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by name"
+                                                style={{ minWidth: '180px' }}
+                                            />
+                                            <Column
+                                                field="email"
+                                                header="Email"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by email"
+                                                style={{ minWidth: '220px' }}
+                                            />
+                                            <Column
+                                                field="phone_number"
+                                                header="Phone Number"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by phone"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="assign_name"
+                                                header="Assigned To"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by assigned"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="partner_name"
+                                                header="Partner Name"
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by partner"
+                                                style={{ minWidth: '150px' }}
+                                            />
+                                            <Column
+                                                field="current_tier"
+                                                header="Current Tier"
+                                                body={tierBody}
+                                                sortable
+                                                filter
+                                                showFilterMatchModes
+                                                filterPlaceholder="Search by tier"
+                                                style={{ minWidth: '130px' }}
+                                            />
+                                        </DataTable>
+                                    </div>
+                                )}
 
                             </div>
                         </div>

@@ -4,6 +4,8 @@ import BusinessFinancialsSection from './BusinessFinancialsSection';
 import DocumentChecklistSection from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
 import type { Client, ChecklistItem } from '../../../modules/client/types';
+// @ts-ignore
+import FormLoader from '../../../components/Loader/FormLoader';
 
 interface ClientFormProps {
     activeTab: string;
@@ -35,38 +37,50 @@ export default function ClientForm({
             {/* Client Information Tab */}
             {activeTab === 'personalDetails' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <ClientInfoSection
-                        formData={formData}
-                        errors={errors}
-                        handleInputChange={handleInputChange}
-                        countries={countries}
-                        states={states}
-                        cities={cities}
-                        isLoading={isLoading}
-                    />
+                    {isLoading ? (
+                        <FormLoader count={12} />
+                    ) : (
+                        <ClientInfoSection
+                            formData={formData}
+                            errors={errors}
+                            handleInputChange={handleInputChange}
+                            countries={countries}
+                            states={states}
+                            cities={cities}
+                            isLoading={isLoading}
+                        />
+                    )}
                 </div>
             )}
 
             {/* Business Financials Tab */}
             {activeTab === 'businessFinancials' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <BusinessFinancialsSection
-                        formData={formData}
-                        errors={errors}
-                        handleInputChange={handleInputChange}
-                        isLoading={isLoading}
-                    />
+                    {isLoading ? (
+                        <FormLoader count={12} />
+                    ) : (
+                        <BusinessFinancialsSection
+                            formData={formData}
+                            errors={errors}
+                            handleInputChange={handleInputChange}
+                            isLoading={isLoading}
+                        />
+                    )}
                 </div>
             )}
 
             {/* Document Checklist Tab */}
             {activeTab === 'documentChecklist' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <DocumentChecklistSection
-                        checklist={checklist || []}
-                        handleChecklistChange={handleChecklistChange || (() => { })}
-                        isLoading={isLoading}
-                    />
+                    {isLoading ? (
+                        <FormLoader count={8} />
+                    ) : (
+                        <DocumentChecklistSection
+                            checklist={checklist || []}
+                            handleChecklistChange={handleChecklistChange || (() => { })}
+                            isLoading={isLoading}
+                        />
+                    )}
                 </div>
             )}
 
