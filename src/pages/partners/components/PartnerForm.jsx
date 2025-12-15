@@ -19,6 +19,9 @@ export default function PartnerForm({
     users,
     partnerId,
     loading
+    , onSelectedFilesChange
+    , documentsReloadKey
+    , documentsClearKey
 }) {
     return (
         <div className="tab-content">
@@ -69,7 +72,7 @@ export default function PartnerForm({
             {/* Documents Tab */}
             {activeTab === 'documents' && (
                 <div className="tab-pane active show">
-                    <DocumentsSection partnerId={partnerId} />
+                    <DocumentsSection partnerId={partnerId} onSelectedFilesChange={onSelectedFilesChange} reloadKey={documentsReloadKey} clearKey={documentsClearKey} />
                 </div>
             )}
 

@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats } from '../../modules/partner/services';
+import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments } from '../../modules/partner/services';
 import { locationData } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -30,6 +30,9 @@ export default function PartnerProfile() {
 
     const [activeTab, setActiveTab] = useState(getInitialTab());
     const [errors, setErrors] = useState({});
+    const [selectedDocumentsToAttach, setSelectedDocumentsToAttach] = useState([]);
+    const [documentsReloadKey, setDocumentsReloadKey] = useState(0);
+    const [documentsClearKey, setDocumentsClearKey] = useState(0);
 
     // Location states
     const [countries] = useState(
@@ -744,6 +747,26 @@ export default function PartnerProfile() {
                 toast.success('Partner updated successfully');
 
                 // Redirect to next tab after update
+                // Attach any selected documents (selected in DocumentsSection)
+                try {
+                    if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
+                        const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
+                        await attachPartnerDocuments({
+                            partner_id: id,
+                            files: filePaths,
+                            document_type: 'Documents',
+                            entity_type: 'partners',
+                            entity_id: id
+                        });
+                        toast.success(`${filePaths.length} document(s) uploaded`);
+                        setDocumentsReloadKey(k => k + 1);
+                        setDocumentsClearKey(k => k + 1);
+                        setSelectedDocumentsToAttach([]);
+                    }
+                } catch (e) {
+                    console.error('Attach documents failed', e);
+                    toast.error(e.response?.data?.message || 'Failed to attach documents');
+                }
                 const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
                 const currentIndex = tabOrder.indexOf(activeTab);
                 const nextTab = tabOrder[currentIndex + 1];
@@ -762,6 +785,26 @@ export default function PartnerProfile() {
                 const newPartnerId = response?.data?.id || response?.id;
 
                 if (newPartnerId) {
+                    // If there are selected documents from the DocumentsSection, attach them to the new partner
+                    try {
+                        if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
+                            const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
+                            await attachPartnerDocuments({
+                                partner_id: newPartnerId,
+                                files: filePaths,
+                                document_type: 'Documents',
+                                entity_type: 'partners',
+                                entity_id: newPartnerId
+                            });
+                            toast.success(`${filePaths.length} document(s) uploaded`);
+                            setDocumentsReloadKey(k => k + 1);
+                            setDocumentsClearKey(k => k + 1);
+                            setSelectedDocumentsToAttach([]);
+                        }
+                    } catch (e) {
+                        console.error('Attach documents failed', e);
+                        toast.error(e.response?.data?.message || 'Failed to attach documents');
+                    }
                     // Redirect to the partner profile page with Status & Agent tab active
                     setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
                 } else {
@@ -912,6 +955,9 @@ export default function PartnerProfile() {
                                     users={users}
                                     partnerId={id}
                                     loading={isPartnerLoading}
+                                    onSelectedFilesChange={(files) => setSelectedDocumentsToAttach(files)}
+                                    documentsReloadKey={documentsReloadKey}
+                                    documentsClearKey={documentsClearKey}
                                 />
                             </div>
                         </div>

@@ -7,6 +7,8 @@ export type AuthUser = {
   email?: string
   role?: string
   image?: string
+  entity_type?: string
+  entity_id?: string | number
   permissions?: string[]
   [key: string]: unknown
 }

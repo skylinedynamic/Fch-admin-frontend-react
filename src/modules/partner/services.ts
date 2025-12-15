@@ -64,6 +64,11 @@ export const uploadPartnerDocument = async (partnerId: string | number, formData
   return data;
 };
 
+export const attachPartnerDocuments = async (payload: { partner_id: string | number, file_path: string[] | string, document_type?: string, entity_type?: string, entity_id?: string | number }) => {
+  const { data } = await apiClient.post(`/admin/partners/documents`, payload);
+  return data;
+};
+
 export const deletePartnerDocument = async (docId: string | number) => {
   const { data } = await apiClient.post(`/admin/partners/documents/delete/${docId}`);
   return data;
