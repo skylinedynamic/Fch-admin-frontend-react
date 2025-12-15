@@ -46,7 +46,7 @@ export default function ClientDetails() {
         state_file_number: '',
         duns_number: '',
         business_address: '',
-        country: 'USA',
+        country: 'United States',
         city: '',
         other_city: '',
         state: '',
@@ -78,7 +78,7 @@ export default function ClientDetails() {
     const [countries] = useState(
         Object.keys(locationData).map((key) => ({
             label: locationData[key].name,
-            value: key
+            value: locationData[key].name
         }))
     );
     const [states, setStates] = useState<{ label: string; value: string }[]>([]);
@@ -95,14 +95,14 @@ export default function ClientDetails() {
 
     // Handle cascading location logic
     useEffect(() => {
-        // Country -> State
-        // Default to USA if no country set (or based on business requirement)
-        const countryCode = formData.country || 'USA';
+        // Find country code based on Name
+        const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country);
+        const countryCode = countryEntry ? countryEntry[0] : (formData.country === 'USA' ? 'USA' : 'USA'); // Default fallback/handling
 
-        if (locationData[countryCode]) {
+        if (countryCode && locationData[countryCode]) {
             const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
                 label: locationData[countryCode].states[key].name,
-                value: key
+                value: locationData[countryCode].states[key].name
             }));
             setStates(stateOptions);
         } else {
@@ -110,10 +110,17 @@ export default function ClientDetails() {
         }
 
         // State -> City
-        if (countryCode && formData.state && locationData[countryCode]?.states[formData.state]) {
-            const cityList = locationData[countryCode].states[formData.state].cities;
-            const cityOptions = cityList.map((city: string) => ({ label: city, value: city }));
-            setCities(cityOptions);
+        if (countryCode && formData.state && locationData[countryCode]) {
+            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
+            const stateCode = stateEntry ? stateEntry[0] : null;
+
+            if (stateCode) {
+                const cityList = locationData[countryCode].states[stateCode].cities;
+                const cityOptions = cityList.map((city: string) => ({ label: city, value: city }));
+                setCities(cityOptions);
+            } else {
+                setCities([]);
+            }
         } else {
             setCities([]);
         }
@@ -146,14 +153,36 @@ export default function ClientDetails() {
                     let finalCity = clientData.city;
                     let finalOtherCity = clientData.other_city;
 
-                    if (clientData.country && clientData.state && clientData.city && clientData.city !== 'Others') {
-                        const countryCode = clientData.country;
-                        const stateCode = clientData.state;
+                    // Normalize Country: If it matches a key in locationData, convert to Name
+                    let finalCountry = clientData.country;
+                    if (locationData[finalCountry]) {
+                        finalCountry = locationData[finalCountry].name;
+                    }
+
+                    // Normalize State: Name lookup needs Country Code first
+                    let finalState = clientData.state;
+                    // Find code for finalCountry
+                    const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
+                    const countryCode = countryEntry ? countryEntry[0] : null;
+
+                    if (countryCode && locationData[countryCode] && locationData[countryCode].states[finalState]) {
+                        // It was a code, convert to Name
+                        finalState = locationData[countryCode].states[finalState].name;
+                    }
+
+                    if (finalCountry && finalState && finalCity && finalCity !== 'Others') {
+                        const searchCountryCode = countryCode || 'USA'; // fallback
+                        // Find state code if finalState is Name
+                        let stateCode = null;
+                        if (locationData[searchCountryCode]) {
+                            const sEntry = Object.entries(locationData[searchCountryCode].states).find(([key, val]) => val.name === finalState);
+                            stateCode = sEntry ? sEntry[0] : finalState; // fallback to value itself
+                        }
 
                         // Reconstruct logic from useEffect that derived cities
-                        if (locationData[countryCode] && locationData[countryCode].states[stateCode]) {
-                            const validCities = locationData[countryCode].states[stateCode].cities;
-                            if (!validCities.includes(clientData.city)) {
+                        if (locationData[searchCountryCode] && locationData[searchCountryCode].states[stateCode]) {
+                            const validCities = locationData[searchCountryCode].states[stateCode].cities;
+                            if (!validCities.includes(finalCity)) {
                                 // fetched city is NOT in the accepted list -> it's an "Others" city
                                 finalCity = 'Others';
                                 finalOtherCity = clientData.city;
@@ -164,6 +193,8 @@ export default function ClientDetails() {
                     setFormData(prev => ({
                         ...prev,
                         ...clientData,
+                        country: finalCountry,
+                        state: finalState,
                         city: finalCity,
                         other_city: finalOtherCity
                     }));

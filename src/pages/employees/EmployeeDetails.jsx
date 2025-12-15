@@ -33,7 +33,7 @@ export default function EmployeeDetails() {
   const [countries] = useState(
     Object.keys(locationData).map((key) => ({
       label: locationData[key].name,
-      value: key
+      value: locationData[key].name
     }))
   );
   const [states, setStates] = useState([]);
@@ -59,7 +59,7 @@ export default function EmployeeDetails() {
     job_status: '',
     address: '',
     joining_date: '',
-    country: 'USA',
+    country: 'United States',
     country_code: '+1',
     state: '',
     city: '',
@@ -84,14 +84,19 @@ export default function EmployeeDetails() {
       .catch((err) => console.error('Failed to fetch departments', err));
   }, []);
 
-  // Initialize states for default country (USA) on new employee creation
+  // Initialize states for default country (United States) on new employee creation
   useEffect(() => {
-    if (!id && employee.country === 'USA') {
-      const stateOptions = Object.keys(locationData['USA'].states).map((key) => ({
-        label: locationData['USA'].states[key].name,
-        value: key
-      }));
-      setStates(stateOptions);
+    if (!id && employee.country === 'United States') {
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === 'United States');
+      const countryCode = countryEntry ? countryEntry[0] : 'USA';
+
+      if (countryCode && locationData[countryCode]) {
+        const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
+          label: locationData[countryCode].states[key].name,
+          value: locationData[countryCode].states[key].name
+        }));
+        setStates(stateOptions);
+      }
     }
   }, [id]);
 
@@ -101,17 +106,38 @@ export default function EmployeeDetails() {
       setLoading(true);
       fetchEmployeeById(id)
         .then((data) => {
+          // Normalize Country: If it matches a key in locationData, convert to Name
+          let finalCountry = data.country;
+          if (locationData[finalCountry]) {
+            finalCountry = locationData[finalCountry].name;
+          }
+
+          // Find country code based on Name
+          const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
+          const countryCode = countryEntry ? countryEntry[0] : null;
+
+          // Normalize State
+          let finalState = data.state;
+          if (countryCode && locationData[countryCode] && locationData[countryCode].states[finalState]) {
+            finalState = locationData[countryCode].states[finalState].name;
+          }
+
           // Handle location cascading first to ensure options are available
           let cityOptions = [];
-          if (data.country && locationData[data.country]) {
-            const stateOptions = Object.keys(locationData[data.country].states).map((key) => ({
-              label: locationData[data.country].states[key].name,
-              value: key
+          if (countryCode && locationData[countryCode]) {
+            const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
+              label: locationData[countryCode].states[key].name,
+              value: locationData[countryCode].states[key].name
             }));
             setStates(stateOptions);
 
-            if (data.state && locationData[data.country].states[data.state]) {
-              const cityList = locationData[data.country].states[data.state].cities;
+            // Find State Code
+            let stateCode = null;
+            const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === finalState);
+            stateCode = sEntry ? sEntry[0] : finalState;
+
+            if (stateCode && locationData[countryCode].states[stateCode]) {
+              const cityList = locationData[countryCode].states[stateCode].cities;
               cityOptions = cityList.map((city) => ({ label: city, value: city }));
               setCities(cityOptions);
             }
@@ -132,9 +158,11 @@ export default function EmployeeDetails() {
 
           const normalizedData = {
             ...data,
+            country: finalCountry,
+            state: finalState,
             city: cityValue,
             other_city: otherCityValue,
-            country_code: data.country_code || ((data.country === 'USA' || data.country === 'Canada') ? '+1' : ''),
+            country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
             create_account:
               data.create_account === true ||
               data.create_account === 'true' ||
@@ -245,15 +273,20 @@ export default function EmployeeDetails() {
     // Handle country/state/city cascading
     if (name === 'country') {
       let countryCode = '';
-      if (newValue === 'USA' || newValue === 'Canada') {
+      if (newValue === 'United States' || newValue === 'Canada') {
         countryCode = '+1';
       }
       setEmployee((prev) => ({ ...prev, country: newValue, country_code: countryCode, state: '', city: '', other_city: '' }));
       validateField('country', newValue);
-      if (locationData[newValue]) {
-        const stateOptions = Object.keys(locationData[newValue].states).map((key) => ({
-          label: locationData[newValue].states[key].name,
-          value: key
+
+      // Find code based on Name
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === newValue);
+      const code = countryEntry ? countryEntry[0] : null;
+
+      if (code && locationData[code]) {
+        const stateOptions = Object.keys(locationData[code].states).map((key) => ({
+          label: locationData[code].states[key].name,
+          value: locationData[code].states[key].name
         }));
         setStates(stateOptions);
         setCities([]);
@@ -264,11 +297,22 @@ export default function EmployeeDetails() {
     } else if (name === 'state') {
       setEmployee((prev) => ({ ...prev, state: newValue, city: '', other_city: '' }));
       validateField('state', newValue);
-      const countryCode = employee.country;
-      if (countryCode && locationData[countryCode] && locationData[countryCode].states[newValue]) {
-        const cityList = locationData[countryCode].states[newValue].cities;
-        const cityOptions = cityList.map((city) => ({ label: city, value: city }));
-        setCities(cityOptions);
+
+      const countryName = employee.country;
+      const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === countryName);
+      const countryCode = countryEntry ? countryEntry[0] : null;
+
+      if (countryCode && locationData[countryCode]) {
+        const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === newValue);
+        const stateCode = sEntry ? sEntry[0] : null;
+
+        if (stateCode) {
+          const cityList = locationData[countryCode].states[stateCode].cities;
+          const cityOptions = cityList.map((city) => ({ label: city, value: city }));
+          setCities(cityOptions);
+        } else {
+          setCities([]);
+        }
       } else {
         setCities([]);
       }
