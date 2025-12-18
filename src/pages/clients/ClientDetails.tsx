@@ -3,9 +3,12 @@ import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClientForm from './components/ClientForm';
+// @ts-ignore - JSX component imported in TSX file
+import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config/locations';
+
 
 export default function ClientDetails() {
     const { id } = useParams();
@@ -549,6 +552,13 @@ export default function ClientDetails() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Activity Sidebar - Only show when editing */}
+                    {id && (
+                        <div className="col-xxl-4">
+                            <ActivitySidebar />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

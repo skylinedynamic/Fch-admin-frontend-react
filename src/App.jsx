@@ -19,6 +19,8 @@ import Partners from './pages/partners/Partners.jsx';
 import PartnerProfile from './pages/partners/PartnerProfile.jsx';
 import Clients from './pages/clients/Clients.jsx';
 import ClientDetails from './pages/clients/ClientDetails';
+import TiersList from './pages/tiers/TiersList.jsx';
+import TierForm from './pages/tiers/TierForm.jsx';
 
 export default function App() {
   useEffect(() => {
@@ -71,11 +73,19 @@ export default function App() {
               <Route path="users" element={<Users />} />
             </Route>
 
+
             {/* Roles & Permissions Routes - requires 'view roles & permissions' permission */}
             <Route element={<PermissionRoute permission="view roles & permissions" />}>
               <Route path="roles-permissions" element={<RolesPermissions />} />
               <Route path="roles-permissions/create" element={<CreateRole />} />
               <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+            </Route>
+
+            {/* Credit Builder Menu Routes */}
+            <Route>
+              <Route path="tiers" element={<TiersList />} />
+              <Route path="tiers/create" element={<TierForm />} />
+              <Route path="tiers/:id" element={<TierForm />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

@@ -21,6 +21,7 @@ const menuItems = [
     label: 'Partners',
     permission: 'view partners',
   },
+  // ... (Keeping other items, replacing Tiers with Submenu)
   {
     to: '/under-construction/demo-requests',
     icon: 'las la-calendar-check',
@@ -44,6 +45,21 @@ const menuItems = [
     icon: 'las la-user-friends',
     label: 'Clients',
     permission: 'view clients',
+  },
+  {
+    label: 'Credit Builder',
+    icon: 'ri-building-2-line',
+    id: 'credit-builder',
+    permission: 'view tiers', // Parent permission
+    isHostOnly: true, // Only show for is_host === 1
+    subItems: [
+      {
+        to: '/tiers',
+        label: 'Manage Tier',
+        icon: 'ri-sound-module-line',
+        permission: 'view tiers',
+      }
+    ]
   },
   {
     to: '/under-construction/commissions',
@@ -122,6 +138,7 @@ const menuItems = [
 export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 992 : false)
   const [open, setOpen] = useState(false)
+  const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission } = usePermissions()
 
   // Get current user and check if is_host
@@ -151,6 +168,11 @@ export default function Sidebar() {
     }
   }
 
+  const toggleSubMenu = (menuId, e) => {
+    e.preventDefault();
+    setExpandedMenu(expandedMenu === menuId ? null : menuId);
+  }
+
   // Filter menu items based on permissions AND special rules
   const visibleMenuItems = useMemo(() => {
     const filtered = menuItems.filter((item) => {
@@ -160,11 +182,14 @@ export default function Sidebar() {
         return true
       }
 
-      // Check if user has the required permission
-      const hasRequiredPermission = hasPermission(item.permission)
+      // Check if user has the required permission (for parent)
+      if (item.permission && !hasPermission(item.permission)) {
+        return false;
+      }
 
-      if (!hasRequiredPermission) {
-        // User doesn't have permission - hide this menu
+      // Generic rule: Check isHostOnly flag
+      if (item.isHostOnly && !isHost) {
+        console.log(`🔒 Hiding ${item.label} menu: user is not host (is_host: ${currentUser?.is_host})`)
         return false
       }
 
@@ -178,15 +203,6 @@ export default function Sidebar() {
       return true
     })
 
-    // Debug log (remove after testing)
-    console.log('📋 Sidebar Menu Filter:', {
-      userType: currentUser?.user_type,
-      isHost: isHost,
-      totalMenus: menuItems.length,
-      visibleMenus: filtered.length,
-      hiddenMenus: menuItems.filter(item => !filtered.includes(item)).map(m => m.label)
-    })
-
     return filtered
   }, [hasPermission, isHost, currentUser])
 
@@ -195,6 +211,22 @@ export default function Sidebar() {
       <style>{`
         @media (max-width: 991.98px){
           .navbar-brand-box{position:sticky;top:0;z-index:1;background:var(--bs-body-bg);display:block!important}
+        }
+        .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+            transform: rotate(90deg);
+        }
+        .nav-link[data-bs-toggle="collapse"]::after {
+            content: "\\F0142";
+            font-family: "Material Design Icons";
+            margin-left: auto;
+            transition: transform 0.2s;
+            font-size: 1.05rem;
+            position: absolute;
+            right: 18px;
+            color: #919da9; 
+        }
+        .menu-dropdown .nav-link {
+            padding-left: 3rem;
         }
       `}</style>
       <div className="navbar-brand-box">
@@ -259,17 +291,52 @@ export default function Sidebar() {
         <div className="container-fluid">
           <div id="two-column-menu"></div>
           <ul className="navbar-nav partner-sidebar" id="navbar-nav">
-            {visibleMenuItems.map((item) => (
-              <li className="nav-item" key={item.to}>
-                <NavLink
-                  end={item.exact}
-                  className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'}
-                  to={item.to}
-                >
-                  <i className={item.icon}></i> <span>{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
+            {visibleMenuItems.map((item) => {
+              if (item.subItems) {
+                const isExpanded = expandedMenu === item.id;
+                return (
+                  <li className="nav-item" key={item.id}>
+                    <a
+                      className={`nav-link menu-link ${isExpanded ? '' : 'collapsed'}`}
+                      href={`#sidebar-${item.id}`}
+                      onClick={(e) => toggleSubMenu(item.id, e)}
+                      data-bs-toggle="collapse"
+                      role="button"
+                      aria-expanded={isExpanded}
+                      aria-controls={`sidebar-${item.id}`}
+                    >
+                      <i className={item.icon}></i> <span>{item.label}</span>
+                    </a>
+                    <div className={`collapse ${isExpanded ? 'show' : ''} menu-dropdown`} id={`sidebar-${item.id}`}>
+                      <ul className="nav nav-sm flex-column">
+                        {item.subItems.map(subItem => (
+                          <li className="nav-item" key={subItem.to}>
+                            <NavLink
+                              to={subItem.to}
+                              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                            >
+                              {subItem.label}
+                            </NavLink>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                );
+              }
+
+              return (
+                <li className="nav-item" key={item.to}>
+                  <NavLink
+                    end={item.exact}
+                    className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'}
+                    to={item.to}
+                  >
+                    <i className={item.icon}></i> <span>{item.label}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
