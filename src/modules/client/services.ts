@@ -91,6 +91,6 @@ export const fetchBorrowerUsers = async (): Promise<any> => {
 
 // Fetch borrower tiers
 export const fetchBorrowerTiers = async (): Promise<any> => {
-    const { data } = await apiClient.post('/common/borrowers-tiers');
+    const { data } = await apiClient.post('/common/tiers/fetch-all-tiers');
     return data;
 };

@@ -8,6 +8,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import { createTier, updateTier, getTier } from '../../modules/tiers/services';
 import { TIER_STATUS_OPTIONS } from '../../config/tierOptions';
 import FormLoader from '../../components/Loader/FormLoader';
+import TierTasks from './components/TierTasks';
+
+// Import Summernote JS (it will attach itself to the global jQuery)
+import 'summernote/dist/summernote-lite.js';
 
 export default function TierForm() {
     const navigate = useNavigate();
@@ -42,56 +46,57 @@ export default function TierForm() {
 
     // Initialize Summernote
     useEffect(() => {
-        if (activeTab === 'tierInfo' && !initialLoading && window.$) {
+        if (activeTab === 'tierInfo' && !initialLoading && editorRef.current) {
             const $ = window.$;
-            $(editorRef.current).summernote({
-                height: 200,
-                placeholder: 'Enter description...',
-                callbacks: {
-                    onChange: (contents) => {
-                        setFormData(prev => ({ ...prev, description: contents }));
-                        if (errors.description) {
-                            setErrors(prev => ({ ...prev, description: null }));
-                        }
-                    }
-                },
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['color', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['table', ['table']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ]
-            });
+            const $editor = $(editorRef.current);
 
-            // Set initial content
-            if (formData.description) {
-                $(editorRef.current).summernote('code', formData.description);
+            // Destroy previous instance to be safe
+            if ($editor.summernote) {
+                // Initialize
+                $editor.summernote({
+                    height: 200,
+                    placeholder: 'Enter description...',
+                    dialogsInBody: true,
+                    callbacks: {
+                        onChange: (contents) => {
+                            setFormData(prev => ({ ...prev, description: contents }));
+                            if (errors.description) {
+                                setErrors(prev => ({ ...prev, description: null }));
+                            }
+                        }
+                    },
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview', 'help']]
+                    ]
+                });
+
+                // Set initial content
+                if (formData.description) {
+                    $editor.summernote('code', formData.description);
+                }
             }
         }
 
         return () => {
-            if (editorRef.current && window.$) {
-                window.$(editorRef.current).summernote('destroy');
+            if (window.$ && editorRef.current) {
+                const $ = window.$;
+                try {
+                    $(editorRef.current).summernote('destroy');
+                } catch (e) { }
             }
         };
     }, [activeTab, initialLoading]);
 
-    // Update summernote if formData.description changes externally (e.g. after fetch)
-    useEffect(() => {
-        if (editorRef.current && window.$ && formData.description) {
-            const currentCode = window.$(editorRef.current).summernote('code');
-            if (currentCode !== formData.description) {
-                window.$(editorRef.current).summernote('code', formData.description);
-            }
-        }
-    }, [initialLoading]); // Only sync when initial loading finishes
-
     useEffect(() => {
         if (isEditMode) {
             const loadTier = async () => {
+                setInitialLoading(true); // Ensure loader shows when ID changes
                 try {
                     const response = await getTier(id);
                     // Extract the actual tier data from response.data
@@ -382,9 +387,7 @@ export default function TierForm() {
                                     </form>
                                 )}
                                 {activeTab === 'taskInfo' && (
-                                    <div className="text-center py-5">
-                                        <h5 className="text-muted">Task Information Module Coming Soon</h5>
-                                    </div>
+                                    <TierTasks tierId={Number(id)} />
                                 )}
                             </div>
                         </div>

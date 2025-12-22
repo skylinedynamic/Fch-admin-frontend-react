@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config/relations';
 import { PARTNER_INFORMATION_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
-
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
+import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
+import { toast } from 'react-toastify';
+
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
 export default function PartnerInformationSection({
     formData,
@@ -14,26 +17,84 @@ export default function PartnerInformationSection({
     handleInputChange,
     countries,
     states,
-    cities
+    cities,
+    partnerId
 }) {
+    const [showFileManager, setShowFileManager] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState(null);
+
+    // Filter results from file manager based on allowed extensions
+    const handleFileSelection = (selectedFiles) => {
+        if (!selectedFiles || selectedFiles.length === 0) return;
+
+        const file = selectedFiles[0];
+        const extension = file.path.split('.').pop()?.toLowerCase();
+        const allowed = ['jpg', 'jpeg', 'png'];
+
+        if (!extension || !allowed.includes(extension)) {
+            toast.error(`File type ".${extension}" not allowed. Please select JPG, JPEG or PNG.`);
+            return;
+        }
+
+        // Set local preview URL for immediate display
+        setPreviewUrl(file.url);
+
+        // Update form data with the selected file path for backend
+        handleInputChange({
+            target: {
+                name: 'partner_image',
+                value: file.path
+            }
+        });
+        setShowFileManager(false);
+    };
+
     // Helper function to get image source - matches EmployeeDetails pattern
     const getImageSrc = () => {
-        // If user selected a new image file
+        // 1. If user selected a new image file from browser (Blob)
         if (formData.partner_image instanceof File) {
             return URL.createObjectURL(formData.partner_image);
         }
 
-        // If there's an existing image URL from formData
+        const buildUrl = (path) => {
+            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
+                return path;
+            }
+
+            // Clean up BOTH base URL and path
+            const baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
+            let cleanPath = path.trim().replace(/^\/+/, '');
+
+            // Ensure partners structure if missing
+            if (partnerId && !cleanPath.includes('partners/')) {
+                // If it already has some other path, we preserve it, 
+                // but if it's just a filename, we add the partner path
+                if (!cleanPath.includes('/')) {
+                    cleanPath = `partners/${partnerId}/${cleanPath}`;
+                }
+            }
+
+            // Construct full URL and remove any double slashes except after protocol
+            const fullUrl = `${baseUrl}/${cleanPath}`;
+            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+        };
+
+        // 2. If we have a preview URL from file manager selection
+        if (previewUrl && formData.partner_image && typeof formData.partner_image === 'string' && !formData.partner_image.startsWith('http')) {
+            return buildUrl(previewUrl);
+        }
+
+        // 3. Use current partner_image if it's a string (from DB)
         if (typeof formData.partner_image === 'string' && formData.partner_image.trim() !== '') {
-            return formData.partner_image;
+            return buildUrl(formData.partner_image);
         }
 
-        // Fall back to profileImage prop
+        // 4. Fall back to profileImage prop
         if (typeof profileImage === 'string' && profileImage.trim() !== '') {
-            return profileImage;
+            return buildUrl(profileImage);
         }
 
-        // Default avatar - using static import
+        // 5. Default avatar
         return avatarDefault;
     };
 
@@ -49,25 +110,27 @@ export default function PartnerInformationSection({
                             alt="user-profile-image"
                         />
                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                            <input
-                                id="profile-img-file-input"
-                                type="file"
-                                className="profile-img-file-input"
-                                onChange={handleInputChange}
-                                name="partner_image"
-                                accept=".jpg, .jpeg, .png"
-                            />
-                            <label
-                                htmlFor="profile-img-file-input"
-                                className="profile-photo-edit avatar-xs"
+                            <button
+                                type="button"
+                                className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
+                                onClick={() => setShowFileManager(true)}
                                 title="Upload profile image"
                             >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>
                                 </span>
-                            </label>
+                            </button>
                         </div>
                     </div>
+
+                    <FileManagerModal
+                        isOpen={showFileManager}
+                        toggle={() => setShowFileManager(!showFileManager)}
+                        selectionMode={true}
+                        onSelectFiles={handleFileSelection}
+                        entityType="partners"
+                        entityId={partnerId || formData?.id}
+                    />
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border">
                             <i className="ri-information-line me-1"></i>

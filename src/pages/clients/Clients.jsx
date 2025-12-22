@@ -83,7 +83,7 @@ export default function Clients() {
             phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             assign_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            current_tier: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            current_tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -142,7 +142,7 @@ export default function Clients() {
                 if (result.status && result.data) {
                     const formattedTiers = (result.data || []).map(tier => ({
                         label: tier.name,
-                        value: tier.value
+                        value: tier.name
                     }));
                     setTiersList(formattedTiers);
                 }
@@ -407,14 +407,30 @@ export default function Clients() {
         const tierColors = {};
 
         tiersList.forEach((tier, index) => {
-            tierColors[tier.value] = colorOptions[index % colorOptions.length];
+            tierColors[tier.label] = colorOptions[index % colorOptions.length];
         });
 
-        const color = tierColors[rowData.current_tier] || 'secondary';
+        const color = tierColors[rowData.current_tier_name] || 'secondary';
         return (
             <span className={`badge bg-${color}-subtle text-${color}`}>
-                {rowData.current_tier}
+                {rowData.current_tier_name}
             </span>
+        );
+    };
+
+    const tierFilterElement = (options) => {
+        return (
+            <Dropdown
+                value={options.value}
+                options={tiersList}
+                onChange={(e) => options.filterApplyCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Tier"
+                className="p-column-filter"
+                showClear
+                style={{ minWidth: '12rem' }}
+            />
         );
     };
 
@@ -649,7 +665,7 @@ export default function Clients() {
                                                 'phone_number',
                                                 'assign_name',
                                                 'partner_name',
-                                                'current_tier'
+                                                'current_tier_name'
                                             ]}
                                             selection={selectedClients}
                                             onSelectionChange={(e) => setSelectedClients(e.value)}
@@ -720,12 +736,13 @@ export default function Clients() {
                                                 style={{ minWidth: '150px' }}
                                             />
                                             <Column
-                                                field="current_tier"
+                                                field="current_tier_name"
                                                 header="Current Tier"
                                                 body={tierBody}
                                                 sortable
                                                 filter
-                                                showFilterMatchModes
+                                                filterElement={tierFilterElement}
+                                                showFilterMatchModes={false}
                                                 filterPlaceholder="Search by tier"
                                                 style={{ minWidth: '130px' }}
                                             />

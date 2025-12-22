@@ -22,6 +22,13 @@ import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
 
+// Import jQuery and expose to window (Summernote requires this)
+import $ from 'jquery';
+window.jQuery = window.$ = $;
+
+// Import Summernote CSS globally
+import 'summernote/dist/summernote-lite.css';
+
 export default function App() {
   useEffect(() => {
     // Check session immediately on app load

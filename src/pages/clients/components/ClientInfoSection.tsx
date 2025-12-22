@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import type { Client } from '../../../modules/client/types';
+import 'summernote/dist/summernote-lite.js';
 
 const entityTypeOptions = [
     { label: 'Corporation (C-Corp)', value: 'Corporation (C-Corp)' },
@@ -35,6 +36,66 @@ export default function ClientInfoSection({
     cities,
     isLoading = false
 }: ClientInfoSectionProps) {
+    const editorRef = useRef<HTMLTextAreaElement>(null);
+
+    // Initialize Summernote
+    useEffect(() => {
+        let $editor: any = null;
+        const $ = (window as any).$;
+        if (!isLoading && $ && editorRef.current) {
+            $editor = $(editorRef.current);
+
+            if ($editor.summernote) {
+                $editor.summernote({
+                    height: 200,
+                    placeholder: 'Enter notes here...',
+                    dialogsInBody: true,
+                    callbacks: {
+                        onChange: (contents: string) => {
+                            handleInputChange({ target: { name: 'notes', value: contents } });
+                        }
+                    },
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview', 'help']]
+                    ]
+                });
+
+                // Set initial content
+                if (formData.notes) {
+                    $editor.summernote('code', formData.notes);
+                }
+            }
+        }
+
+        return () => {
+            if ($editor && $editor.summernote) {
+                try {
+                    $editor.summernote('destroy');
+                } catch (e) { }
+            }
+        };
+    }, [isLoading]);
+
+    // Update content when formData.notes changes externally (e.g. after fetch)
+    useEffect(() => {
+        const $ = (window as any).$;
+        if (!isLoading && $ && editorRef.current) {
+            const $editor = $(editorRef.current);
+            if ($editor.summernote) {
+                const currentCode = $editor.summernote('code');
+                if (currentCode !== (formData.notes || '')) {
+                    $editor.summernote('code', formData.notes || '');
+                }
+            }
+        }
+    }, [formData.notes]);
+
     if (isLoading) {
         return (
             <div className="row">
@@ -51,7 +112,7 @@ export default function ClientInfoSection({
     }
 
     return (
-        <form>
+        <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
                 <div className="col-lg-6">
                     <div className="mb-3">
@@ -125,21 +186,7 @@ export default function ClientInfoSection({
                         {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                     </div>
                 </div>
-                {/* <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="signup_id" className="form-label">Signup ID </label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.signup_id ? 'is-invalid' : ''}`}
-                            id="signup_id"
-                            name="signup_id"
-                            placeholder="Enter signup ID"
-                            value={formData.signup_id || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.signup_id && <div className="invalid-feedback">{errors.signup_id}</div>}
-                    </div>
-                </div> */}
+
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="website" className="form-label">Website</label>
@@ -246,6 +293,7 @@ export default function ClientInfoSection({
                             placeholder="Select Country"
                             filter
                             className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
+                            appendTo="self"
                         />
                         {errors.country && <small className="p-error">{errors.country}</small>}
                     </div>
@@ -263,6 +311,7 @@ export default function ClientInfoSection({
                             filter
                             className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
                             disabled={!formData.country}
+                            appendTo="self"
                         />
                         {errors.state && <small className="p-error">{errors.state}</small>}
                     </div>
@@ -280,6 +329,7 @@ export default function ClientInfoSection({
                             filter
                             className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
                             disabled={!formData.state}
+                            appendTo="self"
                         />
                         {errors.city && <small className="p-error">{errors.city}</small>}
                     </div>
@@ -356,6 +406,7 @@ export default function ClientInfoSection({
                             optionLabel="label"
                             placeholder="Select entity type"
                             className={`w-100 ${errors.entity_type ? 'p-invalid' : ''}`}
+                            appendTo="self"
                         />
                         {errors.entity_type && <small className="p-error">{errors.entity_type}</small>}
                     </div>
@@ -370,6 +421,7 @@ export default function ClientInfoSection({
                             optionLabel="label"
                             placeholder="Select industry type"
                             className={`w-100 ${errors.industry_type ? 'p-invalid' : ''}`}
+                            appendTo="self"
                         />
                         {errors.industry_type && <small className="p-error">{errors.industry_type}</small>}
                     </div>
@@ -414,15 +466,12 @@ export default function ClientInfoSection({
                     <div className="mb-3 pb-2">
                         <label htmlFor="notes" className="form-label">Notes</label>
                         <textarea
-                            className={`form-control ${errors.notes ? 'is-invalid' : ''}`}
+                            ref={editorRef}
                             id="notes"
                             name="notes"
-                            placeholder="Enter description"
-                            rows={3}
-                            value={formData.notes || ''}
-                            onChange={handleInputChange}
+                            className={`form-control ${errors.notes ? 'is-invalid' : ''}`}
                         />
-                        {errors.notes && <div className="invalid-feedback">{errors.notes}</div>}
+                        {errors.notes && <div className="invalid-feedback d-block">{errors.notes}</div>}
                     </div>
                 </div>
             </div>

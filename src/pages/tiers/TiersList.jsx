@@ -197,12 +197,16 @@ export default function TiersList() {
     };
 
     const statusBodyTemplate = (rowData) => {
-        const status = rowData.status;
-        let badgeClass = 'badge bg-secondary';
-        if (status === 'Active') badgeClass = 'badge bg-success';
-        if (status === 'Inactive') badgeClass = 'badge bg-danger';
+        const status = rowData.status?.toLowerCase();
+        let color = 'secondary';
+        if (status === 'active') color = 'success';
+        if (status === 'inactive') color = 'danger';
 
-        return <span className={badgeClass}>{status || 'N/A'}</span>;
+        return (
+            <span className={`badge bg-${color}-subtle text-${color} text-uppercase`}>
+                {rowData.status || 'N/A'}
+            </span>
+        );
     };
 
     const actionBodyTemplate = (rowData) => {
@@ -369,6 +373,7 @@ export default function TiersList() {
                                         <Column field="subtitle" header="Subtitle" sortable className="text-truncate" style={{ width: '20%', maxWidth: '200px' }} />
                                         <Column field="description" header="Description" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
                                         <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '12%' }} />
+                                        <Column header="Action" body={actionBodyTemplate} exportable={false} style={{ minWidth: '100px' }} />
                                     </DataTable>
                                 )}
                             </div>

@@ -23,6 +23,7 @@
     "react-toastify": "^11.0.5",
     "reactstrap": "^9.2.3",
     "select2": "^4.1.0-rc.0",
+    "summernote": "^0.9.1",
     "sweetalert2": "^11.26.3",
     "zustand": "^5.0.8"
   },

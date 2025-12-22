@@ -11,6 +11,8 @@ import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
+import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -711,12 +713,14 @@ export default function PartnerProfile() {
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== null && value !== undefined) {
                     if (key === 'partner_image') {
-                        // Only append if it's a File object (user selected a new image)
+                        // Append if it's a File object (user selected a new image) or a string path (from file manager)
                         if (value instanceof File) {
                             // Send as 'partner_image' - the backend field name
                             formDataToSend.append('partner_image', value);
+                        } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
+                            // Send path string if it's not a full URL (which usually means it was just selected from file manager)
+                            formDataToSend.append('partner_image', value);
                         }
-                        // Skip if it's a URL string (existing image from server)
                     } else if (key === 'agent') {
                         // Map 'agent' to 'assign_to' for backend
                         if (value !== '') {
@@ -983,10 +987,20 @@ export default function PartnerProfile() {
                                     <i className="ri-history-line align-middle me-2"></i>Activity
                                 </h4>
                                 <div className="d-flex flex-wrap gap-2 chip-actions">
-                                    <button type="button" className="btn btn-light btn-sm">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#emailComposeModal"
+                                    >
                                         <i className="ri-mail-line align-middle me-1"></i>New Email
                                     </button>
-                                    <button type="button" className="btn btn-light btn-sm">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#activityCreateModal"
+                                    >
                                         <i className="ri-calendar-line align-middle me-1"></i>New Event
                                     </button>
                                 </div>
@@ -1027,6 +1041,10 @@ export default function PartnerProfile() {
                     </div>
                 </div>
             </div>
+
+            {/* Modals */}
+            <EmailComposeModal />
+            <ActivityCreateModal />
         </div >
     );
 }

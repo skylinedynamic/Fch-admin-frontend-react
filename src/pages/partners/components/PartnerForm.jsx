@@ -41,6 +41,7 @@ export default function PartnerForm({
                                     countries={countries}
                                     states={states}
                                     cities={cities}
+                                    partnerId={partnerId}
                                 />
                             </div>
                         </form>
