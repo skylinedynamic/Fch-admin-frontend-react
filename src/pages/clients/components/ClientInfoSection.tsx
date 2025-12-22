@@ -361,7 +361,7 @@ export default function ClientInfoSection({
                             className={`form-control ${errors.business_zip ? 'is-invalid' : ''}`}
                             id="business_zip"
                             name="business_zip"
-                            placeholder="Enter zipcode"
+                            placeholder="Enter zip code"
                             value={formData.business_zip || ''}
                             onChange={handleInputChange}
                         />
