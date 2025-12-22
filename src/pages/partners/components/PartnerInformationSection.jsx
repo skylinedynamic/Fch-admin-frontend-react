@@ -129,8 +129,20 @@ export default function PartnerInformationSection({
                         selectionMode={true}
                         onSelectFiles={handleFileSelection}
                         entityType="partners"
-                        entityId={partnerId || formData?.id}
+                        entityId={partnerId || formData?.id || formData?.entity_id}
                     />
+                    {window.location.pathname === '/partners/create' && (
+                        <input
+                            type="hidden"
+                            className="form-control bg-light text-center fw-bold border-dashed"
+                            id="entityId"
+                            name="entity_id"
+                            value={formData.entity_id || ''}
+                            readOnly
+                            disabled
+                        />
+                    )}
+
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border">
                             <i className="ri-information-line me-1"></i>

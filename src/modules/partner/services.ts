@@ -98,3 +98,8 @@ export const fetchPartnerProfileStats = async (id: string) => {
   const { data } = await apiClient.post(`/admin/partners-profile-states-details-count/${id}`, {});
   return data;
 };
+
+export const getNextPartnerId = async () => {
+  const { data } = await apiClient.get('/admin/partners/next-id');
+  return data;
+};

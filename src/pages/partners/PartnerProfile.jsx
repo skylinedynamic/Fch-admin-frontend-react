@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments } from '../../modules/partner/services';
+import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId } from '../../modules/partner/services';
 import { locationData } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -49,6 +49,7 @@ export default function PartnerProfile() {
 
     // Form state matching backend payload
     const [formData, setFormData] = useState({
+        entity_id: '',
         full_name: '',
         company_name: '',
         email: '',
@@ -108,6 +109,26 @@ export default function PartnerProfile() {
         };
         fetchUsers();
     }, []);
+
+    // Fetch next partner ID for new partners
+    useEffect(() => {
+        const fetchNextId = async () => {
+            if (!id) {
+                try {
+                    const response = await getNextPartnerId();
+                    if (response.status && response.data?.next_id) {
+                        setFormData(prev => ({
+                            ...prev,
+                            entity_id: response.data.next_id
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch next partner ID', error);
+                }
+            }
+        };
+        fetchNextId();
+    }, [id]);
 
     // Initialize states for default country (United States) on new partner creation
     useEffect(() => {
