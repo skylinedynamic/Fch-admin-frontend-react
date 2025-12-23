@@ -59,6 +59,12 @@ export default function EmailComposeModal() {
                 choicesInstance = new window.Choices(choicesRef.current, {
                     removeItemButton: true,
                     searchEnabled: true,
+                    addItems: true,
+                    removeItems: true,
+                    editItems: true,
+                    duplicateItemsAllowed: false,
+                    delimiter: ',',
+                    paste: true
                 });
 
                 // Listen for changes
@@ -118,16 +124,15 @@ export default function EmailComposeModal() {
                         <form>
                             <div className="mb-3">
                                 <label className="form-label">To</label>
-                                <select
+                                <input
+                                    type="text"
                                     id="emailTo"
                                     ref={choicesRef}
-                                    className="form-select"
-                                    multiple
+                                    className="form-control"
                                     name="to"
-                                    defaultValue={formData.to}
-                                >
-                                    <option value="in@mail.com">in@mail.com</option>
-                                </select>
+                                    defaultValue="in@mail.com"
+                                    placeholder="Enter emails..."
+                                />
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Subject <span className="text-danger">*</span></label>

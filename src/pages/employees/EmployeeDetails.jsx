@@ -18,6 +18,7 @@ import { validateRequired, validateEmail, validatePhone } from '../../components
 import EmployeeForm from './components/EmployeeForm';
 import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
+import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
@@ -600,15 +601,26 @@ export default function EmployeeDetails() {
 
           <div className="col-xxl-4">
             <div className="card">
-              <div className="card-header align-items-center d-flex">
-                <h4 className="card-title mb-0 flex-grow-1">Activity</h4>
-                <div className="flex-shrink-0">
-                  <button type="button" className="btn btn-soft-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#emailComposeModal">
-                    <i className="ri-mail-line align-middle me-1"></i> New Email
-                  </button>
-                  <button type="button" className="btn btn-soft-info btn-sm">
-                    <i className="ri-calendar-2-line align-middle me-1"></i> New Event
-                  </button>
+              <div className="card-header">
+                <div className="d-flex align-items-center mb-4">
+                  <h5 className="flex-grow-1 mb-0">Activity Log</h5>
+                  <div className="flex-shrink-0">
+                    <button
+                      type="button"
+                      className="btn btn-soft-primary btn-sm"
+                      data-bs-toggle="modal"
+                      data-bs-target="#emailComposeModal"
+                    >
+                      New Email
+                    </button>
+                    <div
+                      className="btn text-light bg-primary btn-sm ms-2"
+                      data-bs-toggle="modal"
+                      data-bs-target="#activityCreateModal"
+                    >
+                      New Event
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="card-body">
@@ -664,6 +676,8 @@ export default function EmployeeDetails() {
 
 
         <EmailComposeModal />
+
+        <ActivityCreateModal />
 
         <FileManagerModal
           isOpen={showFileManager}

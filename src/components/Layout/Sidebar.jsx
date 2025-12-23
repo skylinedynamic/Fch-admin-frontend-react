@@ -57,6 +57,11 @@ const menuItems = [
         to: '/tiers',
         label: 'Manage Tier',
         permission: 'view tiers',
+      },
+      {
+        to: '/verification-center',
+        label: 'Verification Center',
+        permission: 'view verification center', // Reuse permission or add new one
       }
     ]
   },
