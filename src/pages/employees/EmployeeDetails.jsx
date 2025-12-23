@@ -8,7 +8,8 @@ import {
   createEmployee,
   updateEmployee,
   fetchEmployeeById,
-  fetchDepartments
+  fetchDepartments,
+  getNextEmployeeId
 } from '../../modules/employee';
 import { fetchRoles } from '../../modules/user/services';
 import { locationData } from '../../config/locations';
@@ -16,18 +17,22 @@ import { validateRequired, validateEmail, validatePhone } from '../../components
 
 import EmployeeForm from './components/EmployeeForm';
 import DepartmentModal from './components/DepartmentModal';
+import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import FormLoader from '../../components/Loader/FormLoader';
+import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 
 export default function EmployeeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   // State
-  const [loading, setLoading] = useState(!!id);
+  const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [showFileManager, setShowFileManager] = useState(false);
 
   // Location states
   const [countries] = useState(
@@ -98,6 +103,29 @@ export default function EmployeeDetails() {
         setStates(stateOptions);
       }
     }
+  }, [id]);
+
+  // Fetch next employee ID for new employees
+  useEffect(() => {
+    const fetchNextId = async () => {
+      if (!id) {
+        try {
+          const response = await getNextEmployeeId();
+          const nextId = response.next_id || response.data?.next_id;
+          if (nextId) {
+            setEmployee(prev => ({
+              ...prev,
+              employee_code: nextId // Mapping next_id to employee_code
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch next employee ID', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchNextId();
   }, [id]);
 
   // Fetch employee data if editing
@@ -364,6 +392,18 @@ export default function EmployeeDetails() {
   };
 
   // Handle save
+  // Handle File Manager Selection
+  const handleFileManagerSelect = (files) => {
+    // Assuming single file selection for profile image
+    const file = Array.isArray(files) ? files[0] : files;
+    if (file) {
+      // Logic to extract path or URL
+      const filePath = file.path || file.url || file;
+      setEmployee(prev => ({ ...prev, image: filePath }));
+    }
+    setShowFileManager(false);
+  };
+
   const handleSave = async () => {
     // Clear previous errors
     setErrors({});
@@ -492,6 +532,18 @@ export default function EmployeeDetails() {
                   <i className="ri-save-3-line align-middle me-1"></i>
                   {id ? 'Update' : 'Save'}
                 </button>
+                {id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const modal = new window.bootstrap.Modal(document.getElementById('emailComposeModal'));
+                      modal.show();
+                    }}
+                    className="btn btn-outline-primary w-lg waves-effect"
+                  >
+                    <i className="ri-mail-send-line align-middle me-1"></i> Email
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -532,11 +584,12 @@ export default function EmployeeDetails() {
                         countries={countries}
                         states={states}
                         cities={cities}
-                        countryCodeOptions={countryCodeOptions}
                         phonePrefix={phonePrefix}
                         onPhonePrefixChange={setPhonePrefix}
                         onAddDepartment={() => setShowDepartmentModal(true)}
+                        onOpenFileManager={() => setShowFileManager(true)}
                         isEditMode={!!id}
+                        employeeId={id || employee.employee_code}
                       />
                     )}
                   </div>
@@ -547,13 +600,54 @@ export default function EmployeeDetails() {
 
           <div className="col-xxl-4">
             <div className="card">
-              <div className="card-header px-2 py-2">
-                <h4 className="card-title mb-0">
-                  <i className="ri-history-line me-2"></i>Activity
-                </h4>
+              <div className="card-header align-items-center d-flex">
+                <h4 className="card-title mb-0 flex-grow-1">Activity</h4>
+                <div className="flex-shrink-0">
+                  <button type="button" className="btn btn-soft-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#emailComposeModal">
+                    <i className="ri-mail-line align-middle me-1"></i> New Email
+                  </button>
+                  <button type="button" className="btn btn-soft-info btn-sm">
+                    <i className="ri-calendar-2-line align-middle me-1"></i> New Event
+                  </button>
+                </div>
               </div>
               <div className="card-body">
-                <p className="text-muted">Activity Logs Here...</p>
+                <div className="acitivity-timeline acitivity-main">
+                  <div className="acitivity-item d-flex">
+                    <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                      <div className="avatar-title bg-soft-success text-success rounded-circle">
+                        <i className="ri-shopping-cart-2-line"></i>
+                      </div>
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">New ticket received <span className="badge bg-soft-danger text-danger align-middle">High</span></h6>
+                      <p className="text-muted mb-2">User <span className="text-primary">Erica245</span> submitted a ticket</p>
+                      <small className="mb-0 text-muted">26 Dec, 2024</small>
+                    </div>
+                  </div>
+                  <div className="acitivity-item py-3 d-flex">
+                    <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                      <div className="avatar-title bg-soft-danger text-danger rounded-circle">
+                        <i className="ri-user-3-line"></i>
+                      </div>
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">Employee Created <span className="badge bg-soft-primary text-primary align-middle">New</span></h6>
+                      <p className="text-muted mb-2">Profile created by <span className="text-primary">Admin</span></p>
+                      <small className="mb-0 text-muted">25 Dec, 2024</small>
+                    </div>
+                  </div>
+                  <div className="acitivity-item py-3 d-flex">
+                    <div className="flex-shrink-0">
+                      <img src={avatarDefault} alt="" className="avatar-xs rounded-circle acitivity-avatar" />
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                      <h6 className="mb-1">Jacqueline Steve</h6>
+                      <p className="text-muted mb-2">Lead status updated: moved to "Proposal" - 05:16 PM</p>
+                      <small className="mb-0 text-muted">18 Dec, 2024</small>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -565,6 +659,19 @@ export default function EmployeeDetails() {
           onHide={() => setShowDepartmentModal(false)}
           onSuccess={handleDepartmentSuccess}
           departments={departments}
+        />
+
+
+
+        <EmailComposeModal />
+
+        <FileManagerModal
+          isOpen={showFileManager}
+          toggle={() => setShowFileManager(false)}
+          onSelectFiles={handleFileManagerSelect}
+          selectionMode={true}
+          entityType="employees"
+          entityId={id || employee.employee_code}
         />
       </div>
     </div>

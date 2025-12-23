@@ -116,15 +116,21 @@ export default function PartnerProfile() {
             if (!id) {
                 try {
                     const response = await getNextPartnerId();
-                    if (response.status && response.data?.next_id) {
+                    const nextId = response.next_id || response.data?.next_id;
+                    if (nextId) {
                         setFormData(prev => ({
                             ...prev,
-                            entity_id: response.data.next_id
+                            entity_id: nextId
                         }));
                     }
                 } catch (error) {
-                    console.error('Failed to fetch next partner ID', error);
+                    // console.error('Failed to fetch next partner ID', error);
+                } finally {
+                    setIsPartnerLoading(false);
                 }
+            } else {
+                // If we have ID, loading is handled by fetchPartnerData
+                // But if fetchPartnerData dependency logic is complex, ensuring defaults:
             }
         };
         fetchNextId();
@@ -178,7 +184,7 @@ export default function PartnerProfile() {
         total_tickets: 0
     });
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
-    const [isPartnerLoading, setIsPartnerLoading] = useState(false);
+    const [isPartnerLoading, setIsPartnerLoading] = useState(true);
 
     // Metrics Configuration
     const metricsConfig = [

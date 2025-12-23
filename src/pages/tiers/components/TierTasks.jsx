@@ -303,10 +303,10 @@ export default function TierTasks({ tierId }) {
             {loading ? (
                 <TableLoader rows={5} columns={[
                     ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
-                    { style: { width: '35%' } },       // Title
+                    { style: { width: '25%' } },       // Title
                     { style: { width: '35%' } },       // Subtitle
-                    { style: { width: '15%' } },       // Estimated Days
-                    { style: { width: '15%' } }        // Order
+                    { style: { width: '20%' } },       // Estimated Days
+                    { style: { width: '20%' } }        // Order
                 ]} />
             ) : (
                 <DataTable
@@ -331,10 +331,10 @@ export default function TierTasks({ tierId }) {
                     onFilter={onFilter}
                 >
                     {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
-                    <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '35%' }} />
+                    <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
                     <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
-                    <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '15%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '15%' }} />
-                    <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '15%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '15%' }} />
+                    <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
+                    <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                 </DataTable>
             )}
 

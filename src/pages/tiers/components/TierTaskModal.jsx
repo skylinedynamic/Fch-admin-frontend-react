@@ -224,16 +224,14 @@ const TierTaskModal = ({
 
                                 <div className="col-md-6">
                                     <label className="form-label">Est. Completion Days</label>
-                                    <Dropdown
-                                        value={formData.estimated_completion_days ? Number(formData.estimated_completion_days) : ''}
-                                        onChange={(e) => handleChange({ target: { name: 'estimated_completion_days', value: e.value } })}
-                                        options={Array.from({ length: 90 }, (_, i) => ({ label: `${i + 1} Days`, value: i + 1 }))}
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        filter
-                                        className="w-100"
-                                        placeholder="Select Days"
-                                        appendTo="self"
+                                    <input
+                                        type="number"
+                                        name="estimated_completion_days"
+                                        className="form-control"
+                                        value={formData.estimated_completion_days}
+                                        onChange={handleChange}
+                                        placeholder="Enter days"
+                                        min="1"
                                     />
                                 </div>
 
