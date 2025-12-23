@@ -15,8 +15,12 @@ import {
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
+import { useAuthStore } from '../../../store/auth/authStore';
 
 export default function TierTasks({ tierId }) {
+    const { user } = useAuthStore();
+    const isDeveloper = user?.role_name === 'Developer';
+
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -25,14 +29,12 @@ export default function TierTasks({ tierId }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [sortField, setSortField] = useState('order'); // Default sort field?
+    const [sortField, setSortField] = useState('title');
     const [sortOrder, setSortOrder] = useState('asc');
 
     // Filters
     const [searchText, setSearchText] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState(null);
     const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [appliedStatus, setAppliedStatus] = useState(null);
 
     // Selection
     const [selectedTasks, setSelectedTasks] = useState([]);
@@ -45,11 +47,7 @@ export default function TierTasks({ tierId }) {
     const [editTask, setEditTask] = useState(null);
     const [loadingSave, setLoadingSave] = useState(false);
 
-    const statusOptions = [
-        { label: 'All Status', value: null },
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' }
-    ];
+    // Removed statusOptions
 
     const loadTasks = async () => {
         if (!tierId) return;
@@ -62,7 +60,6 @@ export default function TierTasks({ tierId }) {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
-                status: appliedStatus,
                 tier_id: tierId
             };
 
@@ -91,19 +88,16 @@ export default function TierTasks({ tierId }) {
 
     useEffect(() => {
         loadTasks();
-    }, [tierId, page, perPage, sortField, sortOrder, appliedSearchText, appliedStatus]);
+    }, [tierId, page, perPage, sortField, sortOrder, appliedSearchText]);
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
-        setAppliedStatus(selectedStatus);
         setPage(1);
     };
 
     const handleClearFilters = () => {
         setSearchText('');
-        setSelectedStatus(null);
         setAppliedSearchText('');
-        setAppliedStatus(null);
         setPage(1);
     };
 
@@ -222,18 +216,7 @@ export default function TierTasks({ tierId }) {
     };
 
 
-    const statusBodyTemplate = (rowData) => {
-        const status = rowData.status?.toLowerCase();
-        let color = 'secondary';
-        if (status === 'active') color = 'success';
-        if (status === 'inactive') color = 'danger';
-
-        return (
-            <span className={`badge bg-${color}-subtle text-${color} text-uppercase`}>
-                {status || 'N/A'}
-            </span>
-        );
-    };
+    // Removed statusBodyTemplate
 
     const actionBodyTemplate = (rowData) => {
         return (
@@ -251,18 +234,20 @@ export default function TierTasks({ tierId }) {
     return (
         <React.Fragment>
             <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
-                {selectedTasks.length > 0 ? (
-                    <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={openDeleteModal}
-                    >
-                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                    </button>
-                ) : (
-                    <button className="btn btn-primary" onClick={openAddModal}>
-                        <i className="ri-add-line me-1 align-bottom"></i> Add Task
-                    </button>
+                {isDeveloper && (
+                    selectedTasks.length > 0 ? (
+                        <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={openDeleteModal}
+                        >
+                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                        </button>
+                    ) : (
+                        <button className="btn btn-primary" onClick={openAddModal}>
+                            <i className="ri-add-line me-1 align-bottom"></i> Add Task
+                        </button>
+                    )
                 )}
             </div>
 
@@ -271,7 +256,7 @@ export default function TierTasks({ tierId }) {
                 handleApplyFilters();
             }}>
                 <div className="row g-3 mb-3">
-                    <div className="col-xxl-5 col-sm-6">
+                    <div className="col-xxl-9 col-sm-8">
                         <div className="search-box">
                             <input
                                 type="text"
@@ -291,21 +276,7 @@ export default function TierTasks({ tierId }) {
                         </div>
                     </div>
 
-                    <div className="col-xxl-4 col-sm-3">
-                        <Dropdown
-                            value={selectedStatus}
-                            onChange={(e) => {
-                                setSelectedStatus(e.value);
-                            }}
-                            options={statusOptions}
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="All Status"
-                            className="w-100 bg-light border-light"
-                        />
-                    </div>
-
-                    <div className="col-xxl-3 col-sm-3">
+                    <div className="col-xxl-3 col-sm-4">
                         <div className="d-flex gap-2">
                             <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                 <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -320,13 +291,12 @@ export default function TierTasks({ tierId }) {
 
             {loading ? (
                 <TableLoader rows={5} columns={[
-                    { style: { width: '3rem' } },
-                    { style: { width: '20%' } },
-                    { style: { width: '20%' } },
-                    { style: { width: '20%' } },
-                    { style: { width: '10%' } },
-                    { style: { width: '10%' } },
-                    { style: { width: '10%' } }
+                    ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
+                    { style: { width: '25%' } },       // Title
+                    { style: { width: '25%' } },       // Subtitle
+                    { style: { width: '30%' } },       // URL
+                    { style: { width: '10%' } },       // Days
+                    { style: { width: '10%' } }        // Order
                 ]} />
             ) : (
                 <DataTable
@@ -341,18 +311,18 @@ export default function TierTasks({ tierId }) {
                     sortField={sortField}
                     sortOrder={sortOrder === 'asc' ? 1 : -1}
                     className="p-datatable-sm"
-                    tableStyle={{ minWidth: '5rem' }}
+                    tableStyle={{ minWidth: '50rem' }}
                     selection={selectedTasks}
                     onSelectionChange={(e) => setSelectedTasks(e.value)}
-                    selectionMode="checkbox"
+                    selectionMode={isDeveloper ? "multiple" : null}
                     dataKey="id"
                 >
-                    <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
+                    {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="title" header="Title" body={titleBodyTemplate} sortable style={{ width: '25%' }} />
-                    <Column field="subtitle" header="Subtitle" sortable style={{ width: '20%' }} />
-                    <Column field="description" header="Description" sortable className="text-truncate" style={{ maxWidth: '300px' }} />
+                    <Column field="subtitle" header="Subtitle" sortable style={{ width: '25%' }} />
+                    <Column field="url" header="URL" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
                     <Column field="estimated_completion_days" header="Days" sortable style={{ width: '10%' }} />
-                    <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '10%' }} />
+                    <Column field="order" header="Order" sortable style={{ width: '10%' }} />
                 </DataTable>
             )}
 

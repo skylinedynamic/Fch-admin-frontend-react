@@ -346,7 +346,7 @@ export default function TierForm() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="col-md-6">
+                                            {/* <div className="col-md-6">
                                                 <label className="form-label">Status </label>
                                                 <Dropdown
                                                     value={formData.status}
@@ -365,7 +365,7 @@ export default function TierForm() {
                                                         {errors.status}
                                                     </div>
                                                 )}
-                                            </div>
+                                            </div> */}
 
                                             {/* Row 3: Description */}
                                             <div className="col-md-12">

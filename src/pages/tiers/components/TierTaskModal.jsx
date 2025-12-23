@@ -23,7 +23,7 @@ const TierTaskModal = ({
         url: '',
         button_title: '',
         estimated_completion_days: '',
-        status: 'Active'
+        order: ''
     });
     const [errors, setErrors] = useState({});
 
@@ -59,7 +59,7 @@ const TierTaskModal = ({
                     url: task.url || '',
                     button_title: task.button_title || '',
                     estimated_completion_days: task.estimated_completion_days || '',
-                    status: (task.status === 'active' || task.status === 'Active') ? 'Active' : 'Inactive'
+                    order: task.order || ''
                 });
             } else {
                 setFormData({
@@ -69,7 +69,7 @@ const TierTaskModal = ({
                     url: '',
                     button_title: '',
                     estimated_completion_days: '',
-                    status: 'Active'
+                    order: ''
                 });
             }
             setErrors({});
@@ -143,7 +143,8 @@ const TierTaskModal = ({
             onSubmit({
                 ...formData,
                 tier_id: tierId,
-                estimated_completion_days: formData.estimated_completion_days ? Number(formData.estimated_completion_days) : null
+                estimated_completion_days: formData.estimated_completion_days ? Number(formData.estimated_completion_days) : null,
+                order: formData.order ? Number(formData.order) : 0
             });
         }
     };
@@ -237,19 +238,14 @@ const TierTaskModal = ({
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Status</label>
-                                    <Dropdown
-                                        value={formData.status}
-                                        onChange={(e) => handleChange({ target: { name: 'status', value: e.value } })}
-                                        options={[
-                                            { label: 'Active', value: 'Active' },
-                                            { label: 'Inactive', value: 'Inactive' }
-                                        ]}
-                                        optionLabel="label"
-                                        optionValue="value"
-                                        className="w-100"
-                                        placeholder="Select Status"
-                                        appendTo="self"
+                                    <label className="form-label">Order</label>
+                                    <input
+                                        type="number"
+                                        name="order"
+                                        className="form-control"
+                                        value={formData.order}
+                                        onChange={handleChange}
+                                        placeholder="Enter display order"
                                     />
                                 </div>
                             </div>

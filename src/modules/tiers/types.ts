@@ -33,6 +33,7 @@ export interface TierTask {
     button_title: string;
     status: 'active' | 'inactive' | null;
     estimated_completion_days: number;
+    order: number;
     tier_name: string;
     created_at: string;
     updated_at: string;
@@ -47,4 +48,5 @@ export interface TierTaskFormData {
     button_title: string;
     status: 'active' | 'inactive';
     estimated_completion_days: number;
+    order: number;
 }
