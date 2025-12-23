@@ -10,8 +10,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import { fetchTiers, deleteTier, deleteTiers } from '../../modules/tiers/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../components/Loader/TableLoader';
+import { useAuthStore } from '../../store/auth/authStore';
 
 export default function TiersList() {
+    const { user } = useAuthStore();
+    const isDeveloper = user?.role_name === 'Developer';
+
     const [tiers, setTiers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -20,7 +24,7 @@ export default function TiersList() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [sortField, setSortField] = useState('order');
+    const [sortField, setSortField] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
 
     // PrimeReact DataTable Filters (for column-specific filters if used)
@@ -28,29 +32,18 @@ export default function TiersList() {
         name: { value: null, matchMode: FilterMatchMode.CONTAINS },
         title: { value: null, matchMode: FilterMatchMode.CONTAINS },
         subtitle: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        description: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        status: { value: null, matchMode: FilterMatchMode.EQUALS }
+        order: { value: null, matchMode: FilterMatchMode.EQUALS }
     });
 
     // UI Filter State (Input values)
     const [searchText, setSearchText] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState(null);
-
-    // Applied Filter State (Values used for fetching data from API)
     const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [appliedStatus, setAppliedStatus] = useState(null);
 
     // Selection
     const [selectedTiers, setSelectedTiers] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const [deleteRows, setDeleteRows] = useState([]);
-
-    const statusOptions = [
-        { label: 'All Status', value: null }, // Changed to null for 'All' to match logic
-        { label: 'Active', value: 'Active' },
-        { label: 'Inactive', value: 'Inactive' }
-    ];
 
     // Removed initFilters as filter states are now managed differently
 
@@ -62,8 +55,7 @@ export default function TiersList() {
                 per_page: perPage,
                 sort_field: sortField,
                 sort_order: sortOrder,
-                search: appliedSearchText, // Use applied state
-                status: appliedStatus // Use applied state
+                search: appliedSearchText // Use applied state
             };
 
             const result = await fetchTiers(payload);
@@ -91,8 +83,7 @@ export default function TiersList() {
 
     useEffect(() => {
         loadTiers();
-        // Depend on applied states, not UI states
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedStatus]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText]);
 
     const onPage = (event) => {
         setPage(event.first / event.rows + 1); // Corrected page calculation
@@ -110,23 +101,19 @@ export default function TiersList() {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
-        setAppliedStatus(selectedStatus);
         setPage(1); // Reset to first page when filters are applied
     };
 
     const handleClearFilters = () => {
         setSearchText('');
-        setSelectedStatus(null);
         setAppliedSearchText('');
-        setAppliedStatus(null);
         setPage(1); // Reset to first page when filters are cleared
         // Optionally reset DataTable's internal filters if they were used
         setFilters({
             name: { value: null, matchMode: FilterMatchMode.CONTAINS },
             title: { value: null, matchMode: FilterMatchMode.CONTAINS },
             subtitle: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            description: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            status: { value: null, matchMode: FilterMatchMode.EQUALS }
+            order: { value: null, matchMode: FilterMatchMode.EQUALS }
         });
     };
 
@@ -144,12 +131,6 @@ export default function TiersList() {
         setShowDeleteModal(false);
         setDeleteId(null);
         setDeleteRows([]);
-    };
-
-    const handleDeleteClick = (tier) => {
-        setDeleteId(tier.id);
-        setDeleteRows([]); // Ensure we are not in bulk delete mode explicitly
-        setShowDeleteModal(true);
     };
 
     const handleDeleteConfirm = async () => {
@@ -196,32 +177,11 @@ export default function TiersList() {
         );
     };
 
-    const statusBodyTemplate = (rowData) => {
-        const status = rowData.status?.toLowerCase();
-        let color = 'secondary';
-        if (status === 'active') color = 'success';
-        if (status === 'inactive') color = 'danger';
-
+    const titleBodyTemplate = (rowData) => {
         return (
-            <span className={`badge bg-${color}-subtle text-${color} text-uppercase`}>
-                {rowData.status || 'N/A'}
-            </span>
-        );
-    };
-
-    const actionBodyTemplate = (rowData) => {
-        return (
-            <div className="d-flex gap-2">
-                <Link to={`/tiers/${rowData.id}`} className="btn btn-sm btn-soft-primary">
-                    <i className="ri-pencil-fill align-bottom" />
-                </Link>
-                <button className="btn btn-sm btn-soft-danger" onClick={() => {
-                    setDeleteRows([rowData]); // Set the single row for deletion
-                    setShowDeleteModal(true);
-                }}>
-                    <i className="ri-delete-bin-fill align-bottom" />
-                </button>
-            </div>
+            <Link to={`/tiers/${rowData.id}`} className="fw-medium link-primary">
+                {rowData.title}
+            </Link>
         );
     };
 
@@ -245,33 +205,35 @@ export default function TiersList() {
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <div className="row g-3 mb-0 align-items-center">
                                         <div className="col-sm-auto">
-                                            <div className="btn-group">
-                                                {Array.isArray(selectedTiers) && selectedTiers.length > 0 ? (
-                                                    <>
-                                                        <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
-                                                            Actions
-                                                        </button>
-                                                        <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <span className="visually-hidden">Toggle dropdown</span>
-                                                        </button>
-                                                        <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                                            <li>
-                                                                <button
-                                                                    type="button"
-                                                                    className="dropdown-item text-danger"
-                                                                    onClick={openDeleteModal}
-                                                                >
-                                                                    <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                                </button>
-                                                            </li>
-                                                        </ul>
-                                                    </>
-                                                ) : (
-                                                    <Link to="/tiers/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                                        <i className="ri-add-fill me-1 align-bottom"></i> Add Tier
-                                                    </Link>
-                                                )}
-                                            </div>
+                                            {isDeveloper && (
+                                                <div className="btn-group">
+                                                    {Array.isArray(selectedTiers) && selectedTiers.length > 0 ? (
+                                                        <>
+                                                            <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                                                Actions
+                                                            </button>
+                                                            <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <span className="visually-hidden">Toggle dropdown</span>
+                                                            </button>
+                                                            <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                                                <li>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="dropdown-item text-danger"
+                                                                        onClick={openDeleteModal}
+                                                                    >
+                                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                        </>
+                                                    ) : (
+                                                        <Link to="/tiers/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Tier
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </form>
@@ -289,7 +251,7 @@ export default function TiersList() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-xxl-5 col-sm-6">
+                                        <div className="col-xxl-9 col-sm-8">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -309,19 +271,7 @@ export default function TiersList() {
                                             </div>
                                         </div>
 
-                                        <div className="col-xxl-4 col-sm-3">
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                options={statusOptions}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                placeholder="All Status"
-                                                className="w-100 bg-light border-light employee-filter-dropdown"
-                                            />
-                                        </div>
-
-                                        <div className="col-xxl-3 col-sm-3">
+                                        <div className="col-xxl-3 col-sm-4">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -337,12 +287,11 @@ export default function TiersList() {
                                     <TableLoader
                                         rows={5}
                                         columns={[
-                                            { style: { width: '3rem' } },      // Checkbox
-                                            { style: { width: '15%' } },       // Name
-                                            { style: { width: '20%' } },       // Title
-                                            { style: { width: '20%' } },       // Subtitle
-                                            { style: { width: '30%' } },       // Description
-                                            { style: { width: '12%' } }        // Status
+                                            ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
+                                            { style: { width: '25%' } },       // Name
+                                            { style: { width: '30%' } },       // Title
+                                            { style: { width: '30%' } },       // Subtitle
+                                            { style: { width: '15%' } }        // Order
                                         ]}
                                     />
                                 ) : (
@@ -364,16 +313,14 @@ export default function TiersList() {
                                         tableStyle={{ minWidth: '50rem' }}
                                         selection={selectedTiers}
                                         onSelectionChange={(e) => setSelectedTiers(e.value)}
-                                        selectionMode="checkbox"
+                                        selectionMode={isDeveloper ? "multiple" : null}
                                         dataKey="id"
                                     >
-                                        <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
-                                        <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '15%' }} />
-                                        <Column field="title" header="Title" sortable filter filterPlaceholder="Search Title" style={{ width: '20%' }} />
-                                        <Column field="subtitle" header="Subtitle" sortable className="text-truncate" style={{ width: '20%', maxWidth: '200px' }} />
-                                        <Column field="description" header="Description" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
-                                        <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ width: '12%' }} />
-                                        <Column header="Action" body={actionBodyTemplate} exportable={false} style={{ minWidth: '100px' }} />
+                                        {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                                        <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '25%' }} />
+                                        <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '30%' }} />
+                                        <Column field="subtitle" header="Subtitle" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
+                                        <Column field="order" header="Order" sortable className="text-truncate" style={{ width: '15%', maxWidth: '300px' }} />
                                     </DataTable>
                                 )}
                             </div>
