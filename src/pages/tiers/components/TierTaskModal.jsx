@@ -189,14 +189,14 @@ const TierTaskModal = ({
                                     />
                                 </div>
 
-                                <div className="col-md-12">
+                                {/* <div className="col-md-12">
                                     <label className="form-label">Description</label>
                                     <textarea
                                         ref={editorRef}
                                         name="description"
                                         className="form-control"
                                     ></textarea>
-                                </div>
+                                </div> */}
 
                                 <div className="col-md-6">
                                     <label className="form-label">Button Title</label>

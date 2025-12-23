@@ -29,10 +29,10 @@ export default function TiersList() {
 
     // PrimeReact DataTable Filters (for column-specific filters if used)
     const [filters, setFilters] = useState({
-        name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        title: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        subtitle: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        order: { value: null, matchMode: FilterMatchMode.EQUALS }
+        name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        subtitle: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        order: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     });
 
     // UI Filter State (Input values)
@@ -55,7 +55,8 @@ export default function TiersList() {
                 per_page: perPage,
                 sort_field: sortField,
                 sort_order: sortOrder,
-                search: appliedSearchText // Use applied state
+                search: appliedSearchText, // Use applied state
+                filters: filters // Include column filters
             };
 
             const result = await fetchTiers(payload);
@@ -83,7 +84,7 @@ export default function TiersList() {
 
     useEffect(() => {
         loadTiers();
-    }, [page, perPage, sortField, sortOrder, appliedSearchText]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, filters]);
 
     const onPage = (event) => {
         setPage(event.first / event.rows + 1); // Corrected page calculation
@@ -110,10 +111,10 @@ export default function TiersList() {
         setPage(1); // Reset to first page when filters are cleared
         // Optionally reset DataTable's internal filters if they were used
         setFilters({
-            name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            title: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            subtitle: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            order: { value: null, matchMode: FilterMatchMode.EQUALS }
+            name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            subtitle: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            order: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         });
     };
 
@@ -319,8 +320,8 @@ export default function TiersList() {
                                         {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                                         <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '25%' }} />
                                         <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '30%' }} />
-                                        <Column field="subtitle" header="Subtitle" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
-                                        <Column field="order" header="Order" sortable className="text-truncate" style={{ width: '15%', maxWidth: '300px' }} />
+                                        <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
+                                        <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '15%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '15%' }} />
                                     </DataTable>
                                 )}
                             </div>

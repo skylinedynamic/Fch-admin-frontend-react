@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
 import { useAuthStore } from '../../store/auth/authStore'
 import faviconImg from '../../../assets/images/Favicon.png'
@@ -56,7 +56,6 @@ const menuItems = [
       {
         to: '/tiers',
         label: 'Manage Tier',
-        icon: 'ri-sound-module-line',
         permission: 'view tiers',
       }
     ]
@@ -140,6 +139,21 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false)
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission } = usePermissions()
+  const location = useLocation();
+
+  // Auto-expand menu on route change
+  useEffect(() => {
+    menuItems.forEach(item => {
+      if (item.subItems) {
+        const isChildActive = item.subItems.some(sub =>
+          location.pathname === sub.to || (location.pathname.startsWith(sub.to) && sub.to !== '/')
+        );
+        if (isChildActive) {
+          setExpandedMenu(item.id);
+        }
+      }
+    });
+  }, [location.pathname]);
 
   // Get current user and check if is_host
   const currentUser = useAuthStore((state) => state.user)
@@ -170,6 +184,7 @@ export default function Sidebar() {
 
   const toggleSubMenu = (menuId, e) => {
     e.preventDefault();
+    // Close the menu if it's already open, otherwise open it and close others
     setExpandedMenu(expandedMenu === menuId ? null : menuId);
   }
 
@@ -208,27 +223,6 @@ export default function Sidebar() {
 
   return (
     <div className={menuClass}>
-      <style>{`
-        @media (max-width: 991.98px){
-          .navbar-brand-box{position:sticky;top:0;z-index:1;background:var(--bs-body-bg);display:block!important}
-        }
-        .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
-            transform: rotate(90deg);
-        }
-        .nav-link[data-bs-toggle="collapse"]::after {
-            content: "\\F0142";
-            font-family: "Material Design Icons";
-            margin-left: auto;
-            transition: transform 0.2s;
-            font-size: 1.05rem;
-            position: absolute;
-            right: 18px;
-            color: #919da9; 
-        }
-        .menu-dropdown .nav-link {
-            padding-left: 3rem;
-        }
-      `}</style>
       <div className="navbar-brand-box">
         <a href="/" className="logo logo-dark">
           <span className="logo-sm">
@@ -294,6 +288,9 @@ export default function Sidebar() {
             {visibleMenuItems.map((item) => {
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
+                const isChildActive = item.subItems.some(sub =>
+                  location.pathname === sub.to || (location.pathname.startsWith(sub.to) && sub.to !== '/')
+                );
                 return (
                   <li className="nav-item" key={item.id}>
                     <a
@@ -308,14 +305,19 @@ export default function Sidebar() {
                       <i className={item.icon}></i> <span>{item.label}</span>
                     </a>
                     <div className={`collapse ${isExpanded ? 'show' : ''} menu-dropdown`} id={`sidebar-${item.id}`}>
-                      <ul className="nav nav-sm flex-column">
+                      <ul className="flex-column">
                         {item.subItems.map(subItem => (
                           <li className="nav-item" key={subItem.to}>
                             <NavLink
                               to={subItem.to}
-                              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                              className={({ isActive }) => {
+                                const isChildPathActive = location.pathname.startsWith(subItem.to) && subItem.to !== '/';
+                                return (isActive || isChildPathActive) ? 'nav-link active' : 'nav-link';
+                              }}
                             >
-                              {subItem.label}
+                              <i className="ri-arrow-right-s-line align-bottom"></i>
+                              {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
+                              <span>{subItem.label}</span>
                             </NavLink>
                           </li>
                         ))}
@@ -331,6 +333,7 @@ export default function Sidebar() {
                     end={item.exact}
                     className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'}
                     to={item.to}
+                    onClick={() => setExpandedMenu(null)}
                   >
                     <i className={item.icon}></i> <span>{item.label}</span>
                   </NavLink>
