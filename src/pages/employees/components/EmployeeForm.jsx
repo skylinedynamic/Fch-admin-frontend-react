@@ -19,7 +19,9 @@ export default function EmployeeForm({
     phonePrefix,
     onPhonePrefixChange,
     onAddDepartment,
-    isEditMode
+    isEditMode,
+    onOpenFileManager,
+    employeeId
 }) {
     return (
         <form onSubmit={(e) => e.preventDefault()}>
@@ -33,6 +35,8 @@ export default function EmployeeForm({
                     countryCodeOptions={countryCodeOptions}
                     phonePrefix={phonePrefix}
                     onPhonePrefixChange={onPhonePrefixChange}
+                    onOpenFileManager={onOpenFileManager}
+                    employeeId={employeeId}
                 />
 
                 <AddressSection

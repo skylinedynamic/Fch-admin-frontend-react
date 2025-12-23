@@ -5,6 +5,7 @@ import { formatPhoneNumber } from '../../../../utils/formatters';
 import avatarDefault from '../../../../../assets/images/users/avatar-1.jpg';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
 export default function PersonalInfoSection({
     employee,
@@ -14,16 +15,46 @@ export default function PersonalInfoSection({
     onAddDepartment,
     countryCodeOptions,
     phonePrefix,
-    onPhonePrefixChange
+    onPhonePrefixChange,
+    onOpenFileManager,
+    employeeId
 }) {
+    // Helper function to get image source
     // Helper function to get image source
     const getImageSrc = () => {
         if (employee.image instanceof File) {
             return URL.createObjectURL(employee.image);
         }
 
+        const buildUrl = (path) => {
+            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
+                return path;
+            }
+
+            // Clean up BOTH base URL and path
+            let baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
+            if (!baseUrl && BASE_URL) {
+                baseUrl = BASE_URL.trim().replace(/\/+$/, '') + '/storage';
+            }
+
+            let cleanPath = path.trim().replace(/^\/+/, '');
+
+            // Ensure employees structure if missing
+            if (employeeId && !cleanPath.includes('employees/')) {
+                // If it already has some other path, we preserve it,
+                // but if it's just a filename, we add the employee path
+                if (!cleanPath.includes('/')) {
+                    cleanPath = `employees/${employeeId}/${cleanPath}`;
+                }
+            }
+
+            // Construct full URL and remove any double slashes except after protocol
+            const fullUrl = `${baseUrl}/${cleanPath}`;
+            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+        };
+
         if (typeof employee.image === 'string' && employee.image.trim() !== '') {
-            return employee.image;
+            return buildUrl(employee.image);
         }
         return avatarDefault;
     };
@@ -39,23 +70,16 @@ export default function PersonalInfoSection({
                             alt="user-profile-image"
                         />
                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                            <input
-                                id="profile-img-file-input"
-                                type="file"
-                                className="profile-img-file-input"
-                                name="image"
-                                accept=".jpg, .jpeg, .png"
-                                onChange={onChange}
-                            />
-                            <label
-                                htmlFor="profile-img-file-input"
+                            <div
+                                role="button"
                                 className="profile-photo-edit avatar-xs"
-                                title="Upload profile image"
+                                onClick={onOpenFileManager}
+                                title="Select profile image"
                             >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>
                                 </span>
-                            </label>
+                            </div>
                         </div>
                     </div>
                     <div className="text-center mb-3">

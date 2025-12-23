@@ -75,6 +75,11 @@ export const fetchDepartments = async () => {
   return res.data.data;
 };
 
+export const getNextEmployeeId = async (): Promise<{ status: boolean; message: string; data: { next_id: number } }> => {
+  const { data } = await apiClient.get('/common/employees-next-id');
+  return data;
+};
+
 export const saveDepartment = async (payload: { name: string }) => {
   const res = await apiClient.post('/common/departments', payload);
   return res.data;

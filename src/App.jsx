@@ -21,6 +21,7 @@ import Clients from './pages/clients/Clients.jsx';
 import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
+import VerificationCenter from './pages/credit-builder/VerificationCenter.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -93,6 +94,7 @@ export default function App() {
               <Route path="tiers" element={<TiersList />} />
               <Route path="tiers/create" element={<TierForm />} />
               <Route path="tiers/:id" element={<TierForm />} />
+              <Route path="verification-center" element={<VerificationCenter />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

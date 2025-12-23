@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Dropdown } from 'primereact/dropdown';
 import { Column } from 'primereact/column';
-import { FilterMatchMode } from 'primereact/api';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { toast } from 'react-toastify';
 
 import {
@@ -35,6 +35,12 @@ export default function TierTasks({ tierId }) {
     // Filters
     const [searchText, setSearchText] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [filters, setFilters] = useState({
+        title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        subtitle: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        estimated_completion_days: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        order: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+    });
 
     // Selection
     const [selectedTasks, setSelectedTasks] = useState([]);
@@ -60,7 +66,8 @@ export default function TierTasks({ tierId }) {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
-                tier_id: tierId
+                tier_id: tierId,
+                filters: filters
             };
 
             const result = await fetchTierTasks(payload);
@@ -88,7 +95,11 @@ export default function TierTasks({ tierId }) {
 
     useEffect(() => {
         loadTasks();
-    }, [tierId, page, perPage, sortField, sortOrder, appliedSearchText]);
+    }, [tierId, page, perPage, sortField, sortOrder, appliedSearchText, filters]);
+
+    const onFilter = (event) => {
+        setFilters(event.filters);
+    };
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
@@ -293,10 +304,9 @@ export default function TierTasks({ tierId }) {
                 <TableLoader rows={5} columns={[
                     ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
                     { style: { width: '25%' } },       // Title
-                    { style: { width: '25%' } },       // Subtitle
-                    { style: { width: '30%' } },       // URL
-                    { style: { width: '10%' } },       // Days
-                    { style: { width: '10%' } }        // Order
+                    { style: { width: '35%' } },       // Subtitle
+                    { style: { width: '20%' } },       // Estimated Days
+                    { style: { width: '20%' } }        // Order
                 ]} />
             ) : (
                 <DataTable
@@ -316,13 +326,15 @@ export default function TierTasks({ tierId }) {
                     onSelectionChange={(e) => setSelectedTasks(e.value)}
                     selectionMode={isDeveloper ? "multiple" : null}
                     dataKey="id"
+                    filters={filters}
+                    filterDisplay="menu"
+                    onFilter={onFilter}
                 >
                     {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
-                    <Column field="title" header="Title" body={titleBodyTemplate} sortable style={{ width: '25%' }} />
-                    <Column field="subtitle" header="Subtitle" sortable style={{ width: '25%' }} />
-                    <Column field="url" header="URL" sortable className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
-                    <Column field="estimated_completion_days" header="Days" sortable style={{ width: '10%' }} />
-                    <Column field="order" header="Order" sortable style={{ width: '10%' }} />
+                    <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
+                    <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
+                    <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
+                    <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                 </DataTable>
             )}
 
