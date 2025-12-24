@@ -50,8 +50,6 @@ const menuItems = [
     label: 'Credit Builder',
     icon: 'ri-building-2-line',
     id: 'credit-builder',
-    permission: 'view tiers', // Parent permission
-    isHostOnly: true, // Only show for is_host === 1
     subItems: [
       {
         to: '/tiers',
@@ -195,36 +193,57 @@ export default function Sidebar() {
 
   // Filter menu items based on permissions AND special rules
   const visibleMenuItems = useMemo(() => {
-    const filtered = menuItems.filter((item) => {
-      // Safety check: ensure hasPermission is a function
-      if (typeof hasPermission !== 'function') {
-        console.warn('⚠️ hasPermission is not a function, showing all menus')
-        return true
-      }
-
-      // Check if user has the required permission (for parent)
+    const checkVisibility = (item) => {
+      // 1. Basic permission check
       if (item.permission && !hasPermission(item.permission)) {
         return false;
       }
 
-      // Generic rule: Check isHostOnly flag
-      if (item.isHostOnly && !isHost) {
-        console.log(`🔒 Hiding ${item.label} menu: user is not host (is_host: ${currentUser?.is_host})`)
-        return false
+      // 2. Manage Tier: is_host && permission
+      if (item.label === 'Manage Tier') {
+        return isHost;
       }
 
-      // Special rule: Partners menu only visible if user is host (is_host === 1)
+      // 3. Verification Center: (WL && permission) || (is_host && permission)
+      if (item.label === 'Verification Center') {
+        const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
+        return isWL || isHost;
+      }
+
+      // 4. Special rule for Partners menu
       if (item.label === 'Partners' && !isHost) {
-        console.log(`🔒 Hiding Partners menu: user is not host (is_host: ${currentUser?.is_host})`)
-        return false
+        return false;
       }
 
-      // All checks passed - show this menu
-      return true
-    })
+      // 5. Generic rule: Check isHostOnly flag
+      if (item.isHostOnly && !isHost) {
+        return false;
+      }
 
-    return filtered
-  }, [hasPermission, isHost, currentUser])
+      return true;
+    };
+
+    return menuItems
+      .map(item => {
+        // If it has subItems, filter them first
+        if (item.subItems) {
+          const filteredSubItems = item.subItems.filter(sub => checkVisibility(sub));
+
+          // If no subItems are visible, the parent itself shouldn't be visible
+          if (filteredSubItems.length === 0) {
+            return null;
+          }
+
+          // For parent items with subItems, their visibility depends solely on their children.
+          // We don't apply checkVisibility to the parent itself.
+          return { ...item, subItems: filteredSubItems };
+        }
+
+        // Check top-level item visibility (non-dropdown items)
+        return checkVisibility(item) ? item : null;
+      })
+      .filter(item => item !== null);
+  }, [menuItems, hasPermission, isHost, currentUser]);
 
   return (
     <div className={menuClass}>
