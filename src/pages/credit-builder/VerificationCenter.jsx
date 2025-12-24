@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -26,12 +27,22 @@ export default function VerificationCenter() {
     const [sortField, setSortField] = useState('request_date');
     const [sortOrder, setSortOrder] = useState('desc');
 
+    // Column Filters
+    const [filters, setFilters] = useState({
+        borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        pending_count: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+        request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+    });
+
     // UI Filter State
     const [searchText, setSearchText] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [partnersList, setPartnersList] = useState([]);
     const [selectedPartner, setSelectedPartner] = useState('');
     const [appliedPartner, setAppliedPartner] = useState('');
+
 
     // Load partners if host
     useEffect(() => {
@@ -63,7 +74,8 @@ export default function VerificationCenter() {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
-                partner_id: appliedPartner
+                partner_id: appliedPartner,
+                filters: filters
             };
 
             const response = await fetchVerificationRequests(payload);
@@ -82,7 +94,7 @@ export default function VerificationCenter() {
         } finally {
             setLoading(false);
         }
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedPartner]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedPartner, filters]);
 
     useEffect(() => {
         loadVerifications();
@@ -98,6 +110,10 @@ export default function VerificationCenter() {
         setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
     };
 
+    const onFilter = (event) => {
+        setFilters(event.filters);
+    };
+
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedPartner(selectedPartner);
@@ -109,14 +125,30 @@ export default function VerificationCenter() {
         setAppliedSearchText('');
         setSelectedPartner('');
         setAppliedPartner('');
+        setFilters({
+            borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            pending_count: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+        });
         setPage(1);
     };
 
     const borrowerNameTemplate = (rowData) => {
         return (
-            <div className="fw-medium text-primary">
+            <Link
+                to="/verification-center/borrower-requests"
+                state={{
+                    borrower_id: rowData.borrower_id,
+                    partner_id: rowData.partner_id,
+                    borrower_name: rowData.borrower_name,
+                    partner_name: rowData.partner_name
+                }}
+                className="fw-medium text-primary cursor-pointer"
+            >
                 {rowData.borrower_name}
-            </div>
+            </Link>
         );
     };
 
@@ -166,13 +198,13 @@ export default function VerificationCenter() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-4">
-                                        <div className={isHost ? "col-xxl-7 col-lg-6" : "col-xxl-10 col-lg-9"}>
+                                        <div className={isHost ? "col-xxl-7 col-lg-6" : "col-xxl-9 col-lg-9"}>
                                             <div className="search-box">
                                                 <input
                                                     type="text"
                                                     className="form-control search bg-light border-light"
                                                     autoComplete="off"
-                                                    placeholder="Search here..."
+                                                    placeholder="Search borrower, partner or tier..."
                                                     value={searchText}
                                                     onChange={(e) => setSearchText(e.target.value)}
                                                     onKeyDown={(e) => {
@@ -206,7 +238,8 @@ export default function VerificationCenter() {
                                             </div>
                                         )}
 
-                                        <div className={isHost ? "col-xxl-2 col-lg-3" : "col-xxl-2 col-lg-3"}>
+
+                                        <div className={isHost ? "col-xxl-2 col-lg-3" : "col-xxl-3 col-lg-3"}>
                                             <div className="d-flex gap-2">
                                                 <button type="submit" className="btn btn-warning flex-grow-1">
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -242,6 +275,9 @@ export default function VerificationCenter() {
                                         onSort={onSort}
                                         sortField={sortField}
                                         sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                        filters={filters}
+                                        filterDisplay="menu"
+                                        onFilter={onFilter}
                                         className="p-datatable-sm custom-table"
                                         tableStyle={{ minWidth: '60rem' }}
                                         dataKey="id"
@@ -252,12 +288,16 @@ export default function VerificationCenter() {
                                             header="Borrower Name"
                                             body={borrowerNameTemplate}
                                             sortable
+                                            filter
+                                            filterPlaceholder="Search Name"
                                             style={{ width: '25%' }}
                                         />
                                         <Column
                                             field="partner_name"
                                             header="Partner Name"
                                             sortable
+                                            filter
+                                            filterPlaceholder="Search Partner"
                                             style={{ width: '20%' }}
                                             body={(rowData) => <span className="text-muted fw-medium">{rowData.partner_name}</span>}
                                         />
@@ -265,6 +305,8 @@ export default function VerificationCenter() {
                                             field="tier_name"
                                             header="Tier Name"
                                             sortable
+                                            filter
+                                            filterPlaceholder="Search Tier"
                                             style={{ width: '15%' }}
                                             body={(rowData) => <span className="badge bg-info-subtle text-info fs-11">{rowData.tier_name}</span>}
                                         />
@@ -273,6 +315,8 @@ export default function VerificationCenter() {
                                             header="Pending Requests"
                                             body={pendingCountTemplate}
                                             sortable
+                                            filter
+                                            filterPlaceholder="Search Count"
                                             style={{ width: '15%' }}
                                         />
                                         <Column
@@ -280,6 +324,8 @@ export default function VerificationCenter() {
                                             header="Request Date"
                                             body={dateBodyTemplate}
                                             sortable
+                                            filter
+                                            filterPlaceholder="Search Date"
                                             style={{ width: '25%' }}
                                         />
                                     </DataTable>
