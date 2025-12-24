@@ -147,12 +147,12 @@ export default function BorrowerVerificationRequests() {
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Borrower request task details</h4>
+                                <h4 className="fs-20 mb-1">Borrower Request Task Details</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/verification-center">Verification Center</Link></li>
-                                        <li className="breadcrumb-item active">Borrower request task details</li>
+                                        <li className="breadcrumb-item active">Borrower Request Task Details</li>
                                     </ol>
                                 </nav>
                             </div>
