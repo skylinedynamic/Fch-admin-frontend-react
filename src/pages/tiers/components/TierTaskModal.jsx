@@ -23,7 +23,9 @@ const TierTaskModal = ({
         url: '',
         button_title: '',
         estimated_completion_days: '',
-        order: ''
+        order: '',
+        manual_verification: false,
+        status: 'Active'
     });
     const [errors, setErrors] = useState({});
 
@@ -59,7 +61,9 @@ const TierTaskModal = ({
                     url: task.url || '',
                     button_title: task.button_title || '',
                     estimated_completion_days: task.estimated_completion_days || '',
-                    order: task.order || ''
+                    order: task.order || '',
+                    manual_verification: task.manual_verification == 1 || task.manual_verification === true,
+                    status: ['active', 'Active'].includes(task.status) ? 'Active' : 'Inactive'
                 });
             } else {
                 setFormData({
@@ -69,7 +73,9 @@ const TierTaskModal = ({
                     url: '',
                     button_title: '',
                     estimated_completion_days: '',
-                    order: ''
+                    order: '',
+                    manual_verification: false,
+                    status: 'Active'
                 });
             }
             setErrors({});
@@ -119,8 +125,11 @@ const TierTaskModal = ({
     }, [show, task]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
@@ -144,7 +153,9 @@ const TierTaskModal = ({
                 ...formData,
                 tier_id: tierId,
                 estimated_completion_days: formData.estimated_completion_days ? Number(formData.estimated_completion_days) : null,
-                order: formData.order ? Number(formData.order) : 0
+                order: formData.order ? Number(formData.order) : 0,
+                manual_verification: formData.manual_verification ? 1 : 0,
+                status: formData.status
             });
         }
     };
@@ -228,15 +239,15 @@ const TierTaskModal = ({
                                         type="number"
                                         name="estimated_completion_days"
                                         className="form-control"
-                                        value={formData.estimated_completion_days}
-                                        onChange={handleChange}
+
                                         placeholder="Enter days"
                                         min="1"
                                     />
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Order</label>
+                                    <label className="form-label">Ord                                    value={formData.estimated_completion_days}
+                                        onChange={handleChange}er</label>
                                     <input
                                         type="number"
                                         name="order"
@@ -245,6 +256,37 @@ const TierTaskModal = ({
                                         onChange={handleChange}
                                         placeholder="Enter display order"
                                     />
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label">Status</label>
+                                    <Dropdown
+                                        value={formData.status}
+                                        options={[
+                                            { label: 'Active', value: 'Active' },
+                                            { label: 'Inactive', value: 'Inactive' }
+                                        ]}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, status: e.value }))}
+                                        placeholder="Select Status"
+                                        className="w-100"
+                                    />
+                                </div>
+
+                                <div className="col-md-6">
+                                    <div className="mb-3">
+                                        <label className="form-label d-block">&nbsp;</label>
+                                        <div className="form-check">
+                                            <input
+                                                id="manualVerificationCheckbox"
+                                                type="checkbox"
+                                                className="form-check-input"
+                                                name="manual_verification"
+                                                checked={formData.manual_verification}
+                                                onChange={handleChange}
+                                            />
+                                            <label className="form-check-label" htmlFor="manualVerificationCheckbox">Manual Verification</label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

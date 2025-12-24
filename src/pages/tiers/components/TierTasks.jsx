@@ -227,7 +227,6 @@ export default function TierTasks({ tierId }) {
     };
 
 
-    // Removed statusBodyTemplate
 
     const actionBodyTemplate = (rowData) => {
         return (
@@ -335,6 +334,7 @@ export default function TierTasks({ tierId }) {
                     <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
                     <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                     <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
+                    {isDeveloper && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
                 </DataTable>
             )}
 
