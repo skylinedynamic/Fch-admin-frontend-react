@@ -13,12 +13,13 @@ import { fetchBorrowerVerificationRequests } from '../../modules/verification-ce
 export default function BorrowerVerificationRequests() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { borrower_id, partner_id, borrower_name, partner_name } = location.state || {};
+    const { borrower_id, partner_id, borrower_name, partner_name, borrower_status } = location.state || {};
 
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [borrowerName, setBorrowerName] = useState(borrower_name || '');
     const [partnerName, setPartnerName] = useState(partner_name || '');
+    const [borrowerStatus, setBorrowerStatus] = useState(borrower_status || '');
 
     // Pagination & Sort
     const [page, setPage] = useState(1);
@@ -29,8 +30,6 @@ export default function BorrowerVerificationRequests() {
 
     // Column Filters
     const [filters, setFilters] = useState({
-        borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-        partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         task_title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
@@ -67,7 +66,9 @@ export default function BorrowerVerificationRequests() {
                 setRequests(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
                 if (response.data?.length > 0) {
-                    setBorrowerName(response.data[0].borrower_name);
+                    if (!borrowerName) setBorrowerName(response.data[0].borrower_name);
+                    if (!partnerName) setPartnerName(response.data[0].partner_name);
+                    if (!borrowerStatus) setBorrowerStatus(response.data[0].borrower_status);
                 }
             } else {
                 toast.error(response.message || 'Failed to load requests');
@@ -80,7 +81,7 @@ export default function BorrowerVerificationRequests() {
         } finally {
             setLoading(false);
         }
-    }, [borrower_id, partner_id, page, perPage, sortField, sortOrder, appliedSearchText, filters]);
+    }, [borrower_id, partner_id, page, perPage, sortField, sortOrder, appliedSearchText, filters, borrowerName, partnerName]);
 
     useEffect(() => {
         loadRequests();
@@ -109,8 +110,6 @@ export default function BorrowerVerificationRequests() {
         setSearchText('');
         setAppliedSearchText('');
         setFilters({
-            borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             task_title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
@@ -169,6 +168,8 @@ export default function BorrowerVerificationRequests() {
                     </div>
                 </div>
 
+
+
                 <div className="row">
                     <div className="col-12">
                         <div className="card border-0 shadow-sm">
@@ -210,16 +211,64 @@ export default function BorrowerVerificationRequests() {
                                     </div>
                                 </form>
 
+                                <div className="card bg-primary-subtle border-0 mb-4 position-relative overflow-hidden" style={{ borderRadius: '15px' }}>
+                                    <div className="card-body p-4">
+                                        {/* Decorative backgrounds */}
+
+
+                                        <div className="row align-items-center position-relative">
+                                            <div className="col-auto">
+                                                <div className="avatar-md p-1 bg-white rounded-circle shadow-sm">
+                                                    <div className="avatar-title bg-primary rounded-circle fs-24">
+                                                        {borrowerName ? borrowerName.charAt(0).toUpperCase() : 'B'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col">
+                                                <div className="ps-2">
+                                                    <div className="row g-0 align-items-center">
+                                                        <div className="col-md-6 border-end-md pe-md-4">
+                                                            <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Borrower Name</span>
+                                                            <div className="d-flex align-items-center">
+                                                                <h4 className="fs-18 mb-0 fw-bold text-primary">{borrowerName || 'Loading...'}</h4>
+                                                                <span className="badge bg-success-subtle text-success ms-2 fs-10 text-uppercase">{borrowerStatus || ''}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-md-6 ps-md-4">
+                                                            <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Partner Name</span>
+                                                            <div className="d-flex align-items-center">
+                                                                <i className="ri-building-line me-2 text-primary fs-16"></i>
+                                                                <h5 className="fs-15 mb-0 fw-medium text-dark-emphasis">{partnerName || 'Loading...'}</h5>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-2 pt-2 border-top">
+                                                        <p className="text-muted mb-0 fs-12">
+                                                            <h6 className="fs-14 mb-0 fw-medium text-info">
+                                                            </h6>        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-auto mt-3 mt-lg-0 border-start-lg ps-lg-4">
+                                                <div className="d-flex gap-4">
+                                                    <div className="text-center">
+                                                        <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Pending Requests</p>
+                                                        <h6 className="mb-0 text-warning fw-bold">{totalRecords}</h6>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {loading ? (
                                     <TableLoader
                                         rows={8}
                                         columns={[
+                                            { style: { width: '35%' } },
                                             { style: { width: '15%' } },
-                                            { style: { width: '15%' } },
-                                            { style: { width: '25%' } },
-                                            { style: { width: '10%' } },
-                                            { style: { width: '15%' } },
-                                            { style: { width: '20%' } }
+                                            { style: { width: '20%' } },
+                                            { style: { width: '30%' } }
                                         ]}
                                     />
                                 ) : (
@@ -242,24 +291,7 @@ export default function BorrowerVerificationRequests() {
                                         dataKey="id"
                                         responsiveLayout="scroll"
                                     >
-                                        <Column
-                                            field="borrower_name"
-                                            header="Borrower Name"
-                                            body={(rowData) => <span className="fw-medium text-primary">{rowData.borrower_name || borrowerName}</span>}
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Borrower"
-                                            style={{ width: '15%' }}
-                                        />
-                                        <Column
-                                            field="partner_name"
-                                            header="Partner Name"
-                                            body={(rowData) => <span className="text-muted fw-medium">{rowData.partner_name || partnerName}</span>}
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Partner"
-                                            style={{ width: '15%' }}
-                                        />
+
                                         <Column
                                             field="task_title"
                                             header="Task Title"
