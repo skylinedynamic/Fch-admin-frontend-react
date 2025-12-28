@@ -137,16 +137,7 @@ export default function VerificationCenter() {
 
     const borrowerNameTemplate = (rowData) => {
         return (
-            <Link
-                to="/verification-center/borrower-requests"
-                state={{
-                    borrower_id: rowData.borrower_id,
-                    partner_id: rowData.partner_id,
-                    borrower_name: rowData.borrower_name,
-                    partner_name: rowData.partner_name
-                }}
-                className="fw-medium text-primary cursor-pointer"
-            >
+            <Link to={`/verification-center/borrower-requests/${rowData.borrower_id}`} className="fw-medium text-primary cursor-pointer">
                 {rowData.borrower_name}
             </Link>
         );
@@ -167,6 +158,8 @@ export default function VerificationCenter() {
             </div>
         );
     };
+
+
 
     return (
         <div className="page-content">
@@ -328,6 +321,7 @@ export default function VerificationCenter() {
                                             filterPlaceholder="Search Date"
                                             style={{ width: '25%' }}
                                         />
+
                                     </DataTable>
                                 )}
                             </div>

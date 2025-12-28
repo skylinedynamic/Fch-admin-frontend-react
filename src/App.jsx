@@ -96,7 +96,7 @@ export default function App() {
               <Route path="tiers/create" element={<TierForm />} />
               <Route path="tiers/:id" element={<TierForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
-              <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
+              <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

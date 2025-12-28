@@ -4,22 +4,27 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
+import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
+import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { VERIFICATION_STATUS } from '../../config/tierOptions'; // Import Constants
 import TableLoader from '../../components/Loader/TableLoader';
-import { fetchBorrowerVerificationRequests } from '../../modules/verification-center/services';
+import '../../components/Loader/SkeletonLoader.css'; // Import Loader CSS
 
 export default function BorrowerVerificationRequests() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { borrower_id, partner_id, borrower_name, partner_name, borrower_status } = location.state || {};
+    const { borrower_id } = useParams(); // Get ID from URL
+    const { partner_id } = location.state || {}; // Optional: keep partner_id from state if available, but profile fetch is better source
 
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [borrowerName, setBorrowerName] = useState(borrower_name || '');
-    const [partnerName, setPartnerName] = useState(partner_name || '');
-    const [borrowerStatus, setBorrowerStatus] = useState(borrower_status || '');
+    
+    // Profile Data State
+    const [profileData, setProfileData] = useState(null);
+    const [profileLoading, setProfileLoading] = useState(true);
 
     // Pagination & Sort
     const [page, setPage] = useState(1);
@@ -40,18 +45,40 @@ export default function BorrowerVerificationRequests() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
 
 
+    const fetchProfileData = async () => {
+        if (!borrower_id) return;
+        setProfileLoading(true);
+        try {
+            const response = await getBorrowerProfile(borrower_id);
+            if (response.status && response.data) {
+                setProfileData(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch profile data", error);
+            toast.error("Failed to load borrower profile");
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
     const loadRequests = useCallback(async () => {
-        if (!borrower_id || !partner_id) {
-            toast.error('Missing borrower or partner information');
-            setLoading(false);
-            return;
+        // Wait for profile data to get partner_id (or if it was passed in state fallback, but mainly rely on profile now)
+        // If we don't have profileData yet, we can't load requests reliably if we need partner_id from it
+        if (!borrower_id) return;
+        
+        const currentPartnerId = profileData?.partner_id || partner_id;
+
+        if (!currentPartnerId) {
+             // If profile is loading, or failed, we might not have partner_id yet. 
+             // We can skip loading requests until profile is loaded.
+             return; 
         }
 
         setLoading(true);
         try {
             const payload = {
                 borrower_id,
-                partner_id,
+                partner_id: currentPartnerId,
                 page: page,
                 per_page: perPage,
                 sort_field: sortField,
@@ -65,11 +92,6 @@ export default function BorrowerVerificationRequests() {
             if (response.status) {
                 setRequests(response.data || []);
                 setTotalRecords(response.meta?.total || 0);
-                if (response.data?.length > 0) {
-                    if (!borrowerName) setBorrowerName(response.data[0].borrower_name);
-                    if (!partnerName) setPartnerName(response.data[0].partner_name);
-                    if (!borrowerStatus) setBorrowerStatus(response.data[0].borrower_status);
-                }
             } else {
                 toast.error(response.message || 'Failed to load requests');
                 setRequests([]);
@@ -81,11 +103,17 @@ export default function BorrowerVerificationRequests() {
         } finally {
             setLoading(false);
         }
-    }, [borrower_id, partner_id, page, perPage, sortField, sortOrder, appliedSearchText, filters, borrowerName, partnerName]);
+    }, [borrower_id, partner_id, profileData, page, perPage, sortField, sortOrder, appliedSearchText, filters]);
 
     useEffect(() => {
-        loadRequests();
-    }, [loadRequests]);
+        fetchProfileData();
+    }, [borrower_id]);
+
+    useEffect(() => {
+        if (profileData) {
+            loadRequests();
+        }
+    }, [profileData, loadRequests]);
 
     const onPage = (event) => {
         setPage(event.first / event.rows + 1);
@@ -117,11 +145,66 @@ export default function BorrowerVerificationRequests() {
         setPage(1);
     };
 
+    const [deleteRows, setDeleteRows] = useState([]);
+
+    // Profile Modal State
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [selectedBorrowerIdProfile, setSelectedBorrowerIdProfile] = useState(null);
+
+    // Verification/Reject Action Modal State
+    const [showActionModal, setShowActionModal] = useState(false);
+    const [actionType, setActionType] = useState('verify'); // 'verify' or 'reject'
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [validationErrors, setValidationErrors] = useState(null);
+
+    const openActionModal = (type, rowData) => {
+        setActionType(type);
+        setSelectedRequest(rowData);
+        setShowActionModal(true);
+        setValidationErrors(null); // Clear previous errors
+    };
+
+    const handleActionConfirm = async (reason) => {
+        if (!selectedRequest) return;
+
+        setActionLoading(true);
+        try {
+            const payload = {
+                request_id: selectedRequest.id,
+                status: actionType === 'verify' ? 'verified' : 'rejected',
+                rejection_reason: reason
+            };
+
+            const response = await updateVerificationStatus(payload);
+
+            if (response.status) {
+                toast.success(response.message || `Request ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
+                setShowActionModal(false);
+                loadRequests(); // Refresh list
+            } else {
+                toast.error(response.message || 'Failed to update status');
+            }
+        } catch (err) {
+            console.error(err);
+            if (err.response && err.response.status === 422) {
+                // Validation error
+                setValidationErrors(err.response.data.errors);
+                // Optionally show a generic toast if needed, but user requested field errors
+            } else {
+                const errorMessage = err.response?.data?.message || 'An error occurred while updating status';
+                toast.error(errorMessage);
+            }
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const statusTemplate = (rowData) => {
         let badgeClass = 'bg-info-subtle text-info';
-        if (rowData.status === 'pending') badgeClass = 'bg-warning-subtle text-warning';
-        if (rowData.status === 'verified' || rowData.status === 'approved') badgeClass = 'bg-success-subtle text-success';
-        if (rowData.status === 'rejected') badgeClass = 'bg-danger-subtle text-danger';
+        if (rowData.status === VERIFICATION_STATUS.PENDING) badgeClass = 'bg-warning-subtle text-warning';
+        if (rowData.status === VERIFICATION_STATUS.COMPLETED) badgeClass = 'bg-success-subtle text-success';
+        if (rowData.status === VERIFICATION_STATUS.REJECTED) badgeClass = 'bg-danger-subtle text-danger';
 
         return (
             <span className={`badge ${badgeClass} fs-12 text-capitalize`}>
@@ -134,6 +217,28 @@ export default function BorrowerVerificationRequests() {
         return (
             <div className="fw-medium">
                 {rowData.task_title}
+            </div>
+        );
+    };
+
+    const actionBodyTemplate = (rowData) => {
+        return (
+            <div className="dropdown">
+                <button className="btn btn-soft-promary btn-md" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i className="ri-more-2-fill align-middle"></i>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end text-md">
+                    <li>
+                        <button className="dropdown-item fs-14" onClick={() => openActionModal('verify', rowData)}>
+                            <i className="ri-check-line align-bottom me-2 text-muted"></i> Verify
+                        </button>
+                    </li>
+                    <li>
+                        <button className="dropdown-item fs-14" onClick={() => openActionModal('reject', rowData)}>
+                            <i className="ri-close-line align-bottom me-2 text-muted"></i> Reject
+                        </button>
+                    </li>
+                </ul>
             </div>
         );
     };
@@ -219,9 +324,13 @@ export default function BorrowerVerificationRequests() {
                                         <div className="row align-items-center position-relative">
                                             <div className="col-auto">
                                                 <div className="avatar-md p-1 bg-white rounded-circle shadow-sm">
-                                                    <div className="avatar-title bg-primary rounded-circle fs-24">
-                                                        {borrowerName ? borrowerName.charAt(0).toUpperCase() : 'B'}
-                                                    </div>
+                                                    {profileLoading ? (
+                                                         <div className="skeleton-line rounded-circle w-100 h-100"></div>
+                                                    ) : (
+                                                        <div className="avatar-title bg-primary rounded-circle fs-24">
+                                                            {profileData?.first_name ? profileData.first_name.charAt(0).toUpperCase() : 'B'}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="col">
@@ -230,15 +339,25 @@ export default function BorrowerVerificationRequests() {
                                                         <div className="col-md-6 border-end-md pe-md-4">
                                                             <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Borrower Name</span>
                                                             <div className="d-flex align-items-center">
-                                                                <h4 className="fs-18 mb-0 fw-bold text-primary">{borrowerName || 'Loading...'}</h4>
-                                                                <span className="badge bg-success-subtle text-success ms-2 fs-10 text-uppercase">{borrowerStatus || ''}</span>
+                                                                {profileLoading ? (
+                                                                     <div className="skeleton-line w-50" style={{ height: '20px', borderRadius: '4px' }}></div>
+                                                                ) : (
+                                                                    <>
+                                                                        <h4 className="fs-18 mb-0 fw-bold text-primary">{profileData?.full_name || 'N/A'}</h4>
+                                                                        {profileData?.status && <span className="badge bg-success-subtle text-success ms-2 fs-10 text-uppercase">{profileData.status}</span>}
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="col-md-6 ps-md-4">
                                                             <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Partner Name</span>
                                                             <div className="d-flex align-items-center">
                                                                 <i className="ri-building-line me-2 text-primary fs-16"></i>
-                                                                <h5 className="fs-15 mb-0 fw-medium text-dark-emphasis">{partnerName || 'Loading...'}</h5>
+                                                                {profileLoading ? (
+                                                                     <div className="skeleton-line w-50" style={{ height: '16px', borderRadius: '4px' }}></div>
+                                                                ) : (
+                                                                    <h5 className="fs-15 mb-0 fw-medium text-dark-emphasis">{profileData?.partner_name || 'N/A'}</h5>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -255,6 +374,14 @@ export default function BorrowerVerificationRequests() {
                                                         <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Pending Requests</p>
                                                         <h6 className="mb-0 text-warning fw-bold">{totalRecords}</h6>
                                                     </div>
+                                                </div>
+                                                <div className="mt-3 text-center">
+                                                    <button 
+                                                        className="btn btn-sm btn-soft-primary w-100"
+                                                        onClick={() => setShowProfileModal(true)}
+                                                    >
+                                                        <i className="ri-user-line me-1 align-bottom"></i> View Profile
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -326,6 +453,11 @@ export default function BorrowerVerificationRequests() {
                                             style={{ width: '20%' }}
                                             body={(rowData) => <span className="text-muted">{rowData.request_date}</span>}
                                         />
+                                        <Column
+                                            header="Action"
+                                            body={actionBodyTemplate}
+                                            style={{ width: '5%' }}
+                                        />
                                     </DataTable>
                                 )}
                             </div>
@@ -333,6 +465,24 @@ export default function BorrowerVerificationRequests() {
                     </div>
                 </div>
             </div>
+
+            {/* Profile Modal */}
+            <BorrowerProfileModal
+                show={showProfileModal}
+                onHide={() => setShowProfileModal(false)}
+                borrowerId={borrower_id}
+                profileData={profileData}
+            />
+
+            {/* Verification Action Modal */}
+            <VerificationActionModal
+                show={showActionModal}
+                onHide={() => setShowActionModal(false)}
+                onConfirm={handleActionConfirm}
+                actionType={actionType}
+                loading={actionLoading}
+                validationErrors={validationErrors}
+            />
         </div>
     );
 }

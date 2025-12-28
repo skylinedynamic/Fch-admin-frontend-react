@@ -909,3 +909,11 @@
   color: var(--vz-secondary-text-color) !important;
   border-color: none !important;
 }
+
+.p-datatable-wrapper{
+  min-height: 250px !important;
+}
+
+.btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
+    border-color: transparent !important; 
+}
