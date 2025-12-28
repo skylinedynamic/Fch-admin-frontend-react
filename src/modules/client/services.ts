@@ -71,16 +71,50 @@ export const fetchBorrowerProfileStats = async (borrowerId: string | number): Pr
 
 // Fetch borrower documents
 export const fetchBorrowerDocuments = async (borrowerId: string | number): Promise<any> => {
-    const { data } = await apiClient.post(`/common/borrowers-documents/${borrowerId}`);
+    const { data } = await apiClient.post(`/common/borrowers-documents/${Number(borrowerId)}`);
     return data;
 };
 
 // Download borrower document
 export const downloadBorrowerDocument = async (documentId: string | number): Promise<any> => {
-    const response = await apiClient.get(`/common/borrowers-documents/download/${documentId}`, {
+    const response = await apiClient.get(`/common/borrowers-documents/download/${Number(documentId)}`, {
         responseType: 'blob'
     });
     return response;
+};
+
+// Attach borrower documents
+export const attachBorrowerDocuments = async (payload: { borrower_id: string | number, file_path: string[] | string, document_name?: string[] | string, entity_type?: string, entity_id?: string | number, document_type_id?: number | string }) => {
+    const formattedPayload = {
+        ...payload,
+        borrower_id: Number(payload.borrower_id),
+        entity_id: Number(payload.entity_id || payload.borrower_id),
+        entity_type: payload.entity_type || 'borrowers',
+        document_type_id: payload.document_type_id ? Number(payload.document_type_id) : undefined
+    };
+    const { data } = await apiClient.post(`/common/borrowers-documents/upload`, formattedPayload);
+    return data;
+};
+
+// Delete borrower document
+export const deleteBorrowerDocument = async (documentId: string | number) => {
+    const { data } = await apiClient.post(`/common/borrowers-documents-delete/${Number(documentId)}`);
+    return data;
+};
+
+// Update borrower document status
+export const updateBorrowerDocumentStatus = async (documentId: string | number, status: string, note?: string) => {
+    const { data } = await apiClient.post(`/common/borrowers-documents/update-status/${Number(documentId)}`, {
+        status,
+        rejection_reason: note
+    });
+    return data;
+};
+
+// Fetch borrower document types
+export const fetchBorrowerDocumentTypes = async () => {
+    const { data } = await apiClient.get(`/common/borrower-document-types`);
+    return data;
 };
 
 // Fetch all users for borrower module
