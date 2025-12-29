@@ -258,11 +258,11 @@ export default function ClientDocumentsSection() {
             </div>
             <div className="card-body">
                 <div className="table-responsive table-card">
-                    <table className="table align-middle mb-0" style={{ tableLayout: 'fixed', width: '100%', minWidth: '850px' }}>
+                    <table className="table table-nowrap align-middle mb-0" style={{ minWidth: '850px' }}>
                         <thead className="table-light text-muted">
                             <tr>
-                                <th scope="col" style={{ width: '30%' }}>File Name</th>
-                                <th scope="col" style={{ width: '20%' }}>Document Type</th>
+                                <th scope="col" style={{ width: '25%' }}>File Name</th>
+                                <th scope="col" style={{ width: '25%' }}>Document Type</th>
                                 <th scope="col" style={{ width: '10%' }}>Size</th>
                                 <th scope="col" style={{ width: '15%' }}>Upload Date</th>
                                 <th scope="col" style={{ width: '15%' }}>Status</th>
@@ -294,7 +294,7 @@ export default function ClientDocumentsSection() {
                                     return (
                                         <tr key={doc.id}>
                                             <td>
-                                                <div className="d-flex align-items-center overflow-hidden">
+                                                <div className="d-flex align-items-center">
                                                     <div className="avatar-sm flex-shrink-0">
                                                         <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
                                                             <i className={config.icon}></i>
@@ -323,11 +323,11 @@ export default function ClientDocumentsSection() {
                                             <td>{getStatusBadge(doc)}</td>
                                             <td className="text-end">
                                                 <UncontrolledDropdown strategy="fixed">
-                                                    <DropdownToggle tag="a" href="#" className="btn btn-light btn-icon" onClick={(e) => e.preventDefault()}>
+                                                    <DropdownToggle tag="button" className="btn btn-light btn-icon btn-sm" onClick={(e) => e.preventDefault()}>
                                                         <i className="ri-equalizer-fill"></i>
                                                     </DropdownToggle>
-                                                    <DropdownMenu className="dropdown-menu-end">
-                                                        <DropdownItem onClick={(e) => { e.preventDefault(); handleDownload(doc.id, doc.document_name, doc.file_path || ''); }}>
+                                                    <DropdownMenu container="body" className="dropdown-menu-end" style={{ minWidth: '180px', zIndex: 1060 }}>
+                                                        <DropdownItem onClick={(e) => { e.preventDefault(); handleDownload(doc.id, displayFileName, doc.file_path || ''); }} className="py-2">
                                                             <i className="ri-download-2-fill me-2 align-middle text-muted"></i>Download
                                                         </DropdownItem>
 
@@ -336,7 +336,7 @@ export default function ClientDocumentsSection() {
                                                                 e.preventDefault();
                                                                 setDeletingDocId(doc.id);
                                                                 setShowDeleteModal(true);
-                                                            }}>
+                                                            }} className="py-2">
                                                                 <i className="ri-delete-bin-5-fill me-2 align-middle text-muted"></i>Delete
                                                             </DropdownItem>
                                                         )}
@@ -344,16 +344,16 @@ export default function ClientDocumentsSection() {
                                                         {canUpdateStatus && (
                                                             <>
                                                                 <DropdownItem divider />
-                                                                <DropdownItem header className="text-uppercase fs-10 fw-bold text-muted">Change Status</DropdownItem>
+                                                                <DropdownItem header className="text-uppercase fs-10 fw-bold text-muted py-2">Change Status</DropdownItem>
 
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.UNDER_REVIEW); }}>
-                                                                    <i className="ri-time-line me-2 align-middle text-warning"></i>Mark as {getDocumentStatusLabel(DOCUMENT_STATUS.UNDER_REVIEW)}
+                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.UNDER_REVIEW); }} className="py-2">
+                                                                    <i className="ri-time-line me-2 align-middle text-warning"></i>Mark as Under Reviewing
                                                                 </DropdownItem>
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.ACCEPTED); }}>
-                                                                    <i className="ri-checkbox-circle-line me-2 align-middle text-success"></i>Mark as {getDocumentStatusLabel(DOCUMENT_STATUS.ACCEPTED)}
+                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.ACCEPTED); }} className="py-2">
+                                                                    <i className="ri-checkbox-circle-line me-2 align-middle text-success"></i>Mark as Accepted
                                                                 </DropdownItem>
-                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.REJECTED); }}>
-                                                                    <i className="ri-close-circle-line me-2 align-middle text-danger"></i>Mark as {getDocumentStatusLabel(DOCUMENT_STATUS.REJECTED)}
+                                                                <DropdownItem onClick={(e) => { e.preventDefault(); handleStatusUpdate(doc.id, DOCUMENT_STATUS.REJECTED); }} className="py-2">
+                                                                    <i className="ri-close-circle-line me-2 align-middle text-danger"></i>Mark as Rejected
                                                                 </DropdownItem>
                                                             </>
                                                         )}
