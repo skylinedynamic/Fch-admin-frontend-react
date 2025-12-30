@@ -88,10 +88,9 @@ const menuItems = [
     permission: 'view subscriptions',
   },
   {
-    to: '/under-construction/appointments',
+    to: '/appointments',
     icon: 'ri-calendar-2-line',
     label: 'Appointments',
-    permission: 'view appointments',
   },
   {
     to: '/under-construction/training-courses',
