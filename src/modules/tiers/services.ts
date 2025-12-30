@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { Tier, TierFormData, TierTask, TierTaskFormData } from './types';
+import { Tier, TierFormData, TierTask, TierTaskFormData, TierRelatedApiResponse, TierTasksResponse } from './types';
 
 export const fetchTiers = async (payload: any = {}) => {
     const response = await apiClient.post('/admin/credit-builder/tiers/fetch-tiers', payload);
@@ -31,7 +31,7 @@ export const deleteTiers = async (ids: number[]): Promise<void> => {
 
 // Tier Task Services
 
-export const fetchTierTasks = async (payload: any = {}) => {
+export const fetchTierTasks = async (payload: any = {}): Promise<TierTasksResponse> => {
     const response = await apiClient.post('/admin/credit-builder/tier-tasks/fetch-tasks', payload);
     return response.data;
 };
@@ -57,4 +57,9 @@ export const deleteTierTask = async (id: number): Promise<void> => {
 
 export const deleteTierTasks = async (ids: number[]): Promise<void> => {
     await apiClient.post('/admin/credit-builder/tier-tasks-multiple-delete', { ids });
+}
+
+export const fetchTierRelatedApis = async (tierId: number | string): Promise<TierRelatedApiResponse> => {
+    const response = await apiClient.get(`/admin/credit-builder/tier-related-api/${tierId}`);
+    return response.data;
 }

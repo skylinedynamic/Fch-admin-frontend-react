@@ -34,6 +34,9 @@ export interface TierTask {
     status: 'active' | 'inactive' | null;
     estimated_completion_days: number;
     order: number;
+    manual_verification: boolean | number;
+    related_api_id: number | null;
+    is_mandatory: number;
     tier_name: string;
     created_at: string;
     updated_at: string;
@@ -49,4 +52,50 @@ export interface TierTaskFormData {
     status: 'active' | 'inactive';
     estimated_completion_days: number;
     order: number;
+    manual_verification: boolean | number;
+    related_api_id: number | null;
 }
+
+export interface TierRelatedApi {
+    id: number;
+    name: string;
+    provider: string;
+    base_url: string;
+    client_id: string;
+    additional_info: string | null;
+    tier_id: number;
+}
+
+export interface TierRelatedApiResponse {
+    status: boolean;
+    message: string;
+    data: TierRelatedApi[];
+}
+
+export interface Link {
+    url: string | null;
+    label: string;
+    active: boolean;
+    page: number | null;
+}
+
+export interface Meta {
+    current_page: number;
+    from: number;
+    to: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+    links: Link[];
+}
+
+export interface ApiResponse<T> {
+    status: boolean;
+    message: string;
+    data: T;
+    meta?: Meta;
+}
+
+export type TierTasksResponse = ApiResponse<TierTask[]>;

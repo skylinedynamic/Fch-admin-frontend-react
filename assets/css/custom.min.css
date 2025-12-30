@@ -798,6 +798,11 @@
   border: none !important;
   box-shadow: none !important;
 }
+
+/* Fix PrimeReact dropdown visibility inside Bootstrap modals */
+.p-dropdown-panel {
+    z-index: 2000 !important;
+}
 .employee-filter-dropdown .p-dropdown-label.p-inputtext {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
