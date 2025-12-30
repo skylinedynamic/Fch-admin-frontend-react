@@ -9,6 +9,8 @@ const TierTaskModal = ({
     onSubmit,
     task,
     tierId,
+    relatedApis = [],
+    loadingApis = false,
     loadingSave
 }) => {
     const isEdit = !!task;
@@ -20,12 +22,11 @@ const TierTaskModal = ({
         title: '',
         subtitle: '',
         description: '',
-        url: '',
         button_title: '',
         estimated_completion_days: '',
         order: '',
         manual_verification: false,
-        status: 'Active'
+        related_api_id: null
     });
     const [errors, setErrors] = useState({});
 
@@ -58,24 +59,22 @@ const TierTaskModal = ({
                     title: task.title || '',
                     subtitle: task.subtitle || '',
                     description: task.description || '',
-                    url: task.url || '',
                     button_title: task.button_title || '',
                     estimated_completion_days: task.estimated_completion_days || '',
                     order: task.order || '',
                     manual_verification: task.manual_verification == 1 || task.manual_verification === true,
-                    status: ['active', 'Active'].includes(task.status) ? 'Active' : 'Inactive'
+                    related_api_id: task.related_api_id || null
                 });
             } else {
                 setFormData({
                     title: '',
                     subtitle: '',
                     description: '',
-                    url: '',
                     button_title: '',
                     estimated_completion_days: '',
                     order: '',
                     manual_verification: false,
-                    status: 'Active'
+                    related_api_id: null
                 });
             }
             setErrors({});
@@ -142,6 +141,10 @@ const TierTaskModal = ({
             tempErrors.title = "Title is required";
             isValid = false;
         }
+        if (!formData.manual_verification && !formData.related_api_id) {
+            tempErrors.related_api_id = "Verification API is required for automated tasks";
+            isValid = false;
+        }
         setErrors(tempErrors);
         return isValid;
     };
@@ -154,8 +157,7 @@ const TierTaskModal = ({
                 tier_id: tierId,
                 estimated_completion_days: formData.estimated_completion_days ? Number(formData.estimated_completion_days) : null,
                 order: formData.order ? Number(formData.order) : 0,
-                manual_verification: formData.manual_verification ? 1 : 0,
-                status: formData.status
+                manual_verification: formData.manual_verification ? 1 : 0
             });
         }
     };
@@ -222,15 +224,30 @@ const TierTaskModal = ({
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">URL</label>
-                                    <input
-                                        type="text"
-                                        name="url"
-                                        className="form-control"
-                                        value={formData.url}
-                                        onChange={handleChange}
-                                        placeholder="https://example.com"
+                                    <label className="form-label">Verified By</label>
+                                    <Dropdown
+                                        value={formData.related_api_id}
+                                        options={relatedApis || []}
+                                        optionLabel="name"
+                                        optionValue="id"
+                                        itemTemplate={(option) => (
+                                            <div>
+                                                <span className="fw-medium">{option.name}</span>
+                                                <span className="ms-2 text-muted small">({option.provider})</span>
+                                            </div>
+                                        )}
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, related_api_id: e.value }));
+                                            if (errors.related_api_id) {
+                                                setErrors(prev => ({ ...prev, related_api_id: null }));
+                                            }
+                                        }}
+                                        placeholder={loadingApis ? "Loading..." : "Select Verification API"}
+                                        className={`w-100 ${errors.related_api_id ? 'p-invalid' : ''}`}
+                                        showClear
+                                        appendTo={document.body}
                                     />
+                                    {errors.related_api_id && <div className="text-danger small mt-1">{errors.related_api_id}</div>}
                                 </div>
 
                                 <div className="col-md-6">
@@ -239,15 +256,15 @@ const TierTaskModal = ({
                                         type="number"
                                         name="estimated_completion_days"
                                         className="form-control"
-
+                                        value={formData.estimated_completion_days}
+                                        onChange={handleChange}
                                         placeholder="Enter days"
                                         min="1"
                                     />
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Ord                                    value={formData.estimated_completion_days}
-                                        onChange={handleChange}er</label>
+                                    <label className="form-label">Order Value</label>
                                     <input
                                         type="number"
                                         name="order"
@@ -255,20 +272,6 @@ const TierTaskModal = ({
                                         value={formData.order}
                                         onChange={handleChange}
                                         placeholder="Enter display order"
-                                    />
-                                </div>
-
-                                <div className="col-md-6">
-                                    <label className="form-label">Status</label>
-                                    <Dropdown
-                                        value={formData.status}
-                                        options={[
-                                            { label: 'Active', value: 'Active' },
-                                            { label: 'Inactive', value: 'Inactive' }
-                                        ]}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, status: e.value }))}
-                                        placeholder="Select Status"
-                                        className="w-100"
                                     />
                                 </div>
 

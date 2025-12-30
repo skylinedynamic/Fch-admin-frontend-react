@@ -10,3 +10,13 @@ export const fetchBorrowerVerificationRequests = async (payload: { borrower_id: 
     const response = await apiClient.post('/common/credit-builder/verification-center-borrower-requests', payload);
     return response.data;
 };
+
+export const getBorrowerProfile = async (id: string | number) => {
+    const { data } = await apiClient.get(`/common/borrowers/get-borrower-profile/${id}`);
+    return data;
+};
+
+export const updateVerificationStatus = async (payload: { request_id: number | string, status: string, rejection_reason?: string }): Promise<any> => {
+    const response = await apiClient.post('/common/credit-builder/verification-center-status-update', payload);
+    return response.data;
+};

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTiers, createTier, updateTier, deleteTier, getTier } from './services';
+import { fetchTiers, createTier, updateTier, deleteTier, getTier, fetchTierRelatedApis } from './services';
 import { TierFormData } from './types';
 
 export const useTiers = (payload: any = {}) => {
@@ -14,6 +14,17 @@ export const useTier = (id: number | string) => {
         queryKey: ['tier', id],
         queryFn: () => getTier(id),
         enabled: !!id,
+    });
+}
+
+export const useTierRelatedApis = (tierId: number | string | null) => {
+    return useQuery({
+        queryKey: ['tier-related-apis', tierId],
+        queryFn: async () => {
+            const result = await fetchTierRelatedApis(tierId!);
+            return result.data || [];
+        },
+        enabled: !!tierId,
     });
 }
 

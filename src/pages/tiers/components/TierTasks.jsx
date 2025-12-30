@@ -16,6 +16,7 @@ import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteCon
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { useTierRelatedApis } from '../../../modules/tiers/queries';
 
 export default function TierTasks({ tierId }) {
     const { user } = useAuthStore();
@@ -52,6 +53,9 @@ export default function TierTasks({ tierId }) {
     const [showModal, setShowModal] = useState(false);
     const [editTask, setEditTask] = useState(null);
     const [loadingSave, setLoadingSave] = useState(false);
+
+    // Fetch related APIs once on page load for this tier
+    const { data: relatedApis = [], isLoading: loadingApis } = useTierRelatedApis(tierId);
 
     // Removed statusOptions
 
@@ -344,6 +348,8 @@ export default function TierTasks({ tierId }) {
                 onSubmit={handleModalSubmit}
                 task={editTask}
                 tierId={tierId}
+                relatedApis={relatedApis}
+                loadingApis={loadingApis}
                 loadingSave={loadingSave}
             />
 

@@ -99,6 +99,7 @@ export default function App() {
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
               <Route path="appointments" element={<Appointments />} />
+              <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
