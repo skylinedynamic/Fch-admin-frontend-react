@@ -224,9 +224,9 @@ const TierTaskModal = ({
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Verified By</label>
+                                    <label className="form-label">Verified By Api</label>
                                     <Dropdown
-                                        value={formData.related_api_id}
+                                        value={(relatedApis || []).find(api => api.id == formData.related_api_id)?.id}
                                         options={relatedApis || []}
                                         optionLabel="name"
                                         optionValue="id"
