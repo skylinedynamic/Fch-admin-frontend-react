@@ -23,3 +23,7 @@ export { PARTNER_STATUS, type PartnerStatusOption } from './partnerStatus';
 // Location configurations
 export { locationData, type LocationData, type Country, type StatesMap, type StateOrProvince } from './locations';
 export { BILLING_OPTIONS } from './billingOptions';
+
+// Appointment related configurations
+export { APPOINTMENT_TYPE_OPTIONS } from './appointmentTypeOptions';
+export { TIMEZONE_OPTIONS } from './timezoneOptions';

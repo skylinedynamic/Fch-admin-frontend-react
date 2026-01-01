@@ -313,3 +313,183 @@ File: Custom Css File
 .menu-dropdown.collapse {
     transition: height 0.35s ease;
 }
+
+/* Choices.js Custom Premium Styling for Modals */
+.choices {
+    margin-bottom: 0;
+}
+
+.choices__inner {
+    border-radius: 0.375rem !important;
+    border: 1px solid #ced4da !important;
+    background-color: #fff !important;
+    padding: 4px 8px !important;
+    min-height: 38px !important;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.choices__list--dropdown {
+    z-index: 1080 !important;
+    /* Higher than bootstrap modal */
+    border: 1px solid #e9ebec !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 0 !important;
+    margin-top: 5px !important;
+    background-color: #fff !important;
+}
+
+.choices__list--dropdown .choices__item {
+    padding: 10px 16px !important;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+    background-color: #f3f6f9 !important;
+    color: #405189 !important;
+}
+
+.choices__list--dropdown .choices__placeholder {
+    display: none !important;
+    /* Hide redundant placeholder in list */
+}
+
+/* Custom scrollbar for Choices list */
+.choices__list--dropdown .choices__list {
+    max-height: 250px !important;
+}
+
+.choices__list--dropdown .choices__list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.choices__list--dropdown .choices__list::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.choices__list--dropdown .choices__list::-webkit-scrollbar-track {
+    background: #fff;
+}
+
+/* Fix for Choices interaction in modal - ensuring parent doesn't capture clicks weirdly */
+.choices[data-type*="select-one"]::after {
+    border-color: #919da9 transparent transparent transparent !important;
+    border-width: 5px !important;
+    right: 15px !important;
+}
+
+.choices[data-type*="select-one"].is-open::after {
+    border-color: transparent transparent #919da9 transparent !important;
+    margin-top: -7.5px !important;
+}
+
+.choices.is-focused .choices__inner {
+    border-color: #80bdff !important;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Premium Form Design for Appointments Modal */
+.modal-header.bg-info-subtle {
+    background-color: #f3f6f9 !important;
+    border-bottom: 1px solid #e9ebec !important;
+}
+
+.modal-title {
+    color: #405189 !important;
+    font-weight: 600 !important;
+}
+
+#form-event .form-label {
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+    color: #495057;
+}
+
+#form-event .form-control,
+#form-event .form-select {
+    border-color: #ced4da;
+    border-radius: 0.375rem;
+}
+
+#form-event .form-control:focus,
+#form-event .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.15rem rgba(64, 81, 137, 0.15);
+}
+
+#form-event .form-check-input:checked {
+    background-color: #405189;
+    border-color: #405189;
+}
+
+#form-event .form-check-label {
+    margin-left: 0.25rem;
+    color: #495057;
+}
+
+/* Choices Custom highlighting */
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+    background-color: #f3f6fa !important;
+    color: #405189 !important;
+}
+
+.choices__list--dropdown .choices__item {
+    font-weight: 400;
+}
+
+.choices__inner.border-radius-custom {
+    border-radius: 0.375rem !important;
+}
+
+/* Fix for Select entity label dynamic change spacing */
+.col-12 .mb-3 label.form-label {
+    display: block;
+}
+
+/* Universal Validation Styling - Premium Look */
+.is-invalid,
+.form-control.is-invalid,
+.form-select.is-invalid,
+.choices.is-invalid .choices__inner,
+.flatpickr-input.is-invalid {
+    border-color: #f1734f !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23f1734f'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23f1734f' stroke='none'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-size: 16px 16px !important;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+    background-position: right 12px center !important;
+}
+
+.choices.is-invalid .choices__inner {
+    background-position: right 30px center !important;
+}
+
+.flatpickr-input.is-invalid {
+    background-position: right 10px center !important;
+    background-size: 14px 14px !important;
+}
+
+.choices {
+    margin-bottom: 0 !important;
+}
+
+.invalid-feedback.d-block {
+    color: #f1734f !important;
+    font-size: 13px !important;
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+    font-weight: 400 !important;
+    display: block !important;
+}
+
+.choices.is-invalid::after {
+    right: 55px !important;
+}
