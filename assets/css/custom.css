@@ -493,3 +493,58 @@ File: Custom Css File
 .choices.is-invalid::after {
     right: 55px !important;
 }
+/* FullCalendar Premium Toolbar Styling */
+.fc .fc-toolbar-title {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: #495057 !important;
+}
+
+.fc .fc-button-primary {
+    background-color: #e2eafc !important;
+    border-color: transparent !important;
+    color: #405189 !important;
+    font-weight: 500 !important;
+    text-transform: capitalize !important;
+    padding: 6px 14px !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: #d0defa !important;
+    color: #405189 !important;
+}
+
+.fc .fc-button-primary:disabled {
+    opacity: 0.7 !important;
+}
+
+/* Active & Today State */
+.fc .fc-button-primary.fc-today-button,
+.fc .fc-button-primary.fc-button-active {
+    background-color: #405189 !important;
+    border-color: #405189 !important;
+    color: #ffffff !important;
+}
+
+/* Icon (Prev/Next) Styling */
+.fc .fc-button .fc-icon {
+    font-size: 1.1em !important;
+    vertical-align: middle !important;
+}
+
+.fc .fc-button-group > .fc-button:not(:last-child) {
+    margin-right: 2px !important;
+}
+
+.fc .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+}
+
+.fc .fc-toolbar-chunk:first-child .fc-button-group {
+    margin-right: 8px !important;
+}
