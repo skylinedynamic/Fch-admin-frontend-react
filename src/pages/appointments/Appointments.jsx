@@ -120,13 +120,28 @@ export default function Appointments() {
                     // Calculate end time based on duration_minutes
                     const end = new Date(start.getTime() + apt.duration_minutes * 60000);
 
-                    // Map status to color
+                    // Map variety of colors
+                    const SUBTLE_COLORS = [
+                        'bg-primary-subtle',
+                        'bg-success-subtle',
+                        'bg-info-subtle',
+                        'bg-warning-subtle',
+                        'bg-danger-subtle',
+                        'bg-secondary-subtle',
+                        'bg-indigo-subtle',
+                        'bg-purple-subtle',
+                        'bg-teal-subtle'
+                    ];
+
                     let className = 'bg-primary-subtle';
-                    switch (apt.status) {
-                        case 'cancelled': className = 'bg-danger-subtle'; break;
-                        case 'completed': className = 'bg-success-subtle'; break;
-                        case 'rescheduled': className = 'bg-warning-subtle'; break;
-                        default: className = 'bg-primary-subtle';
+                    if (apt.status === 'cancelled') {
+                        className = 'bg-danger-subtle';
+                    } else if (apt.status === 'completed') {
+                        className = 'bg-success-subtle';
+                    } else {
+                        // Use meeting_type or ID to pick a consistent "random" color
+                        const colorIndex = (apt.id + (apt.meeting_type?.length || 0)) % SUBTLE_COLORS.length;
+                        className = SUBTLE_COLORS[colorIndex];
                     }
 
                     return {
@@ -753,6 +768,22 @@ export default function Appointments() {
                                                         left: 'prev,next today',
                                                         center: 'title',
                                                         right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                                                    }}
+                                                    buttonIcons={{
+                                                        prev: 'chevron-left',
+                                                        next: 'chevron-right',
+                                                    }}
+                                                    buttonText={{
+                                                        today: 'Today',
+                                                        month: 'Month',
+                                                        week: 'Week',
+                                                        day: 'Day',
+                                                        list: 'List'
+                                                    }}
+                                                    eventTimeFormat={{
+                                                        hour: 'numeric',
+                                                        minute: '2-digit',
+                                                        meridiem: 'short'
                                                     }}
                                                     events={events}
                                                     editable={true}
