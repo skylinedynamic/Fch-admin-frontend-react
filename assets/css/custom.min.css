@@ -922,3 +922,86 @@
 .btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
     border-color: transparent !important; 
 }
+.p-chips .p-chips-multiple-container {
+    min-height: 37.5px !important;
+}
+
+.p-inputtext.p-chips-multiple-container{
+  height: auto !important;
+  margin-bottom: 0 !important;
+}
+
+/* .p-chips.p-component .p-inputtext,
+.p-chips.p-component,
+.p-chips.p-component:hover,
+.p-chips.p-component:focus{
+  border-color: none !important;
+} */
+
+.p-chips:not(.p-disabled):hover .p-chips-multiple-container{
+  border-color: #ced4da !important;
+}
+
+
+/* PrimeReact Chips Customization */
+.p-chips {
+    display: block;
+    width: 100%;
+}
+
+.p-chips .p-chips-multiple-container {
+    width: 100%;
+    min-height: 38px;
+    height: auto;
+    border: 1px solid #ced4da; /* Default Bootstrap border */
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    gap: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Remove default PrimeReact active border color */
+.p-chips.p-focus .p-chips-multiple-container,
+.p-chips .p-chips-multiple-container.p-focus {
+    box-shadow: none !important;
+    border-color: #ced4da !important;
+    outline: none !important;
+}
+
+/* Chip Token Items Styling */
+.p-chips .p-chips-token {
+    background-color: #e5e6e7 !important; /* or #f3f6f9 */
+    color: var(--vz-body-color) !important;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 4px; /* Slightly rounded */
+    padding: 4px 8px;
+    font-size: 0.8125rem;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Chip remove icon */
+.p-chips .p-chips-token-icon {
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    color: var(--vz-gray);
+}
+
+.p-chips .p-chips-token-icon:hover {
+    color: var(--vz-danger);
+}
+
+.p-chips-input-token input {
+    font-size: 0.8125rem;
+    color: var(--vz-body-color);
+    font-family: var(--vz-font-sans-serif);
+}
+
+.p-chips .p-chips-token-icon{
+  margin-right: .3rem !important;
+}

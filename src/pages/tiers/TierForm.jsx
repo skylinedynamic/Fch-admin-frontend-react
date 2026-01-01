@@ -9,6 +9,7 @@ import { createTier, updateTier, getTier } from '../../modules/tiers/services';
 import { TIER_STATUS_OPTIONS } from '../../config/tierOptions';
 import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
+import TierVendors from './components/TierVendors';
 
 // Import Summernote JS (it will attach itself to the global jQuery)
 import 'summernote/dist/summernote-lite.js';
@@ -36,6 +37,7 @@ export default function TierForm() {
 
     // Summernote Ref
     const editorRef = useRef(null);
+    const vendorsRef = useRef(null);
 
     // Update activeTab when location state changes
     useEffect(() => {
@@ -179,7 +181,7 @@ export default function TierForm() {
             <div className="page-content">
                 <ToastContainer position="top-right" autoClose={3000} />
                 <div className="container-fluid">
-                    <div className="row pb-1 page-subheader-sticky bg-body">
+                    <div className="row pb-1 mb-3 page-subheader-sticky bg-body">
                         <div className="col-12">
                             <div className="d-flex align-items-lg-center flex-lg-row flex-column">
                                 <div className="flex-grow-1">
@@ -230,23 +232,42 @@ export default function TierForm() {
                                 <Link to="/tiers" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="btn btn-primary w-lg waves-effect"
-                                    onClick={handleSubmit}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line align-middle me-1"></i> Save
-                                        </>
-                                    )}
-                                </button>
+
+                                {/* Show Save button only for Tier Info tab */}
+                                {activeTab === 'tierInfo' && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary w-lg waves-effect"
+                                        onClick={handleSubmit}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> Save
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+
+                                {/* Show Add Vendor button only for Vendors tab */}
+                                {activeTab === 'vendorInfo' && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary w-lg waves-effect"
+                                        onClick={() => {
+                                            if (vendorsRef.current) {
+                                                vendorsRef.current.openAddModal();
+                                            }
+                                        }}
+                                    >
+                                        <i className="ri-add-line align-middle me-1"></i> Add Vendor
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -275,6 +296,16 @@ export default function TierForm() {
                                             role="tab"
                                         >
                                             <i className="far fa-user"></i> Task Information
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === 'vendorInfo' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('vendorInfo')}
+                                            type="button"
+                                            role="tab"
+                                        >
+                                            <i className="fas fa-store"></i> Vendors
                                         </button>
                                     </li>
                                 </ul>
@@ -388,6 +419,9 @@ export default function TierForm() {
                                 )}
                                 {activeTab === 'taskInfo' && (
                                     <TierTasks tierId={Number(id)} />
+                                )}
+                                {activeTab === 'vendorInfo' && (
+                                    <TierVendors ref={vendorsRef} tierId={Number(id)} />
                                 )}
                             </div>
                         </div>
