@@ -396,12 +396,16 @@ export default function Appointments() {
             assignedFor: calEvent.extendedProps?.assigned_for?.name || "N/A",
         });
 
+        const h = startInit.getHours().toString().padStart(2, '0');
+        const m = startInit.getMinutes().toString().padStart(2, '0');
+        const hh_mm = `${h}:${m}`;
+
         setFormData(prev => ({
             ...prev,
             subject: calEvent.title,
             category: calEvent.classNames[0] || 'Business Review',
             date: startInit.toISOString().split('T')[0],
-            timeStart: startInit.toTimeString().slice(0, 5),
+            timeStart: hh_mm,
             timeEnd: endInit.toTimeString().slice(0, 5),
         }));
 
@@ -428,8 +432,11 @@ export default function Appointments() {
                 assignedFor: apt.assigned_for?.name || "N/A",
             });
 
-            const timeStr = start.toTimeString().slice(0, 5);
-            const matchedSlot = timeSlots.find(s => s.start_time === timeStr);
+            const h_full = start.getHours().toString().padStart(2, '0');
+            const m_full = start.getMinutes().toString().padStart(2, '0');
+            const hh_mm_full = `${h_full}:${m_full}`;
+
+            const matchedSlot = timeSlots.find(s => s.start_time.substring(0, 5) === hh_mm_full);
 
             setFormData({
                 subject: apt.subject,
@@ -437,7 +444,7 @@ export default function Appointments() {
                 location: apt.timezone || "UTC (GMT+00:00)",
                 description: apt.description || "",
                 date: start.toISOString().split('T')[0],
-                timeStart: timeStr,
+                timeStart: matchedSlot ? matchedSlot.start_time : hh_mm_full,
                 timeEnd: end.toTimeString().slice(0, 5),
                 timeSlotId: matchedSlot ? matchedSlot.id : '',
             });
