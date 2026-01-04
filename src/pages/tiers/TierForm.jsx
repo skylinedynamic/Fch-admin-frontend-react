@@ -176,6 +176,20 @@ export default function TierForm() {
         }));
     };
 
+    // Track selected vendors
+    const [selectedVendorsCount, setSelectedVendorsCount] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (vendorsRef.current && activeTab === 'vendorInfo') {
+                const selected = vendorsRef.current.getSelectedVendors();
+                setSelectedVendorsCount(selected?.length || 0);
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [activeTab]);
+
     if (initialLoading) {
         return (
             <div className="page-content">
@@ -210,7 +224,6 @@ export default function TierForm() {
             </div>
         );
     }
-
     return (
         <div className="page-content">
             <ToastContainer position="top-right" autoClose={3000} />
@@ -254,19 +267,45 @@ export default function TierForm() {
                                     </button>
                                 )}
 
-                                {/* Show Add Vendor button only for Vendors tab */}
+                                {/* Show Add Vendor or Delete Selected button for Vendors tab */}
                                 {activeTab === 'vendorInfo' && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary w-lg waves-effect"
-                                        onClick={() => {
-                                            if (vendorsRef.current) {
-                                                vendorsRef.current.openAddModal();
-                                            }
-                                        }}
-                                    >
-                                        <i className="ri-add-line align-middle me-1"></i> Add Vendor
-                                    </button>
+                                    selectedVendorsCount > 0 ? (
+                                        <div className="btn-group">
+                                            <button type="button" className="btn bg-success text-white fw-medium">
+                                                Actions
+                                            </button>
+                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span className="visually-hidden">Toggle dropdown</span>
+                                            </button>
+                                            <ul className="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button
+                                                        type="button"
+                                                        className="dropdown-item text-danger"
+                                                        onClick={() => {
+                                                            if (vendorsRef.current) {
+                                                                vendorsRef.current.openDeleteModal();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary w-lg waves-effect"
+                                            onClick={() => {
+                                                if (vendorsRef.current) {
+                                                    vendorsRef.current.openAddModal();
+                                                }
+                                            }}
+                                        >
+                                            <i className="ri-add-line align-middle me-1"></i> Add Vendor
+                                        </button>
+                                    )
                                 )}
                             </div>
                         </div>

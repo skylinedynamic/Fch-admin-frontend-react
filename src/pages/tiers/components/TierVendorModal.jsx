@@ -2,19 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { Chips } from 'primereact/chips';
 import { Dropdown } from 'primereact/dropdown';
+import { MultiSelect } from 'primereact/multiselect';
 
-const CATEGORY_OPTIONS = [
-    { label: 'Financial', value: 'Financial' },
-    { label: 'Supplies', value: 'Supplies' },
-    { label: 'Services', value: 'Services' },
-    { label: 'Logistics', value: 'Logistics' },
-    { label: 'IT', value: 'IT' }
-];
-
-const STATUS_OPTIONS = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' }
-];
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS } from '../../../config/creditBuilder';
 
 const TierVendorModal = ({
     show,
@@ -22,7 +12,8 @@ const TierVendorModal = ({
     onSubmit,
     vendor,
     tierId,
-    loadingSave
+    loadingSave,
+    serverErrors
 }) => {
     const isEdit = !!vendor;
     const modalRef = useRef(null);
@@ -37,6 +28,18 @@ const TierVendorModal = ({
         status: 'Active'
     });
     const [errors, setErrors] = useState({});
+
+    // Handle Server Errors
+    useEffect(() => {
+        if (serverErrors && Object.keys(serverErrors).length > 0) {
+            const newErrors = {};
+            Object.keys(serverErrors).forEach(key => {
+                // Take the first error message for each field
+                newErrors[key] = Array.isArray(serverErrors[key]) ? serverErrors[key][0] : serverErrors[key];
+            });
+            setErrors(newErrors);
+        }
+    }, [serverErrors]);
 
     // Initialize Bootstrap Modal
     useEffect(() => {
@@ -103,34 +106,17 @@ const TierVendorModal = ({
         }));
     };
 
-    const validate = () => {
-        let tempErrors = {};
-        let isValid = true;
-        if (!formData.name) {
-            tempErrors.name = "Name is required";
-            isValid = false;
-        }
-        if (!formData.category) {
-            tempErrors.category = "Category is required";
-            isValid = false;
-        }
-        setErrors(tempErrors);
-        return isValid;
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (validate()) {
-            onSubmit({
-                ...formData,
-                tier_id: tierId
-            });
-        }
+        onSubmit({
+            ...formData,
+            tier_id: tierId
+        });
     };
 
     return (
         <div
-            className="modal fade flip"
+            className="modal fade flip tier-vendor-modal"
             ref={modalRef}
             tabIndex="-1"
             aria-hidden="true"
@@ -168,6 +154,7 @@ const TierVendorModal = ({
                                         optionLabel="label"
                                         placeholder="Select a Category"
                                         className={`w-100 ${errors.category ? 'p-invalid' : ''}`}
+                                        appendTo="self"
                                     />
                                     {errors.category && <div className="invalid-feedback d-block">{errors.category}</div>}
                                 </div>
@@ -195,17 +182,38 @@ const TierVendorModal = ({
                                 </div>
 
                                 <div className="col-md-12">
-                                    <label className="form-label">Report To</label>
-                                    <Chips
-                                        value={formData.report_to}
-                                        onChange={(e) => handleChipsChange('report_to', e.value)}
-                                        className="w-100"
-                                        separator=","
-                                        placeholder="Type and press enter"
-                                    />
+                                    <label className="form-label d-block">Report To</label>
+                                    <div className="d-flex flex-wrap gap-3">
+                                        {REPORT_TO_OPTIONS.map((option) => (
+                                            <div key={option.value} className="form-check">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id={`report_${option.value}`}
+                                                    value={option.value}
+                                                    checked={formData.report_to.includes(option.value)}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        const value = option.value;
+                                                        setFormData(prev => {
+                                                            const current = prev.report_to || [];
+                                                            if (checked) {
+                                                                return { ...prev, report_to: [...current, value] };
+                                                            } else {
+                                                                return { ...prev, report_to: current.filter(item => item !== value) };
+                                                            }
+                                                        });
+                                                    }}
+                                                />
+                                                <label className="form-check-label" htmlFor={`report_${option.value}`}>
+                                                    {option.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                <div className="col-md-12">
+                                <div className="col-md-6">
                                     <label className="form-label">Status</label>
                                     <Dropdown
                                         value={formData.status}
@@ -213,6 +221,7 @@ const TierVendorModal = ({
                                         onChange={(e) => setFormData(prev => ({ ...prev, status: e.value }))}
                                         optionLabel="label"
                                         className="w-100"
+                                        appendTo="self"
                                     />
                                 </div>
                             </div>

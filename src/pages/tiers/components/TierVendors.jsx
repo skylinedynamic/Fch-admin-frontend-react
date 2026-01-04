@@ -1,5 +1,6 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
+import { Dropdown } from 'primereact/dropdown';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { toast } from 'react-toastify';
@@ -7,68 +8,13 @@ import { toast } from 'react-toastify';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierVendorModal from './TierVendorModal';
-import { useAuthStore } from '../../../store/auth/authStore';
 
-// Mock Services - TODO: Implement actual API services
-const fetchTierVendors = async (payload) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const mockData = [
-        {
-            id: 1,
-            name: 'Vendor A',
-            category: 'Financial',
-            requirements: ['Tax ID', 'Business License'],
-            benefits: ['Net-30 Terms', 'Credit Reporting'],
-            report_to: ['Dun & Bradstreet', 'Experian']
-        },
-        {
-            id: 2,
-            name: 'Vendor B',
-            category: 'Supplies',
-            requirements: ['EIN', 'D-U-N-S Number'],
-            benefits: ['Discounts', 'Fast Shipping'],
-            report_to: ['Equifax']
-        },
-        {
-            id: 3,
-            name: 'Vendor C',
-            category: 'Services',
-            requirements: ['Valid Address', 'Phone Verification'],
-            benefits: ['24/7 Support'],
-            report_to: ['Dun & Bradstreet']
-        }
-    ];
-    return { status: true, data: mockData, meta: { total: 3 } };
-};
 
-const createTierVendor = async (payload) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { status: true, data: { ...payload, id: Date.now() } };
-};
-
-const updateTierVendor = async (id, payload) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { status: true, data: { ...payload, id } };
-};
-
-const deleteTierVendor = async (id) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { status: true };
-};
-
-const deleteTierVendors = async (ids) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { status: true };
-};
+import { CATEGORY_OPTIONS } from '../../../config/creditBuilder';
+import { useTierVendors, useCreateTierVendor, useUpdateTierVendor, useDeleteTierVendor, useDeleteTierVendors } from '../../../modules/tiers/queries';
 
 const TierVendors = forwardRef(({ tierId }, ref) => {
-    const { user } = useAuthStore();
-    const isDeveloper = user?.role_name === 'Developer';
-
-    const [vendors, setVendors] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [serverErrors, setServerErrors] = useState({});
 
     // Pagination & Sort
     const [page, setPage] = useState(1);
@@ -80,9 +26,12 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     // Filters
     const [searchText, setSearchText] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [appliedCategory, setAppliedCategory] = useState('');
     const [filters, setFilters] = useState({
-        name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-        category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+        name: { constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        category: { constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        status: { constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     });
 
     // Selection
@@ -99,51 +48,39 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     useImperativeHandle(ref, () => ({
         openAddModal: () => {
             setEditVendor(null);
+            setServerErrors({});
             setShowModal(true);
-        }
+        },
+        getSelectedVendors: () => selectedVendors,
+        openDeleteModal: openDeleteModal
     }));
 
-    const loadVendors = async () => {
-        if (!tierId) return;
+    // React Query Hooks
+    const { 
+        data: vendorsData, 
+        isLoading: loading, 
+        isFetching 
+    } = useTierVendors({
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+        search: appliedSearchText,
+        tier_id: tierId,
+        category: appliedCategory,
+        filters: filters
+    });
 
-        setLoading(true);
-        try {
-            const payload = {
-                page,
-                per_page: perPage,
-                sort_field: sortField,
-                sort_order: sortOrder,
-                search: appliedSearchText,
-                tier_id: tierId,
-                filters: filters
-            };
-
-            const result = await fetchTierVendors(payload);
-
-            if (result.status) {
-                setVendors(Array.isArray(result.data) ? result.data : []);
-                const meta = result.meta;
-                if (meta) {
-                    setTotalRecords(meta.total);
-                } else {
-                    setTotalRecords((result.data || []).length);
-                }
-            } else {
-                setVendors([]);
-                setError(result.message);
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to load vendors');
-            setVendors([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const createMutation = useCreateTierVendor();
+    const updateMutation = useUpdateTierVendor();
+    const deleteMutation = useDeleteTierVendor();
+    const deleteMutations = useDeleteTierVendors();
 
     useEffect(() => {
-        loadVendors();
-    }, [tierId, page, perPage, sortField, sortOrder, appliedSearchText, filters]);
+        if (vendorsData?.meta) {
+            setTotalRecords(vendorsData.meta.total);
+        }
+    }, [vendorsData]);
 
     const onFilter = (event) => {
         setFilters(event.filters);
@@ -151,12 +88,15 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
+        setAppliedCategory(selectedCategory);
         setPage(1);
     };
 
     const handleClearFilters = () => {
         setSearchText('');
+        setSelectedCategory('');
         setAppliedSearchText('');
+        setAppliedCategory('');
         setPage(1);
     };
 
@@ -173,32 +113,35 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     // Modal Handlers
     const openAddModal = () => {
         setEditVendor(null);
+        setServerErrors({});
         setShowModal(true);
     };
 
     const openEditModal = (vendor) => {
         setEditVendor(vendor);
+        setServerErrors({});
         setShowModal(true);
     };
 
     const handleModalSubmit = async (formData) => {
-        setLoadingSave(true);
+        setServerErrors({});
         try {
             if (editVendor) {
-                await updateTierVendor(editVendor.id, formData);
+                await updateMutation.mutateAsync({ id: editVendor.id, data: formData });
                 toast.success('Vendor updated successfully');
             } else {
-                await createTierVendor(formData);
+                await createMutation.mutateAsync(formData);
                 toast.success('Vendor created successfully');
             }
             setShowModal(false);
-            loadVendors();
         } catch (err) {
             console.error(err);
-            const msg = err.response?.data?.message || 'Failed to save vendor';
-            toast.error(msg);
-        } finally {
-            setLoadingSave(false);
+            if (err.response && err.response.status === 422) {
+                setServerErrors(err.response.data.errors);
+            } else {
+                const msg = err.response?.data?.message || 'Failed to save vendor';
+                toast.error(msg);
+            }
         }
     };
 
@@ -230,16 +173,14 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
         if (idsToDelete.length === 0) return;
 
         try {
-            setLoading(true);
-
             if (idsToDelete.length === 1) {
                 if (deleteId) {
-                    await deleteTierVendor(deleteId);
+                    await deleteMutation.mutateAsync(deleteId);
                 } else {
-                    await deleteTierVendors(idsToDelete);
+                    await deleteMutations.mutateAsync(idsToDelete);
                 }
             } else {
-                await deleteTierVendors(idsToDelete);
+                await deleteMutations.mutateAsync(idsToDelete);
             }
 
             toast.success("Vendor(s) deleted successfully");
@@ -247,12 +188,9 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
             setDeleteId(null);
             setDeleteRows([]);
             setSelectedVendors([]);
-            loadVendors();
         } catch (err) {
             console.error('Delete error:', err);
             toast.error(err.message || 'Failed to delete vendors');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -262,7 +200,10 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
             <span
                 className="fw-medium cursor-pointer"
                 style={{ cursor: 'pointer' }}
-                onClick={() => openEditModal(rowData)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    openEditModal(rowData);
+                }}
             >
                 {rowData.name}
             </span>
@@ -283,45 +224,47 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
         );
     };
 
-    const actionBodyTemplate = (rowData) => {
+    const statusBodyTemplate = (rowData) => {
+        const status = rowData.status ? rowData.status.charAt(0).toUpperCase() + rowData.status.slice(1) : '-';
+        const badgeClass = status === 'Active' ? 'bg-success' : 'bg-danger';
         return (
-            <div className="d-flex gap-2">
-                <button className="btn btn-sm btn-soft-primary" onClick={() => openEditModal(rowData)}>
-                    <i className="ri-pencil-fill align-bottom" />
-                </button>
-                <button className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteClick(rowData)}>
-                    <i className="ri-delete-bin-fill align-bottom" />
-                </button>
-            </div>
+            <span className={`badge ${badgeClass}`}>
+                {status}
+            </span>
         );
     };
 
+    const statusFilterTemplate = (options) => {
+        return (
+            <Dropdown
+                value={options.value}
+                onChange={(e) => options.filterCallback(e.value, options.index)}
+                options={[
+                    { label: 'All Status', value: '' },
+                    { label: 'Active', value: 'Active' },
+                    { label: 'Inactive', value: 'Inactive' }
+                ]}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="All Status"
+                className="w-100"
+                showClear
+            />
+        );
+    };
+
+
+
     return (
         <React.Fragment>
-            <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
-                {isDeveloper && (
-                    selectedVendors.length > 0 ? (
-                        <button
-                            type="button"
-                            className="btn btn-danger"
-                            onClick={openDeleteModal}
-                        >
-                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                        </button>
-                    ) : (
-                        <button className="btn btn-primary" onClick={openAddModal}>
-                            <i className="ri-add-line me-1 align-bottom"></i> Add Vendor
-                        </button>
-                    )
-                )}
-            </div>
+
 
             <form onSubmit={(e) => {
                 e.preventDefault();
                 handleApplyFilters();
             }}>
                 <div className="row g-3 mb-3">
-                    <div className="col-xxl-9 col-sm-8">
+                    <div className="col-xxl-6 col-sm-6">
                         <div className="search-box">
                             <input
                                 type="text"
@@ -341,6 +284,21 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                         </div>
                     </div>
 
+                    <div className="col-xxl-3 col-sm-2">
+                        <Dropdown
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.value)}
+                            options={[
+                                { label: 'All Categories', value: '' },
+                                ...CATEGORY_OPTIONS
+                            ]}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="All Categories"
+                            className="w-100 employee-filter-dropdown"
+                        />
+                    </div>
+
                     <div className="col-xxl-3 col-sm-4">
                         <div className="d-flex gap-2">
                             <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
@@ -354,16 +312,16 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                 </div>
             </form>
 
-            {loading ? (
+            {loading || isFetching ? (
                 <TableLoader rows={5} columns={[
-                    ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
+                    { style: { width: '3rem' } },
                     { style: { width: '50%' } },       // Name
                     { style: { width: '40%' } },       // Category
                     { style: { width: '10%' } }        // Actions
                 ]} />
             ) : (
                 <DataTable
-                    value={vendors || []}
+                    value={vendorsData?.data || []}
                     paginator
                     rows={perPage}
                     totalRecords={totalRecords}
@@ -377,19 +335,31 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                     tableStyle={{ minWidth: '50rem' }}
                     selection={selectedVendors}
                     onSelectionChange={(e) => setSelectedVendors(e.value)}
-                    selectionMode={isDeveloper ? "multiple" : null}
+                    metaKeySelection={true}
                     dataKey="id"
                     filters={filters}
                     filterDisplay="menu"
                     onFilter={onFilter}
                 >
-                    {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                    <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
                     <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '20%' }} />
                     <Column field="category" header="Category" sortable filter filterPlaceholder="Search Category" style={{ width: '15%' }} />
                     <Column field="requirements" header="Requirements" body={(rowData) => arrayBadgeBodyTemplate(rowData, 'requirements', 'bg-info')} style={{ width: '20%' }} />
                     <Column field="benefits" header="Benefits" body={(rowData) => arrayBadgeBodyTemplate(rowData, 'benefits', 'bg-success')} style={{ width: '20%' }} />
                     <Column field="report_to" header="Report To" body={(rowData) => arrayBadgeBodyTemplate(rowData, 'report_to', 'bg-primary')} style={{ width: '15%' }} />
-                    {isDeveloper && <Column header="Actions" body={actionBodyTemplate} style={{ width: '10%' }} />}
+                    <Column
+                        field="status"
+                        header="Status"
+                        body={statusBodyTemplate}
+                        sortable
+                        style={{ width: '10%' }}
+                        className="text-center"
+                        headerClassName="text-center justify-content-center"
+                        filter
+                        filterElement={statusFilterTemplate}
+                        filterPlaceholder="Select Status"
+                        showFilterMatchModes={false}
+                    />
                 </DataTable>
             )}
 
@@ -399,14 +369,15 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                 onSubmit={handleModalSubmit}
                 vendor={editVendor}
                 tierId={tierId}
-                loadingSave={loadingSave}
+                loadingSave={createMutation.isPending || updateMutation.isPending}
+                serverErrors={serverErrors}
             />
 
             <DeleteConfirmationModal
                 show={showDeleteModal}
                 onConfirm={handleDeleteConfirm}
                 onClose={() => setShowDeleteModal(false)}
-                loading={loading}
+                loading={deleteMutation.isPending || deleteMutations.isPending}
                 text="The selected vendors will be deleted."
             />
         </React.Fragment>

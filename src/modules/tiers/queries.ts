@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTiers, createTier, updateTier, deleteTier, getTier, fetchTierRelatedApis } from './services';
-import { TierFormData } from './types';
+import { fetchTiers, createTier, updateTier, deleteTier, getTier, fetchTierRelatedApis, fetchTierVendors, createTierVendor, updateTierVendor, deleteTierVendor, deleteTierVendors } from './services';
+import { TierFormData, TierVendorFormData } from './types';
 
 export const useTiers = (payload: any = {}) => {
     return useQuery({
@@ -56,5 +56,54 @@ export const useDeleteTier = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tiers'] });
         }
-    })
-}
+    });
+};
+
+// Tier Vendor Hooks
+
+export const useTierVendors = (payload: any = {}) => {
+    return useQuery({
+        queryKey: ['tier-vendors', payload],
+        queryFn: () => fetchTierVendors(payload),
+    });
+};
+
+export const useCreateTierVendor = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: TierVendorFormData) => createTierVendor(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
+        },
+    });
+};
+
+export const useUpdateTierVendor = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: TierVendorFormData }) => updateTierVendor(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
+        },
+    });
+};
+
+export const useDeleteTierVendor = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => deleteTierVendor(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
+        },
+    });
+};
+
+export const useDeleteTierVendors = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (ids: number[]) => deleteTierVendors(ids),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
+        },
+    });
+};

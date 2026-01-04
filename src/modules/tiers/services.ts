@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { Tier, TierFormData, TierTask, TierTaskFormData, TierRelatedApiResponse, TierTasksResponse } from './types';
+import { Tier, TierFormData, TierTask, TierTaskFormData, TierRelatedApiResponse, TierTasksResponse, TierVendor, TierVendorFormData, TierVendorsResponse } from './types';
 
 export const fetchTiers = async (payload: any = {}) => {
     const response = await apiClient.post('/admin/credit-builder/tiers/fetch-tiers', payload);
@@ -62,4 +62,29 @@ export const deleteTierTasks = async (ids: number[]): Promise<void> => {
 export const fetchTierRelatedApis = async (tierId: number | string): Promise<TierRelatedApiResponse> => {
     const response = await apiClient.get(`/admin/credit-builder/tier-related-api/${tierId}`);
     return response.data;
+}
+
+// Tier Vendor Services
+
+export const fetchTierVendors = async (payload: any = {}): Promise<TierVendorsResponse> => {
+    const response = await apiClient.post('/admin/credit-builder/vendors/fetch-vendors', payload);
+    return response.data;
+};
+
+export const createTierVendor = async (payload: TierVendorFormData): Promise<TierVendor> => {
+    const { data } = await apiClient.post('/admin/credit-builder/vendors', payload);
+    return data;
+}
+
+export const updateTierVendor = async (id: number, payload: TierVendorFormData): Promise<TierVendor> => {
+    const { data } = await apiClient.put(`/admin/credit-builder/vendors/${id}`, payload);
+    return data;
+}
+
+export const deleteTierVendor = async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/credit-builder/vendors/${id}`);
+}
+
+export const deleteTierVendors = async (ids: number[]): Promise<void> => {
+    await apiClient.post('/admin/credit-builder/vendors-multiple-delete', { ids });
 }

@@ -10,6 +10,7 @@ import VerificationActionModal from './components/VerificationActionModal'; // I
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { VERIFICATION_STATUS } from '../../config/tierOptions'; // Import Constants
+import { useTiers } from '../../modules/tiers/queries';
 import TableLoader from '../../components/Loader/TableLoader';
 import '../../components/Loader/SkeletonLoader.css'; // Import Loader CSS
 
@@ -43,6 +44,9 @@ export default function BorrowerVerificationRequests() {
     // Filters
     const [searchText, setSearchText] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [selectedTier, setSelectedTier] = useState('');
+    const [appliedTier, setAppliedTier] = useState('');
+    const [tiersList, setTiersList] = useState([]);
 
 
     const fetchProfileData = async () => {
@@ -52,6 +56,11 @@ export default function BorrowerVerificationRequests() {
             const response = await getBorrowerProfile(borrower_id);
             if (response.status && response.data) {
                 setProfileData(response.data);
+                // Set default tier filter based on profile
+                if (response.data.current_tier_id) {
+                    setSelectedTier(response.data.current_tier_id);
+                    setAppliedTier(response.data.current_tier_id);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch profile data", error);
@@ -60,6 +69,19 @@ export default function BorrowerVerificationRequests() {
             setProfileLoading(false);
         }
     };
+
+    // Fetch Tiers
+    const { data: tiersData } = useTiers();
+
+    useEffect(() => {
+        if (tiersData?.status && tiersData?.data) {
+            const formattedTiers = (tiersData.data || []).map(tier => ({
+                label: tier.name,
+                value: tier.id
+            }));
+            setTiersList(formattedTiers);
+        }
+    }, [tiersData]);
 
     const loadRequests = useCallback(async () => {
         // Wait for profile data to get partner_id (or if it was passed in state fallback, but mainly rely on profile now)
@@ -84,6 +106,7 @@ export default function BorrowerVerificationRequests() {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
+                tier_id: appliedTier,
                 filters: filters
             };
 
@@ -103,7 +126,7 @@ export default function BorrowerVerificationRequests() {
         } finally {
             setLoading(false);
         }
-    }, [borrower_id, partner_id, profileData, page, perPage, sortField, sortOrder, appliedSearchText, filters]);
+    }, [borrower_id, partner_id, profileData, page, perPage, sortField, sortOrder, appliedSearchText, appliedTier, filters]);
 
     useEffect(() => {
         fetchProfileData();
@@ -131,12 +154,15 @@ export default function BorrowerVerificationRequests() {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
+        setAppliedTier(selectedTier);
         setPage(1);
     };
 
     const handleClearFilters = () => {
         setSearchText('');
         setAppliedSearchText('');
+        setSelectedTier(profileData?.current_tier_id || ''); // Reset to default if exists, or empty
+        setAppliedTier(profileData?.current_tier_id || '');
         setFilters({
             task_title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -284,7 +310,7 @@ export default function BorrowerVerificationRequests() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-4">
-                                        <div className="col-xxl-9 col-lg-8">
+                                        <div className="col-xxl-6 col-lg-4">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -301,6 +327,21 @@ export default function BorrowerVerificationRequests() {
                                                 />
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
+                                        </div>
+
+                                        <div className="col-xxl-3 col-sm-4">
+                                            <Dropdown
+                                                value={selectedTier}
+                                                onChange={(e) => setSelectedTier(e.value)}
+                                                options={[
+                                                    { label: 'All Tiers', value: '' },
+                                                    ...tiersList
+                                                ]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="All Tiers"
+                                                className="w-100 employee-filter-dropdown"
+                                            />
                                         </div>
 
                                         <div className="col-xxl-3 col-lg-4">
@@ -372,7 +413,7 @@ export default function BorrowerVerificationRequests() {
                                                 <div className="d-flex gap-4">
                                                     <div className="text-center">
                                                         <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Pending Requests</p>
-                                                        <h6 className="mb-0 text-warning fw-bold">{totalRecords}</h6>
+                                                        <h6 className="mb-0 fw-bold">{totalRecords}</h6>
                                                     </div>
                                                 </div>
                                                 <div className="mt-3 text-center">

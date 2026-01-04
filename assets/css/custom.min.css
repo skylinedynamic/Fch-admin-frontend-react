@@ -1005,3 +1005,14 @@
 .p-chips .p-chips-token-icon{
   margin-right: .3rem !important;
 }
+
+.tier-vendor-modal .p-chips .p-chips-token-icon {
+    font-size: 0.9rem;
+    margin: 0 5px !;
+    cursor: pointer;
+    color: var(--vz-gray);
+}
+.tier-vendor-modal .p-icon {
+    width: .9rem !important;
+    height: .9rem !important;
+}

@@ -99,3 +99,28 @@ export interface ApiResponse<T> {
 }
 
 export type TierTasksResponse = ApiResponse<TierTask[]>;
+
+export interface TierVendor {
+    id: number;
+    tier_id: number;
+    name: string;
+    category: string;
+    requirements: string[] | null;
+    benefits: string[] | null;
+    report_to: string[] | null;
+    status: 'Active' | 'Inactive';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TierVendorFormData {
+    tier_id: number;
+    name: string;
+    category: string;
+    requirements: string[];
+    benefits: string[];
+    report_to: string[];
+    status: 'Active' | 'Inactive';
+}
+
+export type TierVendorsResponse = ApiResponse<TierVendor[]>;
