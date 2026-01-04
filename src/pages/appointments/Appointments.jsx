@@ -3,6 +3,7 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import Modal from 'bootstrap/js/dist/modal';
 
+
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -11,9 +12,25 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 
-// Choices.js Import
-import Choices from 'choices.js';
-import 'choices.js/public/assets/styles/choices.min.css';
+// PrimeReact Imports
+import { Dropdown } from 'primereact/dropdown';
+import { Skeleton } from 'primereact/skeleton';
+
+// Custom Modals
+import ConflictModal from '../../components/Common/Modals/ConflictModal';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+
+// jQuery & Summernote
+import $ from 'jquery';
+import 'summernote/dist/summernote-lite.css';
+import 'summernote/dist/summernote-lite.js'; // Ensure JS is imported if needed, or rely on window.$
+
+// Attach jQuery to window for Summernote
+if (typeof window !== 'undefined') {
+    window.jQuery = $;
+    window.$ = $;
+}
+
 
 // Toast
 import { toast } from 'react-toastify';
@@ -22,20 +39,19 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/auth/authStore';
 
 // API Services
-import { fetchAppointments, fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, fetchTimeSlots } from '../../modules/appointment/services';
+import { fetchAppointments, fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability } from '../../modules/appointment/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { fetchEmployees } from '../../modules/employee/services';
 import { fetchAllBorrowers } from '../../modules/borrower/services';
 
 // Config
-import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS } from '../../config';
+import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../config';
 
 export default function Appointments() {
     const calendarRef = useRef(null);
     const eventModalRef = useRef(null);
-    const categoryChoicesRef = useRef(null);
-    const assignedForChoicesRef = useRef(null);
-    const timeSlotChoicesRef = useRef(null);
+    const descriptionEditorRef = useRef(null); // Summernote Ref
+
     const [modalInstance, setModalInstance] = useState(null);
 
     // Auth
@@ -54,10 +70,6 @@ export default function Appointments() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    // Time Slots
-    const [timeSlots, setTimeSlots] = useState([]);
-    const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
-
     // Assigned For Selection
     const [assignedForType, setAssignedForType] = useState('employee'); // 'partner', 'employee', 'borrower'
     const [assignedForId, setAssignedForId] = useState('');
@@ -66,6 +78,13 @@ export default function Appointments() {
     const [borrowers, setBorrowers] = useState([]);
     const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
 
+    // Availability Check
+    const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+    const [availabilityConflicts, setAvailabilityConflicts] = useState(null);
+    const [showConflictModal, setShowConflictModal] = useState(false);
+    const [modalConflictData, setModalConflictData] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
     // Form Data
     const [formData, setFormData] = useState({
         subject: '',
@@ -73,9 +92,9 @@ export default function Appointments() {
         location: 'UTC (GMT+00:00)', // timezone
         description: '',
         date: '',
-        timeStart: '',
-        timeEnd: '',
-        timeSlotId: '',
+        timeStart: '09:00', // Default start time
+        timeEnd: '10:00',   // Default end time
+        timeSlotId: '', // KEPT for backward compatibility/types, but effectively unused now
     });
 
     // Display Data
@@ -89,32 +108,16 @@ export default function Appointments() {
         assignedFor: '',
     });
 
-    // Fetch Appointments and Time Slots
+    // Fetch Appointments
     useEffect(() => {
         loadAppointments();
-        loadTimeSlots();
     }, []);
-
-    const loadTimeSlots = async () => {
-        try {
-            setLoadingTimeSlots(true);
-            const response = await fetchTimeSlots();
-            if (response.status && response.data) {
-                setTimeSlots(response.data);
-            }
-        } catch (error) {
-            console.error("Failed to load time slots", error);
-        } finally {
-            setLoadingTimeSlots(false);
-        }
-    };
 
     const loadAppointments = async () => {
         try {
             setLoading(true);
             const response = await fetchAppointments();
             if (response.status && response.data) {
-                // toast.success(response.message || 'Appointments loaded successfully');
                 const mappedEvents = response.data.map(apt => {
                     const start = new Date(apt.appointment_date);
                     // Calculate end time based on duration_minutes
@@ -149,19 +152,19 @@ export default function Appointments() {
                         title: apt.subject,
                         start: start,
                         end: end,
-                        allDay: false, // Assuming all meetups are timed as they have duration
+                        allDay: false,
                         className: className,
                         classNames: [className],
                         description: apt.description,
-                        location: apt.timezone, // Helper for some FC views if needed, or remove
+                        location: apt.timezone,
                         extendedProps: {
                             description: apt.description,
-                            location: apt.location, // The actual meeting location content
-                            timezone: apt.timezone, // The timezone string
+                            location: apt.location,
+                            timezone: apt.timezone,
                             appointment_code: apt.appointment_code,
                             status: apt.status,
                             meeting_type: apt.meeting_type,
-                            assigned_for: apt.assigned_for // Keep track of assigned person
+                            assigned_for: apt.assigned_for
                         }
                     };
                 });
@@ -204,119 +207,58 @@ export default function Appointments() {
         }
     }, [assignedForType, viewMode]);
 
-    // Initialize Modal, Category Choices, and Time Slot Choices
+    // Check Availability when Date or Assigned Entity changes
+    useEffect(() => {
+        const check = async () => {
+            if (!formData.date || !assignedForId) {
+                setAvailabilityConflicts(null);
+                return;
+            }
+
+            try {
+                setIsCheckingAvailability(true);
+                setAvailabilityConflicts(null);
+                const response = await checkAvailability({
+                    assigned_for: assignedForId,
+                    appointment_date: formData.date
+                });
+
+                if (response.data && response.data.available === false) {
+                    setAvailabilityConflicts(response.data);
+                    // Optional: Show toast if requested, but inline UI is often better
+                    // toast.warning(response.message || "Conflicts found");
+                }
+            } catch (error) {
+                console.error("Failed to check availability", error);
+            } finally {
+                setIsCheckingAvailability(false);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            if (!viewMode) check();
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.date, assignedForId, viewMode]);
+
+    // Initialize Modal
     useEffect(() => {
         if (eventModalRef.current && !modalInstance) {
             const mod = new Modal(eventModalRef.current, { keyboard: false });
             setModalInstance(mod);
         }
+    }, [modalInstance]);
 
-        if (eventModalRef.current) {
-            // Category Choices
-            const catSelect = document.getElementById('event-category');
-            if (catSelect && !categoryChoicesRef.current) {
-                categoryChoicesRef.current = new Choices(catSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false
-                });
 
-                catSelect.addEventListener('change', (e) => {
-                    setFormData(prev => ({ ...prev, category: e.target.value }));
-                });
-            }
 
-            // Time Slot Choices
-            const timeSelect = document.getElementById('time-slot-select');
-            if (timeSelect && timeSlots.length > 0) {
-                if (timeSlotChoicesRef.current) {
-                    timeSlotChoicesRef.current.destroy();
-                }
 
-                timeSlotChoicesRef.current = new Choices(timeSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false,
-                    placeholder: true,
-                    placeholderValue: 'Select Time Slot'
-                });
 
-                timeSelect.addEventListener('change', (e) => {
-                    const val = e.target.value;
-                    const slot = timeSlots.find(s => s.start_time === val);
-                    if (slot) {
-                        setFormData(prev => ({ ...prev, timeStart: slot.start_time, timeEnd: slot.end_time, timeSlotId: slot.id }));
-                    }
-                });
 
-                // Sync initial value if exists
-                if (formData.timeStart) {
-                    timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-                }
-            }
-        }
-    }, [modalInstance, timeSlots]);
 
-    // Initialize/Update Assigned For Choices
+
+    // Sync error classes to Flatpickr containers
     useEffect(() => {
-        const assignedSelect = document.getElementById('event-assigned-for');
-        if (assignedSelect && !loadingAssignedFor) {
-            // Destroy previous instance if it exists
-            if (assignedForChoicesRef.current) {
-                assignedForChoicesRef.current.destroy();
-                assignedForChoicesRef.current = null;
-            }
-
-            // Initialize new instance
-            assignedForChoicesRef.current = new Choices(assignedSelect, {
-                searchEnabled: false,
-                itemSelectText: '',
-                shouldSort: false,
-                placeholder: true,
-                placeholderValue: `Select ${assignedForType}...`
-            });
-
-            // Set value if assignedForId is set
-            if (assignedForId) {
-                assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }
-
-            // Listen for changes
-            assignedSelect.addEventListener('change', (e) => {
-                setAssignedForId(e.target.value);
-            });
-        }
-    }, [assignedForType, loadingAssignedFor, viewMode, modalInstance, partners.length, employees.length, borrowers.length]);
-
-    // Dedicated useEffect to sync Choices.js when formData or viewMode changes
-    useEffect(() => {
-        if (!viewMode) {
-            if (categoryChoicesRef.current && formData.category) {
-                categoryChoicesRef.current.setChoiceByValue(formData.category);
-            }
-            if (timeSlotChoicesRef.current && formData.timeStart) {
-                timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-            }
-            if (assignedForChoicesRef.current && assignedForId) {
-                assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }
-        }
-    }, [formData.category, formData.timeStart, assignedForId, viewMode]);
-
-    // Sync error classes to Choices.js and Flatpickr containers
-    useEffect(() => {
-        const syncInvalidClass = (ref, hasError) => {
-            if (ref.current && ref.current.containerOuter && ref.current.containerOuter.element) {
-                const el = ref.current.containerOuter.element;
-                if (hasError) el.classList.add('is-invalid');
-                else el.classList.remove('is-invalid');
-            }
-        };
-
-        syncInvalidClass(categoryChoicesRef, !!formErrors.meeting_type);
-        syncInvalidClass(timeSlotChoicesRef, !!formErrors.duration_minutes);
-        syncInvalidClass(assignedForChoicesRef, !!formErrors.assigned_for || !!formErrors.assigned_for_id);
-
         const dateEl = document.getElementById('event-start-date');
         if (dateEl) {
             if (formErrors.appointment_date) dateEl.classList.add('is-invalid');
@@ -338,6 +280,47 @@ export default function Appointments() {
             });
         }
     }, [viewMode, modalInstance]);
+
+    // Initialize Summernote
+    useEffect(() => {
+        // Only initialize if we are in "Edit" mode (form visible) and ref exists
+        if (!viewMode && descriptionEditorRef.current) {
+            const $editor = $(descriptionEditorRef.current);
+
+            $editor.summernote({
+                height: 200,
+                dialogsInBody: true, // Fix for Bootstrap Modal
+                placeholder: 'Enter detailed description...',
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'underline', 'clear']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link']],
+                    ['view', ['fullscreen', 'codeview', 'help']]
+                ],
+                callbacks: {
+                    onChange: (contents) => {
+                        // Summernote sets value to <p><br></p> when empty, check for that
+                        const isEmpty = contents === '<p><br></p>';
+                        setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
+                    }
+                }
+            });
+
+            // Set initial content
+            $editor.summernote('code', formData.description || '');
+
+            return () => {
+                if ($editor.length > 0) {
+                    $editor.summernote('destroy');
+                }
+            };
+        }
+    }, [viewMode, modalInstance]); // Re-run when viewMode toggles to ensure editor is created/destroyed properly
+
+    // Sync formData description updates back to Summernote if it changes externally (e.g. reset)
+    // Be careful not to cause loops. Usually optional if one-way binding is sufficient.
+
 
     // Update upcoming events list
     useEffect(() => {
@@ -373,18 +356,22 @@ export default function Appointments() {
         setSelectedEventId(null);
         setAssignedForType('employee');
         setAssignedForId('');
+        const now = new Date();
+        const nextHour = new Date(now.getTime() + 60 * 60000);
+        // Round to nearest 15 mins for cleaner UI default? Optional. 
+        // For now just hardcode sane defaults or use close approximations.
+
         setFormData({
             subject: '',
             category: 'Business Review',
             location: 'UTC (GMT+00:00)',
             description: '',
             date: dateStr || new Date().toISOString().split('T')[0],
-            timeStart: '',
-            timeEnd: '',
+            timeStart: '09:00',
+            timeEnd: '10:00',
             timeSlotId: '',
         });
         setFormErrors({});
-        if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue("Business Review");
         if (modalInstance) modalInstance.show();
     };
 
@@ -396,7 +383,7 @@ export default function Appointments() {
         setSelectedEventId(eventId);
         setFormErrors({});
 
-        // --- 1. SET INITIAL DATA IMMEDIATELY (Prevent empty modal) ---
+        // --- 1. SET INITIAL DATA IMMEDIATELY ---
         const startInit = calEvent.start;
         const endInit = calEvent.end || new Date(startInit.getTime() + 60 * 60000);
 
@@ -415,13 +402,17 @@ export default function Appointments() {
         const m = startInit.getMinutes().toString().padStart(2, '0');
         const hh_mm = `${h}:${m}`;
 
+        const h_end = endInit.getHours().toString().padStart(2, '0');
+        const m_end = endInit.getMinutes().toString().padStart(2, '0');
+        const hh_mm_end = `${h_end}:${m_end}`;
+
         setFormData(prev => ({
             ...prev,
             subject: calEvent.title,
             category: calEvent.classNames[0] || 'Business Review',
             date: startInit.toISOString().split('T')[0],
             timeStart: hh_mm,
-            timeEnd: endInit.toTimeString().slice(0, 5),
+            timeEnd: hh_mm_end,
         }));
 
         if (modalInstance) modalInstance.show();
@@ -451,7 +442,9 @@ export default function Appointments() {
             const m_full = start.getMinutes().toString().padStart(2, '0');
             const hh_mm_full = `${h_full}:${m_full}`;
 
-            const matchedSlot = timeSlots.find(s => s.start_time.substring(0, 5) === hh_mm_full);
+            const h_end_full = end.getHours().toString().padStart(2, '0');
+            const m_end_full = end.getMinutes().toString().padStart(2, '0');
+            const hh_mm_end_full = `${h_end_full}:${m_end_full}`;
 
             setFormData({
                 subject: apt.subject,
@@ -459,9 +452,9 @@ export default function Appointments() {
                 location: apt.timezone || "UTC (GMT+00:00)",
                 description: apt.description || "",
                 date: start.toISOString().split('T')[0],
-                timeStart: matchedSlot ? matchedSlot.start_time : hh_mm_full,
-                timeEnd: end.toTimeString().slice(0, 5),
-                timeSlotId: matchedSlot ? matchedSlot.id : '',
+                timeStart: hh_mm_full,
+                timeEnd: hh_mm_end_full,
+                timeSlotId: '', // NO LONGER USED
             });
 
             // Determine Assigned For Type
@@ -482,7 +475,7 @@ export default function Appointments() {
             setAssignedForType(type);
             setAssignedForId(apt.assigned_for?.id || '');
 
-            if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue(calEvent.classNames[0] || 'bg-primary-subtle');
+            setAssignedForId(apt.assigned_for?.id || '');
 
         } catch (error) {
             console.error("Failed to fetch appointment details", error);
@@ -499,61 +492,66 @@ export default function Appointments() {
             allDay: calEvent.allDay
         } : e));
 
-        // TODO: Call API to update date/time
-        // updateAppointment(calEvent.id, { ...mappedPayload });
+        // TODO: Call API to update
     };
 
     const toggleEditMode = (e) => {
         if (e) e.preventDefault();
         const nextMode = !viewMode;
         setViewMode(nextMode);
+    };
 
-        // If entering edit mode, ensure choices are synced
-        if (nextMode === false) {
-            setTimeout(() => {
-                if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue(formData.category);
-                if (timeSlotChoicesRef.current && formData.timeStart) timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-                if (assignedForChoicesRef.current && assignedForId) assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }, 50);
+    // Delete Appointment
+    const handleDelete = () => {
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedEventId) return;
+        setIsDeleting(true);
+        try {
+            await deleteAppointment(selectedEventId);
+            setEvents(prev => prev.filter(e => String(e.id) !== String(selectedEventId))); // Optimistic update
+
+            // Close Modals
+            setShowDeleteModal(false);
+            if (modalInstance) modalInstance.hide();
+
+            // Reset
+            setSelectedEventId(null); // Clear selected event
+            // Assuming resetForm exists and clears formData
+            setFormData({
+                subject: '',
+                category: 'Business Review',
+                location: 'UTC (GMT+00:00)',
+                description: '',
+                date: new Date().toISOString().split('T')[0],
+                timeStart: '09:00',
+                timeEnd: '10:00',
+                timeSlotId: '',
+            });
+            toast.success("Appointment deleted successfully");
+        } catch (error) {
+            console.error("Delete failed", error);
+            toast.error("Failed to delete appointment");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (selectedEventId) {
-            try {
-                setIsDeleting(true);
-                await deleteAppointment(selectedEventId);
-                toast.success('Appointment deleted successfully');
-                if (modalInstance) modalInstance.hide();
-                loadAppointments(); // This triggers the skeleton loader for the list
-            } catch (error) {
-                console.error("Failed to delete appointment", error);
-                toast.error('Failed to delete appointment');
-            } finally {
-                setIsDeleting(false);
-            }
-        }
-    };
-
-    const handleTimeSlotChange = (e) => {
-        const val = e.target.value;
-        const slot = timeSlots.find(s => s.start_time === val);
-        if (slot) {
-            setFormData(prev => ({
-                ...prev,
-                timeStart: slot.start_time,
-                timeEnd: slot.end_time,
-                timeSlotId: slot.id
-            }));
-        }
-    };
+    const assignedOptions = (() => {
+        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
+        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
+        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
+        return [];
+    })();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormErrors({});
 
         const subject = formData.subject;
-        const category = categoryChoicesRef.current ? categoryChoicesRef.current.getValue(true) : "Business Review";
+        const category = formData.category;
         const dateVal = formData.date;
         const locationVal = formData.location; // Time Zone
         const descVal = formData.description;
@@ -565,21 +563,34 @@ export default function Appointments() {
         if (formData.timeStart) {
             startDateTime = new Date(`${dateVal}T${formData.timeStart}`);
             if (formData.timeEnd) {
-                const endDateTime = new Date(`${dateVal}T${formData.timeEnd}`);
+                // Handle late night spanning next day? Not complex for now, assume same day.
+                // If end time < start time, assume next day?
+                // Let's stick to simple same-day logic unless customized.
+                let endDateTime = new Date(`${dateVal}T${formData.timeEnd}`);
+                if (endDateTime <= startDateTime) {
+                    // Maybe user selected past midnight?
+                    // or just invalid.
+                    // Simple validation:
+                }
+
                 durationMinutes = (endDateTime - startDateTime) / 60000;
-            } else {
-                durationMinutes = 0; // Force validation if end time missing
+
+                if (durationMinutes <= 0) {
+                    // Fallback or error?
+                    // Let's assume minimum 15 mins
+                    durationMinutes = 15;
+                }
             }
         } else {
             durationMinutes = 0; // Force validation if no time selected
         }
 
         // Format date for API: "2026-01-01 14:00:00"
-        // Helper to format: YYYY-MM-DD HH:mm:ss
         const toMySQLDate = (date) => {
             const pad = (num) => (num < 10 ? '0' + num : num);
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         };
+
 
 
         const currentType = APPOINTMENT_TYPE_OPTIONS.find(opt => opt.value === category);
@@ -592,7 +603,7 @@ export default function Appointments() {
             duration_minutes: durationMinutes > 0 ? durationMinutes : null,
             meeting_type: category || null,
             assigned_for: assignedForId ? parseInt(assignedForId) : null,
-            time_slot_id: formData.timeSlotId ? parseInt(formData.timeSlotId) : undefined,
+            // time_slot_id: REMOVED
         };
 
         try {
@@ -601,13 +612,11 @@ export default function Appointments() {
                 // Update
                 const response = await updateAppointment(selectedEventId, payload);
                 toast.success(response.message || 'Appointment updated successfully');
-                // Reload or manually update state
                 loadAppointments();
             } else {
                 // Create
                 const response = await createAppointment(payload);
                 toast.success(response.message || 'Appointment created successfully');
-                // Reload or manually update state
                 loadAppointments();
             }
             modalInstance.hide();
@@ -624,420 +633,739 @@ export default function Appointments() {
     };
 
     return (
-        <div className="page-content">
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="row">
-                            <div className="col-xl-3">
-                                <div className="card card-h-100">
-                                    <div className="card-body">
-                                        <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
-                                        <div id="external-events">{/* External events would go here */}</div>
+        <React.Fragment>
+            <div className="page-content">
+                <div className="container-fluid">
+                    <div className="row">
+                        <div className="col-12">
+                            <div className="row">
+                                <div className="col-xl-3">
+                                    <div className="card card-h-100">
+                                        <div className="card-body">
+                                            <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
+                                            <div id="external-events">{/* External events would go here */}</div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <h5 className="mb-1">Upcoming Appointment</h5>
-                                    <p className="text-muted">Don't miss scheduled appointments</p>
-                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "600px" }}>
-                                        <div id="upcoming-event-list">
-                                            {loading && (
-                                                <>
-                                                    {[1, 2, 3].map(n => (
-                                                        <div className="card mb-3" key={n} aria-hidden="true">
+                                    <div>
+                                        <h5 className="mb-1">Upcoming Appointment</h5>
+                                        <p className="text-muted">Don't miss scheduled appointments</p>
+                                        <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "600px" }}>
+                                            <div id="upcoming-event-list">
+                                                {loading && (
+                                                    <>
+                                                        {[1, 2, 3].map(n => (
+                                                            <div className="card mb-3" key={n} aria-hidden="true">
+                                                                <div className="card-body">
+                                                                    <div className="d-flex mb-3 placeholder-glow">
+                                                                        <div className="flex-grow-1">
+                                                                            <span className="placeholder col-4 rounded bg-secondary-subtle"></span>
+                                                                        </div>
+                                                                        <div className="flex-shrink-0">
+                                                                            <span className="placeholder col-3 rounded bg-secondary-subtle"></span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <h6 className="card-title placeholder-glow">
+                                                                        <span className="placeholder col-7 rounded bg-secondary-subtle"></span>
+                                                                    </h6>
+                                                                    <p className="text-muted mb-0 placeholder-glow">
+                                                                        <span className="placeholder col-12 rounded bg-secondary-subtle"></span>
+                                                                        <span className="placeholder col-8 rounded bg-secondary-subtle"></span>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </>
+                                                )}
+                                                {!loading && upcomingEvents.map(evt => {
+                                                    const s = new Date(evt.start);
+                                                    const e = evt.end ? new Date(evt.end) : null;
+
+                                                    let dateStr = str_dt_fmt(s);
+                                                    if (e) {
+                                                        const eDay = new Date(e);
+                                                        if (evt.allDay) {
+                                                            eDay.setDate(eDay.getDate() - 1);
+                                                        }
+                                                        const sStr = str_dt_fmt(s);
+                                                        const eStr = str_dt_fmt(eDay);
+                                                        if (sStr !== eStr) {
+                                                            dateStr = `${sStr} to ${eStr}`;
+                                                        }
+                                                    }
+
+                                                    let badge;
+                                                    if (evt.allDay || !e) {
+                                                        badge = <small className="badge bg-primary-subtle text-primary ms-auto">Full day event</small>;
+                                                    } else {
+                                                        const t1 = tConvert(s.toTimeString().slice(0, 5));
+                                                        const t2 = tConvert(e.toTimeString().slice(0, 5));
+                                                        badge = <small className="badge bg-primary-subtle text-primary ms-auto">{t1} to {t2}</small>;
+                                                    }
+                                                    const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
+
+                                                    return (
+                                                        <div className="card mb-3" key={evt.id}>
                                                             <div className="card-body">
-                                                                <div className="d-flex mb-3 placeholder-glow">
+                                                                <div className="d-flex mb-3">
                                                                     <div className="flex-grow-1">
-                                                                        <span className="placeholder col-4 rounded bg-secondary-subtle"></span>
+                                                                        <i className={`mdi mdi-checkbox-blank-circle me-2 text-${colorClass}`}></i>
+                                                                        <span className="fw-medium">{dateStr}</span>
                                                                     </div>
                                                                     <div className="flex-shrink-0">
-                                                                        <span className="placeholder col-3 rounded bg-secondary-subtle"></span>
+                                                                        {badge}
                                                                     </div>
                                                                 </div>
-                                                                <h6 className="card-title placeholder-glow">
-                                                                    <span className="placeholder col-7 rounded bg-secondary-subtle"></span>
-                                                                </h6>
-                                                                <p className="text-muted mb-0 placeholder-glow">
-                                                                    <span className="placeholder col-12 rounded bg-secondary-subtle"></span>
-                                                                    <span className="placeholder col-8 rounded bg-secondary-subtle"></span>
-                                                                </p>
+                                                                <h6 className="card-title fs-16">{evt.title}</h6>
+                                                                <p className="text-muted text-truncate-two-lines mb-0">{evt.extendedProps?.description || evt.description}</p>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </>
-                                            )}
-                                            {!loading && upcomingEvents.map(evt => {
-                                                const s = new Date(evt.start);
-                                                const e = evt.end ? new Date(evt.end) : null;
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                let dateStr = str_dt_fmt(s);
-                                                if (e) {
-                                                    const eDay = new Date(e);
-                                                    if (evt.allDay) {
-                                                        eDay.setDate(eDay.getDate() - 1);
-                                                    }
-                                                    const sStr = str_dt_fmt(s);
-                                                    const eStr = str_dt_fmt(eDay);
-                                                    if (sStr !== eStr) {
-                                                        dateStr = `${sStr} to ${eStr}`;
-                                                    }
-                                                }
-
-                                                let badge;
-                                                if (evt.allDay || !e) {
-                                                    badge = <small className="badge bg-primary-subtle text-primary border border-primary-subtle small ms-auto">Full day event</small>;
-                                                } else {
-                                                    const t1 = tConvert(s.toTimeString().slice(0, 5));
-                                                    const t2 = tConvert(e.toTimeString().slice(0, 5));
-                                                    badge = <small className="badge bg-primary-subtle text-primary border border-primary-subtle small ms-auto">{t1} to {t2}</small>;
-                                                }
-                                                const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
-
-                                                return (
-                                                    <div className="card mb-3" key={evt.id}>
-                                                        <div className="card-body">
-                                                            <div className="d-flex mb-3">
-                                                                <div className="flex-grow-1">
-                                                                    <i className={`mdi mdi-checkbox-blank-circle me-2 text-${colorClass}`}></i>
-                                                                    <span className="fw-medium">{dateStr}</span>
-                                                                </div>
-                                                                <div className="flex-shrink-0">
-                                                                    {badge}
-                                                                </div>
-                                                            </div>
-                                                            <h6 className="card-title fs-16">{evt.title}</h6>
-                                                            <p className="text-muted text-truncate-two-lines mb-0">{evt.extendedProps?.description || evt.description}</p>
+                                <div className="col-xl-9">
+                                    <div className="card card-h-100">
+                                        <div className="card-body">
+                                            {loading ? (
+                                                <div style={{ minHeight: '600px' }} className="placeholder-glow">
+                                                    <div className="d-flex justify-content-between mb-4">
+                                                        <div className="d-flex gap-1">
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
+                                                        </div>
+                                                        <span className="placeholder rounded bg-secondary-subtle col-3" style={{ height: '35px' }}></span>
+                                                        <div className="d-flex gap-1">
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
+                                                            <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
                                                         </div>
                                                     </div>
-                                                )
-                                            })}
+
+                                                    <div className="border rounded">
+                                                        <div className="d-flex border-bottom">
+                                                            {[...Array(7)].map((_, i) => (
+                                                                <div key={i} className="flex-fill border-end p-2 text-center">
+                                                                    <span className="placeholder rounded bg-secondary-subtle w-50"></span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {[...Array(5)].map((_, row) => (
+                                                            <div key={row} className="d-flex border-bottom" style={{ height: '100px' }}>
+                                                                {[...Array(7)].map((_, col) => (
+                                                                    <div key={col} className="flex-fill border-end p-1">
+                                                                        {((row + col) % 5 === 0) && (
+                                                                            <div className="rounded bg-secondary-subtle mt-3 mx-1" style={{ height: '20px', opacity: 0.5 }}></div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div id="calendar" style={{ minHeight: '600px' }}>
+                                                    <FullCalendar
+                                                        ref={calendarRef}
+                                                        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
+                                                        initialView={window.innerWidth >= 1200 ? "dayGridMonth" : window.innerWidth >= 768 ? "timeGridWeek" : "listMonth"}
+                                                        themeSystem="bootstrap5"
+                                                        bootstrapFontAwesome={{
+                                                            prev: 'ri-arrow-left-s-line',
+                                                            next: 'ri-arrow-right-s-line',
+                                                            today: 'ri-calendar-check-line',
+                                                        }}
+                                                        headerToolbar={{
+                                                            left: 'prev,next today',
+                                                            center: 'title',
+                                                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                                                        }}
+                                                        buttonText={{
+                                                            today: 'Today',
+                                                            month: 'Month',
+                                                            week: 'Week',
+                                                            day: 'Day',
+                                                            list: 'List'
+                                                        }}
+                                                        eventTimeFormat={{
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            meridiem: 'short'
+                                                        }}
+                                                        events={events}
+                                                        editable={true}
+                                                        droppable={true}
+                                                        selectable={true}
+                                                        dateClick={(arg) => handleNewEvent(arg.dateStr)}
+                                                        eventClick={handleEventClick}
+                                                        eventDrop={handleDropResize}
+                                                        eventResize={handleDropResize}
+
+                                                        windowResize={(arg) => {
+                                                            if (window.innerWidth >= 1200) {
+                                                                arg.view.calendar.changeView('dayGridMonth');
+                                                            } else if (window.innerWidth >= 768) {
+                                                                arg.view.calendar.changeView('timeGridWeek');
+                                                            } else {
+                                                                arg.view.calendar.changeView('listMonth');
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="col-xl-9">
-                                <div className="card card-h-100">
-                                    <div className="card-body">
-                                        {loading ? (
-                                            <div style={{ minHeight: '600px' }} className="placeholder-glow">
-                                                <div className="d-flex justify-content-between mb-4">
-                                                    <div className="d-flex gap-1">
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
-                                                    </div>
-                                                    <span className="placeholder rounded bg-secondary-subtle col-3" style={{ height: '35px' }}></span>
-                                                    <div className="d-flex gap-1">
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
-                                                        <span className="placeholder rounded bg-secondary-subtle" style={{ width: '60px', height: '35px' }}></span>
-                                                    </div>
-                                                </div>
+                            <div style={{ clear: 'both' }}></div>
 
-                                                <div className="border rounded">
-                                                    <div className="d-flex border-bottom">
-                                                        {[...Array(7)].map((_, i) => (
-                                                            <div key={i} className="flex-fill border-end p-2 text-center">
-                                                                <span className="placeholder rounded bg-secondary-subtle w-50"></span>
-                                                            </div>
-                                                        ))}
+                            {/* Event Modal */}
+                            <div
+                                className="modal fade"
+                                id="event-modal"
+                                tabIndex="-1"
+                                ref={eventModalRef} // Attach ref here
+                            >
+                                <div
+                                    className="modal-dialog modal-dialog-centered modal-medium"
+                                >
+                                    <div className="modal-content border-0">
+                                        <div className="modal-header p-3 bg-info-subtle">
+                                            <h5 className="modal-title" id="modal-title">
+                                                {viewMode
+                                                    ? displayData.title || "Appointment"
+                                                    : isNewEvent
+                                                        ? "Add Appointment"
+                                                        : "Edit Appointment"}
+                                            </h5>
+                                            <button
+                                                type="button"
+                                                className="btn-close"
+                                                data-bs-dismiss="modal"
+                                                aria-hidden="true"
+                                            ></button>
+                                        </div>
+
+                                        <div className="modal-body p-4">
+                                            <form
+                                                className="needs-validation"
+                                                name="event-form"
+                                                id="form-event"
+                                                noValidate
+                                                onSubmit={handleSubmit}
+                                            >
+                                                {/* --- Details View --- */}
+                                                <div
+                                                    className="event-details"
+                                                    style={{ display: viewMode ? "block" : "none" }}
+                                                >
+                                                    <div className="d-flex justify-content-end mb-2">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm px-3"
+                                                            onClick={toggleEditMode}
+                                                            style={{
+                                                                backgroundColor: "#f0f2f7",
+                                                                color: "#405189",
+                                                                border: "none",
+                                                                fontWeight: "500",
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </button>
                                                     </div>
-                                                    {[...Array(5)].map((_, row) => (
-                                                        <div key={row} className="d-flex border-bottom" style={{ height: '100px' }}>
-                                                            {[...Array(7)].map((_, col) => (
-                                                                <div key={col} className="flex-fill border-end p-1">
-                                                                    {((row + col) % 5 === 0) && (
-                                                                        <div className="rounded bg-secondary-subtle mt-3 mx-1" style={{ height: '20px', opacity: 0.5 }}></div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
+
+                                                    <div className="d-flex align-items-center mb-3">
+                                                        <div className="flex-shrink-0 me-3">
+                                                            <i className="ri-calendar-event-line text-muted fs-18"></i>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div id="calendar" style={{ minHeight: '600px' }}>
-                                                <FullCalendar
-                                                    ref={calendarRef}
-                                                    plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
-                                                    initialView={window.innerWidth >= 1200 ? "dayGridMonth" : window.innerWidth >= 768 ? "timeGridWeek" : "listMonth"}
-                                                    themeSystem="bootstrap5"
-                                                    headerToolbar={{
-                                                        left: 'prev,next today',
-                                                        center: 'title',
-                                                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
-                                                    }}
-                                                    buttonIcons={{
-                                                        prev: 'chevron-left',
-                                                        next: 'chevron-right',
-                                                    }}
-                                                    buttonText={{
-                                                        today: 'Today',
-                                                        month: 'Month',
-                                                        week: 'Week',
-                                                        day: 'Day',
-                                                        list: 'List'
-                                                    }}
-                                                    eventTimeFormat={{
-                                                        hour: 'numeric',
-                                                        minute: '2-digit',
-                                                        meridiem: 'short'
-                                                    }}
-                                                    events={events}
-                                                    editable={true}
-                                                    droppable={true}
-                                                    selectable={true}
-                                                    dateClick={(arg) => handleNewEvent(arg.dateStr)}
-                                                    eventClick={handleEventClick}
-                                                    eventDrop={handleDropResize}
-                                                    eventResize={handleDropResize}
-                                                    windowResize={(arg) => {
-                                                        if (window.innerWidth >= 1200) {
-                                                            arg.view.calendar.changeView('dayGridMonth');
-                                                        } else if (window.innerWidth >= 768) {
-                                                            arg.view.calendar.changeView('timeGridWeek');
-                                                        } else {
-                                                            arg.view.calendar.changeView('listMonth');
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <h6
+                                                                className="d-block fw-semibold mb-0"
+                                                                style={{ color: "#495057" }}
+                                                            >
+                                                                {displayData.date || "No Date Set"}
+                                                            </h6>
+                                                        </div>
+                                                    </div>
 
-                        <div style={{ clear: 'both' }}></div>
+                                                    <div className="d-flex align-items-center mb-3">
+                                                        <div className="flex-shrink-0 me-3">
+                                                            <i className="ri-time-line text-muted fs-18"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <h6
+                                                                className="d-block fw-semibold mb-0"
+                                                                style={{ color: "#495057" }}
+                                                            >
+                                                                {displayData.timeStart} - {displayData.timeEnd}
+                                                            </h6>
+                                                        </div>
+                                                    </div>
 
-                        {/* Modal */}
+                                                    <div className="d-flex align-items-center mb-4">
+                                                        <div className="flex-shrink-0 me-3">
+                                                            <i className="ri-map-pin-line text-muted fs-18"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <h6
+                                                                className="d-block fw-semibold mb-0 text-primary-emphasis"
+                                                            >
+                                                                {displayData.location}
+                                                            </h6>
+                                                        </div>
+                                                    </div>
 
-                        <div className="modal" id="event-modal" tabIndex="-1" ref={eventModalRef}>
+                                                    <div className="d-flex align-items-center mb-3">
+                                                        <div className="flex-shrink-0 me-3">
+                                                            <i className="ri-user-star-line text-muted fs-18"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <h6
+                                                                className="d-block fw-semibold mb-0"
+                                                                style={{ color: "#495057" }}
+                                                            >
+                                                                Scheduled By:{" "}
+                                                                <span className="text-muted fw-normal">
+                                                                    {displayData.scheduledBy || "FCH Admin"}
+                                                                </span>
+                                                            </h6>
+                                                        </div>
+                                                    </div>
 
-                            <div className="modal-dialog modal-dialog-centered">
-                                <div className="modal-content border-0">
-                                    <div className="modal-header p-3 bg-info-subtle">
-                                        <h5 className="modal-title" id="modal-title">{viewMode ? (displayData.title || "Appointment") : (isNewEvent ? "Add Appointment" : "Edit Appointment")}</h5>
-                                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
-                                    </div>
-                                    <div className="modal-body p-4">
-                                        <form className="needs-validation" name="event-form" id="form-event" noValidate onSubmit={handleSubmit}>
+                                                    <div className="d-flex align-items-center mb-4">
+                                                        <div className="flex-shrink-0 me-3">
+                                                            <i className="ri-user-follow-line text-muted fs-18"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <h6
+                                                                className="d-block fw-semibold mb-0"
+                                                                style={{ color: "#495057" }}
+                                                            >
+                                                                Assigned For:{" "}
+                                                                <span className="text-muted fw-normal">
+                                                                    {displayData.assignedFor}
+                                                                </span>
+                                                            </h6>
+                                                        </div>
+                                                    </div>
 
-                                            {/* --- Details View --- */}
-                                            <div className="event-details" style={{ display: viewMode ? 'block' : 'none' }}>
-                                                <div className="d-flex justify-content-end mb-2">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm px-3"
-                                                        onClick={toggleEditMode}
-                                                        style={{ backgroundColor: '#f0f2f7', color: '#405189', border: 'none', fontWeight: '500' }}
+                                                    <div
+                                                        className="text-end mt-4 pt-2"
+                                                        style={{ display: viewMode ? "block" : "none" }}
                                                     >
-                                                        Edit
-                                                    </button>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-calendar-event-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>{displayData.date || "No Date Set"}</h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-time-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>{displayData.timeStart} - {displayData.timeEnd}</h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-map-pin-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0 text-primary-emphasis">{displayData.location}</h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-user-star-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>Scheduled By: <span className="text-muted fw-normal">{displayData.scheduledBy || "FCH Admin"}</span></h6>
+                                                        <button
+                                                            type="button"
+                                                            className="btn px-4 py-2"
+                                                            onClick={handleDelete}
+                                                            disabled={isDeleting}
+                                                            style={{
+                                                                backgroundColor: "#fff1f0",
+                                                                color: "#ff4d4f",
+                                                                border: "none",
+                                                                borderRadius: "6px",
+                                                                fontWeight: "500",
+                                                            }}
+                                                        >
+                                                            {isDeleting ? (
+                                                                <>
+                                                                    <span
+                                                                        className="spinner-border spinner-border-sm me-1"
+                                                                        role="status"
+                                                                        aria-hidden="true"
+                                                                    ></span>{" "}
+                                                                    Deleting...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i
+                                                                        className="ri-close-line align-bottom me-1"
+                                                                        style={{ fontSize: "18px" }}
+                                                                    ></i>{" "}
+                                                                    Delete
+                                                                </>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 </div>
 
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-user-follow-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>Assigned For: <span className="text-muted fw-normal">{displayData.assignedFor}</span></h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="text-end mt-4 pt-2" style={{ display: viewMode ? 'block' : 'none' }}>
-                                                    <button
-                                                        type="button"
-                                                        className="btn px-4 py-2"
-                                                        onClick={handleDelete}
-                                                        disabled={isDeleting}
-                                                        style={{ backgroundColor: '#fff1f0', color: '#ff4d4f', border: 'none', borderRadius: '6px', fontWeight: '500' }}
-                                                    >
-                                                        {isDeleting ? (
-                                                            <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Deleting...</>
-                                                        ) : (
-                                                            <><i className="ri-close-line align-bottom me-1" style={{ fontSize: '18px' }}></i> Delete</>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Form View */}
-                                            <div className="row event-form" style={{ display: !viewMode ? 'flex' : 'none' }}>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
+                                                {/* --- Form View --- */}
+                                                <div
+                                                    className="row event-form"
+                                                    style={{ display: !viewMode ? "flex" : "none" }}
+                                                >
+                                                    {/* Appointment Title */}
+                                                    <div className="col-12 mb-3">
                                                         <label className="form-label">Appointment Title</label>
-                                                        <input className={`form-control ${formErrors.subject ? 'is-invalid' : ''}`} placeholder="Enter Appointment Title" type="text" name="subject" id="event-title" value={formData.subject} onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))} />
-                                                        {formErrors.subject && <div className="invalid-feedback d-block" style={{ color: '#f1734f' }}>{formErrors.subject}</div>}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-control ${formErrors.subject ? "is-invalid" : ""
+                                                                }`}
+                                                            placeholder="Enter Appointment Title"
+                                                            name="subject"
+                                                            id="event-title"
+                                                            value={formData.subject}
+                                                            onChange={(e) =>
+                                                                setFormData((prev) => ({ ...prev, subject: e.target.value }))
+                                                            }
+                                                        />
+                                                        {formErrors.subject && (
+                                                            <div
+                                                                className="invalid-feedback d-block"
+                                                                style={{ color: "#f1734f" }}
+                                                            >
+                                                                {formErrors.subject}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
 
-                                                {/* Appointment By Section */}
-                                                <div className="col-12">
-                                                    <div className="mb-3">
+                                                    {/* Appointment By */}
+                                                    <div className="col-12 mb-3">
                                                         <label className="form-label">Appointment By</label>
                                                         <div className="d-flex gap-3">
                                                             {isHost && (
                                                                 <div className="form-check mb-2">
-                                                                    <input className="form-check-input" type="radio" name="assignedForType" id="typePartner" value="partner" checked={assignedForType === 'partner'} onChange={() => { setAssignedForType('partner'); setAssignedForId(''); }} />
+                                                                    <input
+                                                                        className="form-check-input"
+                                                                        type="radio"
+                                                                        name="assignedForType"
+                                                                        id="typePartner"
+                                                                        value="partner"
+                                                                        checked={assignedForType === "partner"}
+                                                                        onChange={() => {
+                                                                            setAssignedForType("partner");
+                                                                            setAssignedForId("");
+                                                                        }}
+                                                                    />
                                                                     <label className="form-check-label" htmlFor="typePartner">
                                                                         Partner
                                                                     </label>
                                                                 </div>
                                                             )}
                                                             <div className="form-check mb-2">
-                                                                <input className="form-check-input" type="radio" name="assignedForType" id="typeEmployee" value="employee" checked={assignedForType === 'employee'} onChange={() => { setAssignedForType('employee'); setAssignedForId(''); }} />
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="radio"
+                                                                    name="assignedForType"
+                                                                    id="typeEmployee"
+                                                                    value="employee"
+                                                                    checked={assignedForType === "employee"}
+                                                                    onChange={() => {
+                                                                        setAssignedForType("employee");
+                                                                        setAssignedForId("");
+                                                                    }}
+                                                                />
                                                                 <label className="form-check-label" htmlFor="typeEmployee">
                                                                     Employee
                                                                 </label>
                                                             </div>
                                                             <div className="form-check mb-2">
-                                                                <input className="form-check-input" type="radio" name="assignedForType" id="typeBorrower" value="borrower" checked={assignedForType === 'borrower'} onChange={() => { setAssignedForType('borrower'); setAssignedForId(''); }} />
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="radio"
+                                                                    name="assignedForType"
+                                                                    id="typeBorrower"
+                                                                    value="borrower"
+                                                                    checked={assignedForType === "borrower"}
+                                                                    onChange={() => {
+                                                                        setAssignedForType("borrower");
+                                                                        setAssignedForId("");
+                                                                    }}
+                                                                />
                                                                 <label className="form-check-label" htmlFor="typeBorrower">
                                                                     Borrower
                                                                 </label>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Select {assignedForType ? assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1) : 'Entity'}</label>
-                                                        <select className={`form-select ${(formErrors.assigned_for || formErrors.assigned_for_id) ? 'is-invalid' : ''}`} id="event-assigned-for" value={assignedForId} onChange={(e) => setAssignedForId(e.target.value)} disabled={loadingAssignedFor}>
-                                                            <option value="" disabled>Select {assignedForType}</option>
-                                                            {assignedForType === 'partner' && partners.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || item.name || item.company_name}</option>
-                                                            ))}
-                                                            {assignedForType === 'employee' && employees.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || (item.first_name + ' ' + item.last_name)}</option>
-                                                            ))}
-                                                            {assignedForType === 'borrower' && borrowers.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || (item.first_name + ' ' + item.last_name)}</option>
-                                                            ))}
-                                                        </select>
-                                                        {loadingAssignedFor && <div className="text-muted small mt-1">Loading...</div>}
+                                                    {/* Assigned Entity Select */}
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label">
+                                                            Select{" "}
+                                                            {assignedForType
+                                                                ? assignedForType.charAt(0).toUpperCase() +
+                                                                assignedForType.slice(1)
+                                                                : "Entity"}
+                                                        </label>
+                                                        {loadingAssignedFor ? (
+                                                            <Skeleton height="38px" className="mb-2" borderRadius="6px" />
+                                                        ) : (
+                                                            <Dropdown
+                                                                id="event-assigned-for"
+                                                                value={assignedForId}
+                                                                options={assignedOptions}
+                                                                onChange={(e) => setAssignedForId(e.value)}
+                                                                optionLabel="label"
+                                                                disabled={loadingAssignedFor}
+                                                                filter
+                                                                showClear
+                                                                placeholder={`Select ${assignedForType}...`}
+                                                                className={`w-100 ${formErrors.assigned_for || formErrors.assigned_for_id ? 'p-invalid' : ''}`}
+                                                                emptyMessage="No results found"
+                                                                appendTo="self"
+                                                            />
+                                                        )}
                                                         {(formErrors.assigned_for || formErrors.assigned_for_id) && (
-                                                            <div className="invalid-feedback d-block" style={{ color: '#f1734f' }}>
+                                                            <div
+                                                                className="invalid-feedback d-block"
+                                                                style={{ color: "#f1734f" }}
+                                                            >
                                                                 {formErrors.assigned_for || formErrors.assigned_for_id}
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Type</label>
-                                                        <select className={`form-select ${formErrors.meeting_type ? 'is-invalid' : ''}`} name="category" id="event-category" value={formData.category} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}>
-                                                            <option value="" disabled>Select Type</option>
-                                                            {APPOINTMENT_TYPE_OPTIONS.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </select>
-                                                        {formErrors.meeting_type && <div className="invalid-feedback d-block">{formErrors.meeting_type}</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="col-6">
-                                                    <div className="mb-3">
-                                                        <label>Event Date</label>
-                                                        <div className="input-group">
-                                                            <input type="text" id="event-start-date" className={`form-control flatpickr flatpickr-input ${formErrors.appointment_date ? 'is-invalid' : ''}`} placeholder="Select date" readOnly value={formData.date} />
-                                                            <span className="input-group-text"><i className="ri-calendar-event-line"></i></span>
-                                                        </div>
-                                                        {formErrors.appointment_date && <div className="invalid-feedback d-block">{formErrors.appointment_date}</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="col-6" id="event-time">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Time Slot</label>
-                                                        <select id="time-slot-select" className={`form-select ${formErrors.duration_minutes ? 'is-invalid' : ''}`} onChange={handleTimeSlotChange} value={formData.timeStart}>
-                                                            <option value="" disabled>Select a time</option>
-                                                            {timeSlots.map((slot) => {
-                                                                return <option key={slot.id} value={slot.start_time}>{slot.label}</option>;
-                                                            })}
-                                                        </select>
-                                                        {formErrors.duration_minutes && <div className="invalid-feedback d-block">{formErrors.duration_minutes}</div>}
-                                                        <input id="timepicker1" type="text" className="form-control flatpickr flatpickr-input d-none" readOnly value={formData.timeStart} />
-                                                        <input id="timepicker2" type="text" className="form-control flatpickr flatpickr-input d-none" readOnly value={formData.timeEnd} />
-                                                    </div>
-                                                </div>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label htmlFor="event-location">Time Zone</label>
-                                                        <select className={`form-select ${formErrors.timezone ? 'is-invalid' : ''}`} name="event-location" id="event-location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}>
-                                                            <option value="" disabled>Select time zone</option>
-                                                            {TIMEZONE_OPTIONS.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </select>
-                                                        {formErrors.timezone && <div className="invalid-feedback d-block">{formErrors.timezone}</div>}
-                                                    </div>
-                                                </div>
-                                                <input type="hidden" id="eventid" name="eventid" value={selectedEventId || ""} />
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Description</label>
-                                                        <textarea className={`form-control ${formErrors.description ? 'is-invalid' : ''}`} id="event-description" placeholder="Enter a description" rows="3" spellCheck="false" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}></textarea>
-                                                        {formErrors.description && <div className="invalid-feedback d-block">{formErrors.description}</div>}
-                                                    </div>
-                                                </div>
-                                            </div>
 
-                                            <div className="hstack gap-2 justify-content-end mt-4" style={{ display: !viewMode ? 'flex' : 'none' }}>
-                                                <button type="button" className="btn btn-light" onClick={() => setViewMode(true)}>Cancel</button>
-                                                <button type="submit" className="btn btn-success" id="btn-save-event" disabled={isSubmitting}>
-                                                    {isSubmitting ? (
-                                                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving data...</>
-                                                    ) : (
-                                                        isNewEvent ? "Confirm Appointment" : "Update Appointment"
+                                                    {/* Meeting Type */}
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label">Type</label>
+                                                        <Dropdown
+                                                            id="event-category"
+                                                            value={formData.category}
+                                                            options={APPOINTMENT_TYPE_OPTIONS}
+                                                            onChange={(e) => setFormData((prev) => ({ ...prev, category: e.value }))}
+                                                            placeholder="Select Type"
+                                                            className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
+                                                            appendTo="self"
+                                                        />
+                                                        {formErrors.meeting_type && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.meeting_type}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Event Date */}
+                                                    <div className="col-6 mb-3">
+                                                        <label className="form-label">Event Date</label>
+                                                        <div className="input-group">
+                                                            <input
+                                                                type="text"
+                                                                id="event-start-date"
+                                                                className={`form-control flatpickr flatpickr-input ${formErrors.appointment_date ? "is-invalid" : ""
+                                                                    }`}
+                                                                placeholder="Select date"
+                                                                readOnly
+                                                                value={formData.date}
+                                                            />
+                                                            <span className="input-group-text">
+                                                                <i className="ri-calendar-event-line"></i>
+                                                            </span>
+                                                        </div>
+                                                        {formErrors.appointment_date && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.appointment_date}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Availability Status */}
+                                                    {/* Availability Status - shows Skeleton while checking or remains empty if available */}
+                                                    {(isCheckingAvailability || loadingAssignedFor) && (
+                                                        <div className="col-12 mb-3">
+                                                            <div className="p-3 border border-dashed rounded bg-light">
+                                                                <Skeleton className="mb-2" width="100%" height="20px"></Skeleton>
+                                                                <Skeleton width="60%" height="20px"></Skeleton>
+                                                            </div>
+                                                        </div>
                                                     )}
-                                                </button>
-                                            </div>
-                                        </form>
+
+                                                    {/* Time Slot */}
+                                                    <div className="col-6 mb-3">
+                                                        <label className="form-label">Time Slot</label>
+                                                        <div className="d-flex gap-2 align-items-center">
+                                                            <div className="flex-grow-1">
+                                                                <Dropdown
+                                                                    id="time-start-select"
+                                                                    value={formData.timeStart}
+                                                                    options={TIME_SLOTS}
+                                                                    onChange={(e) => {
+                                                                        const val = e.value;
+
+                                                                        // Prevent selection while checking availability
+                                                                        if (isCheckingAvailability) {
+                                                                            // Optional: Show toast or just return
+                                                                            return;
+                                                                        }
+
+                                                                        // Conflict Validation
+                                                                        if (availabilityConflicts && (availabilityConflicts.assignee_conflicts || availabilityConflicts.scheduler_conflicts)) {
+                                                                            const conflicts = [
+                                                                                ...(availabilityConflicts.assignee_conflicts || []),
+                                                                                ...(availabilityConflicts.scheduler_conflicts || [])
+                                                                            ];
+
+                                                                            // Calculate proposed time range (assuming 60 min default as per below logic)
+                                                                            const [h, m] = val.split(':').map(Number);
+                                                                            const startMinutes = h * 60 + m;
+                                                                            const endMinutes = startMinutes + 60; // 60 min duration
+
+                                                                            const isConflict = conflicts.some(c => {
+                                                                                // Handle potential "HH:mm:ss" or "HH:mm" format from API
+                                                                                const [cH, cM] = c.start_time.split(':').map(Number);
+                                                                                const [cEndH, cEndM] = c.end_time.split(':').map(Number);
+
+                                                                                const conflictStart = cH * 60 + cM;
+                                                                                const conflictEnd = cEndH * 60 + cEndM;
+
+                                                                                // Check for overlap: (StartA < EndB) and (EndA > StartB)
+                                                                                return startMinutes < conflictEnd && endMinutes > conflictStart;
+                                                                            });
+
+                                                                            console.log("Checking Conflict:", { val, startMinutes, endMinutes, conflicts, isConflict }); // Debug Log
+
+                                                                            if (isConflict) {
+                                                                                // Trigger Custom Conflict Modal
+                                                                                setModalConflictData(availabilityConflicts);
+                                                                                setShowConflictModal(true);
+                                                                                return; // Do NOT update state
+                                                                            }
+                                                                        }
+
+                                                                        if (val) {
+                                                                            const [h, m] = val.split(':').map(Number);
+                                                                            let endH = h + 1;
+                                                                            let endM = m;
+                                                                            const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                            setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
+                                                                        } else {
+                                                                            setFormData(prev => ({ ...prev, timeStart: val }));
+                                                                        }
+                                                                    }}
+                                                                    filter
+                                                                    placeholder="Start Time"
+                                                                    className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
+                                                                    appendTo="self"
+                                                                />
+                                                            </div>
+                                                            <div>to</div>
+                                                            <div className="flex-grow-1">
+                                                                <Dropdown
+                                                                    id="time-end-select"
+                                                                    value={formData.timeEnd}
+                                                                    options={TIME_SLOTS}
+                                                                    onChange={(e) => setFormData(prev => ({ ...prev, timeEnd: e.value }))}
+                                                                    filter
+                                                                    placeholder="End Time"
+                                                                    className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
+                                                                    appendTo="self"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {formErrors.duration_minutes && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.duration_minutes}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Timezone */}
+                                                    <div className="col-12 mb-3">
+                                                        <label htmlFor="event-location">Time Zone</label>
+                                                        <Dropdown
+                                                            id="event-location"
+                                                            value={formData.location}
+                                                            options={TIMEZONE_OPTIONS}
+                                                            onChange={(e) => setFormData((prev) => ({ ...prev, location: e.value }))}
+                                                            optionLabel="label"
+                                                            placeholder="Select time zone"
+                                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`}
+                                                            appendTo="self"
+                                                        />
+                                                        {formErrors.timezone && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.timezone}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <input
+                                                        type="hidden"
+                                                        id="eventid"
+                                                        name="eventid"
+                                                        value={selectedEventId || ""}
+                                                    />
+
+                                                    {/* Description */}
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label">Description</label>
+                                                        <div ref={descriptionEditorRef}></div>
+                                                        {formErrors.description && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.description}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Buttons */}
+                                                <div
+                                                    className="hstack gap-2 justify-content-end mt-4"
+                                                    style={{ display: !viewMode ? "flex" : "none" }}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-light"
+                                                        onClick={() => setViewMode(true)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="submit"
+                                                        className="btn btn-success"
+                                                        id="btn-save-event"
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        {isSubmitting ? (
+                                                            <>
+                                                                <span
+                                                                    className="spinner-border spinner-border-sm me-1"
+                                                                    role="status"
+                                                                    aria-hidden="true"
+                                                                ></span>{" "}
+                                                                Saving data...
+                                                            </>
+                                                        ) : isNewEvent ? (
+                                                            "Confirm Appointment"
+                                                        ) : (
+                                                            "Update Appointment"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Conflict Modal */}
+            {/* ConflictModal with strict z-index to ensure it appears above Event Modal */}
+            <div style={{ position: 'relative', zIndex: 1060 }}>
+                <ConflictModal
+                    show={showConflictModal}
+                    conflicts={modalConflictData}
+                    onClose={() => setShowConflictModal(false)}
+                />
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={confirmDelete}
+                loading={isDeleting}
+                text="Are you sure you want to delete this appointment?"
+            />
+        </React.Fragment >
     );
 }

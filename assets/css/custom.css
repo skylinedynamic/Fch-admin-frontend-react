@@ -399,6 +399,111 @@ File: Custom Css File
     border-bottom: 1px solid #e9ebec !important;
 }
 
+/* Custom FullCalendar header (matches template) */
+.fc-custom-header .btn-calendar {
+    background: var(--bs-primary) !important;
+    color: #fff !important;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fc-custom-header .btn-calendar i[class^="ri-"],
+.fc-custom-header .btn-calendar i[class*=" ri-"] {
+    font-family: 'remixicon' !important;
+    font-size: 20px;
+}
+
+.fc-custom-header .btn-calendar+.btn-calendar {
+    margin-left: 8px;
+}
+
+.fc-custom-title {
+    background: var(--bs-primary);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    min-width: 110px;
+    display: inline-block;
+    text-align: center;
+}
+
+.fc-custom-title .month {
+    display: block;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.fc-custom-title .year {
+    display: block;
+    font-size: 12px;
+    opacity: 0.95;
+}
+
+@media (max-width: 576px) {
+    .fc-custom-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .fc-custom-header .d-flex.gap-2 {
+        justify-content: center;
+    }
+}
+
+
+/* FullCalendar header & icon tweaks to match template design ✅ */
+.fc .fc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Make the month title uppercase, heavier and use the template heading font */
+.fc .fc-toolbar-title {
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+    font-family: var(--vz-headings-font-family, 'Poppins', sans-serif);
+    font-size: 18px;
+    color: #283046;
+}
+
+/* Ensure remixicon icons used in header/buttons render correctly */
+.fc .fc-button i[class^="ri-"],
+.fc .fc-button i[class*=" ri-"] {
+    font-family: 'remixicon' !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Slight padding tweaks for header buttons to match template spacing */
+.fc .fc-button {
+    padding: 0.45rem 0.7rem;
+    border-radius: 8px;
+}
+
+/* Optional: adjust Today/Month/Week button active style to match screenshot */
+.fc .fc-button.fc-button-primary {
+    background-color: #405189;
+    color: #fff;
+    border: none;
+}
+
+/* Small responsive tweak so header keeps centered on narrow screens */
+@media (max-width: 767px) {
+    .fc .fc-toolbar-title {
+        font-size: 16px;
+    }
+}
+
+
 .modal-title {
     color: #405189 !important;
     font-weight: 600 !important;
@@ -493,6 +598,7 @@ File: Custom Css File
 .choices.is-invalid::after {
     right: 55px !important;
 }
+
 /* FullCalendar Premium Toolbar Styling */
 .fc .fc-toolbar-title {
     font-size: 1.1rem !important;
@@ -536,7 +642,7 @@ File: Custom Css File
     vertical-align: middle !important;
 }
 
-.fc .fc-button-group > .fc-button:not(:last-child) {
+.fc .fc-button-group>.fc-button:not(:last-child) {
     margin-right: 2px !important;
 }
 
@@ -547,4 +653,11 @@ File: Custom Css File
 
 .fc .fc-toolbar-chunk:first-child .fc-button-group {
     margin-right: 8px !important;
+}
+/* Custom Modal Size */
+@media (min-width: 576px) {
+    .modal-medium {
+        max-width: 600px;
+        margin: 1.75rem auto;
+    }
 }
