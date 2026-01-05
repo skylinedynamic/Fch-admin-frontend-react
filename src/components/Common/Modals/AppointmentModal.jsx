@@ -242,6 +242,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setSelectedEventId(null);
             setAssignedForType('partner');
             setAvailabilityConflicts(null);
+            setIsConflictVisible(false);
+            setLastConflictingAttempt(null);
+            setConflictError(null);
             const defaultDate = dateStr || new Date().toISOString().split('T')[0];
             setFormData({
                 subject: '',
@@ -696,7 +699,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                 <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
                                     <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary" disabled={isSubmitting || (availabilityConflicts && isConflictVisible)}>
+                                    <button type="submit" className="btn btn-primary" disabled={isSubmitting || (availabilityConflicts && availabilityConflicts.available === false)}>
                                         <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
                                         {isSubmitting ? "Saving..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
                                     </button>
