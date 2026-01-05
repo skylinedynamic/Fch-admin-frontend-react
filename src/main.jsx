@@ -29,10 +29,6 @@ const _loadFullCalendarCss = () => {
 };
 _loadFullCalendarCss();
 
-// Template icons & base styles (RemixIcon + theme font faces)
-import '../template/fch-admin/assets/css/icons.min.css'
-import '../template/fch-admin/assets/css/app.min.css'
-
 import '../assets/css/bootstrap.min.css'
 import '../assets/css/icons.min.css'
 import '../assets/css/app.min.css'
