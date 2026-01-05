@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import Modal from 'bootstrap/js/dist/modal';
+import { Modal } from 'bootstrap';
 
 
 // FullCalendar Imports
@@ -122,28 +122,38 @@ export default function Appointments() {
                     // Calculate end time based on duration_minutes
                     const end = new Date(start.getTime() + apt.duration_minutes * 60000);
 
-                    // Map variety of colors
-                    const SUBTLE_COLORS = [
-                        'bg-primary-subtle',
-                        'bg-success-subtle',
-                        'bg-info-subtle',
-                        'bg-warning-subtle',
-                        'bg-danger-subtle',
-                        'bg-secondary-subtle',
-                        'bg-indigo-subtle',
-                        'bg-purple-subtle',
-                        'bg-teal-subtle'
-                    ];
+                    // Map variety of colors based on meeting_type for "Accurate Design"
+                    const COLOR_MAP = {
+                        'Initial Consultation': 'bg-primary-subtle',
+                        'Follow-up Meeting': 'bg-info-subtle',
+                        'Business Review': 'bg-success-subtle',
+                        'Technical Support': 'bg-warning-subtle',
+                        'Feedback Session': 'bg-danger-subtle',
+                        'Partnership Meeting': 'bg-indigo-subtle',
+                        // Keywords mapping for backend flexibility
+                        'Marketing': 'bg-success-subtle',
+                        'Kickoff': 'bg-secondary-subtle',
+                        'Invoice': 'bg-danger-subtle',
+                        'Demo': 'bg-info-subtle',
+                        'Review': 'bg-warning-subtle',
+                        'Offsite': 'bg-dark-subtle'
+                    };
 
                     let className = 'bg-primary-subtle';
-                    if (apt.status === 'cancelled') {
+                    const type = apt.meeting_type || '';
+
+                    // Match by type or keyword
+                    const foundKey = Object.keys(COLOR_MAP).find(key => type.includes(key));
+                    if (foundKey) {
+                        className = COLOR_MAP[foundKey];
+                    } else if (apt.status === 'cancelled') {
                         className = 'bg-danger-subtle';
                     } else if (apt.status === 'completed') {
                         className = 'bg-success-subtle';
                     } else {
-                        // Use meeting_type or ID to pick a consistent "random" color
-                        const colorIndex = (apt.id + (apt.meeting_type?.length || 0)) % SUBTLE_COLORS.length;
-                        className = SUBTLE_COLORS[colorIndex];
+                        // Fallback deterministic
+                        const SUBTLE_COLORS = ['bg-primary-subtle', 'bg-success-subtle', 'bg-info-subtle', 'bg-warning-subtle', 'bg-danger-subtle'];
+                        className = SUBTLE_COLORS[apt.id % SUBTLE_COLORS.length];
                     }
 
                     return {
@@ -647,7 +657,7 @@ export default function Appointments() {
                 toast.success(response.message || 'Appointment created successfully');
                 loadAppointments();
             }
-            modalInstance.hide();
+            if (modalInstance) modalInstance.hide();
         } catch (error) {
             console.error("Failed to save appointment", error);
             if (error.response && error.response.data && error.response.data.errors) {
@@ -727,16 +737,17 @@ export default function Appointments() {
                                                     } else {
                                                         const t1 = tConvert(s.toTimeString().slice(0, 5));
                                                         const t2 = tConvert(e.toTimeString().slice(0, 5));
-                                                        badge = <small className="badge bg-primary-subtle text-primary ms-auto">{t1} to {t2}</small>;
+                                                        badge = <small className="badge bg-light text-primary ms-auto" style={{ border: '1px solid #eef1f6' }}>{t1} to {t2}</small>;
                                                     }
-                                                    const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
+                                                    const colorClass = evt.className ? evt.className.replace('bg-', '').replace('-subtle', '') : 'primary';
+                                                    const dotColor = evt.className ? `var(--vz-${colorClass})` : '#405189';
 
                                                     return (
                                                         <div className="card mb-3" key={evt.id}>
                                                             <div className="card-body">
                                                                 <div className="d-flex mb-3">
                                                                     <div className="flex-grow-1">
-                                                                        <i className={`mdi mdi-checkbox-blank-circle me-2 text-${colorClass}`}></i>
+                                                                        <i className={`mdi mdi-checkbox-blank-circle me-2`} style={{ color: dotColor }}></i>
                                                                         <span className="fw-medium">{dateStr}</span>
                                                                     </div>
                                                                     <div className="flex-shrink-0">
@@ -805,46 +816,82 @@ export default function Appointments() {
                                                             font-size: 1.1rem !important;
                                                             letter-spacing: 0.5px;
                                                         }
-                                                        #calendar .fc-button {
+                                                        
+                                                        /* View Buttons (Month, Week, etc.) */
+                                                        .fc .fc-button-group > .fc-button {
                                                             background-color: #eef5ff !important;
                                                             border: none !important;
                                                             color: #2979ff !important;
                                                             font-weight: 600 !important;
-                                                            padding: 6px 14px !important;
-                                                            box-shadow: none !important;
-                                                            transition: all 0.2s ease;
-                                                            border-radius: 4px !important;
+                                                            padding: 8px 16px !important;
                                                             font-size: 13px !important;
+                                                            transition: all 0.2s ease;
+                                                            box-shadow: none !important;
+                                                            text-transform: capitalize !important;
                                                         }
-                                                        #calendar .fc-button-primary:not(:disabled).fc-button-active,
-                                                        #calendar .fc-button-primary:not(:disabled):active {
+
+                                                        .fc .fc-button-group > .fc-button.fc-button-active {
                                                             background-color: #2979ff !important;
                                                             color: #ffffff !important;
+                                                            z-index: 1;
                                                         }
+
+                                                        .fc .fc-button-group > .fc-button:hover {
+                                                            background-color: #dbeaff !important;
+                                                        }
+
+                                                        /* Navigation Buttons (Prev/Next) */
+                                                        .fc .fc-prev-button, .fc .fc-next-button {
+                                                            background-color: #eef5ff !important;
+                                                            border: none !important;
+                                                            color: #2979ff !important;
+                                                            font-weight: bold !important;
+                                                            border-radius: 4px !important;
+                                                            margin: 0 2px !important;
+                                                            padding: 4px 8px !important;
+                                                        }
+
+                                                        /* Today Button */
                                                         #calendar .fc-today-button {
                                                             background-color: #2979ff !important;
                                                             color: #ffffff !important;
-                                                            margin-left: 8px !important;
+                                                            border: none !important;
+                                                            font-weight: 600 !important;
+                                                            padding: 6px 14px !important;
+                                                            border-radius: 4px !important;
+                                                            margin-left: 10px !important;
                                                             opacity: 1 !important;
+                                                            text-transform: capitalize !important;
                                                         }
+
                                                         #calendar .fc-today-button:disabled {
-                                                            opacity: 0.7 !important;
+                                                            opacity: 0.65 !important;
                                                         }
-                                                        #calendar .fc-button:hover {
-                                                            background-color: #dbe9ff !important;
+
+                                                        /* Event Styling */
+                                                        .fc-event {
+                                                            border: none !important;
+                                                            border-radius: 4px !important;
+                                                            padding: 2px 4px !important;
+                                                            margin-top: 1px !important;
+                                                            cursor: pointer !important;
                                                         }
-                                                        #calendar .fc-button .fc-icon {
-                                                            font-size: 1.1em !important;
+
+                                                        .fc-event-title {
+                                                            font-weight: 600 !important;
+                                                            font-size: 0.8rem !important;
                                                         }
-                                                        #calendar .fc-button-group {
-                                                            background-color: #eef5ff;
-                                                            border-radius: 6px;
-                                                            padding: 2px;
-                                                        }
-                                                        #calendar .fc-button-group .fc-button {
-                                                            margin: 0 !important;
-                                                        }
-                                                        .fc .fc-button .fc-icon { vertical-align: middle; }
+
+                                                        /* Color themes for events */
+                                                        .bg-success-subtle .fc-event-title, .bg-success-subtle .fc-event-time { color: #0ab39c !important; }
+                                                        .bg-primary-subtle .fc-event-title, .bg-primary-subtle .fc-event-time { color: #405189 !important; }
+                                                        .bg-info-subtle .fc-event-title, .bg-info-subtle .fc-event-time { color: #29b6f6 !important; }
+                                                        .bg-warning-subtle .fc-event-title, .bg-warning-subtle .fc-event-time { color: #f7b84b !important; }
+                                                        .bg-danger-subtle .fc-event-title, .bg-danger-subtle .fc-event-time { color: #f06548 !important; }
+                                                        .bg-secondary-subtle .fc-event-title, .bg-secondary-subtle .fc-event-time { color: #3577f1 !important; }
+                                                        .bg-dark-subtle .fc-event-title, .bg-dark-subtle .fc-event-time { color: #212529 !important; }
+
+                                                        .fc-daygrid-event-dot { display: none !important; }
                                                     `}</style>
                                                     <FullCalendar
                                                         ref={calendarRef}
