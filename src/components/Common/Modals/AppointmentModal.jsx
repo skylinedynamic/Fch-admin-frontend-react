@@ -28,7 +28,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const [assignedForType, setAssignedForType] = useState('partner');
+    const [assignedForType, setAssignedForType] = useState('Partner');
     const [partners, setPartners] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [borrowers, setBorrowers] = useState([]);
@@ -44,7 +44,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         timeStart: '09:00',
         timeEnd: '09:30',
         entity_id: '',
-        entity_type: 'partner',
+        entity_type: 'Partner',
     });
 
     // Display Data
@@ -198,19 +198,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     // Load Options
     const loadAssignedForOptions = async (type) => {
-        if (type === 'partner' && partners.length > 0) return;
-        if (type === 'employee' && employees.length > 0) return;
-        if (type === 'borrower' && borrowers.length > 0) return;
+        if (type === 'Partner' && partners.length > 0) return;
+        if (type === 'Employee' && employees.length > 0) return;
+        if (type === 'Borrower' && borrowers.length > 0) return;
 
         try {
             setLoadingAssignedFor(true);
-            if (type === 'partner') {
+            if (type === 'Partner') {
                 const response = await fetchPartners({});
                 setPartners(response.data || []);
-            } else if (type === 'employee') {
+            } else if (type === 'Employee') {
                 const response = await fetchEmployees({});
                 setEmployees(response.employees || []);
-            } else if (type === 'borrower') {
+            } else if (type === 'Borrower') {
                 const response = await fetchAllBorrowers({});
                 setBorrowers(response.data || []);
             }
@@ -242,7 +242,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType('partner');
+            setAssignedForType('Partner');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
@@ -257,9 +257,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeStart: '09:00',
                 timeEnd: '09:30',
                 entity_id: '',
-                entity_type: 'partner',
+                entity_type: 'Partner',
             });
             setFormErrors({});
+
+            // Manual reset for plugins
+            if (descriptionEditorRef.current) {
+                $(descriptionEditorRef.current).summernote('code', '');
+            }
 
             // Sync flatpickr if already initialized
             const dateInput = document.getElementById("event-start-date-modal");
@@ -310,12 +315,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             });
 
             if (apt.assigned_for) {
-                setAssignedForType(apt.assigned_for.entity_type?.toLowerCase() || 'partner');
+                const rawType = apt.assigned_for.entity_type || 'Partner';
+                const formattedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+                setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
                     entity_id: apt.assigned_for.id,
-                    entity_type: apt.assigned_for.entity_type?.toLowerCase() || 'partner'
+                    entity_type: formattedType
                 }));
+            }
+
+            // Manual Summernote reset/sync
+            if (descriptionEditorRef.current) {
+                $(descriptionEditorRef.current).summernote('code', apt.description || '');
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
@@ -341,14 +353,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         };
 
+        // Fetch description directly from Summernote
+        let descVal = formData.description;
+        if (descriptionEditorRef.current) {
+            descVal = $(descriptionEditorRef.current).summernote('code');
+            if (descVal === '<p><br></p>') descVal = '';
+        }
+
+        const startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
+        const durationMinutes = (new Date(`${formData.date}T${formData.timeEnd}`) - startDateTime) / 60000;
+
         if (!formData.date) {
             setFormErrors({ appointment_date: "Event date is required" });
             return;
         }
-
-        let startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
-        let endDateTime = new Date(`${formData.date}T${formData.timeEnd}`);
-        let durationMinutes = (endDateTime - startDateTime) / 60000;
 
         // Check for conflicts before submission
         if (availabilityConflicts && availabilityConflicts.available === false) {
@@ -371,7 +389,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         // FIXED PAYLOAD as requested
         const payload = {
             subject: formData.subject,
-            description: formData.description,
+            description: descVal,
             appointment_date: toMySQLDate(startDateTime),
             timezone: formData.location,
             duration_minutes: durationMinutes,
@@ -461,9 +479,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     }, [viewMode]);
 
     const assignedOptions = (() => {
-        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
-        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
-        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
+        if (assignedForType === 'Partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
+        if (assignedForType === 'Employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
+        if (assignedForType === 'Borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
         return [];
     })();
 
@@ -538,7 +556,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     <div className="col-12 mb-3">
                                         <label className="form-label">Assigned For <span className="text-danger">*</span></label>
                                         <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
-                                            {['partner', 'employee', 'borrower'].map(t => (
+                                            {['Partner', 'Employee', 'Borrower'].map(t => (
                                                 <div className="form-check" key={t}>
                                                     <input className="form-check-input" type="radio"
                                                         name="assignedForType" id={`type-${t}`}
