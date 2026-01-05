@@ -18,6 +18,7 @@ import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../..
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
+    const dateInputRef = useRef(null);
     const descriptionEditorRef = useRef(null);
     const [modalInstance, setModalInstance] = useState(null);
     const [viewMode, setViewMode] = useState(true);
@@ -88,6 +89,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             }
 
             try {
+                setIsCheckingAvailability(true);
                 // Determine what exactly changed
                 const dateOrAssigneeChanged = prevDateRef.current !== formData.date;
                 const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
@@ -418,16 +420,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     // Flatpickr initialization
     useEffect(() => {
-        const dateInput = document.getElementById("event-start-date-modal");
-        if (dateInput && !viewMode) {
-            flatpickr(dateInput, {
+        if (dateInputRef.current && !viewMode) {
+            const fp = flatpickr(dateInputRef.current, {
                 mode: "single",
                 minDate: "today",
                 defaultDate: formData.date,
+                disableMobile: true, // Forces custom UI on mobile
                 onChange: (selectedDates, dateStr) => {
                     setFormData(prev => ({ ...prev, date: dateStr }));
                 }
             });
+            return () => fp.destroy();
         }
     }, [viewMode]);
 
@@ -529,6 +532,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             onChange={(e) => setFormData(p => ({ ...p, category: e.value }))}
                                             className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
                                             placeholder="Select Type" appendTo="self" />
+                                        {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
                                     </div>
 
                                     <div className="col-12 mb-3">
@@ -550,12 +554,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             ))}
                                         </div>
                                         <div className="position-relative" style={{ minHeight: '38px' }}>
-                                            {loadingAssignedFor && (
-                                                <div className="position-absolute w-100 h-100 bg-white d-flex align-items-center px-1"
-                                                    style={{ zIndex: 2, top: 0, left: 0, pointerEvents: 'none', opacity: 0.9 }}>
-                                                    <Skeleton width="100%" height="38px" borderRadius="6px" />
-                                                </div>
-                                            )}
                                             <Dropdown value={formData.entity_id} options={assignedOptions}
                                                 onChange={(e) => {
                                                     setFormData(p => ({ ...p, entity_id: e.value }));
@@ -564,32 +562,22 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 placeholder={`Select ${assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1)}`}
                                                 className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
                                                 appendTo="self" />
+                                            {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                         </div>
                                     </div>
 
                                     <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
-                                        {isCheckingAvailability && (
-                                            <div className="position-absolute w-100 h-100 bg-white d-flex align-items-center gap-3 px-3"
-                                                style={{ zIndex: 10, top: 0, left: 0, pointerEvents: 'none', opacity: 0.9 }}>
-                                                <div className="flex-grow-1">
-                                                    <Skeleton width="100%" height="45px" borderRadius="6px" />
-                                                </div>
-                                                <div className="flex-grow-1">
-                                                    <Skeleton width="100%" height="45px" borderRadius="6px" />
-                                                </div>
-                                            </div>
-                                        )}
                                         <div className="row mx-0">
-                                            <div className="col-6 mb-0 px-2">
+                                            <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-light border-end-0"><i className="ri-calendar-line text-muted"></i></span>
-                                                    <input type="text" id="event-start-date-modal" className={`form-control border-start-0 ${formErrors.appointment_date ? 'is-invalid border-danger' : ''}`}
+                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal" className={`form-control border-start-0 ${formErrors.appointment_date ? 'is-invalid border-danger' : ''}`}
                                                         value={formData.date} readOnly placeholder="Select date" />
                                                     {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                 </div>
                                             </div>
-                                            <div className="col-6 mb-0 px-2">
+                                            <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
                                                 <div className="d-flex align-items-center gap-2">
                                                     <Dropdown value={formData.timeStart} options={TIME_SLOTS}
@@ -688,7 +676,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         <label className="form-label fs-13 fw-semibold">Time Zone</label>
                                         <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
                                             onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
-                                            className="w-100" filter placeholder="Select Time Zone" appendTo="self" />
+                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} filter placeholder="Select Time Zone" appendTo="self" />
+                                        {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
                                     </div>
 
                                     <div className="col-12 mb-3">
@@ -699,7 +688,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                 <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
                                     <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary" disabled={isSubmitting || (availabilityConflicts && availabilityConflicts.available === false)}>
+                                    <button type="submit" className="btn btn-primary"
+                                        disabled={isSubmitting || isCheckingAvailability || (() => {
+                                            if (!availabilityConflicts) return false;
+                                            const allConflicts = [
+                                                ...(availabilityConflicts.assignee_conflicts || []),
+                                                ...(availabilityConflicts.scheduler_conflicts || [])
+                                            ];
+                                            return allConflicts.some(c => {
+                                                const cStart = c.start_time || "";
+                                                const cEnd = c.end_time || "";
+                                                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                                            });
+                                        })()}>
                                         <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
                                         {isSubmitting ? "Saving..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
                                     </button>
