@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import { Modal } from 'bootstrap';
+import Modal from 'bootstrap/js/dist/modal';
 
 
 // FullCalendar Imports
@@ -276,7 +276,7 @@ export default function Appointments() {
             const mod = new Modal(eventModalRef.current, { keyboard: false });
             setModalInstance(mod);
         }
-    }, [modalInstance]);
+    }, []); // Only once
 
 
 
@@ -400,7 +400,15 @@ export default function Appointments() {
             timeSlotId: '',
         });
         setFormErrors({});
-        if (modalInstance) modalInstance.show();
+
+        // Robust modal trigger
+        if (modalInstance) {
+            modalInstance.show();
+        } else if (eventModalRef.current) {
+            const mod = new Modal(eventModalRef.current, { keyboard: false });
+            setModalInstance(mod);
+            mod.show();
+        }
     };
 
     const handleEventClick = async (info) => {
@@ -443,7 +451,13 @@ export default function Appointments() {
             timeEnd: hh_mm_end,
         }));
 
-        if (modalInstance) modalInstance.show();
+        if (modalInstance) {
+            modalInstance.show();
+        } else if (eventModalRef.current) {
+            const mod = Modal.getInstance(eventModalRef.current) || new Modal(eventModalRef.current, { keyboard: false });
+            setModalInstance(mod);
+            mod.show();
+        }
 
         // --- 2. FETCH FULL DETAILS IN BACKGROUND ---
         try {
@@ -533,7 +547,12 @@ export default function Appointments() {
         setFormErrors({});
         setConflictError(null);
         if (isNewEvent) {
-            if (modalInstance) modalInstance.hide();
+            if (modalInstance) {
+                modalInstance.hide();
+            } else if (eventModalRef.current) {
+                const mod = Modal.getInstance(eventModalRef.current) || new Modal(eventModalRef.current, { keyboard: false });
+                mod.hide();
+            }
         } else {
             setViewMode(true);
         }
@@ -553,7 +572,12 @@ export default function Appointments() {
 
             // Close Modals
             // setShowDeleteModal(false); // Removed as per instruction
-            if (modalInstance) modalInstance.hide();
+            if (modalInstance) {
+                modalInstance.hide();
+            } else if (eventModalRef.current) {
+                const mod = Modal.getInstance(eventModalRef.current) || new Modal(eventModalRef.current, { keyboard: false });
+                mod.hide();
+            }
 
             // Reset
             setSelectedEventId(null); // Clear selected event
@@ -657,7 +681,12 @@ export default function Appointments() {
                 toast.success(response.message || 'Appointment created successfully');
                 loadAppointments();
             }
-            if (modalInstance) modalInstance.hide();
+            if (modalInstance) {
+                modalInstance.hide();
+            } else if (eventModalRef.current) {
+                const mod = Modal.getInstance(eventModalRef.current) || new Modal(eventModalRef.current, { keyboard: false });
+                mod.hide();
+            }
         } catch (error) {
             console.error("Failed to save appointment", error);
             if (error.response && error.response.data && error.response.data.errors) {
@@ -958,7 +987,7 @@ export default function Appointments() {
                                 <div
                                     className="modal-dialog modal-dialog-centered"
                                     style={{
-                                        maxWidth: "700px",
+                                        maxWidth: "650px",
                                         width: "100%",
                                         margin: "1rem auto"
                                     }}
@@ -1131,7 +1160,7 @@ export default function Appointments() {
                                                 >
                                                     {/* Appointment Title */}
                                                     <div className="col-12 mb-3">
-                                                        <label className="form-label">Appointment Title</label>
+                                                        <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
                                                         <input
                                                             type="text"
                                                             className={`form-control ${formErrors.subject ? "is-invalid" : ""
@@ -1155,7 +1184,7 @@ export default function Appointments() {
                                                     </div>
                                                     {/* Meeting Type */}
                                                     <div className="col-12 mb-3">
-                                                        <label className="form-label">Type</label>
+                                                        <label className="form-label">Type <span className="text-danger">*</span></label>
                                                         <Dropdown
                                                             id="event-category"
                                                             value={formData.category}
@@ -1239,7 +1268,7 @@ export default function Appointments() {
                                                             {assignedForType
                                                                 ? assignedForType.charAt(0).toUpperCase() +
                                                                 assignedForType.slice(1)
-                                                                : "Entity"}
+                                                                : "Entity"} <span className="text-danger">*</span>
                                                         </label>
                                                         {loadingAssignedFor ? (
                                                             <Skeleton height="38px" className="mb-2" borderRadius="6px" />
@@ -1271,7 +1300,7 @@ export default function Appointments() {
 
                                                     {/* Event Date */}
                                                     <div className="col-6 mb-3">
-                                                        <label className="form-label">Event Date</label>
+                                                        <label className="form-label">Event Date <span className="text-danger">*</span></label>
                                                         <div className="input-group">
                                                             <input
                                                                 type="text"
@@ -1306,7 +1335,7 @@ export default function Appointments() {
 
                                                     {/* Time Slot */}
                                                     <div className="col-6 mb-3">
-                                                        <label className="form-label">Time Slot</label>
+                                                        <label className="form-label">Time Slot <span className="text-danger">*</span></label>
                                                         <div className="d-flex gap-2 align-items-center">
                                                             <div className="flex-grow-1">
                                                                 <Dropdown
