@@ -1388,7 +1388,6 @@ export default function Appointments() {
                                                                         const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
                                                                         setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
                                                                     }}
-                                                                    filter
                                                                     placeholder="Start Time"
                                                                     className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
                                                                     appendTo="self"
@@ -1401,7 +1400,6 @@ export default function Appointments() {
                                                                     value={formData.timeEnd}
                                                                     options={TIME_SLOTS}
                                                                     onChange={(e) => setFormData(prev => ({ ...prev, timeEnd: e.value }))}
-                                                                    filter
                                                                     placeholder="End Time"
                                                                     className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
                                                                     appendTo="self"
