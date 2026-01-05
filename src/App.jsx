@@ -32,6 +32,10 @@ window.jQuery = window.$ = $;
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
 
+// Icon Libraries
+import 'remixicon/fonts/remixicon.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 export default function App() {
   useEffect(() => {
     // Check session immediately on app load

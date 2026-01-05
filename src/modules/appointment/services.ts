@@ -36,3 +36,7 @@ export const fetchTimeSlots = async (): Promise<FetchTimeSlotsResponse> => {
   const { data } = await apiClient.get('/common/time-slots/fetch-all')
   return data
 }
+export const checkAvailability = async (payload: { assigned_for: number | string, appointment_date: string }) => {
+  const { data } = await apiClient.post('/common/appointments/check-availability', payload)
+  return data
+}

@@ -3,6 +3,7 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import Modal from 'bootstrap/js/dist/modal';
 
+
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -11,9 +12,21 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 
-// Choices.js Import
-import Choices from 'choices.js';
-import 'choices.js/public/assets/styles/choices.min.css';
+// PrimeReact Imports
+import { Dropdown } from 'primereact/dropdown';
+import { Skeleton } from 'primereact/skeleton';
+
+// jQuery & Summernote
+import $ from 'jquery';
+import 'summernote/dist/summernote-lite.css';
+import 'summernote/dist/summernote-lite.js'; // Ensure JS is imported if needed, or rely on window.$
+
+// Attach jQuery to window for Summernote
+if (typeof window !== 'undefined') {
+    window.jQuery = $;
+    window.$ = $;
+}
+
 
 // Toast
 import { toast } from 'react-toastify';
@@ -22,20 +35,19 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/auth/authStore';
 
 // API Services
-import { fetchAppointments, fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, fetchTimeSlots } from '../../modules/appointment/services';
+import { fetchAppointments, fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment } from '../../modules/appointment/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { fetchEmployees } from '../../modules/employee/services';
 import { fetchAllBorrowers } from '../../modules/borrower/services';
 
 // Config
-import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS } from '../../config';
+import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../config';
 
 export default function Appointments() {
     const calendarRef = useRef(null);
     const eventModalRef = useRef(null);
-    const categoryChoicesRef = useRef(null);
-    const assignedForChoicesRef = useRef(null);
-    const timeSlotChoicesRef = useRef(null);
+    const descriptionEditorRef = useRef(null); // Summernote Ref
+
     const [modalInstance, setModalInstance] = useState(null);
 
     // Auth
@@ -54,10 +66,6 @@ export default function Appointments() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    // Time Slots
-    const [timeSlots, setTimeSlots] = useState([]);
-    const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
-
     // Assigned For Selection
     const [assignedForType, setAssignedForType] = useState('employee'); // 'partner', 'employee', 'borrower'
     const [assignedForId, setAssignedForId] = useState('');
@@ -73,9 +81,9 @@ export default function Appointments() {
         location: 'UTC (GMT+00:00)', // timezone
         description: '',
         date: '',
-        timeStart: '',
-        timeEnd: '',
-        timeSlotId: '',
+        timeStart: '09:00', // Default start time
+        timeEnd: '10:00',   // Default end time
+        timeSlotId: '', // KEPT for backward compatibility/types, but effectively unused now
     });
 
     // Display Data
@@ -89,32 +97,16 @@ export default function Appointments() {
         assignedFor: '',
     });
 
-    // Fetch Appointments and Time Slots
+    // Fetch Appointments
     useEffect(() => {
         loadAppointments();
-        loadTimeSlots();
     }, []);
-
-    const loadTimeSlots = async () => {
-        try {
-            setLoadingTimeSlots(true);
-            const response = await fetchTimeSlots();
-            if (response.status && response.data) {
-                setTimeSlots(response.data);
-            }
-        } catch (error) {
-            console.error("Failed to load time slots", error);
-        } finally {
-            setLoadingTimeSlots(false);
-        }
-    };
 
     const loadAppointments = async () => {
         try {
             setLoading(true);
             const response = await fetchAppointments();
             if (response.status && response.data) {
-                // toast.success(response.message || 'Appointments loaded successfully');
                 const mappedEvents = response.data.map(apt => {
                     const start = new Date(apt.appointment_date);
                     // Calculate end time based on duration_minutes
@@ -149,19 +141,19 @@ export default function Appointments() {
                         title: apt.subject,
                         start: start,
                         end: end,
-                        allDay: false, // Assuming all meetups are timed as they have duration
+                        allDay: false,
                         className: className,
                         classNames: [className],
                         description: apt.description,
-                        location: apt.timezone, // Helper for some FC views if needed, or remove
+                        location: apt.timezone,
                         extendedProps: {
                             description: apt.description,
-                            location: apt.location, // The actual meeting location content
-                            timezone: apt.timezone, // The timezone string
+                            location: apt.location,
+                            timezone: apt.timezone,
                             appointment_code: apt.appointment_code,
                             status: apt.status,
                             meeting_type: apt.meeting_type,
-                            assigned_for: apt.assigned_for // Keep track of assigned person
+                            assigned_for: apt.assigned_for
                         }
                     };
                 });
@@ -204,119 +196,23 @@ export default function Appointments() {
         }
     }, [assignedForType, viewMode]);
 
-    // Initialize Modal, Category Choices, and Time Slot Choices
+    // Initialize Modal
     useEffect(() => {
         if (eventModalRef.current && !modalInstance) {
             const mod = new Modal(eventModalRef.current, { keyboard: false });
             setModalInstance(mod);
         }
+    }, [modalInstance]);
 
-        if (eventModalRef.current) {
-            // Category Choices
-            const catSelect = document.getElementById('event-category');
-            if (catSelect && !categoryChoicesRef.current) {
-                categoryChoicesRef.current = new Choices(catSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false
-                });
 
-                catSelect.addEventListener('change', (e) => {
-                    setFormData(prev => ({ ...prev, category: e.target.value }));
-                });
-            }
 
-            // Time Slot Choices
-            const timeSelect = document.getElementById('time-slot-select');
-            if (timeSelect && timeSlots.length > 0) {
-                if (timeSlotChoicesRef.current) {
-                    timeSlotChoicesRef.current.destroy();
-                }
 
-                timeSlotChoicesRef.current = new Choices(timeSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false,
-                    placeholder: true,
-                    placeholderValue: 'Select Time Slot'
-                });
 
-                timeSelect.addEventListener('change', (e) => {
-                    const val = e.target.value;
-                    const slot = timeSlots.find(s => s.start_time === val);
-                    if (slot) {
-                        setFormData(prev => ({ ...prev, timeStart: slot.start_time, timeEnd: slot.end_time, timeSlotId: slot.id }));
-                    }
-                });
 
-                // Sync initial value if exists
-                if (formData.timeStart) {
-                    timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-                }
-            }
-        }
-    }, [modalInstance, timeSlots]);
 
-    // Initialize/Update Assigned For Choices
+
+    // Sync error classes to Flatpickr containers
     useEffect(() => {
-        const assignedSelect = document.getElementById('event-assigned-for');
-        if (assignedSelect && !loadingAssignedFor) {
-            // Destroy previous instance if it exists
-            if (assignedForChoicesRef.current) {
-                assignedForChoicesRef.current.destroy();
-                assignedForChoicesRef.current = null;
-            }
-
-            // Initialize new instance
-            assignedForChoicesRef.current = new Choices(assignedSelect, {
-                searchEnabled: false,
-                itemSelectText: '',
-                shouldSort: false,
-                placeholder: true,
-                placeholderValue: `Select ${assignedForType}...`
-            });
-
-            // Set value if assignedForId is set
-            if (assignedForId) {
-                assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }
-
-            // Listen for changes
-            assignedSelect.addEventListener('change', (e) => {
-                setAssignedForId(e.target.value);
-            });
-        }
-    }, [assignedForType, loadingAssignedFor, viewMode, modalInstance, partners.length, employees.length, borrowers.length]);
-
-    // Dedicated useEffect to sync Choices.js when formData or viewMode changes
-    useEffect(() => {
-        if (!viewMode) {
-            if (categoryChoicesRef.current && formData.category) {
-                categoryChoicesRef.current.setChoiceByValue(formData.category);
-            }
-            if (timeSlotChoicesRef.current && formData.timeStart) {
-                timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-            }
-            if (assignedForChoicesRef.current && assignedForId) {
-                assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }
-        }
-    }, [formData.category, formData.timeStart, assignedForId, viewMode]);
-
-    // Sync error classes to Choices.js and Flatpickr containers
-    useEffect(() => {
-        const syncInvalidClass = (ref, hasError) => {
-            if (ref.current && ref.current.containerOuter && ref.current.containerOuter.element) {
-                const el = ref.current.containerOuter.element;
-                if (hasError) el.classList.add('is-invalid');
-                else el.classList.remove('is-invalid');
-            }
-        };
-
-        syncInvalidClass(categoryChoicesRef, !!formErrors.meeting_type);
-        syncInvalidClass(timeSlotChoicesRef, !!formErrors.duration_minutes);
-        syncInvalidClass(assignedForChoicesRef, !!formErrors.assigned_for || !!formErrors.assigned_for_id);
-
         const dateEl = document.getElementById('event-start-date');
         if (dateEl) {
             if (formErrors.appointment_date) dateEl.classList.add('is-invalid');
@@ -338,6 +234,47 @@ export default function Appointments() {
             });
         }
     }, [viewMode, modalInstance]);
+
+    // Initialize Summernote
+    useEffect(() => {
+        // Only initialize if we are in "Edit" mode (form visible) and ref exists
+        if (!viewMode && descriptionEditorRef.current) {
+            const $editor = $(descriptionEditorRef.current);
+
+            $editor.summernote({
+                height: 200,
+                dialogsInBody: true, // Fix for Bootstrap Modal
+                placeholder: 'Enter detailed description...',
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'underline', 'clear']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link']],
+                    ['view', ['fullscreen', 'codeview', 'help']]
+                ],
+                callbacks: {
+                    onChange: (contents) => {
+                        // Summernote sets value to <p><br></p> when empty, check for that
+                        const isEmpty = contents === '<p><br></p>';
+                        setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
+                    }
+                }
+            });
+
+            // Set initial content
+            $editor.summernote('code', formData.description || '');
+
+            return () => {
+                if ($editor.length > 0) {
+                    $editor.summernote('destroy');
+                }
+            };
+        }
+    }, [viewMode, modalInstance]); // Re-run when viewMode toggles to ensure editor is created/destroyed properly
+
+    // Sync formData description updates back to Summernote if it changes externally (e.g. reset)
+    // Be careful not to cause loops. Usually optional if one-way binding is sufficient.
+
 
     // Update upcoming events list
     useEffect(() => {
@@ -373,18 +310,28 @@ export default function Appointments() {
         setSelectedEventId(null);
         setAssignedForType('employee');
         setAssignedForId('');
+        const now = new Date();
+        const nextHour = new Date(now.getTime() + 60 * 60000);
+        // Round to nearest 15 mins for cleaner UI default? Optional. 
+        // For now just hardcode sane defaults or use close approximations.
+
         setFormData({
             subject: '',
             category: 'Business Review',
             location: 'UTC (GMT+00:00)',
             description: '',
             date: dateStr || new Date().toISOString().split('T')[0],
-            timeStart: '',
-            timeEnd: '',
+            timeStart: '09:00',
+            timeEnd: '10:00',
             timeSlotId: '',
         });
+
+        // Manual reset for Summernote if it exists
+        if (descriptionEditorRef.current) {
+            $(descriptionEditorRef.current).summernote('code', '');
+        }
+
         setFormErrors({});
-        if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue("Business Review");
         if (modalInstance) modalInstance.show();
     };
 
@@ -396,7 +343,7 @@ export default function Appointments() {
         setSelectedEventId(eventId);
         setFormErrors({});
 
-        // --- 1. SET INITIAL DATA IMMEDIATELY (Prevent empty modal) ---
+        // --- 1. SET INITIAL DATA IMMEDIATELY ---
         const startInit = calEvent.start;
         const endInit = calEvent.end || new Date(startInit.getTime() + 60 * 60000);
 
@@ -415,13 +362,17 @@ export default function Appointments() {
         const m = startInit.getMinutes().toString().padStart(2, '0');
         const hh_mm = `${h}:${m}`;
 
+        const h_end = endInit.getHours().toString().padStart(2, '0');
+        const m_end = endInit.getMinutes().toString().padStart(2, '0');
+        const hh_mm_end = `${h_end}:${m_end}`;
+
         setFormData(prev => ({
             ...prev,
             subject: calEvent.title,
             category: calEvent.classNames[0] || 'Business Review',
             date: startInit.toISOString().split('T')[0],
             timeStart: hh_mm,
-            timeEnd: endInit.toTimeString().slice(0, 5),
+            timeEnd: hh_mm_end,
         }));
 
         if (modalInstance) modalInstance.show();
@@ -451,7 +402,9 @@ export default function Appointments() {
             const m_full = start.getMinutes().toString().padStart(2, '0');
             const hh_mm_full = `${h_full}:${m_full}`;
 
-            const matchedSlot = timeSlots.find(s => s.start_time.substring(0, 5) === hh_mm_full);
+            const h_end_full = end.getHours().toString().padStart(2, '0');
+            const m_end_full = end.getMinutes().toString().padStart(2, '0');
+            const hh_mm_end_full = `${h_end_full}:${m_end_full}`;
 
             setFormData({
                 subject: apt.subject,
@@ -459,9 +412,9 @@ export default function Appointments() {
                 location: apt.timezone || "UTC (GMT+00:00)",
                 description: apt.description || "",
                 date: start.toISOString().split('T')[0],
-                timeStart: matchedSlot ? matchedSlot.start_time : hh_mm_full,
-                timeEnd: end.toTimeString().slice(0, 5),
-                timeSlotId: matchedSlot ? matchedSlot.id : '',
+                timeStart: hh_mm_full,
+                timeEnd: hh_mm_end_full,
+                timeSlotId: '', // NO LONGER USED
             });
 
             // Determine Assigned For Type
@@ -482,7 +435,10 @@ export default function Appointments() {
             setAssignedForType(type);
             setAssignedForId(apt.assigned_for?.id || '');
 
-            if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue(calEvent.classNames[0] || 'bg-primary-subtle');
+            // Manual Summernote reset/sync
+            if (descriptionEditorRef.current) {
+                $(descriptionEditorRef.current).summernote('code', apt.description || '');
+            }
 
         } catch (error) {
             console.error("Failed to fetch appointment details", error);
@@ -499,23 +455,13 @@ export default function Appointments() {
             allDay: calEvent.allDay
         } : e));
 
-        // TODO: Call API to update date/time
-        // updateAppointment(calEvent.id, { ...mappedPayload });
+        // TODO: Call API to update
     };
 
     const toggleEditMode = (e) => {
         if (e) e.preventDefault();
         const nextMode = !viewMode;
         setViewMode(nextMode);
-
-        // If entering edit mode, ensure choices are synced
-        if (nextMode === false) {
-            setTimeout(() => {
-                if (categoryChoicesRef.current) categoryChoicesRef.current.setChoiceByValue(formData.category);
-                if (timeSlotChoicesRef.current && formData.timeStart) timeSlotChoicesRef.current.setChoiceByValue(formData.timeStart);
-                if (assignedForChoicesRef.current && assignedForId) assignedForChoicesRef.current.setChoiceByValue(String(assignedForId));
-            }, 50);
-        }
     };
 
     const handleDelete = async () => {
@@ -525,7 +471,7 @@ export default function Appointments() {
                 await deleteAppointment(selectedEventId);
                 toast.success('Appointment deleted successfully');
                 if (modalInstance) modalInstance.hide();
-                loadAppointments(); // This triggers the skeleton loader for the list
+                loadAppointments();
             } catch (error) {
                 console.error("Failed to delete appointment", error);
                 toast.error('Failed to delete appointment');
@@ -535,28 +481,28 @@ export default function Appointments() {
         }
     };
 
-    const handleTimeSlotChange = (e) => {
-        const val = e.target.value;
-        const slot = timeSlots.find(s => s.start_time === val);
-        if (slot) {
-            setFormData(prev => ({
-                ...prev,
-                timeStart: slot.start_time,
-                timeEnd: slot.end_time,
-                timeSlotId: slot.id
-            }));
-        }
-    };
+    const assignedOptions = (() => {
+        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
+        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
+        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
+        return [];
+    })();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormErrors({});
 
         const subject = formData.subject;
-        const category = categoryChoicesRef.current ? categoryChoicesRef.current.getValue(true) : "Business Review";
+        const category = formData.category;
         const dateVal = formData.date;
         const locationVal = formData.location; // Time Zone
-        const descVal = formData.description;
+
+        // Fetch description directly from Summernote to ensure we have the latest content
+        let descVal = formData.description;
+        if (descriptionEditorRef.current) {
+            descVal = $(descriptionEditorRef.current).summernote('code');
+            if (descVal === '<p><br></p>') descVal = '';
+        }
 
         // Construct Start and End Date
         let startDateTime = new Date(`${dateVal}T00:00:00`);
@@ -565,21 +511,34 @@ export default function Appointments() {
         if (formData.timeStart) {
             startDateTime = new Date(`${dateVal}T${formData.timeStart}`);
             if (formData.timeEnd) {
-                const endDateTime = new Date(`${dateVal}T${formData.timeEnd}`);
+                // Handle late night spanning next day? Not complex for now, assume same day.
+                // If end time < start time, assume next day?
+                // Let's stick to simple same-day logic unless customized.
+                let endDateTime = new Date(`${dateVal}T${formData.timeEnd}`);
+                if (endDateTime <= startDateTime) {
+                    // Maybe user selected past midnight?
+                    // or just invalid.
+                    // Simple validation:
+                }
+
                 durationMinutes = (endDateTime - startDateTime) / 60000;
-            } else {
-                durationMinutes = 0; // Force validation if end time missing
+
+                if (durationMinutes <= 0) {
+                    // Fallback or error?
+                    // Let's assume minimum 15 mins
+                    durationMinutes = 15;
+                }
             }
         } else {
             durationMinutes = 0; // Force validation if no time selected
         }
 
         // Format date for API: "2026-01-01 14:00:00"
-        // Helper to format: YYYY-MM-DD HH:mm:ss
         const toMySQLDate = (date) => {
             const pad = (num) => (num < 10 ? '0' + num : num);
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         };
+
 
 
         const currentType = APPOINTMENT_TYPE_OPTIONS.find(opt => opt.value === category);
@@ -591,8 +550,9 @@ export default function Appointments() {
             timezone: locationVal || null,
             duration_minutes: durationMinutes > 0 ? durationMinutes : null,
             meeting_type: category || null,
+            entity_type: assignedForType,
+            entity_id: assignedForId ? parseInt(assignedForId) : null,
             assigned_for: assignedForId ? parseInt(assignedForId) : null,
-            time_slot_id: formData.timeSlotId ? parseInt(formData.timeSlotId) : undefined,
         };
 
         try {
@@ -601,13 +561,11 @@ export default function Appointments() {
                 // Update
                 const response = await updateAppointment(selectedEventId, payload);
                 toast.success(response.message || 'Appointment updated successfully');
-                // Reload or manually update state
                 loadAppointments();
             } else {
                 // Create
                 const response = await createAppointment(payload);
                 toast.success(response.message || 'Appointment created successfully');
-                // Reload or manually update state
                 loadAppointments();
             }
             modalInstance.hide();
@@ -685,11 +643,11 @@ export default function Appointments() {
 
                                                 let badge;
                                                 if (evt.allDay || !e) {
-                                                    badge = <small className="badge bg-primary-subtle text-primary border border-primary-subtle small ms-auto">Full day event</small>;
+                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">Full day event</small>;
                                                 } else {
                                                     const t1 = tConvert(s.toTimeString().slice(0, 5));
                                                     const t2 = tConvert(e.toTimeString().slice(0, 5));
-                                                    badge = <small className="badge bg-primary-subtle text-primary border border-primary-subtle small ms-auto">{t1} to {t2}</small>;
+                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">{t1} to {t2}</small>;
                                                 }
                                                 const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
 
@@ -764,14 +722,15 @@ export default function Appointments() {
                                                     plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
                                                     initialView={window.innerWidth >= 1200 ? "dayGridMonth" : window.innerWidth >= 768 ? "timeGridWeek" : "listMonth"}
                                                     themeSystem="bootstrap5"
+                                                    bootstrapFontAwesome={{
+                                                        prev: 'ri-arrow-left-s-line',
+                                                        next: 'ri-arrow-right-s-line',
+                                                        today: 'ri-calendar-check-line',
+                                                    }}
                                                     headerToolbar={{
                                                         left: 'prev,next today',
                                                         center: 'title',
                                                         right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
-                                                    }}
-                                                    buttonIcons={{
-                                                        prev: 'chevron-left',
-                                                        next: 'chevron-right',
                                                     }}
                                                     buttonText={{
                                                         today: 'Today',
@@ -793,6 +752,7 @@ export default function Appointments() {
                                                     eventClick={handleEventClick}
                                                     eventDrop={handleDropResize}
                                                     eventResize={handleDropResize}
+
                                                     windowResize={(arg) => {
                                                         if (window.innerWidth >= 1200) {
                                                             arg.view.calendar.changeView('dayGridMonth');
@@ -814,25 +774,57 @@ export default function Appointments() {
 
                         {/* Modal */}
 
-                        <div className="modal" id="event-modal" tabIndex="-1" ref={eventModalRef}>
-
-                            <div className="modal-dialog modal-dialog-centered">
+                        <div
+                            className="modal"
+                            id="event-modal"
+                            tabIndex="-1"
+                            ref={eventModalRef}
+                        >
+                            <div
+                                className="modal-dialog modal-dialog-centered modal-medium"
+                                style={{ maxWidth: '600px' }} // Medium width
+                            >
                                 <div className="modal-content border-0">
                                     <div className="modal-header p-3 bg-info-subtle">
-                                        <h5 className="modal-title" id="modal-title">{viewMode ? (displayData.title || "Appointment") : (isNewEvent ? "Add Appointment" : "Edit Appointment")}</h5>
-                                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+                                        <h5 className="modal-title" id="modal-title">
+                                            {viewMode
+                                                ? displayData.title || "Appointment"
+                                                : isNewEvent
+                                                    ? "Add Appointment"
+                                                    : "Edit Appointment"}
+                                        </h5>
+                                        <button
+                                            type="button"
+                                            className="btn-close"
+                                            data-bs-dismiss="modal"
+                                            aria-hidden="true"
+                                        ></button>
                                     </div>
-                                    <div className="modal-body p-4">
-                                        <form className="needs-validation" name="event-form" id="form-event" noValidate onSubmit={handleSubmit}>
 
+                                    <div className="modal-body p-4">
+                                        <form
+                                            className="needs-validation"
+                                            name="event-form"
+                                            id="form-event"
+                                            noValidate
+                                            onSubmit={handleSubmit}
+                                        >
                                             {/* --- Details View --- */}
-                                            <div className="event-details" style={{ display: viewMode ? 'block' : 'none' }}>
+                                            <div
+                                                className="event-details"
+                                                style={{ display: viewMode ? "block" : "none" }}
+                                            >
                                                 <div className="d-flex justify-content-end mb-2">
                                                     <button
                                                         type="button"
                                                         className="btn btn-sm px-3"
                                                         onClick={toggleEditMode}
-                                                        style={{ backgroundColor: '#f0f2f7', color: '#405189', border: 'none', fontWeight: '500' }}
+                                                        style={{
+                                                            backgroundColor: "#f0f2f7",
+                                                            color: "#405189",
+                                                            border: "none",
+                                                            fontWeight: "500",
+                                                        }}
                                                     >
                                                         Edit
                                                     </button>
@@ -843,7 +835,12 @@ export default function Appointments() {
                                                         <i className="ri-calendar-event-line text-muted fs-18"></i>
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>{displayData.date || "No Date Set"}</h6>
+                                                        <h6
+                                                            className="d-block fw-semibold mb-0"
+                                                            style={{ color: "#495057" }}
+                                                        >
+                                                            {displayData.date || "No Date Set"}
+                                                        </h6>
                                                     </div>
                                                 </div>
 
@@ -852,7 +849,12 @@ export default function Appointments() {
                                                         <i className="ri-time-line text-muted fs-18"></i>
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>{displayData.timeStart} - {displayData.timeEnd}</h6>
+                                                        <h6
+                                                            className="d-block fw-semibold mb-0"
+                                                            style={{ color: "#495057" }}
+                                                        >
+                                                            {displayData.timeStart} - {displayData.timeEnd}
+                                                        </h6>
                                                     </div>
                                                 </div>
 
@@ -861,7 +863,11 @@ export default function Appointments() {
                                                         <i className="ri-map-pin-line text-muted fs-18"></i>
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0 text-primary-emphasis">{displayData.location}</h6>
+                                                        <h6
+                                                            className="d-block fw-semibold mb-0 text-primary-emphasis"
+                                                        >
+                                                            {displayData.location}
+                                                        </h6>
                                                     </div>
                                                 </div>
 
@@ -870,7 +876,15 @@ export default function Appointments() {
                                                         <i className="ri-user-star-line text-muted fs-18"></i>
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>Scheduled By: <span className="text-muted fw-normal">{displayData.scheduledBy || "FCH Admin"}</span></h6>
+                                                        <h6
+                                                            className="d-block fw-semibold mb-0"
+                                                            style={{ color: "#495057" }}
+                                                        >
+                                                            Scheduled By:{" "}
+                                                            <span className="text-muted fw-normal">
+                                                                {displayData.scheduledBy || "FCH Admin"}
+                                                            </span>
+                                                        </h6>
                                                     </div>
                                                 </div>
 
@@ -879,154 +893,345 @@ export default function Appointments() {
                                                         <i className="ri-user-follow-line text-muted fs-18"></i>
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="d-block fw-semibold mb-0" style={{ color: '#495057' }}>Assigned For: <span className="text-muted fw-normal">{displayData.assignedFor}</span></h6>
+                                                        <h6
+                                                            className="d-block fw-semibold mb-0"
+                                                            style={{ color: "#495057" }}
+                                                        >
+                                                            Assigned For:{" "}
+                                                            <span className="text-muted fw-normal">
+                                                                {displayData.assignedFor}
+                                                            </span>
+                                                        </h6>
                                                     </div>
                                                 </div>
 
-                                                <div className="text-end mt-4 pt-2" style={{ display: viewMode ? 'block' : 'none' }}>
+                                                <div
+                                                    className="text-end mt-4 pt-2"
+                                                    style={{ display: viewMode ? "block" : "none" }}
+                                                >
                                                     <button
                                                         type="button"
                                                         className="btn px-4 py-2"
                                                         onClick={handleDelete}
                                                         disabled={isDeleting}
-                                                        style={{ backgroundColor: '#fff1f0', color: '#ff4d4f', border: 'none', borderRadius: '6px', fontWeight: '500' }}
+                                                        style={{
+                                                            backgroundColor: "#fff1f0",
+                                                            color: "#ff4d4f",
+                                                            border: "none",
+                                                            borderRadius: "6px",
+                                                            fontWeight: "500",
+                                                        }}
                                                     >
                                                         {isDeleting ? (
-                                                            <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Deleting...</>
+                                                            <>
+                                                                <span
+                                                                    className="spinner-border spinner-border-sm me-1"
+                                                                    role="status"
+                                                                    aria-hidden="true"
+                                                                ></span>{" "}
+                                                                Deleting...
+                                                            </>
                                                         ) : (
-                                                            <><i className="ri-close-line align-bottom me-1" style={{ fontSize: '18px' }}></i> Delete</>
+                                                            <>
+                                                                <i
+                                                                    className="ri-close-line align-bottom me-1"
+                                                                    style={{ fontSize: "18px" }}
+                                                                ></i>{" "}
+                                                                Delete
+                                                            </>
                                                         )}
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* Form View */}
-                                            <div className="row event-form" style={{ display: !viewMode ? 'flex' : 'none' }}>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Appointment Title</label>
-                                                        <input className={`form-control ${formErrors.subject ? 'is-invalid' : ''}`} placeholder="Enter Appointment Title" type="text" name="subject" id="event-title" value={formData.subject} onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))} />
-                                                        {formErrors.subject && <div className="invalid-feedback d-block" style={{ color: '#f1734f' }}>{formErrors.subject}</div>}
-                                                    </div>
-                                                </div>
-
-                                                {/* Appointment By Section */}
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Appointment By</label>
-                                                        <div className="d-flex gap-3">
-                                                            {isHost && (
-                                                                <div className="form-check mb-2">
-                                                                    <input className="form-check-input" type="radio" name="assignedForType" id="typePartner" value="partner" checked={assignedForType === 'partner'} onChange={() => { setAssignedForType('partner'); setAssignedForId(''); }} />
-                                                                    <label className="form-check-label" htmlFor="typePartner">
-                                                                        Partner
-                                                                    </label>
-                                                                </div>
-                                                            )}
-                                                            <div className="form-check mb-2">
-                                                                <input className="form-check-input" type="radio" name="assignedForType" id="typeEmployee" value="employee" checked={assignedForType === 'employee'} onChange={() => { setAssignedForType('employee'); setAssignedForId(''); }} />
-                                                                <label className="form-check-label" htmlFor="typeEmployee">
-                                                                    Employee
-                                                                </label>
-                                                            </div>
-                                                            <div className="form-check mb-2">
-                                                                <input className="form-check-input" type="radio" name="assignedForType" id="typeBorrower" value="borrower" checked={assignedForType === 'borrower'} onChange={() => { setAssignedForType('borrower'); setAssignedForId(''); }} />
-                                                                <label className="form-check-label" htmlFor="typeBorrower">
-                                                                    Borrower
-                                                                </label>
-                                                            </div>
+                                            {/* --- Form View --- */}
+                                            <div
+                                                className="row event-form"
+                                                style={{ display: !viewMode ? "flex" : "none" }}
+                                            >
+                                                {/* Appointment Title */}
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label">Appointment Title</label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-control ${formErrors.subject ? "is-invalid" : ""
+                                                            }`}
+                                                        placeholder="Enter Appointment Title"
+                                                        name="subject"
+                                                        id="event-title"
+                                                        value={formData.subject}
+                                                        onChange={(e) =>
+                                                            setFormData((prev) => ({ ...prev, subject: e.target.value }))
+                                                        }
+                                                    />
+                                                    {formErrors.subject && (
+                                                        <div
+                                                            className="invalid-feedback d-block"
+                                                            style={{ color: "#f1734f" }}
+                                                        >
+                                                            {formErrors.subject}
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
 
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Select {assignedForType ? assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1) : 'Entity'}</label>
-                                                        <select className={`form-select ${(formErrors.assigned_for || formErrors.assigned_for_id) ? 'is-invalid' : ''}`} id="event-assigned-for" value={assignedForId} onChange={(e) => setAssignedForId(e.target.value)} disabled={loadingAssignedFor}>
-                                                            <option value="" disabled>Select {assignedForType}</option>
-                                                            {assignedForType === 'partner' && partners.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || item.name || item.company_name}</option>
-                                                            ))}
-                                                            {assignedForType === 'employee' && employees.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || (item.first_name + ' ' + item.last_name)}</option>
-                                                            ))}
-                                                            {assignedForType === 'borrower' && borrowers.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.full_name || (item.first_name + ' ' + item.last_name)}</option>
-                                                            ))}
-                                                        </select>
-                                                        {loadingAssignedFor && <div className="text-muted small mt-1">Loading...</div>}
-                                                        {(formErrors.assigned_for || formErrors.assigned_for_id) && (
-                                                            <div className="invalid-feedback d-block" style={{ color: '#f1734f' }}>
-                                                                {formErrors.assigned_for || formErrors.assigned_for_id}
+                                                {/* Appointment By */}
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label">Appointment By</label>
+                                                    <div className="d-flex gap-3">
+                                                        {isHost && (
+                                                            <div className="form-check mb-2">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="radio"
+                                                                    name="assignedForType"
+                                                                    id="typePartner"
+                                                                    value="partner"
+                                                                    checked={assignedForType === "partner"}
+                                                                    onChange={() => {
+                                                                        setAssignedForType("partner");
+                                                                        setAssignedForId("");
+                                                                    }}
+                                                                />
+                                                                <label className="form-check-label" htmlFor="typePartner">
+                                                                    Partner
+                                                                </label>
                                                             </div>
                                                         )}
-                                                    </div>
-                                                </div>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Type</label>
-                                                        <select className={`form-select ${formErrors.meeting_type ? 'is-invalid' : ''}`} name="category" id="event-category" value={formData.category} onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}>
-                                                            <option value="" disabled>Select Type</option>
-                                                            {APPOINTMENT_TYPE_OPTIONS.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </select>
-                                                        {formErrors.meeting_type && <div className="invalid-feedback d-block">{formErrors.meeting_type}</div>}
-                                                    </div>
-                                                </div>
-                                                <div className="col-6">
-                                                    <div className="mb-3">
-                                                        <label>Event Date</label>
-                                                        <div className="input-group">
-                                                            <input type="text" id="event-start-date" className={`form-control flatpickr flatpickr-input ${formErrors.appointment_date ? 'is-invalid' : ''}`} placeholder="Select date" readOnly value={formData.date} />
-                                                            <span className="input-group-text"><i className="ri-calendar-event-line"></i></span>
+                                                        <div className="form-check mb-2">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="radio"
+                                                                name="assignedForType"
+                                                                id="typeEmployee"
+                                                                value="employee"
+                                                                checked={assignedForType === "employee"}
+                                                                onChange={() => {
+                                                                    setAssignedForType("employee");
+                                                                    setAssignedForId("");
+                                                                }}
+                                                            />
+                                                            <label className="form-check-label" htmlFor="typeEmployee">
+                                                                Employee
+                                                            </label>
                                                         </div>
-                                                        {formErrors.appointment_date && <div className="invalid-feedback d-block">{formErrors.appointment_date}</div>}
+                                                        <div className="form-check mb-2">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="radio"
+                                                                name="assignedForType"
+                                                                id="typeBorrower"
+                                                                value="borrower"
+                                                                checked={assignedForType === "borrower"}
+                                                                onChange={() => {
+                                                                    setAssignedForType("borrower");
+                                                                    setAssignedForId("");
+                                                                }}
+                                                            />
+                                                            <label className="form-check-label" htmlFor="typeBorrower">
+                                                                Borrower
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="col-6" id="event-time">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Time Slot</label>
-                                                        <select id="time-slot-select" className={`form-select ${formErrors.duration_minutes ? 'is-invalid' : ''}`} onChange={handleTimeSlotChange} value={formData.timeStart}>
-                                                            <option value="" disabled>Select a time</option>
-                                                            {timeSlots.map((slot) => {
-                                                                return <option key={slot.id} value={slot.start_time}>{slot.label}</option>;
-                                                            })}
-                                                        </select>
-                                                        {formErrors.duration_minutes && <div className="invalid-feedback d-block">{formErrors.duration_minutes}</div>}
-                                                        <input id="timepicker1" type="text" className="form-control flatpickr flatpickr-input d-none" readOnly value={formData.timeStart} />
-                                                        <input id="timepicker2" type="text" className="form-control flatpickr flatpickr-input d-none" readOnly value={formData.timeEnd} />
-                                                    </div>
+
+                                                {/* Assigned Entity Select */}
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label">
+                                                        Select{" "}
+                                                        {assignedForType
+                                                            ? assignedForType.charAt(0).toUpperCase() +
+                                                            assignedForType.slice(1)
+                                                            : "Entity"}
+                                                    </label>
+                                                    {loadingAssignedFor ? (
+                                                        <Skeleton height="38px" className="mb-2" borderRadius="6px" />
+                                                    ) : (
+                                                        <Dropdown
+                                                            id="event-assigned-for"
+                                                            value={assignedForId}
+                                                            options={assignedOptions}
+                                                            onChange={(e) => setAssignedForId(e.value)}
+                                                            optionLabel="label"
+                                                            disabled={loadingAssignedFor}
+                                                            filter
+                                                            showClear
+                                                            placeholder={`Select ${assignedForType}...`}
+                                                            className={`w-100 ${formErrors.assigned_for || formErrors.assigned_for_id ? 'p-invalid' : ''}`}
+                                                            emptyMessage="No results found"
+                                                            appendTo="self"
+                                                        />
+                                                    )}
+                                                    {(formErrors.assigned_for || formErrors.assigned_for_id) && (
+                                                        <div
+                                                            className="invalid-feedback d-block"
+                                                            style={{ color: "#f1734f" }}
+                                                        >
+                                                            {formErrors.assigned_for || formErrors.assigned_for_id}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label htmlFor="event-location">Time Zone</label>
-                                                        <select className={`form-select ${formErrors.timezone ? 'is-invalid' : ''}`} name="event-location" id="event-location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}>
-                                                            <option value="" disabled>Select time zone</option>
-                                                            {TIMEZONE_OPTIONS.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </select>
-                                                        {formErrors.timezone && <div className="invalid-feedback d-block">{formErrors.timezone}</div>}
-                                                    </div>
+
+                                                {/* Meeting Type */}
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label">Type</label>
+                                                    <Dropdown
+                                                        id="event-category"
+                                                        value={formData.category}
+                                                        options={APPOINTMENT_TYPE_OPTIONS}
+                                                        onChange={(e) => setFormData((prev) => ({ ...prev, category: e.value }))}
+                                                        placeholder="Select Type"
+                                                        className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
+                                                        appendTo="self"
+                                                    />
+                                                    {formErrors.meeting_type && (
+                                                        <div className="invalid-feedback d-block">
+                                                            {formErrors.meeting_type}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <input type="hidden" id="eventid" name="eventid" value={selectedEventId || ""} />
-                                                <div className="col-12">
-                                                    <div className="mb-3">
-                                                        <label className="form-label">Description</label>
-                                                        <textarea className={`form-control ${formErrors.description ? 'is-invalid' : ''}`} id="event-description" placeholder="Enter a description" rows="3" spellCheck="false" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}></textarea>
-                                                        {formErrors.description && <div className="invalid-feedback d-block">{formErrors.description}</div>}
+
+                                                {/* Event Date */}
+                                                <div className="col-6 mb-3">
+                                                    <label className="form-label">Event Date</label>
+                                                    <div className="input-group">
+                                                        <input
+                                                            type="text"
+                                                            id="event-start-date"
+                                                            className={`form-control flatpickr flatpickr-input ${formErrors.appointment_date ? "is-invalid" : ""
+                                                                }`}
+                                                            placeholder="Select date"
+                                                            readOnly
+                                                            value={formData.date}
+                                                        />
+                                                        <span className="input-group-text">
+                                                            <i className="ri-calendar-event-line"></i>
+                                                        </span>
                                                     </div>
+                                                    {formErrors.appointment_date && (
+                                                        <div className="invalid-feedback d-block">
+                                                            {formErrors.appointment_date}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Time Slot */}
+                                                <div className="col-6 mb-3">
+                                                    <label className="form-label">Time Slot</label>
+                                                    <div className="d-flex gap-2 align-items-center">
+                                                        <div className="flex-grow-1">
+                                                            <Dropdown
+                                                                id="time-start-select"
+                                                                value={formData.timeStart}
+                                                                options={TIME_SLOTS}
+                                                                onChange={(e) => {
+                                                                    const val = e.value;
+                                                                    if (val) {
+                                                                        const [h, m] = val.split(':').map(Number);
+                                                                        let endH = h + 1;
+                                                                        let endM = m;
+                                                                        const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                        setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
+                                                                    } else {
+                                                                        setFormData(prev => ({ ...prev, timeStart: val }));
+                                                                    }
+                                                                }}
+                                                                filter
+                                                                placeholder="Start Time"
+                                                                className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
+                                                                appendTo="self"
+                                                            />
+                                                        </div>
+                                                        <div>to</div>
+                                                        <div className="flex-grow-1">
+                                                            <Dropdown
+                                                                id="time-end-select"
+                                                                value={formData.timeEnd}
+                                                                options={TIME_SLOTS}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, timeEnd: e.value }))}
+                                                                filter
+                                                                placeholder="End Time"
+                                                                className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
+                                                                appendTo="self"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    {formErrors.duration_minutes && (
+                                                        <div className="invalid-feedback d-block">
+                                                            {formErrors.duration_minutes}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Timezone */}
+                                                <div className="col-12 mb-3">
+                                                    <label htmlFor="event-location">Time Zone</label>
+                                                    <Dropdown
+                                                        id="event-location"
+                                                        value={formData.location}
+                                                        options={TIMEZONE_OPTIONS}
+                                                        onChange={(e) => setFormData((prev) => ({ ...prev, location: e.value }))}
+                                                        optionLabel="label"
+                                                        placeholder="Select time zone"
+                                                        className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`}
+                                                        appendTo="self"
+                                                    />
+                                                    {formErrors.timezone && (
+                                                        <div className="invalid-feedback d-block">
+                                                            {formErrors.timezone}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <input
+                                                    type="hidden"
+                                                    id="eventid"
+                                                    name="eventid"
+                                                    value={selectedEventId || ""}
+                                                />
+
+                                                {/* Description */}
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label">Description</label>
+                                                    <div ref={descriptionEditorRef}></div>
+                                                    {formErrors.description && (
+                                                        <div className="invalid-feedback d-block">
+                                                            {formErrors.description}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            <div className="hstack gap-2 justify-content-end mt-4" style={{ display: !viewMode ? 'flex' : 'none' }}>
-                                                <button type="button" className="btn btn-light" onClick={() => setViewMode(true)}>Cancel</button>
-                                                <button type="submit" className="btn btn-success" id="btn-save-event" disabled={isSubmitting}>
+                                            {/* Buttons */}
+                                            <div
+                                                className="hstack gap-2 justify-content-end mt-4"
+                                                style={{ display: !viewMode ? "flex" : "none" }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-light"
+                                                    onClick={() => setViewMode(true)}
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-success"
+                                                    id="btn-save-event"
+                                                    disabled={isSubmitting}
+                                                >
                                                     {isSubmitting ? (
-                                                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving data...</>
+                                                        <>
+                                                            <span
+                                                                className="spinner-border spinner-border-sm me-1"
+                                                                role="status"
+                                                                aria-hidden="true"
+                                                            ></span>{" "}
+                                                            Saving data...
+                                                        </>
+                                                    ) : isNewEvent ? (
+                                                        "Confirm Appointment"
                                                     ) : (
-                                                        isNewEvent ? "Confirm Appointment" : "Update Appointment"
+                                                        "Update Appointment"
                                                     )}
                                                 </button>
                                             </div>
@@ -1035,9 +1240,87 @@ export default function Appointments() {
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
+            <style>{`
+                .note-editor.note-frame {
+                    border: 1px solid #e2e5ec !important;
+                    border-radius: 0.4rem !important;
+                    overflow: hidden;
+                    box-shadow: none !important;
+                    background-color: #fff !important;
+                }
+                .note-toolbar {
+                    background-color: #f3f6f9 !important;
+                    border-bottom: 1px solid #e2e5ec !important;
+                    padding: 5px 10px !important;
+                    margin: 0 !important;
+                }
+                .note-btn-group {
+                    margin-right: 8px !important;
+                }
+                .note-btn {
+                    background-color: #fff !important;
+                    border: 1px solid #e2e5ec !important;
+                    color: #495057 !important;
+                    height: 32px !important;
+                    min-width: 32px !important;
+                    padding: 4px 8px !important;
+                    font-size: 13px !important;
+                    line-height: 1.2 !important;
+                    transition: all 0.2s ease;
+                    box-shadow: none !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                }
+                .note-btn:hover {
+                    background-color: #eef1f6 !important;
+                    border-color: #d1d5db !important;
+                    color: #405189 !important;
+                }
+                .note-btn.active {
+                    background-color: #405189 !important;
+                    color: #fff !important;
+                    border-color: #405189 !important;
+                }
+                .note-editable {
+                    background-color: #fff !important;
+                    font-family: var(--vz-body-font-family);
+                    font-size: 14px;
+                    color: #495057;
+                    padding: 15px !important;
+                }
+                .note-placeholder {
+                    padding: 15px !important;
+                }
+                .note-status-output {
+                    display: none !important;
+                }
+                .note-resizebar {
+                    border-top: 1px solid #e2e5ec !important;
+                    background-color: #f3f6f9 !important;
+                }
+                .note-btn-group .note-btn {
+                    border-radius: 0 !important;
+                    margin-left: -1px !important;
+                }
+                .note-btn-group .note-btn:first-child {
+                    border-top-left-radius: 4px !important;
+                    border-bottom-left-radius: 4px !important;
+                    margin-left: 0 !important;
+                }
+                .note-btn-group .note-btn:last-child {
+                    border-top-right-radius: 4px !important;
+                    border-bottom-right-radius: 4px !important;
+                }
+                .note-dropdown-menu {
+                    border: 1px solid #e2e5ec !important;
+                    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
+                }
+            `}</style>
         </div>
     );
 }

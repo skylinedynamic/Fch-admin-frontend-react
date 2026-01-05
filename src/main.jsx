@@ -5,6 +5,37 @@ import { queryClient } from './lib/query'
 import 'primereact/resources/themes/saga-blue/theme.css'
 import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
+
+// Load FullCalendar styles dynamically (CDN). This avoids Vite subpath import errors
+// while keeping `index.html` unchanged.
+const _loadFullCalendarCss = () => {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.20/main.min.css',
+    'https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.20/main.min.css',
+    'https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.20/main.min.css',
+    'https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.20/main.min.css',
+    'https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.20/main.min.css'
+  ];
+  if (typeof document !== 'undefined') {
+    urls.forEach(href => {
+      if (!document.querySelector(`link[href="${href}"]`)) {
+        const l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        document.head.appendChild(l);
+      }
+    });
+  }
+};
+_loadFullCalendarCss();
+
+// Template icons & base styles (RemixIcon + theme font faces)
+import '../template/fch-admin/assets/css/icons.min.css'
+import '../template/fch-admin/assets/css/app.min.css'
+
+import '../assets/css/bootstrap.min.css'
+import '../assets/css/icons.min.css'
+import '../assets/css/app.min.css'
 import '../assets/css/custom.css'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'

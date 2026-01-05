@@ -25,5 +25,5 @@ export { locationData, type LocationData, type Country, type StatesMap, type Sta
 export { BILLING_OPTIONS } from './billingOptions';
 
 // Appointment related configurations
-export { APPOINTMENT_TYPE_OPTIONS } from './appointmentTypeOptions';
+export { APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from './appointmentTypeOptions';
 export { TIMEZONE_OPTIONS } from './timezoneOptions';
