@@ -17,9 +17,6 @@ import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 
 // Custom Modals
-import ConflictModal from '../../components/Common/Modals/ConflictModal';
-import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
-
 // jQuery & Summernote
 import $ from 'jquery';
 import 'summernote/dist/summernote-lite.css';
@@ -80,10 +77,10 @@ export default function Appointments() {
 
     // Availability Check
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+    const [showDateSkeleton, setShowDateSkeleton] = useState(false);
     const [availabilityConflicts, setAvailabilityConflicts] = useState(null);
-    const [showConflictModal, setShowConflictModal] = useState(false);
-    const [modalConflictData, setModalConflictData] = useState(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [conflictError, setConflictError] = useState(null); // Temporary conflict alert
+    // const [showDeleteModal, setShowDeleteModal] = useState(false); // Removed as per instruction
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -93,9 +90,11 @@ export default function Appointments() {
         description: '',
         date: '',
         timeStart: '09:00', // Default start time
-        timeEnd: '10:00',   // Default end time
+        timeEnd: '09:30',   // Default end time (30 mins)
         timeSlotId: '', // KEPT for backward compatibility/types, but effectively unused now
     });
+
+    const prevDateRef = useRef(formData.date);
 
     // Display Data
     const [displayData, setDisplayData] = useState({
@@ -180,6 +179,11 @@ export default function Appointments() {
 
     // Load Partners/Employees/Borrowers based on selection
     const loadAssignedForOptions = async (type) => {
+        // Only load if not already populated to prevent redundant "why load" behavior
+        if (type === 'partner' && partners.length > 0) return;
+        if (type === 'employee' && employees.length > 0) return;
+        if (type === 'borrower' && borrowers.length > 0) return;
+
         try {
             setLoadingAssignedFor(true);
             if (type === 'partner') {
@@ -209,7 +213,7 @@ export default function Appointments() {
 
     // Check Availability when Date or Assigned Entity changes
     useEffect(() => {
-        const check = async () => {
+        const check = async (dateWasChanged) => {
             if (!formData.date || !assignedForId) {
                 setAvailabilityConflicts(null);
                 return;
@@ -217,6 +221,8 @@ export default function Appointments() {
 
             try {
                 setIsCheckingAvailability(true);
+                if (dateWasChanged) setShowDateSkeleton(true);
+
                 setAvailabilityConflicts(null);
                 const response = await checkAvailability({
                     assigned_for: assignedForId,
@@ -225,22 +231,34 @@ export default function Appointments() {
 
                 if (response.data && response.data.available === false) {
                     setAvailabilityConflicts(response.data);
-                    // Optional: Show toast if requested, but inline UI is often better
-                    // toast.warning(response.message || "Conflicts found");
                 }
             } catch (error) {
                 console.error("Failed to check availability", error);
             } finally {
                 setIsCheckingAvailability(false);
+                setShowDateSkeleton(false);
             }
         };
 
+        const dateChanged = prevDateRef.current !== formData.date;
+        prevDateRef.current = formData.date;
+
         const timeoutId = setTimeout(() => {
-            if (!viewMode) check();
+            if (!viewMode) check(dateChanged);
         }, 500); // 500ms debounce
 
         return () => clearTimeout(timeoutId);
     }, [formData.date, assignedForId, viewMode]);
+
+    // Fade out conflict error after 5 seconds
+    useEffect(() => {
+        if (conflictError) {
+            const timer = setTimeout(() => {
+                setConflictError(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [conflictError]);
 
     // Initialize Modal
     useEffect(() => {
@@ -368,7 +386,7 @@ export default function Appointments() {
             description: '',
             date: dateStr || new Date().toISOString().split('T')[0],
             timeStart: '09:00',
-            timeEnd: '10:00',
+            timeEnd: '09:30',
             timeSlotId: '',
         });
         setFormErrors({});
@@ -385,7 +403,7 @@ export default function Appointments() {
 
         // --- 1. SET INITIAL DATA IMMEDIATELY ---
         const startInit = calEvent.start;
-        const endInit = calEvent.end || new Date(startInit.getTime() + 60 * 60000);
+        const endInit = calEvent.end || new Date(startInit.getTime() + 30 * 60000);
 
         setDisplayData({
             title: calEvent.title || "Appointment",
@@ -424,7 +442,7 @@ export default function Appointments() {
             // Robust date parsing (replace space with T for ISO compatibility)
             const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
             const start = dateStr ? new Date(dateStr) : new Date();
-            const duration = apt.duration_minutes || 60;
+            const duration = apt.duration_minutes || 30;
             const end = new Date(start.getTime() + duration * 60000);
 
             setDisplayData({
@@ -501,9 +519,19 @@ export default function Appointments() {
         setViewMode(nextMode);
     };
 
-    // Delete Appointment
+    const handleCancel = () => {
+        setFormErrors({});
+        setConflictError(null);
+        if (isNewEvent) {
+            if (modalInstance) modalInstance.hide();
+        } else {
+            setViewMode(true);
+        }
+    };
+
+    // Delete Appointment (Directly without modal as requested)
     const handleDelete = () => {
-        setShowDeleteModal(true);
+        confirmDelete();
     };
 
     const confirmDelete = async () => {
@@ -514,7 +542,7 @@ export default function Appointments() {
             setEvents(prev => prev.filter(e => String(e.id) !== String(selectedEventId))); // Optimistic update
 
             // Close Modals
-            setShowDeleteModal(false);
+            // setShowDeleteModal(false); // Removed as per instruction
             if (modalInstance) modalInstance.hide();
 
             // Reset
@@ -527,7 +555,7 @@ export default function Appointments() {
                 description: '',
                 date: new Date().toISOString().split('T')[0],
                 timeStart: '09:00',
-                timeEnd: '10:00',
+                timeEnd: '09:30',
                 timeSlotId: '',
             });
             toast.success("Appointment deleted successfully");
@@ -558,7 +586,7 @@ export default function Appointments() {
 
         // Construct Start and End Date
         let startDateTime = new Date(`${dateVal}T00:00:00`);
-        let durationMinutes = 60; // Default
+        let durationMinutes = 30; // Default
 
         if (formData.timeStart) {
             startDateTime = new Date(`${dateVal}T${formData.timeStart}`);
@@ -769,15 +797,64 @@ export default function Appointments() {
                                                 </div>
                                             ) : (
                                                 <div id="calendar" style={{ minHeight: '600px' }}>
+                                                    <style>{`
+                                                        #calendar .fc-toolbar-title {
+                                                            font-weight: 700 !important;
+                                                            color: #495057 !important;
+                                                            text-transform: uppercase !important;
+                                                            font-size: 1.1rem !important;
+                                                            letter-spacing: 0.5px;
+                                                        }
+                                                        #calendar .fc-button {
+                                                            background-color: #eef5ff !important;
+                                                            border: none !important;
+                                                            color: #2979ff !important;
+                                                            font-weight: 600 !important;
+                                                            padding: 6px 14px !important;
+                                                            box-shadow: none !important;
+                                                            transition: all 0.2s ease;
+                                                            border-radius: 4px !important;
+                                                            font-size: 13px !important;
+                                                        }
+                                                        #calendar .fc-button-primary:not(:disabled).fc-button-active,
+                                                        #calendar .fc-button-primary:not(:disabled):active {
+                                                            background-color: #2979ff !important;
+                                                            color: #ffffff !important;
+                                                        }
+                                                        #calendar .fc-today-button {
+                                                            background-color: #2979ff !important;
+                                                            color: #ffffff !important;
+                                                            margin-left: 8px !important;
+                                                            opacity: 1 !important;
+                                                        }
+                                                        #calendar .fc-today-button:disabled {
+                                                            opacity: 0.7 !important;
+                                                        }
+                                                        #calendar .fc-button:hover {
+                                                            background-color: #dbe9ff !important;
+                                                        }
+                                                        #calendar .fc-button .fc-icon {
+                                                            font-size: 1.1em !important;
+                                                        }
+                                                        #calendar .fc-button-group {
+                                                            background-color: #eef5ff;
+                                                            border-radius: 6px;
+                                                            padding: 2px;
+                                                        }
+                                                        #calendar .fc-button-group .fc-button {
+                                                            margin: 0 !important;
+                                                        }
+                                                        .fc .fc-button .fc-icon { vertical-align: middle; }
+                                                    `}</style>
                                                     <FullCalendar
                                                         ref={calendarRef}
                                                         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
                                                         initialView={window.innerWidth >= 1200 ? "dayGridMonth" : window.innerWidth >= 768 ? "timeGridWeek" : "listMonth"}
                                                         themeSystem="bootstrap5"
-                                                        bootstrapFontAwesome={{
-                                                            prev: 'ri-arrow-left-s-line',
-                                                            next: 'ri-arrow-right-s-line',
-                                                            today: 'ri-calendar-check-line',
+                                                        bootstrapFontAwesome={false}
+                                                        buttonIcons={{
+                                                            prev: 'chevron-left',
+                                                            next: 'chevron-right',
                                                         }}
                                                         headerToolbar={{
                                                             left: 'prev,next today',
@@ -832,7 +909,12 @@ export default function Appointments() {
                                 ref={eventModalRef} // Attach ref here
                             >
                                 <div
-                                    className="modal-dialog modal-dialog-centered modal-medium"
+                                    className="modal-dialog modal-dialog-centered"
+                                    style={{
+                                        maxWidth: "700px",
+                                        width: "100%",
+                                        margin: "1rem auto"
+                                    }}
                                 >
                                     <div className="modal-content border-0">
                                         <div className="modal-header p-3 bg-info-subtle">
@@ -914,7 +996,8 @@ export default function Appointments() {
                                                         </div>
                                                         <div className="flex-grow-1">
                                                             <h6
-                                                                className="d-block fw-semibold mb-0 text-primary-emphasis"
+                                                                className="d-block fw-semibold mb-0"
+                                                                style={{ color: "#495057" }}
                                                             >
                                                                 {displayData.location}
                                                             </h6>
@@ -1023,6 +1106,24 @@ export default function Appointments() {
                                                             </div>
                                                         )}
                                                     </div>
+                                                    {/* Meeting Type */}
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label">Type</label>
+                                                        <Dropdown
+                                                            id="event-category"
+                                                            value={formData.category}
+                                                            options={APPOINTMENT_TYPE_OPTIONS}
+                                                            onChange={(e) => setFormData((prev) => ({ ...prev, category: e.value }))}
+                                                            placeholder="Select Type"
+                                                            className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
+                                                            appendTo="self"
+                                                        />
+                                                        {formErrors.meeting_type && (
+                                                            <div className="invalid-feedback d-block">
+                                                                {formErrors.meeting_type}
+                                                            </div>
+                                                        )}
+                                                    </div>
 
                                                     {/* Appointment By */}
                                                     <div className="col-12 mb-3">
@@ -1121,25 +1222,6 @@ export default function Appointments() {
                                                         )}
                                                     </div>
 
-                                                    {/* Meeting Type */}
-                                                    <div className="col-12 mb-3">
-                                                        <label className="form-label">Type</label>
-                                                        <Dropdown
-                                                            id="event-category"
-                                                            value={formData.category}
-                                                            options={APPOINTMENT_TYPE_OPTIONS}
-                                                            onChange={(e) => setFormData((prev) => ({ ...prev, category: e.value }))}
-                                                            placeholder="Select Type"
-                                                            className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
-                                                            appendTo="self"
-                                                        />
-                                                        {formErrors.meeting_type && (
-                                                            <div className="invalid-feedback d-block">
-                                                                {formErrors.meeting_type}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
                                                     {/* Event Date */}
                                                     <div className="col-6 mb-3">
                                                         <label className="form-label">Event Date</label>
@@ -1165,8 +1247,8 @@ export default function Appointments() {
                                                     </div>
 
                                                     {/* Availability Status */}
-                                                    {/* Availability Status - shows Skeleton while checking or remains empty if available */}
-                                                    {(isCheckingAvailability || loadingAssignedFor) && (
+                                                    {/* Availability Status - shows Skeleton only when date changes */}
+                                                    {showDateSkeleton && (
                                                         <div className="col-12 mb-3">
                                                             <div className="p-3 border border-dashed rounded bg-light">
                                                                 <Skeleton className="mb-2" width="100%" height="20px"></Skeleton>
@@ -1186,10 +1268,8 @@ export default function Appointments() {
                                                                     options={TIME_SLOTS}
                                                                     onChange={(e) => {
                                                                         const val = e.value;
-
-                                                                        // Prevent selection while checking availability
-                                                                        if (isCheckingAvailability) {
-                                                                            // Optional: Show toast or just return
+                                                                        if (!val) {
+                                                                            setFormData(prev => ({ ...prev, timeStart: val }));
                                                                             return;
                                                                         }
 
@@ -1200,42 +1280,37 @@ export default function Appointments() {
                                                                                 ...(availabilityConflicts.scheduler_conflicts || [])
                                                                             ];
 
-                                                                            // Calculate proposed time range (assuming 60 min default as per below logic)
                                                                             const [h, m] = val.split(':').map(Number);
                                                                             const startMinutes = h * 60 + m;
-                                                                            const endMinutes = startMinutes + 60; // 60 min duration
+                                                                            const endMinutes = startMinutes + 30;
 
-                                                                            const isConflict = conflicts.some(c => {
-                                                                                // Handle potential "HH:mm:ss" or "HH:mm" format from API
+                                                                            const overlapping = conflicts.filter(c => {
                                                                                 const [cH, cM] = c.start_time.split(':').map(Number);
                                                                                 const [cEndH, cEndM] = c.end_time.split(':').map(Number);
-
                                                                                 const conflictStart = cH * 60 + cM;
                                                                                 const conflictEnd = cEndH * 60 + cEndM;
-
-                                                                                // Check for overlap: (StartA < EndB) and (EndA > StartB)
                                                                                 return startMinutes < conflictEnd && endMinutes > conflictStart;
                                                                             });
 
-                                                                            console.log("Checking Conflict:", { val, startMinutes, endMinutes, conflicts, isConflict }); // Debug Log
-
-                                                                            if (isConflict) {
-                                                                                // Trigger Custom Conflict Modal
-                                                                                setModalConflictData(availabilityConflicts);
-                                                                                setShowConflictModal(true);
-                                                                                return; // Do NOT update state
+                                                                            if (overlapping.length > 0) {
+                                                                                setConflictError({
+                                                                                    count: overlapping.length,
+                                                                                    details: overlapping
+                                                                                });
+                                                                                return; // PREVENT state update
                                                                             }
                                                                         }
 
-                                                                        if (val) {
-                                                                            const [h, m] = val.split(':').map(Number);
-                                                                            let endH = h + 1;
-                                                                            let endM = m;
-                                                                            const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                            setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
-                                                                        } else {
-                                                                            setFormData(prev => ({ ...prev, timeStart: val }));
+                                                                        // If no conflict, update state (Default +30 mins)
+                                                                        const [h, m] = val.split(':').map(Number);
+                                                                        let endM = m + 30;
+                                                                        let endH = h;
+                                                                        if (endM >= 60) {
+                                                                            endH += 1;
+                                                                            endM = 0;
                                                                         }
+                                                                        const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                        setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
                                                                     }}
                                                                     filter
                                                                     placeholder="Start Time"
@@ -1264,9 +1339,63 @@ export default function Appointments() {
                                                         )}
                                                     </div>
 
+                                                    {/* Compact Awesome Conflict Alert */}
+                                                    <div className="col-12">
+                                                        {conflictError && (
+                                                            <div className="card border-0 shadow-sm mb-3 animate__animated animate__fadeInUp mx-auto"
+                                                                style={{ borderRadius: '12px', borderLeft: '6px solid #f06548', maxWidth: '420px', backgroundColor: '#fffcfc' }}>
+                                                                <div className="card-body p-3">
+                                                                    <div className="d-flex align-items-center mb-2">
+                                                                        <div className="avatar-xs flex-shrink-0 me-2">
+                                                                            <div className="avatar-title bg-danger text-white rounded-circle fs-14">
+                                                                                <i className="ri-error-warning-fill"></i>
+                                                                            </div>
+                                                                        </div>
+                                                                        <h6 className="text-danger fw-bold mb-0 fs-14">Slot Conflict Detected</h6>
+                                                                        <button type="button" className="btn-close ms-auto fs-10" onClick={() => setConflictError(null)}></button>
+                                                                    </div>
+
+                                                                    <p className="text-muted mb-2 fs-12 px-1">
+                                                                        This slot is already booked. <span className="text-danger fw-medium">Selection blocked.</span>
+                                                                    </p>
+
+                                                                    <div className="bg-white rounded-2 p-2 border border-danger-subtle mb-2">
+                                                                        {conflictError.details.map((c, idx) => (
+                                                                            <div key={idx} className="d-flex align-items-center justify-content-between py-1 border-bottom border-light-subtle last-child-border-0">
+                                                                                <div className="d-flex align-items-center overflow-hidden">
+                                                                                    <i className="ri-calendar-line text-danger me-1 fs-12"></i>
+                                                                                    <span className="fw-semibold text-dark fs-12 text-truncate">{c.subject}</span>
+                                                                                </div>
+                                                                                <span className="badge bg-danger-subtle text-danger px-2 py-1 fs-11 ms-2">
+                                                                                    {tConvert(c.start_time)} - {tConvert(c.end_time)}
+                                                                                </span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+
+                                                                    <div className="d-flex align-items-center justify-content-center pt-1">
+                                                                        <div className="text-danger fw-bold fs-11 pulse-text text-uppercase letter-spacing-1">
+                                                                            <i className="ri-refresh-line me-1 align-middle"></i> Change Time Slot
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <style>{`
+                                                                    .letter-spacing-1 { letter-spacing: 0.5px; }
+                                                                    .pulse-text { animation: pulse-text-red 1.2s infinite; }
+                                                                    @keyframes pulse-text-red {
+                                                                        0% { opacity: 1; }
+                                                                        50% { opacity: 0.4; }
+                                                                        100% { opacity: 1; }
+                                                                    }
+                                                                    .last-child-border-0:last-child { border-bottom: 0 !important; }
+                                                                `}</style>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
                                                     {/* Timezone */}
                                                     <div className="col-12 mb-3">
-                                                        <label htmlFor="event-location">Time Zone</label>
+                                                        <label htmlFor="event-location" className="form-label">Time Zone</label>
                                                         <Dropdown
                                                             id="event-location"
                                                             value={formData.location}
@@ -1311,7 +1440,7 @@ export default function Appointments() {
                                                     <button
                                                         type="button"
                                                         className="btn btn-light"
-                                                        onClick={() => setViewMode(true)}
+                                                        onClick={handleCancel}
                                                     >
                                                         Cancel
                                                     </button>
@@ -1348,24 +1477,9 @@ export default function Appointments() {
                 </div>
             </div>
 
-            {/* Conflict Modal */}
-            {/* ConflictModal with strict z-index to ensure it appears above Event Modal */}
-            <div style={{ position: 'relative', zIndex: 1060 }}>
-                <ConflictModal
-                    show={showConflictModal}
-                    conflicts={modalConflictData}
-                    onClose={() => setShowConflictModal(false)}
-                />
-            </div>
 
-            {/* Delete Confirmation Modal */}
-            <DeleteConfirmationModal
-                show={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={confirmDelete}
-                loading={isDeleting}
-                text="Are you sure you want to delete this appointment?"
-            />
+
+            {/* Delete Confirmation Modal removed as requested */}
         </React.Fragment >
     );
 }

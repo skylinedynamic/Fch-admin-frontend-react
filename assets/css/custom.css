@@ -412,10 +412,14 @@ File: Custom Css File
     gap: 8px;
 }
 
-.fc-custom-header .btn-calendar i[class^="ri-"],
-.fc-custom-header .btn-calendar i[class*=" ri-"] {
+/* Ensure remixicon icons used in header/buttons render correctly (targets i or span) */
+.fc .fc-button [class^="ri-"],
+.fc .fc-button [class*=" ri-"] {
     font-family: 'remixicon' !important;
-    font-size: 20px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1;
 }
 
 .fc-custom-header .btn-calendar+.btn-calendar {
@@ -471,22 +475,6 @@ File: Custom Css File
     letter-spacing: 0.6px;
     font-weight: 600;
     font-family: var(--vz-headings-font-family, 'Poppins', sans-serif);
-    font-size: 18px;
-    color: #283046;
-}
-
-/* Ensure remixicon icons used in header/buttons render correctly */
-.fc .fc-button i[class^="ri-"],
-.fc .fc-button i[class*=" ri-"] {
-    font-family: 'remixicon' !important;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Slight padding tweaks for header buttons to match template spacing */
-.fc .fc-button {
-    padding: 0.45rem 0.7rem;
-    border-radius: 8px;
 }
 
 /* Optional: adjust Today/Month/Week button active style to match screenshot */
@@ -654,6 +642,7 @@ File: Custom Css File
 .fc .fc-toolbar-chunk:first-child .fc-button-group {
     margin-right: 8px !important;
 }
+
 /* Custom Modal Size */
 @media (min-width: 576px) {
     .modal-medium {
