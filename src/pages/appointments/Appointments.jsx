@@ -325,6 +325,12 @@ export default function Appointments() {
             timeEnd: '10:00',
             timeSlotId: '',
         });
+
+        // Manual reset for Summernote if it exists
+        if (descriptionEditorRef.current) {
+            $(descriptionEditorRef.current).summernote('code', '');
+        }
+
         setFormErrors({});
         if (modalInstance) modalInstance.show();
     };
@@ -429,7 +435,10 @@ export default function Appointments() {
             setAssignedForType(type);
             setAssignedForId(apt.assigned_for?.id || '');
 
-            setAssignedForId(apt.assigned_for?.id || '');
+            // Manual Summernote reset/sync
+            if (descriptionEditorRef.current) {
+                $(descriptionEditorRef.current).summernote('code', apt.description || '');
+            }
 
         } catch (error) {
             console.error("Failed to fetch appointment details", error);
@@ -487,7 +496,13 @@ export default function Appointments() {
         const category = formData.category;
         const dateVal = formData.date;
         const locationVal = formData.location; // Time Zone
-        const descVal = formData.description;
+
+        // Fetch description directly from Summernote to ensure we have the latest content
+        let descVal = formData.description;
+        if (descriptionEditorRef.current) {
+            descVal = $(descriptionEditorRef.current).summernote('code');
+            if (descVal === '<p><br></p>') descVal = '';
+        }
 
         // Construct Start and End Date
         let startDateTime = new Date(`${dateVal}T00:00:00`);
@@ -535,8 +550,9 @@ export default function Appointments() {
             timezone: locationVal || null,
             duration_minutes: durationMinutes > 0 ? durationMinutes : null,
             meeting_type: category || null,
+            entity_type: assignedForType,
+            entity_id: assignedForId ? parseInt(assignedForId) : null,
             assigned_for: assignedForId ? parseInt(assignedForId) : null,
-            // time_slot_id: REMOVED
         };
 
         try {

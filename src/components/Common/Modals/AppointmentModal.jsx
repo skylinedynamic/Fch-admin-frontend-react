@@ -28,7 +28,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const [assignedForType, setAssignedForType] = useState('Partner');
+    const [assignedForType, setAssignedForType] = useState('partner');
     const [partners, setPartners] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [borrowers, setBorrowers] = useState([]);
@@ -44,7 +44,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         timeStart: '09:00',
         timeEnd: '09:30',
         entity_id: '',
-        entity_type: 'Partner',
+        entity_type: 'partner',
     });
 
     // Display Data
@@ -198,19 +198,19 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     // Load Options
     const loadAssignedForOptions = async (type) => {
-        if (type === 'Partner' && partners.length > 0) return;
-        if (type === 'Employee' && employees.length > 0) return;
-        if (type === 'Borrower' && borrowers.length > 0) return;
+        if (type === 'partner' && partners.length > 0) return;
+        if (type === 'employee' && employees.length > 0) return;
+        if (type === 'borrower' && borrowers.length > 0) return;
 
         try {
             setLoadingAssignedFor(true);
-            if (type === 'Partner') {
+            if (type === 'partner') {
                 const response = await fetchPartners({});
                 setPartners(response.data || []);
-            } else if (type === 'Employee') {
+            } else if (type === 'employee') {
                 const response = await fetchEmployees({});
                 setEmployees(response.employees || []);
-            } else if (type === 'Borrower') {
+            } else if (type === 'borrower') {
                 const response = await fetchAllBorrowers({});
                 setBorrowers(response.data || []);
             }
@@ -242,7 +242,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType('Partner');
+            setAssignedForType('partner');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
@@ -257,7 +257,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeStart: '09:00',
                 timeEnd: '09:30',
                 entity_id: '',
-                entity_type: 'Partner',
+                entity_type: 'partner',
             });
             setFormErrors({});
 
@@ -315,8 +315,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             });
 
             if (apt.assigned_for) {
-                const rawType = apt.assigned_for.entity_type || 'Partner';
-                const formattedType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+                const rawType = apt.assigned_for.entity_type || 'partner';
+                const formattedType = rawType.toLowerCase();
                 setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
@@ -479,9 +479,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     }, [viewMode]);
 
     const assignedOptions = (() => {
-        if (assignedForType === 'Partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
-        if (assignedForType === 'Employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
-        if (assignedForType === 'Borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
+        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
+        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
+        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
         return [];
     })();
 
@@ -556,17 +556,21 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     <div className="col-12 mb-3">
                                         <label className="form-label">Assigned For <span className="text-danger">*</span></label>
                                         <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
-                                            {['Partner', 'Employee', 'Borrower'].map(t => (
-                                                <div className="form-check" key={t}>
+                                            {[
+                                                { value: 'partner', label: 'Partner' },
+                                                { value: 'borrower', label: 'Borrower' },
+                                                { value: 'employee', label: 'Employee' }
+                                            ].map(t => (
+                                                <div className="form-check" key={t.value}>
                                                     <input className="form-check-input" type="radio"
-                                                        name="assignedForType" id={`type-${t}`}
-                                                        checked={assignedForType === t}
+                                                        name="assignedForType" id={`modal-type-${t.value}`}
+                                                        checked={assignedForType === t.value}
                                                         onChange={() => {
-                                                            setAssignedForType(t);
-                                                            setFormData(p => ({ ...p, entity_id: '', entity_type: t }));
+                                                            setAssignedForType(t.value);
+                                                            setFormData(p => ({ ...p, entity_id: '', entity_type: t.value }));
                                                         }} />
-                                                    <label className="form-check-label ps-1" htmlFor={`type-${t}`}>
-                                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                                    <label className="form-check-label ps-1" htmlFor={`modal-type-${t.value}`}>
+                                                        {t.label}
                                                     </label>
                                                 </div>
                                             ))}
