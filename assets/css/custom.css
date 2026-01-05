@@ -231,11 +231,12 @@ File: Custom Css File
 }
 
 /* Parent menu collapse arrow */
-.nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+/* Parent menu collapse arrow */
+.nav-link.menu-link[aria-expanded="true"]::after {
     transform: rotate(90deg);
 }
 
-.nav-link[data-bs-toggle="collapse"]::after {
+.nav-link.menu-link[aria-expanded]::after {
     content: "\F0142";
     font-family: "Material Design Icons";
     margin-left: auto;
@@ -310,8 +311,20 @@ File: Custom Css File
 }
 
 /* Smooth collapse animation */
-.menu-dropdown.collapse {
-    transition: height 0.35s ease;
+/* Enhanced Sidebar Animation using Grid */
+.sidebar-submenu-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s ease-out;
+}
+
+.sidebar-submenu-wrapper.open {
+    grid-template-rows: 1fr;
+}
+
+.sidebar-submenu-inner {
+    overflow: hidden;
+    min-height: 0;
 }
 
 /* Choices.js Custom Premium Styling for Modals */
