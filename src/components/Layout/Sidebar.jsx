@@ -320,31 +320,32 @@ export default function Sidebar() {
                       className={`nav-link menu-link ${isExpanded ? '' : 'collapsed'}`}
                       href={`#sidebar-${item.id}`}
                       onClick={(e) => toggleSubMenu(item.id, e)}
-                      data-bs-toggle="collapse"
                       role="button"
                       aria-expanded={isExpanded}
                       aria-controls={`sidebar-${item.id}`}
                     >
                       <i className={item.icon}></i> <span>{item.label}</span>
                     </a>
-                    <div className={`collapse ${isExpanded ? 'show' : ''} menu-dropdown`} id={`sidebar-${item.id}`}>
-                      <ul className="flex-column">
-                        {item.subItems.map(subItem => (
-                          <li className="nav-item" key={subItem.to}>
-                            <NavLink
-                              to={subItem.to}
-                              className={({ isActive }) => {
-                                const isChildPathActive = location.pathname.startsWith(subItem.to) && subItem.to !== '/';
-                                return (isActive || isChildPathActive) ? 'nav-link active' : 'nav-link';
-                              }}
-                            >
-                              <i className="ri-arrow-right-s-line align-bottom"></i>
-                              {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
-                              <span>{subItem.label}</span>
-                            </NavLink>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className={`menu-dropdown sidebar-submenu-wrapper ${isExpanded ? 'open' : ''}`} id={`sidebar-${item.id}`}>
+                      <div className="sidebar-submenu-inner">
+                        <ul className="flex-column">
+                          {item.subItems.map(subItem => (
+                            <li className="nav-item" key={subItem.to}>
+                              <NavLink
+                                to={subItem.to}
+                                className={({ isActive }) => {
+                                  const isChildPathActive = location.pathname.startsWith(subItem.to) && subItem.to !== '/';
+                                  return (isActive || isChildPathActive) ? 'nav-link active' : 'nav-link';
+                                }}
+                              >
+                                <i className="ri-arrow-right-s-line align-bottom"></i>
+                                {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
+                                <span>{subItem.label}</span>
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   </li>
                 );

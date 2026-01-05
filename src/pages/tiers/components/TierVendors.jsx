@@ -312,7 +312,7 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                 </div>
             </form>
 
-            {loading || isFetching ? (
+            {loading ? (
                 <TableLoader rows={5} columns={[
                     { style: { width: '3rem' } },
                     { style: { width: '50%' } },       // Name
