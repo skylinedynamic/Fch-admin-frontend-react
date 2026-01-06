@@ -65,6 +65,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         category: '',
     });
 
+    const [originalData, setOriginalData] = useState(null);
+
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
     const [showDateSkeleton, setShowDateSkeleton] = useState(false);
     const [availabilityConflicts, setAvailabilityConflicts] = useState(null);
@@ -97,9 +99,26 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             try {
                 setIsCheckingAvailability(true);
                 // Determine what exactly changed
-                const dateOrAssigneeChanged = prevDateRef.current !== formData.date;
-                const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
-                    prevTimeEndRef.current !== formData.timeEnd;
+                // const dateOrAssigneeChanged = prevDateRef.current !== formData.date;
+                // const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
+                //    prevTimeEndRef.current !== formData.timeEnd;
+
+                // NEW LOGIC: Compare against ORIGINAL DB DATA
+                if (!isNewEvent && originalData) {
+                    const isSameAsOriginal =
+                        formData.date === originalData.date &&
+                        formData.timeStart === originalData.timeStart &&
+                        formData.timeEnd === originalData.timeEnd &&
+                        String(formData.entity_id) === String(originalData.entity_id); // Ensure string comparison
+
+                    if (isSameAsOriginal) {
+                        // If it matches original, it's a self-conflict. valid.
+                        setAvailabilityConflicts(null);
+                        setIsConflictVisible(false);
+                        setIsCheckingAvailability(false);
+                        return;
+                    }
+                }
 
                 // Never show skeleton loader (removed as per user request)
 
@@ -125,36 +144,21 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     });
 
                     // Logic: If we are EDITING and the user has NOT changed the time, ignore conflicts (it's likely the current appointment)
-                    // If IS NEW EVENT, always show conflicts
-                    // If EDITING and CHANGED time, show conflicts
-                    if (!isNewEvent && matchingConflict && !timeChanged && !dateOrAssigneeChanged) {
-                        setIsConflictVisible(false);
-                        setLastConflictingAttempt(null);
-                        setAvailabilityConflicts(null);
-                        return;
-                    }
-
-                    // Only show conflict message when TIME SLOT changes (not date)
-                    if (matchingConflict && timeChanged && !isSystemShiftRef.current) {
+                    if (matchingConflict) {
                         setLastConflictingAttempt({
                             attemptedStart: formData.timeStart,
                             attemptedEnd: formData.timeEnd,
                             conflict: matchingConflict
                         });
                         setIsConflictVisible(true);
-                    } else if (matchingConflict && !timeChanged && isConflictVisible) {
-                        // Keep visible if already visible (e.g. user saw it, didn't change anything yet)
-                        setIsConflictVisible(true);
-                    } else if (!matchingConflict && timeChanged && !isSystemShiftRef.current) {
+                    } else {
                         setIsConflictVisible(false);
                         setLastConflictingAttempt(null);
                     }
                 } else {
                     setAvailabilityConflicts(null);
-                    if (timeChanged && !isSystemShiftRef.current) {
-                        setLastConflictingAttempt(null);
-                        setIsConflictVisible(false);
-                    }
+                    setLastConflictingAttempt(null);
+                    setIsConflictVisible(false);
                 }
             } catch (error) {
                 console.error("Failed to check availability", error);
@@ -173,7 +177,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, viewMode]);
+    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, viewMode, originalData]);
 
     // Helper functions (tConvert, formatDate, etc.) should be here or imported
     const tConvert = (timeStr) => {
@@ -192,7 +196,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const getShortType = (fullType) => {
         if (!fullType) return 'partners';
-        const segments = fullType.split('\\');
+        const segments = fullType.split('\\\\');
         const last = segments[segments.length - 1].toLowerCase();
         if (last === 'employee') return 'employee-details';
         if (last === 'partner') return 'partners';
@@ -367,6 +371,23 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     })(),
                     entity_type: formattedType
                 }));
+
+                // Set Original Data for Comparison
+                setOriginalData({
+                    subject: apt.subject,
+                    category: apt.meeting_type || 'Business Review',
+                    location: apt.timezone || "UTC (GMT+00:00)",
+                    description: apt.description || "",
+                    date: start.toISOString().split('T')[0],
+                    timeStart: hh_mm_full,
+                    timeEnd: hh_mm_end_full,
+                    entity_id: (() => {
+                        if (formattedType === 'employee') return apt.assigned_for.id;
+                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) return apt.assigned_for.entity_id;
+                        return apt.assigned_for.entity_id || apt.assigned_for.id;
+                    })(),
+                    entity_type: formattedType
+                });
             }
 
             // Manual Summernote reset/sync
@@ -798,6 +819,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         )}
                                     </div>
 
+                                    {/* Skeleton Loader for Availability Check */}
+                                    {isCheckingAvailability && (
+                                        <div className="col-12 px-2 mt-2">
+                                            <Skeleton width="100%" height="40px" className="rounded-2" />
+                                        </div>
+                                    )}
+
                                     <div className="col-12 mb-3">
                                         <label className="form-label fs-13 fw-semibold">Time Zone</label>
                                         <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
@@ -827,10 +855,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 return (formData.timeStart < cEnd && formData.timeEnd > cStart);
                                             });
                                         })()}>
-                                        <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
-                                        {isSubmitting ? "Loading..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Loading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
+                                                {isNewEvent ? "Confirm Appointment" : "Save Changes"}
+                                            </>
+                                        )}
                                     </button>
-
                                 </div>
                             </form>
                         )}

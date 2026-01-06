@@ -51,28 +51,29 @@ export default function Appointments() {
                     // Calculate end time based on duration_minutes
                     const end = new Date(start.getTime() + (apt.duration_minutes || 60) * 60000);
 
-                    // Map variety of colors
-                    const SUBTLE_COLORS = [
-                        'bg-primary-subtle',
-                        'bg-success-subtle',
-                        'bg-info-subtle',
-                        'bg-warning-subtle',
-                        'bg-danger-subtle',
-                        'bg-secondary-subtle',
-                        'bg-indigo-subtle',
-                        'bg-purple-subtle',
-                        'bg-teal-subtle'
+                    // High-fidelity palette matched to 'same-to-same' design reference
+                    const PALETTE = [
+                        { key: 'blue', bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1' },    // Billing/Support
+                        { key: 'emerald', bg: '#d1fae5', border: '#a7f3d0', text: '#059669' }, // Marketing
+                        { key: 'violet', bg: '#ede9fe', border: '#ddd6fe', text: '#7c3aed' },  // Kickoff
+                        { key: 'sky', bg: '#e0f2fe', border: '#bae6fd', text: '#0284c7' },     // Product Demo
+                        { key: 'rose', bg: '#fee2e2', border: '#fecaca', text: '#dc2626' },    // Invoice/Release
+                        { key: 'amber', bg: '#fef3c7', border: '#fde68a', text: '#d97706' },   // Quarterly
+                        { key: 'gray', bg: '#f3f4f6', border: '#e5e7eb', text: '#4b5563' },    // Team Offsite
+                        { key: 'indigo', bg: '#e0e7ff', border: '#c7d2fe', text: '#4f46e5' },
+                        { key: 'teal', bg: '#ccfbf1', border: '#99f6e4', text: '#0d9488' },
+                        { key: 'cyan', bg: '#cffafe', border: '#a5f3fc', text: '#0891b2' }
                     ];
 
-                    let className = 'bg-primary-subtle';
+                    let style = PALETTE[0]; // Default
                     if (apt.status === 'cancelled') {
-                        className = 'bg-danger-subtle';
+                        style = PALETTE[4]; // Rose/Red
                     } else if (apt.status === 'completed') {
-                        className = 'bg-success-subtle';
+                        style = PALETTE[1]; // Emerald
                     } else {
-                        // Use meeting_type or ID to pick a consistent "random" color
-                        const colorIndex = (apt.id + (apt.meeting_type?.length || 0)) % SUBTLE_COLORS.length;
-                        className = SUBTLE_COLORS[colorIndex];
+                        // Maximize difference using a prime shift
+                        const colorIndex = (parseInt(apt.id) * 11) % PALETTE.length;
+                        style = PALETTE[colorIndex];
                     }
 
                     return {
@@ -81,11 +82,17 @@ export default function Appointments() {
                         start: start,
                         end: end,
                         allDay: false,
-                        className: className,
-                        classNames: [className],
+                        backgroundColor: style.bg,
+                        borderColor: style.border,
+                        textColor: style.text,
+                        className: `fc-custom-event`,
                         description: apt.description,
                         location: apt.timezone,
                         extendedProps: {
+                            colorKey: style.key,
+                            bg: style.bg,
+                            text: style.text,
+                            border: style.border,
                             description: apt.description,
                             location: apt.location,
                             timezone: apt.timezone,
@@ -164,7 +171,7 @@ export default function Appointments() {
                                 <div>
                                     <h5 className="mb-1">Upcoming Appointment</h5>
                                     <p className="text-muted">Don't miss scheduled appointments</p>
-                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "600px" }}>
+                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "750px" }}>
                                         <div id="upcoming-event-list">
                                             {loading && (
                                                 <>
@@ -208,30 +215,39 @@ export default function Appointments() {
                                                     }
                                                 }
 
+                                                const eventStyles = evt.extendedProps?.bg ? {
+                                                    bg: evt.extendedProps.bg,
+                                                    text: evt.extendedProps.text,
+                                                    border: evt.extendedProps.border,
+                                                    key: evt.extendedProps.colorKey || 'info'
+                                                } : { bg: '#cff4fc', text: '#055160', border: '#9eeaf9', key: 'info' };
+
                                                 let badge;
-                                                if (evt.allDay || !e) {
-                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">Full day event</small>;
+                                                const startTime = s ? tConvert(s.toTimeString().slice(0, 5)) : '';
+                                                const endTime = e ? tConvert(e.toTimeString().slice(0, 5)) : '';
+
+                                                if (evt.allDay || !e || !endTime) {
+                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>Full day</small>;
                                                 } else {
-                                                    const t1 = tConvert(s.toTimeString().slice(0, 5));
-                                                    const t2 = tConvert(e.toTimeString().slice(0, 5));
-                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">{t1} to {t2}</small>;
+                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>{startTime} to {endTime}</small>;
                                                 }
-                                                const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
 
                                                 return (
                                                     <div className="card mb-3" key={evt.id}>
                                                         <div className="card-body">
-                                                            <div className="d-flex mb-3">
+                                                            <div className="d-flex mb-3 align-items-center">
                                                                 <div className="flex-grow-1">
-                                                                    <i className={`mdi mdi-checkbox-blank-circle me-2 text-${colorClass}`}></i>
-                                                                    <span className="fw-medium">{dateStr}</span>
+                                                                    <i className="mdi mdi-checkbox-blank-circle me-2" style={{ color: eventStyles.text, fontSize: '10px' }}></i>
+                                                                    <span className="fw-medium text-dark">{dateStr}</span>
                                                                 </div>
                                                                 <div className="flex-shrink-0">
                                                                     {badge}
                                                                 </div>
                                                             </div>
-                                                            <h6 className="card-title fs-16">{evt.title}</h6>
-                                                            <p className="text-muted text-truncate-two-lines mb-0">{evt.extendedProps?.description || evt.description}</p>
+                                                            <h6 className="card-title fs-16" style={{ color: eventStyles.text }}>{evt.title}</h6>
+                                                            <p className="text-muted text-truncate-two-lines mb-0">
+                                                                {(evt.extendedProps?.description || evt.description || "").replace(/<[^>]*>?/gm, '')}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 )
@@ -245,7 +261,7 @@ export default function Appointments() {
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         {loading ? (
-                                            <div style={{ minHeight: '600px' }} className="placeholder-glow">
+                                            <div style={{ minHeight: '750px' }} className="placeholder-glow">
                                                 <div className="d-flex justify-content-between mb-4">
                                                     <div className="d-flex gap-1">
                                                         <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
@@ -283,7 +299,7 @@ export default function Appointments() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div id="calendar" style={{ minHeight: '600px' }}>
+                                            <div id="calendar" style={{ minHeight: '750px' }}>
                                                 <FullCalendar
                                                     ref={calendarRef}
                                                     plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
@@ -315,6 +331,34 @@ export default function Appointments() {
                                                     editable={true}
                                                     droppable={true}
                                                     selectable={true}
+                                                    height={750}
+                                                    eventDidMount={(info) => {
+                                                        // Force style overrides directly on the DOM
+                                                        const { backgroundColor, borderColor, textColor } = info.event;
+                                                        if (backgroundColor) {
+                                                            info.el.style.backgroundColor = backgroundColor;
+                                                            info.el.style.setProperty('background-color', backgroundColor, 'important');
+                                                        }
+                                                        if (borderColor) {
+                                                            info.el.style.borderColor = borderColor;
+                                                            info.el.style.setProperty('border-color', borderColor, 'important');
+                                                            // Also apply to the dot for list/day views
+                                                            const dotEl = info.el.querySelector('.fc-daygrid-event-dot');
+                                                            if (dotEl) {
+                                                                dotEl.style.borderColor = borderColor;
+                                                                dotEl.style.setProperty('border-color', borderColor, 'important');
+                                                            }
+                                                        }
+                                                        if (textColor) {
+                                                            const titleEl = info.el.querySelector('.fc-event-title') || info.el.querySelector('.fc-list-event-title');
+                                                            if (titleEl) {
+                                                                titleEl.style.color = textColor;
+                                                                titleEl.style.setProperty('color', textColor, 'important');
+                                                            }
+                                                            info.el.style.color = textColor;
+                                                            info.el.style.setProperty('color', textColor, 'important');
+                                                        }
+                                                    }}
                                                     dateClick={(arg) => handleNewEvent(arg.dateStr)}
                                                     eventClick={handleEventClick}
                                                     eventDrop={handleDropResize}
@@ -339,6 +383,45 @@ export default function Appointments() {
 
                         <div style={{ clear: 'both' }}></div>
 
+                        <style>
+                            {`
+                                .fc-event, 
+                                .fc-daygrid-event, 
+                                .fc-daygrid-block-event, 
+                                .fc-h-event, 
+                                .fc-v-event {
+                                    padding: 6px 12px !important;
+                                    font-size: 13px !important;
+                                    border-radius: 6px !important;
+                                    box-shadow: none !important;
+                                    margin-top: 2px !important;
+                                    margin-bottom: 2px !important;
+                                    min-height: 32px !important;
+                                    border-width: 1px !important; /* Subtle border same as bg */
+                                }
+                                .fc-event-main {
+                                    padding: 2px 4px !important;
+                                    color: inherit !important;
+                                    display: flex !important;
+                                    align-items: center !important;
+                                }
+                                .fc-event-title, .fc-event-main-frame {
+                                    font-weight: 600 !important;
+                                    color: inherit !important;
+                                    white-space: nowrap !important;
+                                    overflow: hidden !important;
+                                    text-overflow: ellipsis !important;
+                                }
+                                .fc-daygrid-event-dot {
+                                    border-color: inherit !important;
+                                }
+                                .fc-event:hover {
+                                    opacity: 0.85 !important;
+                                    transform: translateY(-1px);
+                                    transition: all 0.2s ease;
+                                }
+                            `}
+                        </style>
                     </div>
                 </div>
                 <AppointmentModal ref={appointmentModalRef} onSuccess={loadAppointments} />
