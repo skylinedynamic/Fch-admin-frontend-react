@@ -325,7 +325,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 description: apt.description || "No Description",
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
-                assignedForId: apt.assigned_for?.id,
+                assignedForId: (() => {
+                    const type = (apt.assigned_for?.entity_type || 'partner').toLowerCase();
+                    if (type === 'employee') return apt.assigned_for?.id;
+                    return apt.assigned_for?.entity_id || apt.assigned_for?.id;
+                })(),
                 assignedForType: apt.assigned_for?.entity_type || 'partner',
                 assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
                 appointmentCode: apt.appointment_code || '',
