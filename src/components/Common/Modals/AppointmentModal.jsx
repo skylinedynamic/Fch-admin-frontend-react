@@ -502,9 +502,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         {/* Details View */}
                         {viewMode ? (
                             <div className="event-details position-relative">
-                                <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: 0, top: '-5px' }}>
-                                    <button className="btn btn-sm btn-outline-primary border-primary-subtle bg-white" onClick={() => setViewMode(false)}>
-                                        <i className="ri-edit-line me-1"></i> Edit
+                                <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                    <button
+                                        className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                        onClick={() => setViewMode(false)}
+                                        style={{
+                                            fontWeight: "600",
+                                            transition: "all 0.2s ease"
+                                        }}
+                                    >
+                                        <i className="ri-pencil-fill fs-14 me-1"></i> Edit
                                     </button>
                                 </div>
 
@@ -518,60 +525,53 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                 <div className="mb-4 pb-3 border-bottom">
                                     <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                    <div className="description-wrap border rounded p-3" style={{
-                                        backgroundColor: "#f9faff",
-                                        borderLeft: "3px solid #405189",
-                                        lineHeight: "1.6"
-                                    }}>
-                                        <div className="text-muted fs-14">
-                                            {(() => {
-                                                const description = displayData.description || "No Description";
-                                                // Extract text and properly decode common entities for the preview
-                                                const rawText = description
-                                                    .replace(/<[^>]*>/g, '')
-                                                    .replace(/&nbsp;/g, ' ')
-                                                    .replace(/&amp;/g, '&')
-                                                    .replace(/&lt;/g, '<')
-                                                    .replace(/&gt;/g, '>')
-                                                    .replace(/&quot;/g, '"');
+                                    <div className="text-muted fs-14" style={{ lineHeight: "1.6" }}>
+                                        {(() => {
+                                            const description = displayData.description || "No Description";
+                                            // Extract text and properly decode common entities for the preview
+                                            const rawText = description
+                                                .replace(/<[^>]*>/g, '')
+                                                .replace(/&nbsp;/g, ' ')
+                                                .replace(/&amp;/g, '&')
+                                                .replace(/&lt;/g, '<')
+                                                .replace(/&gt;/g, '>')
+                                                .replace(/&quot;/g, '"');
 
-                                                const limit = 180;
+                                            const limit = 180;
 
-                                                if (!isDescriptionExpanded && rawText.length > limit) {
-                                                    return (
-                                                        <div className="description-content">
-                                                            {rawText.substring(0, limit)}...
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                onClick={() => setIsDescriptionExpanded(true)}
-                                                            >
-                                                                See more <i className="ri-arrow-down-s-line align-middle"></i>
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                }
-
+                                            if (!isDescriptionExpanded && rawText.length > limit) {
                                                 return (
                                                     <div className="description-content">
-                                                        <div
-                                                            className="rich-text-content"
-                                                            dangerouslySetInnerHTML={{ __html: description }}
-                                                            style={{ fontSize: 'inherit', color: 'inherit' }}
-                                                        ></div>
-                                                        {isDescriptionExpanded && rawText.length > limit && (
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                onClick={() => setIsDescriptionExpanded(false)}
-                                                            >
-                                                                See less <i className="ri-arrow-up-s-line align-middle"></i>
-                                                            </button>
-                                                        )}
+                                                        {rawText.substring(0, limit)}...
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                            onClick={() => setIsDescriptionExpanded(true)}
+                                                        >
+                                                            See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                        </button>
                                                     </div>
                                                 );
-                                            })()}
-                                        </div>
+                                            }
+
+                                            return (
+                                                <div className="description-content">
+                                                    <div
+                                                        className="rich-text-content"
+                                                        dangerouslySetInnerHTML={{ __html: description }}
+                                                    ></div>
+                                                    {isDescriptionExpanded && rawText.length > limit && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                            onClick={() => setIsDescriptionExpanded(false)}
+                                                        >
+                                                            See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 
@@ -892,7 +892,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
                 }
             `}</style>
-        </div>
+        </div >
     );
 });
 
