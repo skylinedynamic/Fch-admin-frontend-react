@@ -23,13 +23,14 @@ export const createAppointment = async (payload: CreateAppointmentPayload): Prom
   return data
 }
 
-export const updateAppointment = async (id: string | number, payload: Partial<CreateAppointmentPayload>): Promise<Appointment> => {
+export const updateAppointment = async (id: string | number, payload: Partial<CreateAppointmentPayload>): Promise<CreateAppointmentResponse> => {
   const { data } = await apiClient.put(`/common/appointments/${id}`, payload)
-  return data.data
+  return data
 }
 
-export const deleteAppointment = async (id: string | number): Promise<void> => {
-  await apiClient.delete(`/common/appointments/${id}`)
+export const deleteAppointment = async (id: string | number): Promise<CreateAppointmentResponse> => {
+  const { data } = await apiClient.delete(`/common/appointments/${id}`)
+  return data
 }
 
 export const fetchTimeSlots = async (): Promise<FetchTimeSlotsResponse> => {

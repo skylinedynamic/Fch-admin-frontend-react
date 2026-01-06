@@ -15,7 +15,7 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/auth/authStore';
 
 // API Services
-import { fetchAppointments } from '../../modules/appointment/services';
+import { fetchAppointments, updateAppointment } from '../../modules/appointment/services';
 
 // Components
 import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
@@ -151,13 +151,48 @@ export default function Appointments() {
     };
 
     const handleDropResize = async (info) => {
-        // TODO: Call API to update if desired, for now just update local state
         const calEvent = info.event;
-        setEvents(prev => prev.map(e => String(e.id) === String(calEvent.id) ? {
-            ...e,
-            start: calEvent.start,
-            end: calEvent.end,
-        } : e));
+        const start = calEvent.start;
+        const end = calEvent.end || new Date(start.getTime() + 30 * 60000);
+        const duration = (end - start) / 60000;
+
+        const toMySQLDate = (date) => {
+            const pad = (num) => (num < 10 ? '0' + num : num);
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
+
+        const props = calEvent.extendedProps;
+        const payload = {
+            subject: calEvent.title,
+            description: props.description,
+            appointment_date: toMySQLDate(start),
+            timezone: props.timezone,
+            duration_minutes: duration,
+            meeting_type: props.meeting_type,
+            entity_type: props.assigned_for?.entity_type,
+            entity_id: props.assigned_for?.entity_id || props.assigned_for?.id,
+            assigned_for: props.assigned_for?.id
+        };
+
+        try {
+            const response = await updateAppointment(calEvent.id, payload);
+            if (response && response.status) {
+                toast.success(response.message || 'Appointment updated successfully');
+                // Refresh local state to ensure all computed properties (colors, etc) are correct
+                setEvents(prev => prev.map(e => String(e.id) === String(calEvent.id) ? {
+                    ...e,
+                    start: calEvent.start,
+                    end: calEvent.end,
+                } : e));
+            } else {
+                toast.error(response?.message || 'Failed to update appointment');
+                info.revert();
+            }
+        } catch (error) {
+            console.error("Update failed", error);
+            toast.error(error.response?.data?.message || 'Failed to update appointment');
+            info.revert();
+        }
     };
 
     return (

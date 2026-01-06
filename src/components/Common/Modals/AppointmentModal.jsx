@@ -471,15 +471,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
         try {
             setIsSubmitting(true);
+            let response;
             if (selectedEventId && !isNewEvent) {
-                await updateAppointment(selectedEventId, payload);
-                toast.success('Appointment updated successfully');
+                response = await updateAppointment(selectedEventId, payload);
             } else {
-                await createAppointment(payload);
-                toast.success('Appointment created successfully');
+                response = await createAppointment(payload);
             }
-            if (modalInstance) modalInstance.hide();
-            if (onSuccess) onSuccess();
+
+            if (response && response.status) {
+                toast.success(response.message || `Appointment ${isNewEvent ? 'created' : 'updated'} successfully`);
+                if (modalInstance) modalInstance.hide();
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response?.message || `Failed to ${isNewEvent ? 'create' : 'update'} appointment`);
+            }
         } catch (error) {
             if (error.response?.data?.errors) {
                 setFormErrors(error.response.data.errors);
@@ -499,13 +504,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const handleDelete = async () => {
         try {
             setIsDeleting(true);
-            await deleteAppointment(selectedEventId);
-            toast.success("Appointment deleted successfully");
-            setShowDeleteConfirm(false);
-            if (modalInstance) modalInstance.hide();
-            if (onSuccess) onSuccess();
+            const response = await deleteAppointment(selectedEventId);
+            if (response && response.status) {
+                toast.success(response.message || "Appointment deleted successfully");
+                setShowDeleteConfirm(false);
+                if (modalInstance) modalInstance.hide();
+                if (onSuccess) onSuccess();
+            } else {
+                toast.error(response?.message || "Failed to delete appointment");
+            }
         } catch (error) {
-            toast.error("Failed to delete appointment");
+            toast.error(error.response?.data?.message || "Failed to delete appointment");
         } finally {
             setIsDeleting(false);
         }
