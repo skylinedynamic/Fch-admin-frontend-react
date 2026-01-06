@@ -16,6 +16,9 @@ import { fetchAllBorrowers } from '../../../modules/borrower/services';
 // Config
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
 
+// Styles
+import '../../../assets/css/AppointmentModal.css';
+
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
     const dateInputRef = useRef(null);
@@ -121,6 +124,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         return (formData.timeStart < cEnd && formData.timeEnd > cStart);
                     });
 
+                    // Logic: If we are EDITING and the user has NOT changed the time, ignore conflicts (it's likely the current appointment)
+                    // If IS NEW EVENT, always show conflicts
+                    // If EDITING and CHANGED time, show conflicts
+                    if (!isNewEvent && matchingConflict && !timeChanged && !dateOrAssigneeChanged) {
+                        setIsConflictVisible(false);
+                        setLastConflictingAttempt(null);
+                        setAvailabilityConflicts(null);
+                        return;
+                    }
+
                     // Only show conflict message when TIME SLOT changes (not date)
                     if (matchingConflict && timeChanged && !isSystemShiftRef.current) {
                         setLastConflictingAttempt({
@@ -130,6 +143,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         });
                         setIsConflictVisible(true);
                     } else if (matchingConflict && !timeChanged && isConflictVisible) {
+                        // Keep visible if already visible (e.g. user saw it, didn't change anything yet)
                         setIsConflictVisible(true);
                     } else if (!matchingConflict && timeChanged && !isSystemShiftRef.current) {
                         setIsConflictVisible(false);
@@ -339,7 +353,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
-                    entity_id: apt.assigned_for.id,
+                    entity_id: (() => {
+                        // Employee: Use User ID (id) - Employees are system users
+                        if (formattedType === 'employee') {
+                            return apt.assigned_for.id;
+                        }
+                        // Borrower/Partner: Use Entity ID (entity_id) - These are separate profile entities
+                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) {
+                            return apt.assigned_for.entity_id;
+                        }
+                        // Fallback
+                        return apt.assigned_for.entity_id || apt.assigned_for.id;
+                    })(),
                     entity_type: formattedType
                 }));
             }
@@ -762,29 +787,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                     </>
                                                                 );
                                                             }
-
-                                                            const allConflicts = [
-                                                                ...(availabilityConflicts?.assignee_conflicts || []),
-                                                                ...(availabilityConflicts?.scheduler_conflicts || [])
-                                                            ];
-
-                                                            // Try to find the specific conflict that matches the selected time range
-                                                            const matchingConflict = allConflicts.find(c => {
-                                                                const cStart = c.start_time || "";
-                                                                const cEnd = c.end_time || "";
-                                                                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
-                                                            }) || allConflicts[0];
-
-                                                            if (matchingConflict) {
-                                                                const cDate = matchingConflict.date || "";
-                                                                const cStart = matchingConflict.start_time || "";
-                                                                const cEnd = matchingConflict.end_time || "";
-                                                                return (
-                                                                    <>
-                                                                        Already scheduled for {cDate} from {tConvert(cStart)} to {tConvert(cEnd)}.
-                                                                    </>
-                                                                );
-                                                            }
                                                             return "Conflicting appointment found on this date.";
                                                         })()}
                                                     </span>
@@ -826,104 +828,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             });
                                         })()}>
                                         <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
-                                        {isSubmitting ? "Saving..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
+                                        {isSubmitting ? "Loading..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
                                     </button>
+
                                 </div>
                             </form>
                         )}
                     </div>
                 </div>
             </div>
-            <style>{`
-                .letter-spacing-1 { letter-spacing: 0.5px; }
-                .uppercase-label { text-transform: uppercase; font-weight: 700; }
-                .btn-soft-danger { background-color: rgba(240, 101, 72, .1); color: #f06548; border: none; }
-                .btn-soft-danger:hover { background-color: #f06548; color: #fff; }
-                .alert-danger-subtle { background-color: #fef4f2; border-color: #fbd9d0; color: #f06548; }
-                .conflict-alert { animation: slideInAlert 0.3s ease-out; }
-                @keyframes slideInAlert {
-                    from { opacity: 0; transform: translateY(-5px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .hover-primary:hover { text-decoration: underline !important; color: #354a8e !important; }
 
-                /* Premium Summernote Overrides */
-                .note-editor.note-frame {
-                    border: 1px solid #e2e5ec !important;
-                    border-radius: 0.4rem !important;
-                    overflow: hidden;
-                    box-shadow: none !important;
-                    background-color: #fff !important;
-                }
-                .note-toolbar {
-                    background-color: #f3f6f9 !important;
-                    border-bottom: 1px solid #e2e5ec !important;
-                    padding: 5px 10px !important;
-                    margin: 0 !important;
-                }
-                .note-btn-group {
-                    margin-right: 8px !important;
-                }
-                .note-btn {
-                    background-color: #fff !important;
-                    border: 1px solid #e2e5ec !important;
-                    color: #495057 !important;
-                    height: 32px !important;
-                    min-width: 32px !important;
-                    padding: 4px 8px !important;
-                    font-size: 13px !important;
-                    line-height: 1.2 !important;
-                    transition: all 0.2s ease;
-                    box-shadow: none !important;
-                    display: inline-flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-                .note-btn:hover {
-                    background-color: #eef1f6 !important;
-                    border-color: #d1d5db !important;
-                    color: #405189 !important;
-                }
-                .note-btn.active {
-                    background-color: #405189 !important;
-                    color: #fff !important;
-                    border-color: #405189 !important;
-                }
-                .note-editable {
-                    background-color: #fff !important;
-                    font-family: var(--vz-body-font-family);
-                    font-size: 14px;
-                    color: #495057;
-                    padding: 15px !important;
-                }
-                .note-placeholder {
-                    padding: 15px !important;
-                }
-                .note-status-output {
-                    display: none !important;
-                }
-                .note-resizebar {
-                    border-top: 1px solid #e2e5ec !important;
-                    background-color: #f3f6f9 !important;
-                }
-                .note-btn-group .note-btn {
-                    border-radius: 0 !important;
-                    margin-left: -1px !important;
-                }
-                .note-btn-group .note-btn:first-child {
-                    border-top-left-radius: 4px !important;
-                    border-bottom-left-radius: 4px !important;
-                    margin-left: 0 !important;
-                }
-                .note-btn-group .note-btn:last-child {
-                    border-top-right-radius: 4px !important;
-                    border-bottom-right-radius: 4px !important;
-                }
-                .note-dropdown-menu {
-                    border: 1px solid #e2e5ec !important;
-                    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
-                }
-            `}</style>
         </div >
     );
 });
