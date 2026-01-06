@@ -25,20 +25,11 @@
     color: #f06548;
 }
 
-.conflict-alert {
-    animation: slideInAlert 0.3s ease-out;
-}
-
-@keyframes slideInAlert {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.detail-skeleton-item {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 1rem;
 }
 
 .hover-primary:hover {

@@ -12,6 +12,7 @@ import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppoi
 import { fetchPartners } from '../../../modules/partner/services';
 import { fetchEmployees } from '../../../modules/employee/services';
 import { fetchAllBorrowers } from '../../../modules/borrower/services';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
@@ -30,6 +31,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
     const [assignedForType, setAssignedForType] = useState('partner');
@@ -109,7 +112,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setAvailabilityConflicts(null);
                 const response = await checkAvailability({
                     assigned_for: formData.entity_id,
-                    appointment_date: `${formData.date} ${formData.timeStart}:00`
+                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
+                    id: isNewEvent ? undefined : selectedEventId
                 });
 
                 if (response.data && response.data.available === false) {
@@ -124,10 +128,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         const cStart = c.start_time || "";
                         const cEnd = c.end_time || "";
                         // Standard overlap check: (StartA < EndB) && (EndA > StartB)
-                        return (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                        // AND exclude the CURRENT appointment itself by ID
+                        const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                        return (formData.timeStart < cEnd && formData.timeEnd > cStart) && !isSelf;
                     });
 
-                    // Logic: If we are EDITING and the user has NOT changed the time, ignore conflicts (it's likely the current appointment)
+                    // Logic: If we are EDITING and the user has NOT changed the time/date, ignore conflicts (it's likely the current appointment)
+                    const hasChanged = isNewEvent ||
+                        formData.date !== originalData?.date ||
+                        formData.timeStart !== originalData?.timeStart ||
+                        formData.timeEnd !== originalData?.timeEnd;
+
                     if (matchingConflict) {
                         setLastConflictingAttempt({
                             attemptedStart: formData.timeStart,
@@ -294,6 +305,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const fetchDetails = async (id) => {
         try {
+            setLoadingDetails(true);
             const apt = await fetchAppointmentById(id);
             const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
             const start = dateStr ? new Date(dateStr) : new Date();
@@ -384,6 +396,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
+        } finally {
+            setLoadingDetails(false);
         }
     };
 
@@ -430,10 +444,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             const matchingConflict = allConflicts.find(c => {
                 const cStart = c.start_time || "";
                 const cEnd = c.end_time || "";
-                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isOverlap = (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                return isOverlap && !isSelf;
             });
+
             if (matchingConflict) {
-                toast.error('Cannot save appointment: Time slot conflicts with existing appointment');
+                toast.error('Cannot save appointment: Time slot conflicts with another appointment');
                 setIsConflictVisible(true);
                 return;
             }
@@ -474,12 +491,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     };
 
-    const confirmDelete = async () => {
-        if (!selectedEventId || !window.confirm("Are you sure you want to delete this appointment?")) return;
+    const confirmDelete = () => {
+        if (!selectedEventId) return;
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDelete = async () => {
         try {
             setIsDeleting(true);
             await deleteAppointment(selectedEventId);
             toast.success("Appointment deleted successfully");
+            setShowDeleteConfirm(false);
             if (modalInstance) modalInstance.hide();
             if (onSuccess) onSuccess();
         } catch (error) {
@@ -552,122 +574,162 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
                         {/* Details View */}
                         {viewMode ? (
-                            <div className="event-details position-relative">
-                                <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
-                                    <button
-                                        className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
-                                        onClick={() => setViewMode(false)}
-                                        style={{
-                                            fontWeight: "600",
-                                            transition: "all 0.2s ease"
-                                        }}
-                                    >
-                                        <i className="ri-pencil-fill fs-14 me-1"></i> Edit
-                                    </button>
-                                </div>
-
-                                <div className="mb-4">
-                                    <div className="d-flex align-items-center justify-content-between mb-1">
-                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                            loadingDetails ? (
+                                <div className="event-details-skeleton">
+                                    <div className="mb-4">
+                                        <Skeleton width="120px" height="12px" className="mb-2" />
+                                        <Skeleton width="70%" height="28px" />
                                     </div>
-                                    <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                    <div className="mb-4">
+                                        <Skeleton width="100px" height="12px" className="mb-2" />
+                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                            <Skeleton width="100%" height="14px" className="mb-2" />
+                                            <Skeleton width="90%" height="14px" className="mb-2" />
+                                            <Skeleton width="40%" height="14px" />
+                                        </div>
+                                    </div>
+                                    <div className="row g-4 mb-4">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div className="col-md-6" key={i}>
+                                                <div className="d-flex align-items-center">
+                                                    <Skeleton shape="circle" size="32px" className="me-3" />
+                                                    <div className="flex-grow-1">
+                                                        <Skeleton width="60px" height="10px" className="mb-2" />
+                                                        <Skeleton width="100px" height="14px" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                        <Skeleton shape="circle" size="60px" className="me-3" />
+                                        <div className="flex-grow-1">
+                                            <Skeleton width="80px" height="10px" className="mb-2" />
+                                            <Skeleton width="150px" height="18px" />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                        <Skeleton width="80px" height="35px" borderRadius="4px" />
+                                    </div>
                                 </div>
+                            ) : (
+                                <div className="event-details position-relative">
+                                    <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                        <button
+                                            className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                            onClick={() => setViewMode(false)}
+                                            style={{
+                                                fontWeight: "600",
+                                                transition: "all 0.2s ease"
+                                            }}
+                                        >
+                                            <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                        </button>
+                                    </div>
 
-                                <div className="mb-4">
-                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                    <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
-                                        <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
-                                            {(() => {
-                                                const description = displayData.description || "No Description";
-                                                // Extract text and properly decode common entities for the preview
-                                                const rawText = description
-                                                    .replace(/<[^>]*>/g, '')
-                                                    .replace(/&nbsp;/g, ' ')
-                                                    .replace(/&amp;/g, '&')
-                                                    .replace(/&lt;/g, '<')
-                                                    .replace(/&gt;/g, '>')
-                                                    .replace(/&quot;/g, '"');
+                                    <div className="mb-4">
+                                        <div className="d-flex align-items-center justify-content-between mb-1">
+                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                        </div>
+                                        <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                    </div>
 
-                                                const limit = 180;
+                                    <div className="mb-4">
+                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                            <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                                {(() => {
+                                                    const description = displayData.description || "No Description";
+                                                    // Extract text and properly decode common entities for the preview
+                                                    const rawText = description
+                                                        .replace(/<[^>]*>/g, '')
+                                                        .replace(/&nbsp;/g, ' ')
+                                                        .replace(/&amp;/g, '&')
+                                                        .replace(/&lt;/g, '<')
+                                                        .replace(/&gt;/g, '>')
+                                                        .replace(/&quot;/g, '"');
 
-                                                if (!isDescriptionExpanded && rawText.length > limit) {
+                                                    const limit = 180;
+
+                                                    if (!isDescriptionExpanded && rawText.length > limit) {
+                                                        return (
+                                                            <div className="description-content">
+                                                                {rawText.substring(0, limit)}...
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                    onClick={() => setIsDescriptionExpanded(true)}
+                                                                >
+                                                                    See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     return (
                                                         <div className="description-content">
-                                                            {rawText.substring(0, limit)}...
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                onClick={() => setIsDescriptionExpanded(true)}
-                                                            >
-                                                                See more <i className="ri-arrow-down-s-line align-middle"></i>
-                                                            </button>
+                                                            <div
+                                                                className="rich-text-content"
+                                                                dangerouslySetInnerHTML={{ __html: description }}
+                                                            ></div>
+                                                            {isDescriptionExpanded && rawText.length > limit && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                    onClick={() => setIsDescriptionExpanded(false)}
+                                                                >
+                                                                    See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
-                                                }
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                                return (
-                                                    <div className="description-content">
-                                                        <div
-                                                            className="rich-text-content"
-                                                            dangerouslySetInnerHTML={{ __html: description }}
-                                                        ></div>
-                                                        {isDescriptionExpanded && rawText.length > limit && (
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                onClick={() => setIsDescriptionExpanded(false)}
-                                                            >
-                                                                See less <i className="ri-arrow-up-s-line align-middle"></i>
-                                                            </button>
-                                                        )}
+                                    <div className="row g-4 mb-2">
+                                        <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
+                                        <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
+                                        <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
+                                        <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
+                                    </div>
+
+                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="avatar-md">
+                                                {displayData.assignedForAvatar ? (
+                                                    <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div className="avatar-title rounded-circle bg-primary text-white">
+                                                        <i className="ri-user-follow-line fs-24"></i>
                                                     </div>
-                                                );
-                                            })()}
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1 d-flex align-items-center gap-2">
+                                            <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
+                                                Appointment With:
+                                            </p>
+
+                                            <h5 className="mb-0 fs-16 fw-bold">
+                                                <a
+                                                    href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                    className="text-primary text-decoration-none hover-primary"
+                                                >
+                                                    {displayData.assignedFor}
+                                                </a>
+                                            </h5>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="row g-4 mb-2">
-                                    <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
-                                    <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
-                                    <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
-                                    <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
-                                </div>
-
-                                <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
-                                    <div className="flex-shrink-0 me-3">
-                                        <div className="avatar-md">
-                                            {displayData.assignedForAvatar ? (
-                                                <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
-                                            ) : (
-                                                <div className="avatar-title rounded-circle bg-primary text-white">
-                                                    <i className="ri-user-follow-line fs-24"></i>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow-1 d-flex align-items-center gap-2">
-                                        <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
-                                            Appointment With:
-                                        </p>
-
-                                        <h5 className="mb-0 fs-16 fw-bold">
-                                            <a
-                                                href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
-                                                className="text-primary text-decoration-none hover-primary"
-                                            >
-                                                {displayData.assignedFor}
-                                            </a>
-                                        </h5>
+                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+                                        <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                            <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="mt-4 pt-3 border-top d-flex justify-content-end">
-                                    <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
-                                        <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
-                                    </button>
-                                </div>
-                            </div>
+                            )
                         ) : (
                             /* Form View */
                             <form onSubmit={handleSubmit}>
@@ -766,7 +828,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         className="flex-grow-1" placeholder="End" appendTo="self" />
                                                 </div>
                                                 {/* Conflict Danger Message */}
-                                                {isConflictVisible && availabilityConflicts && (
+                                                {isConflictVisible && (
                                                     <div className="text-danger fs-11 mt-1 fw-bold">
                                                         <i className="ri-error-warning-line me-1"></i> Conflict detected: This time slot is already taken.
                                                     </div>
@@ -779,7 +841,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     <div className="col-12 px-2 overflow-hidden"
                                         style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
                                         {(availabilityConflicts || lastConflictingAttempt) && (
-                                            <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 conflict-alert position-relative" role="alert">
+                                            <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
                                                 <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
                                                 <div className="flex-grow-1 pe-4">
                                                     <div className="d-flex justify-content-between align-items-center">
@@ -832,18 +894,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
                                     <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
                                     <button type="submit" className="btn btn-primary"
-                                        disabled={isSubmitting || isCheckingAvailability || (() => {
-                                            if (!availabilityConflicts) return false;
-                                            const allConflicts = [
-                                                ...(availabilityConflicts.assignee_conflicts || []),
-                                                ...(availabilityConflicts.scheduler_conflicts || [])
-                                            ];
-                                            return allConflicts.some(c => {
-                                                const cStart = c.start_time || "";
-                                                const cEnd = c.end_time || "";
-                                                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
-                                            });
-                                        })()}>
+                                        disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
                                         {isSubmitting ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
@@ -863,6 +914,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 </div>
             </div>
 
+            <DeleteConfirmationModal
+                show={showDeleteConfirm}
+                onConfirm={handleDelete}
+                onClose={() => setShowDeleteConfirm(false)}
+                loading={isDeleting}
+                text="Are you sure you want to delete this appointment? This action cannot be undone."
+            />
         </div >
     );
 });
