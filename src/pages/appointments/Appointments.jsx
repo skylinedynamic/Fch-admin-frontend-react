@@ -127,11 +127,14 @@ export default function Appointments() {
         return `${h}:${m} ${ampm}`;
     };
 
-    // Update upcoming events list
+    // Update upcoming events list (From Today)
     useEffect(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+
         const sorted = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
-        const future = sorted.filter(e => new Date(e.start) >= new Date());
-        setUpcomingEvents(future.slice(0, 10));
+        const fromToday = sorted.filter(e => new Date(e.start) >= today);
+        setUpcomingEvents(fromToday.slice(0, 15)); // Show up to 15
     }, [events]);
 
     // Actions
@@ -235,7 +238,9 @@ export default function Appointments() {
                                                 }
 
                                                 return (
-                                                    <div className="card mb-3" key={evt.id}>
+                                                    <div className="card mb-3 upcoming-event-card cursor-pointer" key={evt.id}
+                                                        onClick={() => handleEventClick({ event: { id: evt.id } })}
+                                                        style={{ transition: 'all 0.3s ease' }}>
                                                         <div className="card-body">
                                                             <div className="d-flex mb-3 align-items-center">
                                                                 <div className="flex-grow-1">
@@ -421,6 +426,14 @@ export default function Appointments() {
                                     opacity: 0.85 !important;
                                     transform: translateY(-1px);
                                     transition: all 0.2s ease;
+                                }
+                                .upcoming-event-card:hover {
+                                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                                    transform: translateY(-2px);
+                                    border-color: #405189 !important;
+                                }
+                                .cursor-pointer {
+                                    cursor: pointer !important;
                                 }
                             `}
                         </style>
