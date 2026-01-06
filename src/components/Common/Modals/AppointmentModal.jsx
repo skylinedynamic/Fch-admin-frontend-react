@@ -97,30 +97,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             }
 
             try {
-                setIsCheckingAvailability(true);
-                // Determine what exactly changed
-                // const dateOrAssigneeChanged = prevDateRef.current !== formData.date;
-                // const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
-                //    prevTimeEndRef.current !== formData.timeEnd;
+                // User Request: Only show skeleton when time slot changes
+                const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
+                    prevTimeEndRef.current !== formData.timeEnd;
+                const isFirstCheck = !prevDateRef.current;
 
-                // NEW LOGIC: Compare against ORIGINAL DB DATA
-                if (!isNewEvent && originalData) {
-                    const isSameAsOriginal =
-                        formData.date === originalData.date &&
-                        formData.timeStart === originalData.timeStart &&
-                        formData.timeEnd === originalData.timeEnd &&
-                        String(formData.entity_id) === String(originalData.entity_id); // Ensure string comparison
-
-                    if (isSameAsOriginal) {
-                        // If it matches original, it's a self-conflict. valid.
-                        setAvailabilityConflicts(null);
-                        setIsConflictVisible(false);
-                        setIsCheckingAvailability(false);
-                        return;
-                    }
+                if (timeChanged && !isFirstCheck) {
+                    setIsCheckingAvailability(true);
                 }
-
-                // Never show skeleton loader (removed as per user request)
 
                 setAvailabilityConflicts(null);
                 const response = await checkAvailability({
@@ -644,10 +628,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 </div>
 
                                 <div className="row g-4 mb-2">
-                                    <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} />
-                                    <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} />
-                                    <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} />
-                                    <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} />
+                                    <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
+                                    <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
+                                    <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
+                                    <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
                                 </div>
 
                                 <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
@@ -745,15 +729,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
                                                 <div className="input-group">
-                                                    <span className="input-group-text bg-light border-end-0"><i className="ri-calendar-line text-muted"></i></span>
-                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal" className={`form-control border-start-0 ${formErrors.appointment_date ? 'is-invalid border-danger' : ''}`}
+                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal"
+                                                        className={`form-control ${formErrors.appointment_date ? 'is-invalid' : ''}`}
                                                         value={formData.date} readOnly placeholder="Select date" />
+                                                    <span className="input-group-text bg-light"><i className="ri-calendar-event-line text-muted"></i></span>
                                                     {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                 </div>
                                             </div>
                                             <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
-                                                <div className="d-flex align-items-center gap-2">
+                                                <div className="d-flex align-items-center gap-2 time-slot-container">
                                                     <Dropdown value={formData.timeStart} options={TIME_SLOTS}
                                                         onChange={(e) => {
                                                             const startVal = e.value;
@@ -782,8 +767,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 </div>
                                                 {/* Conflict Danger Message */}
                                                 {isConflictVisible && availabilityConflicts && (
-                                                    <div className="text-danger fs-11 mt-1">
-
+                                                    <div className="text-danger fs-11 mt-1 fw-bold">
+                                                        <i className="ri-error-warning-line me-1"></i> Conflict detected: This time slot is already taken.
                                                     </div>
                                                 )}
                                             </div>
@@ -882,8 +867,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     );
 });
 
-const DetailItem = ({ icon, label, value }) => (
-    <div className="col-md-6">
+const DetailItem = ({ icon, label, value, className }) => (
+    <div className={`col-md-6 ${className || ''}`}>
         <div className="d-flex align-items-center">
             <div className="flex-shrink-0 me-3">
                 <div className="avatar-xs">

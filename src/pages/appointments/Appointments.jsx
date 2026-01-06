@@ -62,7 +62,9 @@ export default function Appointments() {
                         { key: 'gray', bg: '#f3f4f6', border: '#e5e7eb', text: '#4b5563' },    // Team Offsite
                         { key: 'indigo', bg: '#e0e7ff', border: '#c7d2fe', text: '#4f46e5' },
                         { key: 'teal', bg: '#ccfbf1', border: '#99f6e4', text: '#0d9488' },
-                        { key: 'cyan', bg: '#cffafe', border: '#a5f3fc', text: '#0891b2' }
+                        { key: 'cyan', bg: '#cffafe', border: '#a5f3fc', text: '#0891b2' },
+                        { key: 'orange', bg: '#ffedd5', border: '#fed7aa', text: '#d97706' },
+                        { key: 'fuchsia', bg: '#fae8ff', border: '#f5d0fe', text: '#a21caf' }
                     ];
 
                     let style = PALETTE[0]; // Default
@@ -161,7 +163,7 @@ export default function Appointments() {
                 <div className="row">
                     <div className="col-12">
                         <div className="row">
-                            <div className="col-xl-3">
+                            <div className="col-lg-4 col-xl-3">
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
@@ -257,7 +259,7 @@ export default function Appointments() {
                                 </div>
                             </div>
 
-                            <div className="col-xl-9">
+                            <div className="col-lg-8 col-xl-9">
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         {loading ? (
