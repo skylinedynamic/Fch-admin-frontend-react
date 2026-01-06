@@ -788,7 +788,7 @@ export default function Appointments() {
                                     <div className="modal-header p-3 bg-info-subtle">
                                         <h5 className="modal-title" id="modal-title">
                                             {viewMode
-                                                ? displayData.title || "Appointment"
+                                                ? "Appointment Details"
                                                 : isNewEvent
                                                     ? "Add Appointment"
                                                     : "Edit Appointment"}
@@ -828,6 +828,16 @@ export default function Appointments() {
                                                     >
                                                         Edit
                                                     </button>
+                                                </div>
+
+                                                <div className="mb-4">
+                                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-1 d-block letter-spacing-1">Appointment Title</label>
+                                                    <h4 className="fw-bold mb-1 text-dark" style={{ color: "#495057" }}>{displayData.title || "No Title"}</h4>
+                                                </div>
+
+                                                <div className="mb-4 pb-3 border-bottom">
+                                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                                    <div className="text-muted fs-14 border rounded p-3 bg-light-subtle" dangerouslySetInnerHTML={{ __html: displayData.description || "No Description" }}></div>
                                                 </div>
 
                                                 <div className="d-flex align-items-center mb-3">
@@ -888,17 +898,20 @@ export default function Appointments() {
                                                     </div>
                                                 </div>
 
-                                                <div className="d-flex align-items-center mb-4">
+                                                <div className="d-flex align-items-center mb-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle">
                                                     <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-user-follow-line text-muted fs-18"></i>
+                                                        <div className="avatar-xs">
+                                                            <div className="avatar-title rounded-circle bg-primary text-white">
+                                                                <i className="ri-user-follow-line fs-16"></i>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     <div className="flex-grow-1">
                                                         <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            style={{ color: "#495057" }}
+                                                            className="d-block fw-semibold mb-0 text-primary"
                                                         >
-                                                            Assigned For:{" "}
-                                                            <span className="text-muted fw-normal">
+                                                            Appointment With:{" "}
+                                                            <span className="fw-bold fs-15 text-dark ms-1">
                                                                 {displayData.assignedFor}
                                                             </span>
                                                         </h6>
@@ -976,7 +989,7 @@ export default function Appointments() {
 
                                                 {/* Appointment By */}
                                                 <div className="col-12 mb-3">
-                                                    <label className="form-label">Appointment By</label>
+                                                    <label className="form-label">Appointment With</label>
                                                     <div className="d-flex gap-3">
                                                         {isHost && (
                                                             <div className="form-check mb-2">

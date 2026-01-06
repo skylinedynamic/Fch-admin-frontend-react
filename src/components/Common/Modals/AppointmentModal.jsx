@@ -505,23 +505,38 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         <i className="ri-edit-line me-1"></i> Edit
                                     </button>
                                 </div>
+
                                 <div className="mb-4">
-                                    <h4 className="fw-bold mb-1 text-dark">{displayData.title}</h4>
-                                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2">
+                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-1 d-block letter-spacing-1">Appointment Title</label>
+                                    <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2 mt-1">
                                         <i className="ri-checkbox-circle-line me-1"></i> Confirmed
                                     </span>
                                 </div>
 
-                                <div className="row g-4">
+                                <div className="mb-4 pb-3 border-bottom">
+                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                    <div className="text-muted fs-14 border rounded p-3 bg-light-subtle" dangerouslySetInnerHTML={{ __html: displayData.description || "No Description" }}></div>
+                                </div>
+
+                                <div className="row g-4 mb-2">
                                     <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} />
                                     <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} />
                                     <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} />
                                     <DetailItem icon="ri-user-line" label="Scheduled By" value={displayData.scheduledBy} />
-                                    <DetailItem icon="ri-user-follow-line" label="Assigned For" value={displayData.assignedFor} />
+                                </div>
 
-                                    <div className="col-12 mt-3 pt-3 border-top">
-                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                        <div className="text-muted fs-14 border rounded p-3 bg-light-subtle" dangerouslySetInnerHTML={{ __html: displayData.description }}></div>
+                                <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                    <div className="flex-shrink-0 me-3">
+                                        <div className="avatar-sm">
+                                            <div className="avatar-title rounded-circle bg-primary text-white">
+                                                <i className="ri-user-follow-line fs-20"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex-grow-1">
+                                        <p className="text-primary-emphasis mb-1 fs-12 uppercase-label fw-bold">Appointment With</p>
+                                        <h5 className="mb-0 fs-16 fw-bold text-primary">{displayData.assignedFor}</h5>
                                     </div>
                                 </div>
 
@@ -554,7 +569,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     </div>
 
                                     <div className="col-12 mb-3">
-                                        <label className="form-label">Assigned For <span className="text-danger">*</span></label>
+                                        <label className="form-label">Appointment With <span className="text-danger">*</span></label>
                                         <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
                                             {[
                                                 { value: 'partner', label: 'Partner' },
