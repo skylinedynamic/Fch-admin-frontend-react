@@ -58,6 +58,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         description: '',
         scheduledBy: '',
         assignedFor: '',
+        appointmentCode: '',
+        category: '',
     });
 
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
@@ -172,6 +174,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         const d = new Date(dateObj);
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         return `${d.getDate() < 10 ? '0' + d.getDate() : d.getDate()} ${months[d.getMonth()]}, ${d.getFullYear()}`;
+    };
+
+    const getShortType = (fullType) => {
+        if (!fullType) return 'partners';
+        const segments = fullType.split('\\');
+        const last = segments[segments.length - 1].toLowerCase();
+        if (last === 'employee') return 'employee-details';
+        if (last === 'partner') return 'partners';
+        if (last === 'borrower') return 'clients';
+        return last + 's';
     };
 
     const isSlotBlocked = (timeValue, isEnd = false) => {
@@ -295,6 +307,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 description: apt.description || "No Description",
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
+                assignedForId: apt.assigned_for?.id,
+                assignedForType: apt.assigned_for?.entity_type || 'partner',
+                assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
+                appointmentCode: apt.appointment_code || '',
+                category: apt.meeting_type || 'Business Review',
             });
 
             const h_full = start.getHours().toString().padStart(2, '0');
@@ -516,62 +533,63 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="text-muted fs-11 text-uppercase fw-bold mb-1 d-block letter-spacing-1">Appointment Title</label>
+                                    <div className="d-flex align-items-center justify-content-between mb-1">
+                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                    </div>
                                     <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
-                                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2 mt-1">
-                                        <i className="ri-checkbox-circle-line me-1"></i> Confirmed
-                                    </span>
                                 </div>
 
-                                <div className="mb-4 pb-3 border-bottom">
+                                <div className="mb-4">
                                     <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                    <div className="text-muted fs-14" style={{ lineHeight: "1.6" }}>
-                                        {(() => {
-                                            const description = displayData.description || "No Description";
-                                            // Extract text and properly decode common entities for the preview
-                                            const rawText = description
-                                                .replace(/<[^>]*>/g, '')
-                                                .replace(/&nbsp;/g, ' ')
-                                                .replace(/&amp;/g, '&')
-                                                .replace(/&lt;/g, '<')
-                                                .replace(/&gt;/g, '>')
-                                                .replace(/&quot;/g, '"');
+                                    <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                        <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                            {(() => {
+                                                const description = displayData.description || "No Description";
+                                                // Extract text and properly decode common entities for the preview
+                                                const rawText = description
+                                                    .replace(/<[^>]*>/g, '')
+                                                    .replace(/&nbsp;/g, ' ')
+                                                    .replace(/&amp;/g, '&')
+                                                    .replace(/&lt;/g, '<')
+                                                    .replace(/&gt;/g, '>')
+                                                    .replace(/&quot;/g, '"');
 
-                                            const limit = 180;
+                                                const limit = 180;
 
-                                            if (!isDescriptionExpanded && rawText.length > limit) {
+                                                if (!isDescriptionExpanded && rawText.length > limit) {
+                                                    return (
+                                                        <div className="description-content">
+                                                            {rawText.substring(0, limit)}...
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                onClick={() => setIsDescriptionExpanded(true)}
+                                                            >
+                                                                See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                }
+
                                                 return (
                                                     <div className="description-content">
-                                                        {rawText.substring(0, limit)}...
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                            onClick={() => setIsDescriptionExpanded(true)}
-                                                        >
-                                                            See more <i className="ri-arrow-down-s-line align-middle"></i>
-                                                        </button>
+                                                        <div
+                                                            className="rich-text-content"
+                                                            dangerouslySetInnerHTML={{ __html: description }}
+                                                        ></div>
+                                                        {isDescriptionExpanded && rawText.length > limit && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                onClick={() => setIsDescriptionExpanded(false)}
+                                                            >
+                                                                See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
-                                            }
-
-                                            return (
-                                                <div className="description-content">
-                                                    <div
-                                                        className="rich-text-content"
-                                                        dangerouslySetInnerHTML={{ __html: description }}
-                                                    ></div>
-                                                    {isDescriptionExpanded && rawText.length > limit && (
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                            onClick={() => setIsDescriptionExpanded(false)}
-                                                        >
-                                                            See less <i className="ri-arrow-up-s-line align-middle"></i>
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -579,28 +597,41 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} />
                                     <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} />
                                     <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} />
-                                    <DetailItem icon="ri-user-line" label="Scheduled By" value={displayData.scheduledBy} />
+                                    <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} />
                                 </div>
 
                                 <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
                                     <div className="flex-shrink-0 me-3">
-                                        <div className="avatar-sm">
-                                            <div className="avatar-title rounded-circle bg-primary text-white">
-                                                <i className="ri-user-follow-line fs-20"></i>
-                                            </div>
+                                        <div className="avatar-md">
+                                            {displayData.assignedForAvatar ? (
+                                                <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div className="avatar-title rounded-circle bg-primary text-white">
+                                                    <i className="ri-user-follow-line fs-24"></i>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex-grow-1">
-                                        <p className="text-primary-emphasis mb-1 fs-12 uppercase-label fw-bold">Appointment With</p>
-                                        <h5 className="mb-0 fs-16 fw-bold text-primary">{displayData.assignedFor}</h5>
+                                    <div className="flex-grow-1 d-flex align-items-center gap-2">
+                                        <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
+                                            Appointment With:
+                                        </p>
+
+                                        <h5 className="mb-0 fs-16 fw-bold">
+                                            <a
+                                                href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                className="text-primary text-decoration-none hover-primary"
+                                            >
+                                                {displayData.assignedFor}
+                                            </a>
+                                        </h5>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-top d-flex justify-content-between">
+                                <div className="mt-4 pt-3 border-top d-flex justify-content-end">
                                     <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
-                                        <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete Appointment"}
+                                        <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
                                     </button>
-                                    <button className="btn btn-light" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         ) : (
@@ -814,6 +845,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     from { opacity: 0; transform: translateY(-5px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+                .hover-primary:hover { text-decoration: underline !important; color: #354a8e !important; }
 
                 /* Premium Summernote Overrides */
                 .note-editor.note-frame {
@@ -908,7 +940,7 @@ const DetailItem = ({ icon, label, value }) => (
             </div>
             <div className="flex-grow-1">
                 <p className="text-muted mb-0 fs-12 uppercase-label">{label}</p>
-                <h6 className="mb-0 fs-14 fw-medium">{value}</h6>
+                <h6 className="mb-0 fs-14 fw-bold text-dark">{value}</h6>
             </div>
         </div>
     </div>
