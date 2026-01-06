@@ -1,0 +1,347 @@
+/* AppointmentModal Styles */
+.letter-spacing-1 {
+    letter-spacing: 0.5px;
+}
+
+.uppercase-label {
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.btn-soft-danger {
+    background-color: rgba(240, 101, 72, .1);
+    color: #f06548;
+    border: none;
+}
+
+.btn-soft-danger:hover {
+    background-color: #f06548;
+    color: #fff;
+}
+
+.alert-danger-subtle {
+    background-color: #fef4f2;
+    border-color: #fbd9d0;
+    color: #f06548;
+}
+
+.detail-skeleton-item {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.hover-primary:hover {
+    text-decoration: underline !important;
+    color: #354a8e !important;
+}
+
+.rich-text-content {
+    font-family: var(--vz-body-font-family);
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.6;
+}
+
+.rich-text-content p {
+    margin-bottom: 0.5rem;
+}
+
+.rich-text-content p:last-child {
+    margin-bottom: 0;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Premium Summernote Overrides */
+.note-editor.note-frame {
+    border: 1px solid #e2e5ec !important;
+    border-radius: 0.4rem !important;
+    overflow: hidden;
+    box-shadow: none !important;
+    background-color: #fff !important;
+}
+
+.note-toolbar {
+    background-color: #f3f6f9 !important;
+    border-bottom: 1px solid #e2e5ec !important;
+    padding: 5px 10px !important;
+    margin: 0 !important;
+}
+
+.note-btn-group {
+    margin-right: 8px !important;
+}
+
+.note-btn {
+    background-color: #fff !important;
+    border: 1px solid #e2e5ec !important;
+    color: #495057 !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    transition: all 0.2s ease;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.note-btn:hover {
+    background-color: #eef1f6 !important;
+    border-color: #d1d5db !important;
+    color: #405189 !important;
+}
+
+.note-btn.active {
+    background-color: #405189 !important;
+    color: #fff !important;
+    border-color: #405189 !important;
+}
+
+.note-editable {
+    background-color: #fff !important;
+    font-family: var(--vz-body-font-family);
+    font-size: 14px;
+    color: #495057;
+    padding: 15px !important;
+}
+
+.note-placeholder {
+    padding: 15px !important;
+}
+
+.note-status-output {
+    display: none !important;
+}
+
+.note-resizebar {
+    border-top: 1px solid #e2e5ec !important;
+    background-color: #f3f6f9 !important;
+}
+
+.note-btn-group .note-btn {
+    border-radius: 0 !important;
+    margin-left: -1px !important;
+}
+
+.note-btn-group .note-btn:first-child {
+    border-top-left-radius: 4px !important;
+    border-bottom-left-radius: 4px !important;
+    margin-left: 0 !important;
+}
+
+.note-btn-group .note-btn:last-child {
+    border-top-right-radius: 4px !important;
+    border-bottom-right-radius: 4px !important;
+}
+
+.note-dropdown-menu {
+    border: 1px solid #e2e5ec !important;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Premium Flatpickr Overrides */
+.flatpickr-calendar {
+    border: none !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    font-family: var(--vz-body-font-family);
+    z-index: 9999 !important;
+}
+
+.flatpickr-months {
+    background: #405189 !important;
+    border-top-left-radius: 8px !important;
+    border-top-right-radius: 8px !important;
+    padding: 10px 0 !important;
+}
+
+.flatpickr-month {
+    color: #fff !important;
+}
+
+.flatpickr-current-month {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-weight: 600 !important;
+    color: #fff !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    font-weight: 600 !important;
+    color: #fff !important;
+}
+
+.flatpickr-monthDropdown-month {
+    color: #495057 !important;
+    background: #fff !important;
+}
+
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    color: #fff !important;
+    fill: #fff !important;
+    padding: 10px !important;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+    color: #fff !important;
+    opacity: 0.8;
+}
+
+.flatpickr-weekdays {
+    background: #405189 !important;
+    padding: 0 10px 5px 10px !important;
+}
+
+span.flatpickr-weekday {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+}
+
+.flatpickr-days {
+    padding: 10px !important;
+    background-color: #fff !important;
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+}
+
+.flatpickr-day {
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    color: #495057 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.flatpickr-day.today {
+    border: 1px solid #405189 !important;
+    color: #405189 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+    background: #405189 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+.flatpickr-day:hover {
+    background: #f3f6f9 !important;
+    color: #405189 !important;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    color: #e2e5ec !important;
+    background: transparent !important;
+}
+
+/* Standardized Form Heights and Accuracy */
+.form-control,
+.p-dropdown,
+.input-group-text,
+.note-editor.note-frame {
+    border-color: #e2e5ec !important;
+    border-radius: 0.3rem !important;
+}
+
+.modal-content .form-control,
+.modal-content .p-dropdown {
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.p-dropdown .p-dropdown-label {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+}
+
+.p-dropdown-panel {
+    border: 1px solid #e2e5ec !important;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0.3rem !important;
+}
+
+.p-dropdown-items .p-dropdown-item {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 13px !important;
+}
+
+.input-group-text {
+    background-color: #f3f6f9 !important;
+    padding: 0 12px !important;
+    border-left: none !important;
+}
+
+.input-group .form-control {
+    border-right: none !important;
+}
+
+/* Responsive Optimizations */
+@media (max-width: 575.98px) {
+    .modal-body {
+        padding: 1.25rem !important;
+    }
+
+    .event-details .hstack {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .event-details .hstack .btn {
+        width: 100% !important;
+    }
+
+    .time-slot-container {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .time-slot-container .text-muted {
+        display: none !important;
+        /* Hide "to" on mobile to save space */
+    }
+}
+
+/* Arrow styling */
+.flatpickr-calendar.arrowTop:before,
+.flatpickr-calendar.arrowTop:after {
+    border-bottom-color: #405189 !important;
+}
+
+.p-invalid {
+    border-color: #f06548 !important;
+}
+
+.p-dropdown.p-focus {
+    border-color: #405189 !important;
+    box-shadow: 0 0 0 0.125rem rgba(64, 81, 137, 0.1) !important;
+}
+
+/* Detail Items stacking */
+@media (max-width: 767.98px) {
+    .detail-item-col {
+        margin-bottom: 1rem;
+    }
+}

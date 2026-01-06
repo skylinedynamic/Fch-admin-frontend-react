@@ -1,8 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
-import Modal from 'bootstrap/js/dist/modal';
-
 
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/react';
@@ -12,22 +8,6 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 
-// PrimeReact Imports
-import { Dropdown } from 'primereact/dropdown';
-import { Skeleton } from 'primereact/skeleton';
-
-// jQuery & Summernote
-import $ from 'jquery';
-import 'summernote/dist/summernote-lite.css';
-import 'summernote/dist/summernote-lite.js'; // Ensure JS is imported if needed, or rely on window.$
-
-// Attach jQuery to window for Summernote
-if (typeof window !== 'undefined') {
-    window.jQuery = $;
-    window.$ = $;
-}
-
-
 // Toast
 import { toast } from 'react-toastify';
 
@@ -35,72 +15,31 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/auth/authStore';
 
 // API Services
-import { fetchAppointments, fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment } from '../../modules/appointment/services';
-import { fetchPartners } from '../../modules/partner/services';
-import { fetchEmployees } from '../../modules/employee/services';
-import { fetchAllBorrowers } from '../../modules/borrower/services';
+import { fetchAppointments } from '../../modules/appointment/services';
 
-// Config
-import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../config';
+// Components
+import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 
 export default function Appointments() {
     const calendarRef = useRef(null);
-    const eventModalRef = useRef(null);
-    const descriptionEditorRef = useRef(null); // Summernote Ref
-
-    const [modalInstance, setModalInstance] = useState(null);
+    const appointmentModalRef = useRef(null);
 
     // Auth
     const { user } = useAuthStore();
-    const isHost = user?.is_host === 1 || user?.entity_type === 'host' || user?.entity_type === 'Host';
 
     // Events data
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [upcomingEvents, setUpcomingEvents] = useState([]);
-    const [viewMode, setViewMode] = useState(true);
-    const [isNewEvent, setIsNewEvent] = useState(false);
-    const [selectedEventId, setSelectedEventId] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formErrors, setFormErrors] = useState({});
-
-    // Assigned For Selection
-    const [assignedForType, setAssignedForType] = useState('employee'); // 'partner', 'employee', 'borrower'
-    const [assignedForId, setAssignedForId] = useState('');
-    const [partners, setPartners] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [borrowers, setBorrowers] = useState([]);
-    const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
-
-    // Form Data
-    const [formData, setFormData] = useState({
-        subject: '',
-        category: 'Business Review',
-        location: 'UTC (GMT+00:00)', // timezone
-        description: '',
-        date: '',
-        timeStart: '09:00', // Default start time
-        timeEnd: '10:00',   // Default end time
-        timeSlotId: '', // KEPT for backward compatibility/types, but effectively unused now
-    });
-
-    // Display Data
-    const [displayData, setDisplayData] = useState({
-        date: '',
-        timeStart: '',
-        timeEnd: '',
-        location: '',
-        description: '',
-        scheduledBy: '',
-        assignedFor: '',
-    });
 
     // Fetch Appointments
     useEffect(() => {
         loadAppointments();
     }, []);
+
+    // Sync formData description updates back to Summernote if it changes externally (e.g. reset)
+    // Be careful not to cause loops. Usually optional if one-way binding is sufficient.
+
 
     const loadAppointments = async () => {
         try {
@@ -110,30 +49,33 @@ export default function Appointments() {
                 const mappedEvents = response.data.map(apt => {
                     const start = new Date(apt.appointment_date);
                     // Calculate end time based on duration_minutes
-                    const end = new Date(start.getTime() + apt.duration_minutes * 60000);
+                    const end = new Date(start.getTime() + (apt.duration_minutes || 60) * 60000);
 
-                    // Map variety of colors
-                    const SUBTLE_COLORS = [
-                        'bg-primary-subtle',
-                        'bg-success-subtle',
-                        'bg-info-subtle',
-                        'bg-warning-subtle',
-                        'bg-danger-subtle',
-                        'bg-secondary-subtle',
-                        'bg-indigo-subtle',
-                        'bg-purple-subtle',
-                        'bg-teal-subtle'
+                    // High-fidelity palette matched to 'same-to-same' design reference
+                    const PALETTE = [
+                        { key: 'blue', bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1' },    // Billing/Support
+                        { key: 'emerald', bg: '#d1fae5', border: '#a7f3d0', text: '#059669' }, // Marketing
+                        { key: 'violet', bg: '#ede9fe', border: '#ddd6fe', text: '#7c3aed' },  // Kickoff
+                        { key: 'sky', bg: '#e0f2fe', border: '#bae6fd', text: '#0284c7' },     // Product Demo
+                        { key: 'rose', bg: '#fee2e2', border: '#fecaca', text: '#dc2626' },    // Invoice/Release
+                        { key: 'amber', bg: '#fef3c7', border: '#fde68a', text: '#d97706' },   // Quarterly
+                        { key: 'gray', bg: '#f3f4f6', border: '#e5e7eb', text: '#4b5563' },    // Team Offsite
+                        { key: 'indigo', bg: '#e0e7ff', border: '#c7d2fe', text: '#4f46e5' },
+                        { key: 'teal', bg: '#ccfbf1', border: '#99f6e4', text: '#0d9488' },
+                        { key: 'cyan', bg: '#cffafe', border: '#a5f3fc', text: '#0891b2' },
+                        { key: 'orange', bg: '#ffedd5', border: '#fed7aa', text: '#d97706' },
+                        { key: 'fuchsia', bg: '#fae8ff', border: '#f5d0fe', text: '#a21caf' }
                     ];
 
-                    let className = 'bg-primary-subtle';
+                    let style = PALETTE[0]; // Default
                     if (apt.status === 'cancelled') {
-                        className = 'bg-danger-subtle';
+                        style = PALETTE[4]; // Rose/Red
                     } else if (apt.status === 'completed') {
-                        className = 'bg-success-subtle';
+                        style = PALETTE[1]; // Emerald
                     } else {
-                        // Use meeting_type or ID to pick a consistent "random" color
-                        const colorIndex = (apt.id + (apt.meeting_type?.length || 0)) % SUBTLE_COLORS.length;
-                        className = SUBTLE_COLORS[colorIndex];
+                        // Maximize difference using a prime shift
+                        const colorIndex = (parseInt(apt.id) * 11) % PALETTE.length;
+                        style = PALETTE[colorIndex];
                     }
 
                     return {
@@ -142,11 +84,17 @@ export default function Appointments() {
                         start: start,
                         end: end,
                         allDay: false,
-                        className: className,
-                        classNames: [className],
+                        backgroundColor: style.bg,
+                        borderColor: style.border,
+                        textColor: style.text,
+                        className: `fc-custom-event`,
                         description: apt.description,
                         location: apt.timezone,
                         extendedProps: {
+                            colorKey: style.key,
+                            bg: style.bg,
+                            text: style.text,
+                            border: style.border,
                             description: apt.description,
                             location: apt.location,
                             timezone: apt.timezone,
@@ -167,124 +115,6 @@ export default function Appointments() {
         }
     };
 
-    // Load Partners/Employees/Borrowers based on selection
-    const loadAssignedForOptions = async (type) => {
-        try {
-            setLoadingAssignedFor(true);
-            if (type === 'partner') {
-                const response = await fetchPartners({});
-                setPartners(response.data || []);
-            } else if (type === 'employee') {
-                const response = await fetchEmployees({});
-                setEmployees(response.employees || []);
-            } else if (type === 'borrower') {
-                const response = await fetchAllBorrowers({});
-                setBorrowers(response.data || []);
-            }
-        } catch (error) {
-            console.error(`Failed to load ${type}s`, error);
-            toast.error(`Failed to load ${type}s`);
-        } finally {
-            setLoadingAssignedFor(false);
-        }
-    };
-
-    // Load assigned for options when type changes
-    useEffect(() => {
-        if (!viewMode && assignedForType) {
-            loadAssignedForOptions(assignedForType);
-        }
-    }, [assignedForType, viewMode]);
-
-    // Initialize Modal
-    useEffect(() => {
-        if (eventModalRef.current && !modalInstance) {
-            const mod = new Modal(eventModalRef.current, { keyboard: false });
-            setModalInstance(mod);
-        }
-    }, [modalInstance]);
-
-
-
-
-
-
-
-
-    // Sync error classes to Flatpickr containers
-    useEffect(() => {
-        const dateEl = document.getElementById('event-start-date');
-        if (dateEl) {
-            if (formErrors.appointment_date) dateEl.classList.add('is-invalid');
-            else dateEl.classList.remove('is-invalid');
-        }
-    }, [formErrors]);
-
-    // Initialize Flatpickr
-    useEffect(() => {
-        const dateInput = document.getElementById("event-start-date");
-        if (dateInput) {
-            flatpickr(dateInput, {
-                mode: "single",
-                minDate: "today",
-                defaultDate: formData.date,
-                onChange: (selectedDates, dateStr) => {
-                    setFormData(prev => ({ ...prev, date: dateStr }));
-                }
-            });
-        }
-    }, [viewMode, modalInstance]);
-
-    // Initialize Summernote
-    useEffect(() => {
-        // Only initialize if we are in "Edit" mode (form visible) and ref exists
-        if (!viewMode && descriptionEditorRef.current) {
-            const $editor = $(descriptionEditorRef.current);
-
-            $editor.summernote({
-                height: 200,
-                dialogsInBody: true, // Fix for Bootstrap Modal
-                placeholder: 'Enter detailed description...',
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ],
-                callbacks: {
-                    onChange: (contents) => {
-                        // Summernote sets value to <p><br></p> when empty, check for that
-                        const isEmpty = contents === '<p><br></p>';
-                        setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
-                    }
-                }
-            });
-
-            // Set initial content
-            $editor.summernote('code', formData.description || '');
-
-            return () => {
-                if ($editor.length > 0) {
-                    $editor.summernote('destroy');
-                }
-            };
-        }
-    }, [viewMode, modalInstance]); // Re-run when viewMode toggles to ensure editor is created/destroyed properly
-
-    // Sync formData description updates back to Summernote if it changes externally (e.g. reset)
-    // Be careful not to cause loops. Usually optional if one-way binding is sufficient.
-
-
-    // Update upcoming events list
-    useEffect(() => {
-        // Sort by start date
-        const sorted = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
-        // Filter only future events if needed, but keeping logic consistent with previous requirement
-        const future = sorted.filter(e => new Date(e.start) >= new Date());
-        setUpcomingEvents(future.slice(0, 10)); // unexpected list size might be huge, limiting to 10
-    }, [events]);
-
     const str_dt_fmt = (date) => {
         return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     };
@@ -297,288 +127,37 @@ export default function Appointments() {
         return `${h}:${m} ${ampm}`;
     };
 
-    const formatDate = (dateObj) => {
-        const d = new Date(dateObj);
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        return `${d.getDate() < 10 ? '0' + d.getDate() : d.getDate()} ${months[d.getMonth()]},${d.getFullYear()}`;
-    };
+    // Update upcoming events list (From Today)
+    useEffect(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+
+        const sorted = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
+        const fromToday = sorted.filter(e => new Date(e.start) >= today);
+        setUpcomingEvents(fromToday.slice(0, 15)); // Show up to 15
+    }, [events]);
 
     // Actions
     const handleNewEvent = (dateStr) => {
-        setIsNewEvent(true);
-        setViewMode(false);
-        setSelectedEventId(null);
-        setAssignedForType('employee');
-        setAssignedForId('');
-        const now = new Date();
-        const nextHour = new Date(now.getTime() + 60 * 60000);
-        // Round to nearest 15 mins for cleaner UI default? Optional. 
-        // For now just hardcode sane defaults or use close approximations.
-
-        setFormData({
-            subject: '',
-            category: 'Business Review',
-            location: 'UTC (GMT+00:00)',
-            description: '',
-            date: dateStr || new Date().toISOString().split('T')[0],
-            timeStart: '09:00',
-            timeEnd: '10:00',
-            timeSlotId: '',
-        });
-
-        // Manual reset for Summernote if it exists
-        if (descriptionEditorRef.current) {
-            $(descriptionEditorRef.current).summernote('code', '');
-        }
-
-        setFormErrors({});
-        if (modalInstance) modalInstance.show();
-    };
-
-    const handleEventClick = async (info) => {
-        const calEvent = info.event;
-        const eventId = calEvent.id;
-        setIsNewEvent(false);
-        setViewMode(true);
-        setSelectedEventId(eventId);
-        setFormErrors({});
-
-        // --- 1. SET INITIAL DATA IMMEDIATELY ---
-        const startInit = calEvent.start;
-        const endInit = calEvent.end || new Date(startInit.getTime() + 60 * 60000);
-
-        setDisplayData({
-            title: calEvent.title || "Appointment",
-            date: formatDate(startInit),
-            timeStart: tConvert(startInit.toTimeString().slice(0, 5)),
-            timeEnd: tConvert(endInit.toTimeString().slice(0, 5)),
-            location: calEvent.extendedProps?.location || "Virtual",
-            description: calEvent.extendedProps?.description || "No Description",
-            scheduledBy: "FCH Admin",
-            assignedFor: calEvent.extendedProps?.assigned_for?.name || "N/A",
-        });
-
-        const h = startInit.getHours().toString().padStart(2, '0');
-        const m = startInit.getMinutes().toString().padStart(2, '0');
-        const hh_mm = `${h}:${m}`;
-
-        const h_end = endInit.getHours().toString().padStart(2, '0');
-        const m_end = endInit.getMinutes().toString().padStart(2, '0');
-        const hh_mm_end = `${h_end}:${m_end}`;
-
-        setFormData(prev => ({
-            ...prev,
-            subject: calEvent.title,
-            category: calEvent.classNames[0] || 'Business Review',
-            date: startInit.toISOString().split('T')[0],
-            timeStart: hh_mm,
-            timeEnd: hh_mm_end,
-        }));
-
-        if (modalInstance) modalInstance.show();
-
-        // --- 2. FETCH FULL DETAILS IN BACKGROUND ---
-        try {
-            const apt = await fetchAppointmentById(eventId);
-
-            // Robust date parsing (replace space with T for ISO compatibility)
-            const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
-            const start = dateStr ? new Date(dateStr) : new Date();
-            const duration = apt.duration_minutes || 60;
-            const end = new Date(start.getTime() + duration * 60000);
-
-            setDisplayData({
-                title: apt.subject || calEvent.title,
-                date: formatDate(start),
-                timeStart: tConvert(start.toTimeString().slice(0, 5)),
-                timeEnd: tConvert(end.toTimeString().slice(0, 5)),
-                location: apt.location || (apt.meeting_type === 'online' ? "Virtual" : apt.timezone) || "Virtual",
-                description: apt.description || "No Description",
-                scheduledBy: apt.scheduled_by?.name || "FCH Admin",
-                assignedFor: apt.assigned_for?.name || "N/A",
-            });
-
-            const h_full = start.getHours().toString().padStart(2, '0');
-            const m_full = start.getMinutes().toString().padStart(2, '0');
-            const hh_mm_full = `${h_full}:${m_full}`;
-
-            const h_end_full = end.getHours().toString().padStart(2, '0');
-            const m_end_full = end.getMinutes().toString().padStart(2, '0');
-            const hh_mm_end_full = `${h_end_full}:${m_end_full}`;
-
-            setFormData({
-                subject: apt.subject,
-                category: apt.meeting_type || 'Business Review',
-                location: apt.timezone || "UTC (GMT+00:00)",
-                description: apt.description || "",
-                date: start.toISOString().split('T')[0],
-                timeStart: hh_mm_full,
-                timeEnd: hh_mm_end_full,
-                timeSlotId: '', // NO LONGER USED
-            });
-
-            // Determine Assigned For Type
-            let type = 'employee';
-            if (apt.assigned_for?.entity_type) {
-                type = apt.assigned_for.entity_type.toLowerCase();
-            } else if (apt.assigned_for) {
-                // Heuristic if entity_type is missing
-                const foundInEmployees = employees.some(e => e.id === apt.assigned_for.id);
-                const foundInPartners = partners.some(p => p.id === apt.assigned_for.id);
-                const foundInBorrowers = borrowers.some(b => b.id === apt.assigned_for.id);
-
-                if (foundInPartners) type = 'partner';
-                else if (foundInBorrowers) type = 'borrower';
-                else type = 'employee';
-            }
-
-            setAssignedForType(type);
-            setAssignedForId(apt.assigned_for?.id || '');
-
-            // Manual Summernote reset/sync
-            if (descriptionEditorRef.current) {
-                $(descriptionEditorRef.current).summernote('code', apt.description || '');
-            }
-
-        } catch (error) {
-            console.error("Failed to fetch appointment details", error);
+        if (appointmentModalRef.current) {
+            appointmentModalRef.current.create(dateStr);
         }
     };
 
-    const handleDropResize = (info) => {
-        // Optimistic update
+    const handleEventClick = (info) => {
+        if (appointmentModalRef.current) {
+            appointmentModalRef.current.show(info.event.id);
+        }
+    };
+
+    const handleDropResize = async (info) => {
+        // TODO: Call API to update if desired, for now just update local state
         const calEvent = info.event;
         setEvents(prev => prev.map(e => String(e.id) === String(calEvent.id) ? {
             ...e,
             start: calEvent.start,
             end: calEvent.end,
-            allDay: calEvent.allDay
         } : e));
-
-        // TODO: Call API to update
-    };
-
-    const toggleEditMode = (e) => {
-        if (e) e.preventDefault();
-        const nextMode = !viewMode;
-        setViewMode(nextMode);
-    };
-
-    const handleDelete = async () => {
-        if (selectedEventId) {
-            try {
-                setIsDeleting(true);
-                await deleteAppointment(selectedEventId);
-                toast.success('Appointment deleted successfully');
-                if (modalInstance) modalInstance.hide();
-                loadAppointments();
-            } catch (error) {
-                console.error("Failed to delete appointment", error);
-                toast.error('Failed to delete appointment');
-            } finally {
-                setIsDeleting(false);
-            }
-        }
-    };
-
-    const assignedOptions = (() => {
-        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
-        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
-        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
-        return [];
-    })();
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setFormErrors({});
-
-        const subject = formData.subject;
-        const category = formData.category;
-        const dateVal = formData.date;
-        const locationVal = formData.location; // Time Zone
-
-        // Fetch description directly from Summernote to ensure we have the latest content
-        let descVal = formData.description;
-        if (descriptionEditorRef.current) {
-            descVal = $(descriptionEditorRef.current).summernote('code');
-            if (descVal === '<p><br></p>') descVal = '';
-        }
-
-        // Construct Start and End Date
-        let startDateTime = new Date(`${dateVal}T00:00:00`);
-        let durationMinutes = 60; // Default
-
-        if (formData.timeStart) {
-            startDateTime = new Date(`${dateVal}T${formData.timeStart}`);
-            if (formData.timeEnd) {
-                // Handle late night spanning next day? Not complex for now, assume same day.
-                // If end time < start time, assume next day?
-                // Let's stick to simple same-day logic unless customized.
-                let endDateTime = new Date(`${dateVal}T${formData.timeEnd}`);
-                if (endDateTime <= startDateTime) {
-                    // Maybe user selected past midnight?
-                    // or just invalid.
-                    // Simple validation:
-                }
-
-                durationMinutes = (endDateTime - startDateTime) / 60000;
-
-                if (durationMinutes <= 0) {
-                    // Fallback or error?
-                    // Let's assume minimum 15 mins
-                    durationMinutes = 15;
-                }
-            }
-        } else {
-            durationMinutes = 0; // Force validation if no time selected
-        }
-
-        // Format date for API: "2026-01-01 14:00:00"
-        const toMySQLDate = (date) => {
-            const pad = (num) => (num < 10 ? '0' + num : num);
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-        };
-
-
-
-        const currentType = APPOINTMENT_TYPE_OPTIONS.find(opt => opt.value === category);
-
-        const payload = {
-            subject: subject,
-            description: descVal,
-            appointment_date: dateVal ? toMySQLDate(startDateTime) : null,
-            timezone: locationVal || null,
-            duration_minutes: durationMinutes > 0 ? durationMinutes : null,
-            meeting_type: category || null,
-            entity_type: assignedForType,
-            entity_id: assignedForId ? parseInt(assignedForId) : null,
-            assigned_for: assignedForId ? parseInt(assignedForId) : null,
-        };
-
-        try {
-            setIsSubmitting(true);
-            if (selectedEventId && !isNewEvent) {
-                // Update
-                const response = await updateAppointment(selectedEventId, payload);
-                toast.success(response.message || 'Appointment updated successfully');
-                loadAppointments();
-            } else {
-                // Create
-                const response = await createAppointment(payload);
-                toast.success(response.message || 'Appointment created successfully');
-                loadAppointments();
-            }
-            modalInstance.hide();
-        } catch (error) {
-            console.error("Failed to save appointment", error);
-            if (error.response && error.response.data && error.response.data.errors) {
-                setFormErrors(error.response.data.errors);
-            } else {
-                toast.error(error.response?.data?.message || 'Failed to save appointment');
-            }
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     return (
@@ -587,7 +166,7 @@ export default function Appointments() {
                 <div className="row">
                     <div className="col-12">
                         <div className="row">
-                            <div className="col-xl-3">
+                            <div className="col-lg-4 col-xl-3">
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
@@ -597,7 +176,7 @@ export default function Appointments() {
                                 <div>
                                     <h5 className="mb-1">Upcoming Appointment</h5>
                                     <p className="text-muted">Don't miss scheduled appointments</p>
-                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "600px" }}>
+                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "750px" }}>
                                         <div id="upcoming-event-list">
                                             {loading && (
                                                 <>
@@ -641,30 +220,41 @@ export default function Appointments() {
                                                     }
                                                 }
 
+                                                const eventStyles = evt.extendedProps?.bg ? {
+                                                    bg: evt.extendedProps.bg,
+                                                    text: evt.extendedProps.text,
+                                                    border: evt.extendedProps.border,
+                                                    key: evt.extendedProps.colorKey || 'info'
+                                                } : { bg: '#cff4fc', text: '#055160', border: '#9eeaf9', key: 'info' };
+
                                                 let badge;
-                                                if (evt.allDay || !e) {
-                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">Full day event</small>;
+                                                const startTime = s ? tConvert(s.toTimeString().slice(0, 5)) : '';
+                                                const endTime = e ? tConvert(e.toTimeString().slice(0, 5)) : '';
+
+                                                if (evt.allDay || !e || !endTime) {
+                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>Full day</small>;
                                                 } else {
-                                                    const t1 = tConvert(s.toTimeString().slice(0, 5));
-                                                    const t2 = tConvert(e.toTimeString().slice(0, 5));
-                                                    badge = <small className="badge bg-primary-subtle text-primary ms-auto">{t1} to {t2}</small>;
+                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>{startTime} to {endTime}</small>;
                                                 }
-                                                const colorClass = (evt.className || 'bg-primary-subtle').split('-')[1];
 
                                                 return (
-                                                    <div className="card mb-3" key={evt.id}>
+                                                    <div className="card mb-3 upcoming-event-card cursor-pointer" key={evt.id}
+                                                        onClick={() => handleEventClick({ event: { id: evt.id } })}
+                                                        style={{ transition: 'all 0.3s ease' }}>
                                                         <div className="card-body">
-                                                            <div className="d-flex mb-3">
+                                                            <div className="d-flex mb-3 align-items-center">
                                                                 <div className="flex-grow-1">
-                                                                    <i className={`mdi mdi-checkbox-blank-circle me-2 text-${colorClass}`}></i>
-                                                                    <span className="fw-medium">{dateStr}</span>
+                                                                    <i className="mdi mdi-checkbox-blank-circle me-2" style={{ color: eventStyles.text, fontSize: '10px' }}></i>
+                                                                    <span className="fw-medium text-dark">{dateStr}</span>
                                                                 </div>
                                                                 <div className="flex-shrink-0">
                                                                     {badge}
                                                                 </div>
                                                             </div>
-                                                            <h6 className="card-title fs-16">{evt.title}</h6>
-                                                            <p className="text-muted text-truncate-two-lines mb-0">{evt.extendedProps?.description || evt.description}</p>
+                                                            <h6 className="card-title fs-16" style={{ color: eventStyles.text }}>{evt.title}</h6>
+                                                            <p className="text-muted text-truncate-two-lines mb-0">
+                                                                {(evt.extendedProps?.description || evt.description || "").replace(/<[^>]*>?/gm, '')}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 )
@@ -674,11 +264,11 @@ export default function Appointments() {
                                 </div>
                             </div>
 
-                            <div className="col-xl-9">
+                            <div className="col-lg-8 col-xl-9">
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         {loading ? (
-                                            <div style={{ minHeight: '600px' }} className="placeholder-glow">
+                                            <div style={{ minHeight: '750px' }} className="placeholder-glow">
                                                 <div className="d-flex justify-content-between mb-4">
                                                     <div className="d-flex gap-1">
                                                         <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
@@ -716,7 +306,7 @@ export default function Appointments() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div id="calendar" style={{ minHeight: '600px' }}>
+                                            <div id="calendar" style={{ minHeight: '750px' }}>
                                                 <FullCalendar
                                                     ref={calendarRef}
                                                     plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
@@ -748,6 +338,34 @@ export default function Appointments() {
                                                     editable={true}
                                                     droppable={true}
                                                     selectable={true}
+                                                    height={750}
+                                                    eventDidMount={(info) => {
+                                                        // Force style overrides directly on the DOM
+                                                        const { backgroundColor, borderColor, textColor } = info.event;
+                                                        if (backgroundColor) {
+                                                            info.el.style.backgroundColor = backgroundColor;
+                                                            info.el.style.setProperty('background-color', backgroundColor, 'important');
+                                                        }
+                                                        if (borderColor) {
+                                                            info.el.style.borderColor = borderColor;
+                                                            info.el.style.setProperty('border-color', borderColor, 'important');
+                                                            // Also apply to the dot for list/day views
+                                                            const dotEl = info.el.querySelector('.fc-daygrid-event-dot');
+                                                            if (dotEl) {
+                                                                dotEl.style.borderColor = borderColor;
+                                                                dotEl.style.setProperty('border-color', borderColor, 'important');
+                                                            }
+                                                        }
+                                                        if (textColor) {
+                                                            const titleEl = info.el.querySelector('.fc-event-title') || info.el.querySelector('.fc-list-event-title');
+                                                            if (titleEl) {
+                                                                titleEl.style.color = textColor;
+                                                                titleEl.style.setProperty('color', textColor, 'important');
+                                                            }
+                                                            info.el.style.color = textColor;
+                                                            info.el.style.setProperty('color', textColor, 'important');
+                                                        }
+                                                    }}
                                                     dateClick={(arg) => handleNewEvent(arg.dateStr)}
                                                     eventClick={handleEventClick}
                                                     eventDrop={handleDropResize}
@@ -772,555 +390,57 @@ export default function Appointments() {
 
                         <div style={{ clear: 'both' }}></div>
 
-                        {/* Modal */}
-
-                        <div
-                            className="modal"
-                            id="event-modal"
-                            tabIndex="-1"
-                            ref={eventModalRef}
-                        >
-                            <div
-                                className="modal-dialog modal-dialog-centered modal-medium"
-                                style={{ maxWidth: '600px' }} // Medium width
-                            >
-                                <div className="modal-content border-0">
-                                    <div className="modal-header p-3 bg-info-subtle">
-                                        <h5 className="modal-title" id="modal-title">
-                                            {viewMode
-                                                ? displayData.title || "Appointment"
-                                                : isNewEvent
-                                                    ? "Add Appointment"
-                                                    : "Edit Appointment"}
-                                        </h5>
-                                        <button
-                                            type="button"
-                                            className="btn-close"
-                                            data-bs-dismiss="modal"
-                                            aria-hidden="true"
-                                        ></button>
-                                    </div>
-
-                                    <div className="modal-body p-4">
-                                        <form
-                                            className="needs-validation"
-                                            name="event-form"
-                                            id="form-event"
-                                            noValidate
-                                            onSubmit={handleSubmit}
-                                        >
-                                            {/* --- Details View --- */}
-                                            <div
-                                                className="event-details"
-                                                style={{ display: viewMode ? "block" : "none" }}
-                                            >
-                                                <div className="d-flex justify-content-end mb-2">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm px-3"
-                                                        onClick={toggleEditMode}
-                                                        style={{
-                                                            backgroundColor: "#f0f2f7",
-                                                            color: "#405189",
-                                                            border: "none",
-                                                            fontWeight: "500",
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-calendar-event-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            style={{ color: "#495057" }}
-                                                        >
-                                                            {displayData.date || "No Date Set"}
-                                                        </h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-time-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            style={{ color: "#495057" }}
-                                                        >
-                                                            {displayData.timeStart} - {displayData.timeEnd}
-                                                        </h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-map-pin-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0 text-primary-emphasis"
-                                                        >
-                                                            {displayData.location}
-                                                        </h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-user-star-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            style={{ color: "#495057" }}
-                                                        >
-                                                            Scheduled By:{" "}
-                                                            <span className="text-muted fw-normal">
-                                                                {displayData.scheduledBy || "FCH Admin"}
-                                                            </span>
-                                                        </h6>
-                                                    </div>
-                                                </div>
-
-                                                <div className="d-flex align-items-center mb-4">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-user-follow-line text-muted fs-18"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            style={{ color: "#495057" }}
-                                                        >
-                                                            Assigned For:{" "}
-                                                            <span className="text-muted fw-normal">
-                                                                {displayData.assignedFor}
-                                                            </span>
-                                                        </h6>
-                                                    </div>
-                                                </div>
-
-                                                <div
-                                                    className="text-end mt-4 pt-2"
-                                                    style={{ display: viewMode ? "block" : "none" }}
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        className="btn px-4 py-2"
-                                                        onClick={handleDelete}
-                                                        disabled={isDeleting}
-                                                        style={{
-                                                            backgroundColor: "#fff1f0",
-                                                            color: "#ff4d4f",
-                                                            border: "none",
-                                                            borderRadius: "6px",
-                                                            fontWeight: "500",
-                                                        }}
-                                                    >
-                                                        {isDeleting ? (
-                                                            <>
-                                                                <span
-                                                                    className="spinner-border spinner-border-sm me-1"
-                                                                    role="status"
-                                                                    aria-hidden="true"
-                                                                ></span>{" "}
-                                                                Deleting...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <i
-                                                                    className="ri-close-line align-bottom me-1"
-                                                                    style={{ fontSize: "18px" }}
-                                                                ></i>{" "}
-                                                                Delete
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* --- Form View --- */}
-                                            <div
-                                                className="row event-form"
-                                                style={{ display: !viewMode ? "flex" : "none" }}
-                                            >
-                                                {/* Appointment Title */}
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label">Appointment Title</label>
-                                                    <input
-                                                        type="text"
-                                                        className={`form-control ${formErrors.subject ? "is-invalid" : ""
-                                                            }`}
-                                                        placeholder="Enter Appointment Title"
-                                                        name="subject"
-                                                        id="event-title"
-                                                        value={formData.subject}
-                                                        onChange={(e) =>
-                                                            setFormData((prev) => ({ ...prev, subject: e.target.value }))
-                                                        }
-                                                    />
-                                                    {formErrors.subject && (
-                                                        <div
-                                                            className="invalid-feedback d-block"
-                                                            style={{ color: "#f1734f" }}
-                                                        >
-                                                            {formErrors.subject}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Appointment By */}
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label">Appointment By</label>
-                                                    <div className="d-flex gap-3">
-                                                        {isHost && (
-                                                            <div className="form-check mb-2">
-                                                                <input
-                                                                    className="form-check-input"
-                                                                    type="radio"
-                                                                    name="assignedForType"
-                                                                    id="typePartner"
-                                                                    value="partner"
-                                                                    checked={assignedForType === "partner"}
-                                                                    onChange={() => {
-                                                                        setAssignedForType("partner");
-                                                                        setAssignedForId("");
-                                                                    }}
-                                                                />
-                                                                <label className="form-check-label" htmlFor="typePartner">
-                                                                    Partner
-                                                                </label>
-                                                            </div>
-                                                        )}
-                                                        <div className="form-check mb-2">
-                                                            <input
-                                                                className="form-check-input"
-                                                                type="radio"
-                                                                name="assignedForType"
-                                                                id="typeEmployee"
-                                                                value="employee"
-                                                                checked={assignedForType === "employee"}
-                                                                onChange={() => {
-                                                                    setAssignedForType("employee");
-                                                                    setAssignedForId("");
-                                                                }}
-                                                            />
-                                                            <label className="form-check-label" htmlFor="typeEmployee">
-                                                                Employee
-                                                            </label>
-                                                        </div>
-                                                        <div className="form-check mb-2">
-                                                            <input
-                                                                className="form-check-input"
-                                                                type="radio"
-                                                                name="assignedForType"
-                                                                id="typeBorrower"
-                                                                value="borrower"
-                                                                checked={assignedForType === "borrower"}
-                                                                onChange={() => {
-                                                                    setAssignedForType("borrower");
-                                                                    setAssignedForId("");
-                                                                }}
-                                                            />
-                                                            <label className="form-check-label" htmlFor="typeBorrower">
-                                                                Borrower
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Assigned Entity Select */}
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label">
-                                                        Select{" "}
-                                                        {assignedForType
-                                                            ? assignedForType.charAt(0).toUpperCase() +
-                                                            assignedForType.slice(1)
-                                                            : "Entity"}
-                                                    </label>
-                                                    {loadingAssignedFor ? (
-                                                        <Skeleton height="38px" className="mb-2" borderRadius="6px" />
-                                                    ) : (
-                                                        <Dropdown
-                                                            id="event-assigned-for"
-                                                            value={assignedForId}
-                                                            options={assignedOptions}
-                                                            onChange={(e) => setAssignedForId(e.value)}
-                                                            optionLabel="label"
-                                                            disabled={loadingAssignedFor}
-                                                            filter
-                                                            showClear
-                                                            placeholder={`Select ${assignedForType}...`}
-                                                            className={`w-100 ${formErrors.assigned_for || formErrors.assigned_for_id ? 'p-invalid' : ''}`}
-                                                            emptyMessage="No results found"
-                                                            appendTo="self"
-                                                        />
-                                                    )}
-                                                    {(formErrors.assigned_for || formErrors.assigned_for_id) && (
-                                                        <div
-                                                            className="invalid-feedback d-block"
-                                                            style={{ color: "#f1734f" }}
-                                                        >
-                                                            {formErrors.assigned_for || formErrors.assigned_for_id}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Meeting Type */}
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label">Type</label>
-                                                    <Dropdown
-                                                        id="event-category"
-                                                        value={formData.category}
-                                                        options={APPOINTMENT_TYPE_OPTIONS}
-                                                        onChange={(e) => setFormData((prev) => ({ ...prev, category: e.value }))}
-                                                        placeholder="Select Type"
-                                                        className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
-                                                        appendTo="self"
-                                                    />
-                                                    {formErrors.meeting_type && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {formErrors.meeting_type}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Event Date */}
-                                                <div className="col-6 mb-3">
-                                                    <label className="form-label">Event Date</label>
-                                                    <div className="input-group">
-                                                        <input
-                                                            type="text"
-                                                            id="event-start-date"
-                                                            className={`form-control flatpickr flatpickr-input ${formErrors.appointment_date ? "is-invalid" : ""
-                                                                }`}
-                                                            placeholder="Select date"
-                                                            readOnly
-                                                            value={formData.date}
-                                                        />
-                                                        <span className="input-group-text">
-                                                            <i className="ri-calendar-event-line"></i>
-                                                        </span>
-                                                    </div>
-                                                    {formErrors.appointment_date && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {formErrors.appointment_date}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Time Slot */}
-                                                <div className="col-6 mb-3">
-                                                    <label className="form-label">Time Slot</label>
-                                                    <div className="d-flex gap-2 align-items-center">
-                                                        <div className="flex-grow-1">
-                                                            <Dropdown
-                                                                id="time-start-select"
-                                                                value={formData.timeStart}
-                                                                options={TIME_SLOTS}
-                                                                onChange={(e) => {
-                                                                    const val = e.value;
-                                                                    if (val) {
-                                                                        const [h, m] = val.split(':').map(Number);
-                                                                        let endH = h + 1;
-                                                                        let endM = m;
-                                                                        const nextSlotVal = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                        setFormData(prev => ({ ...prev, timeStart: val, timeEnd: nextSlotVal }));
-                                                                    } else {
-                                                                        setFormData(prev => ({ ...prev, timeStart: val }));
-                                                                    }
-                                                                }}
-                                                                filter
-                                                                placeholder="Start Time"
-                                                                className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
-                                                                appendTo="self"
-                                                            />
-                                                        </div>
-                                                        <div>to</div>
-                                                        <div className="flex-grow-1">
-                                                            <Dropdown
-                                                                id="time-end-select"
-                                                                value={formData.timeEnd}
-                                                                options={TIME_SLOTS}
-                                                                onChange={(e) => setFormData(prev => ({ ...prev, timeEnd: e.value }))}
-                                                                filter
-                                                                placeholder="End Time"
-                                                                className={`w-100 ${formErrors.duration_minutes ? 'p-invalid' : ''}`}
-                                                                appendTo="self"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    {formErrors.duration_minutes && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {formErrors.duration_minutes}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Timezone */}
-                                                <div className="col-12 mb-3">
-                                                    <label htmlFor="event-location">Time Zone</label>
-                                                    <Dropdown
-                                                        id="event-location"
-                                                        value={formData.location}
-                                                        options={TIMEZONE_OPTIONS}
-                                                        onChange={(e) => setFormData((prev) => ({ ...prev, location: e.value }))}
-                                                        optionLabel="label"
-                                                        placeholder="Select time zone"
-                                                        className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`}
-                                                        appendTo="self"
-                                                    />
-                                                    {formErrors.timezone && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {formErrors.timezone}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <input
-                                                    type="hidden"
-                                                    id="eventid"
-                                                    name="eventid"
-                                                    value={selectedEventId || ""}
-                                                />
-
-                                                {/* Description */}
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label">Description</label>
-                                                    <div ref={descriptionEditorRef}></div>
-                                                    {formErrors.description && (
-                                                        <div className="invalid-feedback d-block">
-                                                            {formErrors.description}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Buttons */}
-                                            <div
-                                                className="hstack gap-2 justify-content-end mt-4"
-                                                style={{ display: !viewMode ? "flex" : "none" }}
-                                            >
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-light"
-                                                    onClick={() => setViewMode(true)}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="btn btn-success"
-                                                    id="btn-save-event"
-                                                    disabled={isSubmitting}
-                                                >
-                                                    {isSubmitting ? (
-                                                        <>
-                                                            <span
-                                                                className="spinner-border spinner-border-sm me-1"
-                                                                role="status"
-                                                                aria-hidden="true"
-                                                            ></span>{" "}
-                                                            Saving data...
-                                                        </>
-                                                    ) : isNewEvent ? (
-                                                        "Confirm Appointment"
-                                                    ) : (
-                                                        "Update Appointment"
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        <style>
+                            {`
+                                .fc-event, 
+                                .fc-daygrid-event, 
+                                .fc-daygrid-block-event, 
+                                .fc-h-event, 
+                                .fc-v-event {
+                                    padding: 6px 12px !important;
+                                    font-size: 13px !important;
+                                    border-radius: 6px !important;
+                                    box-shadow: none !important;
+                                    margin-top: 2px !important;
+                                    margin-bottom: 2px !important;
+                                    min-height: 32px !important;
+                                    border-width: 1px !important; /* Subtle border same as bg */
+                                }
+                                .fc-event-main {
+                                    padding: 2px 4px !important;
+                                    color: inherit !important;
+                                    display: flex !important;
+                                    align-items: center !important;
+                                }
+                                .fc-event-title, .fc-event-main-frame {
+                                    font-weight: 600 !important;
+                                    color: inherit !important;
+                                    white-space: nowrap !important;
+                                    overflow: hidden !important;
+                                    text-overflow: ellipsis !important;
+                                }
+                                .fc-daygrid-event-dot {
+                                    border-color: inherit !important;
+                                }
+                                .fc-event:hover {
+                                    opacity: 0.85 !important;
+                                    transform: translateY(-1px);
+                                    transition: all 0.2s ease;
+                                }
+                                .upcoming-event-card:hover {
+                                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                                    transform: translateY(-2px);
+                                    border-color: #405189 !important;
+                                }
+                                .cursor-pointer {
+                                    cursor: pointer !important;
+                                }
+                            `}
+                        </style>
                     </div>
                 </div>
+                <AppointmentModal ref={appointmentModalRef} onSuccess={loadAppointments} />
             </div>
-            <style>{`
-                .note-editor.note-frame {
-                    border: 1px solid #e2e5ec !important;
-                    border-radius: 0.4rem !important;
-                    overflow: hidden;
-                    box-shadow: none !important;
-                    background-color: #fff !important;
-                }
-                .note-toolbar {
-                    background-color: #f3f6f9 !important;
-                    border-bottom: 1px solid #e2e5ec !important;
-                    padding: 5px 10px !important;
-                    margin: 0 !important;
-                }
-                .note-btn-group {
-                    margin-right: 8px !important;
-                }
-                .note-btn {
-                    background-color: #fff !important;
-                    border: 1px solid #e2e5ec !important;
-                    color: #495057 !important;
-                    height: 32px !important;
-                    min-width: 32px !important;
-                    padding: 4px 8px !important;
-                    font-size: 13px !important;
-                    line-height: 1.2 !important;
-                    transition: all 0.2s ease;
-                    box-shadow: none !important;
-                    display: inline-flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-                .note-btn:hover {
-                    background-color: #eef1f6 !important;
-                    border-color: #d1d5db !important;
-                    color: #405189 !important;
-                }
-                .note-btn.active {
-                    background-color: #405189 !important;
-                    color: #fff !important;
-                    border-color: #405189 !important;
-                }
-                .note-editable {
-                    background-color: #fff !important;
-                    font-family: var(--vz-body-font-family);
-                    font-size: 14px;
-                    color: #495057;
-                    padding: 15px !important;
-                }
-                .note-placeholder {
-                    padding: 15px !important;
-                }
-                .note-status-output {
-                    display: none !important;
-                }
-                .note-resizebar {
-                    border-top: 1px solid #e2e5ec !important;
-                    background-color: #f3f6f9 !important;
-                }
-                .note-btn-group .note-btn {
-                    border-radius: 0 !important;
-                    margin-left: -1px !important;
-                }
-                .note-btn-group .note-btn:first-child {
-                    border-top-left-radius: 4px !important;
-                    border-bottom-left-radius: 4px !important;
-                    margin-left: 0 !important;
-                }
-                .note-btn-group .note-btn:last-child {
-                    border-top-right-radius: 4px !important;
-                    border-bottom-right-radius: 4px !important;
-                }
-                .note-dropdown-menu {
-                    border: 1px solid #e2e5ec !important;
-                    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
-                }
-            `}</style>
         </div>
     );
 }

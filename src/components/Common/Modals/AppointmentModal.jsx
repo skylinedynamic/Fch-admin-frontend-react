@@ -12,9 +12,13 @@ import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppoi
 import { fetchPartners } from '../../../modules/partner/services';
 import { fetchEmployees } from '../../../modules/employee/services';
 import { fetchAllBorrowers } from '../../../modules/borrower/services';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
+
+// Styles
+import '../../../assets/css/AppointmentModal.css';
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
@@ -22,10 +26,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const descriptionEditorRef = useRef(null);
     const [modalInstance, setModalInstance] = useState(null);
     const [viewMode, setViewMode] = useState(true);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isNewEvent, setIsNewEvent] = useState(false);
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
     const [assignedForType, setAssignedForType] = useState('partner');
@@ -57,7 +64,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         description: '',
         scheduledBy: '',
         assignedFor: '',
+        appointmentCode: '',
+        category: '',
     });
+
+    const [originalData, setOriginalData] = useState(null);
 
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
     const [showDateSkeleton, setShowDateSkeleton] = useState(false);
@@ -89,18 +100,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             }
 
             try {
-                setIsCheckingAvailability(true);
-                // Determine what exactly changed
-                const dateOrAssigneeChanged = prevDateRef.current !== formData.date;
+                // User Request: Only show skeleton when time slot changes
                 const timeChanged = prevTimeStartRef.current !== formData.timeStart ||
                     prevTimeEndRef.current !== formData.timeEnd;
+                const isFirstCheck = !prevDateRef.current;
 
-                // Never show skeleton loader (removed as per user request)
+                if (timeChanged && !isFirstCheck) {
+                    setIsCheckingAvailability(true);
+                }
 
                 setAvailabilityConflicts(null);
                 const response = await checkAvailability({
                     assigned_for: formData.entity_id,
-                    appointment_date: `${formData.date} ${formData.timeStart}:00`
+                    appointment_date: `${formData.date} ${formData.timeStart}:00`,
+                    id: isNewEvent ? undefined : selectedEventId
                 });
 
                 if (response.data && response.data.available === false) {
@@ -115,29 +128,32 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         const cStart = c.start_time || "";
                         const cEnd = c.end_time || "";
                         // Standard overlap check: (StartA < EndB) && (EndA > StartB)
-                        return (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                        // AND exclude the CURRENT appointment itself by ID
+                        const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                        return (formData.timeStart < cEnd && formData.timeEnd > cStart) && !isSelf;
                     });
 
-                    // Only show conflict message when TIME SLOT changes (not date)
-                    if (matchingConflict && timeChanged && !isSystemShiftRef.current) {
+                    // Logic: If we are EDITING and the user has NOT changed the time/date, ignore conflicts (it's likely the current appointment)
+                    const hasChanged = isNewEvent ||
+                        formData.date !== originalData?.date ||
+                        formData.timeStart !== originalData?.timeStart ||
+                        formData.timeEnd !== originalData?.timeEnd;
+
+                    if (matchingConflict) {
                         setLastConflictingAttempt({
                             attemptedStart: formData.timeStart,
                             attemptedEnd: formData.timeEnd,
                             conflict: matchingConflict
                         });
                         setIsConflictVisible(true);
-                    } else if (matchingConflict && !timeChanged && isConflictVisible) {
-                        setIsConflictVisible(true);
-                    } else if (!matchingConflict && timeChanged && !isSystemShiftRef.current) {
+                    } else {
                         setIsConflictVisible(false);
                         setLastConflictingAttempt(null);
                     }
                 } else {
                     setAvailabilityConflicts(null);
-                    if (timeChanged && !isSystemShiftRef.current) {
-                        setLastConflictingAttempt(null);
-                        setIsConflictVisible(false);
-                    }
+                    setLastConflictingAttempt(null);
+                    setIsConflictVisible(false);
                 }
             } catch (error) {
                 console.error("Failed to check availability", error);
@@ -156,7 +172,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, viewMode]);
+    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, viewMode, originalData]);
 
     // Helper functions (tConvert, formatDate, etc.) should be here or imported
     const tConvert = (timeStr) => {
@@ -171,6 +187,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         const d = new Date(dateObj);
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         return `${d.getDate() < 10 ? '0' + d.getDate() : d.getDate()} ${months[d.getMonth()]}, ${d.getFullYear()}`;
+    };
+
+    const getShortType = (fullType) => {
+        if (!fullType) return 'partners';
+        const segments = fullType.split('\\\\');
+        const last = segments[segments.length - 1].toLowerCase();
+        if (last === 'employee') return 'employee-details';
+        if (last === 'partner') return 'partners';
+        if (last === 'borrower') return 'clients';
+        return last + 's';
     };
 
     const isSlotBlocked = (timeValue, isEnd = false) => {
@@ -232,6 +258,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         show: async (id) => {
             setIsNewEvent(false);
             setViewMode(true);
+            setIsDescriptionExpanded(false);
             setSelectedEventId(id);
             setFormErrors({});
             setAvailabilityConflicts(null);
@@ -278,6 +305,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const fetchDetails = async (id) => {
         try {
+            setLoadingDetails(true);
             const apt = await fetchAppointmentById(id);
             const dateStr = apt.appointment_date ? apt.appointment_date.replace(' ', 'T') : '';
             const start = dateStr ? new Date(dateStr) : new Date();
@@ -293,6 +321,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 description: apt.description || "No Description",
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
+                assignedForId: (() => {
+                    const type = (apt.assigned_for?.entity_type || 'partner').toLowerCase();
+                    if (type === 'employee') return apt.assigned_for?.id;
+                    return apt.assigned_for?.entity_id || apt.assigned_for?.id;
+                })(),
+                assignedForType: apt.assigned_for?.entity_type || 'partner',
+                assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
+                appointmentCode: apt.appointment_code || '',
+                category: apt.meeting_type || 'Business Review',
             });
 
             const h_full = start.getHours().toString().padStart(2, '0');
@@ -320,9 +357,37 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
-                    entity_id: apt.assigned_for.id,
+                    entity_id: (() => {
+                        // Employee: Use User ID (id) - Employees are system users
+                        if (formattedType === 'employee') {
+                            return apt.assigned_for.id;
+                        }
+                        // Borrower/Partner: Use Entity ID (entity_id) - These are separate profile entities
+                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) {
+                            return apt.assigned_for.entity_id;
+                        }
+                        // Fallback
+                        return apt.assigned_for.entity_id || apt.assigned_for.id;
+                    })(),
                     entity_type: formattedType
                 }));
+
+                // Set Original Data for Comparison
+                setOriginalData({
+                    subject: apt.subject,
+                    category: apt.meeting_type || 'Business Review',
+                    location: apt.timezone || "UTC (GMT+00:00)",
+                    description: apt.description || "",
+                    date: start.toISOString().split('T')[0],
+                    timeStart: hh_mm_full,
+                    timeEnd: hh_mm_end_full,
+                    entity_id: (() => {
+                        if (formattedType === 'employee') return apt.assigned_for.id;
+                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) return apt.assigned_for.entity_id;
+                        return apt.assigned_for.entity_id || apt.assigned_for.id;
+                    })(),
+                    entity_type: formattedType
+                });
             }
 
             // Manual Summernote reset/sync
@@ -331,6 +396,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
+        } finally {
+            setLoadingDetails(false);
         }
     };
 
@@ -377,10 +444,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             const matchingConflict = allConflicts.find(c => {
                 const cStart = c.start_time || "";
                 const cEnd = c.end_time || "";
-                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isOverlap = (formData.timeStart < cEnd && formData.timeEnd > cStart);
+                const isSelf = !isNewEvent && String(c.id) === String(selectedEventId);
+                return isOverlap && !isSelf;
             });
+
             if (matchingConflict) {
-                toast.error('Cannot save appointment: Time slot conflicts with existing appointment');
+                toast.error('Cannot save appointment: Time slot conflicts with another appointment');
                 setIsConflictVisible(true);
                 return;
             }
@@ -421,12 +491,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     };
 
-    const confirmDelete = async () => {
-        if (!selectedEventId || !window.confirm("Are you sure you want to delete this appointment?")) return;
+    const confirmDelete = () => {
+        if (!selectedEventId) return;
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDelete = async () => {
         try {
             setIsDeleting(true);
             await deleteAppointment(selectedEventId);
             toast.success("Appointment deleted successfully");
+            setShowDeleteConfirm(false);
             if (modalInstance) modalInstance.hide();
             if (onSuccess) onSuccess();
         } catch (error) {
@@ -499,39 +574,162 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
                         {/* Details View */}
                         {viewMode ? (
-                            <div className="event-details position-relative">
-                                <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: 0, top: '-5px' }}>
-                                    <button className="btn btn-sm btn-outline-primary border-primary-subtle bg-white" onClick={() => setViewMode(false)}>
-                                        <i className="ri-edit-line me-1"></i> Edit
-                                    </button>
-                                </div>
-                                <div className="mb-4">
-                                    <h4 className="fw-bold mb-1 text-dark">{displayData.title}</h4>
-                                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2">
-                                        <i className="ri-checkbox-circle-line me-1"></i> Confirmed
-                                    </span>
-                                </div>
-
-                                <div className="row g-4">
-                                    <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} />
-                                    <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} />
-                                    <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} />
-                                    <DetailItem icon="ri-user-line" label="Scheduled By" value={displayData.scheduledBy} />
-                                    <DetailItem icon="ri-user-follow-line" label="Assigned For" value={displayData.assignedFor} />
-
-                                    <div className="col-12 mt-3 pt-3 border-top">
-                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                        <div className="text-muted fs-14 border rounded p-3 bg-light-subtle" dangerouslySetInnerHTML={{ __html: displayData.description }}></div>
+                            loadingDetails ? (
+                                <div className="event-details-skeleton">
+                                    <div className="mb-4">
+                                        <Skeleton width="120px" height="12px" className="mb-2" />
+                                        <Skeleton width="70%" height="28px" />
+                                    </div>
+                                    <div className="mb-4">
+                                        <Skeleton width="100px" height="12px" className="mb-2" />
+                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                            <Skeleton width="100%" height="14px" className="mb-2" />
+                                            <Skeleton width="90%" height="14px" className="mb-2" />
+                                            <Skeleton width="40%" height="14px" />
+                                        </div>
+                                    </div>
+                                    <div className="row g-4 mb-4">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div className="col-md-6" key={i}>
+                                                <div className="d-flex align-items-center">
+                                                    <Skeleton shape="circle" size="32px" className="me-3" />
+                                                    <div className="flex-grow-1">
+                                                        <Skeleton width="60px" height="10px" className="mb-2" />
+                                                        <Skeleton width="100px" height="14px" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                        <Skeleton shape="circle" size="60px" className="me-3" />
+                                        <div className="flex-grow-1">
+                                            <Skeleton width="80px" height="10px" className="mb-2" />
+                                            <Skeleton width="150px" height="18px" />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                        <Skeleton width="80px" height="35px" borderRadius="4px" />
                                     </div>
                                 </div>
+                            ) : (
+                                <div className="event-details position-relative">
+                                    <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                        <button
+                                            className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                            onClick={() => setViewMode(false)}
+                                            style={{
+                                                fontWeight: "600",
+                                                transition: "all 0.2s ease"
+                                            }}
+                                        >
+                                            <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                        </button>
+                                    </div>
 
-                                <div className="mt-4 pt-3 border-top d-flex justify-content-between">
-                                    <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
-                                        <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete Appointment"}
-                                    </button>
-                                    <button className="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                    <div className="mb-4">
+                                        <div className="d-flex align-items-center justify-content-between mb-1">
+                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                        </div>
+                                        <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                            <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                                {(() => {
+                                                    const description = displayData.description || "No Description";
+                                                    // Extract text and properly decode common entities for the preview
+                                                    const rawText = description
+                                                        .replace(/<[^>]*>/g, '')
+                                                        .replace(/&nbsp;/g, ' ')
+                                                        .replace(/&amp;/g, '&')
+                                                        .replace(/&lt;/g, '<')
+                                                        .replace(/&gt;/g, '>')
+                                                        .replace(/&quot;/g, '"');
+
+                                                    const limit = 180;
+
+                                                    if (!isDescriptionExpanded && rawText.length > limit) {
+                                                        return (
+                                                            <div className="description-content">
+                                                                {rawText.substring(0, limit)}...
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                    onClick={() => setIsDescriptionExpanded(true)}
+                                                                >
+                                                                    See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div className="description-content">
+                                                            <div
+                                                                className="rich-text-content"
+                                                                dangerouslySetInnerHTML={{ __html: description }}
+                                                            ></div>
+                                                            {isDescriptionExpanded && rawText.length > limit && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                    onClick={() => setIsDescriptionExpanded(false)}
+                                                                >
+                                                                    See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="row g-4 mb-2">
+                                        <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
+                                        <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
+                                        <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
+                                        <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
+                                    </div>
+
+                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="avatar-md">
+                                                {displayData.assignedForAvatar ? (
+                                                    <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div className="avatar-title rounded-circle bg-primary text-white">
+                                                        <i className="ri-user-follow-line fs-24"></i>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1 d-flex align-items-center gap-2">
+                                            <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
+                                                Appointment With:
+                                            </p>
+
+                                            <h5 className="mb-0 fs-16 fw-bold">
+                                                <a
+                                                    href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                    className="text-primary text-decoration-none hover-primary"
+                                                >
+                                                    {displayData.assignedFor}
+                                                </a>
+                                            </h5>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+                                        <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                            <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )
                         ) : (
                             /* Form View */
                             <form onSubmit={handleSubmit}>
@@ -554,7 +752,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     </div>
 
                                     <div className="col-12 mb-3">
-                                        <label className="form-label">Assigned For <span className="text-danger">*</span></label>
+                                        <label className="form-label">Appointment With <span className="text-danger">*</span></label>
                                         <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
                                             {[
                                                 { value: 'partner', label: 'Partner' },
@@ -580,7 +778,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 onChange={(e) => {
                                                     setFormData(p => ({ ...p, entity_id: e.value }));
                                                 }}
-                                                loading={loadingAssignedFor} filter
+                                                loading={loadingAssignedFor}
                                                 placeholder={`Select ${assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1)}`}
                                                 className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
                                                 appendTo="self" />
@@ -593,15 +791,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
                                                 <div className="input-group">
-                                                    <span className="input-group-text bg-light border-end-0"><i className="ri-calendar-line text-muted"></i></span>
-                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal" className={`form-control border-start-0 ${formErrors.appointment_date ? 'is-invalid border-danger' : ''}`}
+                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal"
+                                                        className={`form-control ${formErrors.appointment_date ? 'is-invalid' : ''}`}
                                                         value={formData.date} readOnly placeholder="Select date" />
+                                                    <span className="input-group-text bg-light"><i className="ri-calendar-event-line text-muted"></i></span>
                                                     {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                 </div>
                                             </div>
                                             <div className="col-md-6 col-12 mb-3 px-2">
                                                 <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
-                                                <div className="d-flex align-items-center gap-2">
+                                                <div className="d-flex align-items-center gap-2 time-slot-container">
                                                     <Dropdown value={formData.timeStart} options={TIME_SLOTS}
                                                         onChange={(e) => {
                                                             const startVal = e.value;
@@ -629,9 +828,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         className="flex-grow-1" placeholder="End" appendTo="self" />
                                                 </div>
                                                 {/* Conflict Danger Message */}
-                                                {isConflictVisible && availabilityConflicts && (
-                                                    <div className="text-danger fs-11 mt-1">
-
+                                                {isConflictVisible && (
+                                                    <div className="text-danger fs-11 mt-1 fw-bold">
+                                                        <i className="ri-error-warning-line me-1"></i> Conflict detected: This time slot is already taken.
                                                     </div>
                                                 )}
                                             </div>
@@ -642,7 +841,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     <div className="col-12 px-2 overflow-hidden"
                                         style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
                                         {(availabilityConflicts || lastConflictingAttempt) && (
-                                            <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 conflict-alert position-relative" role="alert">
+                                            <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
                                                 <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
                                                 <div className="flex-grow-1 pe-4">
                                                     <div className="d-flex justify-content-between align-items-center">
@@ -660,29 +859,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                                     </>
                                                                 );
                                                             }
-
-                                                            const allConflicts = [
-                                                                ...(availabilityConflicts?.assignee_conflicts || []),
-                                                                ...(availabilityConflicts?.scheduler_conflicts || [])
-                                                            ];
-
-                                                            // Try to find the specific conflict that matches the selected time range
-                                                            const matchingConflict = allConflicts.find(c => {
-                                                                const cStart = c.start_time || "";
-                                                                const cEnd = c.end_time || "";
-                                                                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
-                                                            }) || allConflicts[0];
-
-                                                            if (matchingConflict) {
-                                                                const cDate = matchingConflict.date || "";
-                                                                const cStart = matchingConflict.start_time || "";
-                                                                const cEnd = matchingConflict.end_time || "";
-                                                                return (
-                                                                    <>
-                                                                        Already scheduled for {cDate} from {tConvert(cStart)} to {tConvert(cEnd)}.
-                                                                    </>
-                                                                );
-                                                            }
                                                             return "Conflicting appointment found on this date.";
                                                         })()}
                                                     </span>
@@ -694,11 +870,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         )}
                                     </div>
 
+                                    {/* Skeleton Loader for Availability Check */}
+                                    {isCheckingAvailability && (
+                                        <div className="col-12 px-2 mt-2">
+                                            <Skeleton width="100%" height="40px" className="rounded-2" />
+                                        </div>
+                                    )}
+
                                     <div className="col-12 mb-3">
                                         <label className="form-label fs-13 fw-semibold">Time Zone</label>
                                         <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
                                             onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
-                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} filter placeholder="Select Time Zone" appendTo="self" />
+                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} placeholder="Select Time Zone" appendTo="self" />
                                         {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
                                     </div>
 
@@ -711,20 +894,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
                                     <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
                                     <button type="submit" className="btn btn-primary"
-                                        disabled={isSubmitting || isCheckingAvailability || (() => {
-                                            if (!availabilityConflicts) return false;
-                                            const allConflicts = [
-                                                ...(availabilityConflicts.assignee_conflicts || []),
-                                                ...(availabilityConflicts.scheduler_conflicts || [])
-                                            ];
-                                            return allConflicts.some(c => {
-                                                const cStart = c.start_time || "";
-                                                const cEnd = c.end_time || "";
-                                                return (formData.timeStart < cEnd && formData.timeEnd > cStart);
-                                            });
-                                        })()}>
-                                        <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
-                                        {isSubmitting ? "Saving..." : (isNewEvent ? "Confirm Appointment" : "Save Changes")}
+                                        disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Loading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
+                                                {isNewEvent ? "Confirm Appointment" : "Save Changes"}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -732,101 +913,20 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     </div>
                 </div>
             </div>
-            <style>{`
-                .letter-spacing-1 { letter-spacing: 0.5px; }
-                .uppercase-label { text-transform: uppercase; font-weight: 700; }
-                .btn-soft-danger { background-color: rgba(240, 101, 72, .1); color: #f06548; border: none; }
-                .btn-soft-danger:hover { background-color: #f06548; color: #fff; }
-                .alert-danger-subtle { background-color: #fef4f2; border-color: #fbd9d0; color: #f06548; }
-                .conflict-alert { animation: slideInAlert 0.3s ease-out; }
-                @keyframes slideInAlert {
-                    from { opacity: 0; transform: translateY(-5px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
 
-                /* Premium Summernote Overrides */
-                .note-editor.note-frame {
-                    border: 1px solid #e2e5ec !important;
-                    border-radius: 0.4rem !important;
-                    overflow: hidden;
-                    box-shadow: none !important;
-                    background-color: #fff !important;
-                }
-                .note-toolbar {
-                    background-color: #f3f6f9 !important;
-                    border-bottom: 1px solid #e2e5ec !important;
-                    padding: 5px 10px !important;
-                    margin: 0 !important;
-                }
-                .note-btn-group {
-                    margin-right: 8px !important;
-                }
-                .note-btn {
-                    background-color: #fff !important;
-                    border: 1px solid #e2e5ec !important;
-                    color: #495057 !important;
-                    height: 32px !important;
-                    min-width: 32px !important;
-                    padding: 4px 8px !important;
-                    font-size: 13px !important;
-                    line-height: 1.2 !important;
-                    transition: all 0.2s ease;
-                    box-shadow: none !important;
-                    display: inline-flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-                .note-btn:hover {
-                    background-color: #eef1f6 !important;
-                    border-color: #d1d5db !important;
-                    color: #405189 !important;
-                }
-                .note-btn.active {
-                    background-color: #405189 !important;
-                    color: #fff !important;
-                    border-color: #405189 !important;
-                }
-                .note-editable {
-                    background-color: #fff !important;
-                    font-family: var(--vz-body-font-family);
-                    font-size: 14px;
-                    color: #495057;
-                    padding: 15px !important;
-                }
-                .note-placeholder {
-                    padding: 15px !important;
-                }
-                .note-status-output {
-                    display: none !important;
-                }
-                .note-resizebar {
-                    border-top: 1px solid #e2e5ec !important;
-                    background-color: #f3f6f9 !important;
-                }
-                .note-btn-group .note-btn {
-                    border-radius: 0 !important;
-                    margin-left: -1px !important;
-                }
-                .note-btn-group .note-btn:first-child {
-                    border-top-left-radius: 4px !important;
-                    border-bottom-left-radius: 4px !important;
-                    margin-left: 0 !important;
-                }
-                .note-btn-group .note-btn:last-child {
-                    border-top-right-radius: 4px !important;
-                    border-bottom-right-radius: 4px !important;
-                }
-                .note-dropdown-menu {
-                    border: 1px solid #e2e5ec !important;
-                    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
-                }
-            `}</style>
-        </div>
+            <DeleteConfirmationModal
+                show={showDeleteConfirm}
+                onConfirm={handleDelete}
+                onClose={() => setShowDeleteConfirm(false)}
+                loading={isDeleting}
+                text="Are you sure you want to delete this appointment? This action cannot be undone."
+            />
+        </div >
     );
 });
 
-const DetailItem = ({ icon, label, value }) => (
-    <div className="col-md-6">
+const DetailItem = ({ icon, label, value, className }) => (
+    <div className={`col-md-6 ${className || ''}`}>
         <div className="d-flex align-items-center">
             <div className="flex-shrink-0 me-3">
                 <div className="avatar-xs">
@@ -837,7 +937,7 @@ const DetailItem = ({ icon, label, value }) => (
             </div>
             <div className="flex-grow-1">
                 <p className="text-muted mb-0 fs-12 uppercase-label">{label}</p>
-                <h6 className="mb-0 fs-14 fw-medium">{value}</h6>
+                <h6 className="mb-0 fs-14 fw-bold text-dark">{value}</h6>
             </div>
         </div>
     </div>
