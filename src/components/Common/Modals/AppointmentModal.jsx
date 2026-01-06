@@ -716,7 +716,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 onChange={(e) => {
                                                     setFormData(p => ({ ...p, entity_id: e.value }));
                                                 }}
-                                                loading={loadingAssignedFor} filter
+                                                loading={loadingAssignedFor}
                                                 placeholder={`Select ${assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1)}`}
                                                 className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
                                                 appendTo="self" />
@@ -819,7 +819,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         <label className="form-label fs-13 fw-semibold">Time Zone</label>
                                         <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
                                             onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
-                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} filter placeholder="Select Time Zone" appendTo="self" />
+                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} placeholder="Select Time Zone" appendTo="self" />
                                         {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
                                     </div>
 
