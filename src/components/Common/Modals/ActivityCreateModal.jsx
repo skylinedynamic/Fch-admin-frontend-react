@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
 
-export default function ActivityCreateModal() {
+export default function ActivityCreateModal({ entityId, entityType }) {
     const referenceRef = useRef(null);
     const categoryRef = useRef(null);
+    const dateInputRef = useRef(null);
     const [formData, setFormData] = useState({
         reference: 'Event',
         date: '',
@@ -44,7 +47,7 @@ export default function ActivityCreateModal() {
         }
 
         // TODO: Implement actual create activity logic with API
-        console.log('Creating activity:', formData);
+        console.log('Creating activity:', { ...formData, entityId, entityType });
         toast.success(`Activity "${formData.summary}" created successfully`);
 
         // Close modal
@@ -85,6 +88,22 @@ export default function ActivityCreateModal() {
         };
     }, []);
 
+    // Initialize Flatpickr for date field
+    useEffect(() => {
+        if (dateInputRef.current) {
+            const fp = flatpickr(dateInputRef.current, {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true,
+                defaultDate: formData.date || new Date(),
+                onChange: (selectedDates, dateStr) => {
+                    setFormData(prev => ({ ...prev, date: dateStr }));
+                }
+            });
+            return () => fp.destroy();
+        }
+    }, []);
+
     // Initialize Summernote
     useEffect(() => {
         if (window.$ && editorRef.current) {
@@ -94,6 +113,10 @@ export default function ActivityCreateModal() {
                 callbacks: {
                     onChange: (contents) => {
                         setFormData(prev => ({ ...prev, message: contents }));
+                    },
+                    onInit: function () {
+                        // Clear default <p><br></p> on initialization
+                        window.$(editorRef.current).summernote('code', '');
                     }
                 },
                 toolbar: [
@@ -146,12 +169,12 @@ export default function ActivityCreateModal() {
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
                                     <input
-                                        type="datetime-local"
+                                        type="text"
                                         className="form-control"
                                         id="activityDate"
                                         name="date"
-                                        value={formData.date}
-                                        onChange={handleInputChange}
+                                        ref={dateInputRef}
+                                        placeholder="Select date and time"
                                         required
                                     />
                                 </div>
@@ -201,7 +224,7 @@ export default function ActivityCreateModal() {
                                     <textarea
                                         id="activityMessageEditor"
                                         ref={editorRef}
-                                        className="form-control"
+                                        className="d-none"
                                         name="message"
                                     ></textarea>
                                 </div>
