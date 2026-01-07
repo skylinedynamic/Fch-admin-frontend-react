@@ -796,25 +796,30 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             const startVal = e.value;
                                                             setFormData(p => {
                                                                 const newData = { ...p, timeStart: startVal };
-                                                                if (newData.timeEnd <= startVal) {
-                                                                    const [h, m] = startVal.split(':').map(Number);
-                                                                    let endM = m + 30; let endH = h;
-                                                                    if (endM >= 60) { endH += 1; endM = 0; }
-                                                                    if (endH < 24) {
-                                                                        newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                    }
+                                                                // Automatically select the next 30-minute slot for timeEnd
+                                                                const [h, m] = startVal.split(':').map(Number);
+                                                                let endM = m + 30;
+                                                                let endH = h;
+                                                                if (endM >= 60) {
+                                                                    endH += 1;
+                                                                    endM = 0;
+                                                                }
+                                                                if (endH < 24) {
+                                                                    newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                } else {
+                                                                    // Fallback if it's the last slot of the day
+                                                                    newData.timeEnd = startVal;
                                                                 }
                                                                 return newData;
                                                             });
                                                         }}
-
                                                         className="flex-grow-1" placeholder="Start" appendTo="self" />
                                                     <span className="text-muted fw-bold">to</span>
-                                                    <Dropdown value={formData.timeEnd} options={TIME_SLOTS}
+                                                    <Dropdown value={formData.timeEnd}
+                                                        options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
                                                         onChange={(e) => {
                                                             setFormData(p => ({ ...p, timeEnd: e.value }));
                                                         }}
-
                                                         className="flex-grow-1" placeholder="End" appendTo="self" />
                                                 </div>
                                             </div>
