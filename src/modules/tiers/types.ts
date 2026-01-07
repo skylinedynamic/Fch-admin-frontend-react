@@ -2,10 +2,13 @@ export interface Tier {
     id: number;
     name: string;
     title: string;
+    code: string;
     subtitle: string;
     description: string;
-    status: 'Active' | 'Inactive' | null;
+    status: string;
     order: number;
+    has_vendor: number; // 0 or 1
+    estimated_completion_days?: number | null;
     created_at: string;
     updated_at: string;
     created_by?: number | null;
@@ -19,7 +22,7 @@ export interface TierFormData {
     title: string;
     subtitle: string;
     description: string;
-    status: 'Active' | 'Inactive';
+    status: string;
     order: number;
 }
 
@@ -31,7 +34,7 @@ export interface TierTask {
     description: string;
     url: string;
     button_title: string;
-    status: 'active' | 'inactive' | null;
+    status: string;
     estimated_completion_days: number;
     order: number;
     manual_verification: boolean | number;
@@ -49,7 +52,7 @@ export interface TierTaskFormData {
     description: string;
     url: string;
     button_title: string;
-    status: 'active' | 'inactive';
+    status: string;
     estimated_completion_days: number;
     order: number;
     manual_verification: boolean | number;
@@ -108,7 +111,7 @@ export interface TierVendor {
     requirements: string[] | null;
     benefits: string[] | null;
     report_to: string[] | null;
-    status: 'Active' | 'Inactive';
+    status: string;
     created_at: string;
     updated_at: string;
 }
@@ -120,7 +123,7 @@ export interface TierVendorFormData {
     requirements: string[];
     benefits: string[];
     report_to: string[];
-    status: 'Active' | 'Inactive';
+    status: string;
 }
 
 export type TierVendorsResponse = ApiResponse<TierVendor[]>;

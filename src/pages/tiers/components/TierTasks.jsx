@@ -16,11 +16,14 @@ import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteCon
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
 import { useAuthStore } from '../../../store/auth/authStore';
-import { useTierRelatedApis } from '../../../modules/tiers/queries';
+import { useTierRelatedApis, useTierVendors, useTier } from '../../../modules/tiers/queries';
 
 export default function TierTasks({ tierId }) {
     const { user } = useAuthStore();
     const isDeveloper = user?.role_name === 'Developer';
+
+    // Fetch Tier Details to get code
+    const { data: tier } = useTier(tierId);
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,6 +59,15 @@ export default function TierTasks({ tierId }) {
 
     // Fetch related APIs once on page load for this tier
     const { data: relatedApis = [], isLoading: loadingApis } = useTierRelatedApis(tierId);
+    
+    // Fetch vendors for this tier (for Related Vendor dropdown)
+    // We fetch a large number to ensure we get all for the dropdown
+    const { data: vendorData } = useTierVendors({ 
+        tier_id: tierId,
+        per_page: 9999,
+        status: 'Active'
+    });
+    const vendors = vendorData?.data || [];
 
     // Removed statusOptions
 
@@ -348,7 +360,9 @@ export default function TierTasks({ tierId }) {
                 onSubmit={handleModalSubmit}
                 task={editTask}
                 tierId={tierId}
+                tier={tier?.data}
                 relatedApis={relatedApis}
+                vendors={vendors}
                 loadingApis={loadingApis}
                 loadingSave={loadingSave}
             />

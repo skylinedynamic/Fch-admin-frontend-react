@@ -9,7 +9,7 @@ import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import 
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { VERIFICATION_STATUS } from '../../config/tierOptions'; // Import Constants
+import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
 import TableLoader from '../../components/Loader/TableLoader';
 import '../../components/Loader/SkeletonLoader.css'; // Import Loader CSS
