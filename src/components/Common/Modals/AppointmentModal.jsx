@@ -12,6 +12,7 @@ import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppoi
 import { fetchPartners } from '../../../modules/partner/services';
 import { fetchEmployees } from '../../../modules/employee/services';
 import { fetchAllBorrowers } from '../../../modules/borrower/services';
+import { useAuthStore } from '../../../store/auth/authStore';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
@@ -35,7 +36,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const [assignedForType, setAssignedForType] = useState('partner');
+    const currentUser = useAuthStore((state) => state.user);
+    const isHost = currentUser?.is_host === 1;
+
+    const [assignedForType, setAssignedForType] = useState(isHost ? 'partner' : 'borrower');
     const [partners, setPartners] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [borrowers, setBorrowers] = useState([]);
@@ -269,7 +273,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType('partner');
+            setAssignedForType(isHost ? 'partner' : 'borrower');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
@@ -284,7 +288,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeStart: '09:00',
                 timeEnd: '09:30',
                 entity_id: '',
-                entity_type: 'partner',
+                entity_type: isHost ? 'partner' : 'borrower',
             });
             setFormErrors({});
 
@@ -748,7 +752,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 { value: 'partner', label: 'Partner' },
                                                 { value: 'borrower', label: 'Borrower' },
                                                 { value: 'employee', label: 'Employee' }
-                                            ].map(t => (
+                                            ].filter(t => t.value !== 'partner' || isHost).map(t => (
                                                 <div className="form-check" key={t.value}>
                                                     <input className="form-check-input" type="radio"
                                                         name="assignedForType" id={`modal-type-${t.value}`}
