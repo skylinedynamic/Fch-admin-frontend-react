@@ -41,3 +41,8 @@ export const checkAvailability = async (payload: { assigned_for: number | string
   const { data } = await apiClient.post('/common/appointments/check-availability', payload)
   return data
 }
+
+export const fetchSelectableUsers = async (payload: any = {}): Promise<{ status: boolean, message: string, data: any[] }> => {
+  const { data } = await apiClient.post('/common/appointments/fetch-selectable-users', payload)
+  return data
+}

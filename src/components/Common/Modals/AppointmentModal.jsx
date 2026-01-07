@@ -8,10 +8,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 
 // API Services
-import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability } from '../../../modules/appointment/services';
-import { fetchPartners } from '../../../modules/partner/services';
-import { fetchEmployees } from '../../../modules/employee/services';
-import { fetchAllBorrowers } from '../../../modules/borrower/services';
+import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
 import { useAuthStore } from '../../../store/auth/authStore';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
@@ -39,11 +36,10 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
 
-    const [assignedForType, setAssignedForType] = useState(isHost ? 'partner' : 'borrower');
-    const [partners, setPartners] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [borrowers, setBorrowers] = useState([]);
+    const [assignedForType, setAssignedForType] = useState('borrower');
+    const [selectableUsers, setSelectableUsers] = useState([]);
     const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
+    const [isMeetingWithChecked, setIsMeetingWithChecked] = useState(false);
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -55,6 +51,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         timeStart: '09:00',
         timeEnd: '09:30',
         entity_id: '',
+        assigned_for: '',
         entity_type: 'partner',
     });
 
@@ -227,35 +224,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     };
 
     // Load Options
-    const loadAssignedForOptions = async (type) => {
-        if (type === 'partner' && partners.length > 0) return;
-        if (type === 'employee' && employees.length > 0) return;
-        if (type === 'borrower' && borrowers.length > 0) return;
-
+    const loadSelectableUsers = async () => {
         try {
             setLoadingAssignedFor(true);
-            if (type === 'partner') {
-                const response = await fetchPartners({});
-                setPartners(response.data || []);
-            } else if (type === 'employee') {
-                const response = await fetchEmployees({});
-                setEmployees(response.employees || []);
-            } else if (type === 'borrower') {
-                const response = await fetchAllBorrowers({});
-                setBorrowers(response.data || []);
+            const payload = {
+                [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
+            };
+            const response = await fetchSelectableUsers(payload);
+            if (response.status) {
+                setSelectableUsers(response.data || []);
             }
         } catch (error) {
-            console.error(`Failed to load ${type}s`, error);
+            console.error("Failed to load selectable users", error);
         } finally {
             setLoadingAssignedFor(false);
         }
     };
 
     useEffect(() => {
-        if (!viewMode && assignedForType) {
-            loadAssignedForOptions(assignedForType);
+        if (!viewMode) {
+            loadSelectableUsers();
         }
-    }, [assignedForType, viewMode]);
+    }, [viewMode, isMeetingWithChecked]);
 
     // Exposure
     useImperativeHandle(ref, () => ({
@@ -273,11 +263,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType(isHost ? 'partner' : 'borrower');
+            setAssignedForType('borrower');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
             setConflictError(null);
+            setIsMeetingWithChecked(false);
             const defaultDate = dateStr || new Date().toISOString().split('T')[0];
             setFormData({
                 subject: '',
@@ -288,7 +279,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeStart: '09:00',
                 timeEnd: '09:30',
                 entity_id: '',
-                entity_type: isHost ? 'partner' : 'borrower',
+                assigned_for: '',
+                entity_type: 'borrower',
             });
             setFormErrors({});
 
@@ -326,7 +318,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
                 assignedForId: apt.assigned_for?.entity_id || apt.assigned_for?.id,
-                assignedForType: apt.assigned_for?.entity_type || 'partner',
+                assignedForType: apt.assigned_for?.entity_type || null,
                 assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
                 appointmentCode: apt.appointment_code || '',
                 category: apt.meeting_type || 'Business Review',
@@ -351,6 +343,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeEnd: hh_mm_end_full,
             });
 
+            setIsMeetingWithChecked(apt.meeting_with === 1 || apt.meeting_with_host === 1);
+
             if (apt.assigned_for) {
                 const rawType = apt.assigned_for.entity_type || 'partner';
                 const formattedType = rawType.toLowerCase();
@@ -358,6 +352,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setFormData(p => ({
                     ...p,
                     entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                    assigned_for: apt.assigned_for.id,
                     entity_type: formattedType
                 }));
 
@@ -371,6 +366,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     timeStart: hh_mm_full,
                     timeEnd: hh_mm_end_full,
                     entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                    assigned_for: apt.assigned_for.id,
                     entity_type: formattedType
                 });
             }
@@ -451,7 +447,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             meeting_type: formData.category,
             entity_type: assignedForType,
             entity_id: formData.entity_id ? parseInt(formData.entity_id) : null,
-            assigned_for: formData.entity_id ? parseInt(formData.entity_id) : null,
+            assigned_for: formData.assigned_for ? parseInt(formData.assigned_for) : null,
+            [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
         };
 
         try {
@@ -547,12 +544,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     }, [viewMode]);
 
-    const assignedOptions = (() => {
-        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
-        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
-        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
-        return [];
-    })();
+    const assignedOptions = selectableUsers.map(u => ({
+        label: u.name,
+        value: u.entity_type ? u.entity_id : u.id,
+        user_id: u.id,
+        entity_type: u.entity_type,
+        actual_entity_id: u.entity_id
+    }));
 
     return (
         <div className="modal fade" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
@@ -707,12 +705,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </p>
 
                                             <h5 className="mb-0 fs-16 fw-bold">
-                                                <a
-                                                    href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
-                                                    className="text-primary text-decoration-none hover-primary"
-                                                >
-                                                    {displayData.assignedFor}
-                                                </a>
+                                                {displayData.assignedForType ? (
+                                                    <a
+                                                        href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                        className="text-primary text-decoration-none hover-primary"
+                                                    >
+                                                        {displayData.assignedFor}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-dark">{displayData.assignedFor}</span>
+                                                )}
                                             </h5>
                                         </div>
                                     </div>
@@ -746,36 +748,46 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     </div>
 
                                     <div className="col-12 mb-3">
-                                        <label className="form-label">Appointment With <span className="text-danger">*</span></label>
-                                        <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
-                                            {[
-                                                { value: 'partner', label: 'Partner' },
-                                                { value: 'borrower', label: 'Borrower' },
-                                                { value: 'employee', label: 'Employee' }
-                                            ].filter(t => t.value !== 'partner' || isHost).map(t => (
-                                                <div className="form-check" key={t.value}>
-                                                    <input className="form-check-input" type="radio"
-                                                        name="assignedForType" id={`modal-type-${t.value}`}
-                                                        checked={assignedForType === t.value}
-                                                        onChange={() => {
-                                                            setAssignedForType(t.value);
-                                                            setFormData(p => ({ ...p, entity_id: '', entity_type: t.value }));
-                                                        }} />
-                                                    <label className="form-check-label ps-1" htmlFor={`modal-type-${t.value}`}>
-                                                        {t.label}
-                                                    </label>
-                                                </div>
-                                            ))}
+                                        <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
+                                            <label className="form-label mb-0">
+                                                {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
+                                            </label>
+                                            <div className="form-check">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="meeting-with-toggle"
+                                                    checked={isMeetingWithChecked}
+                                                    onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
+                                                    name={isHost ? "meeting_with" : "meeting_with_host"}
+                                                    value="1"
+                                                />
+                                                <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
+                                                    {isHost ? "Meeting with partner" : "Meeting with host"}
+                                                </label>
+                                            </div>
                                         </div>
+
                                         <div className="position-relative" style={{ minHeight: '38px' }}>
-                                            <Dropdown value={formData.entity_id} options={assignedOptions}
-                                                onChange={(e) => {
-                                                    setFormData(p => ({ ...p, entity_id: e.value }));
-                                                }}
-                                                loading={loadingAssignedFor}
-                                                placeholder={`Select ${assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1)}`}
-                                                className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                appendTo="self" />
+                                            {loadingAssignedFor ? (
+                                                <Skeleton width="100%" height="38px" className="rounded-2" />
+                                            ) : (
+                                                <Dropdown value={formData.entity_id} options={assignedOptions}
+                                                    onChange={(e) => {
+                                                        const selected = assignedOptions.find(opt => opt.value === e.value);
+                                                        const newType = selected?.entity_type?.toLowerCase() || 'borrower';
+                                                        setAssignedForType(newType);
+                                                        setFormData(p => ({
+                                                            ...p,
+                                                            entity_id: e.value,
+                                                            assigned_for: selected?.user_id || e.value,
+                                                            entity_type: newType
+                                                        }));
+                                                    }}
+                                                    placeholder="Select Users"
+                                                    className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
+                                                    appendTo="self" />
+                                            )}
                                             {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                         </div>
                                     </div>
