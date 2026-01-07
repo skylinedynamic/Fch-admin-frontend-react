@@ -7,7 +7,7 @@ import ClientForm from './components/ClientForm';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
-import { locationData } from '../../config/locations';
+import { locationData } from '../../config';
 
 
 export default function ClientDetails() {

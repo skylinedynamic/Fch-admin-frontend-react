@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
-import { relationOptions } from '../../../config/relations';
+import { relationOptions } from '../../../config';
 import { PARTNER_INFORMATION_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';

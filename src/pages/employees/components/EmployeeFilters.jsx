@@ -1,5 +1,5 @@
 import React from 'react';
-import { STATUS } from '../../../config/statusOptions';
+import { STATUS } from '../../../config';
 import { Dropdown } from 'primereact/dropdown';
 
 export default function EmployeeFilters({

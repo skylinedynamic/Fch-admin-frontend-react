@@ -10,7 +10,7 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import TierVendorModal from './TierVendorModal';
 
 
-import { CATEGORY_OPTIONS } from '../../../config/creditBuilder';
+import { CATEGORY_OPTIONS } from '../../../config';
 import { useTierVendors, useCreateTierVendor, useUpdateTierVendor, useDeleteTierVendor, useDeleteTierVendors } from '../../../modules/tiers/queries';
 
 const TierVendors = forwardRef(({ tierId }, ref) => {
@@ -56,10 +56,10 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     }));
 
     // React Query Hooks
-    const { 
-        data: vendorsData, 
-        isLoading: loading, 
-        isFetching 
+    const {
+        data: vendorsData,
+        isLoading: loading,
+        isFetching
     } = useTierVendors({
         page,
         per_page: perPage,
@@ -209,7 +209,7 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
             </span>
         );
     };
-    
+
     const arrayBadgeBodyTemplate = (rowData, field, badgeClass = 'text-bg-secondary') => {
         const values = rowData[field];
         if (!values || !Array.isArray(values) || values.length === 0) return '-';

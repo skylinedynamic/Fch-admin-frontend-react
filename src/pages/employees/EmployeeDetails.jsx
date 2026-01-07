@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import '../../assets/css/datepicker.css';
+import '../../../assets/css/datepicker.css';
 
 import {
   createEmployee,
@@ -12,7 +12,7 @@ import {
   getNextEmployeeId
 } from '../../modules/employee';
 import { fetchRoles } from '../../modules/user/services';
-import { locationData } from '../../config/locations';
+import { locationData } from '../../config';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 
 import EmployeeForm from './components/EmployeeForm';
