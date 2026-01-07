@@ -321,11 +321,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 description: apt.description || "No Description",
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
-                assignedForId: (() => {
-                    const type = (apt.assigned_for?.entity_type || 'partner').toLowerCase();
-                    if (type === 'employee') return apt.assigned_for?.id;
-                    return apt.assigned_for?.entity_id || apt.assigned_for?.id;
-                })(),
+                assignedForId: apt.assigned_for?.entity_id || apt.assigned_for?.id,
                 assignedForType: apt.assigned_for?.entity_type || 'partner',
                 assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
                 appointmentCode: apt.appointment_code || '',
@@ -357,18 +353,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
-                    entity_id: (() => {
-                        // Employee: Use User ID (id) - Employees are system users
-                        if (formattedType === 'employee') {
-                            return apt.assigned_for.id;
-                        }
-                        // Borrower/Partner: Use Entity ID (entity_id) - These are separate profile entities
-                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) {
-                            return apt.assigned_for.entity_id;
-                        }
-                        // Fallback
-                        return apt.assigned_for.entity_id || apt.assigned_for.id;
-                    })(),
+                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
                     entity_type: formattedType
                 }));
 
@@ -381,11 +366,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     date: start.toISOString().split('T')[0],
                     timeStart: hh_mm_full,
                     timeEnd: hh_mm_end_full,
-                    entity_id: (() => {
-                        if (formattedType === 'employee') return apt.assigned_for.id;
-                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) return apt.assigned_for.entity_id;
-                        return apt.assigned_for.entity_id || apt.assigned_for.id;
-                    })(),
+                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
                     entity_type: formattedType
                 });
             }
@@ -836,12 +817,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                                         className="flex-grow-1" placeholder="End" appendTo="self" />
                                                 </div>
-                                                {/* Conflict Danger Message */}
-                                                {isConflictVisible && (
-                                                    <div className="text-danger fs-11 mt-1 fw-bold">
-                                                        <i className="ri-error-warning-line me-1"></i> Conflict detected: This time slot is already taken.
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
