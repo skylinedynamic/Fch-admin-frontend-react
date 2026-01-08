@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import type { Client } from '../../../modules/client/types';
-import 'summernote/dist/summernote-lite.js';
+import { useSummernote } from '../../../hooks/useSummernote';
 
 const entityTypeOptions = [
     { label: 'Corporation (C-Corp)', value: 'Corporation (C-Corp)' },
@@ -36,65 +36,7 @@ export default function ClientInfoSection({
     cities,
     isLoading = false
 }: ClientInfoSectionProps) {
-    const editorRef = useRef<HTMLTextAreaElement>(null);
-
-    // Initialize Summernote
-    useEffect(() => {
-        let $editor: any = null;
-        const $ = (window as any).$;
-        if (!isLoading && $ && editorRef.current) {
-            $editor = $(editorRef.current);
-
-            if ($editor.summernote) {
-                $editor.summernote({
-                    height: 200,
-                    placeholder: 'Enter notes here...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents: string) => {
-                            handleInputChange({ target: { name: 'notes', value: contents } });
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                // Set initial content
-                if (formData.notes) {
-                    $editor.summernote('code', formData.notes);
-                }
-            }
-        }
-
-        return () => {
-            if ($editor && $editor.summernote) {
-                try {
-                    $editor.summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, [isLoading]);
-
-    // Update content when formData.notes changes externally (e.g. after fetch)
-    useEffect(() => {
-        const $ = (window as any).$;
-        if (!isLoading && $ && editorRef.current) {
-            const $editor = $(editorRef.current);
-            if ($editor.summernote) {
-                const currentCode = $editor.summernote('code');
-                if (currentCode !== (formData.notes || '')) {
-                    $editor.summernote('code', formData.notes || '');
-                }
-            }
-        }
-    }, [formData.notes]);
+    const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
     if (isLoading) {
         return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { useSummernote } from '../../../hooks/useSummernote';
 
 export default function EmailComposeModal({ entityId, entityType }) {
     const choicesRef = useRef(null);
@@ -48,8 +49,11 @@ export default function EmailComposeModal({ entityId, entityType }) {
         }
     };
 
-    // Modals Ref
-    const editorRef = useRef(null);
+    // Use global Summernote hook
+    const { editorRef } = useSummernote('message', formData.message, handleInputChange, {
+        height: 200,
+        placeholder: 'Write your message...'
+    });
 
     // Initialize Choices.js
     useEffect(() => {
@@ -79,37 +83,6 @@ export default function EmailComposeModal({ entityId, entityType }) {
         return () => {
             if (choicesInstance) {
                 choicesInstance.destroy();
-            }
-        };
-    }, []);
-
-    // Initialize Summernote
-    useEffect(() => {
-        if (window.$ && editorRef.current) {
-            window.$(editorRef.current).summernote({
-                height: 200,
-                placeholder: 'Write your message...',
-                callbacks: {
-                    onChange: (contents) => {
-                        setFormData(prev => ({ ...prev, message: contents }));
-                    },
-                    onInit: function () {
-                        // Clear default <p><br></p> on initialization
-                        window.$(editorRef.current).summernote('code', '');
-                    }
-                },
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview']]
-                ]
-            });
-        }
-        return () => {
-            if (editorRef.current && window.$) {
-                window.$(editorRef.current).summernote('destroy');
             }
         };
     }, []);

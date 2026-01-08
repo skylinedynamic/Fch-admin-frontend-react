@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { formatPhoneNumber } from '../../../utils/formatters';
-import 'summernote/dist/summernote-lite.js';
+import { useSummernote } from '../../../hooks/useSummernote';
 
 export default function ContactForm({
     contact,
@@ -11,65 +11,7 @@ export default function ContactForm({
     states,
     cities
 }) {
-    const editorRef = useRef(null);
-
-    // Initialize Summernote
-    useEffect(() => {
-        let $editor = null;
-        const $ = window.$;
-        if ($ && editorRef.current) {
-            $editor = $(editorRef.current);
-
-            if ($editor.summernote) {
-                $editor.summernote({
-                    height: 200,
-                    placeholder: 'Enter notes here...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents) => {
-                            onChange({ target: { name: 'notes', value: contents } });
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                // Set initial content
-                if (contact.notes) {
-                    $editor.summernote('code', contact.notes);
-                }
-            }
-        }
-
-        return () => {
-            if ($editor && $editor.summernote) {
-                try {
-                    $editor.summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, []);
-
-    // Update content when contact.notes changes externally (e.g. after fetch)
-    useEffect(() => {
-        const $ = window.$;
-        if ($ && editorRef.current) {
-            const $editor = $(editorRef.current);
-            if ($editor.summernote) {
-                const currentCode = $editor.summernote('code');
-                if (currentCode !== (contact.notes || '')) {
-                    $editor.summernote('code', contact.notes || '');
-                }
-            }
-        }
-    }, [contact.notes]);
+    const { editorRef } = useSummernote('notes', contact.notes, onChange);
 
     return (
         <form onSubmit={(e) => e.preventDefault()}>

@@ -10,6 +10,7 @@ import {
 } from '../../modules/contact/services';
 import { locationData } from '../../config';
 import ContactForm from './components/ContactForm';
+import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
@@ -307,39 +308,7 @@ export default function ContactDetails() {
 
                     {/* Right Side: Activity Sidebar */}
                     <div className="col-xxl-4">
-                        <div className="card">
-                            <div className="card-header">
-                                <div className="d-flex align-items-center mb-0">
-                                    <h5 className="flex-grow-1 mb-0"><i className="ri-history-line align-middle me-1"></i> Activity</h5>
-                                    <div className="flex-shrink-0">
-                                        {/* Buttons to trigger modals */}
-                                        <button
-                                            type="button"
-                                            className="btn btn-soft-secondary btn-sm me-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#emailComposeModal"
-                                        >
-                                            <i className="ri-mail-line align-middle me-1"></i> New Email
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-soft-secondary btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#activityCreateModal"
-                                        >
-                                            <i className="ri-calendar-event-line align-middle me-1"></i> New Event
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="card-body">
-                                {/* Placeholder for Activity Log */}
-                                <div className="text-center text-muted mt-5 mb-5">
-                                    <i className="ri-error-warning-line fs-24"></i>
-                                    <p className="mt-2">No activity found</p>
-                                </div>
-                            </div>
-                        </div>
+                        <ActivitySidebar entityId={id} entityType="Contact" />
                     </div>
                 </div>
 
