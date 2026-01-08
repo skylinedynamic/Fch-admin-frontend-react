@@ -20,6 +20,11 @@ export const queryKeys = {
     list: () => [...queryKeys.appointment.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.appointment.all, 'detail', id] as const,
   },
+  contact: {
+    all: ['contact'] as const,
+    list: () => [...queryKeys.contact.all, 'list'] as const,
+    detail: (id: string | number) => [...queryKeys.contact.all, 'detail', id] as const,
+  },
   role: {
     all: ['role'] as const,
     list: () => [...queryKeys.role.all, 'list'] as const,
