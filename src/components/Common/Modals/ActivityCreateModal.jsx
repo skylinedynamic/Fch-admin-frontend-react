@@ -96,9 +96,8 @@ export default function ActivityCreateModal({ entityId, entityType }) {
     useEffect(() => {
         if (dateInputRef.current) {
             const fp = flatpickr(dateInputRef.current, {
-                enableTime: true,
-                dateFormat: "Y-m-d H:i",
-                time_24hr: true,
+                enableTime: false,
+                dateFormat: "Y-m-d",
                 defaultDate: formData.date || new Date(),
                 onChange: (selectedDates, dateStr) => {
                     setFormData(prev => ({ ...prev, date: dateStr }));
