@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { formatPhoneNumber } from '../../../utils/formatters';
+import 'summernote/dist/summernote-lite.js';
 
 export default function ContactForm({
     contact,
@@ -11,47 +12,64 @@ export default function ContactForm({
     cities
 }) {
     const editorRef = useRef(null);
-    const editorInstance = useRef(null);
 
     // Initialize Summernote
     useEffect(() => {
-        if (window.$ && editorRef.current) {
-            // Check if already initialized to prevent double init
-            if (editorInstance.current) return;
+        let $editor = null;
+        const $ = window.$;
+        if ($ && editorRef.current) {
+            $editor = $(editorRef.current);
 
-            window.$(editorRef.current).summernote({
-                height: 200,
-                placeholder: 'Enter notes...',
-                callbacks: {
-                    onChange: (contents) => {
-                        // Pass synthetic event style object to parent onChange
-                        onChange({ target: { name: 'notes', value: contents } });
-                    },
-                    onInit: function () {
-                        // Set initial content if editing
-                        if (contact.notes) {
-                            window.$(editorRef.current).summernote('code', contact.notes);
+            if ($editor.summernote) {
+                $editor.summernote({
+                    height: 200,
+                    placeholder: 'Enter notes here...',
+                    dialogsInBody: true,
+                    callbacks: {
+                        onChange: (contents) => {
+                            onChange({ target: { name: 'notes', value: contents } });
                         }
-                    }
-                },
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link']],
-                    ['view', ['fullscreen', 'codeview']]
-                ]
-            });
-            editorInstance.current = true;
+                    },
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview', 'help']]
+                    ]
+                });
+
+                // Set initial content
+                if (contact.notes) {
+                    $editor.summernote('code', contact.notes);
+                }
+            }
         }
 
         return () => {
-            if (editorRef.current && window.$ && editorInstance.current) {
-                window.$(editorRef.current).summernote('destroy');
-                editorInstance.current = null;
+            if ($editor && $editor.summernote) {
+                try {
+                    $editor.summernote('destroy');
+                } catch (e) { }
             }
         };
-    }, []); // Empty dependency to init once
+    }, []);
+
+    // Update content when contact.notes changes externally (e.g. after fetch)
+    useEffect(() => {
+        const $ = window.$;
+        if ($ && editorRef.current) {
+            const $editor = $(editorRef.current);
+            if ($editor.summernote) {
+                const currentCode = $editor.summernote('code');
+                if (currentCode !== (contact.notes || '')) {
+                    $editor.summernote('code', contact.notes || '');
+                }
+            }
+        }
+    }, [contact.notes]);
 
     return (
         <form onSubmit={(e) => e.preventDefault()}>

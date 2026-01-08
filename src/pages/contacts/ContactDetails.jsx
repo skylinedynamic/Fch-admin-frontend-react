@@ -287,12 +287,6 @@ export default function ContactDetails() {
                             <div className="card-header">
                                 <h5 className="card-title mb-0">Contact Information</h5>
                             </div>
-                            <div className="card-header">
-                                {/* Just a visual collapsible header or tabs if needed, mirroring EmployeeDetails */}
-                                <a className="text-body d-block" data-bs-toggle="collapse" href="#contactInfo" role="button" aria-expanded="true" aria-controls="contactInfo">
-                                    {/* If we want the arrow we can add it, but simpler is fine too */}
-                                </a>
-                            </div>
 
                             <div className="card-body p-4">
                                 {loading ? (

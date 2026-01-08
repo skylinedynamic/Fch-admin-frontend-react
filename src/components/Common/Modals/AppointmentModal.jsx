@@ -518,31 +518,63 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     }, [viewMode]);
 
+
     // Summernote initialization
+    useEffect(() => {
+        let $editor = null;
+        if (!viewMode && descriptionEditorRef.current) {
+            $editor = $(descriptionEditorRef.current);
+
+            if ($editor.summernote) {
+                $editor.summernote({
+                    height: 150,
+                    placeholder: 'Enter description here...',
+                    dialogsInBody: true,
+                    callbacks: {
+                        onChange: (contents) => {
+                            const isEmpty = contents === '<p><br></p>';
+                            setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
+                        }
+                    },
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview', 'help']]
+                    ]
+                });
+
+                // Set initial content
+                if (formData.description) {
+                    $editor.summernote('code', formData.description);
+                }
+            }
+        }
+
+        return () => {
+            if ($editor && $editor.summernote) {
+                try {
+                    $editor.summernote('destroy');
+                } catch (e) { }
+            }
+        };
+    }, [viewMode]);
+
+    // Update content when formData.description changes externally (e.g. after fetch)
     useEffect(() => {
         if (!viewMode && descriptionEditorRef.current) {
             const $editor = $(descriptionEditorRef.current);
-            $editor.summernote({
-                height: 150,
-                dialogsInBody: true,
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link']],
-                    ['view', ['codeview']]
-                ],
-                callbacks: {
-                    onChange: (contents) => {
-                        const isEmpty = contents === '<p><br></p>';
-                        setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
-                    }
+            if ($editor.summernote) {
+                const currentCode = $editor.summernote('code');
+                if (currentCode !== (formData.description || '')) {
+                    $editor.summernote('code', formData.description || '');
                 }
-            });
-            $editor.summernote('code', formData.description || '');
-            return () => $editor.summernote('destroy');
+            }
         }
-    }, [viewMode]);
+    }, [formData.description]);
 
     const assignedOptions = selectableUsers.map(u => ({
         label: u.name,
