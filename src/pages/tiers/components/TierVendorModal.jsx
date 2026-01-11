@@ -5,6 +5,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 
 import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS } from '../../../config';
+import { SUMMERNOTE_CONFIG } from '../../../config/summernote';
 
 const TierVendorModal = ({
     show,
@@ -18,10 +19,14 @@ const TierVendorModal = ({
     const isEdit = !!vendor;
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
+    const editorRef = useRef(null);
 
     const [formData, setFormData] = useState({
         name: '',
         category: null,
+        description: '',
+        affiliate_url: '',
+        general_url: '',
         requirements: [],
         benefits: [],
         report_to: [],
@@ -69,24 +74,71 @@ const TierVendorModal = ({
                 setFormData({
                     name: vendor.name || '',
                     category: vendor.category || null,
+                    description: vendor.description || '',
+                    affiliate_url: vendor.affiliate_url || '',
+                    general_url: vendor.general_url || '',
                     requirements: vendor.requirements || [],
                     benefits: vendor.benefits || [],
                     report_to: vendor.report_to || [],
-                    status: vendor.status || 'Active'
+                    status: vendor.status || STATUS_OPTIONS[0].value
                 });
             } else {
                 setFormData({
                     name: '',
                     category: null,
+                    description: '',
+                    affiliate_url: '',
+                    general_url: '',
                     requirements: [],
                     benefits: [],
                     report_to: [],
-                    status: 'Active'
+                    status: STATUS_OPTIONS[0].value
                 });
             }
             setErrors({});
         }
     }, [show, vendor]);
+
+    // Initialize Summernote
+    useEffect(() => {
+        let $editor = null;
+
+        if (show && editorRef.current && window.$) {
+            const $ = window.$;
+            $editor = $(editorRef.current);
+
+            // Initialize if not already initialized
+            // We can destroy and recreate to ensure clean state or just set code if already init
+            // But destruction ensures options are fresh and handlers are bound correctly
+            if ($editor.summernote) {
+                 try {
+                     $editor.summernote('destroy');
+                 } catch (e) {}
+
+                $editor.summernote({
+                    ...SUMMERNOTE_CONFIG,
+                    placeholder: 'Enter vendor description...',
+                    callbacks: {
+                        onChange: (contents) => {
+                            setFormData(prev => ({ ...prev, description: contents }));
+                        }
+                    }
+                });
+
+                // Set initial content from props/state
+                const initialContent = vendor?.description || '';
+                $editor.summernote('code', initialContent);
+            }
+        }
+
+        return () => {
+            if ($editor) {
+                try {
+                    $editor.summernote('destroy');
+                } catch (e) {}
+            }
+        };
+    }, [show, vendor]); // Re-init if vendor changes in edit mode
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -112,6 +164,19 @@ const TierVendorModal = ({
             ...formData,
             tier_id: tierId
         });
+    };
+
+    const handleDescriptionTemplate = () => {
+        const template = `<div>
+<div class="alert alert-warning d-flex align-items-start gap-2 border-0 rounded-3 mb-3 p-3 task-modal-alert"><i class="ri-alert-fill text-warning fs-5 mt-0"></i><div class="text-dark task-modal-alert-text"><strong>Important:</strong> Read these instructions carefully before proceeding.</div></div>
+<div class="task-content"><div class="styled-content"><h6 class="fw-bold mb-1 text-dark task-modal-section-title">Eligibility</h6><ul class="mb-3 text-dark ps-3 task-modal-list"><li class="mb-1">It's recommended that your business is at least 30 days old.</li><li class="mb-1">Use your exact business legal name, address, and information when applying.</li><li class="mb-1">Orders should be consistent with normal business purchases; do not order luxury items, gift cards, or personal items.</li></ul><h6 class="fw-bold mb-1 text-dark task-modal-section-title">Ordering Guidelines</h6><ul class="mb-3 text-dark ps-3 task-modal-list"><li class="mb-1">Place an initial order of at least $70 worth of shipping, packaging, or cleaning supplies.</li><li class="mb-1">Always make payments on <span class="fw-bold text-black">time</span> to build a positive payment history.</li></ul><h6 class="fw-bold mb-1 text-dark task-modal-section-title">Reporting Timeline</h6><ul class="mb-3 text-dark ps-3 task-modal-list"><li class="mb-1">After making a <span class="fw-bold text-black">purchase</span>, reporting to bureaus typically occurs after two or more on-time payment cycles.</li></ul><hr class="my-3 opacity-25"><p class="text-dark fst-italic mb-0 task-modal-footer-note">Opening an account and making purchases does not guarantee credit reporting. Accounts are reviewed before reporting.</p></div></div>
+</div>`;
+
+        if (editorRef.current && window.$) {
+            const $editor = window.$(editorRef.current);
+            // Always replace content with template
+            $editor.summernote('code', template);
+        }
     };
 
     return (
@@ -157,6 +222,45 @@ const TierVendorModal = ({
                                         appendTo="self"
                                     />
                                     {errors.category && <div className="invalid-feedback d-block">{errors.category}</div>}
+                                </div>
+
+                                <div className="col-md-12">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <label className="form-label mb-0">Description</label>
+                                        <span 
+                                            className="text-primary text-decoration-underline" 
+                                            style={{ cursor: 'pointer', fontSize: '13px' }} 
+                                            onClick={handleDescriptionTemplate}
+                                        >
+                                            Add Template
+                                        </span>
+                                    </div>
+                                    <textarea ref={editorRef}></textarea>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label">Affiliate URL</label>
+                                    <input
+                                        type="text"
+                                        name="affiliate_url"
+                                        className={`form-control ${errors.affiliate_url ? 'is-invalid' : ''}`}
+                                        value={formData.affiliate_url}
+                                        onChange={handleChange}
+                                        placeholder="Enter affiliate URL"
+                                    />
+                                    {errors.affiliate_url && <div className="invalid-feedback">{errors.affiliate_url}</div>}
+                                </div>
+                                <div className="col-md-6">
+                                    <label className="form-label">General URL <span className="text-danger">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="general_url"
+                                        className={`form-control ${errors.general_url ? 'is-invalid' : ''}`}
+                                        value={formData.general_url}
+                                        onChange={handleChange}
+                                        placeholder="Enter general URL"
+                                    />
+                                    {errors.general_url && <div className="invalid-feedback">{errors.general_url}</div>}
                                 </div>
 
                                 <div className="col-md-6">

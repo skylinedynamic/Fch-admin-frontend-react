@@ -4,14 +4,8 @@ export interface ConfigOption {
 }
 
 export const CATEGORY_OPTIONS: ConfigOption[] = [
-    { label: 'Financial', value: 'Financial' },
-    { label: 'Supplies', value: 'Supplies' },
-    { label: 'Services', value: 'Services' },
-    { label: 'Logistics', value: 'Logistics' },
-    { label: 'IT', value: 'IT' },
-    { label: 'Office Supplies', value: 'Office Supplies' },
-    { label: 'Industrial Supplies', value: 'Industrial Supplies' },
-    { label: 'Technology', value: 'Technology' }
+    { label: 'Shipping & Packaging', value: 'Shipping & Packaging' },
+    { label: 'Other', value: 'Other' }
 ];
 
 export const STATUS_OPTIONS: ConfigOption[] = [

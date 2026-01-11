@@ -108,6 +108,9 @@ export interface TierVendor {
     tier_id: number;
     name: string;
     category: string;
+    description?: string;
+    affiliate_url?: string;
+    general_url?: string;
     requirements: string[] | null;
     benefits: string[] | null;
     report_to: string[] | null;
@@ -120,6 +123,9 @@ export interface TierVendorFormData {
     tier_id: number;
     name: string;
     category: string;
+    description?: string;
+    affiliate_url?: string;
+    general_url?: string;
     requirements: string[];
     benefits: string[];
     report_to: string[];

@@ -6,11 +6,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { createTier, updateTier, getTier } from '../../modules/tiers/services';
-import { TIER_STATUS_OPTIONS } from '../../config';
+import { TIER_STATUS_OPTIONS } from '../../config/creditBuilder';
+import { SUMMERNOTE_CONFIG } from '../../config/summernote';
 import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
 import TierVendors from './components/TierVendors';
-import { TIER_STATUS_OPTIONS } from '../../config/creditBuilder';   
 
 
 export default function TierForm() {
@@ -81,9 +81,8 @@ export default function TierForm() {
             if ($editor.summernote) {
                 // Initialize
                 $editor.summernote({
-                    height: 200,
+                    ...SUMMERNOTE_CONFIG,
                     placeholder: 'Enter description...',
-                    dialogsInBody: true,
                     callbacks: {
                         onChange: (contents) => {
                             setFormData(prev => ({ ...prev, description: contents }));
@@ -91,16 +90,7 @@ export default function TierForm() {
                                 setErrors(prev => ({ ...prev, description: null }));
                             }
                         }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['color', ['color']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
+                    }
                 });
 
                 // Set initial content
