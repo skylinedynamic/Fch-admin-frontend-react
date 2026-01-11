@@ -366,7 +366,7 @@ export default function BorrowerVerificationRequests() {
                                             <div className="col-auto">
                                                 <div className="avatar-md p-1 bg-white rounded-circle shadow-sm">
                                                     {profileLoading ? (
-                                                         <div className="skeleton-line rounded-circle w-100 h-100"></div>
+                                                        <div className="skeleton-line rounded-circle w-100 h-100"></div>
                                                     ) : (
                                                         <div className="avatar-title bg-primary rounded-circle fs-24">
                                                             {profileData?.first_name ? profileData.first_name.charAt(0).toUpperCase() : 'B'}
@@ -381,7 +381,7 @@ export default function BorrowerVerificationRequests() {
                                                             <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Borrower Name</span>
                                                             <div className="d-flex align-items-center">
                                                                 {profileLoading ? (
-                                                                     <div className="skeleton-line w-50" style={{ height: '20px', borderRadius: '4px' }}></div>
+                                                                    <div className="skeleton-line w-50" style={{ height: '20px', borderRadius: '4px' }}></div>
                                                                 ) : (
                                                                     <>
                                                                         <h4 className="fs-18 mb-0 fw-bold text-primary">{profileData?.full_name || 'N/A'}</h4>
@@ -395,7 +395,7 @@ export default function BorrowerVerificationRequests() {
                                                             <div className="d-flex align-items-center">
                                                                 <i className="ri-building-line me-2 text-primary fs-16"></i>
                                                                 {profileLoading ? (
-                                                                     <div className="skeleton-line w-50" style={{ height: '16px', borderRadius: '4px' }}></div>
+                                                                    <div className="skeleton-line w-50" style={{ height: '16px', borderRadius: '4px' }}></div>
                                                                 ) : (
                                                                     <h5 className="fs-15 mb-0 fw-medium text-dark-emphasis">{profileData?.partner_name || 'N/A'}</h5>
                                                                 )}
@@ -417,7 +417,7 @@ export default function BorrowerVerificationRequests() {
                                                     </div>
                                                 </div>
                                                 <div className="mt-3 text-center">
-                                                    <button 
+                                                    <button
                                                         className="btn btn-sm btn-soft-primary w-100"
                                                         onClick={() => setShowProfileModal(true)}
                                                     >

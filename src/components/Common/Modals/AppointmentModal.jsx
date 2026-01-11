@@ -8,17 +8,15 @@ import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 
 // API Services
-import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability } from '../../../modules/appointment/services';
-import { fetchPartners } from '../../../modules/partner/services';
-import { fetchEmployees } from '../../../modules/employee/services';
-import { fetchAllBorrowers } from '../../../modules/borrower/services';
+import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
+import { useAuthStore } from '../../../store/auth/authStore';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
 
 // Styles
-import '../../../assets/css/AppointmentModal.css';
+import '../../../../assets/css/appointment-modal.css';
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
@@ -35,11 +33,13 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const [assignedForType, setAssignedForType] = useState('partner');
-    const [partners, setPartners] = useState([]);
-    const [employees, setEmployees] = useState([]);
-    const [borrowers, setBorrowers] = useState([]);
+    const currentUser = useAuthStore((state) => state.user);
+    const isHost = currentUser?.is_host === 1;
+
+    const [assignedForType, setAssignedForType] = useState('borrower');
+    const [selectableUsers, setSelectableUsers] = useState([]);
     const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
+    const [isMeetingWithChecked, setIsMeetingWithChecked] = useState(false);
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -51,6 +51,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         timeStart: '09:00',
         timeEnd: '09:30',
         entity_id: '',
+        assigned_for: '',
         entity_type: 'partner',
     });
 
@@ -223,35 +224,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     };
 
     // Load Options
-    const loadAssignedForOptions = async (type) => {
-        if (type === 'partner' && partners.length > 0) return;
-        if (type === 'employee' && employees.length > 0) return;
-        if (type === 'borrower' && borrowers.length > 0) return;
-
+    const loadSelectableUsers = async () => {
         try {
             setLoadingAssignedFor(true);
-            if (type === 'partner') {
-                const response = await fetchPartners({});
-                setPartners(response.data || []);
-            } else if (type === 'employee') {
-                const response = await fetchEmployees({});
-                setEmployees(response.employees || []);
-            } else if (type === 'borrower') {
-                const response = await fetchAllBorrowers({});
-                setBorrowers(response.data || []);
+            const payload = {
+                [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
+            };
+            const response = await fetchSelectableUsers(payload);
+            if (response.status) {
+                setSelectableUsers(response.data || []);
             }
         } catch (error) {
-            console.error(`Failed to load ${type}s`, error);
+            console.error("Failed to load selectable users", error);
         } finally {
             setLoadingAssignedFor(false);
         }
     };
 
     useEffect(() => {
-        if (!viewMode && assignedForType) {
-            loadAssignedForOptions(assignedForType);
+        if (!viewMode) {
+            loadSelectableUsers();
         }
-    }, [assignedForType, viewMode]);
+    }, [viewMode, isMeetingWithChecked]);
 
     // Exposure
     useImperativeHandle(ref, () => ({
@@ -269,11 +263,12 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType('partner');
+            setAssignedForType('borrower');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
             setConflictError(null);
+            setIsMeetingWithChecked(false);
             const defaultDate = dateStr || new Date().toISOString().split('T')[0];
             setFormData({
                 subject: '',
@@ -284,7 +279,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeStart: '09:00',
                 timeEnd: '09:30',
                 entity_id: '',
-                entity_type: 'partner',
+                assigned_for: '',
+                entity_type: 'borrower',
             });
             setFormErrors({});
 
@@ -321,12 +317,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 description: apt.description || "No Description",
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
-                assignedForId: (() => {
-                    const type = (apt.assigned_for?.entity_type || 'partner').toLowerCase();
-                    if (type === 'employee') return apt.assigned_for?.id;
-                    return apt.assigned_for?.entity_id || apt.assigned_for?.id;
-                })(),
-                assignedForType: apt.assigned_for?.entity_type || 'partner',
+                assignedForId: apt.assigned_for?.entity_id || apt.assigned_for?.id,
+                assignedForType: apt.assigned_for?.entity_type || null,
                 assignedForAvatar: apt.assigned_for?.image || apt.assigned_for?.avatar || apt.assigned_for?.profile_picture || null,
                 appointmentCode: apt.appointment_code || '',
                 category: apt.meeting_type || 'Business Review',
@@ -351,24 +343,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeEnd: hh_mm_end_full,
             });
 
+            setIsMeetingWithChecked(apt.meeting_with === 1 || apt.meeting_with_host === 1);
+
             if (apt.assigned_for) {
                 const rawType = apt.assigned_for.entity_type || 'partner';
                 const formattedType = rawType.toLowerCase();
                 setAssignedForType(formattedType);
                 setFormData(p => ({
                     ...p,
-                    entity_id: (() => {
-                        // Employee: Use User ID (id) - Employees are system users
-                        if (formattedType === 'employee') {
-                            return apt.assigned_for.id;
-                        }
-                        // Borrower/Partner: Use Entity ID (entity_id) - These are separate profile entities
-                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) {
-                            return apt.assigned_for.entity_id;
-                        }
-                        // Fallback
-                        return apt.assigned_for.entity_id || apt.assigned_for.id;
-                    })(),
+                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                    assigned_for: apt.assigned_for.id,
                     entity_type: formattedType
                 }));
 
@@ -381,11 +365,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     date: start.toISOString().split('T')[0],
                     timeStart: hh_mm_full,
                     timeEnd: hh_mm_end_full,
-                    entity_id: (() => {
-                        if (formattedType === 'employee') return apt.assigned_for.id;
-                        if (['borrower', 'partner'].includes(formattedType) && apt.assigned_for.entity_id) return apt.assigned_for.entity_id;
-                        return apt.assigned_for.entity_id || apt.assigned_for.id;
-                    })(),
+                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                    assigned_for: apt.assigned_for.id,
                     entity_type: formattedType
                 });
             }
@@ -466,7 +447,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             meeting_type: formData.category,
             entity_type: assignedForType,
             entity_id: formData.entity_id ? parseInt(formData.entity_id) : null,
-            assigned_for: formData.entity_id ? parseInt(formData.entity_id) : null,
+            assigned_for: formData.assigned_for ? parseInt(formData.assigned_for) : null,
+            [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
         };
 
         try {
@@ -536,38 +518,71 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     }, [viewMode]);
 
+
     // Summernote initialization
+    useEffect(() => {
+        let $editor = null;
+        if (!viewMode && descriptionEditorRef.current) {
+            $editor = $(descriptionEditorRef.current);
+
+            if ($editor.summernote) {
+                $editor.summernote({
+                    height: 150,
+                    placeholder: 'Enter description here...',
+                    dialogsInBody: true,
+                    callbacks: {
+                        onChange: (contents) => {
+                            const isEmpty = contents === '<p><br></p>';
+                            setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
+                        }
+                    },
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview', 'help']]
+                    ]
+                });
+
+                // Set initial content
+                if (formData.description) {
+                    $editor.summernote('code', formData.description);
+                }
+            }
+        }
+
+        return () => {
+            if ($editor && $editor.summernote) {
+                try {
+                    $editor.summernote('destroy');
+                } catch (e) { }
+            }
+        };
+    }, [viewMode]);
+
+    // Update content when formData.description changes externally (e.g. after fetch)
     useEffect(() => {
         if (!viewMode && descriptionEditorRef.current) {
             const $editor = $(descriptionEditorRef.current);
-            $editor.summernote({
-                height: 150,
-                dialogsInBody: true,
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link']],
-                    ['view', ['codeview']]
-                ],
-                callbacks: {
-                    onChange: (contents) => {
-                        const isEmpty = contents === '<p><br></p>';
-                        setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
-                    }
+            if ($editor.summernote) {
+                const currentCode = $editor.summernote('code');
+                if (currentCode !== (formData.description || '')) {
+                    $editor.summernote('code', formData.description || '');
                 }
-            });
-            $editor.summernote('code', formData.description || '');
-            return () => $editor.summernote('destroy');
+            }
         }
-    }, [viewMode]);
+    }, [formData.description]);
 
-    const assignedOptions = (() => {
-        if (assignedForType === 'partner') return partners.map(p => ({ label: p.full_name || p.name || p.company_name, value: p.id }));
-        if (assignedForType === 'employee') return employees.map(e => ({ label: e.full_name || e.first_name + " " + e.last_name, value: e.id }));
-        if (assignedForType === 'borrower') return borrowers.map(b => ({ label: b.full_name || b.first_name + " " + b.last_name, value: b.id }));
-        return [];
-    })();
+    const assignedOptions = selectableUsers.map(u => ({
+        label: u.name,
+        value: u.entity_type ? u.entity_id : u.id,
+        user_id: u.id,
+        entity_type: u.entity_type,
+        actual_entity_id: u.entity_id
+    }));
 
     return (
         <div className="modal fade" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
@@ -722,12 +737,16 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             </p>
 
                                             <h5 className="mb-0 fs-16 fw-bold">
-                                                <a
-                                                    href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
-                                                    className="text-primary text-decoration-none hover-primary"
-                                                >
-                                                    {displayData.assignedFor}
-                                                </a>
+                                                {displayData.assignedForType ? (
+                                                    <a
+                                                        href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                        className="text-primary text-decoration-none hover-primary"
+                                                    >
+                                                        {displayData.assignedFor}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-dark">{displayData.assignedFor}</span>
+                                                )}
                                             </h5>
                                         </div>
                                     </div>
@@ -761,36 +780,46 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     </div>
 
                                     <div className="col-12 mb-3">
-                                        <label className="form-label">Appointment With <span className="text-danger">*</span></label>
-                                        <div className="d-flex flex-wrap gap-3 mb-2 mt-1">
-                                            {[
-                                                { value: 'partner', label: 'Partner' },
-                                                { value: 'borrower', label: 'Borrower' },
-                                                { value: 'employee', label: 'Employee' }
-                                            ].map(t => (
-                                                <div className="form-check" key={t.value}>
-                                                    <input className="form-check-input" type="radio"
-                                                        name="assignedForType" id={`modal-type-${t.value}`}
-                                                        checked={assignedForType === t.value}
-                                                        onChange={() => {
-                                                            setAssignedForType(t.value);
-                                                            setFormData(p => ({ ...p, entity_id: '', entity_type: t.value }));
-                                                        }} />
-                                                    <label className="form-check-label ps-1" htmlFor={`modal-type-${t.value}`}>
-                                                        {t.label}
-                                                    </label>
-                                                </div>
-                                            ))}
+                                        <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
+                                            <label className="form-label mb-0">
+                                                {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
+                                            </label>
+                                            <div className="form-check">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="meeting-with-toggle"
+                                                    checked={isMeetingWithChecked}
+                                                    onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
+                                                    name={isHost ? "meeting_with" : "meeting_with_host"}
+                                                    value="1"
+                                                />
+                                                <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
+                                                    {isHost ? "Meeting with partner" : "Meeting with host"}
+                                                </label>
+                                            </div>
                                         </div>
+
                                         <div className="position-relative" style={{ minHeight: '38px' }}>
-                                            <Dropdown value={formData.entity_id} options={assignedOptions}
-                                                onChange={(e) => {
-                                                    setFormData(p => ({ ...p, entity_id: e.value }));
-                                                }}
-                                                loading={loadingAssignedFor}
-                                                placeholder={`Select ${assignedForType.charAt(0).toUpperCase() + assignedForType.slice(1)}`}
-                                                className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                appendTo="self" />
+                                            {loadingAssignedFor ? (
+                                                <Skeleton width="100%" height="38px" className="rounded-2" />
+                                            ) : (
+                                                <Dropdown value={formData.entity_id} options={assignedOptions}
+                                                    onChange={(e) => {
+                                                        const selected = assignedOptions.find(opt => opt.value === e.value);
+                                                        const newType = selected?.entity_type?.toLowerCase() || 'borrower';
+                                                        setAssignedForType(newType);
+                                                        setFormData(p => ({
+                                                            ...p,
+                                                            entity_id: e.value,
+                                                            assigned_for: selected?.user_id || e.value,
+                                                            entity_type: newType
+                                                        }));
+                                                    }}
+                                                    placeholder="Select Users"
+                                                    className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
+                                                    appendTo="self" />
+                                            )}
                                             {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                         </div>
                                     </div>
@@ -815,33 +844,32 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                             const startVal = e.value;
                                                             setFormData(p => {
                                                                 const newData = { ...p, timeStart: startVal };
-                                                                if (newData.timeEnd <= startVal) {
-                                                                    const [h, m] = startVal.split(':').map(Number);
-                                                                    let endM = m + 30; let endH = h;
-                                                                    if (endM >= 60) { endH += 1; endM = 0; }
-                                                                    if (endH < 24) {
-                                                                        newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                    }
+                                                                // Automatically select the next 30-minute slot for timeEnd
+                                                                const [h, m] = startVal.split(':').map(Number);
+                                                                let endM = m + 30;
+                                                                let endH = h;
+                                                                if (endM >= 60) {
+                                                                    endH += 1;
+                                                                    endM = 0;
+                                                                }
+                                                                if (endH < 24) {
+                                                                    newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                } else {
+                                                                    // Fallback if it's the last slot of the day
+                                                                    newData.timeEnd = startVal;
                                                                 }
                                                                 return newData;
                                                             });
                                                         }}
-
                                                         className="flex-grow-1" placeholder="Start" appendTo="self" />
                                                     <span className="text-muted fw-bold">to</span>
-                                                    <Dropdown value={formData.timeEnd} options={TIME_SLOTS}
+                                                    <Dropdown value={formData.timeEnd}
+                                                        options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
                                                         onChange={(e) => {
                                                             setFormData(p => ({ ...p, timeEnd: e.value }));
                                                         }}
-
                                                         className="flex-grow-1" placeholder="End" appendTo="self" />
                                                 </div>
-                                                {/* Conflict Danger Message */}
-                                                {isConflictVisible && (
-                                                    <div className="text-danger fs-11 mt-1 fw-bold">
-                                                        <i className="ri-error-warning-line me-1"></i> Conflict detected: This time slot is already taken.
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>

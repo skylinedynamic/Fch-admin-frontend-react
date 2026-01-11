@@ -7,7 +7,9 @@ import illustrator1 from '../../../../assets/images/user-illustarator-1.png';
 import illustrator2 from '../../../../assets/images/user-illustarator-2.png';
 
 
-export default function ActivitySidebar() {
+export default function ActivitySidebar({ entityId, entityType }) {
+    // TODO: Use entityId and entityType to fetch specific activities
+
     return (
         <div className="card">
             <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">

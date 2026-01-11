@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
-import { STATUS } from '../../../../config/statusOptions';
+import { STATUS } from '../../../../config';
 
 // Transform status options to include empty option
 const jobStatusOptions = [

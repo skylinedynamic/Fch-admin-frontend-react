@@ -4,7 +4,7 @@ import { Chips } from 'primereact/chips';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 
-import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS } from '../../../config/creditBuilder';
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS } from '../../../config';
 
 const TierVendorModal = ({
     show,

@@ -58,6 +58,7 @@
     margin-bottom: 0.5rem;
 }
 
+<<<<<<< HEAD:src/assets/css/AppointmentModal.css
 /* Premium Summernote Overrides */
 .note-editor.note-frame {
     border: 1px solid #e2e5ec !important;
@@ -147,6 +148,8 @@
     border: 1px solid #e2e5ec !important;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1) !important;
 }
+=======
+>>>>>>> merge-branch:assets/css/appointment-modal.css
 
 /* Premium Flatpickr Overrides */
 .flatpickr-calendar {

@@ -9,7 +9,8 @@ import interactionPlugin from '@fullcalendar/interaction';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 
 // Toast
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Auth Store
 import { useAuthStore } from '../../store/auth/authStore';
@@ -197,6 +198,7 @@ export default function Appointments() {
 
     return (
         <div className="page-content">
+            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row">
                     <div className="col-12">

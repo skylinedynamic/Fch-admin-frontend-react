@@ -2,6 +2,11 @@ export interface UserInfo {
   id: number
   name: string
   email: string
+  entity_type?: string | null
+  entity_id?: number | null
+  image?: string | null
+  avatar?: string | null
+  profile_picture?: string | null
 }
 
 export interface Appointment {
@@ -21,6 +26,8 @@ export interface Appointment {
   microsoft_event_id: string | null
   created_at: string
   updated_at: string
+  meeting_with?: number
+  meeting_with_host?: number
 }
 
 export interface FetchAppointmentsResponse {
@@ -36,10 +43,14 @@ export interface CreateAppointmentPayload {
   timezone: string
   duration_minutes: number
   meeting_type: string
-  assigned_for: number // User ID
+  assigned_for: number
+  entity_type?: string | null
+  entity_id?: number | null
   location?: string
   time_slot_id?: number
   remarks?: string
+  meeting_with?: number
+  meeting_with_host?: number
 }
 
 export interface CreateAppointmentResponse {
@@ -62,4 +73,33 @@ export interface FetchTimeSlotsResponse {
   status: boolean;
   message: string;
   data: TimeSlot[];
+}
+
+export interface CheckAvailabilityPayload {
+  assigned_for: number | string
+  appointment_date: string
+  id?: string | number
+}
+
+export interface CheckAvailabilityResponse {
+  status: boolean
+  message: string
+  data: {
+    available: boolean
+    assignee_conflicts?: any[]
+    scheduler_conflicts?: any[]
+  }
+}
+
+export interface SelectableUser {
+  id: number
+  name: string
+  entity_type: string | null
+  entity_id: number | null
+}
+
+export interface FetchSelectableUsersResponse {
+  status: boolean
+  message: string
+  data: SelectableUser[]
 }

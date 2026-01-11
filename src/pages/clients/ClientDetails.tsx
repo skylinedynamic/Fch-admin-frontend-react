@@ -5,9 +5,13 @@ import 'react-toastify/dist/ReactToastify.css';
 import ClientForm from './components/ClientForm';
 // @ts-ignore - JSX component imported in TSX file
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
+// @ts-ignore - JSX component imported in TSX file
+import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
+// @ts-ignore - JSX component imported in TSX file
+import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
-import { locationData } from '../../config/locations';
+import { locationData } from '../../config';
 
 
 export default function ClientDetails() {
@@ -553,14 +557,14 @@ export default function ClientDetails() {
                         </div>
                     </div>
 
-                    {/* Activity Sidebar - Only show when editing */}
-                    {id && (
-                        <div className="col-xxl-4">
-                            <ActivitySidebar />
-                        </div>
-                    )}
+                    {/* Activity Sidebar */}
+                    <div className="col-xxl-4">
+                        <ActivitySidebar entityId={id} entityType="Client" />
+                    </div>
                 </div>
             </div>
+            <EmailComposeModal entityId={id} entityType="Client" />
+            <ActivityCreateModal entityId={id} entityType="Client" />
         </div>
     );
 }

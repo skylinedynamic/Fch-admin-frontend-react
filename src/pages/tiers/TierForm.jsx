@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { createTier, updateTier, getTier } from '../../modules/tiers/services';
+import { TIER_STATUS_OPTIONS } from '../../config';
 import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
 import TierVendors from './components/TierVendors';

@@ -35,7 +35,7 @@ const menuItems = [
     permission: 'view leads',
   },
   {
-    to: '/under-construction/contacts',
+    to: '/contacts',
     icon: 'las la-clipboard-list',
     label: 'Contacts',
     permission: 'view contacts',

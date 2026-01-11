@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
+import { useSummernote } from '../../../hooks/useSummernote';
 
-export default function ActivityCreateModal() {
+export default function ActivityCreateModal({ entityId, entityType }) {
     const referenceRef = useRef(null);
     const categoryRef = useRef(null);
+    const dateInputRef = useRef(null);
     const [formData, setFormData] = useState({
         reference: 'Event',
         date: '',
@@ -44,7 +48,7 @@ export default function ActivityCreateModal() {
         }
 
         // TODO: Implement actual create activity logic with API
-        console.log('Creating activity:', formData);
+        console.log('Creating activity:', { ...formData, entityId, entityType });
         toast.success(`Activity "${formData.summary}" created successfully`);
 
         // Close modal
@@ -53,8 +57,11 @@ export default function ActivityCreateModal() {
         }
     };
 
-    // Modals Ref
-    const editorRef = useRef(null);
+    // Use global Summernote hook
+    const { editorRef } = useSummernote('message', formData.message, handleInputChange, {
+        height: 200,
+        placeholder: 'Write your message...'
+    });
 
     // Initialize Choices.js
     useEffect(() => {
@@ -85,31 +92,19 @@ export default function ActivityCreateModal() {
         };
     }, []);
 
-    // Initialize Summernote
+    // Initialize Flatpickr for date field
     useEffect(() => {
-        if (window.$ && editorRef.current) {
-            window.$(editorRef.current).summernote({
-                height: 200,
-                placeholder: 'Write your message...',
-                callbacks: {
-                    onChange: (contents) => {
-                        setFormData(prev => ({ ...prev, message: contents }));
-                    }
-                },
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview']]
-                ]
+        if (dateInputRef.current) {
+            const fp = flatpickr(dateInputRef.current, {
+                enableTime: false,
+                dateFormat: "Y-m-d",
+                defaultDate: formData.date || new Date(),
+                onChange: (selectedDates, dateStr) => {
+                    setFormData(prev => ({ ...prev, date: dateStr }));
+                }
             });
+            return () => fp.destroy();
         }
-        return () => {
-            if (editorRef.current && window.$) {
-                window.$(editorRef.current).summernote('destroy');
-            }
-        };
     }, []);
 
     return (
@@ -146,12 +141,12 @@ export default function ActivityCreateModal() {
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
                                     <input
-                                        type="datetime-local"
+                                        type="text"
                                         className="form-control"
                                         id="activityDate"
                                         name="date"
-                                        value={formData.date}
-                                        onChange={handleInputChange}
+                                        ref={dateInputRef}
+                                        placeholder="Select date and time"
                                         required
                                     />
                                 </div>
@@ -201,7 +196,7 @@ export default function ActivityCreateModal() {
                                     <textarea
                                         id="activityMessageEditor"
                                         ref={editorRef}
-                                        className="form-control"
+                                        className="d-none"
                                         name="message"
                                     ></textarea>
                                 </div>
