@@ -36,7 +36,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
 
-    const [assignedForType, setAssignedForType] = useState('borrower');
+    const [assignedForType, setAssignedForType] = useState('');
     const [selectableUsers, setSelectableUsers] = useState([]);
     const [loadingAssignedFor, setLoadingAssignedFor] = useState(false);
     const [isMeetingWithChecked, setIsMeetingWithChecked] = useState(false);
@@ -113,6 +113,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 setAvailabilityConflicts(null);
                 const response = await checkAvailability({
                     assigned_for: formData.entity_id,
+                    entity_type: formData.entity_type,
                     appointment_date: `${formData.date} ${formData.timeStart}:00`,
                     id: isNewEvent ? undefined : selectedEventId
                 });
@@ -173,7 +174,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, viewMode, originalData]);
+    }, [formData.date, formData.timeStart, formData.timeEnd, formData.entity_id, formData.entity_type, viewMode, originalData]);
 
     // Helper functions (tConvert, formatDate, etc.) should be here or imported
     const tConvert = (timeStr) => {
@@ -263,7 +264,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsNewEvent(true);
             setViewMode(false);
             setSelectedEventId(null);
-            setAssignedForType('borrower');
+            setAssignedForType('');
             setAvailabilityConflicts(null);
             setIsConflictVisible(false);
             setLastConflictingAttempt(null);
@@ -280,7 +281,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeEnd: '09:30',
                 entity_id: '',
                 assigned_for: '',
-                entity_type: 'borrower',
+                entity_type: '',
             });
             setFormErrors({});
 
@@ -346,7 +347,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             setIsMeetingWithChecked(apt.meeting_with === 1 || apt.meeting_with_host === 1);
 
             if (apt.assigned_for) {
-                const rawType = apt.assigned_for.entity_type || 'partner';
+                const rawType = apt.assigned_for.entity_type || '';
                 const formattedType = rawType.toLowerCase();
                 setAssignedForType(formattedType);
                 setFormData(p => ({
@@ -445,8 +446,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             timezone: formData.location,
             duration_minutes: durationMinutes,
             meeting_type: formData.category,
-            entity_type: assignedForType,
-            entity_id: formData.entity_id ? parseInt(formData.entity_id) : null,
+            entity_type: assignedForType || null,
+            entity_id: assignedForType ? (formData.entity_id ? parseInt(formData.entity_id) : null) : null,
             assigned_for: formData.assigned_for ? parseInt(formData.assigned_for) : null,
             [isHost ? 'meeting_with' : 'meeting_with_host']: isMeetingWithChecked ? 1 : 0
         };
@@ -748,6 +749,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                     <span className="text-dark">{displayData.assignedFor}</span>
                                                 )}
                                             </h5>
+
                                         </div>
                                     </div>
 
@@ -761,6 +763,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         ) : (
                             /* Form View */
                             <form onSubmit={handleSubmit}>
+
                                 <div className="row">
 
                                     <div className="col-12 mb-3">
@@ -807,7 +810,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 <Dropdown value={formData.entity_id} options={assignedOptions}
                                                     onChange={(e) => {
                                                         const selected = assignedOptions.find(opt => opt.value === e.value);
-                                                        const newType = selected?.entity_type?.toLowerCase() || 'borrower';
+                                                        const newType = selected?.entity_type?.toLowerCase() || '';
                                                         setAssignedForType(newType);
                                                         setFormData(p => ({
                                                             ...p,
