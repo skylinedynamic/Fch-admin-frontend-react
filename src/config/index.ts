@@ -28,8 +28,5 @@ export { BILLING_OPTIONS } from './billingOptions';
 export { APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from './appointmentTypeOptions';
 export { TIMEZONE_OPTIONS } from './timezoneOptions';
 
-// Verification/Tier related configurations
-export { VERIFICATION_STATUS, TIER_STATUS_OPTIONS, type VerificationStatus, type TierStatusOption } from './tierOptions';
-
 // Credit Builder related configurations
 export { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS, type ConfigOption } from './creditBuilder';

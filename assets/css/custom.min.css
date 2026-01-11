@@ -1016,3 +1016,22 @@
     width: .9rem !important;
     height: .9rem !important;
 }
+
+
+.note-popover .popover-content .note-color-all .note-dropdown-menu, .note-editor .note-toolbar .note-color-all .note-dropdown-menu
+ {
+    min-width: 345px !important;
+    min-height: 400px !important;
+}
+.note-toolbar .note-btn-group.open .note-dropdown-menu {
+    display: flex !important;
+}
+
+.note-toolbar .note-holder{
+  margin-bottom: 50px !important;
+}
+
+.note-popover .popover-content .note-color .dropdown-toggle, .note-editor .note-toolbar .note-color .dropdown-toggle {
+    width: 38px !important;
+    padding-left: 12px !important;
+}
