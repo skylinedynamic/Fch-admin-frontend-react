@@ -27,6 +27,7 @@ const TierVendorModal = ({
         description: '',
         affiliate_url: '',
         general_url: '',
+        logo: null,
         requirements: [],
         benefits: [],
         report_to: [],
@@ -77,6 +78,7 @@ const TierVendorModal = ({
                     description: vendor.description || '',
                     affiliate_url: vendor.affiliate_url || '',
                     general_url: vendor.general_url || '',
+                    logo: null, // Don't preload file object, maybe show preview if needed
                     requirements: vendor.requirements || [],
                     benefits: vendor.benefits || [],
                     report_to: vendor.report_to || [],
@@ -89,6 +91,7 @@ const TierVendorModal = ({
                     description: '',
                     affiliate_url: '',
                     general_url: '',
+                    logo: null,
                     requirements: [],
                     benefits: [],
                     report_to: [],
@@ -141,11 +144,18 @@ const TierVendorModal = ({
     }, [show, vendor]); // Re-init if vendor changes in edit mode
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        const { name, value, type, files } = e.target;
+        if (type === 'file') {
+            setFormData(prev => ({
+                ...prev,
+                [name]: files[0]
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
@@ -315,6 +325,21 @@ const TierVendorModal = ({
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label">Logo</label>
+                                    <input
+                                        type="file"
+                                        name="logo"
+                                        className={`form-control ${errors.logo ? 'is-invalid' : ''}`}
+                                        onChange={handleChange}
+                                        accept="image/*"
+                                    />
+                                    {vendor?.logo && !formData.logo && (
+                                        <div className="mt-2 text-muted small">Current logo: {vendor.logo}</div>
+                                    )}
+                                    {errors.logo && <div className="invalid-feedback">{errors.logo}</div>}
                                 </div>
 
                                 <div className="col-md-6">

@@ -126,11 +126,45 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     const handleModalSubmit = async (formData) => {
         setServerErrors({});
         try {
+            let payload = formData;
+
+            // Check if logo is a file or if we need to send multipart/form-data
+            // Since we added a file input, we should check if 'logo' is a File object
+            // or always send as FormData to be safe if logo is present
+            const isMultipart = formData.logo instanceof File;
+            
+            if (isMultipart) {
+                 const data = new FormData();
+                 Object.keys(formData).forEach(key => {
+                     const value = formData[key];
+                     if (Array.isArray(value)) {
+                         value.forEach((item, index) => {
+                             data.append(`${key}[${index}]`, item);
+                         });
+                     } else if (value !== null && value !== undefined) {
+                         data.append(key, value);
+                     }
+                 });
+                 // For update, we might need to handle _method field if using PUT with FormData (Laravel quirk)
+                 // But react-query mutation usually handles it? No, axios needs it.
+                 // Assuming POST for create, PUT for update.
+                 // If update and file, typically we need POST with _method=PUT for Laravel
+                 if (editVendor) {
+                     data.append('_method', 'PUT');
+                 }
+                 payload = data;
+            }
+
             if (editVendor) {
-                await updateMutation.mutateAsync({ id: editVendor.id, data: formData });
+                // If multipart, we usually use POST with _method=PUT for Laravel file uploads on update
+                if (isMultipart) {
+                    await updateMutation.mutateAsync({ id: editVendor.id, data: payload }); // Ensure query uses POST if payload is FormData
+                } else {
+                    await updateMutation.mutateAsync({ id: editVendor.id, data: payload });
+                }
                 toast.success('Vendor updated successfully');
             } else {
-                await createMutation.mutateAsync(formData);
+                await createMutation.mutateAsync(payload);
                 toast.success('Vendor created successfully');
             }
             setShowModal(false);

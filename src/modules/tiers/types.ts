@@ -39,6 +39,7 @@ export interface TierTask {
     order: number;
     manual_verification: boolean | number;
     related_api_id: number | null;
+    vendor_id?: number | null;
     is_mandatory: number;
     tier_name: string;
     created_at: string;
@@ -57,6 +58,7 @@ export interface TierTaskFormData {
     order: number;
     manual_verification: boolean | number;
     related_api_id: number | null;
+    vendor_id?: number | null;
 }
 
 export interface TierRelatedApi {
@@ -111,6 +113,7 @@ export interface TierVendor {
     description?: string;
     affiliate_url?: string;
     general_url?: string;
+    logo?: string | null;
     requirements: string[] | null;
     benefits: string[] | null;
     report_to: string[] | null;
@@ -126,6 +129,7 @@ export interface TierVendorFormData {
     description?: string;
     affiliate_url?: string;
     general_url?: string;
+    logo?: File | string | null;
     requirements: string[];
     benefits: string[];
     report_to: string[];

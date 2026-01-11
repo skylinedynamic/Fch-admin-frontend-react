@@ -33,7 +33,7 @@ export default function TierTasks({ tierId }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [sortField, setSortField] = useState('title');
+    const [sortField, setSortField] = useState('order');
     const [sortOrder, setSortOrder] = useState('asc');
 
     // Filters
