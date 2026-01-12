@@ -460,7 +460,6 @@ export default function Appointments() {
                                 }
                                 .fc-event-title, .fc-event-main-frame {
                                     font-weight: 600 !important;
-                                    color: inherit !important;
                                     white-space: nowrap !important;
                                     overflow: hidden !important;
                                     text-overflow: ellipsis !important;
