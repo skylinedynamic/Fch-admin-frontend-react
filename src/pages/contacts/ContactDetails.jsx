@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -8,6 +8,7 @@ import {
     updateContact,
     fetchContactById
 } from '../../modules/contact/services';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import { locationData } from '../../config';
 import ContactForm from './components/ContactForm';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
@@ -19,6 +20,20 @@ import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 export default function ContactDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
+
+    // Permission checks
+    const canCreate = hasPermission('create contacts');
+    const canUpdate = hasPermission('update contacts');
+
+    // Access control: redirect to access-denied if lacks required permission
+    if (id && !canUpdate) {
+        return <Navigate to="/access-denied" replace />;
+    }
+
+    if (!id && !canCreate) {
+        return <Navigate to="/access-denied" replace />;
+    }
 
     // State
     const [loading, setLoading] = useState(true);

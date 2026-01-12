@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { usePermissions } from '../../lib/auth/usePermissions';
 import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
@@ -41,6 +42,7 @@ export default function Users() {
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = usePermissions();
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -190,6 +192,7 @@ export default function Users() {
       className="link-primary"
       style={{ cursor: 'pointer' }}
       onClick={() => {
+        if (!hasPermission('update users')) return;
         setEditingUserId(rowData.id);
         setNewUser({
           name: rowData.name || '',
@@ -322,7 +325,7 @@ export default function Users() {
                           <div className="row g-3 mb-0 align-items-center">
                             <div className="col-sm-auto">
                               <div className="btn-group">
-                                {Array.isArray(selection) && selection.length > 0 ? (
+                                {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
                                   <>
                                     <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
                                       Actions
@@ -349,7 +352,7 @@ export default function Users() {
                                       </li>
                                     </ul>
                                   </>
-                                ) : (
+                                ) : hasPermission('create users') ? (
                                   <button className="btn btn-primary fw-medium" onClick={() => {
                                     setShowAddUser(true);
                                     setEditingUserId(null);
@@ -357,7 +360,7 @@ export default function Users() {
                                   }}>
                                     <i className="ri-add-fill me-1 align-bottom"></i> Add User
                                   </button>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                           </div>
@@ -481,53 +484,61 @@ export default function Users() {
                               className="p-datatable-sm"
                               emptyMessage="No Users found"
                             >
-                              <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                              {hasPermission('delete users') && (
+                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                              )}
                               <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                               <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                               <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                               <Column field="entity_type" header="Entity Type" sortable filter showFilterMatchModes filterPlaceholder="Search Entity Type"></Column>
                               <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
                               <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                              <Column
-                                header="Action"
-                                body={(rowData) => (
-                                  <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
-                                    <button
-                                      className="btn btn-sm btn-primary"
-                                      aria-label="Edit user"
-                                      onClick={() => {
-                                        setEditingUserId(rowData.id);
-                                        setNewUser({
-                                          name: rowData.name || '',
-                                          email: rowData.email || '',
-                                          phone_number: rowData.phone_number || '',
-                                          role_id: resolveRoleId(rowData),
-                                          password: rowData.password || '',
-                                          status: rowData.status || '',
-                                          new_password: '',
-                                          confirm_password: '',
-                                        });
-                                        setShowAddUser(true);
-                                      }}
-                                    >
-                                      <i className="ri-edit-2-fill align-bottom"></i>
-                                      <span className="d-none d-sm-inline ms-1">Edit</span>
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-danger"
-                                      aria-label="Delete user"
-                                      onClick={() => {
-                                        setDeletingUserId(rowData.id);
-                                        setShowDeleteModal(true);
-                                      }}
-                                    >
-                                      <i className="ri-delete-bin-6-fill align-bottom"></i>
-                                      <span className="d-none d-sm-inline ms-1">Delete</span>
-                                    </button>
-                                  </div>
-                                )}
-                                style={{ textAlign: 'center', width: '12rem' }}
-                              />
+                              {(hasPermission('update users') || hasPermission('delete users')) && (
+                                <Column
+                                  header="Action"
+                                  body={(rowData) => (
+                                    <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
+                                      {hasPermission('update users') && (
+                                        <button
+                                          className="btn btn-sm btn-primary"
+                                          aria-label="Edit user"
+                                          onClick={() => {
+                                            setEditingUserId(rowData.id);
+                                            setNewUser({
+                                              name: rowData.name || '',
+                                              email: rowData.email || '',
+                                              phone_number: rowData.phone_number || '',
+                                              role_id: resolveRoleId(rowData),
+                                              password: rowData.password || '',
+                                              status: rowData.status || '',
+                                              new_password: '',
+                                              confirm_password: '',
+                                            });
+                                            setShowAddUser(true);
+                                          }}
+                                        >
+                                          <i className="ri-edit-2-fill align-bottom"></i>
+                                          <span className="d-none d-sm-inline ms-1">Edit</span>
+                                        </button>
+                                      )}
+                                      {hasPermission('delete users') && (
+                                        <button
+                                          className="btn btn-sm btn-danger"
+                                          aria-label="Delete user"
+                                          onClick={() => {
+                                            setDeletingUserId(rowData.id);
+                                            setShowDeleteModal(true);
+                                          }}
+                                        >
+                                          <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                          <span className="d-none d-sm-inline ms-1">Delete</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                  style={{ textAlign: 'center', width: '12rem' }}
+                                />
+                              )}
                             </DataTable>
                           </div>
                         )}

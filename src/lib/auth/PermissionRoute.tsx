@@ -28,8 +28,9 @@ export default function PermissionRoute({ permission, redirectTo = '/' }: Props)
     }
 
     if (!allowed) {
-        // User doesn't have permission - redirect to dashboard
-        return <Navigate to={redirectTo} replace />
+        // User doesn't have permission - redirect to access denied page
+        console.log('Redirecting to /access-denied');
+        return <Navigate to="/access-denied" replace />
     }
 
     return <Outlet />

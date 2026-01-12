@@ -26,6 +26,7 @@ import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerific
 import Appointments from './pages/appointments/Appointments.jsx';
 import Contacts from './pages/contacts/Contacts.jsx';
 import ContactDetails from './pages/contacts/ContactDetails.jsx';
+import ErrorPage from './pages/Utility/ErrorPage';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -104,7 +105,10 @@ export default function App() {
               <Route path="tiers/:id" element={<TierForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
-              <Route path="appointments" element={<Appointments />} />
+              {/* Appointments Routes - requires 'view appointments' permission */}
+              <Route element={<PermissionRoute permission="view appointments" />}>
+                <Route path="appointments" element={<Appointments />} />
+              </Route>
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
             </Route>
 
@@ -117,6 +121,11 @@ export default function App() {
 
             {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />
+
+            {/* Error Pages */}
+            <Route path="access-denied" element={<ErrorPage status={403} />} />
+            <Route path="not-found" element={<ErrorPage status={404} />} />
+            <Route path="*" element={<ErrorPage status={404} />} />
           </Route>
         </Route>
       </Routes>

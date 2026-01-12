@@ -11,8 +11,10 @@ import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkelet
 import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function Partners() {
+    const { hasPermission } = usePermissions();
     // State for partners
     const [partners, setPartners] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -340,7 +342,7 @@ export default function Partners() {
                                     <div className="row g-3 mb-0 align-items-center">
                                         <div className="col-sm-auto">
                                             <div className="btn-group">
-                                                {Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
+                                                {hasPermission('delete partners') && Array.isArray(selectedPartners) && selectedPartners.length > 0 ? (
                                                     <>
                                                         <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
                                                             Actions
@@ -360,11 +362,11 @@ export default function Partners() {
                                                             </li>
                                                         </ul>
                                                     </>
-                                                ) : (
+                                                ) : hasPermission('create partners') ? (
                                                     <Link to="/partners/create" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                                         <i className="ri-add-fill me-1 align-bottom"></i> Add Partner
                                                     </Link>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
@@ -530,11 +532,13 @@ export default function Partners() {
                                             loading={false}
                                             emptyMessage="No partners found"
                                         >
-                                            <Column
-                                                selectionMode="multiple"
-                                                headerStyle={{ width: '3rem' }}
-                                                exportable={false}
-                                            />
+                                            {hasPermission('delete partners') && (
+                                                <Column
+                                                    selectionMode="multiple"
+                                                    headerStyle={{ width: '3rem' }}
+                                                    exportable={false}
+                                                />
+                                            )}
                                             <Column
                                                 field="company_name"
                                                 header="Company Name"

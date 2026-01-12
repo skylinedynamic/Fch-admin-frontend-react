@@ -9,6 +9,7 @@ import { deleteClients, fetchBorrowerStats, fetchBorrowerTiers } from '../../mod
 import { fetchAllBorrowers, deleteBorrower, getAllUsers } from '../../modules/borrower/services';
 import { fetchPartners } from '../../modules/partner/services';
 import { getUser } from '../../lib/auth';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
@@ -18,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 export default function Clients() {
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     // State for clients
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -465,7 +467,7 @@ export default function Clients() {
                                     <div className="row g-3 mb-0 align-items-center">
                                         <div className="col-sm-auto">
                                             <div className="btn-group">
-                                                {Array.isArray(selectedClients) && selectedClients.length > 0 ? (
+                                                {hasPermission('delete clients') && Array.isArray(selectedClients) && selectedClients.length > 0 ? (
                                                     <>
                                                         <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
                                                             Actions
@@ -485,7 +487,7 @@ export default function Clients() {
                                                             </li>
                                                         </ul>
                                                     </>
-                                                ) : (
+                                                ) : hasPermission('create clients') ? (
                                                     <button
                                                         type="button"
                                                         id="primaryActionBtn"
@@ -494,7 +496,7 @@ export default function Clients() {
                                                     >
                                                         <i className="ri-add-fill me-1 align-bottom"></i> Add Client
                                                     </button>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
@@ -684,11 +686,13 @@ export default function Clients() {
                                             className="p-datatable-sm"
                                             emptyMessage="No clients found"
                                         >
-                                            <Column
-                                                selectionMode="multiple"
-                                                headerStyle={{ width: '3rem' }}
-                                                exportable={false}
-                                            />
+                                            {hasPermission('delete clients') && (
+                                                <Column
+                                                    selectionMode="multiple"
+                                                    headerStyle={{ width: '3rem' }}
+                                                    exportable={false}
+                                                />
+                                            )}
                                             <Column
                                                 field="full_name"
                                                 header="Full Name"

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
+import { usePermissions } from '../../lib/auth/usePermissions';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../../assets/css/datepicker.css';
@@ -26,6 +27,19 @@ import { FileManagerModal } from '../../components/FileManagerModal/FileManagerM
 export default function EmployeeDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+
+  // Permission checks
+  const canCreate = hasPermission('create employees');
+  const canUpdate = hasPermission('update employees');
+
+  // Access control: redirect to access-denied if lacks required permission
+  if (id && !canUpdate) {
+    return <Navigate to="/access-denied" replace />;
+  }
+  if (!id && !canCreate) {
+    return <Navigate to="/access-denied" replace />;
+  }
 
   // State
   const [loading, setLoading] = useState(true);

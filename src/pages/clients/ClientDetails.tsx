@@ -12,12 +12,28 @@ import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateMo
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { Navigate } from 'react-router-dom';
 
 
 export default function ClientDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { hasPermission } = usePermissions();
+
+    // Permission checks
+    const canCreate = hasPermission('create clients');
+    const canUpdate = hasPermission('update clients');
+
+    // Access control: redirect to access-denied if lacks required permission
+    if (id && !canUpdate) {
+        return <Navigate to="/access-denied" replace />;
+    }
+    if (!id && !canCreate) {
+        return <Navigate to="/access-denied" replace />;
+    }
+
     const [activeTab, setActiveTab] = useState('personalDetails');
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);

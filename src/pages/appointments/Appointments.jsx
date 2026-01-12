@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Auth Store
 import { useAuthStore } from '../../store/auth/authStore';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 // API Services
 import { fetchAppointments, updateAppointment } from '../../modules/appointment/services';
@@ -27,6 +28,7 @@ export default function Appointments() {
 
     // Auth
     const { user } = useAuthStore();
+    const { hasPermission } = usePermissions();
 
     // Events data
     const [events, setEvents] = useState([]);
@@ -140,6 +142,10 @@ export default function Appointments() {
 
     // Actions
     const handleNewEvent = (dateStr) => {
+        if (!hasPermission('create appointments')) {
+            toast.warn("You do not have permission to create appointments");
+            return;
+        }
         if (appointmentModalRef.current) {
             appointmentModalRef.current.create(dateStr);
         }
@@ -206,7 +212,9 @@ export default function Appointments() {
                             <div className="col-lg-4 col-xl-3">
                                 <div className="card card-h-100">
                                     <div className="card-body">
-                                        <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
+                                        {hasPermission('create appointments') && (
+                                            <button className="btn btn-primary w-100" id="btn-new-event" onClick={() => handleNewEvent()}><i className="mdi mdi-plus"></i> Create New Appointment</button>
+                                        )}
                                         <div id="external-events">{/* External events would go here */}</div>
                                     </div>
                                 </div>
@@ -372,9 +380,9 @@ export default function Appointments() {
                                                         meridiem: 'short'
                                                     }}
                                                     events={events}
-                                                    editable={true}
-                                                    droppable={true}
-                                                    selectable={true}
+                                                    editable={hasPermission('update appointments')}
+                                                    droppable={hasPermission('update appointments')}
+                                                    selectable={hasPermission('create appointments')}
                                                     height={750}
                                                     eventDidMount={(info) => {
                                                         // Force style overrides directly on the DOM

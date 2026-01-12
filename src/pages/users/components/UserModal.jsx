@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 const UserModal = ({
     show,
@@ -13,6 +14,7 @@ const UserModal = ({
     showPasswordFields,
     onPasswordFieldsToggle
 }) => {
+    const { hasPermission } = usePermissions();
     const [errors, setErrors] = React.useState({});
 
     // Reset errors when modal opens/closes
@@ -218,29 +220,31 @@ const UserModal = ({
                                 )}
                                 <div className="d-flex justify-content-end">
                                     <button type="button" className="btn btn-light me-2" onClick={onHide}>Cancel</button>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={loadingSave}
-                                    >
-                                        {/* Loading Spinner */}
-                                        {loadingSave && (
-                                            <span
-                                                className="spinner-border spinner-border-sm me-1"
-                                                role="status"
-                                                aria-hidden="true"
-                                            ></span>
-                                        )}
+                                    {((isEdit && hasPermission('update users')) || (!isEdit && hasPermission('create users'))) && (
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={loadingSave}
+                                        >
+                                            {/* Loading Spinner */}
+                                            {loadingSave && (
+                                                <span
+                                                    className="spinner-border spinner-border-sm me-1"
+                                                    role="status"
+                                                    aria-hidden="true"
+                                                ></span>
+                                            )}
 
-                                        {/* Dynamic Icon */}
-                                        <i
-                                            className={`me-1 align-bottom ${isEdit ? 'ri-edit-2-fill' : 'ri-save-3-fill'
-                                                }`}
-                                        ></i>
+                                            {/* Dynamic Icon */}
+                                            <i
+                                                className={`me-1 align-bottom ${isEdit ? 'ri-edit-2-fill' : 'ri-save-3-fill'
+                                                    }`}
+                                            ></i>
 
-                                        {/* Dynamic Text */}
-                                        {isEdit ? 'Update' : 'Submit'}
-                                    </button>
+                                            {/* Dynamic Text */}
+                                            {isEdit ? 'Update' : 'Submit'}
+                                        </button>
+                                    )}
                                 </div>
                             </form>
                         </div>
