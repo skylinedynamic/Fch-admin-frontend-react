@@ -297,9 +297,10 @@ export default function Appointments() {
                                                                 </div>
                                                             </div>
                                                             <h6 className="card-title fs-16" style={{ color: eventStyles.text }}>{evt.title}</h6>
-                                                            <p className="text-muted text-truncate-two-lines mb-0">
-                                                                {(evt.extendedProps?.description || evt.description || "").replace(/<[^>]*>?/gm, '')}
-                                                            </p>
+                                                            <div
+                                                                className="text-muted text-truncate-two-lines mb-0 fs-12"
+                                                                dangerouslySetInnerHTML={{ __html: evt.extendedProps?.description || evt.description || "" }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 )
