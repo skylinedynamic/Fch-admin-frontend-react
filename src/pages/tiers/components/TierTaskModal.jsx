@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
-import 'summernote/dist/summernote-lite.js';
 import Modal from 'bootstrap/js/dist/modal';
+import { useSummernote } from '../../../hooks/useSummernote';
 
 const TierTaskModal = ({
     show,
@@ -18,7 +18,6 @@ const TierTaskModal = ({
     const isEdit = !!task;
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
-    const editorRef = useRef(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -30,6 +29,17 @@ const TierTaskModal = ({
         manual_verification: false,
         related_api_id: null
     });
+
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({ ...prev, description: value }));
+    }, {
+        height: 200,
+        placeholder: 'Enter task description...',
+        dialogsInBody: true
+    }, show);
+
     const [errors, setErrors] = useState({});
 
     // Initialize Bootstrap Modal
@@ -81,48 +91,6 @@ const TierTaskModal = ({
             }
             setErrors({});
         }
-    }, [show, task]);
-
-    // Initialize/Destroy Summernote
-    useEffect(() => {
-        let $editor = null;
-        if (show && window.$ && editorRef.current) {
-            const $ = window.$;
-            $editor = $(editorRef.current);
-
-            if ($editor.summernote) {
-                $editor.summernote({
-                    height: 200,
-                    placeholder: 'Enter task description...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents) => {
-                            setFormData(prev => ({ ...prev, description: contents }));
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                const descriptionToSet = task ? (task.description || '') : '';
-                $editor.summernote('code', descriptionToSet);
-            }
-        }
-
-        return () => {
-            if ($editor && $editor.summernote) {
-                try {
-                    $editor.summernote('destroy');
-                } catch (e) { }
-            }
-        };
     }, [show, task]);
 
     const handleChange = (e) => {
@@ -204,14 +172,14 @@ const TierTaskModal = ({
                                     />
                                 </div>
 
-                                {/* <div className="col-md-12">
+                                <div className="col-md-12">
                                     <label className="form-label">Description</label>
                                     <textarea
-                                        ref={editorRef}
+                                        ref={descriptionRef}
                                         name="description"
-                                        className="form-control"
+                                        className="d-none"
                                     ></textarea>
-                                </div> */}
+                                </div>
 
                                 <div className="col-md-6">
                                     <label className="form-label">Button Title</label>

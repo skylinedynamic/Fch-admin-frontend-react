@@ -10,6 +10,8 @@ import { Skeleton } from 'primereact/skeleton';
 // API Services
 import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useSummernote } from '../../../hooks/useSummernote';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
@@ -21,7 +23,7 @@ import '../../../../assets/css/appointment-modal.css';
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
     const dateInputRef = useRef(null);
-    const descriptionEditorRef = useRef(null);
+    const descriptionEditorRef = useRef(null); // This ref will be passed to the useSummernote hook
     const [modalInstance, setModalInstance] = useState(null);
     const [viewMode, setViewMode] = useState(true);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -34,6 +36,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const [formErrors, setFormErrors] = useState({});
 
     const currentUser = useAuthStore((state) => state.user);
+    const { hasPermission } = usePermissions();
     const isHost = currentUser?.is_host === 1;
 
     const [assignedForType, setAssignedForType] = useState('');
@@ -285,11 +288,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             });
             setFormErrors({});
 
-            // Manual reset for plugins
-            if (descriptionEditorRef.current) {
-                $(descriptionEditorRef.current).summernote('code', '');
-            }
-
             // Sync flatpickr if already initialized
             const dateInput = document.getElementById("event-start-date-modal");
             if (dateInput && dateInput._flatpickr) {
@@ -371,11 +369,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     entity_type: formattedType
                 });
             }
-
-            // Manual Summernote reset/sync
-            if (descriptionEditorRef.current) {
-                $(descriptionEditorRef.current).summernote('code', apt.description || '');
-            }
         } catch (error) {
             console.error("Failed to fetch details", error);
         } finally {
@@ -402,12 +395,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         };
 
-        // Fetch description directly from Summernote
-        let descVal = formData.description;
-        if (descriptionEditorRef.current) {
-            descVal = $(descriptionEditorRef.current).summernote('code');
-            if (descVal === '<p><br></p>') descVal = '';
-        }
+        // Fetch description
+        const descVal = formData.description;
 
         const startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
         const durationMinutes = (new Date(`${formData.date}T${formData.timeEnd}`) - startDateTime) / 60000;
@@ -520,62 +509,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     }, [viewMode]);
 
 
-    // Summernote initialization
-    useEffect(() => {
-        let $editor = null;
-        if (!viewMode && descriptionEditorRef.current) {
-            $editor = $(descriptionEditorRef.current);
-
-            if ($editor.summernote) {
-                $editor.summernote({
-                    height: 150,
-                    placeholder: 'Enter description here...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents) => {
-                            const isEmpty = contents === '<p><br></p>';
-                            setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                // Set initial content
-                if (formData.description) {
-                    $editor.summernote('code', formData.description);
-                }
-            }
-        }
-
-        return () => {
-            if ($editor && $editor.summernote) {
-                try {
-                    $editor.summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, [viewMode]);
-
-    // Update content when formData.description changes externally (e.g. after fetch)
-    useEffect(() => {
-        if (!viewMode && descriptionEditorRef.current) {
-            const $editor = $(descriptionEditorRef.current);
-            if ($editor.summernote) {
-                const currentCode = $editor.summernote('code');
-                if (currentCode !== (formData.description || '')) {
-                    $editor.summernote('code', formData.description || '');
-                }
-            }
-        }
-    }, [formData.description]);
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            description: value
+        }));
+    }, {
+        height: 150,
+        placeholder: 'Enter description here...',
+        dialogsInBody: true
+    }, !viewMode); // Pass !viewMode as the enabled state
 
     const assignedOptions = selectableUsers.map(u => ({
         label: u.name,
@@ -640,16 +585,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                             ) : (
                                 <div className="event-details position-relative">
                                     <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
-                                        <button
-                                            className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
-                                            onClick={() => setViewMode(false)}
-                                            style={{
-                                                fontWeight: "600",
-                                                transition: "all 0.2s ease"
-                                            }}
-                                        >
-                                            <i className="ri-pencil-fill fs-14 me-1"></i> Edit
-                                        </button>
+                                        {hasPermission('update appointments') && (
+                                            <button
+                                                className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                                onClick={() => setViewMode(false)}
+                                                style={{
+                                                    fontWeight: "600",
+                                                    transition: "all 0.2s ease"
+                                                }}
+                                            >
+                                                <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="mb-4">
@@ -754,9 +701,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                     </div>
 
                                     <div className="mt-4 pt-3 border-top d-flex justify-content-end">
-                                        <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
-                                            <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
-                                        </button>
+                                        {hasPermission('delete appointments') && (
+                                            <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                                <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )
@@ -927,26 +876,28 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                     <div className="col-12 mb-3">
                                         <label className="form-label fs-13 fw-semibold">Description</label>
-                                        <div ref={descriptionEditorRef}></div>
+                                        <div ref={descriptionRef}></div>
                                     </div>
                                 </div>
 
                                 <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
                                     <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary"
-                                        disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
-                                        {isSubmitting ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                Loading...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
-                                                {isNewEvent ? "Confirm Appointment" : "Save Changes"}
-                                            </>
-                                        )}
-                                    </button>
+                                    {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
+                                        <button type="submit" className="btn btn-primary"
+                                            disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
+                                            {isSubmitting ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    Loading...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
+                                                    {isNewEvent ? "Confirm Appointment" : "Save Changes"}
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </form>
                         )}

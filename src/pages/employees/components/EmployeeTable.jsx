@@ -1,5 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import TableLoader from '../../../components/Loader/TableLoader';
@@ -19,6 +19,7 @@ export default function EmployeeTable({
     onPage,
     onSort
 }) {
+    const { hasPermission } = usePermissions();
     // Name column body template
     const nameBody = (rowData) => (
         <Link to={`/employee-details/${rowData.id}`} className="link-primary">
@@ -90,7 +91,9 @@ export default function EmployeeTable({
                 loading={loading}
                 emptyMessage="No employees found"
             >
-                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                {hasPermission('delete employees') && (
+                    <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                )}
                 <Column field="full_name" header="Employee Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                 <Column field="employee_code" header="Code" sortable filter showFilterMatchModes filterPlaceholder="Search code"></Column>
                 <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>

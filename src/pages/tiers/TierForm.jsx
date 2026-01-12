@@ -1,17 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dropdown } from 'primereact/dropdown';
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { createTier, updateTier, getTier } from '../../modules/tiers/services';
-import { TIER_STATUS_OPTIONS } from '../../config/creditBuilder';
-import { SUMMERNOTE_CONFIG } from '../../config/summernote';
 import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
 import TierVendors from './components/TierVendors';
-
+import { useSummernote } from '../../hooks/useSummernote';
 
 export default function TierForm() {
     const navigate = useNavigate();
@@ -20,7 +18,7 @@ export default function TierForm() {
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState(false);
-    // initialLoading removed, replaced by query's isLoading
+    const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [errors, setErrors] = useState({});
 
     const [formData, setFormData] = useState({
@@ -28,117 +26,53 @@ export default function TierForm() {
         title: '',
         subtitle: '',
         description: '',
-        status: TIER_STATUS_OPTIONS[0].value,
-        has_vendor: 0
+        status: 'Active'
     });
 
     // Initialize activeTab from navigation state or default to 'tierInfo'
     const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'tierInfo');
 
-    // Summernote Ref
-    const editorRef = useRef(null);
     const vendorsRef = useRef(null);
 
-    // Update activeTab when location state changes
-    useEffect(() => {
-        if (location.state?.activeTab) {
-            setActiveTab(location.state.activeTab);
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({ ...prev, description: value }));
+        if (errors.description) {
+            setErrors(prev => ({ ...prev, description: null }));
         }
-    }, [location.state]);
+    }, {
+        height: 200,
+        placeholder: 'Enter description...',
+        dialogsInBody: true
+    }, activeTab === 'tierInfo' && !initialLoading);
 
-    // React Query for fetching tier data
-    const { data: tierData, isLoading: isTierLoading, isError } = useQuery({
-        queryKey: ['tier', id],
-        queryFn: async () => {
-            const response = await getTier(id);
-            return response.data || response;
-        },
-        enabled: isEditMode,
-        refetchOnWindowFocus: false, // Prevent refetching on window focus to avoid overwriting unsaved changes
-    });
-
-    // Populate form data when tierData is available
     useEffect(() => {
-        if (tierData) {
-            setFormData({
-                name: tierData.name || '',
-                title: tierData.title || '',
-                subtitle: tierData.subtitle || '',
-                description: tierData.description || '',
-                status: tierData.status,
-                has_vendor: tierData.has_vendor ? 1 : 0
-            });
-        }
-    }, [tierData]);
-
-    // Initialize Summernote
-    useEffect(() => {
-        if (activeTab === 'tierInfo' && !isTierLoading && editorRef.current) {
-            const $ = window.$;
-            const $editor = $(editorRef.current);
-
-            // Destroy previous instance to be safe
-            if ($editor.summernote) {
-                // Initialize
-                $editor.summernote({
-                    ...SUMMERNOTE_CONFIG,
-                    placeholder: 'Enter description...',
-                    callbacks: {
-                        onChange: (contents) => {
-                            setFormData(prev => ({ ...prev, description: contents }));
-                            if (errors.description) {
-                                setErrors(prev => ({ ...prev, description: null }));
-                            }
-                        }
-                    }
-                });
-
-                // Set initial content
-                if (formData.description) {
-                    $editor.summernote('code', formData.description);
-                }
-            }
-        }
-
-        return () => {
-            if (window.$ && editorRef.current) {
-                const $ = window.$;
+        if (isEditMode) {
+            const loadTier = async () => {
+                setInitialLoading(true); // Ensure loader shows when ID changes
                 try {
-                    $(editorRef.current).summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, [activeTab, isTierLoading]);
-
-    // Removed manual useEffect fetching logic replaced by useQuery
-
-
-    const handleDefaultTemplate = () => {
-        const defaultTemplate = `<div class="p-4 mb-3 rounded d-flex align-items-start gap-2 position-relative" style="background: #f5f1e8; border: 1px solid #e5dac4;">
-    <small class="position-absolute top-0 end-0 m-2 text-muted" style="font-size: 11px;">Progress updates only after accounts</small>
-    <div class="flex-shrink-0" style="font-size: 30px; color: #f59e0b; margin-top: -4px;">
-        <i class="ri-lightbulb-line"></i>
-    </div>
-    <div>
-        <h5 class="fw-semibold mb-2" style="font-size: 16px; color: #1a1a1a;">Before Starting Tier 1, Please Read Carefully.</h5>
-        <ul class="mb-0 ps-3" style="font-size: 13px; color: #3a3a3a; line-height: 1.5;">
-            <li class="mb-1">Tier 1 requires <b>opening accounts</b> with approved starter vendors below.</li>
-            <li class="mb-1">Every business is unique; always <b>read</b> guidance before acting.</li>
-            <li class="mb-1">Account progress is only confirmed after opening and verified by FCH.</li>
-            <li>Do not apply for vendors outside this list. Doing so may result in denials and hard inquiries.</li>
-        </ul>
-    </div>
-</div>`;
-
-        if (editorRef.current && window.$) {
-            const $editor = window.$(editorRef.current);
-            if ($editor.summernote('isEmpty')) {
-                $editor.summernote('code', defaultTemplate);
-            } else {
-                $editor.summernote('pasteHTML', defaultTemplate);
-            }
+                    const response = await getTier(id);
+                    // Extract the actual tier data from response.data
+                    const tierData = response.data || response;
+                    setFormData({
+                        name: tierData.name || '',
+                        title: tierData.title || '',
+                        subtitle: tierData.subtitle || '',
+                        description: tierData.description || '',
+                        status: ['active', 'Active'].includes(tierData.status) ? 'Active' : 'Inactive'
+                    });
+                } catch (err) {
+                    console.error('Failed to load tier:', err);
+                    toast.error('Failed to load tier details');
+                    navigate('/tiers');
+                } finally {
+                    setInitialLoading(false);
+                }
+            };
+            loadTier();
         }
-    };
+    }, [id, isEditMode, navigate]);
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
@@ -187,10 +121,10 @@ export default function TierForm() {
     };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value, type } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? (checked ? 1 : 0) : (type === 'number' ? Number(value) : value)
+            [name]: type === 'number' ? Number(value) : value
         }));
     };
 
@@ -208,7 +142,7 @@ export default function TierForm() {
         return () => clearInterval(interval);
     }, [activeTab]);
 
-    if (isEditMode && isTierLoading) {
+    if (initialLoading) {
         return (
             <div className="page-content">
                 <ToastContainer position="top-right" autoClose={3000} />
@@ -355,18 +289,16 @@ export default function TierForm() {
                                             <i className="far fa-user"></i> Task Information
                                         </button>
                                     </li>
-                                    {isEditMode && formData.has_vendor === 1 && (
-                                        <li className="nav-item">
-                                            <button
-                                                className={`nav-link ${activeTab === 'vendorInfo' ? 'active' : ''}`}
-                                                onClick={() => setActiveTab('vendorInfo')}
-                                                type="button"
-                                                role="tab"
-                                            >
-                                                <i className="fas fa-store"></i> Vendors
-                                            </button>
-                                        </li>
-                                    )}
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === 'vendorInfo' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('vendorInfo')}
+                                            type="button"
+                                            role="tab"
+                                        >
+                                            <i className="fas fa-store"></i> Vendors
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
                             <div className="card-body p-4">
@@ -415,7 +347,7 @@ export default function TierForm() {
                                                 )}
                                             </div>
 
-                                            {/* Row 2: Subtitle and Vendor */}
+                                            {/* Row 2: Subtitle and Status */}
                                             <div className="col-md-6">
                                                 <label htmlFor="subtitle" className="form-label">Subtitle</label>
                                                 <input
@@ -436,40 +368,36 @@ export default function TierForm() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="col-md-12">
-                                                <div className="form-check form-switch form-switch-lg mt-2">
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="checkbox"
-                                                        role="switch"
-                                                        id="has_vendor"
-                                                        name="has_vendor"
-                                                        checked={formData.has_vendor === 1}
-                                                        onChange={handleChange}
-                                                    />
-                                                    <label className="form-check-label" htmlFor="has_vendor">
-                                                        Has Vendor
-                                                    </label>
-                                                </div>
-                                            </div>
+                                            {/* <div className="col-md-6">
+                                                <label className="form-label">Status </label>
+                                                <Dropdown
+                                                    value={formData.status}
+                                                    options={TIER_STATUS_OPTIONS}
+                                                    onChange={(e) => {
+                                                        setFormData({ ...formData, status: e.value });
+                                                        setErrors({ ...errors, status: null });
+                                                    }}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Select status..."
+                                                    className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
+                                                />
+                                                {errors.status && (
+                                                    <div className="invalid-feedback d-block">
+                                                        {errors.status}
+                                                    </div>
+                                                )}
+                                            </div> */}
 
                                             {/* Row 3: Description */}
                                             <div className="col-md-12">
-                                                <div className="d-flex justify-content-between align-items-center mb-1">
-                                                    <label htmlFor="description" className="form-label mb-0">Description</label>
-                                                    <span 
-                                                        className="text-primary text-decoration-underline" 
-                                                        style={{ cursor: 'pointer', fontSize: '13px' }} 
-                                                        onClick={handleDefaultTemplate}
-                                                    >
-                                                        Add default Template
-                                                    </span>
-                                                </div>
+                                                <label htmlFor="description" className="form-label">Description</label>
                                                 <div className={errors.description ? 'is-invalid' : ''}>
                                                     <textarea
-                                                        ref={editorRef}
+                                                        ref={descriptionRef}
                                                         id="description"
                                                         name="description"
+                                                        className="d-none"
                                                     />
                                                 </div>
                                                 {errors.description && (

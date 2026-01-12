@@ -1,7 +1,8 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 export default function EmployeeListHeader({ selection, onDeleteSelected }) {
+    const { hasPermission } = usePermissions();
     return (
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
             <div className="col-12">
@@ -20,7 +21,7 @@ export default function EmployeeListHeader({ selection, onDeleteSelected }) {
                             <div className="row g-3 mb-0 align-items-center">
                                 <div className="col-sm-auto">
                                     <div className="btn-group">
-                                        {Array.isArray(selection) && selection.length > 0 ? (
+                                        {hasPermission('delete employees') && Array.isArray(selection) && selection.length > 0 ? (
                                             <>
                                                 <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
                                                     Actions
@@ -40,11 +41,11 @@ export default function EmployeeListHeader({ selection, onDeleteSelected }) {
                                                     </li>
                                                 </ul>
                                             </>
-                                        ) : (
+                                        ) : hasPermission('create employees') ? (
                                             <Link to="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                                 <i className="ri-add-fill me-1 align-bottom"></i> Add Employee
                                             </Link>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>

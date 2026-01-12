@@ -13,12 +13,27 @@ import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { Navigate } from 'react-router-dom';
 
 export default function PartnerProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
+    const { hasPermission } = usePermissions();
+
+    // Permission checks
+    const canCreate = hasPermission('create partners');
+    const canUpdate = hasPermission('update partners');
+
+    // Access control: redirect to access-denied if lacks required permission
+    if (id && !canUpdate) {
+        return <Navigate to="/access-denied" replace />;
+    }
+    if (!id && !canCreate) {
+        return <Navigate to="/access-denied" replace />;
+    }
 
     // Determine initial active tab based on navigation state or defaults
     const getInitialTab = () => {

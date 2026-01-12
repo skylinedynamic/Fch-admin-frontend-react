@@ -8,9 +8,11 @@ import { fetchContacts, deleteContacts } from '../../modules/contact/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../components/Loader/TableLoader';
 import { toast } from 'react-toastify';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function Contacts() {
     const navigate = useNavigate();
+    const { hasPermission } = usePermissions();
     // State for contacts
     const [contacts, setContacts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -224,7 +226,7 @@ export default function Contacts() {
                             </div>
                             <div className="mt-0">
                                 <div className="d-flex gap-2">
-                                    {Array.isArray(selectedContacts) && selectedContacts.length > 0 ? (
+                                    {hasPermission('delete contacts') && Array.isArray(selectedContacts) && selectedContacts.length > 0 ? (
                                         <div className="btn-group">
                                             <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
                                             <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
@@ -238,7 +240,7 @@ export default function Contacts() {
                                                 </li>
                                             </ul>
                                         </div>
-                                    ) : (
+                                    ) : hasPermission('create contacts') ? (
                                         <button
                                             type="button"
                                             className="btn btn-primary fw-medium waves-effect waves-light"
@@ -246,7 +248,7 @@ export default function Contacts() {
                                         >
                                             <i className="ri-add-fill me-1 align-bottom"></i> Add Contact
                                         </button>
-                                    )}
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
@@ -335,7 +337,9 @@ export default function Contacts() {
                                             emptyMessage="No contacts found"
                                             className="p-datatable-sm"
                                         >
-                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
+                                            {hasPermission('delete contacts') && (
+                                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
+                                            )}
                                             <Column field="full_name" header="Full Name" body={fullNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by name" style={{ minWidth: '180px' }} />
                                             <Column field="company_name" header="Company" sortable filter showFilterMatchModes filterPlaceholder="Search by company" style={{ minWidth: '180px' }} />
                                             <Column field="mobile_number" header="Mobile" sortable filter showFilterMatchModes filterPlaceholder="Search by mobile" style={{ minWidth: '150px' }} />
