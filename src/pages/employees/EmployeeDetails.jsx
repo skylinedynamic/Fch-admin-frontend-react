@@ -547,18 +547,6 @@ export default function EmployeeDetails() {
                   <i className="ri-save-3-line align-middle me-1"></i>
                   {id ? 'Update' : 'Save'}
                 </button>
-                {id && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const modal = new window.bootstrap.Modal(document.getElementById('emailComposeModal'));
-                      modal.show();
-                    }}
-                    className="btn btn-outline-primary w-lg waves-effect"
-                  >
-                    <i className="ri-mail-send-line align-middle me-1"></i> Email
-                  </button>
-                )}
               </div>
             </div>
           </div>

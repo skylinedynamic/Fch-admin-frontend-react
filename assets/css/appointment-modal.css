@@ -37,11 +37,19 @@
     color: #354a8e !important;
 }
 
+.description-content {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
 .rich-text-content {
     font-family: var(--vz-body-font-family);
     font-size: 14px;
     color: #495057;
     line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .rich-text-content p {

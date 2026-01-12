@@ -11,6 +11,7 @@ import { Skeleton } from 'primereact/skeleton';
 import { fetchAppointmentById, createAppointment, deleteAppointment, updateAppointment, checkAvailability, fetchSelectableUsers } from '../../../modules/appointment/services';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useSummernote } from '../../../hooks/useSummernote';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Config
@@ -22,7 +23,7 @@ import '../../../../assets/css/appointment-modal.css';
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
     const dateInputRef = useRef(null);
-    const descriptionEditorRef = useRef(null);
+    const descriptionEditorRef = useRef(null); // This ref will be passed to the useSummernote hook
     const [modalInstance, setModalInstance] = useState(null);
     const [viewMode, setViewMode] = useState(true);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -287,11 +288,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             });
             setFormErrors({});
 
-            // Manual reset for plugins
-            if (descriptionEditorRef.current) {
-                $(descriptionEditorRef.current).summernote('code', '');
-            }
-
             // Sync flatpickr if already initialized
             const dateInput = document.getElementById("event-start-date-modal");
             if (dateInput && dateInput._flatpickr) {
@@ -373,11 +369,6 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     entity_type: formattedType
                 });
             }
-
-            // Manual Summernote reset/sync
-            if (descriptionEditorRef.current) {
-                $(descriptionEditorRef.current).summernote('code', apt.description || '');
-            }
         } catch (error) {
             console.error("Failed to fetch details", error);
         } finally {
@@ -404,12 +395,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         };
 
-        // Fetch description directly from Summernote
-        let descVal = formData.description;
-        if (descriptionEditorRef.current) {
-            descVal = $(descriptionEditorRef.current).summernote('code');
-            if (descVal === '<p><br></p>') descVal = '';
-        }
+        // Fetch description
+        const descVal = formData.description;
 
         const startDateTime = new Date(`${formData.date}T${formData.timeStart}`);
         const durationMinutes = (new Date(`${formData.date}T${formData.timeEnd}`) - startDateTime) / 60000;
@@ -522,62 +509,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     }, [viewMode]);
 
 
-    // Summernote initialization
-    useEffect(() => {
-        let $editor = null;
-        if (!viewMode && descriptionEditorRef.current) {
-            $editor = $(descriptionEditorRef.current);
-
-            if ($editor.summernote) {
-                $editor.summernote({
-                    height: 150,
-                    placeholder: 'Enter description here...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents) => {
-                            const isEmpty = contents === '<p><br></p>';
-                            setFormData(prev => ({ ...prev, description: isEmpty ? '' : contents }));
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                // Set initial content
-                if (formData.description) {
-                    $editor.summernote('code', formData.description);
-                }
-            }
-        }
-
-        return () => {
-            if ($editor && $editor.summernote) {
-                try {
-                    $editor.summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, [viewMode]);
-
-    // Update content when formData.description changes externally (e.g. after fetch)
-    useEffect(() => {
-        if (!viewMode && descriptionEditorRef.current) {
-            const $editor = $(descriptionEditorRef.current);
-            if ($editor.summernote) {
-                const currentCode = $editor.summernote('code');
-                if (currentCode !== (formData.description || '')) {
-                    $editor.summernote('code', formData.description || '');
-                }
-            }
-        }
-    }, [formData.description]);
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            description: value
+        }));
+    }, {
+        height: 150,
+        placeholder: 'Enter description here...',
+        dialogsInBody: true
+    }, !viewMode); // Pass !viewMode as the enabled state
 
     const assignedOptions = selectableUsers.map(u => ({
         label: u.name,
@@ -933,7 +876,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
                                     <div className="col-12 mb-3">
                                         <label className="form-label fs-13 fw-semibold">Description</label>
-                                        <div ref={descriptionEditorRef}></div>
+                                        <div ref={descriptionRef}></div>
                                     </div>
                                 </div>
 

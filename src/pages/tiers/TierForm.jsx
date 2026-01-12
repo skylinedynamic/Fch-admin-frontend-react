@@ -10,9 +10,7 @@ import { TIER_STATUS_OPTIONS } from '../../config';
 import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
 import TierVendors from './components/TierVendors';
-
-// Import Summernote JS (it will attach itself to the global jQuery)
-import 'summernote/dist/summernote-lite.js';
+import { useSummernote } from '../../hooks/useSummernote';
 
 export default function TierForm() {
     const navigate = useNavigate();
@@ -35,65 +33,20 @@ export default function TierForm() {
     // Initialize activeTab from navigation state or default to 'tierInfo'
     const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'tierInfo');
 
-    // Summernote Ref
-    const editorRef = useRef(null);
     const vendorsRef = useRef(null);
 
-    // Update activeTab when location state changes
-    useEffect(() => {
-        if (location.state?.activeTab) {
-            setActiveTab(location.state.activeTab);
+    // Use global Summernote hook
+    const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
+        const { value } = e.target;
+        setFormData(prev => ({ ...prev, description: value }));
+        if (errors.description) {
+            setErrors(prev => ({ ...prev, description: null }));
         }
-    }, [location.state]);
-
-    // Initialize Summernote
-    useEffect(() => {
-        if (activeTab === 'tierInfo' && !initialLoading && editorRef.current) {
-            const $ = window.$;
-            const $editor = $(editorRef.current);
-
-            // Destroy previous instance to be safe
-            if ($editor.summernote) {
-                // Initialize
-                $editor.summernote({
-                    height: 200,
-                    placeholder: 'Enter description...',
-                    dialogsInBody: true,
-                    callbacks: {
-                        onChange: (contents) => {
-                            setFormData(prev => ({ ...prev, description: contents }));
-                            if (errors.description) {
-                                setErrors(prev => ({ ...prev, description: null }));
-                            }
-                        }
-                    },
-                    toolbar: [
-                        ['style', ['style']],
-                        ['font', ['bold', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['table', ['table']],
-                        ['insert', ['link', 'picture', 'video']],
-                        ['view', ['fullscreen', 'codeview', 'help']]
-                    ]
-                });
-
-                // Set initial content
-                if (formData.description) {
-                    $editor.summernote('code', formData.description);
-                }
-            }
-        }
-
-        return () => {
-            if (window.$ && editorRef.current) {
-                const $ = window.$;
-                try {
-                    $(editorRef.current).summernote('destroy');
-                } catch (e) { }
-            }
-        };
-    }, [activeTab, initialLoading]);
+    }, {
+        height: 200,
+        placeholder: 'Enter description...',
+        dialogsInBody: true
+    }, activeTab === 'tierInfo' && !initialLoading);
 
     useEffect(() => {
         if (isEditMode) {
@@ -442,9 +395,10 @@ export default function TierForm() {
                                                 <label htmlFor="description" className="form-label">Description</label>
                                                 <div className={errors.description ? 'is-invalid' : ''}>
                                                     <textarea
-                                                        ref={editorRef}
+                                                        ref={descriptionRef}
                                                         id="description"
                                                         name="description"
+                                                        className="d-none"
                                                     />
                                                 </div>
                                                 {errors.description && (
