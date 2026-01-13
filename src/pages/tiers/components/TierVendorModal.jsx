@@ -4,7 +4,7 @@ import { Chips } from 'primereact/chips';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 
-import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS } from '../../../config';
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS, VENDOR_STATUS_OPTIONS } from '../../../config';
 import { SUMMERNOTE_CONFIG } from '../../../config/summernote';
 
 const TierVendorModal = ({
@@ -27,10 +27,11 @@ const TierVendorModal = ({
         description: '',
         affiliate_url: '',
         general_url: '',
+        logo: null,
         requirements: [],
         benefits: [],
         report_to: [],
-        status: 'Active'
+        status: VENDOR_STATUS_OPTIONS['Active']
     });
     const [errors, setErrors] = useState({});
 
@@ -77,6 +78,7 @@ const TierVendorModal = ({
                     description: vendor.description || '',
                     affiliate_url: vendor.affiliate_url || '',
                     general_url: vendor.general_url || '',
+                    logo: null, // Don't preload file object, maybe show preview if needed
                     requirements: vendor.requirements || [],
                     benefits: vendor.benefits || [],
                     report_to: vendor.report_to || [],
@@ -89,6 +91,7 @@ const TierVendorModal = ({
                     description: '',
                     affiliate_url: '',
                     general_url: '',
+                    logo: null,
                     requirements: [],
                     benefits: [],
                     report_to: [],
@@ -141,11 +144,27 @@ const TierVendorModal = ({
     }, [show, vendor]); // Re-init if vendor changes in edit mode
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        const { name, value, type, files } = e.target;
+        if (type === 'file') {
+            const file = files[0];
+            let processedFile = file;
+            
+            // Sanitize filename if it has spaces
+            if (file && /\s/.test(file.name)) {
+                const sanitizedName = file.name.replace(/\s+/g, '_');
+                processedFile = new File([file], sanitizedName, { type: file.type });
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                [name]: processedFile
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
@@ -315,6 +334,60 @@ const TierVendorModal = ({
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="col-md-12">
+                                    <label className="form-label">Logo <small className="text-muted">(recommended size: 300 x 100)</small></label>
+                                    <div 
+                                        className={`border rounded-3 d-flex align-items-center justify-content-center position-relative ${errors.logo ? 'border-danger' : 'border-secondary-subtle'}`}
+                                        style={{ 
+                                            height: '100px', 
+                                            backgroundColor: '#f8f9fa',
+                                            borderStyle: 'dashed',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        <input
+                                            type="file"
+                                            name="logo"
+                                            id="logo-upload"
+                                            className="d-none"
+                                            onChange={handleChange}
+                                            accept="image/*"
+                                        />
+                                        
+                                        {(formData.logo instanceof File || (vendor?.logo && !formData.logo)) ? (
+                                            <div className="w-100 h-100 d-flex align-items-center justify-content-center p-2 position-relative">
+                                                <img 
+                                                    src={formData.logo instanceof File ? URL.createObjectURL(formData.logo) : (typeof vendor.logo === 'string' ? vendor.logo.replace(/ /g, '%20') : vendor.logo)} 
+                                                    alt="Logo" 
+                                                    className="img-fluid" 
+                                                    style={{ maxHeight: '100%', objectFit: 'contain' }}
+                                                />
+                                                <div 
+                                                    className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                                                    onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                                                    onClick={() => document.getElementById('logo-upload').click()}
+                                                >
+                                                    <span className="btn btn-sm btn-light rounded-pill">
+                                                        <i className="ri-upload-2-fill me-1"></i> Change
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label 
+                                                htmlFor="logo-upload" 
+                                                className="w-100 h-100 d-flex flex-column align-items-center justify-content-center cursor-pointer text-muted"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <i className="ri-image-add-line fs-3 mb-1 opacity-50"></i>
+                                                <small className="fw-medium" style={{ fontSize: '0.75rem' }}>Click to upload</small>
+                                            </label>
+                                        )}
+                                    </div>
+                                    {errors.logo && <div className="invalid-feedback d-block">{errors.logo}</div>}
                                 </div>
 
                                 <div className="col-md-6">

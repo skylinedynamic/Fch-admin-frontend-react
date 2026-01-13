@@ -93,7 +93,6 @@ export default function ClientDetails() {
         years_in_business: '',
         number_of_employees: '',
         nsf_days: '',
-        time_in_business: '',
         funding_urgency: ''
     });
 

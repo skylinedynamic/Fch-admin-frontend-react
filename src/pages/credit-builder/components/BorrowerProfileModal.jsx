@@ -161,6 +161,12 @@ export default function BorrowerProfileModal({ show, onHide, borrowerId, profile
                                                     {renderField("Website", profile.business_website, true, "col-12")}
                                                     {renderField("Address", profile.business_address, false, "col-12")}
                                                     <div className="row g-2">
+                                                        {renderField("City", profile.business_city, false, "col-6")}
+                                                        {renderField("State", profile.business_state, false, "col-6")}
+                                                        {renderField("Zip Code", profile.business_zip_code, false, "col-6")}
+                                                        {renderField("DUNS Number", profile.duns_number, false, "col-6")}
+                                                    </div>
+                                                    <div className="row g-2">
                                                         {renderField("Entity Type", profile.business_entity_type, false, "col-6")}
                                                         {renderField("Industry", profile.business_industry_type, false, "col-6")}
                                                     </div>

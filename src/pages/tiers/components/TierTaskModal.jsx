@@ -27,7 +27,8 @@ const TierTaskModal = ({
         estimated_completion_days: '',
         order: '',
         manual_verification: false,
-        related_api_id: null
+        related_api_id: null,
+        vendor_id: null
     });
 
     // Use global Summernote hook
@@ -75,7 +76,8 @@ const TierTaskModal = ({
                     estimated_completion_days: task.estimated_completion_days || '',
                     order: task.order || '',
                     manual_verification: task.manual_verification == 1 || task.manual_verification === true,
-                    related_api_id: task.related_api_id || null
+                    related_api_id: task.related_api_id || null,
+                    vendor_id: task.vendor_id || null
                 });
             } else {
                 setFormData({
@@ -86,7 +88,8 @@ const TierTaskModal = ({
                     estimated_completion_days: '',
                     order: '',
                     manual_verification: false,
-                    related_api_id: null
+                    related_api_id: null,
+                    vendor_id: null
                 });
             }
             setErrors({});
@@ -111,9 +114,18 @@ const TierTaskModal = ({
             tempErrors.title = "Title is required";
             isValid = false;
         }
-        if (!formData.manual_verification && !formData.related_api_id) {
-            tempErrors.related_api_id = "Verification API/Vendor is required for automated tasks";
-            isValid = false;
+        if (!formData.manual_verification) {
+            if (tier?.code === 'T1') {
+                if (!formData.vendor_id) {
+                    tempErrors.vendor_id = "Vendor is required for automated tasks";
+                    isValid = false;
+                }
+            } else {
+                if (!formData.related_api_id) {
+                    tempErrors.related_api_id = "Verification API is required for automated tasks";
+                    isValid = false;
+                }
+            }
         }
         setErrors(tempErrors);
         return isValid;
@@ -122,13 +134,24 @@ const TierTaskModal = ({
     const handleSubmit = (e) => {
         e.preventDefault();
         if (validate()) {
-            onSubmit({
+            const payload = {
                 ...formData,
                 tier_id: tierId,
                 estimated_completion_days: formData.estimated_completion_days ? Number(formData.estimated_completion_days) : null,
                 order: formData.order ? Number(formData.order) : 0,
                 manual_verification: formData.manual_verification ? 1 : 0
-            });
+            };
+
+            // Handle conditional IDs
+            if (tier?.code === 'T1') {
+                payload.vendor_id = formData.vendor_id;
+                payload.related_api_id = null; // Ensure this is null for T1
+            } else {
+                payload.related_api_id = formData.related_api_id;
+                payload.vendor_id = null; // Ensure this is null for others
+            }
+
+            onSubmit(payload);
         }
     };
 
@@ -197,7 +220,7 @@ const TierTaskModal = ({
                                     <label className="form-label">{tier?.code === 'T1' ? 'Related Vendor' : 'Verified By Api'}</label>
                                     {tier?.code === 'T1' ? (
                                         <Dropdown
-                                            value={formData.related_api_id}
+                                            value={formData.vendor_id}
                                             options={vendors || []}
                                             optionLabel="name"
                                             optionValue="id"
@@ -208,13 +231,13 @@ const TierTaskModal = ({
                                                 </div>
                                             )}
                                             onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, related_api_id: e.value }));
-                                                if (errors.related_api_id) {
-                                                    setErrors(prev => ({ ...prev, related_api_id: null }));
+                                                setFormData(prev => ({ ...prev, vendor_id: e.value }));
+                                                if (errors.vendor_id) {
+                                                    setErrors(prev => ({ ...prev, vendor_id: null }));
                                                 }
                                             }}
                                             placeholder="Select Vendor"
-                                            className={`w-100 ${errors.related_api_id ? 'p-invalid' : ''}`}
+                                            className={`w-100 ${errors.vendor_id ? 'p-invalid' : ''}`}
                                             showClear
                                             appendTo={document.body}
                                             filter

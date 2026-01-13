@@ -218,21 +218,6 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                         {errors.nsf_days && <div className="invalid-feedback">{errors.nsf_days}</div>}
                     </div>
                 </div>
-                <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="time_in_business" className="form-label">Time in Business</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.time_in_business ? 'is-invalid' : ''}`}
-                            id="time_in_business"
-                            name="time_in_business"
-                            placeholder="e.g., 1 year"
-                            value={formData.time_in_business || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.time_in_business && <div className="invalid-feedback">{errors.time_in_business}</div>}
-                    </div>
-                </div>
 
                 <div className="col-lg-12">
                     <div className="mb-3">

@@ -39,7 +39,6 @@ export type Client = {
     years_in_business?: string | number;
     number_of_employees?: string | number;
     nsf_days?: string | number;
-    time_in_business?: string;
     funding_urgency?: string;
 
     // Metadata

@@ -289,7 +289,6 @@ export default function VerificationCenter() {
                                             field="partner_name"
                                             header="Partner Name"
                                             sortable
-                                            filter
                                             filterPlaceholder="Search Partner"
                                             style={{ width: '20%' }}
                                             body={(rowData) => <span className="text-muted fw-medium">{rowData.partner_name}</span>}

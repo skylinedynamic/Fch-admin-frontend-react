@@ -71,7 +71,7 @@ export const useTierVendors = (payload: any = {}) => {
 export const useCreateTierVendor = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: TierVendorFormData) => createTierVendor(data),
+        mutationFn: (data: TierVendorFormData | FormData) => createTierVendor(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
         },
@@ -81,7 +81,7 @@ export const useCreateTierVendor = () => {
 export const useUpdateTierVendor = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: TierVendorFormData }) => updateTierVendor(id, data),
+        mutationFn: ({ id, data }: { id: number; data: TierVendorFormData | FormData }) => updateTierVendor(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tier-vendors'] });
         },

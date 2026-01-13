@@ -1035,3 +1035,8 @@
     width: 38px !important;
     padding-left: 12px !important;
 }
+
+.form-control[type=file]:hover{
+  border: 1px solid #e2e5ec !important;
+  background-color: #eff2f7 !important;
+}

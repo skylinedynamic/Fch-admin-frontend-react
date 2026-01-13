@@ -71,12 +71,28 @@ export const fetchTierVendors = async (payload: any = {}): Promise<TierVendorsRe
     return response.data;
 };
 
-export const createTierVendor = async (payload: TierVendorFormData): Promise<TierVendor> => {
+export const createTierVendor = async (payload: TierVendorFormData | FormData): Promise<TierVendor> => {
+    if (payload instanceof FormData) {
+        const { data } = await apiClient.post('/admin/credit-builder/vendors', payload, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return data;
+    }
     const { data } = await apiClient.post('/admin/credit-builder/vendors', payload);
     return data;
 }
 
-export const updateTierVendor = async (id: number, payload: TierVendorFormData): Promise<TierVendor> => {
+export const updateTierVendor = async (id: number, payload: TierVendorFormData | FormData): Promise<TierVendor> => {
+    if (payload instanceof FormData) {
+        const { data } = await apiClient.post(`/admin/credit-builder/vendors/${id}`, payload, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return data;
+    }
     const { data } = await apiClient.put(`/admin/credit-builder/vendors/${id}`, payload);
     return data;
 }
