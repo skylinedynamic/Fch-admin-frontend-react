@@ -175,8 +175,8 @@ span.flatpickr-weekday {
     border-radius: 0.3rem !important;
 }
 
-.modal-content .form-control,
-.modal-content .p-dropdown {
+#appointmentModal .modal-content .form-control,
+#appointmentModal .modal-content .p-dropdown {
     height: 38px !important;
     display: flex !important;
     align-items: center !important;

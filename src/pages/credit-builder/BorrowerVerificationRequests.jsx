@@ -3,6 +3,7 @@ import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
+import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
@@ -36,9 +37,9 @@ export default function BorrowerVerificationRequests() {
 
     // Column Filters
     const [filters, setFilters] = useState({
-        task_title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-        tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-        request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+        task_title: { constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+        tier_name: { constraints: [{ value: null }] },
+        request_date: { constraints: [{ value: null }] }
     });
 
     // Filters
@@ -46,6 +47,8 @@ export default function BorrowerVerificationRequests() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [selectedTier, setSelectedTier] = useState('');
     const [appliedTier, setAppliedTier] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState(VERIFICATION_STATUS.PROCESSING);
+    const [appliedStatus, setAppliedStatus] = useState(VERIFICATION_STATUS.PROCESSING);
     const [tiersList, setTiersList] = useState([]);
 
 
@@ -57,9 +60,12 @@ export default function BorrowerVerificationRequests() {
             if (response.status && response.data) {
                 setProfileData(response.data);
                 // Set default tier filter based on profile
-                if (response.data.current_tier_id) {
-                    setSelectedTier(response.data.current_tier_id);
-                    setAppliedTier(response.data.current_tier_id);
+                if (response.data.current_tier) {
+                    // Ensure type consistency (e.g. if API returns string "1" and options are number 1)
+                    // We can try to find the matching option in tiersList if available, or just set it. 
+                    // Since tiersList might not be loaded, we trust the ID value.
+                    setSelectedTier(response.data.current_tier);
+                    setAppliedTier(response.data.current_tier);
                 }
             }
         } catch (error) {
@@ -88,25 +94,18 @@ export default function BorrowerVerificationRequests() {
         // If we don't have profileData yet, we can't load requests reliably if we need partner_id from it
         if (!borrower_id) return;
         
-        const currentPartnerId = profileData?.partner_id || partner_id;
-
-        if (!currentPartnerId) {
-             // If profile is loading, or failed, we might not have partner_id yet. 
-             // We can skip loading requests until profile is loaded.
-             return; 
-        }
 
         setLoading(true);
         try {
             const payload = {
                 borrower_id,
-                partner_id: currentPartnerId,
                 page: page,
                 per_page: perPage,
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
                 tier_id: appliedTier,
+                status: appliedStatus,
                 filters: filters
             };
 
@@ -126,7 +125,7 @@ export default function BorrowerVerificationRequests() {
         } finally {
             setLoading(false);
         }
-    }, [borrower_id, partner_id, profileData, page, perPage, sortField, sortOrder, appliedSearchText, appliedTier, filters]);
+    }, [borrower_id, partner_id, profileData, page, perPage, sortField, sortOrder, appliedSearchText, appliedTier, appliedStatus, filters]);
 
     useEffect(() => {
         fetchProfileData();
@@ -155,6 +154,7 @@ export default function BorrowerVerificationRequests() {
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedTier(selectedTier);
+        setAppliedStatus(selectedStatus);
         setPage(1);
     };
 
@@ -163,15 +163,17 @@ export default function BorrowerVerificationRequests() {
         setAppliedSearchText('');
         setSelectedTier(profileData?.current_tier_id || ''); // Reset to default if exists, or empty
         setAppliedTier(profileData?.current_tier_id || '');
+        setSelectedStatus(VERIFICATION_STATUS.PROCESSING);
+        setAppliedStatus(VERIFICATION_STATUS.PROCESSING);
         setFilters({
-            task_title: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            request_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            task_title: { constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            tier_name: { constraints: [{ value: null }] },
+            request_date: { constraints: [{ value: null }] }
         });
         setPage(1);
     };
 
-    const [deleteRows, setDeleteRows] = useState([]);
+    const [selectedRequests, setSelectedRequests] = useState([]);
 
     // Profile Modal State
     const [showProfileModal, setShowProfileModal] = useState(false);
@@ -180,47 +182,72 @@ export default function BorrowerVerificationRequests() {
     // Verification/Reject Action Modal State
     const [showActionModal, setShowActionModal] = useState(false);
     const [actionType, setActionType] = useState('verify'); // 'verify' or 'reject'
-    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [selectedRequest, setSelectedRequest] = useState(null); // Single request (original logic)
+    const [isBulkAction, setIsBulkAction] = useState(false); // Flag for bulk
     const [actionLoading, setActionLoading] = useState(false);
     const [validationErrors, setValidationErrors] = useState(null);
 
-    const openActionModal = (type, rowData) => {
+    const openActionModal = (type, rowData = null) => {
         setActionType(type);
-        setSelectedRequest(rowData);
-        setShowActionModal(true);
         setValidationErrors(null); // Clear previous errors
+        
+        if (rowData) {
+            // Single action
+            setSelectedRequest(rowData);
+            setIsBulkAction(false);
+        } else {
+            // Bulk action
+            setSelectedRequest(null);
+            setIsBulkAction(true);
+        }
+        setShowActionModal(true);
     };
 
     const handleActionConfirm = async (reason) => {
-        if (!selectedRequest) return;
+        const requestsToProcess = isBulkAction ? selectedRequests : [selectedRequest];
+        
+        if (!requestsToProcess || requestsToProcess.length === 0) return;
 
         setActionLoading(true);
-        try {
+        
+        // Convert to array of promises
+        const promises = requestsToProcess.map(req => {
             const payload = {
-                request_id: selectedRequest.id,
+                request_id: req.id,
                 status: actionType === 'verify' ? 'verified' : 'rejected',
                 rejection_reason: reason
             };
+            return updateVerificationStatus(payload);
+        });
 
-            const response = await updateVerificationStatus(payload);
+        try {
+            const results = await Promise.allSettled(promises);
+            
+            let successCount = 0;
+            let failCount = 0;
 
-            if (response.status) {
-                toast.success(response.message || `Request ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
-                setShowActionModal(false);
-                loadRequests(); // Refresh list
-            } else {
-                toast.error(response.message || 'Failed to update status');
+            results.forEach(result => {
+                if (result.status === 'fulfilled' && result.value.status) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            });
+
+            if (successCount > 0) {
+                 toast.success(`${successCount} request(s) ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
             }
+            if (failCount > 0) {
+                 toast.error(`Failed to update ${failCount} request(s)`);
+            }
+
+            setShowActionModal(false);
+            loadRequests(); // Refresh list
+            setSelectedRequests([]); // Clear selection after bulk action
+            
         } catch (err) {
-            console.error(err);
-            if (err.response && err.response.status === 422) {
-                // Validation error
-                setValidationErrors(err.response.data.errors);
-                // Optionally show a generic toast if needed, but user requested field errors
-            } else {
-                const errorMessage = err.response?.data?.message || 'An error occurred while updating status';
-                toast.error(errorMessage);
-            }
+             console.error("Bulk action error", err);
+             toast.error("An unexpected error occurred processing requests.");
         } finally {
             setActionLoading(false);
         }
@@ -239,6 +266,33 @@ export default function BorrowerVerificationRequests() {
         );
     };
 
+    const tierFilterTemplate = (options) => {
+        return (
+            <Dropdown 
+                value={options.value} 
+                options={tiersList} 
+                onChange={(e) => options.filterCallback(e.value)} 
+                placeholder="Select Tier" 
+                className="p-column-filter" 
+                showClear 
+            />
+        );
+    };
+
+    const dateFilterTemplate = (options) => {
+        return (
+            <Calendar 
+                value={options.value} 
+                onChange={(e) => options.filterCallback(e.value, options.index)} 
+                selectionMode="range" 
+                placeholder="Select Date Range" 
+                dateFormat="yy-mm-dd" 
+                className="p-column-filter" 
+                showIcon
+            />
+        );
+    };
+
     const taskTitleTemplate = (rowData) => {
         return (
             <div className="fw-medium">
@@ -249,22 +303,21 @@ export default function BorrowerVerificationRequests() {
 
     const actionBodyTemplate = (rowData) => {
         return (
-            <div className="dropdown">
-                <button className="btn btn-soft-promary btn-md" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i className="ri-more-2-fill align-middle"></i>
+            <div className="d-flex gap-2 justify-content-center">
+                <button 
+                    className="btn btn-sm btn-soft-success" 
+                    onClick={() => openActionModal('verify', rowData)}
+                    title="Verify"
+                >
+                    <i className="ri-check-line align-bottom"></i>
                 </button>
-                <ul className="dropdown-menu dropdown-menu-end text-md">
-                    <li>
-                        <button className="dropdown-item fs-14" onClick={() => openActionModal('verify', rowData)}>
-                            <i className="ri-check-line align-bottom me-2 text-muted"></i> Verify
-                        </button>
-                    </li>
-                    <li>
-                        <button className="dropdown-item fs-14" onClick={() => openActionModal('reject', rowData)}>
-                            <i className="ri-close-line align-bottom me-2 text-muted"></i> Reject
-                        </button>
-                    </li>
-                </ul>
+                <button 
+                    className="btn btn-sm btn-soft-danger" 
+                    onClick={() => openActionModal('reject', rowData)}
+                    title="Reject"
+                >
+                    <i className="ri-close-line align-bottom"></i>
+                </button>
             </div>
         );
     };
@@ -286,7 +339,7 @@ export default function BorrowerVerificationRequests() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 d-flex gap-2">
                                 <button
                                     onClick={() => navigate('/verification-center')}
                                     className="btn btn-outline-primary btn-md px-4"
@@ -294,6 +347,36 @@ export default function BorrowerVerificationRequests() {
                                 >
                                     <i className="ri-arrow-left-line align-bottom me-1"></i> Back
                                 </button>
+                                {selectedRequests.length > 0 && (
+                                    <div className="btn-group">
+                                        <button type="button" className="btn bg-success text-white fw-medium">
+                                            Actions
+                                        </button>
+                                        <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <span className="visually-hidden">Toggle dropdown</span>
+                                        </button>
+                                        <ul className="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    className="dropdown-item"
+                                                    onClick={() => openActionModal('verify')}
+                                                >
+                                                    <i className="ri-check-double-line me-1 align-bottom"></i> Bulk Verify
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    className="dropdown-item text-danger"
+                                                    onClick={() => openActionModal('reject')}
+                                                >
+                                                    <i className="ri-close-circle-line me-1 align-bottom"></i> Bulk Reject
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -310,7 +393,7 @@ export default function BorrowerVerificationRequests() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-4">
-                                        <div className="col-xxl-6 col-lg-4">
+                                        <div className="col-xxl-4 col-lg-4">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -340,6 +423,23 @@ export default function BorrowerVerificationRequests() {
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="All Tiers"
+                                                className="w-100 employee-filter-dropdown"
+                                            />
+                                        </div>
+
+                                        <div className="col-xxl-2 col-sm-4">
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.value)}
+                                                options={[
+                                                    { label: 'All Status', value: '' },
+                                                    { label: 'Processing', value: VERIFICATION_STATUS.PROCESSING },
+                                                    { label: 'Verified', value: VERIFICATION_STATUS.COMPLETED },
+                                                    { label: 'Rejected', value: VERIFICATION_STATUS.REJECTED }
+                                                ]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="All Status"
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
@@ -429,14 +529,18 @@ export default function BorrowerVerificationRequests() {
                                     </div>
                                 </div>
 
+
+
                                 {loading ? (
                                     <TableLoader
                                         rows={8}
                                         columns={[
-                                            { style: { width: '35%' } },
+                                            { style: { width: '3%' } },
+                                            { style: { width: '25%' } },
                                             { style: { width: '15%' } },
-                                            { style: { width: '20%' } },
-                                            { style: { width: '30%' } }
+                                            { style: { width: '17%' } },
+                                            { style: { width: '25%' } },
+                                            { style: { width: '15%' } }
                                         ]}
                                     />
                                 ) : (
@@ -455,10 +559,13 @@ export default function BorrowerVerificationRequests() {
                                         filterDisplay="menu"
                                         onFilter={onFilter}
                                         className="p-datatable-sm custom-table"
-                                        tableStyle={{ minWidth: '70rem' }}
+                                        tableStyle={{ minWidth: '80rem' }}
                                         dataKey="id"
                                         responsiveLayout="scroll"
+                                        selection={selectedRequests}
+                                        onSelectionChange={(e) => setSelectedRequests(e.value)}
                                     >
+                                        <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
 
                                         <Column
                                             field="task_title"
@@ -474,8 +581,10 @@ export default function BorrowerVerificationRequests() {
                                             header="Tier"
                                             sortable
                                             filter
+                                            filterElement={tierFilterTemplate}
+                                            showFilterMatchModes={false}
                                             filterPlaceholder="Search Tier"
-                                            style={{ width: '10%' }}
+                                            style={{ width: '15%' }}
                                             body={(rowData) => <span className="badge bg-info-subtle text-info fs-11">{rowData.tier_name}</span>}
                                         />
                                         <Column
@@ -483,21 +592,25 @@ export default function BorrowerVerificationRequests() {
                                             header="Status"
                                             body={statusTemplate}
                                             sortable
-                                            style={{ width: '15%' }}
+                                            showFilterMatchModes={false}
+                                            style={{ width: '17%' }}
                                         />
                                         <Column
                                             field="request_date"
                                             header="Request Date"
                                             sortable
                                             filter
+                                            showFilterMatchModes={false}
+                                            filterElement={dateFilterTemplate}
                                             filterPlaceholder="Search Date"
-                                            style={{ width: '20%' }}
+                                            style={{ width: '25%' }}
                                             body={(rowData) => <span className="text-muted">{rowData.request_date}</span>}
                                         />
                                         <Column
                                             header="Action"
                                             body={actionBodyTemplate}
-                                            style={{ width: '5%' }}
+                                            alignHeader={'center'} 
+                                            style={{ minWidth: '8rem', textAlign: 'center', width: '15%' }} 
                                         />
                                     </DataTable>
                                 )}

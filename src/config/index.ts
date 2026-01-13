@@ -29,4 +29,5 @@ export { APPOINTMENT_TYPE_OPTIONS, TIME_SLOTS } from './appointmentTypeOptions';
 export { TIMEZONE_OPTIONS } from './timezoneOptions';
 
 // Credit Builder related configurations
-export { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS, type ConfigOption } from './creditBuilder';
+export { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS,VENDOR_STATUS_OPTIONS, type ConfigOption } from './creditBuilder';
+

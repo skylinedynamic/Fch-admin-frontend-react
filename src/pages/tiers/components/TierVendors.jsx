@@ -142,7 +142,14 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                              data.append(`${key}[${index}]`, item);
                          });
                      } else if (value !== null && value !== undefined) {
-                         data.append(key, value);
+                         if (value instanceof File) {
+                             // Sanitize filename: replace spaces with underscores
+                             const sanitizedName = value.name.replace(/\s+/g, '_');
+                             const sanitizedFile = new File([value], sanitizedName, { type: value.type });
+                             data.append(key, sanitizedFile);
+                         } else {
+                             data.append(key, value);
+                         }
                      }
                  });
                  // For update, we might need to handle _method field if using PUT with FormData (Laravel quirk)
