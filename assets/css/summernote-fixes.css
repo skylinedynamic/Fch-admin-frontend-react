@@ -187,11 +187,6 @@
     cursor: pointer !important;
 }
 
-/* CRITICAL: Fix backdrop stacking for nested modals */
-.modal-backdrop.show~.modal-backdrop.show {
-    z-index: 2049 !important;
-}
-
 /* Ensure proper spacing for form groups */
 .note-modal .form-group:last-child {
     margin-bottom: 0 !important;

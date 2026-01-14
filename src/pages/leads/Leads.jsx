@@ -262,11 +262,21 @@ export default function Leads() {
     const handleConvertLead = async (rowData) => {
         const targetType = rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
-            await convertLead(rowData.id);
-            toast.success(`Lead converted to ${targetType} successfully`);
-            setAppliedFilters({ ...appliedFilters });
+            setLoading(true);
+            const response = await convertLead(rowData.id);
+            if (response.status && response.data?.id) {
+                toast.success(`Lead converted to ${targetType} successfully`);
+                const redirectPath = targetType === 'Partner' ? `/partners/${response.data.id}` : `/clients/${response.data.id}`;
+                navigate(redirectPath);
+            } else {
+                toast.success(`Lead converted to ${targetType} successfully`);
+                setAppliedFilters({ ...appliedFilters });
+            }
         } catch (err) {
-            toast.error(`Failed to convert lead to ${targetType}`);
+            console.error('Conversion error:', err);
+            toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -436,26 +446,26 @@ export default function Leads() {
                                             emptyMessage="No leads found"
                                         >
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                                            <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} />
-                                            <Column field="contact_name" header="Contact Name" sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
+                                            {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
+                                            <Column field="contact_name" header="Contact" sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
                                             <Column field="email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
-                                            <Column field="phone_number" header="Phone Number" sortable filter filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
-                                            <Column field="salesperson_name" header="Salesperson" sortable filter filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
-                                            <Column field="lead_type" header="Lead Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />
+                                            <Column field="phone_number" header="Phone" sortable filter filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
+                                            <Column field="salesperson_name" header="SalesPerson" sortable filter filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
+                                            <Column field="lead_type" header="Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
                                             <Column
-                                                header="Action"
-                                                body={(rowData) => (
+                                            header="Action"
+                                            body={(rowData) => (
+                                                <div className="d-flex">
                                                     <button 
-                                                        className="btn btn-soft-primary btn-sm fw-medium" 
-                                                        onClick={() => handleConvertLead(rowData)}
+                                                        className="btn btn-primary btn-sm fw-medium"
+                                                        onClick={(e) => { e.stopPropagation(); handleConvertLead(rowData); }}
                                                     >
-                                                        <i className="ri-exchange-fill align-bottom me-1"></i>
                                                         {rowData.lead_type === 'Partner' ? 'Convert to Partner' : 'Convert to Borrower'}
                                                     </button>
-                                                )}
-                                                style={{ minWidth: '180px' }}
-                                            />
+                                                </div>
+                                            )}
+                                        />
                                         </DataTable>
                                     </div>
                                 )}
