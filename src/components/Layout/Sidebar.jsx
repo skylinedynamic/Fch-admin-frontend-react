@@ -29,7 +29,7 @@ const menuItems = [
     permission: 'view demo request',
   },
   {
-    to: '/under-construction/leads',
+    to: '/leads',
     icon: 'las la-chart-pie',
     label: 'Leads',
     permission: 'view leads',
