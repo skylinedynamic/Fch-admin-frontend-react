@@ -507,13 +507,20 @@ export default function Leads() {
                                                 const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
                                                 return (
                                                     <div className="d-flex">
-                                                        <button 
-                                                            className={`btn ${isConverted ? 'btn-soft-success' : 'btn-primary'} btn-sm fw-medium`}
-                                                            onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
-                                                            disabled={isConverted}
-                                                        >
-                                                            {isConverted ? `Converted to ${targetType}` : `Convert to ${targetType}`}
-                                                        </button>
+                                                        {isConverted ? (
+                                                            <span className={`badge ${targetType === 'Partner' ? 'bg-success' : 'bg-success'} fs-12`}>
+                                                                <i className="ri-check-double-line align-middle me-1"></i>
+                                                                Already a {targetType}
+                                                            </span>
+                                                        ) : (
+                                                            <button 
+                                                                className={`btn ${isConverted ? 'btn-soft-success' : 'btn-primary'} btn-sm fw-medium`}
+                                                                onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
+                                                                disabled={isConverted}
+                                                            >
+                                                                Convert to {targetType}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
                                             }}

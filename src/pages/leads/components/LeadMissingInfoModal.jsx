@@ -4,7 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { locationData } from '../../../config';
 import { formatPhoneNumber } from '../../../utils/formatters';
 
-export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType, loading }) {
+export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [extraData, setExtraData] = useState({});
@@ -12,10 +12,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
     const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
 
-    const countries = Object.keys(locationData).map((key) => ({
+    const countries = locationData ? Object.keys(locationData).map((key) => ({
         label: locationData[key].name,
         value: locationData[key].name
-    }));
+    })) : [];
 
     useEffect(() => {
         if (show && lead) {
@@ -84,6 +84,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
             if (modalInstanceRef.current) {
                 modalInstanceRef.current.hide();
                 modalInstanceRef.current.dispose();
+                modalInstanceRef.current = null;
             }
         };
     }, [modalRef]);

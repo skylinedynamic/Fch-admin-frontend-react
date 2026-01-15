@@ -387,17 +387,6 @@ export default function LeadDetails() {
                                 <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {id && (
-                                    <button 
-                                        type="button" 
-                                        className={`btn ${formData.convert_to ? 'btn-soft-success' : 'btn-soft-secondary'} w-lg waves-effect`}
-                                        onClick={handleConvertClick}
-                                        disabled={!!formData.convert_to}
-                                    >
-                                        <i className={`${formData.convert_to ? 'ri-checkbox-circle-line' : 'ri-shuffle-line'} align-middle me-1`}></i> 
-                                        {formData.convert_to ? `Converted to ${formData.convert_to}` : 'Convert'}
-                                    </button>
-                                )}
                                 <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={loading}>
                                     <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
                                 </button>

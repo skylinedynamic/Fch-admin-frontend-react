@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 
-export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType, loading }) {
+export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
@@ -19,6 +19,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             if (modalInstanceRef.current) {
                 modalInstanceRef.current.hide();
                 modalInstanceRef.current.dispose();
+                modalInstanceRef.current = null;
             }
         };
     }, [modalRef]);
