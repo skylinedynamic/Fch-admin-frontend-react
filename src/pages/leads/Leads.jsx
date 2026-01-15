@@ -7,6 +7,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchLeads, deleteLead, fetchLeadStats, convertLead, updateLead } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { useAuthStore } from '../../store/auth/authStore';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
@@ -20,6 +21,8 @@ import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 export default function Leads() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
+    const currentUser = useAuthStore((state) => state.user);
+    const isHost = currentUser?.is_host === 1;
     
     // State for leads
     const [leads, setLeads] = useState([]);
@@ -416,16 +419,18 @@ export default function Leads() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-2 col-sm-4">
-                                            <Dropdown
-                                                value={selectedLeadType}
-                                                options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
-                                                onChange={(e) => setSelectedLeadType(e.value)}
-                                                placeholder="All Lead Types"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-2 col-sm-4">
+                                        {isHost && (
+                                            <div className="col-xxl-2 col-sm-4">
+                                                <Dropdown
+                                                    value={selectedLeadType}
+                                                    options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
+                                                    onChange={(e) => setSelectedLeadType(e.value)}
+                                                    placeholder="All Lead Types"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                        )}
+                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
                                             <Dropdown
                                                 value={selectedStatus}
                                                 options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
@@ -434,7 +439,7 @@ export default function Leads() {
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className="col-xxl-2 col-sm-4">
+                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
                                             <Dropdown
                                                 value={selectedSalesperson}
                                                 options={[{ label: 'All Sales Person', value: '' }, ...salespersonsList]}
@@ -498,7 +503,7 @@ export default function Leads() {
                                             <Column field="email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                                             <Column field="phone_number" header="Phone" sortable filter filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
                                             <Column field="salesperson_name" header="SalesPerson" sortable filter filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
-                                            <Column field="lead_type" header="Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />
+                                            {isHost && <Column field="lead_type" header="Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
                                             <Column
                                             header="Action"

@@ -36,7 +36,7 @@ export const deletePartner = async (id: string | number): Promise<void> => {
 };
 
 export const allUsers = async (): Promise<any> => {
-  const { data } = await apiClient.post('/admin/partners/get-all-users', {});
+  const { data } = await apiClient.post('common/get-all-users ', {});
   return data;
 };
 

@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { getLead, createLead, updateLead, convertLead, fetchGlobalStats } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { useAuthStore } from '../../store/auth/authStore';
 import { Navigate } from 'react-router-dom';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
@@ -32,6 +33,8 @@ export default function LeadDetails() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { hasPermission } = usePermissions();
+    const currentUser = useAuthStore((state) => state.user);
+    const isHost = currentUser?.is_host === 1;
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leadDetails');
     
@@ -46,6 +49,14 @@ export default function LeadDetails() {
             }
         }
     }, [searchParams, id]);
+
+    // Force Lead Type to Borrower if not host
+    useEffect(() => {
+        if (!isHost) {
+            setFormData(prev => ({ ...prev, lead_type: 'Borrower' }));
+        }
+    }, [isHost]);
+
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         lead_id: '',
@@ -129,8 +140,58 @@ export default function LeadDetails() {
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/; // (555) 555-5555
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Validation for Contact Info Tab
+        if (activeTab === 'contactInfo') {
+            if (!formData.contact_person?.trim()) newErrors.contact_person = 'Contact person is required';
+            
+            if (!formData.phone_number?.trim()) {
+                newErrors.phone_number = 'Phone number is required';
+            } else if (!phoneRegex.test(formData.phone_number)) {
+                newErrors.phone_number = 'Phone number must be 10 digits';
+            }
+
+            if (!formData.email?.trim()) {
+                newErrors.email = 'Email is required';
+            } else if (!emailRegex.test(formData.email)) {
+                newErrors.email = 'Invalid email format';
+            }
+
+            if (!formData.country) newErrors.country = 'Country is required';
+            if (!formData.state) newErrors.state = 'State is required';
+            if (!formData.city) newErrors.city = 'City is required';
+
+            // Business phone is optional now
+            if (formData.business_phone?.trim() && !phoneRegex.test(formData.business_phone)) {
+                newErrors.business_phone = 'Business phone must be 10 digits';
+            }
+        }
+
+        // Validation for Lead Details Tab
+        if (activeTab === 'leadDetails') {
+            if (!formData.company_name?.trim()) newErrors.company_name = 'Organization Name is required';
+            if (!formData.probability) newErrors.probability = 'Probability is required';
+            if (!formData.lead_type) newErrors.lead_type = 'Lead Type is required';
+            if (!formData.status) newErrors.status = 'Status is required';
+            if (!formData.salesperson_id) newErrors.salesperson_id = 'Salesperson is required';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        
+        if (!validateForm()) {
+            toast.error('Please fill in all required fields correctly');
+            return;
+        }
+
         setErrors({});
         setLoading(true);
 
@@ -450,7 +511,7 @@ export default function LeadDetails() {
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
                                     <li className="nav-item">
-                                        <a className={`nav-link ${activeTab === 'leadDetails' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveTab('leadDetails'); navigate('?tab=leadDetails', { replace: true }); }} href="#">Lead Details</a>
+                                        <a className={`nav-link ${activeTab === 'leadDetails' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setActiveTab('leadDetails'); setErrors({}); navigate('?tab=leadDetails', { replace: true }); }} href="#">Lead Details</a>
                                     </li>
                                     <li className="nav-item">
                                         <a 
@@ -458,7 +519,8 @@ export default function LeadDetails() {
                                             onClick={(e) => { 
                                                 e.preventDefault(); 
                                                 if (id) {
-                                                    setActiveTab('contactInfo'); 
+                                                    setActiveTab('contactInfo');
+                                                    setErrors({});
                                                     navigate('?tab=contactInfo', { replace: true }); 
                                                 } else {
                                                     toast.info('Please save lead details first to access contact info.');
@@ -478,7 +540,7 @@ export default function LeadDetails() {
                                         <div className="row">
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Probability (%)</label>
+                                                    <label className="form-label">Probability (%) <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.probability}
                                                         options={LEAD_PROBABILITY_OPTIONS}
@@ -489,22 +551,24 @@ export default function LeadDetails() {
                                                     {errors.probability && <div className="invalid-feedback d-block">{errors.probability}</div>}
                                                 </div>
                                             </div>
-                                            <div className="col-lg-6">
-                                                <div className="mb-3">
-                                                    <label className="form-label">Lead Type</label>
-                                                    <Dropdown
-                                                        value={formData.lead_type}
-                                                        options={LEAD_TYPE_OPTIONS}
-                                                        onChange={(e) => handleInputChange({ target: { name: 'lead_type', value: e.value } })}
-                                                        placeholder="Select type"
-                                                        className={`w-100 ${errors.lead_type ? 'p-invalid' : ''}`}
-                                                    />
-                                                    {errors.lead_type && <div className="invalid-feedback d-block">{errors.lead_type}</div>}
+                                            {isHost && (
+                                                <div className="col-lg-6">
+                                                    <div className="mb-3">
+                                                        <label className="form-label">Lead Type <span className="text-danger">*</span></label>
+                                                        <Dropdown
+                                                            value={formData.lead_type}
+                                                            options={LEAD_TYPE_OPTIONS}
+                                                            onChange={(e) => handleInputChange({ target: { name: 'lead_type', value: e.value } })}
+                                                            placeholder="Select type"
+                                                            className={`w-100 ${errors.lead_type ? 'p-invalid' : ''}`}
+                                                        />
+                                                        {errors.lead_type && <div className="invalid-feedback d-block">{errors.lead_type}</div>}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Status</label>
+                                                    <label className="form-label">Status <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.status}
                                                         options={LEAD_STATUS_OPTIONS}
@@ -517,7 +581,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Salesperson</label>
+                                                    <label className="form-label">Salesperson <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.salesperson_id}
                                                         options={users.map(user => ({ label: user.name, value: user.id }))}
@@ -531,7 +595,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Organization Name</label>
+                                                    <label className="form-label">Organization Name <span className="text-danger">*</span></label>
                                                     <input type="text" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} name="company_name" value={formData.company_name} onChange={handleInputChange} placeholder="Enter organization name" />
                                                     {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
                                                 </div>
@@ -564,14 +628,14 @@ export default function LeadDetails() {
                                         <div className="row">
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Contact person</label>
+                                                    <label className="form-label">Contact person <span className="text-danger">*</span></label>
                                                     <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" value={formData.contact_person} onChange={handleInputChange} placeholder="Dave" />
                                                     {errors.contact_person && <div className="invalid-feedback">{errors.contact_person}</div>}
                                                 </div>
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Phone Number</label>
+                                                    <label className="form-label">Phone Number <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         {(formData.country === 'United States' || formData.country === 'Canada') && (
                                                             <span className="input-group-text bg-light border">
@@ -596,7 +660,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Lead Contact Email</label>
+                                                    <label className="form-label">Lead Contact Email <span className="text-danger">*</span></label>
                                                     <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} name="email" value={formData.email} onChange={handleInputChange} placeholder="dave@example.com" />
                                                     {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                                                 </div>
@@ -646,7 +710,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-4">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Country</label>
+                                                    <label className="form-label">Country <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.country}
                                                         options={countries}
@@ -661,7 +725,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-4">
                                                 <div className="mb-3">
-                                                    <label className="form-label">State</label>
+                                                    <label className="form-label">State <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.state}
                                                         options={states}
@@ -677,7 +741,7 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-4">
                                                 <div className="mb-3">
-                                                    <label className="form-label">City</label>
+                                                    <label className="form-label">City <span className="text-danger">*</span></label>
                                                     <Dropdown
                                                         value={formData.city}
                                                         options={[...cities, { label: 'Others', value: 'Others' }]}
@@ -694,17 +758,12 @@ export default function LeadDetails() {
                                             {formData.city === 'Others' && (
                                                 <div className="col-lg-4">
                                                     <div className="mb-3">
-                                                        <label className="form-label">Other City</label>
+                                                        <label className="form-label">Other City <span className="text-danger">*</span></label>
                                                         <input type="text" className="form-control" name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className="col-lg-4">
-                                                <div className="mb-3">
-                                                    <label className="form-label">Zip Code</label>
-                                                    <input type="text" className="form-control" name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
-                                                </div>
-                                            </div>
+                                           
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Business Phone</label>
@@ -730,6 +789,12 @@ export default function LeadDetails() {
                                                     </div>
                                                 </div>
                                             </div>
+                                             <div className="col-lg-6">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Zip Code</label>
+                                                    <input type="text" className="form-control" name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                </div>
+                                            </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Entity Type</label>
@@ -742,7 +807,7 @@ export default function LeadDetails() {
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="col-lg-12">
+                                            <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Industry Type</label>
                                                     <Dropdown
