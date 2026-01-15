@@ -79,6 +79,13 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                 keyboard: false,
             });
         }
+
+        return () => {
+            if (modalInstanceRef.current) {
+                modalInstanceRef.current.hide();
+                modalInstanceRef.current.dispose();
+            }
+        };
     }, [modalRef]);
 
     useEffect(() => {

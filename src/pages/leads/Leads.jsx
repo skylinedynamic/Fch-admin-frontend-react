@@ -311,7 +311,8 @@ export default function Leads() {
             const response = await convertLead(targetLead.id);
             if (response.status && response.data?.id) {
                 toast.success(`Lead successfully updated and converted to ${targetType}`);
-                navigate('/leads');
+                setAppliedFilters({ ...appliedFilters });
+                setShowConvertModal(false);
             } else {
                 toast.success(`Lead converted to ${targetType} successfully`);
                 setAppliedFilters({ ...appliedFilters });

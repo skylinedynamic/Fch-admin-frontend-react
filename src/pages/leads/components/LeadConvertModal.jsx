@@ -14,6 +14,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 keyboard: false,
             });
         }
+        
+        return () => {
+            if (modalInstanceRef.current) {
+                modalInstanceRef.current.hide();
+                modalInstanceRef.current.dispose();
+            }
+        };
     }, [modalRef]);
 
     // Show/Hide Logic
