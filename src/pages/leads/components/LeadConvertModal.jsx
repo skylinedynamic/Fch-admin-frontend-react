@@ -48,7 +48,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                         <i className={`${icon} display-4 mb-3 d-block`}></i>
                         <h4 className="mb-2">{title}</h4>
                         <p className="text-muted mb-4">
-                            Are you sure you want to convert <strong>{lead?.contact_name || lead?.company_name || 'this lead'}</strong> to a <strong>{targetType}</strong>? 
+                            Are you sure you want to convert <strong>{lead?.contact_person || lead?.contact_name || lead?.company_name || 'this lead'}</strong> to a <strong>{targetType}</strong>? 
                             This action will create a new {targetType.toLowerCase()} profile and cannot be undone.
                         </p>
 

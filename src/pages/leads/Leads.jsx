@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchLeads, deleteLead, fetchLeadStats, convertLead } from '../../modules/leads/services';
+import { fetchLeads, deleteLead, fetchLeadStats, convertLead, updateLead } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -275,7 +275,8 @@ export default function Leads() {
 
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
-        const isMissingInfo = !rowData.contact_person || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
+        const hasName = rowData.contact_person || rowData.contact_name;
+        const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
         if (isMissingInfo) {
             setShowMissingInfoModal(true);
         } else {
@@ -284,6 +285,10 @@ export default function Leads() {
     };
 
     const handleMissingInfoConfirm = async (updatedData) => {
+        if (!targetLead?.id) {
+            toast.error('Lead ID is missing');
+            return;
+        }
         try {
             setConversionLoading(true);
             await updateLead(targetLead.id, updatedData);
@@ -291,6 +296,7 @@ export default function Leads() {
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
         } catch (err) {
+            console.error('Update missing info error:', err);
             toast.error(err.response?.data?.message || 'Failed to update lead information');
         } finally {
             setConversionLoading(false);
@@ -533,6 +539,7 @@ export default function Leads() {
                     onHide={() => setShowMissingInfoModal(false)}
                     onConfirm={handleMissingInfoConfirm}
                     lead={targetLead}
+                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                     loading={conversionLoading}
                 />
 

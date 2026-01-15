@@ -66,7 +66,7 @@ export default function LeadDetails() {
         state_file_number: '',
         duns_number: '',
         business_address: '',
-        country: 'USA',
+        country: '',
         city: '',
         state: '',
         zip_code: '',
@@ -185,6 +185,10 @@ export default function LeadDetails() {
     };
 
     const handleMissingInfoConfirm = async (updatedData) => {
+        if (!id) {
+            toast.error('Lead ID is missing');
+            return;
+        }
         try {
             setConversionLoading(true);
             await updateLead(id, updatedData);
@@ -192,6 +196,7 @@ export default function LeadDetails() {
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
         } catch (err) {
+            console.error('Update missing info error:', err);
             toast.error(err.response?.data?.message || 'Failed to update lead information');
         } finally {
             setConversionLoading(false);
@@ -796,6 +801,7 @@ export default function LeadDetails() {
                 onHide={() => setShowMissingInfoModal(false)}
                 onConfirm={handleMissingInfoConfirm}
                 lead={formData}
+                targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
             />
         </>

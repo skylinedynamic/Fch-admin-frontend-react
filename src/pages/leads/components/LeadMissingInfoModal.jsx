@@ -4,7 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { locationData } from '../../../config';
 import { formatPhoneNumber } from '../../../utils/formatters';
 
-export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, loading }) {
+export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType, loading }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [extraData, setExtraData] = useState({});
@@ -20,10 +20,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
     useEffect(() => {
         if (show && lead) {
             setExtraData({
-                contact_person: lead.contact_person || '',
+                contact_person: lead.contact_person || lead.contact_name || '',
                 email: lead.email || '',
                 phone_number: lead.phone_number || '',
-                country: lead.country || 'USA',
+                country: lead.country || '',
                 state: lead.state || '',
                 city: lead.city || '',
             });
@@ -49,6 +49,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
         }
     }, [extraData.country]);
 
+    // Handle State -> City cascade
     useEffect(() => {
         if (extraData.state && extraData.country) {
             const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === extraData.country);
@@ -69,6 +70,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
         }
     }, [extraData.state, extraData.country]);
 
+    // Modal Instance setup
     useEffect(() => {
         if (!modalRef.current) return;
         if (!modalInstanceRef.current) {
@@ -89,18 +91,40 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
         }
     }, [show]);
 
+    // Accurate Input Handler with Real-time Validation and Cascading Reset
     const handleInputChange = (name, value) => {
-        setExtraData(prev => ({ ...prev, [name]: value }));
+        setExtraData(prev => {
+            const newData = { ...prev, [name]: value };
+            
+            // Cascading Reset Logic
+            if (name === 'country') {
+                newData.state = '';
+                newData.city = '';
+            } else if (name === 'state') {
+                newData.city = '';
+            }
+            
+            return newData;
+        });
+
+        // Instant Error Clearing
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
+            
+            // Also clear dependent errors if parent changes
+            if (name === 'country') {
+                setErrors(prev => ({ ...prev, state: '', city: '' }));
+            } else if (name === 'state') {
+                setErrors(prev => ({ ...prev, city: '' }));
+            }
         }
     };
 
     const validate = () => {
         const newErrors = {};
-        if (!extraData.contact_person?.trim()) newErrors.contact_person = 'Name is required';
-        if (!extraData.email?.trim()) newErrors.email = 'Email is required';
-        if (!extraData.phone_number?.trim()) newErrors.phone_number = 'Phone is required';
+        if (!extraData.contact_person?.trim()) newErrors.contact_person = 'Contact Name is required';
+        if (!extraData.email?.trim()) newErrors.email = 'Email Address is required';
+        if (!extraData.phone_number?.trim()) newErrors.phone_number = 'Phone Number is required';
         if (!extraData.country) newErrors.country = 'Country is required';
         if (!extraData.state) newErrors.state = 'State is required';
         if (!extraData.city) newErrors.city = 'City is required';
@@ -119,16 +143,26 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
         if (!loading && onHide) onHide();
     };
 
+    const headerClass = targetType === 'Partner' ? 'bg-soft-success' : 'bg-soft-primary';
+    const title = `${targetType} Conversion: Missing Info`;
+    const icon = targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-received-2-line';
+    const textColor = targetType === 'Partner' ? 'text-success' : 'text-primary';
+
     return (
-        <div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
+        <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content border-0 shadow-lg">
-                    <div className="modal-header bg-soft-primary p-3">
-                        <h5 className="modal-title">Missing Contact Information</h5>
+                    <div className={`modal-header ${headerClass} p-3`}>
+                        <h5 className="modal-title d-flex align-items-center">
+                            <i className={`${icon} ${textColor} fs-22 me-2`}></i>
+                            {title}
+                        </h5>
                         <button type="button" className="btn-close" onClick={handleClose} disabled={loading}></button>
                     </div>
                     <div className="modal-body p-4">
-                        <p className="text-muted mb-4">Please provide the missing contact information for <strong>{lead?.company_name || 'this lead'}</strong> before converting.</p>
+                        <p className="text-muted mb-4">
+                            Please provide the missing contact information for <strong>{lead?.company_name || 'this lead'}</strong> before completing the <strong>{targetType}</strong> conversion.
+                        </p>
                         
                         <div className="row g-3">
                             <div className="col-lg-6">
@@ -206,7 +240,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, lo
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" onClick={handleClose} disabled={loading}>Cancel</button>
-                        <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={loading}>
+                        <button type="button" className={`btn ${targetType === 'Partner' ? 'btn-success' : 'btn-primary'}`} onClick={handleConfirm} disabled={loading}>
                             {loading ? <span className="spinner-border spinner-border-sm me-1"></span> : 'Save & Continue'}
                         </button>
                     </div>
