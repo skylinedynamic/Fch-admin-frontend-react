@@ -32,6 +32,11 @@ export const convertLead = async (id: string | number): Promise<any> => {
 };
 
 export const fetchLeadStats = async () => {
-  const response = await apiClient.post('/common/leads-stats', {}); // Assuming this exists based on pattern
+  const response = await apiClient.get('/common/leads-stats');
+  return response.data;
+};
+
+export const fetchGlobalStats = async (payload: any = {}) => {
+  const response = await apiClient.post('/common/stats', payload);
   return response.data;
 };

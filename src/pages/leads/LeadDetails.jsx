@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getLead, createLead, updateLead, convertLead } from '../../modules/leads/services';
+import { getLead, createLead, updateLead, convertLead, fetchGlobalStats } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
@@ -283,12 +283,13 @@ export default function LeadDetails() {
     }, [formData.state, formData.country]);
 
     useEffect(() => {
-        if (id) {
-            const loadLead = async () => {
-                setLoading(true);
-                try {
-                    const response = await getLead(id);
-                    if (response.status && response.data) {
+        if (!id) return;
+
+        const loadLead = async () => {
+            setLoading(true);
+            try {
+                const response = await getLead(id);
+                if (response.status && response.data) {
                     const data = response.data;
                     
                     // Normalize Country
@@ -327,13 +328,16 @@ export default function LeadDetails() {
                         }
                     }
 
+
                     // Check if city exists
                     const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
                     let cityValue = data.city || '';
                     let otherCityValue = '';
-                    if (data.city && !cityExists) {
-                        otherCityValue = data.city;
-                        cityValue = 'Others';
+                    if (data.city && cityExists) {
+                        cityValue = data.city;
+                    } else if (data.city) {
+                         cityValue = 'Others';
+                         otherCityValue = data.city;
                     }
 
                     setFormData(prev => ({ 
@@ -345,16 +349,38 @@ export default function LeadDetails() {
                         other_city: otherCityValue
                     }));
                 }
-                } catch (err) {
-                    toast.error('Failed to load lead details');
-                } finally {
-                    setLoading(false);
+            } catch (err) {
+                console.error('Failed to load lead details:', err);
+                toast.error('Failed to load lead details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadLead();
+    }, [id, navigate]);
+
+    // Fetch Stats
+    useEffect(() => {
+        const loadStats = async () => {
+            if (!id) return;
+            try {
+                setStatsLoading(true);
+                const result = await fetchGlobalStats({ id });
+                if (result.status && result.data) {
+                    setProfileStats(result.data);
                 }
-            };
-            loadLead();
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+
+        if (id) {
+            loadStats();
         }
     }, [id]);
-
 
     const metricsConfig = [
         { label: 'Meetings', dataKey: 'total_meetings', icon: 'ri-calendar-line' },

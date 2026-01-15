@@ -385,7 +385,7 @@ export default function Leads() {
                             <StatisticsCard
                                 key={index}
                                 title={config.title}
-                                count={stats[config.dataKey]}
+                                count={config.dataKey.includes('rate') ? `${stats[config.dataKey]}%` : stats[config.dataKey]}
                                 icon={config.icon}
                                 colorVariant={config.colorVariant}
                             />
