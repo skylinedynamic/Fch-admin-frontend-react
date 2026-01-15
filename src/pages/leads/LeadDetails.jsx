@@ -188,7 +188,7 @@ export default function LeadDetails() {
         if (e && e.preventDefault) e.preventDefault();
         
         if (!validateForm()) {
-            toast.error('Please fill in all required fields correctly');
+            // toast.error('Please fill in all required fields correctly');
             return;
         }
 
