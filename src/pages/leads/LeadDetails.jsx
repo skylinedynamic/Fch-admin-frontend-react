@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getLead, createLead, updateLead } from '../../modules/leads/services';
+import { getLead, createLead, updateLead, convertLead } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ import { locationData } from '../../config';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
+import LeadConvertModal from './components/LeadConvertModal';
 
 export default function LeadDetails() {
     const { id } = useParams();
@@ -89,6 +90,10 @@ export default function LeadDetails() {
     });
     const [statsLoading, setStatsLoading] = useState(false);
     const [errors, setErrors] = useState({});
+
+    // Conversion Modal state
+    const [showConvertModal, setShowConvertModal] = useState(false);
+    const [conversionLoading, setConversionLoading] = useState(false);
 
     // Location states
     const [countries] = useState(
@@ -165,6 +170,28 @@ export default function LeadDetails() {
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleConvertConfirm = async () => {
+        const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
+        try {
+            setConversionLoading(true);
+            const response = await convertLead(id);
+            if (response.status && response.data?.id) {
+                toast.success(`Lead converted to ${targetType} successfully`);
+                const redirectPath = targetType === 'Partner' ? `/partners/${response.data.id}` : `/clients/${response.data.id}`;
+                navigate(redirectPath);
+            } else {
+                toast.success(`Lead converted to ${targetType} successfully`);
+                navigate('/leads');
+            }
+        } catch (err) {
+            console.error('Conversion error:', err);
+            toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
+        } finally {
+            setConversionLoading(false);
+            setShowConvertModal(false);
         }
     };
 
@@ -721,6 +748,14 @@ export default function LeadDetails() {
             {/* Modals rendered outside main content to prevent z-index issues */}
             <EmailComposeModal entityId={id} entityType="Lead" />
             <ActivityCreateModal entityId={id} entityType="Lead" />
+            <LeadConvertModal
+                show={showConvertModal}
+                onHide={() => setShowConvertModal(false)}
+                onConfirm={handleConvertConfirm}
+                lead={formData}
+                targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                loading={conversionLoading}
+            />
         </>
     );
 }

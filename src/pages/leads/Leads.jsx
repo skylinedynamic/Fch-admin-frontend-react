@@ -14,6 +14,7 @@ import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
+import LeadConvertModal from './components/LeadConvertModal';
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -52,6 +53,11 @@ export default function Leads() {
 
     // Dropdown data
     const [salespersonsList, setSalespersonsList] = useState([]);
+
+    // Conversion Modal state
+    const [showConvertModal, setShowConvertModal] = useState(false);
+    const [targetLead, setTargetLead] = useState(null);
+    const [conversionLoading, setConversionLoading] = useState(false);
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -265,11 +271,17 @@ export default function Leads() {
         }
     };
 
-    const handleConvertLead = async (rowData) => {
-        const targetType = rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
+    const openConvertModal = (rowData) => {
+        setTargetLead(rowData);
+        setShowConvertModal(true);
+    };
+
+    const handleConvertLeadConfirm = async () => {
+        if (!targetLead) return;
+        const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
-            setLoading(true);
-            const response = await convertLead(rowData.id);
+            setConversionLoading(true);
+            const response = await convertLead(targetLead.id);
             if (response.status && response.data?.id) {
                 toast.success(`Lead converted to ${targetType} successfully`);
                 const redirectPath = targetType === 'Partner' ? `/partners/${response.data.id}` : `/clients/${response.data.id}`;
@@ -277,12 +289,13 @@ export default function Leads() {
             } else {
                 toast.success(`Lead converted to ${targetType} successfully`);
                 setAppliedFilters({ ...appliedFilters });
+                setShowConvertModal(false);
             }
         } catch (err) {
             console.error('Conversion error:', err);
             toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
         } finally {
-            setLoading(false);
+            setConversionLoading(false);
         }
     };
 
@@ -462,16 +475,21 @@ export default function Leads() {
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
                                             <Column
                                             header="Action"
-                                            body={(rowData) => (
-                                                <div className="d-flex">
-                                                    <button 
-                                                        className="btn btn-primary btn-sm fw-medium"
-                                                        onClick={(e) => { e.stopPropagation(); handleConvertLead(rowData); }}
-                                                    >
-                                                        {rowData.lead_type === 'Partner' ? 'Convert to Partner' : 'Convert to Borrower'}
-                                                    </button>
-                                                </div>
-                                            )}
+                                            body={(rowData) => {
+                                                const isConverted = !!rowData.convert_to;
+                                                const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
+                                                return (
+                                                    <div className="d-flex">
+                                                        <button 
+                                                            className={`btn ${isConverted ? 'btn-soft-success' : 'btn-primary'} btn-sm fw-medium`}
+                                                            onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
+                                                            disabled={isConverted}
+                                                        >
+                                                            {isConverted ? `Converted to ${targetType}` : `Convert to ${targetType}`}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }}
                                         />
                                         </DataTable>
                                     </div>
@@ -480,6 +498,15 @@ export default function Leads() {
                         </div>
                     </div>
                 </div>
+
+                <LeadConvertModal
+                    show={showConvertModal}
+                    onHide={() => setShowConvertModal(false)}
+                    onConfirm={handleConvertLeadConfirm}
+                    lead={targetLead}
+                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                    loading={conversionLoading}
+                />
 
                 <DeleteConfirmationModal
                     show={showDeleteModal}
