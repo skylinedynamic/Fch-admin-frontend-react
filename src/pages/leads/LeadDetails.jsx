@@ -453,6 +453,7 @@ export default function LeadDetails() {
 
     return (
         <>
+            {!hasPermission('view leads') && <Navigate to="/" replace />}
             <div className="page-content">
                 <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
@@ -474,9 +475,11 @@ export default function LeadDetails() {
                                 <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={loading}>
-                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                </button>
+                                {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && (
+                                    <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={loading}>
+                                        <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

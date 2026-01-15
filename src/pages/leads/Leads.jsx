@@ -497,7 +497,7 @@ export default function Leads() {
                                             className="p-datatable-sm"
                                             emptyMessage="No leads found"
                                         >
-                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                                            {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
                                             <Column field="contact_name" header="Contact" sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
                                             <Column field="email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
