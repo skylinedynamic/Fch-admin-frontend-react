@@ -13,6 +13,7 @@ import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkelet
 import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -217,6 +218,11 @@ export default function Leads() {
             'contact initiated': 'bg-info-subtle text-info',
             'lead identified': 'bg-secondary-subtle text-secondary',
             'meeting arranged': 'bg-warning-subtle text-warning',
+            'application allowed': 'bg-info-subtle text-info',
+            'follow up': 'bg-primary-subtle text-primary',
+            'negotiation': 'bg-warning-subtle text-warning',
+            'lead completed': 'bg-success-subtle text-success',
+            'lead declined': 'bg-danger-subtle text-danger',
             'qualified': 'bg-success-subtle text-success',
             'declined': 'bg-danger-subtle text-danger'
         };
@@ -373,7 +379,7 @@ export default function Leads() {
                                         <div className="col-xxl-2 col-sm-4">
                                             <Dropdown
                                                 value={selectedLeadType}
-                                                options={[{ label: 'All Lead Types', value: '' }, { label: 'Partner', value: 'Partner' }, { label: 'Borrower', value: 'Borrower' }]}
+                                                options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
                                                 onChange={(e) => setSelectedLeadType(e.value)}
                                                 placeholder="All Lead Types"
                                                 className="w-100 employee-filter-dropdown"
@@ -382,7 +388,7 @@ export default function Leads() {
                                         <div className="col-xxl-2 col-sm-4">
                                             <Dropdown
                                                 value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, { label: 'New', value: 'New' }, { label: 'Qualified', value: 'Qualified' }]}
+                                                options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
                                                 onChange={(e) => setSelectedStatus(e.value)}
                                                 placeholder="All Status"
                                                 className="w-100 employee-filter-dropdown"
