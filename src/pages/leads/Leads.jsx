@@ -400,6 +400,7 @@ export default function Leads() {
                                                 options={[{ label: 'All Sales Person', value: '' }, ...salespersonsList]}
                                                 onChange={(e) => setSelectedSalesperson(e.value)}
                                                 placeholder="All Sales Person"
+                                                filter
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
