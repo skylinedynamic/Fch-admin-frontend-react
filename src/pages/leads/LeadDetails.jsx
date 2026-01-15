@@ -136,11 +136,15 @@ export default function LeadDetails() {
 
             if (id) {
                 await updateLead(id, payload);
-                toast.success('Lead updated successfully');
-                navigate('/leads');
+                if (activeTab === 'leadDetails') {
+                    toast.success('Lead Details updated successfully');
+                } else {
+                    toast.success('Lead contact information updated successfully');
+                }
+                // navigate('/leads');
             } else {
                 const response = await createLead(payload);
-                toast.success('Lead created successfully');
+                toast.success('Lead Details Completed successfully');
                 if (response.status && response.data?.id) {
                     navigate(`/leads/${response.data.id}?tab=contactInfo`);
                 } else {
