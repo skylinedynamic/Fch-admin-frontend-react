@@ -15,6 +15,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 import LeadConvertModal from './components/LeadConvertModal';
+import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -56,6 +57,7 @@ export default function Leads() {
 
     // Conversion Modal state
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
     const [targetLead, setTargetLead] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
 
@@ -273,7 +275,26 @@ export default function Leads() {
 
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
-        setShowConvertModal(true);
+        const isMissingInfo = !rowData.contact_person || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
+        if (isMissingInfo) {
+            setShowMissingInfoModal(true);
+        } else {
+            setShowConvertModal(true);
+        }
+    };
+
+    const handleMissingInfoConfirm = async (updatedData) => {
+        try {
+            setConversionLoading(true);
+            await updateLead(targetLead.id, updatedData);
+            setTargetLead({ ...targetLead, ...updatedData });
+            setShowMissingInfoModal(false);
+            setShowConvertModal(true);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update lead information');
+        } finally {
+            setConversionLoading(false);
+        }
     };
 
     const handleConvertLeadConfirm = async () => {
@@ -283,9 +304,8 @@ export default function Leads() {
             setConversionLoading(true);
             const response = await convertLead(targetLead.id);
             if (response.status && response.data?.id) {
-                toast.success(`Lead converted to ${targetType} successfully`);
-                const redirectPath = targetType === 'Partner' ? `/partners/${response.data.id}` : `/clients/${response.data.id}`;
-                navigate(redirectPath);
+                toast.success(`Lead successfully updated and converted to ${targetType}`);
+                navigate('/leads');
             } else {
                 toast.success(`Lead converted to ${targetType} successfully`);
                 setAppliedFilters({ ...appliedFilters });
@@ -505,6 +525,14 @@ export default function Leads() {
                     onConfirm={handleConvertLeadConfirm}
                     lead={targetLead}
                     targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                    loading={conversionLoading}
+                />
+
+                <LeadMissingInfoModal
+                    show={showMissingInfoModal}
+                    onHide={() => setShowMissingInfoModal(false)}
+                    onConfirm={handleMissingInfoConfirm}
+                    lead={targetLead}
                     loading={conversionLoading}
                 />
 

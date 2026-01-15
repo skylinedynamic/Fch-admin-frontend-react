@@ -25,6 +25,7 @@ import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
 import LeadConvertModal from './components/LeadConvertModal';
+import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 
 export default function LeadDetails() {
     const { id } = useParams();
@@ -93,6 +94,7 @@ export default function LeadDetails() {
 
     // Conversion Modal state
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
     const [conversionLoading, setConversionLoading] = useState(false);
 
     // Location states
@@ -173,15 +175,37 @@ export default function LeadDetails() {
         }
     };
 
+    const handleConvertClick = () => {
+        const isMissingInfo = !formData.contact_person || !formData.email || !formData.phone_number || !formData.country || !formData.state || !formData.city;
+        if (isMissingInfo) {
+            setShowMissingInfoModal(true);
+        } else {
+            setShowConvertModal(true);
+        }
+    };
+
+    const handleMissingInfoConfirm = async (updatedData) => {
+        try {
+            setConversionLoading(true);
+            await updateLead(id, updatedData);
+            setFormData(prev => ({ ...prev, ...updatedData }));
+            setShowMissingInfoModal(false);
+            setShowConvertModal(true);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update lead information');
+        } finally {
+            setConversionLoading(false);
+        }
+    };
+
     const handleConvertConfirm = async () => {
         const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
             const response = await convertLead(id);
             if (response.status && response.data?.id) {
-                toast.success(`Lead converted to ${targetType} successfully`);
-                const redirectPath = targetType === 'Partner' ? `/partners/${response.data.id}` : `/clients/${response.data.id}`;
-                navigate(redirectPath);
+                toast.success(`Lead successfully updated and converted to ${targetType}`);
+                navigate('/leads');
             } else {
                 toast.success(`Lead converted to ${targetType} successfully`);
                 navigate('/leads');
@@ -354,10 +378,21 @@ export default function LeadDetails() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="d-flex gap-2">
+                             <div className="d-flex gap-2">
                                 <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
+                                {id && (
+                                    <button 
+                                        type="button" 
+                                        className={`btn ${formData.convert_to ? 'btn-soft-success' : 'btn-soft-secondary'} w-lg waves-effect`}
+                                        onClick={handleConvertClick}
+                                        disabled={!!formData.convert_to}
+                                    >
+                                        <i className={`${formData.convert_to ? 'ri-checkbox-circle-line' : 'ri-shuffle-line'} align-middle me-1`}></i> 
+                                        {formData.convert_to ? `Converted to ${formData.convert_to}` : 'Convert'}
+                                    </button>
+                                )}
                                 <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={loading}>
                                     <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
                                 </button>
@@ -754,6 +789,13 @@ export default function LeadDetails() {
                 onConfirm={handleConvertConfirm}
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                loading={conversionLoading}
+            />
+            <LeadMissingInfoModal
+                show={showMissingInfoModal}
+                onHide={() => setShowMissingInfoModal(false)}
+                onConfirm={handleMissingInfoConfirm}
+                lead={formData}
                 loading={conversionLoading}
             />
         </>
