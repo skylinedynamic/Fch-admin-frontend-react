@@ -508,16 +508,16 @@ export default function Leads() {
                                                 return (
                                                     <div className="d-flex">
                                                         {isConverted ? (
-                                                            <span className={`badge ${targetType === 'Partner' ? 'bg-success' : 'bg-success'} fs-12`}>
-                                                                <i className="ri-check-double-line align-middle me-1"></i>
+                                                            <span className="badge bg-success-subtle text-success fs-12 p-2">
+                                                                <i className="ri-checkbox-circle-line align-middle me-1"></i>
                                                                 Already a {targetType}
                                                             </span>
                                                         ) : (
                                                             <button 
-                                                                className={`btn ${isConverted ? 'btn-soft-success' : 'btn-primary'} btn-sm fw-medium`}
+                                                                className={`btn ${targetType === 'Partner' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} btn-sm waves-effect waves-light fw-medium border-0`}
                                                                 onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
-                                                                disabled={isConverted}
                                                             >
+                                                                <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
                                                                 Convert to {targetType}
                                                             </button>
                                                         )}
