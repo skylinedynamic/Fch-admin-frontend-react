@@ -33,62 +33,60 @@ export default function SettingsForm({
                     <div className="card-body p-5 bg-white">
                         
                         {/* Form Header */}
-                        <div className="d-flex align-items-center justify-content-between mb-5">
-                            <div className="d-flex align-items-center gap-4">
+                        <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-5 gap-4">
+                            <div className="d-flex align-items-center gap-4 align-self-start align-self-md-center">
                                 <div className="avatar-md flex-shrink-0">
                                     <span className="avatar-title bg-light text-primary rounded-circle fs-1">
-                                        <i className="ri-wallet-3-line"></i>
+                                        <i className="ri-bank-card-2-line"></i>
                                     </span>
                                 </div>
                                 <div>
-                                    <h3 className="mb-1 text-dark fw-bold">Stripe Settings</h3>
-                                    <p className="text-muted mb-0 fs-15">Configure your Stripe API keys and credit card information.</p>
+                                    <h3 className="mb-1 text-dark fw-bold">System Configuration</h3>
                                 </div>
                             </div>
                             
                             {/* Mode Switcher */}
-                            <div className="d-flex align-items-center gap-3 bg-light p-2 rounded-pill">
-                                <div className="d-flex align-items-center">
-                                    <RadioButton 
-                                        inputId="mode_sandbox" 
-                                        name="payment_mode" 
-                                        value="sandbox" 
-                                        onChange={handleInputChange} 
-                                        checked={isSandbox} 
-                                        className="d-none"
-                                    />
-                                    <label 
-                                        htmlFor="mode_sandbox" 
-                                        className={`btn btn-sm rounded-pill px-4 fw-medium transition-all ${isSandbox ? 'btn-primary shadow-sm' : 'text-muted'}`}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <i className="ri-flask-line me-2"></i> Sandbox
-                                    </label>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <RadioButton 
-                                        inputId="mode_production" 
-                                        name="payment_mode" 
-                                        value="production" 
-                                        onChange={handleInputChange} 
-                                        checked={!isSandbox} 
-                                        className="d-none"
-                                    />
-                                    <label 
-                                        htmlFor="mode_production" 
-                                        className={`btn btn-sm rounded-pill px-4 fw-medium transition-all ${!isSandbox ? 'btn-success shadow-sm' : 'text-muted'}`}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <i className="ri-rocket-line me-2"></i> Production
-                                    </label>
-                                </div>
+                            <div className="bg-light p-1 rounded-pill d-inline-flex">
+                                <RadioButton 
+                                    inputId="mode_sandbox" 
+                                    name="payment_mode" 
+                                    value="sandbox" 
+                                    onChange={handleInputChange} 
+                                    checked={isSandbox} 
+                                    className="d-none"
+                                />
+                                <label 
+                                    htmlFor="mode_sandbox" 
+                                    className={`btn rounded-pill px-4 py-2 d-flex flex-column align-items-center justify-content-center gap-1 transition-all ${isSandbox ? 'btn-white text-dark shadow-sm fw-bold' : 'text-muted fw-medium'}`}
+                                    style={{ cursor: 'pointer', border: 'none', width: '90px', height: '70px' }}
+                                >
+                                    <i className="ri-flask-line fs-18"></i>
+                                    <span className="fs-12">Sandbox</span>
+                                </label>
+
+                                <RadioButton 
+                                    inputId="mode_production" 
+                                    name="payment_mode" 
+                                    value="production" 
+                                    onChange={handleInputChange} 
+                                    checked={!isSandbox} 
+                                    className="d-none"
+                                />
+                                <label 
+                                    htmlFor="mode_production" 
+                                    className={`btn rounded-pill px-4 py-2 d-flex flex-column align-items-center justify-content-center gap-1 transition-all ${!isSandbox ? 'btn-white text-dark shadow-sm fw-bold' : 'text-muted fw-medium'}`}
+                                    style={{ cursor: 'pointer', border: 'none', width: '90px', height: '70px' }}
+                                >
+                                    <i className="ri-rocket-line fs-18"></i>
+                                    <span className="fs-12">Production</span>
+                                </label>
                             </div>
                         </div>
 
                         {/* API Key Configuration */}
                         <div className="mb-5">
                             <h5 className="fw-bold fs-16 mb-2 text-dark">
-                                API Key Configuration 
+                                Stripe Configuration 
                                 <span className={`badge ms-2 ${isSandbox ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
                                     {isSandbox ? 'TEST MODE' : 'LIVE MODE'}
                                 </span>
@@ -225,19 +223,7 @@ export default function SettingsForm({
                         {/* Footer / System Config */}
                          <div className="row align-items-center mt-5 pt-3 border-top">
                             <div className="col-md-6">
-                                <label className="form-label text-muted mb-1 fs-12 fw-medium text-uppercase ls-1">System Notifications</label>
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className="form-check form-switch form-switch-lg custom-switch-primary mb-0">
-                                        <InputSwitch
-                                            inputId="notifications"
-                                            checked={formData.configuration?.notifications}
-                                            onChange={(e) => handleConfigChange('notifications', e.value)}
-                                        />
-                                    </div>
-                                    <span className="fw-medium text-dark">
-                                        {formData.configuration?.notifications ? 'Enabled' : 'Disabled'}
-                                    </span>
-                                </div>
+                              
                             </div>
                             <div className="col-md-6 text-end">
                                 <Button
