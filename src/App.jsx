@@ -29,6 +29,8 @@ import ContactDetails from './pages/contacts/ContactDetails.jsx';
 import ErrorPage from './pages/Utility/ErrorPage';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
+import PreQualificationApplication from './pages/applications/PreQualificationApplication.jsx';
+import FundingApplication from './pages/applications/FundingApplication.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -127,6 +129,12 @@ export default function App() {
               <Route path="leads" element={<Leads />} />
               <Route path="leads/create" element={<LeadDetails />} />
               <Route path="leads/:id" element={<LeadDetails />} />
+            </Route>
+
+            {/* My Application Routes */}
+            <Route path="request-application">
+              <Route path="pre-qualification" element={<PreQualificationApplication />} />
+              <Route path="funding" element={<FundingApplication />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
