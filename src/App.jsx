@@ -27,6 +27,8 @@ import Appointments from './pages/appointments/Appointments.jsx';
 import Contacts from './pages/contacts/Contacts.jsx';
 import ContactDetails from './pages/contacts/ContactDetails.jsx';
 import ErrorPage from './pages/Utility/ErrorPage';
+import Leads from './pages/leads/Leads.jsx';
+import LeadDetails from './pages/leads/LeadDetails.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -118,6 +120,13 @@ export default function App() {
               <Route path="contacts" element={<Contacts />} />
               <Route path="contacts/create" element={<ContactDetails />} />
               <Route path="contacts/:id" element={<ContactDetails />} />
+            </Route>
+
+            {/* Leads Routes */}
+            <Route element={<PermissionRoute permission="view leads" />}>
+              <Route path="leads" element={<Leads />} />
+              <Route path="leads/create" element={<LeadDetails />} />
+              <Route path="leads/:id" element={<LeadDetails />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

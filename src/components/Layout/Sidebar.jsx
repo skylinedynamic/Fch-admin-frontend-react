@@ -22,24 +22,24 @@ const menuItems = [
     permission: 'view partners',
   },
   // ... (Keeping other items, replacing Tiers with Submenu)
+  // {
+  //   to: '/under-construction/demo-requests',
+  //   icon: 'las la-calendar-check',
+  //   label: 'Demo Requests',
+  //   permission: 'view demo request',
+  // },
   {
-    to: '/under-construction/demo-requests',
-    icon: 'las la-calendar-check',
-    label: 'Demo Requests',
-    permission: 'view demo request',
-  },
-  {
-    to: '/under-construction/leads',
+    to: '/leads',
     icon: 'las la-chart-pie',
     label: 'Leads',
     permission: 'view leads',
   },
-  {
-    to: '/contacts',
-    icon: 'las la-clipboard-list',
-    label: 'Contacts',
-    permission: 'view contacts',
-  },
+  // {
+  //   to: '/contacts',
+  //   icon: 'las la-clipboard-list',
+  //   label: 'Contacts',
+  //   permission: 'view contacts',
+  // },
   {
     to: '/clients',
     icon: 'las la-user-friends',
@@ -92,24 +92,24 @@ const menuItems = [
     icon: 'ri-calendar-2-line',
     label: 'Appointments',
   },
-  {
-    to: '/under-construction/training-courses',
-    icon: 'ri-live-fill',
-    label: 'Training & Courses',
-    permission: 'view training & courses',
-  },
-  {
-    to: '/under-construction/support-tickets',
-    icon: 'las la-life-ring',
-    label: 'Support Tickets',
-    permission: 'view support tickets',
-  },
-  {
-    to: '/under-construction/resources',
-    icon: 'ri-folder-fill',
-    label: 'Resources',
-    permission: 'view resources',
-  },
+  // {
+  //   to: '/under-construction/training-courses',
+  //   icon: 'ri-live-fill',
+  //   label: 'Training & Courses',
+  //   permission: 'view training & courses',
+  // },
+  // {
+  //   to: '/under-construction/support-tickets',
+  //   icon: 'las la-life-ring',
+  //   label: 'Support Tickets',
+  //   permission: 'view support tickets',
+  // },
+  // {
+  //   to: '/under-construction/resources',
+  //   icon: 'ri-folder-fill',
+  //   label: 'Resources',
+  //   permission: 'view resources',
+  // },
   {
     to: '/employees',
     icon: 'ri-user-2-fill',
@@ -128,12 +128,12 @@ const menuItems = [
     label: 'Roles & Permissions',
     permission: 'view roles & permissions',
   },
-  {
-    to: '/under-construction/settings',
-    icon: 'ri-file-settings-fill',
-    label: 'Settings',
-    permission: 'view settings',
-  },
+  // {
+  //   to: '/under-construction/settings',
+  //   icon: 'ri-file-settings-fill',
+  //   label: 'Settings',
+  //   permission: 'view settings',
+  // },
 ]
 
 export default function Sidebar() {
