@@ -128,12 +128,12 @@ const menuItems = [
     label: 'Roles & Permissions',
     permission: 'view roles & permissions',
   },
-  // {
-  //   to: '/under-construction/settings',
-  //   icon: 'ri-file-settings-fill',
-  //   label: 'Settings',
-  //   permission: 'view settings',
-  // },
+  {
+    to: '/admin/settings',
+    icon: 'ri-file-settings-fill',
+    label: 'Settings',
+    permission: 'view settings',
+  },
 ]
 
 export default function Sidebar() {

@@ -29,6 +29,7 @@ import ContactDetails from './pages/contacts/ContactDetails.jsx';
 import ErrorPage from './pages/Utility/ErrorPage';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
+import Settings from './pages/settings/Settings.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -100,6 +101,9 @@ export default function App() {
               <Route path="roles-permissions/create" element={<CreateRole />} />
               <Route path="roles-permissions/edit/:id" element={<EditRole />} />
             </Route>
+
+            {/* Settings Route */}
+            <Route path="admin/settings" element={<Settings />} />
 
             {/* Credit Builder Menu Routes */}
             <Route>
