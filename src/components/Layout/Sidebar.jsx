@@ -76,8 +76,8 @@ const menuItems = [
     permission: 'view payments',
   },
   {
-    to: '/under-construction/invoices',
-    icon: 'bx bx-file',
+    to: '/invoices',
+    icon: 'ri-file-text-line',
     label: 'Invoices',
     permission: 'view invoices',
   },

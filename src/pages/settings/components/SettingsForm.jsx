@@ -27,9 +27,9 @@ export default function SettingsForm({
     const getFieldName = (base) => `${base}_${mode}`;
 
     return (
-        <form onSubmit={onSubmit} className="row justify-content-center">
-            <div className="col-xxl-8 col-xl-9 col-lg-10">
-                <div className="card border-0 shadow-lg rounded-4 overflow-hidden" style={{ minHeight: '600px' }}>
+        <form onSubmit={onSubmit} className="row">
+            <div className="col-12">
+                <div className="card border-0 shadow-sm rounded-3 overflow-hidden" style={{ minHeight: '600px' }}>
                     <div className="card-body p-5 bg-white">
                         
                         {/* Form Header */}

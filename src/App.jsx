@@ -30,6 +30,7 @@ import ErrorPage from './pages/Utility/ErrorPage';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
 import Settings from './pages/settings/Settings.jsx';
+import Invoices from './pages/invoices/Invoices.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -126,11 +127,15 @@ export default function App() {
               <Route path="contacts/:id" element={<ContactDetails />} />
             </Route>
 
-            {/* Leads Routes */}
             <Route element={<PermissionRoute permission="view leads" />}>
               <Route path="leads" element={<Leads />} />
               <Route path="leads/create" element={<LeadDetails />} />
               <Route path="leads/:id" element={<LeadDetails />} />
+            </Route>
+
+            {/* Invoices Routes */}
+            <Route element={<PermissionRoute permission="view invoices" />}>
+              <Route path="invoices" element={<Invoices />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
