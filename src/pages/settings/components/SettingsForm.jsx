@@ -18,7 +18,7 @@ export default function SettingsForm({
             // { id: 'others', label: 'Business Information', icon: 'ri-building-line', num: 3 }
         ];
 
-        const progress = activeSection === 'payment' ? 33 : activeSection === 'system' ? 66 : 100;
+        const progress = activeSection === 'payment' ? 100 : activeSection === 'system' ? 66 : 100;
 
         return (
             <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
