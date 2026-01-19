@@ -26,7 +26,8 @@ export default function TierForm() {
         title: '',
         subtitle: '',
         description: '',
-        status: 'Active'
+        status: 'Active',
+        has_vendor: 0
     });
 
     // Initialize activeTab from navigation state or default to 'tierInfo'
@@ -60,7 +61,8 @@ export default function TierForm() {
                         title: tierData.title || '',
                         subtitle: tierData.subtitle || '',
                         description: tierData.description || '',
-                        status: ['active', 'Active'].includes(tierData.status) ? 'Active' : 'Inactive'
+                        status: ['active', 'Active'].includes(tierData.status) ? 'Active' : 'Inactive',
+                        has_vendor: tierData.has_vendor || 0
                     });
                 } catch (err) {
                     console.error('Failed to load tier:', err);
@@ -289,16 +291,18 @@ export default function TierForm() {
                                             <i className="far fa-user"></i> Task Information
                                         </button>
                                     </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === 'vendorInfo' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('vendorInfo')}
-                                            type="button"
-                                            role="tab"
-                                        >
-                                            <i className="fas fa-store"></i> Vendors
-                                        </button>
-                                    </li>
+                                    {formData.has_vendor === 1 && (
+                                        <li className="nav-item">
+                                            <button
+                                                className={`nav-link ${activeTab === 'vendorInfo' ? 'active' : ''}`}
+                                                onClick={() => setActiveTab('vendorInfo')}
+                                                type="button"
+                                                role="tab"
+                                            >
+                                                <i className="fas fa-store"></i> Vendors
+                                            </button>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                             <div className="card-body p-4">
