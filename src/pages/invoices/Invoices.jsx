@@ -61,11 +61,11 @@ export default function Invoices() {
         loadStats();
     }, []);
 
-    const loadStats = async () => {
+    const loadStats = async (params = {}) => {
         try {
             setStatsLoading(true);
-            const data = await fetchInvoiceStats();
-            setStats(data);
+            const response = await fetchInvoiceStats(params);
+            setStats(response);
         } catch (error) {
             console.error('Error fetching stats:', error);
         } finally {
@@ -96,6 +96,9 @@ export default function Invoices() {
             } else {
                 toast.error(response.message || 'Failed to fetch invoices');
             }
+            
+            // Also load stats with the same payload (excluding pagination/sorting usually, but backend handles it)
+            loadStats(payload);
         } catch (error) {
             console.error('Error fetching invoices:', error);
             toast.error('Failed to load invoices');

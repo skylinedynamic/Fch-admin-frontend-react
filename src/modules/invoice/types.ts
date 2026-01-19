@@ -15,10 +15,10 @@ export type Invoice = {
 };
 
 export type InvoiceStats = {
-    total_invoices_sent: string | number;
-    total_paid: string | number;
-    total_unpaid: string | number;
-    collection_rate: string | number;
+    invoices_sent: number;
+    paid_invoices: number;
+    unpaid_invoices: number;
+    collection_rate: number;
 };
 
 export type InvoiceFilterParams = {

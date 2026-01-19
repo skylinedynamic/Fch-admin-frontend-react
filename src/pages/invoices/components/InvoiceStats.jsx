@@ -5,25 +5,25 @@ export default function InvoiceStats({ stats }) {
     const statCards = [
         {
             title: 'Invoices Sent',
-            value: stats?.total_invoices_sent || '$3,425',
+            value: stats?.data?.invoices_sent ? `$${stats.data.invoices_sent.toLocaleString()}` : '$62,488',
             icon: 'ri-file-list-3-line',
             colorVariant: 'primary'
         },
         {
             title: 'Paid Invoices',
-            value: stats?.total_paid || '$2,222',
+            value: stats?.data?.paid_invoices ? `$${stats.data.paid_invoices.toLocaleString()}` : '$2,812',
             icon: 'ri-checkbox-circle-line',
             colorVariant: 'success'
         },
         {
             title: 'Unpaid Invoices',
-            value: stats?.total_unpaid || '$3,438',
+            value: stats?.data?.unpaid_invoices ? `$${stats.data.unpaid_invoices.toLocaleString()}` : '$20,003',
             icon: 'ri-close-circle-line',
             colorVariant: 'danger'
         },
         {
             title: 'Collection Rate',
-            value: stats?.collection_rate || '4%',
+            value: stats?.data?.collection_rate ? `${stats.data.collection_rate}%` : '4.5%',
             icon: 'ri-bar-chart-line',
             colorVariant: 'info'
         }
