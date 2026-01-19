@@ -127,12 +127,14 @@ const menuItems = [
     icon: 'ri-shield-user-fill',
     label: 'Roles & Permissions',
     permission: 'view roles & permissions',
+    isHostOnly: true,
   },
   {
     to: '/admin/settings',
     icon: 'ri-file-settings-fill',
     label: 'Settings',
     permission: 'view settings',
+    isHostOnly: true,
   },
 ]
 
