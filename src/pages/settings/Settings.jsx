@@ -110,7 +110,6 @@ export default function Settings() {
         if (e) e.preventDefault();
         
         if (!validateForm()) {
-            toast.warn('Please fill in all required fields.');
             return;
         }
 
@@ -143,24 +142,17 @@ export default function Settings() {
                     </div>
                 </div>
 
-                {fetching ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                ) : (
-                    <SettingsForm
-                        formData={formData}
-                        handleInputChange={handleInputChange}
-                        handleConfigChange={handleConfigChange}
-                        onSubmit={handleSubmit}
-                        loading={loading}
-                        errors={errors}
-                        activeSection={activeSection}
-                        setActiveSection={setActiveSection}
-                    />
-                )}
+                <SettingsForm
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    handleConfigChange={handleConfigChange}
+                    onSubmit={handleSubmit}
+                    loading={loading}
+                    fetching={fetching}
+                    errors={errors}
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
             </div>
         </div>
     );

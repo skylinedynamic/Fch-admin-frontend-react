@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from 'primereact/button';
+import { Skeleton } from 'primereact/skeleton';
 
 export default function SettingsForm({
     formData,
@@ -7,10 +8,69 @@ export default function SettingsForm({
     handleConfigChange,
     onSubmit,
     loading,
+    fetching,
     errors = {},
     activeSection,
     setActiveSection
 }) {
+    const renderSkeleton = () => (
+        <div className="row g-4 align-items-stretch animate__animated animate__fadeIn">
+            {/* Sidebar Skeleton */}
+            <div className="col-lg-4 col-md-5">
+                <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+                    <div className="app-progress-card mb-4">
+                        <div className="d-flex justify-content-between mb-2">
+                            <Skeleton width="100px" height="1rem" />
+                            <Skeleton width="40px" height="1.2rem" borderRadius="12px" />
+                        </div>
+                        <Skeleton width="60px" height="0.8rem" className="mb-3" />
+                        <Skeleton width="100%" height="6px" borderRadius="3px" />
+                    </div>
+                    <div className="d-flex flex-column gap-2">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                                <Skeleton shape="circle" size="32px" />
+                                <Skeleton width="120px" height="1rem" className="flex-grow-1" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Skeleton */}
+            <div className="col-lg-8 col-md-7">
+                <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border-0 h-100">
+                    <div className="mb-4">
+                        <Skeleton width="200px" height="1.5rem" className="mb-2" />
+                        <Skeleton width="300px" height="1rem" />
+                    </div>
+                    <div className="mb-4 pt-3">
+                        <Skeleton width="150px" height="1rem" className="mb-3" />
+                        <div className="d-flex gap-4">
+                            <Skeleton width="100px" height="1.2rem" />
+                            <Skeleton width="100px" height="1.2rem" />
+                        </div>
+                    </div>
+                    <div className="row g-4 pt-3">
+                        <div className="col-12">
+                            <Skeleton width="100px" height="1rem" className="mb-2" />
+                            <Skeleton width="100%" height="3.5rem" borderRadius="8px" />
+                        </div>
+                        <div className="col-12">
+                            <Skeleton width="100px" height="1rem" className="mb-2" />
+                            <Skeleton width="100%" height="3.5rem" borderRadius="8px" />
+                        </div>
+                    </div>
+                    <div className="d-flex justify-content-end mt-5 pt-4">
+                        <Skeleton width="180px" height="3.5rem" borderRadius="8px" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    if (fetching) return renderSkeleton();
+
     const renderSidebar = () => {
         const sections = [
             { id: 'payment', label: 'Payment Information', icon: 'ri-bank-card-line', num: 1 },
@@ -18,7 +78,8 @@ export default function SettingsForm({
             // { id: 'others', label: 'Business Information', icon: 'ri-building-line', num: 3 }
         ];
 
-        const progress = activeSection === 'payment' ? 100 : activeSection === 'system' ? 66 : 100;
+        // Progress is 100% since only Payment info is currently active and handled in Step 1
+        const progress = 100;
 
         return (
             <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
@@ -27,7 +88,7 @@ export default function SettingsForm({
                         <h6 className="mb-0 fw-bold">Setup Progress</h6>
                         <span className="progress-badge">{progress}%</span>
                     </div>
-                    <p className="text-muted mb-3 small">Step {activeSection === 'payment' ? 1 : activeSection === 'system' ? 2 : 3} of 3</p>
+                    <p className="text-muted mb-3 small">Step 1 of 1</p>
                     <div className="progress-bar-container">
                         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
                     </div>
@@ -50,7 +111,7 @@ export default function SettingsForm({
                         </button>
                     ))}
                     <div className="text-center mt-3 pt-3 border-top border-light">
-                        <small className="text-muted fst-italic">Other settings are temporarily disabled</small>
+                        <small className="text-muted fst-italic">Other settings have been removed</small>
                     </div>
                 </div>
             </div>
@@ -65,7 +126,7 @@ export default function SettingsForm({
         return (
             <div className="animate__animated animate__fadeIn">
                 <div className="mb-4">
-                    <h4 className="fw-bold mb-1">Step 1 of 3: Payment Information</h4>
+                    <h4 className="fw-bold mb-1">Step 1 of 1: Payment Information</h4>
                     <p className="text-muted small">Configure your Stripe integration for payments.</p>
                 </div>
 
@@ -167,38 +228,14 @@ export default function SettingsForm({
                         {/* {activeSection === 'system' && renderSystemSettings()} */}
                         {/* {activeSection === 'others' && renderOtherSettings()} */}
 
-                        <div className="footer-actions d-flex justify-content-between mt-5 pt-4">
-                            {activeSection !== 'payment' ? (
-                                <button 
-                                    type="button" 
-                                    className="btn btn-link link-secondary text-decoration-none fw-bold p-0"
-                                    onClick={() => {
-                                        if (activeSection === 'system') setActiveSection('payment');
-                                        else if (activeSection === 'others') setActiveSection('system');
-                                    }}
-                                >
-                                    <i className="ri-arrow-left-line me-2"></i> Previous
-                                </button>
-                            ) : <div></div>}
-                            
-                            {activeSection === 'payment' ? (
-                                <Button
-                                    label="Save Payment Settings"
-                                    icon="ri-save-line"
-                                    className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow"
-                                    loading={loading}
-                                    type="submit"
-                                />
-                            ) : null}
-                            
-                            {/* Next button disabled as other settings are commented out */}
-                            {/* 
-                            {activeSection !== 'others' ? (
-                                <button ...>Next ...</button>
-                            ) : (
-                                <Button label="Save Settings" ... />
-                            )} 
-                            */}
+                        <div className="footer-actions d-flex justify-content-end mt-5 pt-4">
+                            <Button
+                                label="Save Payment Settings"
+                                icon="ri-save-line"
+                                className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow"
+                                loading={loading}
+                                type="submit"
+                            />
                         </div>
                     </form>
                 </div>
