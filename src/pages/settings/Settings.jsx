@@ -11,24 +11,11 @@ export default function Settings() {
     const [fetching, setFetching] = useState(true);
     const [activeSection, setActiveSection] = useState('payment'); // 'payment', 'system', 'others'
     const [formData, setFormData] = useState({
-        card_no: '',
-        card_name: '',
-        card_expiry: '',
-        card_cvv: '',
-        currency: 'USD',
         stripe_key_sandbox: '',
         stripe_secret_sandbox: '',
         stripe_key_production: '',
         stripe_secret_production: '',
-        payment_mode: 'sandbox',
-        configuration: {
-            theme: 'light',
-            notifications: true,
-            business_name: '',
-            contact_email: '',
-            phone_number: '',
-            address: ''
-        }
+        payment_mode: 'sandbox'
     });
 
     const [errors, setErrors] = useState({});
@@ -44,16 +31,11 @@ export default function Settings() {
             if (response && response.data) {
                 const data = response.data.data || response.data;
                 setFormData({
-                    ...data,
-                    payment_mode: data.payment_mode || 'sandbox',
-                    configuration: data.configuration || { 
-                        theme: 'light', 
-                        notifications: true,
-                        business_name: '',
-                        contact_email: '',
-                        phone_number: '',
-                        address: ''
-                    }
+                    stripe_key_sandbox: data.stripe_key_sandbox || '',
+                    stripe_secret_sandbox: data.stripe_secret_sandbox || '',
+                    stripe_key_production: data.stripe_key_production || '',
+                    stripe_secret_production: data.stripe_secret_production || '',
+                    payment_mode: data.payment_mode || 'sandbox'
                 });
             }
         } catch (error) {
@@ -71,20 +53,17 @@ export default function Settings() {
             ...prev,
             [name]: value
         }));
-        // Clear error when user types
+
+        // Reset all errors if environment mode changes
+        if (name === 'payment_mode') {
+            setErrors({});
+            return;
+        }
+
+        // Clear specific error when user types
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
-    };
-
-    const handleConfigChange = (key, value) => {
-        setFormData(prev => ({
-            ...prev,
-            configuration: {
-                ...prev.configuration,
-                [key]: value
-            }
-        }));
     };
 
     const validateForm = () => {
@@ -115,7 +94,16 @@ export default function Settings() {
 
         setLoading(true);
         try {
-            const response = await updateSettings(formData);
+            // Send only required fields
+            const payload = {
+                stripe_key_sandbox: formData.stripe_key_sandbox,
+                stripe_secret_sandbox: formData.stripe_secret_sandbox,
+                stripe_key_production: formData.stripe_key_production,
+                stripe_secret_production: formData.stripe_secret_production,
+                payment_mode: formData.payment_mode
+            };
+
+            const response = await updateSettings(payload);
             if (response) {
                 toast.success('Settings updated successfully.');
                 loadSettings();

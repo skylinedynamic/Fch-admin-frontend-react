@@ -1,11 +1,9 @@
 import React from 'react';
-import { Button } from 'primereact/button';
-import { Skeleton } from 'primereact/skeleton';
+import FormLoader from '../../../components/Loader/FormLoader';
 
 export default function SettingsForm({
     formData,
     handleInputChange,
-    handleConfigChange,
     onSubmit,
     loading,
     fetching,
@@ -15,55 +13,32 @@ export default function SettingsForm({
 }) {
     const renderSkeleton = () => (
         <div className="row g-4 align-items-stretch animate__animated animate__fadeIn">
-            {/* Sidebar Skeleton */}
+            {/* Sidebar Skeleton (Keep for layout stability) */}
             <div className="col-lg-4 col-md-5">
                 <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
                     <div className="app-progress-card mb-4">
-                        <div className="d-flex justify-content-between mb-2">
-                            <Skeleton width="100px" height="1rem" />
-                            <Skeleton width="40px" height="1.2rem" borderRadius="12px" />
+                        <div className="placeholder-glow">
+                            <span className="placeholder col-6 mb-2"></span>
+                            <span className="placeholder col-12 mb-3"></span>
                         </div>
-                        <Skeleton width="60px" height="0.8rem" className="mb-3" />
-                        <Skeleton width="100%" height="6px" borderRadius="3px" />
+                        <div className="progress-bar-container">
+                            <div className="progress-bar-fill" style={{ width: '0%' }}></div>
+                        </div>
                     </div>
-                    <div className="d-flex flex-column gap-2">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
-                                <Skeleton shape="circle" size="32px" />
-                                <Skeleton width="120px" height="1rem" className="flex-grow-1" />
+                    <div className="d-flex flex-column gap-2 mt-4">
+                        {[1].map(i => (
+                            <div key={i} className="placeholder-glow p-3 rounded-3 bg-light">
+                                <span className="placeholder col-10"></span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Content Skeleton */}
+            {/* Content Skeleton - Using FormLoader to follow "others" */}
             <div className="col-lg-8 col-md-7">
                 <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border-0 h-100">
-                    <div className="mb-4">
-                        <Skeleton width="200px" height="1.5rem" className="mb-2" />
-                        <Skeleton width="300px" height="1rem" />
-                    </div>
-                    <div className="mb-4 pt-3">
-                        <Skeleton width="150px" height="1rem" className="mb-3" />
-                        <div className="d-flex gap-4">
-                            <Skeleton width="100px" height="1.2rem" />
-                            <Skeleton width="100px" height="1.2rem" />
-                        </div>
-                    </div>
-                    <div className="row g-4 pt-3">
-                        <div className="col-12">
-                            <Skeleton width="100px" height="1rem" className="mb-2" />
-                            <Skeleton width="100%" height="3.5rem" borderRadius="8px" />
-                        </div>
-                        <div className="col-12">
-                            <Skeleton width="100px" height="1rem" className="mb-2" />
-                            <Skeleton width="100%" height="3.5rem" borderRadius="8px" />
-                        </div>
-                    </div>
-                    <div className="d-flex justify-content-end mt-5 pt-4">
-                        <Skeleton width="180px" height="3.5rem" borderRadius="8px" />
-                    </div>
+                    <FormLoader count={6} colClass="col-12" />
                 </div>
             </div>
         </div>
@@ -110,9 +85,6 @@ export default function SettingsForm({
                             <i className={`ri-arrow-right-s-line ${activeSection === section.id ? 'text-white' : 'text-muted opacity-50'}`}></i>
                         </button>
                     ))}
-                    <div className="text-center mt-3 pt-3 border-top border-light">
-                        <small className="text-muted fst-italic">Other settings have been removed</small>
-                    </div>
                 </div>
             </div>
         );
@@ -168,7 +140,9 @@ export default function SettingsForm({
                     <div className="col-12">
                         <label className="form-label fw-semibold mb-2">Stripe Key <span className="text-danger">*</span></label>
                         <div className="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span className="input-group-text bg-light border-end-0"><i className="ri-key-2-line"></i></span>
+                            <span className={`input-group-text bg-light border-end-0 ${errors[`stripe_key${suffix}`] ? 'is-invalid border-danger' : ''}`}>
+                                <i className="ri-key-2-line"></i>
+                            </span>
                             <input
                                 type="text"
                                 className={`form-control border-start-0 py-3 ${errors[`stripe_key${suffix}`] ? 'is-invalid' : ''}`}
@@ -183,7 +157,9 @@ export default function SettingsForm({
                     <div className="col-12">
                         <label className="form-label fw-semibold mb-2">Stripe Secret <span className="text-danger">*</span></label>
                         <div className="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span className="input-group-text bg-light border-end-0"><i className="ri-lock-2-line"></i></span>
+                            <span className={`input-group-text bg-light border-end-0 ${errors[`stripe_secret${suffix}`] ? 'is-invalid border-danger' : ''}`}>
+                                <i className="ri-lock-2-line"></i>
+                            </span>
                             <input
                                 type="password"
                                 className={`form-control border-start-0 py-3 ${errors[`stripe_secret${suffix}`] ? 'is-invalid' : ''}`}
@@ -229,13 +205,22 @@ export default function SettingsForm({
                         {/* {activeSection === 'others' && renderOtherSettings()} */}
 
                         <div className="footer-actions d-flex justify-content-end mt-5 pt-4">
-                            <Button
-                                label="Save Payment Settings"
-                                icon="ri-save-line"
-                                className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow"
-                                loading={loading}
+                            <button
                                 type="submit"
-                            />
+                                className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow waves-effect waves-light"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-3-line align-middle me-2"></i> Save Settings
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </form>
                 </div>

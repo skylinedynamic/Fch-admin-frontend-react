@@ -50,7 +50,10 @@ const CheckoutForm = ({ amount, lead, borrowerId, onPaymentSuccess, onCancel, lo
         payment_method_id: paymentMethod.id,
         description: `Enrollment Fee for Borrower ${borrowerId} - ${lead?.contact_person || lead?.contact_name}`,
         entity_id: borrowerId,
-        entity_type: 'borrower'
+        entity_type: 'borrower',
+        borrower_id: borrowerId,
+        partner_id: lead?.partner_id || null,
+        invoice_id: lead?.invoice_id || null
       });
 
       if (response.status) {
@@ -139,14 +142,6 @@ const CheckoutForm = ({ amount, lead, borrowerId, onPaymentSuccess, onCancel, lo
 
         <div className="hstack gap-2 justify-content-center">
             <button
-                type="button"
-                className="btn btn-link text-muted fw-medium"
-                onClick={onCancel}
-                disabled={isProcessing || loading}
-            >
-                <i className="ri-arrow-left-line me-1"></i> Back
-            </button>
-            <button
                 type="submit"
                 className="btn btn-primary btn-lg rounded-3 px-4"
                 disabled={!stripe || isProcessing || loading}
@@ -217,12 +212,14 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
                         <button type="button" className="btn-close" onClick={onHide}></button>
                     </div>
                     <div className="modal-body p-4 text-center">
-                        <div className="mb-4">
-                            <div className="avatar-title bg-soft-primary text-primary rounded-circle fs-1 mx-auto" style={{ width: '80px', height: '80px', background: '#eef2ff' }}>
-                                <i className="ri-lock-password-line" style={{ fontSize: '40px' }}></i>
+                        <div className="mb-4 text-center">
+                            <div className="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm" style={{ width: '80px', height: '80px', background: '#635bff' }}>
+                                <svg width="45" height="45" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21.171 16.489c-1.527-.643-2.585-.921-2.585-1.748 0-.67.618-1.056 1.637-1.056 1.579 0 3.253.643 4.295 1.287l1.096-3.235c-1.25-.683-3.134-1.246-5.021-1.246-4.008 0-6.66 2.029-6.66 5.424 0 5.441 7.641 4.57 7.641 6.88 0 .863-.82 1.226-2.004 1.226-1.896 0-3.951-.884-5.233-1.667l-1.137 3.315c1.472.924 3.978 1.647 6.046 1.647 4.295 0 7.042-2.149 7.042-5.545 0-5.783-7.617-4.697-7.617-6.88z" fill="white"/>
+                                </svg>
                             </div>
                         </div>
-                        <h4 className="mb-2 fw-bold">Secure Checkout</h4>
+                        <h4 className="mb-2 fw-bold">Stripe Payment</h4>
                         <p className="text-muted mb-4 px-3">
                             Complete the enrollment for <strong>{lead?.contact_person || lead?.contact_name}</strong> by processing the secure payment below.
                         </p>

@@ -42,6 +42,14 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         const payload = {};
         if (targetType === 'Borrower') {
             payload.enrollment_type = isHost ? enrollmentType : NON_HOST_ENROLLMENT_VALUE;
+            
+            // Derive amount from enrollment type
+            if (isHost) {
+                const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === enrollmentType);
+                payload.amount = selectedOption ? selectedOption.price : 0;
+            } else {
+                payload.amount = NON_HOST_ENROLLMENT_PRICE;
+            }
         }
         onConfirm(payload);
     };
@@ -89,9 +97,18 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                         )}
 
                         {!isHost && targetType === 'Borrower' && (
-                            <div className="mb-4 text-start bg-light p-3 rounded border border-info">
-                                <h6 className="text-info mb-1"><i className="ri-information-line me-1"></i> Special Note:</h6>
-                                <p className="mb-0 text-muted">A fixed Enrollment Fee of <strong>${NON_HOST_ENROLLMENT_PRICE}</strong> will be applied upon conversion.</p>
+                            <div className="mb-4 text-start bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
+                                <div className="flex-shrink-0 me-3">
+                                    <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
+                                        <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
+                                    </div>
+                                </div>
+                                <div className="flex-grow-1 ps-2">
+                                    <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
+                                    <p className="mb-0 text-muted fs-15 lh-base">
+                                        A fixed enrollment fee <span className="text-success fw-bold fs-18">${NON_HOST_ENROLLMENT_PRICE}</span>
+                                    </p>
+                                </div>
                             </div>
                         )}
 
