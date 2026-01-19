@@ -85,16 +85,16 @@ const menuItems = [
     permission: 'view commission',
   },
   {
+    to: '/invoices',
+    icon: 'ri-file-text-line',
+    label: 'Invoices',
+    permission: 'view invoices',
+  },
+  {
     to: '/under-construction/payments',
     icon: 'bx bx-credit-card',
     label: 'Payments',
     permission: 'view payments',
-  },
-  {
-    to: '/under-construction/invoices',
-    icon: 'bx bx-file',
-    label: 'Invoices',
-    permission: 'view invoices',
   },
   {
     to: '/under-construction/subscriptions',
@@ -142,13 +142,15 @@ const menuItems = [
     icon: 'ri-shield-user-fill',
     label: 'Roles & Permissions',
     permission: 'view roles & permissions',
+    isHostOnly: true,
   },
-  // {
-  //   to: '/under-construction/settings',
-  //   icon: 'ri-file-settings-fill',
-  //   label: 'Settings',
-  //   permission: 'view settings',
-  // },
+  {
+    to: '/admin/settings',
+    icon: 'ri-file-settings-fill',
+    label: 'Settings',
+    permission: 'view settings',
+    isHostOnly: true,
+  },
 ]
 
 export default function Sidebar() {

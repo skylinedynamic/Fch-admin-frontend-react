@@ -17,6 +17,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
+import LeadPaymentModal from './components/LeadPaymentModal';
+import { NON_HOST_ENROLLMENT_PRICE } from '../../config/enrollmentOptions';
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -63,6 +65,8 @@ export default function Leads() {
     const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
     const [targetLead, setTargetLead] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [convertedBorrowerId, setConvertedBorrowerId] = useState(null);
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -306,12 +310,25 @@ export default function Leads() {
         }
     };
 
-    const handleConvertLeadConfirm = async () => {
+    const handleConvertLeadConfirm = async (payload = {}) => {
         if (!targetLead) return;
         const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
-            const response = await convertLead(targetLead.id);
+            const response = await convertLead(targetLead.id, payload);
+            
+            // If Non-Host and Target is Borrower, show payment modal after conversion
+            if (!isHost && targetType === 'Borrower' && response.status) {
+                const borrowerId = response.data?.id;
+                if (borrowerId) {
+                    setConvertedBorrowerId(borrowerId);
+                    setShowConvertModal(false);
+                    setShowPaymentModal(true);
+                    toast.success("Lead converted! Please complete the enrollment payment.");
+                    return;
+                }
+            }
+
             if (response.status && response.data?.id) {
                 toast.success(`Lead successfully updated and converted to ${targetType}`);
                 setAppliedFilters({ ...appliedFilters });
@@ -515,7 +532,7 @@ export default function Leads() {
                                                         {isConverted ? (
                                                             <span className="badge bg-success-subtle text-success fs-12 p-2">
                                                                 <i className="ri-checkbox-circle-line align-middle me-1"></i>
-                                                                Already a {targetType}
+                                                                Converted as a {targetType}
                                                             </span>
                                                         ) : (
                                                             <button 
@@ -545,6 +562,7 @@ export default function Leads() {
                     lead={targetLead}
                     targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                     loading={conversionLoading}
+                    isHost={isHost}
                 />
 
                 <LeadMissingInfoModal
@@ -554,6 +572,18 @@ export default function Leads() {
                     lead={targetLead}
                     targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                     loading={conversionLoading}
+                />
+
+                <LeadPaymentModal
+                    show={showPaymentModal}
+                    onHide={() => setShowPaymentModal(false)}
+                    onSuccess={() => {
+                        setShowPaymentModal(false);
+                        setAppliedFilters({ ...appliedFilters });
+                    }}
+                    lead={targetLead}
+                    borrowerId={convertedBorrowerId}
+                    amount={NON_HOST_ENROLLMENT_PRICE}
                 />
 
                 <DeleteConfirmationModal

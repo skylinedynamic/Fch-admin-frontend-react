@@ -26,8 +26,8 @@ export const deleteLead = async (id: string | number): Promise<any> => {
   return response.data;
 };
 
-export const convertLead = async (id: string | number): Promise<any> => {
-  const response = await apiClient.post(`/common/leads/${id}/convert`, {});
+export const convertLead = async (id: string | number, payload: any = {}): Promise<any> => {
+  const response = await apiClient.post(`/common/leads/${id}/convert`, payload);
   return response.data;
 };
 
@@ -38,5 +38,10 @@ export const fetchLeadStats = async () => {
 
 export const fetchGlobalStats = async (payload: any = {}) => {
   const response = await apiClient.post('/common/stats', payload);
+  return response.data;
+};
+
+export const processPayment = async (payload: any) => {
+  const response = await apiClient.post('/process-payment', payload);
   return response.data;
 };

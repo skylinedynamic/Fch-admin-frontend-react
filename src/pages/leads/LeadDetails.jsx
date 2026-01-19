@@ -27,6 +27,7 @@ import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
+import LeadPaymentModal from './components/LeadPaymentModal';
 
 export default function LeadDetails() {
     const { id } = useParams();
@@ -103,9 +104,12 @@ export default function LeadDetails() {
     const [statsLoading, setStatsLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
-    // Conversion Modal state
+    // Conversion and Payment Modal states
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [newBorrowerId, setNewBorrowerId] = useState(null);
+    const [paymentAmount, setPaymentAmount] = useState(0);
     const [conversionLoading, setConversionLoading] = useState(false);
 
     // Location states
@@ -264,17 +268,25 @@ export default function LeadDetails() {
         }
     };
 
-    const handleConvertConfirm = async () => {
+    const handleConvertConfirm = async (payload) => {
         const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
-            const response = await convertLead(id);
-            if (response.status && response.data?.id) {
-                toast.success(`Lead successfully updated and converted to ${targetType}`);
-                navigate('/leads');
-            } else {
-                toast.success(`Lead converted to ${targetType} successfully`);
-                navigate('/leads');
+            const response = await convertLead(id, payload);
+            
+            if (response.status || response.id) {
+                const bId = response.data?.id || response.id;
+                
+                // If it's a borrower and there's an amount to pay, show payment modal
+                if (targetType === 'Borrower' && payload?.amount > 0) {
+                    setNewBorrowerId(bId);
+                    setPaymentAmount(payload.amount);
+                    setShowPaymentModal(true);
+                    toast.success(`Lead successfully converted. Please complete the payment.`);
+                } else {
+                    toast.success(`Lead successfully converted to ${targetType}`);
+                    navigate('/leads');
+                }
             }
         } catch (err) {
             console.error('Conversion error:', err);
@@ -886,6 +898,14 @@ export default function LeadDetails() {
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
+            />
+            <LeadPaymentModal
+                show={showPaymentModal}
+                onHide={() => setShowPaymentModal(false)}
+                onSuccess={() => navigate('/leads')}
+                lead={formData}
+                borrowerId={newBorrowerId}
+                amount={paymentAmount}
             />
         </>
     );

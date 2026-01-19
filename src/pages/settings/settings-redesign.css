@@ -1,0 +1,78 @@
+/* Settings Redesign Styles - Simplified for Bootstrap Compatibility */
+
+.app-progress-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.progress-header h6 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #344767;
+}
+
+.progress-badge {
+  background: #002651;
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.progress-bar-container {
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.3s ease;
+}
+
+.nav-item-btn {
+  transition: all 0.2s ease;
+}
+
+.nav-item-btn.active {
+  background: #002651 !important;
+  color: #ffffff !important;
+}
+
+.nav-item-btn.active .nav-item-number {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.nav-item-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.animate__fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fix for Sandbox/Production toggle to look premium */
+.form-check-inline .form-check-input:checked + .form-check-label {
+  color: #002651;
+  font-weight: 700;
+}
+
+.input-group-text {
+  color: #6c757d;
+}
+
+.footer-actions {
+  border-top: 1px solid #e9ecef;
+}

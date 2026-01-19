@@ -4,6 +4,7 @@ import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import type { Client } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
+import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
 
 const entityTypeOptions = [
     { label: 'Corporation (C-Corp)', value: 'Corporation (C-Corp)' },
@@ -25,6 +26,7 @@ interface ClientInfoSectionProps {
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
     isLoading?: boolean;
+    isHost?: boolean;
 }
 
 export default function ClientInfoSection({
@@ -34,7 +36,8 @@ export default function ClientInfoSection({
     countries,
     states,
     cities,
-    isLoading = false
+    isLoading = false,
+    isHost = false
 }: ClientInfoSectionProps) {
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
@@ -403,6 +406,24 @@ export default function ClientInfoSection({
                         {errors.ssn_last_4 && <div className="invalid-feedback">{errors.ssn_last_4}</div>}
                     </div>
                 </div>
+
+                {isHost && (
+                    <div className="col-lg-6">
+                        <div className="mb-3">
+                            <label htmlFor="enrollment_type" className="form-label">Enrollment Amount <span className="text-danger">*</span></label>
+                            <Dropdown
+                                value={formData.enrollment_type}
+                                options={ENROLLMENT_TYPE_OPTIONS}
+                                onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                                optionLabel="label"
+                                placeholder="Select enrollment amount"
+                                className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
+                                appendTo="self"
+                            />
+                            {errors.enrollment_type && <small className="p-error">{errors.enrollment_type}</small>}
+                        </div>
+                    </div>
+                )}
 
                 <div className="col-lg-12">
                     <div className="mb-3 pb-2">

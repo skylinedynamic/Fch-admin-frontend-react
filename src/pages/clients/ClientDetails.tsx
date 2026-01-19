@@ -14,6 +14,7 @@ import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/auth/authStore';
 
 
 export default function ClientDetails() {
@@ -21,6 +22,8 @@ export default function ClientDetails() {
     const navigate = useNavigate();
     const location = useLocation();
     const { hasPermission } = usePermissions();
+    const currentUser = useAuthStore((state) => state.user);
+    const isHost = currentUser?.is_host === 1;
 
     // Permission checks
     const canCreate = hasPermission('create clients');
@@ -79,6 +82,7 @@ export default function ClientDetails() {
         industry_type: '',
         business_start_date: '',
         ssn_last_4: '',
+        enrollment_type: 'One Time Payment',
         notes: '',
 
         // Financials
@@ -567,6 +571,7 @@ export default function ClientDetails() {
                                     checklist={checklist}
                                     handleChecklistChange={handleChecklistChange}
                                     isLoading={isLoading}
+                                    isHost={isHost}
                                 />
                             </div>
                         </div>
