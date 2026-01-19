@@ -13,7 +13,7 @@ import { getStripe } from '../../../lib/stripe';
 import { processPayment } from '../../../modules/leads/services';
 import { toast } from 'react-toastify';
 
-const CheckoutForm = ({ amount, lead, onPaymentSuccess, onCancel, loading }) => {
+const CheckoutForm = ({ amount, lead, borrowerId, onPaymentSuccess, onCancel, loading }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,8 +48,9 @@ const CheckoutForm = ({ amount, lead, onPaymentSuccess, onCancel, loading }) => 
         amount: amount * 100, // convert to cents
         currency: 'usd',
         payment_method_id: paymentMethod.id,
-        description: `Enrollment Fee for lead ${lead?.id} - ${lead?.contact_person || lead?.contact_name}`,
-        lead_id: lead?.id
+        description: `Enrollment Fee for Borrower ${borrowerId} - ${lead?.contact_person || lead?.contact_name}`,
+        entity_id: borrowerId,
+        entity_type: 'borrower'
       });
 
       if (response.status) {
@@ -167,7 +168,7 @@ const CheckoutForm = ({ amount, lead, onPaymentSuccess, onCancel, loading }) => 
   );
 };
 
-export default function LeadPaymentModal({ show, onHide, onSuccess, lead, amount }) {
+export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrowerId, amount }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [stripePromise, setStripePromise] = useState(null);
@@ -231,6 +232,7 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, amount
                             <CheckoutForm 
                               amount={amount} 
                               lead={lead} 
+                              borrowerId={borrowerId}
                               onPaymentSuccess={onSuccess} 
                               onCancel={onHide}
                             />
