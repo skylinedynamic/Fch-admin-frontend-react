@@ -70,16 +70,16 @@ const menuItems = [
     permission: 'view commission',
   },
   {
-    to: '/under-construction/payments',
-    icon: 'bx bx-credit-card',
-    label: 'Payments',
-    permission: 'view payments',
-  },
-  {
     to: '/invoices',
     icon: 'ri-file-text-line',
     label: 'Invoices',
     permission: 'view invoices',
+  },
+  {
+    to: '/under-construction/payments',
+    icon: 'bx bx-credit-card',
+    label: 'Payments',
+    permission: 'view payments',
   },
   {
     to: '/under-construction/subscriptions',

@@ -410,13 +410,13 @@ export default function ClientInfoSection({
                 {isHost && (
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label htmlFor="enrollment_type" className="form-label">Enrollment Type <span className="text-danger">*</span></label>
+                            <label htmlFor="enrollment_type" className="form-label">Enrollment Amount <span className="text-danger">*</span></label>
                             <Dropdown
                                 value={formData.enrollment_type}
                                 options={ENROLLMENT_TYPE_OPTIONS}
                                 onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
                                 optionLabel="label"
-                                placeholder="Select enrollment type"
+                                placeholder="Select enrollment amount"
                                 className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
                                 appendTo="self"
                             />
