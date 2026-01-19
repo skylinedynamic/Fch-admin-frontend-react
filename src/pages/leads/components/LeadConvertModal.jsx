@@ -1,7 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
+import { Dropdown } from 'primereact/dropdown';
+import { ENROLLMENT_TYPE_OPTIONS, NON_HOST_ENROLLMENT_PRICE, NON_HOST_ENROLLMENT_VALUE } from '../../../config/enrollmentOptions';
 
-export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading }) {
+export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
+    const [enrollmentType, setEnrollmentType] = useState('One Time Payment');
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
@@ -36,7 +39,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     }, [show]);
 
     const handleConfirm = () => {
-        onConfirm();
+        const payload = {};
+        if (targetType === 'Borrower') {
+            payload.enrollment_type = isHost ? enrollmentType : NON_HOST_ENROLLMENT_VALUE;
+        }
+        onConfirm(payload);
     };
 
     const handleClose = () => {
@@ -59,6 +66,34 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                             Are you sure you want to convert <strong>{lead?.contact_person || lead?.contact_name || lead?.company_name || 'this lead'}</strong> to a <strong>{targetType}</strong>? 
                             This action will create a new {targetType.toLowerCase()} profile and cannot be undone.
                         </p>
+
+                        {targetType === 'Borrower' && isHost && (
+                            <div className="mb-4 text-start">
+                                <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
+                                <Dropdown
+                                    value={enrollmentType}
+                                    options={ENROLLMENT_TYPE_OPTIONS}
+                                    onChange={(e) => setEnrollmentType(e.value)}
+                                    placeholder="Select Enrollment Type"
+                                    className="w-100"
+                                    appendTo="self"
+                                />
+                                <div className="form-text text-info mt-2">
+                                    {enrollmentType === 'One Time Payment' ? (
+                                        <span><i className="ri-information-line me-1"></i> Total Payment: <strong>$2,900</strong></span>
+                                    ) : (
+                                        <span><i className="ri-information-line me-1"></i> Monthly Payment: <strong>$500</strong></span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {!isHost && targetType === 'Borrower' && (
+                            <div className="mb-4 text-start bg-light p-3 rounded border border-info">
+                                <h6 className="text-info mb-1"><i className="ri-information-line me-1"></i> Special Note:</h6>
+                                <p className="mb-0 text-muted">A fixed Enrollment Fee of <strong>${NON_HOST_ENROLLMENT_PRICE}</strong> will be applied upon conversion.</p>
+                            </div>
+                        )}
 
                         <div className="hstack gap-2 justify-content-center">
                             <button

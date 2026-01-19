@@ -306,12 +306,12 @@ export default function Leads() {
         }
     };
 
-    const handleConvertLeadConfirm = async () => {
+    const handleConvertLeadConfirm = async (payload = {}) => {
         if (!targetLead) return;
         const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
-            const response = await convertLead(targetLead.id);
+            const response = await convertLead(targetLead.id, payload);
             if (response.status && response.data?.id) {
                 toast.success(`Lead successfully updated and converted to ${targetType}`);
                 setAppliedFilters({ ...appliedFilters });
@@ -545,6 +545,7 @@ export default function Leads() {
                     lead={targetLead}
                     targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                     loading={conversionLoading}
+                    isHost={isHost}
                 />
 
                 <LeadMissingInfoModal
