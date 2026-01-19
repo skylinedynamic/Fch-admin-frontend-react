@@ -17,6 +17,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
+import LeadPaymentModal from './components/LeadPaymentModal';
+import { NON_HOST_ENROLLMENT_PRICE } from '../../config/enrollmentOptions';
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -63,6 +65,7 @@ export default function Leads() {
     const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
     const [targetLead, setTargetLead] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -308,6 +311,15 @@ export default function Leads() {
 
     const handleConvertLeadConfirm = async (payload = {}) => {
         if (!targetLead) return;
+
+        // If Non-Host and Target is Borrower, show payment modal first
+        const isBorrower = targetLead.lead_type !== 'Partner';
+        if (!isHost && isBorrower && !showPaymentModal) {
+            setShowConvertModal(false);
+            setShowPaymentModal(true);
+            return;
+        }
+
         const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
@@ -326,6 +338,7 @@ export default function Leads() {
             toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
         } finally {
             setConversionLoading(false);
+            setShowPaymentModal(false);
         }
     };
 
@@ -555,6 +568,17 @@ export default function Leads() {
                     lead={targetLead}
                     targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                     loading={conversionLoading}
+                />
+
+                <LeadPaymentModal
+                    show={showPaymentModal}
+                    onHide={() => setShowPaymentModal(false)}
+                    onSuccess={(paymentIntentId) => handleConvertLeadConfirm({ 
+                        enrollment_type: 'Standard Enrollment',
+                        payment_intent_id: paymentIntentId 
+                    })}
+                    lead={targetLead}
+                    amount={NON_HOST_ENROLLMENT_PRICE}
                 />
 
                 <DeleteConfirmationModal

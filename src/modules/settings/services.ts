@@ -2,7 +2,7 @@ import { apiClient } from '../../lib/http/apiClient';
 import type { SettingsData, UpdateSettingsPayload } from './types';
 
 // Base API path
-const BASE_PATH = '/admin/settings';
+const BASE_PATH = '/common/settings';
 
 export const fetchSettings = async (): Promise<SettingsData> => {
     const { data } = await apiClient.get(BASE_PATH);
