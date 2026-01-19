@@ -339,7 +339,7 @@ export default function Partners() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-xxl-4 col-sm-12">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -352,7 +352,7 @@ export default function Partners() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-2 col-sm-4">
+                                        <div className="col-xxl-3 col-sm-4">
                                             <Dropdown
                                                 value={selectedPartner}
                                                 options={[{ label: 'All Partners', value: '' }, ...partnersList]}
@@ -368,15 +368,6 @@ export default function Partners() {
                                                 onChange={(e) => setSelectedAssignedUser(e.value)}
                                                 placeholder="Assigned Users"
                                                 className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-2 col-sm-4">
-                                            <Dropdown
-                                                value={''}
-                                                options={[{ label: 'All Tiers', value: '' }]}
-                                                placeholder="All Tiers"
-                                                className="w-100 employee-filter-dropdown"
-                                                disabled
                                             />
                                         </div>
                                         <div className="col-xxl-3 col-sm-12">

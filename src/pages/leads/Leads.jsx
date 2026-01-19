@@ -515,7 +515,7 @@ export default function Leads() {
                                                         {isConverted ? (
                                                             <span className="badge bg-success-subtle text-success fs-12 p-2">
                                                                 <i className="ri-checkbox-circle-line align-middle me-1"></i>
-                                                                Already a {targetType}
+                                                                Converted as a {targetType}
                                                             </span>
                                                         ) : (
                                                             <button 
