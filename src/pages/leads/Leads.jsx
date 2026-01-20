@@ -77,6 +77,7 @@ export default function Leads() {
     const [statsLoading, setStatsLoading] = useState(true);
     const [newBorrowerId, setNewBorrowerId] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState(0);
+    const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
 
     // Initialize filters
     const initFilters = () => {
@@ -320,12 +321,14 @@ export default function Leads() {
             const response = await convertLead(targetLead.id, payload);
             
             if (response.status || response.id) {
-                const bId = response.data?.id || response.id;
+                const bId = response.data?.borrower?.id || response.data?.id || response.id;
+                const invId = response.data?.invoice?.id || null;
                 
                 // If it's a borrower and there's an amount to pay, and no payment yet
                 if (targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
+                    setPaymentInvoiceId(invId);
                     setShowConvertModal(false);
                     setShowPaymentModal(true);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
@@ -583,6 +586,7 @@ export default function Leads() {
                     }}
                     lead={targetLead}
                     borrowerId={newBorrowerId}
+                    invoiceId={paymentInvoiceId}
                     amount={paymentAmount}
                 />
 
