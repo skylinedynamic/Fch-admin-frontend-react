@@ -893,6 +893,7 @@ export default function LeadDetails() {
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
+                isHost={isHost}
             />
             <LeadMissingInfoModal
                 show={showMissingInfoModal}
@@ -905,12 +906,10 @@ export default function LeadDetails() {
             <LeadPaymentModal
                 show={showPaymentModal}
                 onHide={() => setShowPaymentModal(false)}
-                onSuccess={(paymentIntentId) => {
+                onSuccess={() => {
                     setShowPaymentModal(false);
-                    handleConvertConfirm({ 
-                        amount: paymentAmount,
-                        payment_intent_id: paymentIntentId 
-                    });
+                    toast.success("Lead conversion and payment completed successfully!");
+                    navigate('/leads');
                 }}
                 lead={formData}
                 borrowerId={newBorrowerId}

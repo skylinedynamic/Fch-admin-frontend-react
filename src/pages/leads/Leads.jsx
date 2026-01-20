@@ -76,6 +76,7 @@ export default function Leads() {
     });
     const [statsLoading, setStatsLoading] = useState(true);
     const [newBorrowerId, setNewBorrowerId] = useState(null);
+    const [paymentAmount, setPaymentAmount] = useState(0);
 
     // Initialize filters
     const initFilters = () => {
@@ -321,9 +322,10 @@ export default function Leads() {
             if (response.status || response.id) {
                 const bId = response.data?.id || response.id;
                 
-                // If it's a borrower and non-host, we need to show payment modal
-                if (!isHost && targetType === 'Borrower' && !payload?.payment_intent_id) {
+                // If it's a borrower and there's an amount to pay, and no payment yet
+                if (targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
+                    setPaymentAmount(payload.amount);
                     setShowConvertModal(false);
                     setShowPaymentModal(true);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
@@ -574,16 +576,14 @@ export default function Leads() {
                 <LeadPaymentModal
                     show={showPaymentModal}
                     onHide={() => setShowPaymentModal(false)}
-                    onSuccess={(paymentIntentId) => {
+                    onSuccess={() => {
                         setShowPaymentModal(false);
-                        handleConvertLeadConfirm({ 
-                            enrollment_type: 'Standard Enrollment',
-                            payment_intent_id: paymentIntentId 
-                        });
+                        // toast.success("Lead conversion and payment completed successfully!");
+                        setAppliedFilters({ ...appliedFilters });
                     }}
                     lead={targetLead}
                     borrowerId={newBorrowerId}
-                    amount={NON_HOST_ENROLLMENT_PRICE}
+                    amount={paymentAmount}
                 />
 
                 <DeleteConfirmationModal
