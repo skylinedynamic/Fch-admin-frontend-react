@@ -169,12 +169,14 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
     const [stripePromise, setStripePromise] = useState(null);
 
     useEffect(() => {
-        const initStripe = async () => {
-          const promise = await getStripe();
-          setStripePromise(promise);
-        };
-        initStripe();
-    }, []);
+        if (show && !stripePromise) {
+            const initStripe = async () => {
+                const promise = await getStripe();
+                setStripePromise(promise);
+            };
+            initStripe();
+        }
+    }, [show, stripePromise]);
 
     useEffect(() => {
         if (!modalRef.current) return;
