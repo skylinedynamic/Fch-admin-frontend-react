@@ -220,9 +220,9 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
                             </div>
                         </div>
                         <h4 className="mb-2 fw-bold">Stripe Payment</h4>
-                        <p className="text-muted mb-4 px-3">
-                            Complete the enrollment for <strong>{lead?.contact_person || lead?.contact_name}</strong> by processing the secure payment below.
-                        </p>
+                          <p className="text-muted mb-4 px-3">
+                            Complete the enrollment for <strong>{lead?.contact_person || lead?.contact_name}</strong> by securely processing the payment below.
+                          </p>
 
                         {stripePromise ? (
                           <Elements stripe={stripePromise}>
