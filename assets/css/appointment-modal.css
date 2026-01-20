@@ -175,13 +175,13 @@ span.flatpickr-weekday {
 }
 
 /* Standardized Form Heights and Accuracy */
-.form-control,
+/* .form-control,
 .p-dropdown,
 .input-group-text,
 .note-editor.note-frame {
     border-color: #e2e5ec !important;
     border-radius: 0.3rem !important;
-}
+} */
 
 .fc .fc-list-event-title a {
     color: #4d67bd !important;

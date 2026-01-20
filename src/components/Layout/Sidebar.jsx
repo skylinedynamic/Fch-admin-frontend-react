@@ -40,21 +40,21 @@ const menuItems = [
   //   label: 'Contacts',
   //   permission: 'view contacts',
   // },
-  // {
-  //   label: 'Request Application',
-  //   icon: 'ri-file-list-3-line',
-  //   id: 'request-application',
-  //   subItems: [
-  //     {
-  //       to: '/request-application/pre-qualification',
-  //       label: 'Pre-Qualification',
-  //     },
-  //     {
-  //       to: '/request-application/funding',
-  //       label: 'Funding Application',
-  //     }
-  //   ]
-  // },
+  {
+    label: 'Request Application',
+    icon: 'ri-file-list-3-line',
+    id: 'request-application',
+    subItems: [
+      {
+        to: '/request-application/pre-qualification',
+        label: 'Pre-Qualification',
+      },
+      {
+        to: '/request-application/funding',
+        label: 'Funding Application',
+      }
+    ]
+  },
   {
     to: '/clients',
     icon: 'las la-user-friends',

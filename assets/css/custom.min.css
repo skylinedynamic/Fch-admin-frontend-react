@@ -1040,3 +1040,15 @@
   border: 1px solid #e2e5ec !important;
   background-color: #eff2f7 !important;
 }
+
+
+.table-filter .p-button:focus{
+  box-shadow: none !important;
+}
+
+
+.table-filter .p-button, .table-filter .p-button:hover {
+    color: #666e72 !important;
+    background: #e5e8ea !important;
+    border: 1px solid #f3f7f9 !important;
+}

@@ -33,4 +33,9 @@ export const queryKeys = {
     // Distinct key for edit pages to avoid reading cached grouped permissions
     permissionsGroupedFresh: () => [...queryKeys.role.all, 'permissions', 'grouped', 'edit'] as const,
   },
+  application: {
+    all: ['application'] as const,
+    list: () => [...queryKeys.application.all, 'list'] as const,
+    detail: (id: string | number) => [...queryKeys.application.all, 'detail', id] as const,
+  },
 } as const
