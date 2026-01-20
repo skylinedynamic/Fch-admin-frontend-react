@@ -85,7 +85,8 @@ export default function Clients() {
             phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             assign_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            current_tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            current_tier_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -420,6 +421,43 @@ export default function Clients() {
         );
     };
 
+    const statusBody = (rowData) => {
+        const statusColors = {
+            'OnBoarding': 'info',
+            'Active': 'success',
+            'Suspended': 'warning',
+            'Closed': 'danger'
+        };
+        const color = statusColors[rowData.status] || 'secondary';
+        return (
+            <span className={`badge bg-${color}-subtle text-${color}`}>
+                {rowData.status}
+            </span>
+        );
+    };
+
+    const statusFilterElement = (options) => {
+        const statuses = [
+            { label: 'OnBoarding', value: 'OnBoarding' },
+            { label: 'Active', value: 'Active' },
+            { label: 'Suspended', value: 'Suspended' },
+            { label: 'Closed', value: 'Closed' }
+        ];
+        return (
+            <Dropdown
+                value={options.value}
+                options={statuses}
+                onChange={(e) => options.filterApplyCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Status"
+                className="p-column-filter"
+                showClear
+                style={{ minWidth: '10rem' }}
+            />
+        );
+    };
+
     const tierFilterElement = (options) => {
         return (
             <Dropdown
@@ -638,7 +676,8 @@ export default function Clients() {
                                             { style: { minWidth: '150px' } }, // Phone
                                             { style: { minWidth: '150px' } }, // Assigned To
                                             { style: { minWidth: '150px' } }, // Partner Name
-                                            { style: { minWidth: '130px' } }  // Current Tier
+                                            { style: { minWidth: '130px' } }, // Current Tier
+                                            { style: { minWidth: '120px' } }  // Status
                                         ]}
                                     />
                                 ) : (
@@ -667,7 +706,8 @@ export default function Clients() {
                                                 'phone_number',
                                                 'assign_name',
                                                 'partner_name',
-                                                'current_tier_name'
+                                                'current_tier_name',
+                                                'status'
                                             ]}
                                             selection={selectedClients}
                                             onSelectionChange={(e) => setSelectedClients(e.value)}
@@ -749,6 +789,17 @@ export default function Clients() {
                                                 showFilterMatchModes={false}
                                                 filterPlaceholder="Search by tier"
                                                 style={{ minWidth: '130px' }}
+                                            />
+                                            <Column
+                                                field="status"
+                                                header="Status"
+                                                body={statusBody}
+                                                sortable
+                                                filter
+                                                filterElement={statusFilterElement}
+                                                showFilterMatchModes={false}
+                                                filterPlaceholder="Search by status"
+                                                style={{ minWidth: '120px' }}
                                             />
                                         </DataTable>
                                     </div>

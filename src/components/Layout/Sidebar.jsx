@@ -76,7 +76,7 @@ const menuItems = [
     permission: 'view invoices',
   },
   {
-    to: '/under-construction/payments',
+    to: '/payments',
     icon: 'bx bx-credit-card',
     label: 'Payments',
     permission: 'view payments',
