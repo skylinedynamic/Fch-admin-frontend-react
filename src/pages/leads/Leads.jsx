@@ -66,7 +66,6 @@ export default function Leads() {
     const [targetLead, setTargetLead] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [convertedBorrowerId, setConvertedBorrowerId] = useState(null);
 
     // Statistics data
     const [stats, setStats] = useState({
@@ -76,6 +75,7 @@ export default function Leads() {
         declined_rate: '0%'
     });
     const [statsLoading, setStatsLoading] = useState(true);
+    const [newBorrowerId, setNewBorrowerId] = useState(null);
 
     // Initialize filters
     const initFilters = () => {
@@ -312,31 +312,28 @@ export default function Leads() {
 
     const handleConvertLeadConfirm = async (payload = {}) => {
         if (!targetLead) return;
+
         const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
             const response = await convertLead(targetLead.id, payload);
             
-            // If Non-Host and Target is Borrower, show payment modal after conversion
-            if (!isHost && targetType === 'Borrower' && response.status) {
-                const borrowerId = response.data?.id;
-                if (borrowerId) {
-                    setConvertedBorrowerId(borrowerId);
+            if (response.status || response.id) {
+                const bId = response.data?.id || response.id;
+                
+                // If it's a borrower and non-host, we need to show payment modal
+                if (!isHost && targetType === 'Borrower' && !payload?.payment_intent_id) {
+                    setNewBorrowerId(bId);
                     setShowConvertModal(false);
                     setShowPaymentModal(true);
-                    toast.success("Lead converted! Please complete the enrollment payment.");
+                    toast.success(`Lead successfully converted. Please complete the payment.`);
                     return;
                 }
-            }
 
-            if (response.status && response.data?.id) {
-                toast.success(`Lead successfully updated and converted to ${targetType}`);
+                toast.success(`Lead successfully converted to ${targetType}`);
                 setAppliedFilters({ ...appliedFilters });
                 setShowConvertModal(false);
-            } else {
-                toast.success(`Lead converted to ${targetType} successfully`);
-                setAppliedFilters({ ...appliedFilters });
-                setShowConvertModal(false);
+                setShowPaymentModal(false);
             }
         } catch (err) {
             console.error('Conversion error:', err);
@@ -577,12 +574,15 @@ export default function Leads() {
                 <LeadPaymentModal
                     show={showPaymentModal}
                     onHide={() => setShowPaymentModal(false)}
-                    onSuccess={() => {
+                    onSuccess={(paymentIntentId) => {
                         setShowPaymentModal(false);
-                        setAppliedFilters({ ...appliedFilters });
+                        handleConvertLeadConfirm({ 
+                            enrollment_type: 'Standard Enrollment',
+                            payment_intent_id: paymentIntentId 
+                        });
                     }}
                     lead={targetLead}
-                    borrowerId={convertedBorrowerId}
+                    borrowerId={newBorrowerId}
                     amount={NON_HOST_ENROLLMENT_PRICE}
                 />
 

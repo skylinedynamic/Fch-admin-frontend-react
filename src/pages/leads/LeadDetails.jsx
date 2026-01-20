@@ -268,7 +268,7 @@ export default function LeadDetails() {
         }
     };
 
-    const handleConvertConfirm = async (payload) => {
+    const handleConvertConfirm = async (payload = {}) => {
         const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
@@ -277,23 +277,26 @@ export default function LeadDetails() {
             if (response.status || response.id) {
                 const bId = response.data?.id || response.id;
                 
-                // If it's a borrower and there's an amount to pay, show payment modal
-                if (targetType === 'Borrower' && payload?.amount > 0) {
+                // If it's a borrower and there's an amount to pay, and no payment yet
+                if (targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
+                    setShowConvertModal(false);
                     setShowPaymentModal(true);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
-                } else {
-                    toast.success(`Lead successfully converted to ${targetType}`);
-                    navigate('/leads');
+                    return;
                 }
+
+                toast.success(`Lead successfully converted to ${targetType}`);
+                setShowConvertModal(false);
+                setShowPaymentModal(false);
+                navigate('/leads');
             }
         } catch (err) {
             console.error('Conversion error:', err);
             toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
         } finally {
             setConversionLoading(false);
-            setShowConvertModal(false);
         }
     };
 
@@ -902,7 +905,13 @@ export default function LeadDetails() {
             <LeadPaymentModal
                 show={showPaymentModal}
                 onHide={() => setShowPaymentModal(false)}
-                onSuccess={() => navigate('/leads')}
+                onSuccess={(paymentIntentId) => {
+                    setShowPaymentModal(false);
+                    handleConvertConfirm({ 
+                        amount: paymentAmount,
+                        payment_intent_id: paymentIntentId 
+                    });
+                }}
                 lead={formData}
                 borrowerId={newBorrowerId}
                 amount={paymentAmount}
