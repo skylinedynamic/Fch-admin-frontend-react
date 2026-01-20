@@ -15,6 +15,9 @@ import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
+// @ts-ignore
+import LeadPaymentModal from '../leads/components/LeadPaymentModal';
+import { NON_HOST_ENROLLMENT_PRICE } from '../../config/enrollmentOptions';
 
 
 export default function ClientDetails() {
@@ -43,6 +46,12 @@ export default function ClientDetails() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [originalChecklist, setOriginalChecklist] = useState<ChecklistItem[]>([]); // To detect changes if needed
+
+    // Payment Modal State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [newBorrowerId, setNewBorrowerId] = useState<string | number | null>(null);
+    const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | number | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState(0);
 
     // Profile stats state
     const [profileStats, setProfileStats] = useState({
@@ -338,6 +347,20 @@ export default function ClientDetails() {
                 // Check if response has 'data' property
                 const clientData = response.data || response;
 
+                // Handle Payment for Non-Hosts
+                if (!isHost && clientData?.id) {
+                    const invId = clientData?.invoice?.id || null;
+                    const bId = clientData?.id;
+
+                    setNewBorrowerId(bId);
+                    setPaymentInvoiceId(invId);
+                    setPaymentAmount(NON_HOST_ENROLLMENT_PRICE); // Use standard price
+                    setFormData(prev => ({ ...prev, ...clientData })); // Update form data to ensure lead info is available if needed by modal
+                    
+                    setShowPaymentModal(true);
+                    return; // Stop navigation until payment success
+                }
+
                 // Redirect to edit page and switch to business financials tab
                 if (clientData && clientData.id) {
                     navigate(`/clients/${clientData.id}`, { state: { activeTab: 'businessFinancials' } });
@@ -509,7 +532,7 @@ export default function ClientDetails() {
                 )}
 
                 <div className="row">
-                    <div className="col-xxl-8">
+                    <div className="col-xxl-12">
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -578,13 +601,42 @@ export default function ClientDetails() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    <div className="col-xxl-4">
+                    {/* <div className="col-xxl-4">
                         <ActivitySidebar entityId={id} entityType="Client" />
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <EmailComposeModal entityId={id} entityType="Client" />
             <ActivityCreateModal entityId={id} entityType="Client" />
+
+            <LeadPaymentModal
+                show={showPaymentModal}
+                onHide={() => {
+                    setShowPaymentModal(false);
+                    // On close/cancel, maybe still navigate to edit page so they don't lose created client?
+                    // Or let them stay on create page? 
+                    // Usually safer to navigate to the created client so they aren't stuck on "create" form with "update" logic pending?
+                    // But if they cancel payment, they might want to retry?
+                    // Let's navigate to edit page just like success, but maybe with a warning? 
+                    // For now, let's just close modal. If they check "Clients" list, the client exists.
+                    if (newBorrowerId) {
+                         navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                    }
+                }}
+                onSuccess={() => {
+                    setShowPaymentModal(false);
+                    // toast.success("Client payment completed successfully!");
+                    if (newBorrowerId) {
+                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                    } else {
+                        navigate('/clients');
+                    }
+                }}
+                lead={formData} // LeadPaymentModal expects 'lead', passing formData which has client details (contact_person etc)
+                borrowerId={newBorrowerId}
+                invoiceId={paymentInvoiceId}
+                amount={paymentAmount}
+            />
         </div>
     );
 }

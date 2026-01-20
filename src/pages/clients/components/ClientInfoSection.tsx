@@ -18,6 +18,8 @@ const industryTypeOptions = [
     { label: 'Automotive Services & Dealerships', value: 'Automotive Services & Dealerships' }
 ];
 
+const DATE_PICKER_OPTIONS = { dateFormat: "d M, Y" };
+
 interface ClientInfoSectionProps {
     formData: Client;
     errors: Record<string, string>;
@@ -40,6 +42,7 @@ export default function ClientInfoSection({
     isHost = false
 }: ClientInfoSectionProps) {
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
+
 
     if (isLoading) {
         return (
@@ -375,7 +378,7 @@ export default function ClientInfoSection({
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
                         <Flatpickr
-                            options={{ dateFormat: "d M, Y" }}
+                            options={DATE_PICKER_OPTIONS}
                             value={formData.business_start_date ? new Date(formData.business_start_date) : undefined}
                             onChange={(dates) => {
                                 const date = dates[0];
