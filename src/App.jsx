@@ -33,6 +33,7 @@ import PreQualificationApplication from './pages/applications/PreQualificationAp
 import FundingApplication from './pages/applications/FundingApplication.jsx';
 import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
+import Payments from './pages/payments/Payments.jsx';
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -144,6 +145,11 @@ export default function App() {
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>
               <Route path="invoices" element={<Invoices />} />
+            </Route>
+
+            {/* Payments Routes */}
+            <Route element={<PermissionRoute permission="view payments" />}>
+              <Route path="payments" element={<Payments />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

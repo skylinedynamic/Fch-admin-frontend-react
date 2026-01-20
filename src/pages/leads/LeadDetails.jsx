@@ -110,6 +110,7 @@ export default function LeadDetails() {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [newBorrowerId, setNewBorrowerId] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState(0);
+    const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
 
     // Location states
@@ -268,32 +269,37 @@ export default function LeadDetails() {
         }
     };
 
-    const handleConvertConfirm = async (payload) => {
+    const handleConvertConfirm = async (payload = {}) => {
         const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
             const response = await convertLead(id, payload);
             
             if (response.status || response.id) {
-                const bId = response.data?.id || response.id;
+                const bId = response.data?.borrower?.id || response.data?.id || response.id;
+                const invId = response.data?.invoice?.id || null;
                 
-                // If it's a borrower and there's an amount to pay, show payment modal
-                if (targetType === 'Borrower' && payload?.amount > 0) {
+                // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
+                if (!isHost && targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
+                    setPaymentInvoiceId(invId);
+                    setShowConvertModal(false);
                     setShowPaymentModal(true);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
-                } else {
-                    toast.success(`Lead successfully converted to ${targetType}`);
-                    navigate('/leads');
+                    return;
                 }
+
+                toast.success(`Lead successfully converted to ${targetType}`);
+                setShowConvertModal(false);
+                setShowPaymentModal(false);
+                navigate('/leads');
             }
         } catch (err) {
             console.error('Conversion error:', err);
             toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
         } finally {
             setConversionLoading(false);
-            setShowConvertModal(false);
         }
     };
 
@@ -890,6 +896,7 @@ export default function LeadDetails() {
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
+                isHost={isHost}
             />
             <LeadMissingInfoModal
                 show={showMissingInfoModal}
@@ -902,9 +909,14 @@ export default function LeadDetails() {
             <LeadPaymentModal
                 show={showPaymentModal}
                 onHide={() => setShowPaymentModal(false)}
-                onSuccess={() => navigate('/leads')}
+                onSuccess={() => {
+                    setShowPaymentModal(false);
+                    toast.success("Lead conversion and payment completed successfully!");
+                    navigate('/leads');
+                }}
                 lead={formData}
                 borrowerId={newBorrowerId}
+                invoiceId={paymentInvoiceId}
                 amount={paymentAmount}
             />
         </>

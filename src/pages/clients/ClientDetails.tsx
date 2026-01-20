@@ -15,6 +15,9 @@ import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
+// @ts-ignore
+import LeadPaymentModal from '../leads/components/LeadPaymentModal';
+import { NON_HOST_ENROLLMENT_PRICE, ENROLLMENT_TYPE_OPTIONS, NON_HOST_ENROLLMENT_VALUE } from '../../config/enrollmentOptions';
 
 
 export default function ClientDetails() {
@@ -43,6 +46,12 @@ export default function ClientDetails() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [originalChecklist, setOriginalChecklist] = useState<ChecklistItem[]>([]); // To detect changes if needed
+
+    // Payment Modal State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [newBorrowerId, setNewBorrowerId] = useState<string | number | null>(null);
+    const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | number | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState(0);
 
     // Profile stats state
     const [profileStats, setProfileStats] = useState({
@@ -330,13 +339,47 @@ export default function ClientDetails() {
                 if (payload.city === 'Others') {
                     payload.city = payload.other_city;
                 }
-                // Ensure country_code is handled if needed, or rely on formData
+                
+                // Calculate Enrollment Type and Amount - ACCURATE LEAD PATTERN
+                let amount = 0;
+                let enrollment_type = payload.enrollment_type;
+
+                if (isHost) {
+                    const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === payload.enrollment_type);
+                    amount = selectedOption ? selectedOption.price : 0;
+                } else {
+                    amount = NON_HOST_ENROLLMENT_PRICE;
+                    enrollment_type = NON_HOST_ENROLLMENT_VALUE;
+                }
+
+                // Accurate Payload Fields
+                // @ts-ignore
+                payload.amount = amount;
+                payload.enrollment_type = enrollment_type;
+                // @ts-ignore
+                payload.payment_amount = amount; // Keeping both for safety as per earlier user request "payment_amount in payload"
 
                 const response: any = await createClient(payload);
-                toast.success("Client created successfully");
-
-                // Check if response has 'data' property
+                
+                // Handle Payment for Non-Hosts - ACCURATE LEAD PATTERN (is_host == 0)
                 const clientData = response.data || response;
+                const bId = clientData?.borrower?.id || clientData?.id || response.id;
+                const invId = response.data?.invoice?.id || clientData?.invoice?.id || response.invoice?.id || null;
+
+                if (!isHost && bId && amount > 0) {
+                    setNewBorrowerId(bId);
+                    setPaymentInvoiceId(invId);
+                    setPaymentAmount(amount);
+                    
+                    // Sync formData with response
+                    setFormData(prev => ({ ...prev, ...clientData }));
+                    
+                    setShowPaymentModal(true);
+                    toast.success("Client created. Please complete the payment.");
+                    return;
+                }
+
+                toast.success("Client created successfully");
 
                 // Redirect to edit page and switch to business financials tab
                 if (clientData && clientData.id) {
@@ -509,7 +552,7 @@ export default function ClientDetails() {
                 )}
 
                 <div className="row">
-                    <div className="col-xxl-8">
+                    <div className="col-xxl-12">
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -578,13 +621,45 @@ export default function ClientDetails() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    <div className="col-xxl-4">
+                    {/* <div className="col-xxl-4">
                         <ActivitySidebar entityId={id} entityType="Client" />
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <EmailComposeModal entityId={id} entityType="Client" />
             <ActivityCreateModal entityId={id} entityType="Client" />
+
+            <LeadPaymentModal
+                show={showPaymentModal}
+                onHide={() => {
+                    setShowPaymentModal(false);
+                    // On close/cancel, maybe still navigate to edit page so they don't lose created client?
+                    // Or let them stay on create page? 
+                    // Usually safer to navigate to the created client so they aren't stuck on "create" form with "update" logic pending?
+                    // But if they cancel payment, they might want to retry?
+                    // Let's navigate to edit page just like success, but maybe with a warning? 
+                    // For now, let's just close modal. If they check "Clients" list, the client exists.
+                    if (newBorrowerId) {
+                         navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                    }
+                }}
+                onSuccess={() => {
+                    setShowPaymentModal(false);
+                    // toast.success("Client payment completed successfully!");
+                    if (newBorrowerId) {
+                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                    } else {
+                        navigate('/clients');
+                    }
+                }}
+                lead={{
+                    ...formData,
+                    contact_person: `${formData.first_name} ${formData.last_name}`.trim()
+                }} // Pass constructed contact_person for modal UI accuracy
+                borrowerId={newBorrowerId}
+                invoiceId={paymentInvoiceId}
+                amount={paymentAmount}
+            />
         </div>
     );
 }
