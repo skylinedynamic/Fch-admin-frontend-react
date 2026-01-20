@@ -3,74 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
+import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { allUsers } from '../../modules/partner/services';
+import { useFundingApplications } from '../../modules/application';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
-import LeadConvertModal from '../leads/components/LeadConvertModal';
-import LeadMissingInfoModal from '../leads/components/LeadMissingInfoModal';
-
-// Demo Data for Funding Applications
-const DEMO_LEADS = [
-    { 
-        id: 101, 
-        full_name: 'Alice Springs', 
-        business_name: 'Tech Ventures LLC',
-        business_email: 'alice@techventures.com', 
-        business_phone_no: '555-0201', 
-        requested_amount: 150000, 
-        status: 'Under Review' 
-    },
-    { 
-        id: 102, 
-        full_name: 'Bob Jones', 
-        business_name: 'Jones Consulting',
-        business_email: 'bob@jonesconsulting.com', 
-        business_phone_no: '555-0202', 
-        requested_amount: 50000, 
-        status: 'Approved' 
-    },
-    { 
-        id: 103, 
-        full_name: 'Charlie Brown', 
-        business_name: 'Brown Enterprises',
-        business_email: 'charlie@brownent.com', 
-        business_phone_no: '555-0203', 
-        requested_amount: 75000, 
-        status: 'Pending' 
-    },
-    { 
-        id: 104, 
-        full_name: 'Diana Prince', 
-        business_name: 'Diana Arts',
-        business_email: 'diana@arts.com', 
-        business_phone_no: '555-0204', 
-        requested_amount: 25000, 
-        status: 'Rejected' 
-    },
-    { 
-        id: 105, 
-        full_name: 'Evan Wright', 
-        business_name: 'Wright Logistics',
-        business_email: 'evan@wrightlogistics.com', 
-        business_phone_no: '555-0205', 
-        requested_amount: 120000, 
-        status: 'Under Review' 
-    },
-];
+import { APPLICATION_STATUS_OPTIONS } from '../../config/borrower';
 
 const DEMO_STATS = {
-    total_leads: 5,
-    new_leads: 2,
-    qualified_rate: '40%',
-    declined_rate: '20%'
+    total_applications: 0,
+    approved: 0,
+    pending: 0,
+    approved_amount: 0
 };
 
 export default function FundingApplication() {
@@ -78,41 +28,51 @@ export default function FundingApplication() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
-    
-    // State for leads
-    const [leads, setLeads] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     // Pagination state
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    const [totalRecords, setTotalRecords] = useState(0);
 
     // Sorting state
     const [sortField, setSortField] = useState('id');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Filter states
+    // Filter states (Inputs)
     const [searchText, setSearchText] = useState('');
-    const [selectedLeadType, setSelectedLeadType] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
-    const [selectedSalesperson, setSelectedSalesperson] = useState('');
+    const [dateRange, setDateRange] = useState(null);
     const [filters, setFilters] = useState({});
+
+    // Applied Filters (For API Query)
+    const [appliedFilters, setAppliedFilters] = useState({
+        search: '',
+        status: '',
+        date_range: null,
+        filters: {} 
+    });
+
+    // API Query
+    const queryParams = {
+        page,
+        per_page: perPage,
+        search: appliedFilters.search,
+        status: appliedFilters.status,
+        start_date: appliedFilters.date_range?.[0] ? new Date(appliedFilters.date_range[0]).toISOString().split('T')[0] : null,
+        end_date: appliedFilters.date_range?.[1] ? new Date(appliedFilters.date_range[1]).toISOString().split('T')[0] : null,
+        filters: appliedFilters.filters,
+        sort_field: sortField,
+        sort_order: sortOrder,
+    };
+
+    const { data: apiResponse, isLoading, isFetching } = useFundingApplications(queryParams);
+    const leads = apiResponse?.data || [];
+    const totalRecords = apiResponse?.meta?.total || 0;
+    const loading = isLoading || isFetching;
 
     // Checkbox selection state
     const [selectedLeads, setSelectedLeads] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteRows, setDeleteRows] = useState([]);
-
-    // Dropdown data
-    const [salespersonsList, setSalespersonsList] = useState([]);
-
-    // Conversion Modal state
-    const [showConvertModal, setShowConvertModal] = useState(false);
-    const [showMissingInfoModal, setShowMissingInfoModal] = useState(false);
-    const [targetLead, setTargetLead] = useState(null);
-    const [conversionLoading, setConversionLoading] = useState(false);
 
     // Statistics data
     const [stats, setStats] = useState(DEMO_STATS);
@@ -123,22 +83,18 @@ export default function FundingApplication() {
         const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            business_email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
         };
         setFilters(initial);
+        setAppliedFilters(prev => ({ ...prev, filters: initial }));
     };
 
     // Initialize
     useEffect(() => {
         initFilters();
-        
-        // Load demo salespersons
-        setSalespersonsList([
-            { label: 'Anna Adame', value: 1 },
-            { label: 'Bob Wilson', value: 2 }
-        ]);
 
         // Simulate stats loading
         setTimeout(() => {
@@ -149,48 +105,56 @@ export default function FundingApplication() {
     }, []);
 
     const statisticsConfig = [
-        { title: "Total Leads", dataKey: "total_leads", icon: "ri-coupon-line", colorVariant: "secondary" },
-        { title: "New Leads", dataKey: "new_leads", icon: "ri-folder-open-line", colorVariant: "warning" },
-        { title: "Qualified Rate", dataKey: "qualified_rate", icon: "ri-time-line", colorVariant: "info" },
-        { title: "Declined Rate", dataKey: "declined_rate", icon: "ri-star-line", colorVariant: "success" }
+        { title: "Total Applications", dataKey: "total_applications", icon: "ri-coupon-line", colorVariant: "secondary" },
+        { title: "Approved", dataKey: "approved", icon: "ri-folder-open-line", colorVariant: "warning" },
+        { title: "Pending", dataKey: "pending", icon: "ri-time-line", colorVariant: "info" },
+        { title: "Approved Amount", dataKey: "approved_amount", icon: "ri-star-line", colorVariant: "success" }
     ];
 
-    // Load leads data (Demo)
-    useEffect(() => {
-        setLoading(true);
-        // Simulate API delay
-        setTimeout(() => {
-            let filtered = [...DEMO_LEADS];
-
-            if (searchText) {
-                const lower = searchText.toLowerCase();
-                filtered = filtered.filter(l => 
-                    l.full_name?.toLowerCase().includes(lower) || 
-                    l.business_name?.toLowerCase().includes(lower) || 
-                    l.business_email?.toLowerCase().includes(lower) ||
-                    l.business_phone_no?.toLowerCase().includes(lower)
-                );
-            }
-            if (selectedStatus) {
-                filtered = filtered.filter(l => l.status === selectedStatus);
-            }
-
-            setLeads(filtered);
-            setTotalRecords(filtered.length);
-            setLoading(false);
-        }, 500);
-    }, [searchText, selectedLeadType, selectedStatus, page, perPage, sortField, sortOrder]);
-
     const handleApplyFilters = () => {
+        setAppliedFilters(prev => ({
+            ...prev,
+            search: searchText,
+            status: selectedStatus,
+            date_range: dateRange,
+            filters: filters
+        }));
         setPage(1);
     };
 
     const handleClearFilters = () => {
+        // Reset Inputs
         setSearchText('');
-        setSelectedLeadType('');
         setSelectedStatus('');
-        setSelectedSalesperson('');
+        setDateRange(null);
         initFilters();
+        
+        // Reset Applied Filters
+        setAppliedFilters(prev => ({
+            ...prev,
+            search: '',
+            status: '',
+            date_range: null,
+            filters: {} 
+        }));
+        
+        // Re-call initFilters to reset state properly
+         const initial = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            entity_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            purpose_of_funds: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+        };
+        setFilters(initial);
+        setAppliedFilters({
+             search: '',
+            status: '',
+            date_range: null,
+            filters: initial
+        });
+
         setPage(1);
     };
 
@@ -213,22 +177,20 @@ export default function FundingApplication() {
     // Filter handler
     const onFilter = (e) => {
         setFilters(e.filters);
+        setAppliedFilters(prev => ({
+            ...prev,
+            filters: e.filters
+        }));
         setPage(1);
     };
 
     // Template body
     const statusBodyTemplate = (rowData) => {
         const statusMap = {
-            'new lead': 'bg-primary-subtle text-primary',
-            'contact initiated': 'bg-info-subtle text-info',
-            'lead identified': 'bg-secondary-subtle text-secondary',
-            'meeting arranged': 'bg-warning-subtle text-warning',
-            'application allowed': 'bg-info-subtle text-info',
-            'follow up': 'bg-primary-subtle text-primary',
-            'negotiation': 'bg-warning-subtle text-warning',
-            'lead completed': 'bg-success-subtle text-success',
-            'lead declined': 'bg-danger-subtle text-danger',
-            'qualified': 'bg-success-subtle text-success',
+            'pending': 'bg-warning-subtle text-warning',
+            'intake received': 'bg-info-subtle text-info',
+            'in review': 'bg-primary-subtle text-primary',
+            'approved': 'bg-success-subtle text-success',
             'declined': 'bg-danger-subtle text-danger'
         };
         const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
@@ -247,46 +209,17 @@ export default function FundingApplication() {
 
     const handleDeleteConfirm = async () => {
         try {
-            setLoading(true);
-            // Demo delete behavior
-            const idsToDelete = deleteRows.map(r => r.id);
-            setLeads(prev => prev.filter(l => !idsToDelete.includes(l.id)));
-            
+            // Demo delete behavior (API implementation for delete not requested yet)
             toast.success('Applications deleted successfully (Demo)');
             setShowDeleteModal(false);
             setSelectedLeads([]);
         } catch (err) {
             toast.error('Failed to delete items');
-        } finally {
-            setLoading(false);
         }
-    };
-
-    const openConvertModal = (rowData) => {
-        setTargetLead(rowData);
-        setShowConvertModal(true);
-    };
-
-    const handleMissingInfoConfirm = async (updatedData) => {
-       // Demo logic
-       setTargetLead({ ...targetLead, ...updatedData });
-       setShowMissingInfoModal(false);
-       setShowConvertModal(true);
-    };
-
-    const handleConvertLeadConfirm = async () => {
-        if (!targetLead) return;
-        setConversionLoading(true);
-        setTimeout(() => {
-             toast.success(`Application converted successfully (Demo)`);
-             setShowConvertModal(false);
-             setConversionLoading(false);
-        }, 1000);
     };
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header Section */}
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -356,7 +289,7 @@ export default function FundingApplication() {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                <form onSubmit={(e) => {
+                                <form className="table-filter" onSubmit={(e) => {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
@@ -374,34 +307,26 @@ export default function FundingApplication() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        {isHost && (
-                                            <div className="col-xxl-2 col-sm-4">
-                                                <Dropdown
-                                                    value={selectedLeadType}
-                                                    options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
-                                                    onChange={(e) => setSelectedLeadType(e.value)}
-                                                    placeholder="All Lead Types"
-                                                    className="w-100 employee-filter-dropdown"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
+                                        <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-6`}>
                                             <Dropdown
                                                 value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
+                                                options={[{ label: 'All Status', value: '' }, ...APPLICATION_STATUS_OPTIONS]}
+                                                optionLabel="label"
+                                                optionValue="value"
                                                 onChange={(e) => setSelectedStatus(e.value)}
                                                 placeholder="All Status"
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
-                                            <Dropdown
-                                                value={selectedSalesperson}
-                                                options={[{ label: 'All Sales Person', value: '' }, ...salespersonsList]}
-                                                onChange={(e) => setSelectedSalesperson(e.value)}
-                                                placeholder="All Sales Person"
-                                                filter
+                                        <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-6`}>
+                                            <Calendar 
+                                                value={dateRange} 
+                                                onChange={(e) => setDateRange(e.value)} 
+                                                selectionMode="range" 
+                                                readOnlyInput 
+                                                placeholder="Select Date Range"
                                                 className="w-100 employee-filter-dropdown"
+                                                showIcon
                                             />
                                         </div>
                                         <div className="col-xxl-3 col-sm-12">
@@ -418,7 +343,7 @@ export default function FundingApplication() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(9).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(7).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -445,46 +370,21 @@ export default function FundingApplication() {
                                             onRowClick={(e) => {
                                                 const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
                                                                   e.originalEvent.target.closest('.p-selection-column') ||
-                                                                  e.originalEvent.target.closest('.btn');
+                                                                  e.originalEvent.target.closest('.btn'); 
                                                 if (!isCheckbox) navigate(`/leads/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
-                                            emptyMessage="No applications found (Demo)"
+                                            emptyMessage="No applications found"
                                         >
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-                                            <Column field="full_name" header="Contact Person" sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
-                                            <Column field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" style={{ minWidth: '160px' }} />
-                                            <Column field="business_email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
-                                            <Column field="business_phone_no" header="Phone" sortable filter filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" body={(rowData) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rowData.requested_amount)} sortable style={{ minWidth: '160px' }} />
-                                            {/* <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} /> */}
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
-                                            <Column
-                                            header="Action"
-                                            body={(rowData) => {
-                                                const isConverted = !!rowData.convert_to;
-                                                const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
-                                                return (
-                                                    <div className="d-flex">
-                                                        {isConverted ? (
-                                                            <span className="badge bg-success-subtle text-success fs-12 p-2">
-                                                                <i className="ri-checkbox-circle-line align-middle me-1"></i>
-                                                                Already a {targetType}
-                                                            </span>
-                                                        ) : (
-                                                            <button 
-                                                                className={`btn ${targetType === 'Partner' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} btn-sm waves-effect waves-light fw-medium border-0`}
-                                                                onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
-                                                            >
-                                                                <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
-                                                                Convert to {targetType}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                );
-                                            }}
-                                        />
+                                            <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
+                                            <Column field="industry_type" header="Industry Type" sortable filter filterPlaceholder="Search industry" style={{ minWidth: '150px' }} />
+                                            <Column field="entity_type" header="Entity Type" sortable filter filterPlaceholder="Search entity" style={{ minWidth: '150px' }} />
+                                            <Column field="purpose_of_funds" header="Purpose" sortable filter filterPlaceholder="Search purpose" style={{ minWidth: '160px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(rowData) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rowData.requested_amount || 0)} sortable style={{ minWidth: '160px' }} />
+                                            <Column field="date" header="Date" body={(rowData) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
+                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
                                         </DataTable>
                                     </div>
                                 )}
@@ -492,24 +392,6 @@ export default function FundingApplication() {
                         </div>
                     </div>
                 </div>
-
-                <LeadConvertModal
-                    show={showConvertModal}
-                    onHide={() => setShowConvertModal(false)}
-                    onConfirm={handleConvertLeadConfirm}
-                    lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
-                    loading={conversionLoading}
-                />
-
-                <LeadMissingInfoModal
-                    show={showMissingInfoModal}
-                    onHide={() => setShowMissingInfoModal(false)}
-                    onConfirm={handleMissingInfoConfirm}
-                    lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
-                    loading={conversionLoading}
-                />
 
                 <DeleteConfirmationModal
                     show={showDeleteModal}
