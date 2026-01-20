@@ -17,7 +17,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
 // @ts-ignore
 import LeadPaymentModal from '../leads/components/LeadPaymentModal';
-import { NON_HOST_ENROLLMENT_PRICE } from '../../config/enrollmentOptions';
+import { NON_HOST_ENROLLMENT_PRICE, ENROLLMENT_TYPE_OPTIONS } from '../../config/enrollmentOptions';
 
 
 export default function ClientDetails() {
@@ -339,6 +339,23 @@ export default function ClientDetails() {
                 if (payload.city === 'Others') {
                     payload.city = payload.other_city;
                 }
+                
+                // Calculate Payment Amount
+                let calculatedAmount = 0;
+                if (isHost) {
+                    // Find price based on selection
+                    const enrollmentOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === payload.enrollment_type);
+                    calculatedAmount = enrollmentOption ? enrollmentOption.price : 0;
+                } else {
+                    // Non-Host Standard Price
+                    calculatedAmount = NON_HOST_ENROLLMENT_PRICE;
+                    // payload.enrollment_type = NON_HOST_ENROLLMENT_VALUE; // Optional: Enforce type? User didn't ask, but safe.
+                }
+
+                // Add to payload
+                // @ts-ignore
+                payload.payment_amount = calculatedAmount;
+
                 // Ensure country_code is handled if needed, or rely on formData
 
                 const response: any = await createClient(payload);
