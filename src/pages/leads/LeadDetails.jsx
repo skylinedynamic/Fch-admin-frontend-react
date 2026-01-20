@@ -279,8 +279,8 @@ export default function LeadDetails() {
                 const bId = response.data?.borrower?.id || response.data?.id || response.id;
                 const invId = response.data?.invoice?.id || null;
                 
-                // If it's a borrower and there's an amount to pay, and no payment yet
-                if (targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
+                // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
+                if (!isHost && targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
                     setPaymentInvoiceId(invId);
