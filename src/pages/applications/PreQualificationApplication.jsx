@@ -15,9 +15,6 @@ import TableLoader from '../../components/Loader/TableLoader';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS } from '../../config/borrower';
-import LeadConvertModal from '../leads/components/LeadConvertModal';
-import LeadMissingInfoModal from '../leads/components/LeadMissingInfoModal';
-
 
 
 const DEMO_STATS = {
@@ -52,13 +49,15 @@ export default function PreQualificationApplication() {
     const [selectedLeadType, setSelectedLeadType] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [dateRange, setDateRange] = useState(null);
+    const [filters, setFilters] = useState({});
 
     // Applied Filters (For API Query)
     const [appliedFilters, setAppliedFilters] = useState({
         search: '',
         status: '',
         funding_type: '',
-        date_range: null
+        date_range: null,
+        filters: {} 
     });
 
     // API Query
@@ -70,6 +69,9 @@ export default function PreQualificationApplication() {
         funding_type: appliedFilters.funding_type,
         start_date: appliedFilters.date_range?.[0] ? new Date(appliedFilters.date_range[0]).toISOString().split('T')[0] : null,
         end_date: appliedFilters.date_range?.[1] ? new Date(appliedFilters.date_range[1]).toISOString().split('T')[0] : null,
+        filters: appliedFilters.filters,
+        sort_field: sortField,
+        sort_order: sortOrder,
     };
 
     const { data: apiResponse, isLoading, isFetching } = usePreQualificationApplications(queryParams);
@@ -92,8 +94,23 @@ export default function PreQualificationApplication() {
     const [stats, setStats] = useState(DEMO_STATS);
     const [statsLoading, setStatsLoading] = useState(true);
 
+    // Initialize filters
+    const initFilters = () => {
+        const initial = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            funding_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+        };
+        setFilters(initial);
+        setAppliedFilters(prev => ({ ...prev, filters: initial }));
+    };
+
     // Initialize
     useEffect(() => {
+        initFilters();
+
         // Simulate stats loading
         setTimeout(() => {
             setStats(DEMO_STATS);
@@ -112,12 +129,14 @@ export default function PreQualificationApplication() {
 
 
     const handleApplyFilters = () => {
-        setAppliedFilters({
+        setAppliedFilters(prev => ({
+            ...prev,
             search: searchText,
             status: selectedStatus,
             funding_type: selectedLeadType,
-            date_range: dateRange
-        });
+            date_range: dateRange,
+            filters: filters
+        }));
         setPage(1);
     };
 
@@ -127,15 +146,35 @@ export default function PreQualificationApplication() {
         setSelectedLeadType('');
         setSelectedStatus('');
         setDateRange(null);
+        initFilters();
         
         // Reset Applied Filters
-        setAppliedFilters({
+        setAppliedFilters(prev => ({
+            ...prev,
             search: '',
             status: '',
             funding_type: '',
-            date_range: null
-        });
+            date_range: null,
+            filters: {} // initFilters will reset this via useEffect or manual call if needed, but here we clear specific fields
+        }));
         
+        // Re-call initFilters to reset state properly
+         const initial = {
+            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+            full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            funding_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+        };
+        setFilters(initial);
+        setAppliedFilters({
+             search: '',
+            status: '',
+            funding_type: '',
+            date_range: null,
+            filters: initial
+        });
+
         setPage(1);
     };
 
@@ -156,6 +195,16 @@ export default function PreQualificationApplication() {
     };
 
 
+
+    // Filter handler
+    const onFilter = (e) => {
+        setFilters(e.filters);
+        setAppliedFilters(prev => ({
+            ...prev,
+            filters: e.filters
+        }));
+        setPage(1);
+    };
 
     // Template body
     const statusBodyTemplate = (rowData) => {
@@ -346,11 +395,10 @@ export default function PreQualificationApplication() {
                                         </div>
                                         <div className="col-xxl-3 col-sm-12">
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters} disabled={loading}>
-                                                    {loading ? <i className="ri-loader-4-line me-1 align-bottom animate-spin"></i> : <i className="ri-equalizer-fill me-1 align-bottom"></i>}
-                                                    {loading ? 'Filtering...' : 'Filters'}
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters} disabled={loading}>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
                                                     <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                 </button>
                                             </div>
@@ -375,9 +423,9 @@ export default function PreQualificationApplication() {
                                             sortMode="single"
                                             sortField={sortField}
                                             sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                            // filterDisplay="menu"
-                                            // filters={filters}
-                                            // onFilter={onFilter}
+                                            filterDisplay="menu"
+                                            filters={filters}
+                                            onFilter={onFilter}
                                             onPage={onPage}
                                             onSort={onSort}
                                             selection={selectedLeads}
@@ -394,12 +442,12 @@ export default function PreQualificationApplication() {
                                             emptyMessage="No applications found"
                                         >
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-                                            <Column header="Name" field="full_name" sortable style={{ minWidth: '160px' }} />
-                                            <Column field="business_name" header="Business Name" sortable style={{ minWidth: '180px' }} />
-                                            <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
+                                            <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
+                                            <Column field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" style={{ minWidth: '180px' }} />
+                                            <Column field="funding_type" header="Funding Type" sortable filter filterPlaceholder="Search type" style={{ minWidth: '150px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(rowData) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rowData.requested_amount || 0)} sortable style={{ minWidth: '160px' }} />
                                             <Column field="date" header="Date" body={(rowData) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '140px' }} />
+                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
                                         </DataTable>
                                     </div>
                                 )}
@@ -408,23 +456,6 @@ export default function PreQualificationApplication() {
                     </div>
                 </div>
 
-                <LeadConvertModal
-                    show={showConvertModal}
-                    onHide={() => setShowConvertModal(false)}
-                    onConfirm={handleConvertLeadConfirm}
-                    lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
-                    loading={conversionLoading}
-                />
-
-                <LeadMissingInfoModal
-                    show={showMissingInfoModal}
-                    onHide={() => setShowMissingInfoModal(false)}
-                    onConfirm={handleMissingInfoConfirm}
-                    lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
-                    loading={conversionLoading}
-                />
 
                 <DeleteConfirmationModal
                     show={showDeleteModal}
