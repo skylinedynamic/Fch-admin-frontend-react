@@ -13,6 +13,7 @@ import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
 import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute } from './lib/auth';
+import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
@@ -59,6 +60,8 @@ export default function App() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  const user = useAuthStore((state) => state.user);
 
   return (
     <>
@@ -137,10 +140,12 @@ export default function App() {
             </Route>
 
             {/* My Application Routes */}
-            <Route path="request-application">
-              <Route path="pre-qualification" element={<PreQualificationApplication />} />
-              <Route path="funding" element={<FundingApplication />} />
-            </Route>
+            {user?.user_type === 'Admin' && (
+              <Route path="request-application" element={<PermissionRoute permission="view leads" />}>
+                <Route path="pre-qualification" element={<PreQualificationApplication />} />
+                <Route path="funding" element={<FundingApplication />} />
+              </Route>
+            )}
 
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>
