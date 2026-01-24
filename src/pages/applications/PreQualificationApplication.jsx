@@ -29,7 +29,7 @@ export default function PreQualificationApplication() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
-    
+
     // State for leads
     // const [leads, setLeads] = useState([]);
     // const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function PreQualificationApplication() {
         status: '',
         funding_type: '',
         date_range: null,
-        filters: {} 
+        filters: {}
     });
 
     // API Query
@@ -147,7 +147,7 @@ export default function PreQualificationApplication() {
         setSelectedStatus('');
         setDateRange(null);
         initFilters();
-        
+
         // Reset Applied Filters
         setAppliedFilters(prev => ({
             ...prev,
@@ -157,9 +157,9 @@ export default function PreQualificationApplication() {
             date_range: null,
             filters: {} // initFilters will reset this via useEffect or manual call if needed, but here we clear specific fields
         }));
-        
+
         // Re-call initFilters to reset state properly
-         const initial = {
+        const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             business_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -168,7 +168,7 @@ export default function PreQualificationApplication() {
         };
         setFilters(initial);
         setAppliedFilters({
-             search: '',
+            search: '',
             status: '',
             funding_type: '',
             date_range: null,
@@ -235,7 +235,7 @@ export default function PreQualificationApplication() {
             // Demo delete behavior
             const idsToDelete = deleteRows.map(r => r.id);
             setLeads(prev => prev.filter(l => !idsToDelete.includes(l.id)));
-            
+
             toast.success('Applications deleted successfully (Demo)');
             setShowDeleteModal(false);
             setSelectedLeads([]);
@@ -253,19 +253,19 @@ export default function PreQualificationApplication() {
     };
 
     const handleMissingInfoConfirm = async (updatedData) => {
-       // Demo logic
-       setTargetLead({ ...targetLead, ...updatedData });
-       setShowMissingInfoModal(false);
-       setShowConvertModal(true);
+        // Demo logic
+        setTargetLead({ ...targetLead, ...updatedData });
+        setShowMissingInfoModal(false);
+        setShowConvertModal(true);
     };
 
     const handleConvertLeadConfirm = async () => {
         if (!targetLead) return;
         setConversionLoading(true);
         setTimeout(() => {
-             toast.success(`Application converted successfully (Demo)`);
-             setShowConvertModal(false);
-             setConversionLoading(false);
+            toast.success(`Application converted successfully (Demo)`);
+            setShowConvertModal(false);
+            setConversionLoading(false);
         }, 1000);
     };
 
@@ -288,7 +288,7 @@ export default function PreQualificationApplication() {
                             <div className="mt-0">
                                 <div className="d-flex align-items-center gap-2">
                                     <div className="btn-group">
-                                        {hasPermission('delete leads') && Array.isArray(selectedLeads) && selectedLeads.length > 0 ? (
+                                        {Array.isArray(selectedLeads) && selectedLeads.length > 0 ? (
                                             <>
                                                 <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
                                                 <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
@@ -302,14 +302,6 @@ export default function PreQualificationApplication() {
                                                     </li>
                                                 </ul>
                                             </>
-                                        ) : hasPermission('create leads') ? (
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary fw-medium waves-effect waves-light"
-                                                onClick={() => navigate('/leads/create')}
-                                            >
-                                                <i className="ri-add-fill me-1 align-bottom"></i> Add Application
-                                            </button>
                                         ) : null}
                                     </div>
                                 </div>
@@ -383,11 +375,11 @@ export default function PreQualificationApplication() {
                                             />
                                         </div>
                                         <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
-                                            <Calendar 
-                                                value={dateRange} 
-                                                onChange={(e) => setDateRange(e.value)} 
-                                                selectionMode="range" 
-                                                readOnlyInput 
+                                            <Calendar
+                                                value={dateRange}
+                                                onChange={(e) => setDateRange(e.value)}
+                                                selectionMode="range"
+                                                readOnlyInput
                                                 placeholder="Select Date Range"
                                                 className="w-100 employee-filter-dropdown"
                                                 showIcon
@@ -432,9 +424,9 @@ export default function PreQualificationApplication() {
                                             onSelectionChange={(e) => setSelectedLeads(e.value)}
                                             dataKey="id"
                                             onRowClick={(e) => {
-                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
-                                                                  e.originalEvent.target.closest('.p-selection-column') ||
-                                                                  e.originalEvent.target.closest('.btn'); 
+                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                    e.originalEvent.target.closest('.p-selection-column') ||
+                                                    e.originalEvent.target.closest('.btn');
                                                 if (!isCheckbox) navigate(`/leads/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
