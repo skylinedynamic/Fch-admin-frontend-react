@@ -19,7 +19,8 @@ export default function PaymentTable({
     sortOrder
 }) {
     const statusBodyTemplate = (rowData) => {
-        const color = PAYMENT_STATUS_COLORS[rowData.status?.toLowerCase()] || 'primary';
+        const status = rowData.status?.toLowerCase();
+        const color = PAYMENT_STATUS_COLORS[status] || 'primary';
         return (
             <span className={`badge bg-${color} text-uppercase`}>
                 {rowData.status}
