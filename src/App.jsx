@@ -30,8 +30,10 @@ import ContactDetails from './pages/contacts/ContactDetails.jsx';
 import ErrorPage from './pages/Utility/ErrorPage';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
-import PreQualificationApplication from './pages/applications/PreQualificationApplication.jsx';
-import FundingApplication from './pages/applications/FundingApplication.jsx';
+import PreQualificationApplication from './pages/applications/pre-qualification/PreQualificationApplication.tsx';
+import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
+import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
+import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
 import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
@@ -119,12 +121,13 @@ export default function App() {
               <Route path="tiers/:id" element={<TierForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
+              <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
+            </Route>
+
               {/* Appointments Routes - requires 'view appointments' permission */}
               <Route element={<PermissionRoute permission="view appointments" />}>
                 <Route path="appointments" element={<Appointments />} />
               </Route>
-              <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
-            </Route>
 
             {/* Contacts Routes - requires 'view contacts' permission */}
             <Route element={<PermissionRoute permission="view contacts" />}>
@@ -141,10 +144,14 @@ export default function App() {
 
             {/* My Application Routes */}
             {user?.user_type === 'Admin' && (
-              <Route path="request-application" element={<PermissionRoute permission="view leads" />}>
-                <Route path="pre-qualification" element={<PreQualificationApplication />} />
-                <Route path="funding" element={<FundingApplication />} />
-              </Route>
+              <>
+                <Route path="intake-review" >
+                  <Route path="pre-qualification" element={<PreQualificationApplication />} />
+                  <Route path="funding-review" element={<FundingApplication />} />
+                </Route>
+                <Route path="intake-review/pre-qualification/:id" element={<PreQualificationDetails />} />
+                <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
+              </>
             )}
 
             {/* Invoices Routes */}
