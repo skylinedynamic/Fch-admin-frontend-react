@@ -1030,12 +1030,12 @@ export default function PartnerProfile() {
                                     </li>
                                     <li className="nav-item">
                                         <a
-                                            className={`nav-link ${activeTab === 'subscription' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('subscription')}
+                                            className={`nav-link ${activeTab === 'subscriptionList' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('subscriptionList')}
                                             role="tab"
                                             style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
                                         >
-                                            <i className="far fa-credit-card"></i> Subscription details
+                                            <i className="far fa-list-alt"></i> Subscription List
                                         </a>
                                     </li>
                                 </ul>

@@ -4,6 +4,7 @@ import StatusAgentSection from './StatusAgentSection';
 import DocumentsSection from './DocumentsSection';
 import ClientListSection from './ClientListSection';
 import SubscriptionSection from './SubscriptionSection';
+import SubscriptionListSection from './SubscriptionListSection';
 import FormLoader from '../../../components/Loader/FormLoader';
 
 export default function PartnerForm({
@@ -84,22 +85,10 @@ export default function PartnerForm({
                 </div>
             )}
 
-            {/* Subscription Tab */}
-            {activeTab === 'subscription' && (
+            {/* Subscription List Tab */}
+            {activeTab === 'subscriptionList' && (
                 <div className="tab-pane active show">
-                    {loading ? (
-                        <FormLoader count={8} />
-                    ) : (
-                        <form>
-                            <div className="row g-3">
-                                <SubscriptionSection
-                                    formData={formData}
-                                    handleInputChange={handleInputChange}
-                                    errors={errors}
-                                />
-                            </div>
-                        </form>
-                    )}
+                    <SubscriptionListSection />
                 </div>
             )}
         </div>
