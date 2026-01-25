@@ -29,7 +29,7 @@ export default function Invoices() {
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
-    const [dateRange, setDateRange] = useState(null);
+    const [dateRange, setDateRange] = useState([]);
 
     // Applied filter states (to trigger fetch)
     const [appliedSearchText, setAppliedSearchText] = useState('');
@@ -39,9 +39,6 @@ export default function Invoices() {
     const [appliedDateRange, setAppliedDateRange] = useState(null);
     const [appliedFilters, setAppliedFilters] = useState({});
 
-    // Selection state
-    const [selectedInvoices, setSelectedInvoices] = useState([]);
-
     // Initialize filters
     const initFilters = () => {
         const initial = {
@@ -49,8 +46,11 @@ export default function Invoices() {
             invoice_id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             customer_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-            cycle: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            cycle: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            country: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            payment_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            payment_amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -76,12 +76,28 @@ export default function Invoices() {
     const loadData = async () => {
         setLoading(true);
         try {
+            // Format date range for backend if present
+            let dateFrom = null;
+            let dateTo = null;
+            if (appliedDateRange && appliedDateRange.length === 2) {
+                // Ensure date formatting uses local timezone to prevent shift
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                dateFrom = formatDate(appliedDateRange[0]);
+                dateTo = formatDate(appliedDateRange[1]);
+            }
+
             const payload = {
                 search: appliedSearchText,
                 status: appliedStatus,
                 payee_id: appliedPayee,
                 cycle: appliedCycle,
-                date_range: appliedDateRange,
+                date_from: dateFrom,
+                date_to: dateTo,
                 filters: appliedFilters,
                 page,
                 per_page: perPage,
@@ -128,7 +144,7 @@ export default function Invoices() {
         setSelectedStatus(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
-        setDateRange(null);
+        setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
         setAppliedPayee(null);
@@ -172,11 +188,6 @@ export default function Invoices() {
                                 </nav>
                             </div>
                             <div className="mt-0">
-                                {selectedInvoices.length > 0 && (
-                                    <button className="btn btn-success fw-medium">
-                                        Actions <i className="ri-arrow-down-s-line align-middle ms-1"></i>
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -188,8 +199,8 @@ export default function Invoices() {
                 {/* Filters and Table Section */}
                 <div className="row mt-4">
                     <div className="col-lg-12">
-                        <div className="card border-0 shadow-sm">
-                            <div className="card-body">
+                        <div className="card">
+                            <div className="card-body list-fluid-card">
                                 <InvoiceFilters 
                                     searchText={searchText} setSearchText={setSearchText}
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
@@ -212,8 +223,6 @@ export default function Invoices() {
                                     filters={filters}
                                     sortField={sortField}
                                     sortOrder={sortOrder}
-                                    selectedInvoices={selectedInvoices}
-                                    setSelectedInvoices={setSelectedInvoices}
                                 />
                             </div>
                         </div>

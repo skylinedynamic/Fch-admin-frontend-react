@@ -111,18 +111,8 @@ export default function PaymentTable({
                 <Column 
                     header="Action" 
                     body={(rowData) => {
-                        const isFailed = rowData.status?.toLowerCase() === 'failed';
                         return (
                             <div className="d-flex">
-                                {isFailed && (
-                                    <button 
-                                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
-                                        onClick={(e) => { e.stopPropagation(); }}
-                                    >
-                                        <i className="ri-secure-payment-line align-middle me-1"></i>
-                                        Pay Now
-                                    </button>
-                                )}
                             </div>
                         );
                     }}
