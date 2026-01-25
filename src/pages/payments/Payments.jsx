@@ -49,7 +49,10 @@ export default function Payments() {
             transaction_id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             from: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             company: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+            payment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -80,8 +83,15 @@ export default function Payments() {
             let dateFrom = null;
             let dateTo = null;
             if (appliedDateRange && appliedDateRange.length === 2) {
-                dateFrom = appliedDateRange[0].toISOString().split('T')[0];
-                dateTo = appliedDateRange[1].toISOString().split('T')[0];
+                // Ensure date formatting uses local timezone to prevent shift
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                dateFrom = formatDate(appliedDateRange[0]);
+                dateTo = formatDate(appliedDateRange[1]);
             }
 
             const payload = {

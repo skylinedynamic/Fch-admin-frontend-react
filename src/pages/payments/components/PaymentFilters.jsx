@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
+import { PAYMENT_STATUS_OPTIONS, PAYMENT_CYCLE_OPTIONS } from '../../../config/paymentConfig';
 
 export default function PaymentFilters({
     searchText, setSearchText,
@@ -11,26 +12,6 @@ export default function PaymentFilters({
     onApply,
     onClear
 }) {
-    const statusOptions = [
-        { label: 'All Status', value: null },
-        { label: 'Success', value: 'SUCCESS' },
-        { label: 'Pending', value: 'PENDING' },
-        { label: 'Failed', value: 'FAILED' },
-        { label: 'Disputed', value: 'DISPUTED' }
-    ];
-
-    const payeeOptions = [
-        { label: 'All Payees', value: null },
-        // These would normally be fetched from API, but for now we'll keep it static or empty
-    ];
-
-    const cycleOptions = [
-        { label: 'All Cycle', value: null },
-        { label: 'Daily', value: 'Daily' },
-        { label: 'Weekly', value: 'Weekly' },
-        { label: 'Monthly', value: 'Monthly' },
-        { label: 'Yearly', value: 'Yearly' }
-    ];
 
     return (
         <div className="row g-3 mb-4">
@@ -52,30 +33,20 @@ export default function PaymentFilters({
                 </div>
             </div>
 
-            <div className="col-xxl-2 col-md-2">
+            <div className="col-xxl-3 col-md-2">
                 <Dropdown
                     value={selectedStatus}
-                    options={statusOptions}
+                    options={PAYMENT_STATUS_OPTIONS}
                     onChange={(e) => setSelectedStatus(e.value)}
                     placeholder="All Status"
                     className="w-100"
                 />
             </div>
 
-            <div className="col-xxl-2 col-md-2">
-                <Dropdown
-                    value={selectedPayee}
-                    options={payeeOptions}
-                    onChange={(e) => setSelectedPayee(e.value)}
-                    placeholder="All Payees"
-                    className="w-100"
-                />
-            </div>
-
-            <div className="col-xxl-2 col-md-2">
+            <div className="col-xxl-3 col-md-2">
                 <Dropdown
                     value={selectedCycle}
-                    options={cycleOptions}
+                    options={PAYMENT_CYCLE_OPTIONS}
                     onChange={(e) => setSelectedCycle(e.value)}
                     placeholder="All Cycle"
                     className="w-100"
@@ -90,12 +61,8 @@ export default function PaymentFilters({
                 >
                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                 </button>
-                <button 
-                    type="button" 
-                    className="btn btn-light"
-                    onClick={onClear}
-                >
-                    <i className="ri-refresh-line"></i>
+                 <button type="button" className="btn btn-default flex-grow-1"  onClick={onClear}>
+                    <i className="ri-close-line me-1 align-bottom"></i> Clear
                 </button>
             </div>
         </div>
