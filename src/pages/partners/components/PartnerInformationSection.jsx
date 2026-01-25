@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
-import { PARTNER_INFORMATION_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+import { PARTNER_INFORMATION_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -384,6 +384,23 @@ export default function PartnerInformationSection({
                 <div className="mb-3">
                     <label className="form-label">Website</label>
                     <input type="text" className="form-control" name="website" placeholder="Enter website" value={formData.website} onChange={handleInputChange} />
+                </div>
+            </div>
+
+            {/* Enrollment Type */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
+                    <Dropdown
+                        value={formData.enrollment_type}
+                        options={PAYMENT_TYPE_OPTIONS}
+                        onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select enrollment type..."
+                        className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
+                    />
+                    {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
                 </div>
             </div>
 

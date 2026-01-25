@@ -13,8 +13,8 @@ export default function SubscriptionSection({ formData, handleInputChange, error
     const isFoundingOrExecutive = isFounding || isExecutive;
 
     // Fix: Use enrollment_type instead of payment_type
-    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME;
-    const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN;
+    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR;
+    const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN_STR;
 
     // Effect 1: Set Defaults when Partner Type or Enrollment Type changes
     useEffect(() => {
@@ -41,11 +41,8 @@ export default function SubscriptionSection({ formData, handleInputChange, error
     useEffect(() => {
         if (isFoundingOrExecutive && isPaymentPlan) {
             const currentRecurring = parseFloat(formData.recurring_amount) || 0;
-            const calculatedTotal = currentRecurring * 10;
-
-            if (formData.first_reg_amount !== calculatedTotal) {
-                handleInputChange({ target: { name: 'first_reg_amount', value: calculatedTotal } });
-            }
+            // For 11-month plan, total might be currentRecurring * 11 or fixed
+            // But per request we keep logic simple or driven by pre-fill
         }
     }, [formData.recurring_amount, isFoundingOrExecutive, isPaymentPlan]);
 
@@ -62,8 +59,8 @@ export default function SubscriptionSection({ formData, handleInputChange, error
 
             // Calculate End Date based on Enrollment Type
             if (isPaymentPlan) {
-                // 10-month plan: Add 10 months
-                endDate.setMonth(endDate.getMonth() + 10);
+                // 11-month plan: Add 11 months
+                endDate.setMonth(endDate.getMonth() + 11);
                 shouldUpdate = true;
             } else if (isOneTime) {
                 // One-Time Payment: Ensure dates are empty (nullable)
@@ -209,68 +206,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                 </div>
             </div>
 
-            {/* Row 3: Installment Checkbox */}
-            <div className="col-12">
-                <div className="mb-3 form-check">
-                    <input
-                        type="checkbox"
-                        className="form-check-input"
-                        id="installmentCheck"
-                        checked={formData.installment_type == 1}
-                        onChange={(e) => handleInputChange({ target: { name: 'installment_type', value: e.target.checked ? 1 : 0 } })}
-                    />
-                    <label className="form-check-label" htmlFor="installmentCheck">
-                        I want to pay the registration amount in two installment
-                    </label>
-                </div>
-            </div>
-
-            {/* Row 4: First Registration Payment (Installment 1), Installment 2 */}
-            <div className="col-lg-6 col-12">
-                <div className="mb-3">
-                    <label className="form-label">
-                        First Registration Payment {formData.installment_type == 1 ? '(Installment 1)' : ''} <span className="text-danger">*</span>
-                    </label>
-                    <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <input
-                            type="number"
-                            className={`form-control ${errors.first_reg_payment ? 'is-invalid' : ''}`}
-                            name="first_reg_payment"
-                            placeholder="0.00"
-                            value={formData.first_reg_payment || ''}
-                            onChange={handleInputChange}
-                            onBlur={handleBlur}
-                            min="0"
-                            step="0.01"
-                        />
-                        {errors.first_reg_payment && <div className="invalid-feedback">{errors.first_reg_payment}</div>}
-                    </div>
-                </div>
-            </div>
-
-            {formData.installment_type == 1 && (
-                <div className="col-lg-6 col-12">
-                    <div className="mb-3">
-                        <label className="form-label">First Registration Payment (Installment 2) <span className="text-danger">*</span></label>
-                        <div className="input-group">
-                            <span className="input-group-text">$</span>
-                            <input
-                                type="number"
-                                className={`form-control ${errors.first_reg_payment_2 ? 'is-invalid' : ''}`}
-                                name="first_reg_payment_2"
-                                placeholder="0.00"
-                                value={formData.first_reg_payment_2 || ''}
-                                onChange={handleInputChange}
-                                onBlur={handleBlur}
-                                min="0"
-                                step="0.01"
-                            />
-                            {errors.first_reg_payment_2 && <div className="invalid-feedback">{errors.first_reg_payment_2}</div>}
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Removed Installment Checkbox as per request */}
 
             {/* Row 5: Total Amount - REMOVED */}
 
@@ -319,7 +255,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     {errors.subscription_end_date && <div className="invalid-feedback d-block">{errors.subscription_end_date}</div>}
                     {!isOneTime && (
                         <small className="text-muted">
-                            {isPaymentPlan ? 'Automatically calculated (10 months)' : 'Automatically calculated (1 month)'}
+                            {isPaymentPlan ? 'Automatically calculated (11 months)' : 'Automatically calculated (1 month)'}
                         </small>
                     )}
                 </div>

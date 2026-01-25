@@ -7,7 +7,7 @@ import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId } from '../../modules/partner/services';
 import { locationData } from '../../config';
-import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES } from '../../config/partnerTypeOptions';
+import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
@@ -94,7 +94,7 @@ export default function PartnerProfile() {
         partnerStatus: '',
         // Subscription - using snake_case to match API
         enrollment_type: '', // Replaces billing_term or adds to it
-        installment_type: 0,
+        enrollment_amount: '',
         first_reg_date: '',
         first_reg_amount: '',
         first_reg_amount_2: '',
@@ -354,7 +354,7 @@ export default function PartnerProfile() {
                         ...prev,
                         partner_type: subscriptionData.partner_type || prev.partner_type,
                         enrollment_type: subscriptionData.enrollment_type || '',
-                        installment_type: parseInt(parseFloat(subscriptionData.installment_type)) || 0,
+                        enrollment_amount: subscriptionData.enrollment_amount || '',
                         first_reg_date: subscriptionData.first_reg_date || '',
                         first_reg_amount: subscriptionData.first_reg_amount || '',
                         first_reg_amount_2: subscriptionData.first_reg_amount_2 || '',
@@ -376,7 +376,7 @@ export default function PartnerProfile() {
                     setFormData(prev => ({
                         ...prev,
                         enrollment_type: '',
-                        installment_type: 0,
+                        enrollment_amount: '',
                         first_reg_date: '',
                         first_reg_amount: '',
                         first_reg_payment: '',
@@ -575,6 +575,38 @@ export default function PartnerProfile() {
                 setFormData(prev => ({ ...prev, city: value }));
             }
             setErrors(prev => ({ ...prev, city: null }));
+        } else if (name === 'enrollment_type' || name === 'partner_type') {
+            const newValue = value;
+            const currentPartnerType = name === 'partner_type' ? newValue : formData.partner_type;
+            const currentEnrollmentType = name === 'enrollment_type' ? newValue : formData.enrollment_type;
+            
+            let fees = {};
+            const partnerOption = PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
+            
+            if (currentEnrollmentType) {
+                if (currentEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
+                    fees.enrollment_amount = ENROLLMENT_TYPES.ONE_TIME_VALUE.toString();
+                    fees.recurring_amount = '0';
+                    if (partnerOption && partnerOption.oneTimeFee) {
+                        fees.first_reg_amount = partnerOption.oneTimeFee.toString();
+                        fees.first_reg_payment = partnerOption.oneTimeFee.toString();
+                    }
+                } else if (currentEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
+                    fees.enrollment_amount = ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE.toString();
+                    if (partnerOption && partnerOption.planFee) {
+                        fees.first_reg_amount = partnerOption.planFee.toString();
+                        fees.first_reg_payment = partnerOption.planFee.toString();
+                        fees.recurring_amount = partnerOption.planFee.toString();
+                    }
+                }
+            }
+            
+            setFormData(prev => ({ 
+                ...prev, 
+                [name]: newValue,
+                ...fees
+            }));
+            setErrors(prev => ({ ...prev, [name]: null }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
             setErrors(prev => ({ ...prev, [name]: null }));
@@ -618,17 +650,14 @@ export default function PartnerProfile() {
             const isFounding = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.FOUNDING;
             const isExecutive = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE;
             const isFoundingOrExecutive = isFounding || isExecutive;
-            const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN;
+            const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN_STR;
 
             // Recurring Amount is required only for Founding/Executive on Payment Plan
             if (isFoundingOrExecutive && isPaymentPlan) {
                 requiredSubscriptionFields.recurring_amount = formData.recurring_amount;
             }
-            if (formData.installment_type == 1) {
-                requiredSubscriptionFields.first_reg_payment_2 = formData.first_reg_payment_2;
-            }
 
-            if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME) {
+            if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME_STR) {
                 requiredSubscriptionFields.subscription_end_date = formData.subscription_end_date;
             }
 
@@ -664,7 +693,7 @@ export default function PartnerProfile() {
                 partner_id: id,
                 partner_type: formData.partner_type,
                 enrollment_type: formData.enrollment_type,
-                installment_type: formData.installment_type,
+                enrollment_amount: formData.enrollment_amount,
                 first_reg_date: formData.first_reg_date,
                 first_reg_amount: formData.first_reg_amount,
                 first_reg_payment: formData.first_reg_payment,
@@ -731,6 +760,15 @@ export default function PartnerProfile() {
                     status: formData.status,
                     agent: formData.agent
                 };
+            } else if (activeTab === 'personalDetails' || !activeTab) {
+                requiredFields = {
+                    full_name: formData.full_name,
+                    company_name: formData.company_name,
+                    email: formData.email,
+                    phone_number: formData.phone_number,
+                    partner_type: formData.partner_type,
+                    enrollment_type: formData.enrollment_type
+                };
             }
             // Frontend validation for Partner Information removed to rely on backend validation
 
@@ -788,7 +826,10 @@ export default function PartnerProfile() {
                         if (value) {
                             formDataToSend.append('country_code', value);
                         }
-                    } else if (value !== '') {
+                    } else if (key === 'enrollment_amount') {
+                        // Explicitly ensure enrollment_amount is included and not null
+                        formDataToSend.append('enrollment_amount', value || '');
+                    } else if (value !== '' && value !== null) {
                         formDataToSend.append(key, value);
                     }
                 }
@@ -948,7 +989,7 @@ export default function PartnerProfile() {
 
                 {/* Main Content */}
                 <div className="row">
-                    <div className="col-xxl-8">
+                    <div className="col-xxl-12">
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -1022,7 +1063,7 @@ export default function PartnerProfile() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    <div className="col-xxl-4">
+                    {/* <div className="col-xxl-4">
                         <div className="card">
                             <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">
                                 <h4 style={{ padding: '8px 0px' }} className="card-title mb-0 me-2">
@@ -1080,7 +1121,7 @@ export default function PartnerProfile() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
