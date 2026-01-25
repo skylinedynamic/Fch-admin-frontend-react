@@ -108,16 +108,6 @@ export default function PaymentTable({
                 <Column field="transaction_id" header="Transaction ID" sortable filter showFilterMatchModes filterPlaceholder="Search by ID" style={{ minWidth: '130px' }}></Column>
                 <Column field="amount" header="Amount" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
-                <Column 
-                    header="Action" 
-                    body={(rowData) => {
-                        return (
-                            <div className="d-flex">
-                            </div>
-                        );
-                    }}
-                    style={{ minWidth: '100px' }}
-                />
             </DataTable>
         </div>
     );

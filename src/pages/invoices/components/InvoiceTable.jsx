@@ -104,7 +104,7 @@ export default function InvoiceTable({
                 <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
                 <Column field="customer_name" header="Customer" style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
                 <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
-                <Column field="payment_date" header="Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
+                <Column field="payment_date" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
                 <Column field="status" header="Payment Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
                 <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
