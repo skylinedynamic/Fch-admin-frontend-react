@@ -20,7 +20,7 @@ export default function Payments() {
     const [totalRecords, setTotalRecords] = useState(0);
 
     // Sorting state
-    const [sortField, setSortField] = useState('date');
+    const [sortField, setSortField] = useState('transaction_date');
     const [sortOrder, setSortOrder] = useState('desc');
 
     // Filter states
@@ -29,7 +29,7 @@ export default function Payments() {
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
-    const [dateRange, setDateRange] = useState(null);
+    const [dateRange, setDateRange] = useState([]);
 
     // Applied filter states (to trigger fetch)
     const [appliedSearchText, setAppliedSearchText] = useState('');
@@ -39,9 +39,6 @@ export default function Payments() {
     const [appliedDateRange, setAppliedDateRange] = useState(null);
     const [appliedFilters, setAppliedFilters] = useState({});
 
-    // Selection state
-    const [selectedPayments, setSelectedPayments] = useState([]);
-
     // Initialize filters
     const initFilters = () => {
         const initial = {
@@ -50,8 +47,10 @@ export default function Payments() {
             from: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             company: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             payment_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            transaction_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             amount: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
         setFilters(initial);
@@ -151,7 +150,7 @@ export default function Payments() {
         setSelectedStatus(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
-        setDateRange(null);
+        setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
         setAppliedPayee(null);
@@ -195,16 +194,6 @@ export default function Payments() {
                                 </nav>
                             </div>
                             <div className="mt-0">
-                                {selectedPayments.length > 0 && (
-                                    <div className="btn-group">
-                                        <button className="btn btn-success fw-medium dropdown-toggle" data-bs-toggle="dropdown">
-                                            Actions <i className="ri-arrow-down-s-line align-middle ms-1"></i>
-                                        </button>
-                                        <ul className="dropdown-menu dropdown-menu-end">
-                                            <li><button className="dropdown-item text-danger"><i className="ri-delete-bin-line me-2"></i> Delete Selected</button></li>
-                                        </ul>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -216,8 +205,8 @@ export default function Payments() {
                 {/* Filters and Table Section */}
                 <div className="row mt-4">
                     <div className="col-lg-12">
-                        <div className="card border-0 shadow-sm">
-                            <div className="card-body">
+                        <div className="card">
+                            <div className="card-body list-fluid-card">
                                 <PaymentFilters 
                                     searchText={searchText} setSearchText={setSearchText}
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
@@ -240,8 +229,6 @@ export default function Payments() {
                                     filters={filters}
                                     sortField={sortField}
                                     sortOrder={sortOrder}
-                                    selectedPayments={selectedPayments}
-                                    setSelectedPayments={setSelectedPayments}
                                 />
                             </div>
                         </div>

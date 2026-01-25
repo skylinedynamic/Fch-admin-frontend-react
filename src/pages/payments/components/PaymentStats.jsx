@@ -5,28 +5,28 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 export default function PaymentStats({ stats, loading }) {
     const config = [
         {
-            title: "Total Payments",
+            title: "Total Transactions",
             dataKey: "total_payments",
             icon: "ri-money-dollar-circle-line",
             colorVariant: "primary",
             isAmount: true
         },
         {
-            title: "Completed",
+            title: "Total Paid",
             dataKey: "completed",
             icon: "ri-checkbox-circle-line",
             colorVariant: "success",
             isAmount: true
         },
         {
-            title: "Pending",
+            title: "Total Pending",
             dataKey: "pending",
             icon: "ri-time-line",
             colorVariant: "info",
             isAmount: false
         },
         {
-            title: "Failed",
+            title: "Total Failed",
             dataKey: "failed",
             icon: "ri-close-circle-line",
             colorVariant: "danger",

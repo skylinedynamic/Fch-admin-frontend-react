@@ -16,9 +16,7 @@ export default function PaymentTable({
     onFilter,
     filters,
     sortField,
-    sortOrder,
-    selectedPayments,
-    setSelectedPayments
+    sortOrder
 }) {
     const statusBodyTemplate = (rowData) => {
         const color = PAYMENT_STATUS_COLORS[rowData.status?.toLowerCase()] || 'primary';
@@ -31,6 +29,10 @@ export default function PaymentTable({
 
     const amountBodyTemplate = (rowData) => {
         return `$${Number(rowData.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    const nameBodyTemplate = (rowData) => {
+        return rowData.partner_name || rowData.borrower_name || '-';
     };
 
     const statusFilterElement = (options) => {
@@ -54,7 +56,7 @@ export default function PaymentTable({
     }
 
     return (
-        <div className="table-responsive table-card">
+        <div className="table-responsive table-card mt-1">
             <DataTable
                 value={data}
                 paginator
@@ -69,24 +71,62 @@ export default function PaymentTable({
                 onFilter={onFilter}
                 filters={filters}
                 filterDisplay="menu"
-                globalFilterFields={['date', 'from', 'payment_type', 'company', 'transaction_id', 'amount', 'status']}
+                globalFilterFields={['transaction_date', 'from', 'payment_type', 'borrower_name', 'partner_name', 'transaction_id', 'amount', 'status']}
                 loading={loading}
-                selection={selectedPayments}
-                onSelectionChange={(e) => setSelectedPayments(e.value)}
                 dataKey="id"
                 className="p-datatable-sm"
                 emptyMessage="No payments found."
                 responsiveLayout="scroll"
             >
-                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-                <Column field="date" header="DATE" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
-                <Column field="from" header="FROM" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
-                <Column field="payment_type" header="PAYMENT TYPE" sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '120px' }}></Column>
-                <Column field="company" header="COMPANY" sortable filter showFilterMatchModes filterPlaceholder="Search by company" style={{ minWidth: '150px' }}></Column>
-                <Column field="details" header="DETAILS" filter showFilterMatchModes filterPlaceholder="Search by details" style={{ minWidth: '150px' }}></Column>
-                <Column field="transaction_id" header="TRANSACTION ID" sortable filter showFilterMatchModes filterPlaceholder="Search by ID" style={{ minWidth: '130px' }}></Column>
-                <Column field="amount" header="AMOUNT" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
-                <Column field="status" header="STATUS" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
+                <Column field="transaction_date" header="Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
+                <Column field="from" header="From" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
+                <Column 
+                    field="payment_type" 
+                    header="Payment Type" 
+                    body={(rowData) => {
+                        const type = rowData.partner_name ? 'Partner' : 'Borrower';
+                        return (
+                            <div>
+                                <div className="fw-medium">{rowData.payment_type}</div>
+                                <div className="text-muted fs-11">{type} Payment</div>
+                            </div>
+                        );
+                    }}
+                    sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '120px' }}
+                ></Column>
+                <Column 
+                    header="Name" 
+                    body={nameBodyTemplate} 
+                    sortable 
+                    filter 
+                    filterField="borrower_name" // Default to one field for Primereact filtering, global search handles both
+                    showFilterMatchModes 
+                    filterPlaceholder="Search name" 
+                    style={{ minWidth: '150px' }}
+                ></Column>
+                <Column field="transaction_id" header="Transaction ID" sortable filter showFilterMatchModes filterPlaceholder="Search by ID" style={{ minWidth: '130px' }}></Column>
+                <Column field="amount" header="Amount" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
+                <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
+                <Column 
+                    header="Action" 
+                    body={(rowData) => {
+                        const isFailed = rowData.status?.toLowerCase() === 'failed';
+                        return (
+                            <div className="d-flex">
+                                {isFailed && (
+                                    <button 
+                                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
+                                        onClick={(e) => { e.stopPropagation(); }}
+                                    >
+                                        <i className="ri-secure-payment-line align-middle me-1"></i>
+                                        Pay Now
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    }}
+                    style={{ minWidth: '100px' }}
+                />
             </DataTable>
         </div>
     );
