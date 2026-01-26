@@ -133,7 +133,6 @@ export default function Settings() {
                 <SettingsForm
                     formData={formData}
                     handleInputChange={handleInputChange}
-                    handleConfigChange={handleConfigChange}
                     onSubmit={handleSubmit}
                     loading={loading}
                     fetching={fetching}

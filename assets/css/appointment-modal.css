@@ -217,10 +217,6 @@ span.flatpickr-weekday {
     border-left: none !important;
 }
 
-.input-group .form-control {
-    border-right: none !important;
-}
-
 /* Responsive Optimizations */
 @media (max-width: 575.98px) {
     .modal-body {

@@ -233,27 +233,7 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Partner Type */}
-            <div className="col-lg-6">
-                <div className="mb-3">
-                    <label className="form-label">Partner Type <span className="text-danger">*</span></label>
-                    <Dropdown
-                        value={formData.partner_type}
-                        options={PARTNER_INFORMATION_TYPE_OPTIONS}
-                        onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Select partner type..."
-                        className={`w-100 ${errors.partner_type || errors.partner_type_id ? 'p-invalid' : ''}`}
-                    />
-                    {/* Partner Type Error Handling */}
-                    {(errors.partner_type || errors.partner_type_id) && (
-                        <div className="invalid-feedback d-block">
-                            {errors.partner_type || errors.partner_type_id}
-                        </div>
-                    )}
-                </div>
-            </div>
+           
 
             {/* Address */}
             <div className="col-lg-6">
@@ -387,22 +367,148 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
+             {/* Partner Type */}
+            <div className="col-lg-6">
+                <div className="mb-3">
+                    <label className="form-label">Partner Type <span className="text-danger">*</span></label>
+                    <Dropdown
+                        value={formData.partner_type}
+                        options={PARTNER_INFORMATION_TYPE_OPTIONS}
+                        onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select partner type..."
+                        className={`w-100 ${errors.partner_type || errors.partner_type_id ? 'p-invalid' : ''}`}
+                    />
+                    {/* Partner Type Error Handling */}
+                    {(errors.partner_type || errors.partner_type_id) && (
+                        <div className="invalid-feedback d-block">
+                            {errors.partner_type || errors.partner_type_id}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Enrollment Type */}
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.enrollment_type}
-                        options={PAYMENT_TYPE_OPTIONS}
+                        options={(() => {
+                            // Get selected partner type details
+                            const selectedPartnerType = PARTNER_INFORMATION_TYPE_OPTIONS.find(
+                                pt => pt.value === formData.partner_type
+                            );
+
+                            if (!selectedPartnerType) {
+                                // Default options without amounts if no partner type selected
+                                return PAYMENT_TYPE_OPTIONS;
+                            }
+
+                            // Create dynamic options with partner-specific amounts
+                            return [
+                                {
+                                    label: `One-Time Payment ($${selectedPartnerType.oneTimeFee?.toLocaleString()})`,
+                                    value: 'One-Time Payment'
+                                },
+                                {
+                                    label: `Payment Plan ($${selectedPartnerType.monthlyPayment?.toLocaleString()}/mo, 11-month plan)`,
+                                    value: 'Payment Plan (11-month plan)'
+                                }
+                            ];
+                        })()}
                         onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select enrollment type..."
                         className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
+                        disabled={!formData.partner_type}
                     />
-                    {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
+                    {/* {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
+                    {!formData.partner_type && (
+                        <small className="text-muted">Please select a partner type first</small>
+                    )} */}
                 </div>
             </div>
+
+            {/* Enrollment Amount - Dynamic Display */}
+            {formData.partner_type && formData.enrollment_type && (
+                <div className="col-lg-12">
+                    <div className="mb-3">
+                        <label className="form-label">Enrollment Amount</label>
+                        <div className="card border border-primary bg-light-subtle">
+                            <div className="card-body p-3">
+                                {(() => {
+                                    const selectedPartnerType = PARTNER_INFORMATION_TYPE_OPTIONS.find(
+                                        pt => pt.value === formData.partner_type
+                                    );
+                                    
+                                    if (!selectedPartnerType) return null;
+
+                                    const isOneTime = formData.enrollment_type === 'One-Time Payment';
+                                    const partnerTypeName = selectedPartnerType.label;
+
+                                    return (
+                                        <>
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <span className="fw-semibold text-dark">Partner Type:</span>
+                                                <span className="badge bg-primary-subtle text-primary">{partnerTypeName}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <span className="fw-semibold text-dark">Payment Plan:</span>
+                                                <span className="text-muted">{formData.enrollment_type}</span>
+                                            </div>
+                                            <hr className="my-2" />
+                                            {isOneTime ? (
+                                                <>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">One-Time Cost:</span>
+                                                        <span className="fs-5 fw-bold text-success">
+                                                            ${selectedPartnerType.oneTimeFee?.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="alert alert-info p-2 mb-0 mt-2">
+                                                        <small>
+                                                            <i className="ri-information-line me-1"></i>
+                                                            Platform fee of <strong>${selectedPartnerType.platformFee}/month</strong> starts on the 12th month
+                                                        </small>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Monthly Payment:</span>
+                                                        <span className="fs-5 fw-bold text-primary">
+                                                            ${selectedPartnerType.monthlyPayment?.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="text-muted">Duration:</span>
+                                                        <span className="text-muted">11 months</span>
+                                                    </div>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Total:</span>
+                                                        <span className="fw-bold text-dark">
+                                                            ${((selectedPartnerType.monthlyPayment || 0) * 11).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="alert alert-info p-2 mb-0 mt-2">
+                                                        <small>
+                                                            <i className="ri-information-line me-1"></i>
+                                                            Platform fee of <strong>${selectedPartnerType.platformFee}/month</strong> starts on the 12th month from first payment
+                                                        </small>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Secondary Contact Section */}
             <div className="col-lg-12">
