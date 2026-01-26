@@ -396,94 +396,7 @@ export default function PartnerProfile() {
         fetchSubscriptionData();
     }, [id, activeTab, isPartnerLoading]);
 
-    // Validation function
-    const validateField = (name, value) => {
-        let error = null;
-        switch (name) {
-            case 'other_city':
-                // Only validate other_city if city is set to "Others"
-                if (formData.city === 'Others') {
-                    error = validateRequired(value, 'Other City');
-                }
-                break;
-            case 'status':
-                error = validateRequired(value, 'Status');
-                break;
-            case 'agent':
-                error = validateRequired(value, 'Agent');
-                break;
-            // Subscription validations - all fields required
-            case 'enrollment_type':
-                error = validateRequired(value, 'Enrollment Type');
-                break;
-            case 'first_reg_date':
-                error = validateRequired(value, 'First Registration Date');
-                if (!error && isNaN(new Date(value).getTime())) {
-                    error = 'Invalid Date';
-                }
-                break;
-            case 'first_reg_amount':
-                error = validateRequired(value, 'First Registration Amount');
-                break;
-            case 'first_reg_payment':
-                error = validateRequired(value, 'First Registration Payment');
-                break;
-            case 'first_reg_payment_2':
-                if (formData.installment_type == 1) {
-                    error = validateRequired(value, 'First Registration Payment 2');
-                }
-                break;
-            case 'recurring_amount':
-                error = validateRequired(value, 'Recurring Amount');
-                break;
-            case 'total_paid_amount':
-                // Optional
-                break;
-            case 'subscription_start_date':
-                error = validateRequired(value, 'Subscription Start Date');
-                if (!error && isNaN(new Date(value).getTime())) {
-                    error = 'Invalid Date';
-                }
-                // Also validate against end date if end date exists
-                if (!error && formData.subscription_end_date && value) {
-                    const startDate = new Date(value);
-                    const endDate = new Date(formData.subscription_end_date);
-                    if (startDate >= endDate) {
-                        error = 'Subscription Start Date must be before End Date';
-                    }
-                }
-                break;
-            case 'subscription_end_date':
-                if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME) {
-                    error = validateRequired(value, 'Subscription End Date');
-                    if (!error && isNaN(new Date(value).getTime())) {
-                        error = 'Invalid Date';
-                    }
-                    // Also validate against start date if start date exists
-                    if (!error && formData.subscription_start_date && value) {
-                        const startDate = new Date(formData.subscription_start_date);
-                        const endDate = new Date(value);
-                        if (endDate <= startDate) {
-                            error = 'Subscription End Date must be after Start Date';
-                        }
-                    }
-                }
-                break;
-            case 'expiry_date':
-                // Optional
-                break;
-            case 'termination_date':
-                // Optional
-                break;
-            case 'subscription_status':
-                error = validateRequired(value, 'Status');
-                break;
-            default:
-                break;
-        }
-        setErrors((prev) => ({ ...prev, [name]: error }));
-        return error;
-    };
+
 
     // Handle input changes
     const handleInputChange = (e) => {
@@ -635,59 +548,7 @@ export default function PartnerProfile() {
         }
 
         try {
-            // Validate all required subscription fields
-            const requiredSubscriptionFields = {
-                partner_type: formData.partner_type,
-                enrollment_type: formData.enrollment_type,
-                first_reg_date: formData.first_reg_date,
-                first_reg_amount: formData.first_reg_amount,
-                first_reg_payment: formData.first_reg_payment,
-                subscription_start_date: formData.subscription_start_date,
-            };
 
-            // Conditional Validation
-            const isReferral = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.REFERRAL;
-            const isFounding = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.FOUNDING;
-            const isExecutive = formData.partner_type === SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE;
-            const isFoundingOrExecutive = isFounding || isExecutive;
-            const isPaymentPlan = formData.enrollment_type === ENROLLMENT_TYPES.PAYMENT_PLAN_STR;
-
-            // Recurring Amount is required only for Founding/Executive on Payment Plan
-            if (isFoundingOrExecutive && isPaymentPlan) {
-                requiredSubscriptionFields.recurring_amount = formData.recurring_amount;
-            }
-
-            if (formData.enrollment_type !== ENROLLMENT_TYPES.ONE_TIME_STR) {
-                requiredSubscriptionFields.subscription_end_date = formData.subscription_end_date;
-            }
-
-            requiredSubscriptionFields.subscription_status = formData.subscription_status;
-
-            const fieldErrors = {};
-            Object.entries(requiredSubscriptionFields).forEach(([field, value]) => {
-                const error = validateField(field, value);
-                if (error) {
-                    fieldErrors[field] = error;
-                }
-            });
-
-            // Additional date range validation
-            if (formData.subscription_start_date && formData.subscription_end_date) {
-                const startDate = new Date(formData.subscription_start_date);
-                const endDate = new Date(formData.subscription_end_date);
-                if (startDate >= endDate) {
-                    fieldErrors.subscription_start_date = 'Subscription Start Date must be before End Date';
-                    setErrors(prev => ({ ...prev, subscription_start_date: fieldErrors.subscription_start_date }));
-                }
-            }
-
-            // If there are validation errors, show them and stop submission
-            if (Object.keys(fieldErrors).length > 0) {
-                console.log(fieldErrors);
-                // const firstError = Object.values(fieldErrors)[0];
-                // toast.error(firstError);
-                return;
-            }
 
             const subscriptionPayload = {
                 partner_id: id,
@@ -712,13 +573,7 @@ export default function PartnerProfile() {
 
             // Clear errors for successfully saved fields
             if (Object.keys(errors).length > 0) {
-                setErrors((prev) => {
-                    const newErrors = { ...prev };
-                    Object.keys(requiredSubscriptionFields).forEach((field) => {
-                        delete newErrors[field];
-                    });
-                    return newErrors;
-                });
+                setErrors({});
             }
 
             // Stay on subscription tab after save (no redirect)
@@ -751,41 +606,7 @@ export default function PartnerProfile() {
         }
 
         try {
-            // Validate required fields based on active tab
-            let requiredFields = {};
-
-            if (activeTab === 'statusAgent') {
-                // Only validate status and agent for Status & Agent tab
-                requiredFields = {
-                    status: formData.status,
-                    agent: formData.agent
-                };
-            } else if (activeTab === 'personalDetails' || !activeTab) {
-                requiredFields = {
-                    full_name: formData.full_name,
-                    company_name: formData.company_name,
-                    email: formData.email,
-                    phone_number: formData.phone_number,
-                    partner_type: formData.partner_type,
-                    enrollment_type: formData.enrollment_type
-                };
-            }
             // Frontend validation for Partner Information removed to rely on backend validation
-
-
-            const fieldErrors = {};
-            Object.entries(requiredFields).forEach(([field, value]) => {
-                const error = validateField(field, value);
-                if (error) {
-                    fieldErrors[field] = error;
-                }
-            });
-
-            // If there are validation errors, show them and stop submission
-            if (Object.keys(fieldErrors).length > 0) {
-                // toast.error('Please fill in all required fields');
-                return;
-            }
 
             const formDataToSend = new FormData();
 

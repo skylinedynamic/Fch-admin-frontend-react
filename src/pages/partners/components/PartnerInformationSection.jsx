@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
-import { PARTNER_INFORMATION_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../../config/partnerTypeOptions';
+import { PARTNER_INFORMATION_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -406,15 +406,15 @@ export default function PartnerInformationSection({
                                 return PAYMENT_TYPE_OPTIONS;
                             }
 
-                            // Create dynamic options with partner-specific amounts
+                            // Create dynamic options with partner-specific amounts using config constants
                             return [
                                 {
-                                    label: `One-Time Payment ($${selectedPartnerType.oneTimeFee?.toLocaleString()})`,
-                                    value: 'One-Time Payment'
+                                    label: `${ENROLLMENT_TYPES.ONE_TIME_STR} ($${selectedPartnerType.oneTimeFee?.toLocaleString()})`,
+                                    value: ENROLLMENT_TYPES.ONE_TIME_STR
                                 },
                                 {
-                                    label: `Payment Plan ($${selectedPartnerType.monthlyPayment?.toLocaleString()}/mo, 11-month plan)`,
-                                    value: 'Payment Plan (11-month plan)'
+                                    label: `${ENROLLMENT_TYPES.PAYMENT_PLAN_STR.replace(' (', ` ($${selectedPartnerType.monthlyPayment?.toLocaleString()}/mo, `)}`,
+                                    value: ENROLLMENT_TYPES.PAYMENT_PLAN_STR
                                 }
                             ];
                         })()}
@@ -425,10 +425,7 @@ export default function PartnerInformationSection({
                         className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
                         disabled={!formData.partner_type}
                     />
-                    {/* {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
-                    {!formData.partner_type && (
-                        <small className="text-muted">Please select a partner type first</small>
-                    )} */}
+                    {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
                 </div>
             </div>
 
