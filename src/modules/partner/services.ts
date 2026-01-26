@@ -89,8 +89,8 @@ export const saveSubscription = async (payload: any) => {
   return data;
 };
 
-export const fetchSubscriptions = async (payload: any = {}) => {
-  const { data } = await apiClient.post('/admin/partners/fetch-subscriptions', payload);
+export const fetchSubscriptions = async (partnerId: string | number, payload: any = {}) => {
+  const { data } = await apiClient.post(`/admin/partners/fetch-subscriptions/${partnerId}`, payload);
   return data;
 };
 

@@ -79,7 +79,7 @@ export default function PaymentTable({
                 emptyMessage="No payments found."
                 responsiveLayout="scroll"
             >
-                <Column field="transaction_date" header="Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
+                <Column field="transaction_date" header="Payment Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
                 <Column field="from" header="From" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
                 <Column 
                     field="payment_type" 

@@ -38,8 +38,7 @@ export default function SubscriptionListSection() {
     const loadSubscriptions = async () => {
         try {
             setLoading(true);
-            const response = await fetchSubscriptions({
-                partner_id: id,
+            const response = await fetchSubscriptions(id, {
                 page: page,
                 per_page: perPage,
                 sort_field: sortField,

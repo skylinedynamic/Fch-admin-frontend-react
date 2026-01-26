@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID } from '../../../config/invoiceConfig';
+import InvoicePaymentModal from './InvoicePaymentModal';
 
 export default function InvoiceTable({ 
     data, 
@@ -16,8 +17,24 @@ export default function InvoiceTable({
     onFilter,
     filters,
     sortField,
-    sortOrder
+    sortOrder,
+    onRefresh // Add onRefresh prop to reload data after payment
 }) {
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+    const handlePayClick = (invoice) => {
+        setSelectedInvoice(invoice);
+        setShowPaymentModal(true);
+    };
+
+    const handlePaymentSuccess = (paymentId) => {
+        setShowPaymentModal(false);
+        setSelectedInvoice(null);
+        if (onRefresh) {
+            onRefresh();
+        }
+    };
     const statusFilterElement = (options) => {
         return (
             <Dropdown
@@ -66,7 +83,10 @@ export default function InvoiceTable({
                 {isNotPaid && (
                    <button 
                         className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
-                        onClick={(e) => { e.stopPropagation(); }}
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handlePayClick(rowData);
+                        }}
                     >
                         <i className="ri-secure-payment-line align-middle me-1"></i>
                         Pay Now
@@ -104,11 +124,18 @@ export default function InvoiceTable({
                 <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
                 <Column field="customer_name" header="Customer" style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>
                 <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
-                <Column field="payment_date" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
+                <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
                 <Column field="status" header="Payment Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
                 <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
             </DataTable>
+            
+            <InvoicePaymentModal 
+                show={showPaymentModal}
+                onHide={() => setShowPaymentModal(false)}
+                onSuccess={handlePaymentSuccess}
+                invoice={selectedInvoice}
+            />
         </div>
     );
 }

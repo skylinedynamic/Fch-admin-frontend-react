@@ -223,6 +223,7 @@ export default function Invoices() {
                                     filters={filters}
                                     sortField={sortField}
                                     sortOrder={sortOrder}
+                                    onRefresh={loadData}
                                 />
                             </div>
                         </div>

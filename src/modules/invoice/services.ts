@@ -10,3 +10,7 @@ export const fetchInvoiceStats = async (params: InvoiceFilterParams = {}) => {
     const { data } = await apiClient.post('/common/invoices/stats', params);
     return data;
 };
+export const processInvoicePayment = async (payload: any) => {
+    const response = await apiClient.post('/process-payment', payload);
+    return response.data;
+};
