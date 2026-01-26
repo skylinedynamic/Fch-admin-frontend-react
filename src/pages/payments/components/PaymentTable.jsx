@@ -80,6 +80,7 @@ export default function PaymentTable({
                 responsiveLayout="scroll"
             >
                 <Column field="transaction_date" header="Payment Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
+                <Column field="invoice_id" header="Invoice ID" sortable filter showFilterMatchModes filterPlaceholder="Search by invoice ID" style={{ minWidth: '100px' }}></Column>
                 <Column field="from" header="From" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
                 <Column 
                     field="payment_type" 
