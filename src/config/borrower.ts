@@ -22,3 +22,10 @@ export const FUNDING_TYPE_OPTIONS = [
     { label: 'Expansion', value: 'Expansion' },
     { label: 'Other', value: 'Other' }
 ];
+
+
+export const FUNDING_APPLICATION_STATUS_OPTIONS = [
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Rejected', value: 'Rejected' }
+];

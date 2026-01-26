@@ -1,58 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { useFundingApplications } from '../../modules/application';
-import { usePermissions } from '../../lib/auth/usePermissions';
-import { useAuthStore } from '../../store/auth/authStore';
-import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
-import StatisticsCard from '../../components/Common/StatisticsCard';
-import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
-import TableLoader from '../../components/Loader/TableLoader';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { APPLICATION_STATUS_OPTIONS } from '../../config/borrower';
+import { useFundingApplications, useFundingApplicationStats } from '../../../modules/application';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useAuthStore } from '../../../store/auth/authStore';
 
-const DEMO_STATS = {
-    total_applications: 0,
-    approved: 0,
-    pending: 0,
-    approved_amount: 0
-};
+import StatisticsCard from '../../../components/Common/StatisticsCard';
+import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
+import TableLoader from '../../../components/Loader/TableLoader';
+import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
+
+import { APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
+
+
 
 export default function FundingApplication() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
-    const currentUser = useAuthStore((state) => state.user);
+    const currentUser = useAuthStore((state: any) => state.user)
     const isHost = currentUser?.is_host === 1;
 
     // Pagination state
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
+    const [page, setPage] = useState<number>(1);
+    const [perPage, setPerPage] = useState<number>(10);
 
     // Sorting state
-    const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortField, setSortField] = useState<string>('id');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Filter states (Inputs)
-    const [searchText, setSearchText] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
-    const [dateRange, setDateRange] = useState(null);
-    const [filters, setFilters] = useState({});
+    const [searchText, setSearchText] = useState<string>('');
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [dateRange, setDateRange] = useState<Date[] | null>(null);
+    const [filters, setFilters] = useState<any>({});
 
     // Applied Filters (For API Query)
-    const [appliedFilters, setAppliedFilters] = useState({
+    const [appliedFilters, setAppliedFilters] = useState<{
+        search: string;
+        status: string;
+        date_range: Date[] | null;
+        filters: any;
+    }>({
         search: '',
         status: '',
         date_range: null,
-        filters: {} 
+        filters: {}
     });
 
     // API Query
-    const queryParams = {
+    const queryParams: ApplicationQueryParams = {
         page,
         per_page: perPage,
         search: appliedFilters.search,
@@ -69,14 +69,11 @@ export default function FundingApplication() {
     const totalRecords = apiResponse?.meta?.total || 0;
     const loading = isLoading || isFetching;
 
-    // Checkbox selection state
-    const [selectedLeads, setSelectedLeads] = useState([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteRows, setDeleteRows] = useState([]);
+
 
     // Statistics data
-    const [stats, setStats] = useState(DEMO_STATS);
-    const [statsLoading, setStatsLoading] = useState(true);
+    const { data: statsResponse, isLoading: statsLoading } = useFundingApplicationStats();
+    const stats = statsResponse?.data || { total_applications: 0, approved: 0, pending: 0, approved_amount: 0 };
 
     // Initialize filters
     const initFilters = () => {
@@ -95,13 +92,6 @@ export default function FundingApplication() {
     // Initialize
     useEffect(() => {
         initFilters();
-
-        // Simulate stats loading
-        setTimeout(() => {
-            setStats(DEMO_STATS);
-            setStatsLoading(false);
-        }, 500);
-
     }, []);
 
     const statisticsConfig = [
@@ -128,18 +118,18 @@ export default function FundingApplication() {
         setSelectedStatus('');
         setDateRange(null);
         initFilters();
-        
+
         // Reset Applied Filters
         setAppliedFilters(prev => ({
             ...prev,
             search: '',
             status: '',
             date_range: null,
-            filters: {} 
+            filters: {}
         }));
-        
+
         // Re-call initFilters to reset state properly
-         const initial = {
+        const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             industry_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -149,7 +139,7 @@ export default function FundingApplication() {
         };
         setFilters(initial);
         setAppliedFilters({
-             search: '',
+            search: '',
             status: '',
             date_range: null,
             filters: initial
@@ -159,7 +149,7 @@ export default function FundingApplication() {
     };
 
     // Pagination handler
-    const onPage = (event) => {
+    const onPage = (event: any) => {
         const nextPerPage = event.rows;
         const nextPage = Math.floor(event.first / event.rows) + 1;
         setPerPage(nextPerPage);
@@ -167,7 +157,7 @@ export default function FundingApplication() {
     };
 
     // Sort handler
-    const onSort = (event) => {
+    const onSort = (event: any) => {
         const field = event.sortField;
         const order = event.sortOrder === 1 ? 'asc' : 'desc';
         setSortField(field || sortField);
@@ -175,7 +165,7 @@ export default function FundingApplication() {
     };
 
     // Filter handler
-    const onFilter = (e) => {
+    const onFilter = (e: any) => {
         setFilters(e.filters);
         setAppliedFilters(prev => ({
             ...prev,
@@ -185,8 +175,8 @@ export default function FundingApplication() {
     };
 
     // Template body
-    const statusBodyTemplate = (rowData) => {
-        const statusMap = {
+    const statusBodyTemplate = (rowData: FundingApplicationType) => {
+        const statusMap: { [key: string]: string } = {
             'pending': 'bg-warning-subtle text-warning',
             'intake received': 'bg-info-subtle text-info',
             'in review': 'bg-primary-subtle text-primary',
@@ -197,26 +187,7 @@ export default function FundingApplication() {
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 
-    // Delete handlers
-    const openDeleteModal = () => {
-        if (!selectedLeads || selectedLeads.length === 0) {
-            toast.warn('Please select at least one item to delete.');
-            return;
-        }
-        setDeleteRows(selectedLeads);
-        setShowDeleteModal(true);
-    };
 
-    const handleDeleteConfirm = async () => {
-        try {
-            // Demo delete behavior (API implementation for delete not requested yet)
-            toast.success('Applications deleted successfully (Demo)');
-            setShowDeleteModal(false);
-            setSelectedLeads([]);
-        } catch (err) {
-            toast.error('Failed to delete items');
-        }
-    };
 
     return (
         <div className="page-content">
@@ -234,35 +205,7 @@ export default function FundingApplication() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="mt-0">
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="btn-group">
-                                        {hasPermission('delete leads') && Array.isArray(selectedLeads) && selectedLeads.length > 0 ? (
-                                            <>
-                                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span className="visually-hidden">Toggle Dropdown</span>
-                                                </button>
-                                                <ul className="dropdown-menu dropdown-menu-end">
-                                                    <li>
-                                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </>
-                                        ) : hasPermission('create leads') ? (
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary fw-medium waves-effect waves-light"
-                                                onClick={() => navigate('/leads/create')}
-                                            >
-                                                <i className="ri-add-fill me-1 align-bottom"></i> Add Application
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -319,11 +262,11 @@ export default function FundingApplication() {
                                             />
                                         </div>
                                         <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-6`}>
-                                            <Calendar 
-                                                value={dateRange} 
-                                                onChange={(e) => setDateRange(e.value)} 
-                                                selectionMode="range" 
-                                                readOnlyInput 
+                                            <Calendar
+                                                value={dateRange}
+                                                onChange={(e: any) => setDateRange(e.value)}
+                                                selectionMode="range"
+                                                readOnlyInput
                                                 placeholder="Select Date Range"
                                                 className="w-100 employee-filter-dropdown"
                                                 showIcon
@@ -364,26 +307,21 @@ export default function FundingApplication() {
                                             onFilter={onFilter}
                                             onPage={onPage}
                                             onSort={onSort}
-                                            selection={selectedLeads}
-                                            onSelectionChange={(e) => setSelectedLeads(e.value)}
                                             dataKey="id"
-                                            onRowClick={(e) => {
-                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
-                                                                  e.originalEvent.target.closest('.p-selection-column') ||
-                                                                  e.originalEvent.target.closest('.btn'); 
-                                                if (!isCheckbox) navigate(`/leads/${e.data.id}`);
+                                            rowClassName={() => 'cursor-pointer'}
+                                            onRowClick={(e: any) => {
+                                                navigate(`/intake-review/funding-review/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
                                             emptyMessage="No applications found"
                                         >
-                                            {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
                                             <Column field="industry_type" header="Industry Type" sortable filter filterPlaceholder="Search industry" style={{ minWidth: '150px' }} />
                                             <Column field="entity_type" header="Entity Type" sortable filter filterPlaceholder="Search entity" style={{ minWidth: '150px' }} />
                                             <Column field="purpose_of_funds" header="Purpose" sortable filter filterPlaceholder="Search purpose" style={{ minWidth: '160px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" body={(rowData) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rowData.requested_amount || 0)} sortable style={{ minWidth: '160px' }} />
-                                            <Column field="date" header="Date" body={(rowData) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: FundingApplicationType) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rowData.requested_amount) || 0)} sortable style={{ minWidth: '160px' }} />
+                                            <Column field="date" header="Date" body={(rowData: FundingApplicationType) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
                                         </DataTable>
                                     </div>
@@ -393,13 +331,6 @@ export default function FundingApplication() {
                     </div>
                 </div>
 
-                <DeleteConfirmationModal
-                    show={showDeleteModal}
-                    onConfirm={handleDeleteConfirm}
-                    onClose={() => setShowDeleteModal(false)}
-                    loading={loading}
-                    text="The selected items will be deleted (Demo)."
-                />
             </div>
         </div>
     );
