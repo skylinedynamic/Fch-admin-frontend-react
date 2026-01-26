@@ -5,27 +5,17 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { usePreQualificationApplications } from '../../../modules/application/queries';
+import { usePreQualificationApplications, usePreQualificationStats } from '../../../modules/application/queries';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { PreQualificationApplication as PreQualificationApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS } from '../../../config/borrower';
 
 
-const DEMO_STATS: ApplicationStatistics = {
-    total_leads: 5,
-    new_leads: 1,
-    qualified_rate: '20%',
-    declined_rate: '20%',
-    approved: 0,
-    pending: 0,
-    approved_amount: 0
-};
+
 
 export default function PreQualificationApplication() {
     const navigate = useNavigate();
@@ -97,8 +87,8 @@ export default function PreQualificationApplication() {
     const [conversionLoading, setConversionLoading] = useState<boolean>(false);
 
     // Statistics data
-    const [stats, setStats] = useState<ApplicationStatistics>(DEMO_STATS);
-    const [statsLoading, setStatsLoading] = useState<boolean>(true);
+    const { data: statsResponse, isLoading: statsLoading } = usePreQualificationStats();
+    const stats = statsResponse?.data || { total_applications: 0, approved: 0, pending: 0, approved_amount: 0 };
 
     // Initialize filters
     const initFilters = () => {
@@ -116,13 +106,6 @@ export default function PreQualificationApplication() {
     // Initialize
     useEffect(() => {
         initFilters();
-
-        // Simulate stats loading
-        setTimeout(() => {
-            setStats(DEMO_STATS);
-            setStatsLoading(false);
-        }, 500);
-
     }, []);
 
     const statisticsConfig = [

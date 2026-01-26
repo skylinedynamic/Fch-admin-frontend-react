@@ -37,5 +37,6 @@ export const queryKeys = {
     all: ['application'] as const,
     list: () => [...queryKeys.application.all, 'list'] as const,
     detail: (id: string | number) => [...queryKeys.application.all, 'detail', id] as const,
+    summary: ['summary'] as const,
   },
 } as const

@@ -5,7 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { useFundingApplications } from '../../../modules/application';
+import { useFundingApplications, useFundingApplicationStats } from '../../../modules/application';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 
@@ -14,21 +14,14 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 import TableLoader from '../../../components/Loader/TableLoader';
 import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
 
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
 
-const DEMO_STATS: ApplicationStatistics = {
-    total_applications: 0,
-    approved: 0,
-    pending: 0,
-    approved_amount: 0
-};
+
 
 export default function FundingApplication() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
-    const currentUser = useAuthStore((state: any) => state.user);
+    const currentUser = useAuthStore((state: any) => state.user)
     const isHost = currentUser?.is_host === 1;
 
     // Pagination state
@@ -79,8 +72,8 @@ export default function FundingApplication() {
 
 
     // Statistics data
-    const [stats, setStats] = useState<ApplicationStatistics>(DEMO_STATS);
-    const [statsLoading, setStatsLoading] = useState<boolean>(true);
+    const { data: statsResponse, isLoading: statsLoading } = useFundingApplicationStats();
+    const stats = statsResponse?.data || { total_applications: 0, approved: 0, pending: 0, approved_amount: 0 };
 
     // Initialize filters
     const initFilters = () => {
@@ -99,13 +92,6 @@ export default function FundingApplication() {
     // Initialize
     useEffect(() => {
         initFilters();
-
-        // Simulate stats loading
-        setTimeout(() => {
-            setStats(DEMO_STATS);
-            setStatsLoading(false);
-        }, 500);
-
     }, []);
 
     const statisticsConfig = [
