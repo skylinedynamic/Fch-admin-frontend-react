@@ -34,7 +34,7 @@ export default function InvoiceFilters({
                 </div>
             </div>
 
-            <div className="col-xxl-2 col-sm-6">
+            <div className="col-xxl-3 col-sm-6">
                 <div className="search-box">
                     <Calendar 
                         value={dateRange}
@@ -49,7 +49,7 @@ export default function InvoiceFilters({
                 </div>
             </div>
 
-            <div className="col-xxl-2 col-sm-4">
+            <div className="col-xxl-3 col-sm-6">
                 <Dropdown 
                     value={selectedStatus}
                     options={INVOICE_STATUS_OPTIONS} 
@@ -59,7 +59,7 @@ export default function InvoiceFilters({
                 />
             </div>
 
-            <div className="col-xxl-2 col-sm-4">
+            {/* <div className="col-xxl-2 col-sm-4">
                 <Dropdown 
                     value={selectedCycle}
                     options={INVOICE_CYCLE_OPTIONS} 
@@ -67,7 +67,7 @@ export default function InvoiceFilters({
                     className="w-100 employee-filter-dropdown"
                     onChange={(e) => setSelectedCycle(e.value)}
                 />
-            </div>
+            </div> */}
 
             <div className="col-xxl-3 col-sm-12">
                 <div className="d-flex gap-2">

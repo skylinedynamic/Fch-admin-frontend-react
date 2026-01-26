@@ -39,7 +39,7 @@ export default function PaymentFilters({
                     </div>
                 </div>
 
-                <div className="col-xxl-3 col-sm-6">
+                <div className="col-xxl-4 col-sm-6">
                     <div className="search-box">
                         <Calendar
                             value={dateRange}
@@ -54,7 +54,7 @@ export default function PaymentFilters({
                     </div>
                 </div>
 
-                <div className="col-xxl-2 col-sm-4">
+                <div className="col-xxl-3 col-sm-6">
                     <Dropdown
                         value={selectedStatus}
                         options={PAYMENT_STATUS_OPTIONS}
@@ -64,7 +64,7 @@ export default function PaymentFilters({
                     />
                 </div>
 
-                <div className="col-xxl-2 col-sm-4">
+                {/* <div className="col-xxl-2 col-sm-4">
                     <Dropdown
                         value={selectedCycle}
                         options={PAYMENT_CYCLE_OPTIONS}
@@ -72,9 +72,9 @@ export default function PaymentFilters({
                         placeholder="All Cycle"
                         className="w-100 bg-light border-light"
                     />
-                </div>
+                </div> */}
 
-                <div className="col-xxl-2 col-sm-4 d-flex gap-2">
+                <div className="col-xxl-2 col-sm-6 d-flex gap-2">
                     <button 
                         type="button" 
                         className="btn btn-warning flex-grow-1"
