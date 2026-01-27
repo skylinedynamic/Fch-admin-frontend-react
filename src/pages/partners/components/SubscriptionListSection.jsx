@@ -167,15 +167,22 @@ export default function SubscriptionListSection() {
                     body={(r) => renderBody(r, 'enrollment_type')}
                 />
                 <Column
-                    field="enrollment_amount"
-                    header="Enrollment Amount"
+                    field="total_subscription_amount"
+                    header="Total Amount"
                     sortable
                     style={{ minWidth: '150px' }}
-                    body={(r) => amountBodyTemplate(r, 'enrollment_amount')}
+                    body={(r) => amountBodyTemplate(r, 'total_subscription_amount')}
+                />
+                <Column
+                    field="payable_amount"
+                    header="Payable Amount"
+                    sortable
+                    style={{ minWidth: '120px' }}
+                    body={(r) => amountBodyTemplate(r, 'payable_amount')}
                 />
                 <Column
                     field="monthly_platform_fee"
-                    header="Monthly Fee"
+                    header="Platform Fee"
                     sortable
                     style={{ minWidth: '120px' }}
                     body={(r) => amountBodyTemplate(r, 'monthly_platform_fee')}

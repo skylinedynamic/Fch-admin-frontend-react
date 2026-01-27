@@ -5,6 +5,7 @@ import { Dropdown } from 'primereact/dropdown';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID } from '../../../config/invoiceConfig';
 import InvoicePaymentModal from './InvoicePaymentModal';
+import InvoicePreviewModal from './InvoicePreviewModal';
 
 export default function InvoiceTable({ 
     data, 
@@ -21,11 +22,17 @@ export default function InvoiceTable({
     onRefresh // Add onRefresh prop to reload data after payment
 }) {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
 
     const handlePayClick = (invoice) => {
         setSelectedInvoice(invoice);
         setShowPaymentModal(true);
+    };
+
+    const handlePreviewClick = (invoice) => {
+        setSelectedInvoice(invoice);
+        setShowPreviewModal(true);
     };
 
     const handlePaymentSuccess = (paymentId) => {
@@ -75,10 +82,13 @@ export default function InvoiceTable({
                 <button 
                     className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center"
                     style={{ width: '28px', height: '28px' }}
-                    onClick={(e) => { e.stopPropagation(); }}
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handlePreviewClick(rowData);
+                    }}
                     title="View Details"
                 >
-                    <i className="ri-file-text-line fs-14"></i>
+                    <i className="ri-file-pdf-line fs-14"></i>
                 </button>
                 {isNotPaid && (
                    <button 
@@ -126,7 +136,7 @@ export default function InvoiceTable({
                 <Column field="email" header="Email" bodyClassName="text-muted" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by email"></Column>
                 <Column field="created_at" header="Invoice Date" style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by date"></Column>
                 <Column field="payment_amount" header="Amount" body={amountBodyTemplate} style={{ minWidth: '120px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by amount"></Column>
-                <Column field="status" header="Payment Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
+                <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
                 <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
             </DataTable>
             
@@ -134,6 +144,12 @@ export default function InvoiceTable({
                 show={showPaymentModal}
                 onHide={() => setShowPaymentModal(false)}
                 onSuccess={handlePaymentSuccess}
+                invoice={selectedInvoice}
+            />
+
+            <InvoicePreviewModal 
+                show={showPreviewModal}
+                onHide={() => setShowPreviewModal(false)}
                 invoice={selectedInvoice}
             />
         </div>

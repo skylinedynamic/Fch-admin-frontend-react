@@ -7,7 +7,7 @@ import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId } from '../../modules/partner/services';
 import { locationData } from '../../config';
-import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
+import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
@@ -200,6 +200,7 @@ export default function PartnerProfile() {
     });
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Metrics Configuration
     const metricsConfig = [
@@ -494,23 +495,24 @@ export default function PartnerProfile() {
             const currentEnrollmentType = name === 'enrollment_type' ? newValue : formData.enrollment_type;
             
             let fees = {};
-            const partnerOption = PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
+            // Try information type options first (White-Label, Certified), then fallback to legacy type options
+            const partnerOption = 
+                PARTNER_INFORMATION_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType) ||
+                PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
             
             if (currentEnrollmentType) {
                 if (currentEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
-                    fees.enrollment_amount = ENROLLMENT_TYPES.ONE_TIME_VALUE.toString();
-                    fees.recurring_amount = '0';
-                    if (partnerOption && partnerOption.oneTimeFee) {
-                        fees.first_reg_amount = partnerOption.oneTimeFee.toString();
-                        fees.first_reg_payment = partnerOption.oneTimeFee.toString();
-                    }
+                    const amount = partnerOption?.oneTimeFee || ENROLLMENT_TYPES.ONE_TIME_VALUE;
+                    fees.enrollment_amount = amount.toString();
+                    fees.recurring_amount = (partnerOption?.platformFee || 0).toString();
+                    fees.first_reg_amount = amount.toString();
+                    fees.first_reg_payment = amount.toString();
                 } else if (currentEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
-                    fees.enrollment_amount = ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE.toString();
-                    if (partnerOption && partnerOption.planFee) {
-                        fees.first_reg_amount = partnerOption.planFee.toString();
-                        fees.first_reg_payment = partnerOption.planFee.toString();
-                        fees.recurring_amount = partnerOption.planFee.toString();
-                    }
+                    const amount = partnerOption?.monthlyPayment || partnerOption?.planFee || ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE;
+                    fees.enrollment_amount = amount.toString();
+                    fees.first_reg_amount = amount.toString();
+                    fees.first_reg_payment = amount.toString();
+                    fees.recurring_amount = amount.toString(); // For plan, recurring is the same as payment
                 }
             }
             
@@ -599,122 +601,86 @@ export default function PartnerProfile() {
 
     // Handle form submission
     const handleSave = async () => {
-        // Delegate to subscription save if on subscription tab
-        if (activeTab === 'subscription') {
-            await handleSubscriptionSave();
-            return;
-        }
-
+        setIsSaving(true);
         try {
-            // Frontend validation for Partner Information removed to rely on backend validation
-
-            const formDataToSend = new FormData();
-
-            // Append all form fields with proper field name mapping
-            Object.entries(formData).forEach(([key, value]) => {
-                if (value !== null && value !== undefined) {
-                    if (key === 'partner_image') {
-                        // Append if it's a File object (user selected a new image) or a string path (from file manager)
-                        if (value instanceof File) {
-                            // Send as 'partner_image' - the backend field name
-                            formDataToSend.append('partner_image', value);
-                        } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
-                            // Send path string if it's not a full URL (which usually means it was just selected from file manager)
-                            formDataToSend.append('partner_image', value);
-                        }
-                    } else if (key === 'agent') {
-                        // Map 'agent' to 'assign_to' for backend
-                        if (value !== '') {
-                            formDataToSend.append('assign_to', value);
-                        }
-                    } else if (key === 'city') {
-                        // If city is "Others", save the other_city value to city column
-                        if (value === 'Others' && formData.other_city) {
-                            formDataToSend.append('city', formData.other_city);
-                        } else if (value !== 'Others') {
-                            // Otherwise, save the selected city
-                            formDataToSend.append('city', value);
-                        }
-                    } else if (key === 'other_city') {
-                        // Don't send other_city as a separate field to backend
-                        // It's handled in the city field logic above
-                    } else if (key === 'agentEmail' || key === 'agentPhone' || key === 'company_logo') {
-                        // Skip these:
-                        // - agentEmail/Phone are frontend-only
-                        // - company_logo (string) should not be sent back; we only send it if it's a File (handled above)
-                    } else if (key === 'country_code') {
-                        // Always send country_code if it exists
-                        if (value) {
-                            formDataToSend.append('country_code', value);
-                        }
-                    } else if (key === 'enrollment_amount') {
-                        // Explicitly ensure enrollment_amount is included and not null
-                        formDataToSend.append('enrollment_amount', value || '');
-                    } else if (value !== '' && value !== null) {
-                        formDataToSend.append(key, value);
-                    }
-                }
-            });
-
-            // Debug: Log what we're sending
-            console.log('Sending FormData with:');
-            for (let pair of formDataToSend.entries()) {
-                console.log(pair[0] + ': ', pair[1]);
+            // Delegate to subscription save if on subscription tab
+            if (activeTab === 'subscription') {
+                await handleSubscriptionSave();
+                return;
             }
 
-            if (id) {
-                await updatePartner(id, formDataToSend);
-                toast.success('Partner updated successfully');
+            try {
+                // Frontend validation for Partner Information removed to rely on backend validation
 
-                // Redirect to next tab after update
-                // Attach any selected documents (selected in DocumentsSection)
-                try {
-                    if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
-                        const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
-                        await attachPartnerDocuments({
-                            partner_id: id,
-                            files: filePaths,
-                            document_type: 'Documents',
-                            entity_type: 'partners',
-                            entity_id: id
-                        });
-                        toast.success(`${filePaths.length} document(s) uploaded`);
-                        setDocumentsReloadKey(k => k + 1);
-                        setDocumentsClearKey(k => k + 1);
-                        setSelectedDocumentsToAttach([]);
+                const formDataToSend = new FormData();
+
+                // Append all form fields with proper field name mapping
+                Object.entries(formData).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined) {
+                        if (key === 'partner_image') {
+                            // Append if it's a File object (user selected a new image) or a string path (from file manager)
+                            if (value instanceof File) {
+                                // Send as 'partner_image' - the backend field name
+                                formDataToSend.append('partner_image', value);
+                            } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
+                                // Send path string if it's not a full URL (which usually means it was just selected from file manager)
+                                formDataToSend.append('partner_image', value);
+                            }
+                        } else if (key === 'agent') {
+                            // Map 'agent' to 'assign_to' for backend
+                            if (value !== '') {
+                                formDataToSend.append('assign_to', value);
+                            }
+                        } else if (key === 'city') {
+                            // If city is "Others", save the other_city value to city column
+                            if (value === 'Others' && formData.other_city) {
+                                formDataToSend.append('city', formData.other_city);
+                            } else if (value !== 'Others') {
+                                // Otherwise, save the selected city
+                                formDataToSend.append('city', value);
+                            }
+                        } else if (key === 'other_city') {
+                            // Don't send other_city as a separate field to backend
+                            // It's handled in the city field logic above
+                        } else if (key === 'agentEmail' || key === 'agentPhone' || key === 'company_logo') {
+                            // Skip these:
+                            // - agentEmail/Phone are frontend-only
+                            // - company_logo (string) should not be sent back; we only send it if it's a File (handled above)
+                        } else if (key === 'country_code') {
+                            // Always send country_code if it exists
+                            if (value) {
+                                formDataToSend.append('country_code', value);
+                            }
+                        } else if (key === 'enrollment_amount') {
+                            // Explicitly ensure enrollment_amount is included and not null
+                            formDataToSend.append('enrollment_amount', value || '');
+                        } else if (value !== '' && value !== null) {
+                            formDataToSend.append(key, value);
+                        }
                     }
-                } catch (e) {
-                    console.error('Attach documents failed', e);
-                    toast.error(e.response?.data?.message || 'Failed to attach documents');
+                });
+
+                // Debug: Log what we're sending
+                console.log('Sending FormData with:');
+                for (let pair of formDataToSend.entries()) {
+                    console.log(pair[0] + ': ', pair[1]);
                 }
-                const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
-                const currentIndex = tabOrder.indexOf(activeTab);
-                const nextTab = tabOrder[currentIndex + 1];
 
-                if (nextTab) {
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
-                } else {
-                    // If on last tab, stay on current tab
-                    setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
-                }
-            } else {
-                const response = await createPartner(formDataToSend);
-                toast.success('Partner created successfully');
+                if (id) {
+                    await updatePartner(id, formDataToSend);
+                    toast.success('Partner updated successfully');
 
-                // Get the newly created partner ID from response
-                const newPartnerId = response?.data?.id || response?.id;
-
-                if (newPartnerId) {
-                    // If there are selected documents from the DocumentsSection, attach them to the new partner
+                    // Redirect to next tab after update
+                    // Attach any selected documents (selected in DocumentsSection)
                     try {
                         if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
                             const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
                             await attachPartnerDocuments({
-                                partner_id: newPartnerId,
+                                partner_id: id,
                                 files: filePaths,
                                 document_type: 'Documents',
                                 entity_type: 'partners',
-                                entity_id: newPartnerId
+                                entity_id: id
                             });
                             toast.success(`${filePaths.length} document(s) uploaded`);
                             setDocumentsReloadKey(k => k + 1);
@@ -725,30 +691,71 @@ export default function PartnerProfile() {
                         console.error('Attach documents failed', e);
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    // Redirect to the partner profile page with Status & Agent tab active
-                    setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
+                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
+                    const currentIndex = tabOrder.indexOf(activeTab);
+                    const nextTab = tabOrder[currentIndex + 1];
+
+                    if (nextTab) {
+                        setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: nextTab } }), 800);
+                    } else {
+                        // If on last tab, stay on current tab
+                        setTimeout(() => navigate(`/partners/${id}`, { state: { activeTab: activeTab } }), 800);
+                    }
                 } else {
-                    // Fallback to partners list if no ID returned
-                    setTimeout(() => navigate('/partners'), 800);
+                    const response = await createPartner(formDataToSend);
+                    toast.success('Partner created successfully');
+
+                    // Get the newly created partner ID from response
+                    const newPartnerId = response?.data?.id || response?.id;
+
+                    if (newPartnerId) {
+                        // If there are selected documents from the DocumentsSection, attach them to the new partner
+                        try {
+                            if (selectedDocumentsToAttach && selectedDocumentsToAttach.length > 0) {
+                                const filePaths = selectedDocumentsToAttach.map(f => (typeof f === 'string' ? f : (f.path || f)));
+                                await attachPartnerDocuments({
+                                    partner_id: newPartnerId,
+                                    files: filePaths,
+                                    document_type: 'Documents',
+                                    entity_type: 'partners',
+                                    entity_id: newPartnerId
+                                });
+                                toast.success(`${filePaths.length} document(s) uploaded`);
+                                setDocumentsReloadKey(k => k + 1);
+                                setDocumentsClearKey(k => k + 1);
+                                setSelectedDocumentsToAttach([]);
+                            }
+                        } catch (e) {
+                            console.error('Attach documents failed', e);
+                            toast.error(e.response?.data?.message || 'Failed to attach documents');
+                        }
+                        // Redirect to the partner profile page with Status & Agent tab active
+                        setTimeout(() => navigate(`/partners/${newPartnerId}`, { state: { activeTab: 'statusAgent' } }), 800);
+                    } else {
+                        // Fallback to partners list if no ID returned
+                        setTimeout(() => navigate('/partners'), 800);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Save error:', error);
+                if (error.response?.data?.errors) {
+                    const backendErrors = error.response.data.errors;
+                    const newErrors = {};
+                    Object.entries(backendErrors).forEach(([field, errorMsg]) => {
+                        const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
+                        // toast.error(message);
+                        newErrors[field] = message;
+                    });
+                    setErrors(newErrors);
+                } else if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error(id ? 'Failed to update partner' : 'Failed to save partner');
                 }
             }
-
-        } catch (error) {
-            console.error('Save error:', error);
-            if (error.response?.data?.errors) {
-                const backendErrors = error.response.data.errors;
-                const newErrors = {};
-                Object.entries(backendErrors).forEach(([field, errorMsg]) => {
-                    const message = Array.isArray(errorMsg) ? errorMsg[0] : errorMsg;
-                    // toast.error(message);
-                    newErrors[field] = message;
-                });
-                setErrors(newErrors);
-            } else if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error(id ? 'Failed to update partner' : 'Failed to save partner');
-            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -774,8 +781,17 @@ export default function PartnerProfile() {
                                 <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect">
-                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
+                                    {isSaving ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                            {id ? 'Updating...' : 'Saving...'}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
