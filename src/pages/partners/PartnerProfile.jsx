@@ -7,7 +7,7 @@ import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId } from '../../modules/partner/services';
 import { locationData } from '../../config';
-import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
+import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
@@ -495,23 +495,24 @@ export default function PartnerProfile() {
             const currentEnrollmentType = name === 'enrollment_type' ? newValue : formData.enrollment_type;
             
             let fees = {};
-            const partnerOption = PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
+            // Try information type options first (White-Label, Certified), then fallback to legacy type options
+            const partnerOption = 
+                PARTNER_INFORMATION_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType) ||
+                PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
             
             if (currentEnrollmentType) {
                 if (currentEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
-                    fees.enrollment_amount = ENROLLMENT_TYPES.ONE_TIME_VALUE.toString();
-                    fees.recurring_amount = '0';
-                    if (partnerOption && partnerOption.oneTimeFee) {
-                        fees.first_reg_amount = partnerOption.oneTimeFee.toString();
-                        fees.first_reg_payment = partnerOption.oneTimeFee.toString();
-                    }
+                    const amount = partnerOption?.oneTimeFee || ENROLLMENT_TYPES.ONE_TIME_VALUE;
+                    fees.enrollment_amount = amount.toString();
+                    fees.recurring_amount = (partnerOption?.platformFee || 0).toString();
+                    fees.first_reg_amount = amount.toString();
+                    fees.first_reg_payment = amount.toString();
                 } else if (currentEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
-                    fees.enrollment_amount = ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE.toString();
-                    if (partnerOption && partnerOption.planFee) {
-                        fees.first_reg_amount = partnerOption.planFee.toString();
-                        fees.first_reg_payment = partnerOption.planFee.toString();
-                        fees.recurring_amount = partnerOption.planFee.toString();
-                    }
+                    const amount = partnerOption?.monthlyPayment || partnerOption?.planFee || ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE;
+                    fees.enrollment_amount = amount.toString();
+                    fees.first_reg_amount = amount.toString();
+                    fees.first_reg_payment = amount.toString();
+                    fees.recurring_amount = amount.toString(); // For plan, recurring is the same as payment
                 }
             }
             
