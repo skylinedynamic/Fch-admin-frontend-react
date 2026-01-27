@@ -35,7 +35,7 @@ export default function FundingApplicationDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState<StepType>(1);
-    
+
     // Status update state
     const [status, setStatus] = useState<string>('');
     const [status_note, setStatusNote] = useState<string>('');
@@ -82,8 +82,8 @@ export default function FundingApplicationDetails() {
                 if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     if (backendErrors.status_note) {
-                        const message = Array.isArray(backendErrors.status_note) 
-                            ? backendErrors.status_note[0] 
+                        const message = Array.isArray(backendErrors.status_note)
+                            ? backendErrors.status_note[0]
                             : backendErrors.status_note;
                         setNotesError(message);
                     }
@@ -135,6 +135,46 @@ export default function FundingApplicationDetails() {
                 <label className="form-label fs-14">Has Co-Borrower?</label>
                 <div className="text-muted fs-14">{app.has_co_borrower ? 'Yes' : 'No'}</div>
             </div>
+
+            {app.has_co_borrower && app.co_borrowers && app.co_borrowers.length > 0 && (
+                <div className="col-12 mt-3">
+                    <h5 className="fs-15 fw-bold mb-3 border-bottom pb-2">Co-Borrower Information</h5>
+                    {app.co_borrowers.map((borrower, index) => (
+                        <div key={borrower.id} className="card border shadow-none mb-3">
+                            <div className="card-header bg-light p-2 ps-3">
+                                <h6 className="mb-0 fs-14 fw-bold">Co-Borrower {index + 1}: {borrower.first_name} {borrower.last_name}</h6>
+                            </div>
+                            <div className="card-body p-3">
+                                <div className="row">
+                                    <DetailRow label="First Name" value={borrower.first_name} />
+                                    <DetailRow label="Last Name" value={borrower.last_name} />
+                                    <DetailRow label="Role" value={borrower.role} />
+                                    <DetailRow label="Ownership %" value={borrower.ownership} />
+                                    <DetailRow label="Email" value={borrower.email} />
+                                    <DetailRow label="Mobile Phone" value={borrower.mobile_phone} />
+                                    <DetailRow label="Home Phone" value={borrower.home_phone} />
+                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
+                                    <DetailRow label="Home Phone" value={borrower.home_phone} />
+                                    <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
+                                    <DetailRow label="SSN" value={borrower.ssn || '-'} />
+
+                                    <div className="col-12"><hr className="my-2" /></div>
+                                    <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Address</h6>
+                                    <DetailRow label="Street Address" value={borrower.street_address} />
+                                    <DetailRow label="City" value={borrower.city} />
+                                    <DetailRow label="State" value={borrower.state} />
+                                    <DetailRow label="Zip Code" value={borrower.zip_code} />
+
+                                    <div className="col-12"><hr className="my-2" /></div>
+                                    <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Driver's License</h6>
+                                    <DetailRow label="License Number" value={borrower.drivers_license_number} />
+                                    <DetailRow label="Issuing State" value={borrower.drivers_license_state} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 
@@ -169,14 +209,61 @@ export default function FundingApplicationDetails() {
         </div>
     );
 
+    const getFileIcon = (extension: string) => {
+        switch (extension.toLowerCase()) {
+            case 'pdf': return 'ri-file-pdf-line text-danger';
+            case 'doc':
+            case 'docx': return 'ri-file-word-line text-primary';
+            case 'xls':
+            case 'xlsx': return 'ri-file-excel-line text-success';
+            case 'jpg':
+            case 'jpeg':
+            case 'png': return 'ri-image-line text-warning';
+            default: return 'ri-file-line text-secondary';
+        }
+    };
+
     const renderDocumentUpload = () => (
         <div className="row">
-            <div className="col-12">
-                <div className="alert alert-info">
-                    <i className="ri-information-line me-2"></i>
-                    Document upload information is not available for viewing.
+            {app.documents && app.documents.length > 0 ? (
+                app.documents.map((docType, index) => (
+                    <div key={index} className="col-12 mb-4">
+                        <h6 className="fs-15 fw-bold mb-3 border-bottom pb-2">{docType.type}</h6>
+                        <div className="card border shadow-none">
+                            <ul className="list-group list-group-flush">
+                                {docType.files.map((file) => (
+                                    <li key={file.id} className="list-group-item">
+                                        <div className="d-flex align-items-center">
+                                            <div className="flex-shrink-0 avatar-xs">
+                                                <div className="avatar-title bg-light text-primary rounded fs-20">
+                                                    <i className={`${getFileIcon(file.extension)} fs-18`}></i>
+                                                </div>
+                                            </div>
+                                            <div className="flex-grow-1 ms-3">
+                                                <h6 className="fs-14 mb-0">
+                                                    <a href={file.url} target="_blank" rel="noreferrer" className="text-reset">{file.original_name}</a>
+                                                </h6>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                                <a href={file.url} download={file.original_name} target="_blank" rel="noreferrer" className="btn btn-icon btn-sm btn-ghost-primary text-primary" title="Download">
+                                                    <i className="ri-download-2-line fs-18"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <div className="col-12">
+                    <div className="alert alert-info">
+                        <i className="ri-information-line me-2"></i>
+                        No documents uploaded available for viewing.
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 
@@ -219,7 +306,7 @@ export default function FundingApplicationDetails() {
                 <label className="form-label fs-14">Attestation Authorization</label>
                 <div>{app.attestation_authorization ? <span className="badge bg-success">Authorized</span> : <span className="badge bg-secondary">Not Authorized</span>}</div>
             </div>
-     
+
         </div>
     );
 
@@ -275,14 +362,14 @@ export default function FundingApplicationDetails() {
                                         <button
                                             key={step.id}
                                             type="button"
-                                        className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
+                                            className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
                                             onClick={() => setCurrentStep(step.id as StepType)}
                                         >
                                             <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: '600' }}>
                                                 {step.id}
                                             </div>
                                             <div className="flex-grow-1">
-                                            <div className={`fw-medium ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '14px' }}>
+                                                <div className={`fw-medium ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '14px' }}>
                                                     {step.title}
                                                 </div>
                                             </div>
@@ -310,10 +397,10 @@ export default function FundingApplicationDetails() {
                                     </div>
                                     <div className="mb-3">
                                         <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
-                                        <textarea 
+                                        <textarea
                                             className={`form-control ${notesError ? 'is-invalid' : ''}`}
-                                            id="status-notes" 
-                                            rows={3} 
+                                            id="status-notes"
+                                            rows={3}
                                             placeholder="Add notes..."
                                             value={status_note}
                                             onChange={(e) => {
@@ -324,8 +411,8 @@ export default function FundingApplicationDetails() {
                                         {notesError && <div className="invalid-feedback">{notesError}</div>}
                                     </div>
                                     <div className="d-grid">
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             className="btn btn-primary"
                                             onClick={handleUpdateClick}
                                             disabled={updateMutation.isPending}
@@ -352,7 +439,7 @@ export default function FundingApplicationDetails() {
                                     {renderStepContent()}
 
                                     <div className="d-flex justify-content-between mt-4 pt-3 border-top">
-                                        <button  
+                                        <button
                                             type="button"
                                             className="btn btn-light"
                                             onClick={() => setCurrentStep(Math.max(1, currentStep - 1) as StepType)}
@@ -360,7 +447,7 @@ export default function FundingApplicationDetails() {
                                         >
                                             <i className="ri-arrow-left-line me-1"></i> Previous
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
                                             className="btn btn-primary"
                                             onClick={() => setCurrentStep(Math.min(8, currentStep + 1) as StepType)}
@@ -376,7 +463,7 @@ export default function FundingApplicationDetails() {
                 </div>
             </div>
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 show={showConfirmModal}
                 onHide={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmUpdate}

@@ -106,6 +106,46 @@ export interface PreQualificationApplicationDetails {
     updated_at: string;
 }
 
+
+export interface CoBorrower {
+    id: number;
+    first_name: string;
+    last_name: string;
+    role: string;
+    ownership: string;
+    email: string;
+    mobile_phone: string;
+    home_phone: string;
+    date_of_birth: string;
+    ssn: string;
+    street_address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    drivers_license_number: string;
+    drivers_license_state: string;
+}
+
+export interface DocumentFile {
+    id: number;
+    funding_application_id: number;
+    borrower_id: number;
+    borrower_doc_type_id: number;
+    name: string;
+    path: string;
+    url: string;
+    original_name: string;
+    extension: string;
+    mime: string;
+    size: number;
+    created_at: string;
+}
+
+export interface ApplicationDocument {
+    type: string;
+    files: DocumentFile[];
+}
+
 export interface FundingApplicationDetails {
     id: number;
     borrower_id: number;
@@ -165,6 +205,8 @@ export interface FundingApplicationDetails {
     status: string;
     status_class: string;
     attestation_authorization: boolean;
+    co_borrowers?: CoBorrower[];
+    documents?: ApplicationDocument[];
     created_at: string;
     updated_at: string;
 }
