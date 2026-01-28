@@ -62,8 +62,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             const selectedPartnerType = PARTNER_INFORMATION_TYPE_OPTIONS.find(pt => pt.value === partnerType);
             if (selectedPartnerType) {
                 if (partnerEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
+                    payload.enrollment_amount = selectedPartnerType.oneTimeFee;
                     payload.amount = selectedPartnerType.oneTimeFee;
                 } else if (partnerEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
+                    payload.enrollment_amount = selectedPartnerType.monthlyPayment;
                     payload.amount = selectedPartnerType.monthlyPayment;
                 }
             }
