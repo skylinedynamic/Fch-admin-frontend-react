@@ -71,8 +71,8 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                 <div className="row p-2">
                                     <div className="col-lg-12">
                                         <div className="card-header border-bottom-dashed p-4">
-                                            <div className="d-flex align-items-center">
-                                                <div className="flex-grow-1">
+                                            <div className="d-flex flex-column flex-sm-row align-items-center">
+                                                <div className="flex-grow-1 text-center text-sm-start">
                                                     <img src="/assets/images/Four Corner Holdings LLC.png" className="card-logo card-logo-dark" alt="logo dark" height="80" />
                                                     <div className="mt-sm-4 mt-3">
                                                         <h6 className="text-muted text-uppercase fw-semibold">Address</h6>
@@ -80,7 +80,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                         <p className="text-muted mb-0" id="zip-code"><span>Zip-code:</span> 90201</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex-shrink-0 mt-sm-0 mt-3 text-sm-end">
+                                                <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{invoice.invoice_id || invoice.id}</span></h6>
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Website:</span> <a href="https://fourcornerholdings.com" className="link-primary" target="_blank" id="website"> www.fourcornerholdings.com</a></h6>
@@ -90,7 +90,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                         </div>
                                     </div>
                                     <div className="col-lg-12">
-                                        <div className="card-body p-4">
+                                        <div className="card-body p-sm-4 p-2">
                                             <div className="row g-3 text-center text-sm-start">
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Invoice No</p>
@@ -185,7 +185,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="hstack gap-2 justify-content-end d-print-none mt-4">
+                                            <div className="hstack gap-2 justify-content-center justify-content-sm-end d-print-none mt-4 flex-wrap">
                                                 <button className="btn btn-primary shadow-sm"><i className="ri-download-2-line align-bottom me-1"></i> Download Invoice</button>
                                                 <button className="btn btn-danger shadow-sm"><i className="ri-send-plane-fill align-bottom me-1"></i> Send Invoice</button>
                                             </div>
