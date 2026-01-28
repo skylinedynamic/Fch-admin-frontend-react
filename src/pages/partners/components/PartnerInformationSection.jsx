@@ -263,8 +263,8 @@ export default function PartnerInformationSection({
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select Country"
-                        filter
                         className={`w-100 ${errors.country || errors.country_id ? 'p-invalid' : ''}`}
+                        appendTo="self"
                     />
                     {(errors.country || errors.country_id) && <div className="invalid-feedback d-block">{errors.country || errors.country_id}</div>}
                 </div>
@@ -284,6 +284,7 @@ export default function PartnerInformationSection({
                         filter
                         className={`w-100 ${errors.state || errors.state_id ? 'p-invalid' : ''}`}
                         disabled={!formData.country}
+                        appendTo="self"
                     />
                     {(errors.state || errors.state_id) && <div className="invalid-feedback d-block">{errors.state || errors.state_id}</div>}
                 </div>
@@ -303,6 +304,7 @@ export default function PartnerInformationSection({
                         filter
                         className={`w-100 ${errors.city || errors.city_id ? 'p-invalid' : ''}`}
                         disabled={!formData.state}
+                        appendTo="self"
                     />
                     {(errors.city || errors.city_id) && <div className="invalid-feedback d-block">{errors.city || errors.city_id}</div>}
                 </div>
@@ -386,6 +388,7 @@ export default function PartnerInformationSection({
                         optionValue="value"
                         placeholder="Select partner type..."
                         className={`w-100 ${errors.partner_type || errors.partner_type_id ? 'p-invalid' : ''}`}
+                        appendTo="self"
                     />
                     {/* Partner Type Error Handling */}
                     {(errors.partner_type || errors.partner_type_id) && (
@@ -419,6 +422,7 @@ export default function PartnerInformationSection({
                         placeholder="Select enrollment type..."
                         className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
                         disabled={!formData.partner_type}
+                        appendTo="self"
                     />
                     {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
                 </div>

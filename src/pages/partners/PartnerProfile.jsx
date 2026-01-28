@@ -55,7 +55,7 @@ export default function PartnerProfile() {
     const [countries] = useState(
         Object.keys(locationData).map((key) => ({
             label: locationData[key].name,
-            value: locationData[key].name
+            value: key
         }))
     );
     const [states, setStates] = useState([]);
@@ -79,7 +79,7 @@ export default function PartnerProfile() {
         state: '',
         city: '',
         other_city: '',
-        country: 'United States', // Default to full name
+        country: 'USA', // Default to key
         country_code: '+1', // Default to +1 for USA
         postal_code: '',
         address_line_1: '',
@@ -169,11 +169,10 @@ export default function PartnerProfile() {
 
     // Initialize states for default country (United States) on new partner creation
     useEffect(() => {
-        if (!id && formData.country === 'United States') {
-            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === 'United States');
-            const countryCode = countryEntry ? countryEntry[0] : 'USA';
+        if (!id && formData.country === 'USA') {
+            const countryCode = 'USA';
 
-            if (countryCode && locationData[countryCode]) {
+            if (locationData[countryCode]) {
                 const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
                     label: locationData[countryCode].states[key].name,
                     value: locationData[countryCode].states[key].name
@@ -265,20 +264,21 @@ export default function PartnerProfile() {
 
                 console.log('Fetched partner data:', data); // Debug log
 
-                // Normalize Country: If it matches a key in locationData, convert to Name
+                // Normalize Country: Ensure it's a key (USA/Canada)
                 let finalCountry = data.country;
-                if (locationData[finalCountry]) {
-                    finalCountry = locationData[finalCountry].name;
-                }
-
-                // Find country code based on Name
-                const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
+                const countryEntry = Object.entries(locationData).find(([key, val]) => key === finalCountry || val.name === finalCountry);
                 const countryCode = countryEntry ? countryEntry[0] : null;
+                if (countryCode) {
+                    finalCountry = countryCode;
+                }
 
                 // Normalize State
                 let finalState = data.state;
-                if (countryCode && locationData[countryCode] && locationData[countryCode].states[finalState]) {
-                    finalState = locationData[countryCode].states[finalState].name;
+                if (countryCode && locationData[countryCode]) {
+                    const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => key === finalState || val.name === finalState);
+                    if (sEntry) {
+                        finalState = sEntry[1].name;
+                    }
                 }
 
                 // Handle location cascading
@@ -292,7 +292,7 @@ export default function PartnerProfile() {
 
                     // Find State Code
                     const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === finalState);
-                    const stateCode = sEntry ? sEntry[0] : finalState;
+                    const stateCode = sEntry ? sEntry[0] : null;
 
                     if (stateCode && locationData[countryCode].states[stateCode]) {
                         const cityList = locationData[countryCode].states[stateCode].cities;
@@ -454,17 +454,14 @@ export default function PartnerProfile() {
 
         // Handle country/state/city cascading
         if (name === 'country') {
-            let countryCode = '';
-            // value is Name "United States"
-            if (value === 'United States' || value === 'Canada') {
-                countryCode = '+1';
+            let countryCodePrefix = '';
+            if (value === 'USA' || value === 'Canada') {
+                countryCodePrefix = '+1';
             }
-            setFormData(prev => ({ ...prev, country: value, country_code: countryCode, state: '', city: '', other_city: '' }));
+            setFormData(prev => ({ ...prev, country: value, country_code: countryCodePrefix, state: '', city: '', other_city: '' }));
             setErrors(prev => ({ ...prev, country: null }));
 
-            // Find code based on Name
-            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === value);
-            const code = countryEntry ? countryEntry[0] : null;
+            const code = value; // Value is now the code "USA" or "Canada"
 
             if (code && locationData[code]) {
                 const stateOptions = Object.keys(locationData[code].states).map((key) => ({
@@ -481,8 +478,7 @@ export default function PartnerProfile() {
             setFormData(prev => ({ ...prev, state: value, city: '', other_city: '' }));
             setErrors(prev => ({ ...prev, state: null }));
 
-            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country);
-            const countryCode = countryEntry ? countryEntry[0] : null;
+            const countryCode = formData.country; // Already the code
 
             if (countryCode && locationData[countryCode]) {
                 const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === value);
@@ -906,7 +902,7 @@ export default function PartnerProfile() {
                                     profileImage={profileImage}
                                     handleInputChange={handleInputChange}
                                     handleAgentChange={handleAgentChange}
-                                    countries={locationData.countries}
+                                    countries={countries}
                                     states={states}
                                     cities={cities}
                                     users={users}
