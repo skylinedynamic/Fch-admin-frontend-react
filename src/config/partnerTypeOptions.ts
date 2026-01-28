@@ -40,41 +40,10 @@ export interface PartnerTypeOption {
   planFee?: number; // Legacy support
 }
 
-export const PARTNER_TYPE_OPTIONS: PartnerTypeOption[] = [
-  {
-    label: SUBSCRIPTION_PARTNER_TYPES.REFERRAL,
-    value: SUBSCRIPTION_PARTNER_TYPES.REFERRAL,
-  },
-  {
-    label: SUBSCRIPTION_PARTNER_TYPES.FOUNDING,
-    value: SUBSCRIPTION_PARTNER_TYPES.FOUNDING,
-    oneTimeFee: 4997,
-    planFee: 597,
-  },
-  {
-    label: SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE,
-    value: SUBSCRIPTION_PARTNER_TYPES.EXECUTIVE,
-    oneTimeFee: 5997,
-    planFee: 797,
-  },
-];
+export const PARTNER_TYPE_OPTIONS: PartnerTypeOption[] = [];
 
-export const PARTNER_INFORMATION_TYPE_OPTIONS: PartnerTypeOption[] = [
-  {
-    label: PARTNER_TYPES.CERTIFIED,
-    value: PARTNER_TYPES.CERTIFIED,
-    oneTimeFee: 4997,
-    monthlyPayment: 499.7,
-    platformFee: 299,
-  },
-  {
-    label: PARTNER_TYPES.WHITE_LABEL,
-    value: PARTNER_TYPES.WHITE_LABEL,
-    oneTimeFee: 6997,
-    monthlyPayment: 699.7,
-    platformFee: 399,
-  },
-];
+export const PARTNER_INFORMATION_TYPE_OPTIONS: PartnerTypeOption[] = [];
+
 
 export const PAYMENT_TYPE_OPTIONS = [
   { label: ENROLLMENT_TYPES.ONE_TIME, value: ENROLLMENT_TYPES.ONE_TIME_STR },

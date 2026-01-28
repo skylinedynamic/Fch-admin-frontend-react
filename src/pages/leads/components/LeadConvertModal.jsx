@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
-import { ENROLLMENT_TYPE_OPTIONS, NON_HOST_ENROLLMENT_PRICE, NON_HOST_ENROLLMENT_VALUE } from '../../../config/enrollmentOptions';
-import { PARTNER_INFORMATION_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { fetchPartnerPlans } from '../../../modules/partner/services';
+import { fetchSettings } from '../../../modules/settings/services';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
     const [enrollmentType, setEnrollmentType] = useState('One Time Payment');
     const [partnerType, setPartnerType] = useState('');
     const [partnerEnrollmentType, setPartnerEnrollmentType] = useState('');
+    const [partnerPlans, setPartnerPlans] = useState([]);
+    const [settings, setSettings] = useState(null);
     
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -37,6 +40,20 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         if (!modal) return;
         if (show) {
             modal.show();
+            // Fetch plans and settings when modal opens
+            const loadData = async () => {
+                try {
+                    const [plansRes, settingsRes] = await Promise.all([
+                        fetchPartnerPlans(),
+                        fetchSettings()
+                    ]);
+                    if (plansRes.status) setPartnerPlans(plansRes.data || []);
+                    if (settingsRes.status) setSettings(settingsRes.data);
+                } catch (err) {
+                    console.error('Failed to fetch lead conversion data:', err);
+                }
+            };
+            loadData();
         } else {
             modal.hide();
         }
@@ -45,29 +62,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const handleConfirm = () => {
         const payload = {};
         if (targetType === 'Borrower') {
-            payload.enrollment_type = isHost ? enrollmentType : NON_HOST_ENROLLMENT_VALUE;
-            
-            // Derive amount from enrollment type
-            if (isHost) {
-                const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === enrollmentType);
-                payload.amount = selectedOption ? selectedOption.price : 0;
-            } else {
-                payload.amount = NON_HOST_ENROLLMENT_PRICE;
-            }
+            payload.enrollment_type = settings?.non_host_enrollment_value || 'Standard Enrollment';
+            payload.amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
         } else if (targetType === 'Partner') {
             payload.partner_type = partnerType;
             payload.enrollment_type = partnerEnrollmentType;
             
-            // Derive amount from partner type and enrollment type
-            const selectedPartnerType = PARTNER_INFORMATION_TYPE_OPTIONS.find(pt => pt.value === partnerType);
-            if (selectedPartnerType) {
-                if (partnerEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
-                    payload.enrollment_amount = selectedPartnerType.oneTimeFee;
-                    payload.amount = selectedPartnerType.oneTimeFee;
-                } else if (partnerEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
-                    payload.enrollment_amount = selectedPartnerType.monthlyPayment;
-                    payload.amount = selectedPartnerType.monthlyPayment;
-                }
+            // Derive amount from partner type and enrollment type from dynamic plans
+            const selectedPlan = partnerPlans.find(plan => 
+                plan.partner_type === partnerType && 
+                plan.enrollment_type === partnerEnrollmentType
+            );
+            
+            if (selectedPlan) {
+                payload.enrollment_amount = selectedPlan.payment_amount;
+                payload.amount = selectedPlan.payment_amount;
             }
         }
         onConfirm(payload);
@@ -94,29 +103,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                             This action will create a new {targetType.toLowerCase()} profile and cannot be undone.
                         </p>
 
-                        {/* Borrower Conversion Fields */}
-                        {targetType === 'Borrower' && isHost && (
-                            <div className="mb-4 text-start">
-                                <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
-                                <Dropdown
-                                    value={enrollmentType}
-                                    options={ENROLLMENT_TYPE_OPTIONS}
-                                    onChange={(e) => setEnrollmentType(e.value)}
-                                    placeholder="Select Enrollment Type"
-                                    className="w-100"
-                                    appendTo="self"
-                                />
-                                <div className="form-text text-info mt-2">
-                                    {enrollmentType === 'One Time Payment' ? (
-                                        <span><i className="ri-information-line me-1"></i> Total Payment: <strong>$2,900</strong></span>
-                                    ) : (
-                                        <span><i className="ri-information-line me-1"></i> Monthly Payment: <strong>$500</strong></span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {!isHost && targetType === 'Borrower' && (
+                        {/* Borrower Conversion Fees - Dynamic */}
+                        {targetType === 'Borrower' && (
                             <div className="mb-4 text-start bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                 <div className="flex-shrink-0 me-3">
                                     <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
@@ -126,7 +114,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 <div className="flex-grow-1 ps-2">
                                     <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                     <p className="mb-0 text-muted fs-15 lh-base">
-                                        A fixed enrollment fee <span className="text-success fw-bold fs-18">${NON_HOST_ENROLLMENT_PRICE}</span>
+                                        A fixed enrollment fee <span className="text-success fw-bold fs-18">${settings?.non_host_enrollment_price || '800.00'}</span>
                                     </p>
                                 </div>
                             </div>
@@ -139,7 +127,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                     <label className="form-label fw-semibold">Select Partner Type <span className="text-danger">*</span></label>
                                     <Dropdown
                                         value={partnerType}
-                                        options={PARTNER_INFORMATION_TYPE_OPTIONS}
+                                        options={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).map(type => ({
+                                            label: type,
+                                            value: type
+                                        }))}
                                         onChange={(e) => {
                                             setPartnerType(e.value);
                                             setPartnerEnrollmentType(''); // Reset enrollment type when partner type changes
@@ -156,21 +147,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                     <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
                                     <Dropdown
                                         value={partnerEnrollmentType}
-                                        options={(() => {
-                                            const selectedPT = PARTNER_INFORMATION_TYPE_OPTIONS.find(pt => pt.value === partnerType);
-                                            if (!selectedPT) return PAYMENT_TYPE_OPTIONS;
-                                            
-                                            return [
-                                                {
-                                                    label: `${ENROLLMENT_TYPES.ONE_TIME_STR} ($${selectedPT.oneTimeFee?.toLocaleString()})`,
-                                                    value: ENROLLMENT_TYPES.ONE_TIME_STR
-                                                },
-                                                {
-                                                    label: `${ENROLLMENT_TYPES.PAYMENT_PLAN_STR.replace(' (', ` ($${selectedPT.monthlyPayment?.toLocaleString()}/mo, `)}`,
-                                                    value: ENROLLMENT_TYPES.PAYMENT_PLAN_STR
-                                                }
-                                            ];
-                                        })()}
+                                        options={(partnerPlans || [])
+                                            .filter(plan => plan.partner_type === partnerType)
+                                            .map(plan => ({
+                                                label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
+                                                value: plan.enrollment_type
+                                            }))
+                                        }
                                         onChange={(e) => setPartnerEnrollmentType(e.value)}
                                         optionLabel="label"
                                         optionValue="value"

@@ -33,13 +33,15 @@ export default function StatusAgentSection({
                     <label className="form-label">Agent <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.agent || ''}
-                        options={userOptions}
+                        options={userOptions || []}
                         onChange={(e) =>
                             handleAgentChange({ target: { name: 'agent', value: e.value } })
                         }
                         onBlur={() =>
                             handleInputChange({ target: { name: 'agent', value: formData.agent } })
                         }
+                        optionLabel="label"
+                        optionValue="value"
                         placeholder="Select agent..."
                         filter
                         className={`w-100 ${errors.agent ? 'p-invalid' : ''}`}
@@ -92,13 +94,15 @@ export default function StatusAgentSection({
                     <label className="form-label">Status <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.status || ''}
-                        options={statusOptions}
+                        options={statusOptions || []}
                         onChange={(e) =>
                             handleInputChange({ target: { name: 'status', value: e.value } })
                         }
                         onBlur={() =>
                             handleInputChange({ target: { name: 'status', value: formData.status } })
                         }
+                        optionLabel="label"
+                        optionValue="value"
                         placeholder="Select status..."
                         className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
                     />

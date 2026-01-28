@@ -10,6 +10,7 @@ import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal'
 // @ts-ignore - JSX component imported in TSX file
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
+import { fetchSettings } from '../../modules/settings/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -17,7 +18,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
 // @ts-ignore
 import LeadPaymentModal from '../leads/components/LeadPaymentModal';
-import { NON_HOST_ENROLLMENT_PRICE, ENROLLMENT_TYPE_OPTIONS, NON_HOST_ENROLLMENT_VALUE } from '../../config/enrollmentOptions';
+// ENROLLMENT_TYPE_OPTIONS removed - using dynamic settings instead
 
 
 export default function ClientDetails() {
@@ -63,6 +64,7 @@ export default function ClientDetails() {
         total_documents: 0
     });
     const [statsLoading, setStatsLoading] = useState(false);
+    const [settings, setSettings] = useState<any>(null);
 
     // Initial form state
     const [formData, setFormData] = useState<Client>({
@@ -128,8 +130,20 @@ export default function ClientDetails() {
         }
     }, [location.state]);
 
-    // Handle cascading location logic
+    // Handle cascading    // Load Data and Settings on Mount
     useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                const settingsRes = await fetchSettings();
+                if (settingsRes.status) {
+                    setSettings(settingsRes.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch settings:', err);
+            }
+        };
+        loadInitialData();
+
         // Find country code based on Name
         const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country);
         const countryCode = countryEntry ? countryEntry[0] : (formData.country === 'USA' ? 'USA' : 'USA'); // Default fallback/handling
@@ -345,11 +359,11 @@ export default function ClientDetails() {
                 let enrollment_type = payload.enrollment_type;
 
                 if (isHost) {
-                    const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === payload.enrollment_type);
-                    amount = selectedOption ? selectedOption.price : 0;
+                    // host-specific enrollment logic would go here, currently empty since config removed
+                    amount = 0;
                 } else {
-                    amount = NON_HOST_ENROLLMENT_PRICE;
-                    enrollment_type = NON_HOST_ENROLLMENT_VALUE;
+                    amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
+                    enrollment_type = settings?.non_host_enrollment_value || 'Standard Enrollment';
                 }
 
                 // Accurate Payload Fields
@@ -615,6 +629,8 @@ export default function ClientDetails() {
                                     handleChecklistChange={handleChecklistChange}
                                     isLoading={isLoading}
                                     isHost={isHost}
+                                    // @ts-ignore
+                                    settings={settings}
                                 />
                             </div>
                         </div>

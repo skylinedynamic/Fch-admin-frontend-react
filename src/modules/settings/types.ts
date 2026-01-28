@@ -1,22 +1,25 @@
 export interface SettingsData {
     id: number;
-    partner_id: number;
-    card_no: string | null;
-    card_name: string | null;
-    card_expiry: string | null;
-    card_cvv: string | null;
-    currency: string | null;
-    status: string;
-    stripe_key: string | null;
-    stripe_secret: string | null;
+    payment_mode: string;
+    stripe_key_sandbox: string | null;
+    stripe_secret_sandbox: string | null;
+    stripe_key_production: string | null;
+    stripe_secret_production: string | null;
     payment_method: string;
+    non_host_enrollment_price: string;
+    non_host_enrollment_value?: string;
+    status: number;
     configuration: {
         theme: string;
         notifications: boolean;
     };
     created_at: string;
-    updated_at: string;
-    deleted_at: string | null;
+}
+
+export interface SettingsResponse {
+    status: boolean;
+    message: string;
+    data: SettingsData;
 }
 
 export interface UpdateSettingsPayload {

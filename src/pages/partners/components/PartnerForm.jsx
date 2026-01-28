@@ -23,6 +23,7 @@ export default function PartnerForm({
     , onSelectedFilesChange
     , documentsReloadKey
     , documentsClearKey
+    , partnerPlans
 }) {
     return (
         <div className="tab-content">
@@ -43,6 +44,7 @@ export default function PartnerForm({
                                     states={states}
                                     cities={cities}
                                     partnerId={partnerId}
+                                    partnerPlans={partnerPlans}
                                 />
                             </div>
                         </form>

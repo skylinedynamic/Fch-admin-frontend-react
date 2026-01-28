@@ -19,6 +19,7 @@ interface ClientFormProps {
     handleChecklistChange?: (itemId: number) => void;
     isLoading?: boolean;
     isHost?: boolean;
+    settings?: any;
 }
 
 export default function ClientForm({
@@ -32,7 +33,8 @@ export default function ClientForm({
     checklist,
     handleChecklistChange,
     isLoading,
-    isHost
+    isHost,
+    settings
 }: ClientFormProps) {
     return (
         <div className="tab-content">
@@ -51,6 +53,7 @@ export default function ClientForm({
                             cities={cities}
                             isLoading={isLoading}
                             isHost={isHost}
+                            settings={settings}
                         />
                     )}
                 </div>

@@ -108,3 +108,8 @@ export const getNextPartnerId = async () => {
   const { data } = await apiClient.get('/admin/partners/next-id');
   return data;
 };
+
+export const fetchPartnerPlans = async () => {
+    const { data } = await apiClient.get('/common/partner-plans');
+    return data;
+};

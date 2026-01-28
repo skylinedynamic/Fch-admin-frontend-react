@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
-import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId } from '../../modules/partner/services';
+import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans } from '../../modules/partner/services';
 import { locationData } from '../../config';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
@@ -109,6 +109,22 @@ export default function PartnerProfile() {
         subscription_status: ''
     });
 
+    // Fetch Partner Plans on mount
+    useEffect(() => {
+        const loadPlans = async () => {
+            try {
+                const response = await fetchPartnerPlans();
+                if (response.status) {
+                    setPartnerPlans(response.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch partner plans:', err);
+                toast.error('Failed to load partner plans');
+            }
+        };
+        loadPlans();
+    }, []);
+
     // Fetch users on mount
     useEffect(() => {
         const fetchUsers = async () => {
@@ -201,6 +217,7 @@ export default function PartnerProfile() {
     const [profileStatsLoading, setProfileStatsLoading] = useState(true);
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [partnerPlans, setPartnerPlans] = useState([]);
 
     // Metrics Configuration
     const metricsConfig = [
@@ -495,25 +512,29 @@ export default function PartnerProfile() {
             const currentEnrollmentType = name === 'enrollment_type' ? newValue : formData.enrollment_type;
             
             let fees = {};
-            // Try information type options first (White-Label, Certified), then fallback to legacy type options
-            const partnerOption = 
-                PARTNER_INFORMATION_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType) ||
-                PARTNER_TYPE_OPTIONS.find(opt => opt.value === currentPartnerType);
             
-            if (currentEnrollmentType) {
-                if (currentEnrollmentType === ENROLLMENT_TYPES.ONE_TIME_STR) {
-                    const amount = partnerOption?.oneTimeFee || ENROLLMENT_TYPES.ONE_TIME_VALUE;
-                    fees.enrollment_amount = amount.toString();
-                    fees.recurring_amount = (partnerOption?.platformFee || 0).toString();
-                    fees.first_reg_amount = amount.toString();
-                    fees.first_reg_payment = amount.toString();
-                } else if (currentEnrollmentType === ENROLLMENT_TYPES.PAYMENT_PLAN_STR) {
-                    const amount = partnerOption?.monthlyPayment || partnerOption?.planFee || ENROLLMENT_TYPES.PAYMENT_PLAN_VALUE;
-                    fees.enrollment_amount = amount.toString();
-                    fees.first_reg_amount = amount.toString();
-                    fees.first_reg_payment = amount.toString();
-                    fees.recurring_amount = amount.toString(); // For plan, recurring is the same as payment
+            // Find the matching plan from fetched partnerPlans
+            const selectedPlan = partnerPlans.find(plan => 
+                plan.partner_type === currentPartnerType && 
+                plan.enrollment_type === currentEnrollmentType
+            );
+            
+            if (selectedPlan) {
+                fees.enrollment_amount = selectedPlan.payment_amount.toString();
+                fees.first_reg_amount = selectedPlan.payment_amount.toString();
+                fees.first_reg_payment = selectedPlan.payment_amount.toString();
+                fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
+                
+                // Special case for Payment Plan
+                if (currentEnrollmentType.includes('Payment Plan')) {
+                    fees.recurring_amount = selectedPlan.payment_amount.toString();
                 }
+            } else {
+                // Fallback for types not in plans (like Referral)
+                fees.enrollment_amount = '0';
+                fees.recurring_amount = '0';
+                fees.first_reg_amount = '0';
+                fees.first_reg_payment = '0';
             }
             
             setFormData(prev => ({ 
@@ -867,12 +888,12 @@ export default function PartnerProfile() {
                                     </li>
                                     <li className="nav-item">
                                         <a
-                                            className={`nav-link ${activeTab === 'subscriptionList' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
-                                            onClick={() => id && setActiveTab('subscriptionList')}
+                                            className={`nav-link ${activeTab === 'subscription' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                            onClick={() => id && setActiveTab('subscription')}
                                             role="tab"
                                             style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
                                         >
-                                            <i className="far fa-list-alt"></i> Subscription List
+                                            <i className="far fa-list-alt"></i> Subscription
                                         </a>
                                     </li>
                                 </ul>
@@ -885,15 +906,16 @@ export default function PartnerProfile() {
                                     profileImage={profileImage}
                                     handleInputChange={handleInputChange}
                                     handleAgentChange={handleAgentChange}
-                                    countries={countries}
+                                    countries={locationData.countries}
                                     states={states}
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
                                     loading={isPartnerLoading}
-                                    onSelectedFilesChange={(files) => setSelectedDocumentsToAttach(files)}
+                                    onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
+                                    partnerPlans={partnerPlans}
                                 />
                             </div>
                         </div>

@@ -107,8 +107,10 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.partner_type || ''}
-                        options={PARTNER_TYPE_OPTIONS}
+                        options={PARTNER_TYPE_OPTIONS || []}
                         onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
                         placeholder="Select partner type..."
                         className={`w-100 ${errors.partner_type ? 'p-invalid' : ''}`}
                     />
@@ -125,8 +127,10 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.enrollment_type || ''}
-                        options={PAYMENT_TYPE_OPTIONS}
+                        options={PAYMENT_TYPE_OPTIONS || []}
                         onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
                         placeholder="Select enrollment type..."
                         className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
                         disabled={!formData.partner_type}
@@ -265,8 +269,10 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Status <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.subscription_status || ''}
-                        options={SUBSCRIPTION_STATUS_OPTIONS}
+                        options={SUBSCRIPTION_STATUS_OPTIONS || []}
                         onChange={(e) => handleInputChange({ target: { name: 'subscription_status', value: e.value } })}
+                        optionLabel="label"
+                        optionValue="value"
                         placeholder="Select status..."
                         className={`w-100 ${errors.subscription_status ? 'p-invalid' : ''}`}
                     />

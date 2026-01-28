@@ -4,7 +4,7 @@ import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import type { Client } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
+// ENROLLMENT_TYPE_OPTIONS removed - using dynamic settings instead
 
 const entityTypeOptions = [
     { label: 'Corporation (C-Corp)', value: 'Corporation (C-Corp)' },
@@ -29,6 +29,7 @@ interface ClientInfoSectionProps {
     cities: { label: string; value: string }[];
     isLoading?: boolean;
     isHost?: boolean;
+    settings?: any;
 }
 
 export default function ClientInfoSection({
@@ -39,7 +40,8 @@ export default function ClientInfoSection({
     states,
     cities,
     isLoading = false,
-    isHost = false
+    isHost = false,
+    settings = null
 }: ClientInfoSectionProps) {
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
@@ -235,9 +237,10 @@ export default function ClientInfoSection({
                         <label className="form-label">Country <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.country}
-                            options={countries}
+                            options={countries || []}
                             onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
                             optionLabel="label"
+                            optionValue="value"
                             placeholder="Select Country"
                             filter
                             className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
@@ -252,9 +255,10 @@ export default function ClientInfoSection({
                         <label className="form-label">State <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.state}
-                            options={states}
+                            options={states || []}
                             onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
                             optionLabel="label"
+                            optionValue="value"
                             placeholder="Select State"
                             filter
                             className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
@@ -270,9 +274,10 @@ export default function ClientInfoSection({
                         <label className="form-label">City <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.city}
-                            options={[...cities, { label: 'Others', value: 'Others' }]}
+                            options={[...(cities || []), { label: 'Others', value: 'Others' }]}
                             onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
                             optionLabel="label"
+                            optionValue="value"
                             placeholder="Select City"
                             filter
                             className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
@@ -410,23 +415,24 @@ export default function ClientInfoSection({
                     </div>
                 </div>
 
-                {isHost && (
-                    <div className="col-lg-6">
-                        <div className="mb-3">
-                            <label htmlFor="enrollment_type" className="form-label">Enrollment Amount <span className="text-danger">*</span></label>
-                            <Dropdown
-                                value={formData.enrollment_type}
-                                options={ENROLLMENT_TYPE_OPTIONS}
-                                onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
-                                optionLabel="label"
-                                placeholder="Select enrollment amount"
-                                className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
-                                appendTo="self"
-                            />
-                            {errors.enrollment_type && <small className="p-error">{errors.enrollment_type}</small>}
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Enrollment Fee (Applied)</label>
+                        <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
+                            <div className="flex-shrink-0 me-3">
+                                <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                                    <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '2rem' }}></i>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ps-2">
+                                <h5 className="text-success fw-bold mb-1 fs-18">Standard Enrollment</h5>
+                                <p className="mb-0 text-muted fs-15 lh-base">
+                                    Fixed enrollment fee <span className="text-success fw-bold fs-18">${settings?.non_host_enrollment_price || '800.00'}</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
-                )}
+                </div>
 
                 <div className="col-lg-12">
                     <div className="mb-3 pb-2">
