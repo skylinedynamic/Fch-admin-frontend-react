@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
+import { downloadInvoice, sendInvoice } from '../../../modules/invoice/services';
+import { toast } from 'react-toastify';
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -12,6 +14,8 @@ const formatCurrency = (amount) => {
 export default function InvoicePreviewModal({ show, onHide, invoice }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
+    const [downloadLoading, setDownloadLoading] = useState(false);
+    const [sendLoading, setSendLoading] = useState(false);
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -42,7 +46,52 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         }
     }, [show]);
 
-    // No early return for invoice here, as we need the modal Ref to be stable
+    // Reset loading states when modal closes or invoice changes
+    useEffect(() => {
+        if (!show) {
+            setDownloadLoading(false);
+            setSendLoading(false);
+        }
+    }, [show, invoice]);
+
+    const handleDownload = async () => {
+        if (!invoice?.id || downloadLoading) return;
+        setDownloadLoading(true);
+        try {
+            const blob = await downloadInvoice(invoice.id);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice-${invoice.invoice_id || invoice.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            toast.error('Failed to download invoice');
+        } finally {
+            setDownloadLoading(false);
+        }
+    };
+
+    const handleSend = async () => {
+        if (!invoice?.id || sendLoading) return;
+        setSendLoading(true);
+        try {
+            const response = await sendInvoice(invoice.id);
+            if (response.status) {
+                toast.success('Invoice sent to customer successfully');
+            } else {
+                toast.error(response.message || 'Failed to send invoice');
+            }
+        } catch (error) {
+            console.error('Error sending invoice:', error);
+            toast.error('Failed to send invoice');
+        } finally {
+            setSendLoading(false);
+        }
+    };
     
     // Calculations - only if invoice exists
     const amount = invoice ? (typeof invoice.payment_amount === 'string' 
@@ -186,8 +235,30 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 </div>
                                             </div>
                                             <div className="hstack gap-2 justify-content-center justify-content-sm-end d-print-none mt-4 flex-wrap">
-                                                <button className="btn btn-primary shadow-sm"><i className="ri-download-2-line align-bottom me-1"></i> Download Invoice</button>
-                                                <button className="btn btn-danger shadow-sm"><i className="ri-send-plane-fill align-bottom me-1"></i> Send Invoice</button>
+                                                <button 
+                                                    className="btn btn-primary shadow-sm" 
+                                                    onClick={handleDownload}
+                                                    disabled={downloadLoading}
+                                                >
+                                                    {downloadLoading ? (
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    ) : (
+                                                        <i className="ri-download-2-line align-bottom me-1"></i>
+                                                    )}
+                                                    Download Invoice
+                                                </button>
+                                                <button 
+                                                    className="btn btn-danger shadow-sm" 
+                                                    onClick={handleSend}
+                                                    disabled={sendLoading}
+                                                >
+                                                    {sendLoading ? (
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    ) : (
+                                                        <i className="ri-send-plane-fill align-bottom me-1"></i>
+                                                    )}
+                                                    Send Invoice
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
