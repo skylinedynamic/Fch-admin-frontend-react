@@ -157,7 +157,7 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 992 : false)
   const [open, setOpen] = useState(false)
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
-  const { hasPermission } = usePermissions()
+  const { hasPermission, isRestricted } = usePermissions()
   const location = useLocation();
 
   // Auto-expand menu on route change
@@ -332,6 +332,8 @@ export default function Sidebar() {
           <div id="two-column-menu"></div>
           <ul className="navbar-nav partner-sidebar" id="navbar-nav">
             {visibleMenuItems.map((item) => {
+              const itemIsRestricted = isRestricted && !['Dashboard', 'Invoices', 'Payments'].includes(item.label);
+              
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
                 const isChildActive = item.subItems.some(sub => {
@@ -345,47 +347,50 @@ export default function Sidebar() {
                 });
                 return (
                   <li className="nav-item" key={item.id}>
-                    <a
-                      className={`nav-link menu-link ${isExpanded ? '' : 'collapsed'} ${isChildActive ? 'active' : ''}`}
-                      href={`#sidebar-${item.id}`}
-                      onClick={(e) => toggleSubMenu(item.id, e)}
-                      role="button"
-                      aria-expanded={isExpanded}
-                      aria-controls={`sidebar-${item.id}`}
+                    <button
+                      className={`nav-link menu-link ${!itemIsRestricted && isExpanded ? '' : 'collapsed'} ${!itemIsRestricted && isChildActive ? 'active' : ''} ${itemIsRestricted ? 'locked-item-link' : ''}`}
+                      onClick={(e) => !itemIsRestricted && toggleSubMenu(item.id, e)}
+                      aria-expanded={!itemIsRestricted && isExpanded}
+                      aria-controls={itemIsRestricted ? undefined : `sidebar-${item.id}`}
+                      type="button"
+                      style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: itemIsRestricted ? 'default' : 'pointer' }}
                     >
                       <i className={item.icon}></i> <span>{item.label}</span>
-                    </a>
-                    <div className={`menu-dropdown sidebar-submenu-wrapper ${isExpanded ? 'open' : ''}`} id={`sidebar-${item.id}`}>
-                      <div className="sidebar-submenu-inner">
-                        <ul className="flex-column">
-                          {item.subItems.map(subItem => (
-                            <li className="nav-item" key={subItem.to}>
-                              <NavLink
-                                to={subItem.to}
-                                className={({ isActive }) => {
-                                  // Default active check
-                                  let isPathActive = isActive;
-                                  
-                                  // Special check for active state on Child Routes
-                                  if (subItem.to === '/intake-review/pre-qualification' && location.pathname.startsWith('/intake-review/pre-qualification/')) {
-                                    isPathActive = true;
-                                  }
-                                  if (subItem.to === '/intake-review/funding-review' && location.pathname.startsWith('/intake-review/funding-review/')) {
-                                    isPathActive = true;
-                                  }
+                      {itemIsRestricted && <i className="ri-lock-fill float-end fs-14 opacity-50"></i>}
+                    </button>
+                    {!itemIsRestricted && (
+                      <div className={`menu-dropdown sidebar-submenu-wrapper ${isExpanded ? 'open' : ''}`} id={`sidebar-${item.id}`}>
+                        <div className="sidebar-submenu-inner">
+                          <ul className="flex-column">
+                            {item.subItems.map(subItem => (
+                              <li className="nav-item" key={subItem.to}>
+                                <NavLink
+                                  to={subItem.to}
+                                  className={({ isActive }) => {
+                                    // Default active check
+                                    let isPathActive = isActive;
+                                    
+                                    // Special check for active state on Child Routes
+                                    if (subItem.to === '/intake-review/pre-qualification' && location.pathname.startsWith('/intake-review/pre-qualification/')) {
+                                      isPathActive = true;
+                                    }
+                                    if (subItem.to === '/intake-review/funding-review' && location.pathname.startsWith('/intake-review/funding-review/')) {
+                                      isPathActive = true;
+                                    }
 
-                                  return isPathActive ? 'nav-link active' : 'nav-link';
-                                }}
-                              >
-                                <i className="ri-arrow-right-s-line align-bottom"></i>
-                                {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
-                                <span>{subItem.label}</span>
-                              </NavLink>
-                            </li>
-                          ))}
-                        </ul>
+                                    return isPathActive ? 'nav-link active' : 'nav-link';
+                                  }}
+                                >
+                                  <i className="ri-arrow-right-s-line align-bottom"></i>
+                                  {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
+                                  <span>{subItem.label}</span>
+                                </NavLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </li>
                 );
               }
@@ -394,11 +399,22 @@ export default function Sidebar() {
                 <li className="nav-item" key={item.to}>
                   <NavLink
                     end={item.exact}
-                    className={({ isActive }) => isActive ? 'nav-link menu-link active' : 'nav-link menu-link'}
-                    to={item.to}
-                    onClick={() => setExpandedMenu(null)}
+                    className={({ isActive }) => {
+                      const isActiveState = !itemIsRestricted && isActive;
+                      return `${isActiveState ? 'nav-link menu-link active' : 'nav-link menu-link'} ${itemIsRestricted ? 'locked-item-link' : ''}`;
+                    }}
+                    to={itemIsRestricted ? '#' : item.to}
+                    onClick={(e) => {
+                      if (itemIsRestricted) {
+                        e.preventDefault();
+                        return;
+                      }
+                      setExpandedMenu(null);
+                    }}
+                    style={itemIsRestricted ? { pointerEvents: 'none', cursor: 'default' } : {}}
                   >
                     <i className={item.icon}></i> <span>{item.label}</span>
+                    {itemIsRestricted && <i className="ri-lock-fill float-end fs-14 opacity-50"></i>}
                   </NavLink>
                 </li>
               );

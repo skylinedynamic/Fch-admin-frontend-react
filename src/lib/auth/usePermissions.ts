@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAuthStore } from '../../store/auth/authStore'
+import { isSubscriptionRestricted } from './subscriptionUtils'
 
 /**
  * Custom hook to access user permissions
@@ -15,6 +16,8 @@ export function usePermissions() {
         return user.permissions.filter((p): p is string => typeof p === 'string')
     }, [user])
 
+    const isRestricted = useMemo(() => isSubscriptionRestricted(user), [user])
+
     const hasPermission = useMemo(() => (permission: string): boolean => {
         return permissions.includes(permission)
     }, [permissions])
@@ -29,6 +32,7 @@ export function usePermissions() {
 
     return {
         permissions,
+        isRestricted,
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
