@@ -359,8 +359,8 @@ export default function ClientDetails() {
                 let enrollment_type = payload.enrollment_type;
 
                 if (isHost) {
-                    // host-specific enrollment logic would go here, currently empty since config removed
-                    amount = 0;
+                    // Use the payment_amount set in the UI for host clients
+                    amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
                 } else {
                     amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
                     enrollment_type = settings?.non_host_enrollment_value || 'Standard Enrollment';

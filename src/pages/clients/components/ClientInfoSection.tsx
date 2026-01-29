@@ -46,6 +46,19 @@ export default function ClientInfoSection({
 }: ClientInfoSectionProps) {
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
+    React.useEffect(() => {
+        if (!isHost && settings?.non_host_enrollment_price && !formData.payment_amount) {
+            handleInputChange({ target: { name: 'payment_amount', value: settings.non_host_enrollment_price } });
+            handleInputChange({ target: { name: 'enrollment_type', value: 'Standard Enrollment' } });
+        } else if (isHost && formData.enrollment_type) {
+            // Sync price for the current enrollment type (handles default values on mount)
+            const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
+            if (selectedOption && formData.payment_amount !== selectedOption.price) {
+                handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
+            }
+        }
+    }, [isHost, settings, formData.enrollment_type, formData.payment_amount]);
+
 
     if (isLoading) {
         return (
@@ -422,7 +435,13 @@ export default function ClientInfoSection({
                             <Dropdown
                                 value={formData.enrollment_type}
                                 options={ENROLLMENT_TYPE_OPTIONS}
-                                onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                                onChange={(e) => {
+                                    handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
+                                    const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === e.value);
+                                    if (selectedOption) {
+                                        handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
+                                    }
+                                }}
                                 optionLabel="label"
                                 optionValue="value"
                                 placeholder="Select enrollment amount"
