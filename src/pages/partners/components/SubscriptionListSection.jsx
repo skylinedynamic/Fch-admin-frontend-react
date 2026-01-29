@@ -8,8 +8,9 @@ import { toast } from 'react-toastify';
 import { Skeleton } from 'primereact/skeleton';
 import { Tag } from 'primereact/tag';
 
-export default function SubscriptionListSection() {
-    const { id } = useParams();
+export default function SubscriptionListSection({ partnerId }) {
+    const { id: urlId } = useParams();
+    const id = partnerId || urlId;
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
