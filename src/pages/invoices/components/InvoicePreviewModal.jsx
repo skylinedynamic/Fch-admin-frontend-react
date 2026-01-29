@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { downloadInvoice, sendInvoice } from '../../../modules/invoice/services';
 import { toast } from 'react-toastify';
+import { useAuthStore } from '../../../store/auth';
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -12,6 +13,7 @@ const formatCurrency = (amount) => {
 };
 
 export default function InvoicePreviewModal({ show, onHide, invoice }) {
+    const user = useAuthStore((state) => state.user);
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [downloadLoading, setDownloadLoading] = useState(false);
@@ -81,7 +83,6 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         try {
             const response = await sendInvoice(invoice.id);
             if (response.status) {
-                toast.success('Invoice sent to customer successfully');
             } else {
                 toast.error(response.message || 'Failed to send invoice');
             }
@@ -247,18 +248,20 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     )}
                                                     Download Invoice
                                                 </button>
-                                                <button 
-                                                    className="btn btn-danger shadow-sm" 
-                                                    onClick={handleSend}
-                                                    disabled={sendLoading}
-                                                >
-                                                    {sendLoading ? (
-                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                    ) : (
-                                                        <i className="ri-send-plane-fill align-bottom me-1"></i>
-                                                    )}
-                                                    Send Invoice
-                                                </button>
+                                                {((invoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
+                                                    <button 
+                                                        className="btn btn-danger shadow-sm" 
+                                                        onClick={handleSend}
+                                                        disabled={sendLoading}
+                                                    >
+                                                        {sendLoading ? (
+                                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                        ) : (
+                                                            <i className="ri-send-plane-fill align-bottom me-1"></i>
+                                                        )}
+                                                        Send Invoice
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

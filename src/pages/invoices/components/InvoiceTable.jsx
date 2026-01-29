@@ -6,6 +6,7 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import { INVOICE_STATUS_COLORS, INVOICE_STATUS_OPTIONS, STATUS_PAID } from '../../../config/invoiceConfig';
 import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
+import { useAuthStore } from '../../../store/auth';
 
 export default function InvoiceTable({ 
     data, 
@@ -21,6 +22,7 @@ export default function InvoiceTable({
     sortOrder,
     onRefresh // Add onRefresh prop to reload data after payment
 }) {
+    const user = useAuthStore((state) => state.user);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -77,6 +79,7 @@ export default function InvoiceTable({
 
     const actionBodyTemplate = (rowData) => {
         const isNotPaid = rowData.status !== STATUS_PAID;
+        const isNotHost = user?.is_host === 0;
         return (
             <div className="d-flex align-items-center gap-2">
                 <button 
@@ -90,7 +93,7 @@ export default function InvoiceTable({
                 >
                     <i className="ri-file-pdf-line fs-14"></i>
                 </button>
-                {isNotPaid && (
+                {isNotPaid && isNotHost && (
                    <button 
                         className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
                         onClick={(e) => { 
