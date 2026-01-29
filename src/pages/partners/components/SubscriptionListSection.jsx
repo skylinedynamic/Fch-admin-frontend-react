@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchSubscriptions } from '../../../modules/partner/services';
+import { fetchAllSubscriptions } from '../../../modules/partner/services';
 import { toast } from 'react-toastify';
 import { Skeleton } from 'primereact/skeleton';
 import { Tag } from 'primereact/tag';
@@ -38,7 +38,7 @@ export default function SubscriptionListSection() {
     const loadSubscriptions = async () => {
         try {
             setLoading(true);
-            const response = await fetchSubscriptions(id, {
+            const response = await fetchAllSubscriptions(id, {
                 page: page,
                 per_page: perPage,
                 sort_field: sortField,

@@ -94,6 +94,11 @@ export const fetchSubscriptions = async (partnerId: string | number, payload: an
   return data;
 };
 
+export const fetchAllSubscriptions = async (partnerId: string | number, payload: any = {}) => {
+  const { data } = await apiClient.post(`/admin/partners/fetch-all-subscriptions`, { ...payload, partner_id: partnerId });
+  return data;
+};
+
 export const fetchPartnerStats = async () => {
   const { data } = await apiClient.post('/admin/partners-stats', {});
   return data;

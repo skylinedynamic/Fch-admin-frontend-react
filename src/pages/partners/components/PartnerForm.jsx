@@ -88,7 +88,7 @@ export default function PartnerForm({
             )}
 
             {/* Subscription List Tab */}
-            {activeTab === 'subscriptionList' && (
+            {activeTab === 'subscription' && (
                 <div className="tab-pane active show">
                     <SubscriptionListSection />
                 </div>
