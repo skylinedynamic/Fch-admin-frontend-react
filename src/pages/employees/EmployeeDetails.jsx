@@ -43,6 +43,7 @@ export default function EmployeeDetails() {
 
   // State
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -420,8 +421,8 @@ export default function EmployeeDetails() {
   };
 
   const handleSave = async () => {
-    // Clear previous errors
     setErrors({});
+    setIsSaving(true);
 
     // Frontend validation disabled - rely on backend validation
     /* COMMENTED OUT - CLIENT-SIDE VALIDATION DISABLED
@@ -508,6 +509,8 @@ export default function EmployeeDetails() {
       } else {
         toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -543,9 +546,19 @@ export default function EmployeeDetails() {
                   type="button"
                   onClick={handleSave}
                   className="btn btn-primary w-lg waves-effect"
+                  disabled={isSaving || loading}
                 >
-                  <i className="ri-save-3-line align-middle me-1"></i>
-                  {id ? 'Update' : 'Save'}
+                  {isSaving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                      {id ? 'Updating...' : 'Saving...'}
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-save-3-line align-middle me-1"></i>
+                      {id ? 'Update' : 'Save'}
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -554,7 +567,7 @@ export default function EmployeeDetails() {
 
         {/* Main Content */}
         <div className="row">
-          <div className="col-xxl-8">
+          <div className="col-xxl-12">
             <div className="card">
               <div className="card-header">
                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -601,7 +614,7 @@ export default function EmployeeDetails() {
             </div>
           </div>
 
-          <div className="col-xxl-4">
+          {/* <div className="col-xxl-4">
             <div className="card">
               <div className="card-header">
                 <div className="d-flex align-items-center mb-4">
@@ -664,7 +677,7 @@ export default function EmployeeDetails() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Department Modal */}
