@@ -476,15 +476,6 @@ export default function Clients() {
 
     return (
         <div className="page-content">
-            <style>{`
-                .p-datatable .p-datatable-emptymessage td {
-                    text-align: center !important;
-                    vertical-align: middle !important;
-                    padding: 1rem 0 !important;
-                    font-size: 1rem;
-                    color: #6c757d;
-                }
-            `}</style>
             <ToastContainer position="top-right" autoClose={3000} />
             {/* Header */}
             <div className="container-fluid">

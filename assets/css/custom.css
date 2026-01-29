@@ -667,3 +667,10 @@ File: Custom Css File
 .fc .fc-toolbar-chunk:first-child .fc-button-group {
     margin-right: 8px !important;
 }
+
+.p-datatable .p-datatable-emptymessage td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 1rem 0 !important;
+    font-size: 1rem;
+}
