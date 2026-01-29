@@ -77,3 +77,17 @@ export async function resetPassword(payload: {
     throw err
   }
 }
+
+// Get fresh user details
+export async function getUserDetails(): Promise<any> {
+    try {
+        const res = await apiClient.get('/common/user-details')
+        const data = res?.data
+        if (data?.status === true) {
+            return data
+        }
+        return null
+    } catch (err) {
+        return null
+    }
+}
