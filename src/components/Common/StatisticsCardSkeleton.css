@@ -7,7 +7,7 @@
 
 .skeleton-shimmer {
     background: #e9ecef;
-    background: linear-gradient(90deg, #e9ecef 25%, #dee2e6 37%, #e9ecef 63%);
+    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
     background-size: 400% 100%;
     animation: shimmer 1.4s ease infinite;
     border-radius: 4px;
@@ -44,7 +44,7 @@
 @media (prefers-color-scheme: dark) {
     .skeleton-shimmer {
         background: #2a2a2a;
-        background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 37%, #2a2a2a 63%);
+        background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
         background-size: 400% 100%;
     }
 }
