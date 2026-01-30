@@ -41,6 +41,7 @@
 .topbar-user .dropdown-menu {
   top: 6px !important;
   width: 100%;
+  min-width: 12rem !important;
   border-radius: 0px 0px 5px 5px;
 }
 
@@ -194,6 +195,7 @@
     padding-top: 10px !important;
     padding-bottom: 10px !important;
   }
+
   .page-subheader-sticky .d-flex {
     flex-wrap: wrap;
     row-gap: 8px;
@@ -297,9 +299,21 @@
   }
 }
 
-#roles-permissions-page { --role-card-height: 425px; }
-@media (max-width: 1399.98px) { #roles-permissions-page { --role-card-height: 440px; } }
-@media (max-width: 767.98px) { #roles-permissions-page { --role-card-height: 460px; } }
+#roles-permissions-page {
+  --role-card-height: 425px;
+}
+
+@media (max-width: 1399.98px) {
+  #roles-permissions-page {
+    --role-card-height: 440px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  #roles-permissions-page {
+    --role-card-height: 460px;
+  }
+}
 
 #roles-permissions-page .role-summary-card {
   border: 1px solid var(--vz-border-color);
@@ -392,12 +406,22 @@
   border-top: 1px solid var(--vz-border-color);
 }
 
-#roles-permissions-page .card-actions .label-short { display: none; }
-#roles-permissions-page .card-actions .label-full { display: inline; }
+#roles-permissions-page .card-actions .label-short {
+  display: none;
+}
+
+#roles-permissions-page .card-actions .label-full {
+  display: inline;
+}
 
 @media (min-width: 200px) and (max-width: 1622.98px) {
-  #roles-permissions-page .card-actions .label-full { display: none; }
-  #roles-permissions-page .card-actions .label-short { display: inline; }
+  #roles-permissions-page .card-actions .label-full {
+    display: none;
+  }
+
+  #roles-permissions-page .card-actions .label-short {
+    display: inline;
+  }
 }
 
 #roles-permissions-page .add-role-card {
@@ -653,13 +677,16 @@
     align-items: flex-start;
     gap: 8px;
   }
+
   .accordion-actions {
     width: 100%;
     justify-content: space-between;
   }
+
   .perm-card {
     padding: 12px;
   }
+
   .role-form .section-title {
     font-size: 15px;
   }
@@ -801,13 +828,15 @@
 
 /* Fix PrimeReact dropdown visibility inside Bootstrap modals */
 .p-dropdown-panel {
-    z-index: 2000 !important;
+  z-index: 2000 !important;
 }
+
 .employee-filter-dropdown .p-dropdown-label.p-inputtext {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
   color: var(--vz-topbar-search-color) !important;
 }
+
 .employee-filter-dropdown .p-inputtext {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
@@ -815,25 +844,30 @@
   border: none !important;
   box-shadow: none !important;
 }
+
 .employee-filter-dropdown .p-inputtext:focus {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
   outline: none !important;
 }
+
 .employee-filter-dropdown .p-dropdown-label {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
   color: var(--vz-topbar-search-color) !important;
 }
+
 .employee-filter-dropdown .p-dropdown-label {
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
   color: var(--vz-topbar-search-color) !important;
 }
+
 .employee-filter-dropdown .p-dropdown-trigger {
   --vz-bg-opacity: .8;
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
   color: var(--vz-topbar-search-color) !important;
 }
+
 .employee-filter-dropdown.p-dropdown,
 .employee-filter-dropdown.p-dropdown:not(.p-disabled).p-focus,
 .employee-filter-dropdown:hover,
@@ -843,11 +877,13 @@
   box-shadow: none !important;
   outline: none !important;
 }
+
 /* Ensure background never flips to white on focus/click */
 .employee-filter-dropdown.p-dropdown,
 .employee-filter-dropdown.p-dropdown.p-focus {
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
 }
+
 .employee-filter-dropdown.p-dropdown.p-focus .p-dropdown-label,
 .employee-filter-dropdown.p-dropdown:hover .p-dropdown-label {
   background-color: rgba(var(--vz-light-rgb), var(--vz-bg-opacity)) !important;
@@ -915,18 +951,23 @@
   border-color: none !important;
 }
 
-.p-datatable-wrapper{
+.p-datatable-wrapper {
   min-height: 250px !important;
 }
 
-.btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active {
-    border-color: transparent !important; 
-}
-.p-chips .p-chips-multiple-container {
-    min-height: 37.5px !important;
+.btn-check:checked+.btn,
+.btn.active,
+.btn.show,
+.btn:first-child:active,
+:not(.btn-check)+.btn:active {
+  border-color: transparent !important;
 }
 
-.p-inputtext.p-chips-multiple-container{
+.p-chips .p-chips-multiple-container {
+  min-height: 37.5px !important;
+}
+
+.p-inputtext.p-chips-multiple-container {
   height: auto !important;
   margin-bottom: 0 !important;
 }
@@ -938,117 +979,124 @@
   border-color: none !important;
 } */
 
-.p-chips:not(.p-disabled):hover .p-chips-multiple-container{
+.p-chips:not(.p-disabled):hover .p-chips-multiple-container {
   border-color: #ced4da !important;
 }
 
 
 /* PrimeReact Chips Customization */
 .p-chips {
-    display: block;
-    width: 100%;
+  display: block;
+  width: 100%;
 }
 
 .p-chips .p-chips-multiple-container {
-    width: 100%;
-    min-height: 38px;
-    height: auto;
-    border: 1px solid #ced4da; /* Default Bootstrap border */
-    border-radius: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    gap: 4px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+  width: 100%;
+  min-height: 38px;
+  height: auto;
+  border: 1px solid #ced4da;
+  /* Default Bootstrap border */
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  gap: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 /* Remove default PrimeReact active border color */
 .p-chips.p-focus .p-chips-multiple-container,
 .p-chips .p-chips-multiple-container.p-focus {
-    box-shadow: none !important;
-    border-color: #ced4da !important;
-    outline: none !important;
+  box-shadow: none !important;
+  border-color: #ced4da !important;
+  outline: none !important;
 }
 
 /* Chip Token Items Styling */
 .p-chips .p-chips-token {
-    background-color: #e5e6e7 !important; /* or #f3f6f9 */
-    color: var(--vz-body-color) !important;
-    border: 1px solid var(--vz-border-color);
-    border-radius: 4px; /* Slightly rounded */
-    padding: 4px 8px;
-    font-size: 0.8125rem;
-    margin-right: 4px;
-    margin-bottom: 4px;
-    display: inline-flex;
-    align-items: center;
+  background-color: #e5e6e7 !important;
+  /* or #f3f6f9 */
+  color: var(--vz-body-color) !important;
+  border: 1px solid var(--vz-border-color);
+  border-radius: 4px;
+  /* Slightly rounded */
+  padding: 4px 8px;
+  font-size: 0.8125rem;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Chip remove icon */
 .p-chips .p-chips-token-icon {
-    font-size: 0.85rem;
-    margin-left: 0.5rem;
-    cursor: pointer;
-    color: var(--vz-gray);
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: var(--vz-gray);
 }
 
 .p-chips .p-chips-token-icon:hover {
-    color: var(--vz-danger);
+  color: var(--vz-danger);
 }
 
 .p-chips-input-token input {
-    font-size: 0.8125rem;
-    color: var(--vz-body-color);
-    font-family: var(--vz-font-sans-serif);
+  font-size: 0.8125rem;
+  color: var(--vz-body-color);
+  font-family: var(--vz-font-sans-serif);
 }
 
-.p-chips .p-chips-token-icon{
+.p-chips .p-chips-token-icon {
   margin-right: .3rem !important;
 }
 
 .tier-vendor-modal .p-chips .p-chips-token-icon {
-    font-size: 0.9rem;
-    margin: 0 5px !;
-    cursor: pointer;
-    color: var(--vz-gray);
+  font-size: 0.9rem;
+  margin: 0 5px !;
+  cursor: pointer;
+  color: var(--vz-gray);
 }
+
 .tier-vendor-modal .p-icon {
-    width: .9rem !important;
-    height: .9rem !important;
+  width: .9rem !important;
+  height: .9rem !important;
 }
 
 
-.note-popover .popover-content .note-color-all .note-dropdown-menu, .note-editor .note-toolbar .note-color-all .note-dropdown-menu
- {
-    min-width: 345px !important;
-    min-height: 400px !important;
+.note-popover .popover-content .note-color-all .note-dropdown-menu,
+.note-editor .note-toolbar .note-color-all .note-dropdown-menu {
+  min-width: 345px !important;
+  min-height: 400px !important;
 }
+
 .note-toolbar .note-btn-group.open .note-dropdown-menu {
-    display: flex !important;
+  display: flex !important;
 }
 
-.note-toolbar .note-holder{
+.note-toolbar .note-holder {
   margin-bottom: 50px !important;
 }
 
-.note-popover .popover-content .note-color .dropdown-toggle, .note-editor .note-toolbar .note-color .dropdown-toggle {
-    width: 38px !important;
-    padding-left: 12px !important;
+.note-popover .popover-content .note-color .dropdown-toggle,
+.note-editor .note-toolbar .note-color .dropdown-toggle {
+  width: 38px !important;
+  padding-left: 12px !important;
 }
 
-.form-control[type=file]:hover{
+.form-control[type=file]:hover {
   border: 1px solid #e2e5ec !important;
   background-color: #eff2f7 !important;
 }
 
 
-.table-filter .p-button:focus{
+.table-filter .p-button:focus {
   box-shadow: none !important;
 }
 
 
-.table-filter .p-button, .table-filter .p-button:hover {
-    color: #666e72 !important;
-    background: #e5e8ea !important;
-    border: 1px solid #f3f7f9 !important;
+.table-filter .p-button,
+.table-filter .p-button:hover {
+  color: #666e72 !important;
+  background: #e5e8ea !important;
+  border: 1px solid #f3f7f9 !important;
 }

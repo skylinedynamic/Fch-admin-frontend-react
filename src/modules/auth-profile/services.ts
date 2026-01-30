@@ -1,0 +1,7 @@
+import { apiClient } from '../../lib/http'
+import { UpdatePasswordData, AuthProfileResponse } from './types'
+
+export async function updatePassword(data: UpdatePasswordData): Promise<AuthProfileResponse> {
+    const response = await apiClient.post('/common/auth-profile/update-password', data)
+    return response.data
+}

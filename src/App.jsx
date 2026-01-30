@@ -37,6 +37,8 @@ import FundingApplicationDetails from './pages/applications/funding/FundingAppli
 import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
+import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
+
 
 // Import jQuery and expose to window (Summernote requires this)
 import $ from 'jquery';
@@ -115,6 +117,8 @@ export default function App() {
 
             {/* Settings Route */}
             <Route path="admin/settings" element={<Settings />} />
+            <Route path="change-password" element={<ChangePassword />} />
+
 
             {/* Credit Builder Menu Routes */}
             <Route>
@@ -126,10 +130,10 @@ export default function App() {
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
             </Route>
 
-              {/* Appointments Routes - requires 'view appointments' permission */}
-              <Route element={<PermissionRoute permission="view appointments" />}>
-                <Route path="appointments" element={<Appointments />} />
-              </Route>
+            {/* Appointments Routes - requires 'view appointments' permission */}
+            <Route element={<PermissionRoute permission="view appointments" />}>
+              <Route path="appointments" element={<Appointments />} />
+            </Route>
 
             {/* Contacts Routes - requires 'view contacts' permission */}
             <Route element={<PermissionRoute permission="view contacts" />}>

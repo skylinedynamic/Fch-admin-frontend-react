@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { clearAuth, getUser } from '../../lib/auth'
 import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -33,8 +33,8 @@ export default function Header() {
   }
 
   const avatarSrc = user?.image || avatarDefault
-  const displayName = user?.name 
-  const displayRole = user?.role 
+  const displayName = user?.name
+  const displayRole = user?.role
 
   const toggleSidebar = () => {
     const w = window.innerWidth
@@ -50,7 +50,7 @@ export default function Header() {
     setIsSidebarCollapsed(next === 'sm')
     try {
       sessionStorage.setItem('data-sidebar-size', next)
-    } catch (e) {}
+    } catch (e) { }
   }
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function Header() {
             </form> */}
           </div>
 
-        <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             <div className="dropdown d-md-none topbar-head-dropdown header-item">
               <button type="button" className="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle" id="page-header-search-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i className="bx bx-search fs-22"></i>
@@ -181,13 +181,13 @@ export default function Header() {
                 </span>
               </button>
               <div className="dropdown-menu dropdown-menu-end">
-                  {/* #todo  */}
+                {/* #todo  */}
                 {/* <a className="dropdown-item" href="#"><i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Profile</span></a>
                 <a className="dropdown-item" href="#"><i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Help</span></a>
                 <div className="dropdown-divider"></div>
                 <a className="dropdown-item" href="#"><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a> */}
-                <a className="dropdown-item" href="/contacts"><i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Contacts</span></a>
-                 <a className="dropdown-item" href="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></a>
+                <Link className="dropdown-item" to="/contacts"><i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Contacts</span></Link>
+                <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>
                 <a className="dropdown-item" href="#" onClick={handleLogout}><i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span></a>
               </div>
             </div>

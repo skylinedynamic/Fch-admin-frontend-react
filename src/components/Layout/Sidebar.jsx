@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
 import { useAuthStore } from '../../store/auth/authStore'
 import faviconImg from '../../../assets/images/Favicon.png'
@@ -165,13 +165,13 @@ export default function Sidebar() {
     menuItems.forEach(item => {
       if (item.subItems) {
         const isChildActive = item.subItems.some(sub => {
-           // Direct match
-           if (location.pathname === sub.to || (location.pathname.startsWith(sub.to) && sub.to !== '/')) return true;
-           
-           // Special case for Funding Review details
-           if (sub.to === '/intake-review/funding-review' && location.pathname.includes('/intake-review/funding-applications/')) return true;
-           
-           return false;
+          // Direct match
+          if (location.pathname === sub.to || (location.pathname.startsWith(sub.to) && sub.to !== '/')) return true;
+
+          // Special case for Funding Review details
+          if (sub.to === '/intake-review/funding-review' && location.pathname.includes('/intake-review/funding-applications/')) return true;
+
+          return false;
         });
         if (isChildActive) {
           setExpandedMenu(item.id);
@@ -309,6 +309,7 @@ export default function Sidebar() {
           <div className="dropdown-divider"></div>
           <a className="dropdown-item" href="#"><i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Balance : <b>$5971.67</b></span></a>
           <a className="dropdown-item" href="#"><span className="badge bg-success-subtle text-success mt-1 float-end">New</span><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a>
+          <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-key-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>
           <a
             className="dropdown-item"
             href="#"
@@ -333,16 +334,16 @@ export default function Sidebar() {
           <ul className="navbar-nav partner-sidebar" id="navbar-nav">
             {visibleMenuItems.map((item) => {
               const itemIsRestricted = isRestricted && !['Dashboard', 'Invoices', 'Payments'].includes(item.label);
-              
+
               if (item.subItems) {
                 const isExpanded = expandedMenu === item.id;
                 const isChildActive = item.subItems.some(sub => {
                   // Direct match
                   if (location.pathname === sub.to || (location.pathname.startsWith(sub.to) && sub.to !== '/')) return true;
-                  
+
                   // Special case for Funding Review details
                   if (sub.to === '/intake-review/funding-review' && location.pathname.includes('/intake-review/funding-review/')) return true;
-                  
+
                   return false;
                 });
                 return (
@@ -369,7 +370,7 @@ export default function Sidebar() {
                                   className={({ isActive }) => {
                                     // Default active check
                                     let isPathActive = isActive;
-                                    
+
                                     // Special check for active state on Child Routes
                                     if (subItem.to === '/intake-review/pre-qualification' && location.pathname.startsWith('/intake-review/pre-qualification/')) {
                                       isPathActive = true;
