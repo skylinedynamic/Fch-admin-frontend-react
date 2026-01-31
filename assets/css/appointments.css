@@ -1,0 +1,50 @@
+.appointments-page .fc-event,
+.appointments-page .fc-daygrid-event,
+.appointments-page .fc-daygrid-block-event,
+.appointments-page .fc-h-event,
+.appointments-page .fc-v-event {
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    min-height: 32px !important;
+    border-width: 1px !important;
+    /* Subtle border same as bg */
+}
+
+.appointments-page .fc-event-main {
+    padding: 2px 4px !important;
+    color: inherit !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.appointments-page .fc-event-title,
+.appointments-page .fc-event-main-frame {
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.appointments-page .fc-daygrid-event-dot {
+    border-color: inherit !important;
+}
+
+.appointments-page .fc-event:hover {
+    opacity: 0.85 !important;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.appointments-page .upcoming-event-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #405189 !important;
+}
+
+.appointments-page .cursor-pointer {
+    cursor: pointer !important;
+}

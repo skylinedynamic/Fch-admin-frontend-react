@@ -1,49 +1,49 @@
 /* AppointmentModal Styles */
-.letter-spacing-1 {
+.appointment-modal-theme .letter-spacing-1 {
     letter-spacing: 0.5px;
 }
 
-.uppercase-label {
+.appointment-modal-theme .uppercase-label {
     text-transform: uppercase;
     font-weight: 700;
 }
 
-.btn-soft-danger {
+.appointment-modal-theme .btn-soft-danger {
     background-color: rgba(240, 101, 72, .1);
     color: #f06548;
     border: none;
 }
 
-.btn-soft-danger:hover {
+.appointment-modal-theme .btn-soft-danger:hover {
     background-color: #f06548;
     color: #fff;
 }
 
-.alert-danger-subtle {
+.appointment-modal-theme .alert-danger-subtle {
     background-color: #fef4f2;
     border-color: #fbd9d0;
     color: #f06548;
 }
 
-.detail-skeleton-item {
+.appointment-modal-theme .detail-skeleton-item {
     padding: 1rem;
     background: #fff;
     border-radius: 8px;
     margin-bottom: 1rem;
 }
 
-.hover-primary:hover {
+.appointment-modal-theme .hover-primary:hover {
     text-decoration: underline !important;
     color: #354a8e !important;
 }
 
-.description-content {
+.appointment-modal-theme .description-content {
     word-break: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
 }
 
-.rich-text-content {
+.appointment-modal-theme .rich-text-content {
     font-family: var(--vz-body-font-family);
     font-size: 14px;
     color: #495057;
@@ -52,23 +52,24 @@
     overflow-wrap: break-word;
 }
 
-.rich-text-content p {
+.appointment-modal-theme .rich-text-content p {
     margin-bottom: 0.5rem;
 }
 
-.rich-text-content p:last-child {
+.appointment-modal-theme .rich-text-content p:last-child {
     margin-bottom: 0;
 }
 
-.rich-text-content ul,
-.rich-text-content ol {
+.appointment-modal-theme .rich-text-content ul,
+.appointment-modal-theme .rich-text-content ol {
     padding-left: 1.5rem;
     margin-bottom: 0.5rem;
 }
 
 
 /* Premium Flatpickr Overrides */
-.flatpickr-calendar {
+/* Note: Flatpickr often appends to body, so we target the container with the theme class */
+.flatpickr-calendar.appointment-modal-theme {
     border: none !important;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
     border-radius: 8px !important;
@@ -77,73 +78,73 @@
     z-index: 9999 !important;
 }
 
-.flatpickr-months {
+.appointment-modal-theme .flatpickr-months {
     background: #405189 !important;
     border-top-left-radius: 8px !important;
     border-top-right-radius: 8px !important;
     padding: 10px 0 !important;
 }
 
-.flatpickr-month {
+.appointment-modal-theme .flatpickr-month {
     color: #fff !important;
 }
 
-.flatpickr-current-month {
+.appointment-modal-theme .flatpickr-current-month {
     font-size: 15px !important;
     font-weight: 600 !important;
     color: #fff !important;
 }
 
-.flatpickr-current-month .flatpickr-monthDropdown-months {
+.appointment-modal-theme .flatpickr-current-month .flatpickr-monthDropdown-months {
     font-weight: 600 !important;
     color: #fff !important;
     background: transparent !important;
     border: none !important;
 }
 
-.flatpickr-current-month input.cur-year {
+.appointment-modal-theme .flatpickr-current-month input.cur-year {
     font-weight: 600 !important;
     color: #fff !important;
 }
 
-.flatpickr-monthDropdown-month {
+.appointment-modal-theme .flatpickr-monthDropdown-month {
     color: #495057 !important;
     background: #fff !important;
 }
 
-.flatpickr-prev-month,
-.flatpickr-next-month {
+.appointment-modal-theme .flatpickr-prev-month,
+.appointment-modal-theme .flatpickr-next-month {
     color: #fff !important;
     fill: #fff !important;
     padding: 10px !important;
 }
 
-.flatpickr-prev-month:hover,
-.flatpickr-next-month:hover {
+.appointment-modal-theme .flatpickr-prev-month:hover,
+.appointment-modal-theme .flatpickr-next-month:hover {
     color: #fff !important;
     opacity: 0.8;
 }
 
-.flatpickr-weekdays {
+.appointment-modal-theme .flatpickr-weekdays {
     background: #405189 !important;
     padding: 0 10px 5px 10px !important;
 }
 
-span.flatpickr-weekday {
+.appointment-modal-theme span.flatpickr-weekday {
     color: rgba(255, 255, 255, 0.7) !important;
     font-size: 11px !important;
     font-weight: 700 !important;
     text-transform: uppercase;
 }
 
-.flatpickr-days {
+.appointment-modal-theme .flatpickr-days {
     padding: 10px !important;
     background-color: #fff !important;
     border-bottom-left-radius: 8px !important;
     border-bottom-right-radius: 8px !important;
 }
 
-.flatpickr-day {
+.appointment-modal-theme .flatpickr-day {
     border-radius: 4px !important;
     font-size: 13px !important;
     color: #495057 !important;
@@ -151,67 +152,59 @@ span.flatpickr-weekday {
     box-shadow: none !important;
 }
 
-.flatpickr-day.today {
+.appointment-modal-theme .flatpickr-day.today {
     border: 1px solid #405189 !important;
     color: #405189 !important;
 }
 
-.flatpickr-day.selected,
-.flatpickr-day.selected:hover {
+.appointment-modal-theme .flatpickr-day.selected,
+.appointment-modal-theme .flatpickr-day.selected:hover {
     background: #405189 !important;
     color: #fff !important;
     border: none !important;
 }
 
-.flatpickr-day:hover {
+.appointment-modal-theme .flatpickr-day:hover {
     background: #f3f6f9 !important;
     color: #405189 !important;
 }
 
-.flatpickr-day.flatpickr-disabled,
-.flatpickr-day.flatpickr-disabled:hover {
+.appointment-modal-theme .flatpickr-day.flatpickr-disabled,
+.appointment-modal-theme .flatpickr-day.flatpickr-disabled:hover {
     color: #e2e5ec !important;
     background: transparent !important;
 }
 
 /* Standardized Form Heights and Accuracy */
-/* .form-control,
-.p-dropdown,
-.input-group-text,
-.note-editor.note-frame {
-    border-color: #e2e5ec !important;
-    border-radius: 0.3rem !important;
-} */
-
-.fc .fc-list-event-title a {
+.appointment-modal-theme .fc .fc-list-event-title a {
     color: #4d67bd !important;
 }
 
-.modal-content .form-control,
-.modal-content .p-dropdown {
+.appointment-modal-theme .modal-content .form-control,
+.appointment-modal-theme .modal-content .p-dropdown {
     height: 38px !important;
     display: flex !important;
     align-items: center !important;
 }
 
-.p-dropdown .p-dropdown-label {
+.appointment-modal-theme .p-dropdown .p-dropdown-label {
     padding: 0.5rem 0.75rem !important;
     font-size: 14px !important;
     line-height: 1.25 !important;
 }
 
-.p-dropdown-panel {
+.appointment-modal-theme .p-dropdown-panel {
     border: 1px solid #e2e5ec !important;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1) !important;
     border-radius: 0.3rem !important;
 }
 
-.p-dropdown-items .p-dropdown-item {
+.appointment-modal-theme .p-dropdown-items .p-dropdown-item {
     padding: 0.5rem 0.75rem !important;
     font-size: 13px !important;
 }
 
-.input-group-text {
+.appointment-modal-theme .input-group-text {
     background-color: #f3f6f9 !important;
     padding: 0 12px !important;
     border-left: none !important;
@@ -219,48 +212,48 @@ span.flatpickr-weekday {
 
 /* Responsive Optimizations */
 @media (max-width: 575.98px) {
-    .modal-body {
+    .appointment-modal-theme .modal-body {
         padding: 1.25rem !important;
     }
 
-    .event-details .hstack {
+    .appointment-modal-theme .event-details .hstack {
         flex-direction: column !important;
         align-items: stretch !important;
     }
 
-    .event-details .hstack .btn {
+    .appointment-modal-theme .event-details .hstack .btn {
         width: 100% !important;
     }
 
-    .time-slot-container {
+    .appointment-modal-theme .time-slot-container {
         flex-direction: column !important;
         gap: 10px !important;
     }
 
-    .time-slot-container .text-muted {
+    .appointment-modal-theme .time-slot-container .text-muted {
         display: none !important;
         /* Hide "to" on mobile to save space */
     }
 }
 
 /* Arrow styling */
-.flatpickr-calendar.arrowTop:before,
-.flatpickr-calendar.arrowTop:after {
+.flatpickr-calendar.appointment-modal-theme.arrowTop:before,
+.flatpickr-calendar.appointment-modal-theme.arrowTop:after {
     border-bottom-color: #405189 !important;
 }
 
-.p-invalid {
+.appointment-modal-theme .p-invalid {
     border-color: #f06548 !important;
 }
 
-.p-dropdown.p-focus {
+.appointment-modal-theme .p-dropdown.p-focus {
     border-color: #405189 !important;
     box-shadow: 0 0 0 0.125rem rgba(64, 81, 137, 0.1) !important;
 }
 
 /* Detail Items stacking */
 @media (max-width: 767.98px) {
-    .detail-item-col {
+    .appointment-modal-theme .detail-item-col {
         margin-bottom: 1rem;
     }
 }
