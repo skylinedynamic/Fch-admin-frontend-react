@@ -468,8 +468,14 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         }
     };
 
+    const handleConfirmClose = () => {
+        setShowDeleteConfirm(false);
+        if (modalInstance) modalInstance.show();
+    };
+
     const confirmDelete = () => {
         if (!selectedEventId) return;
+        if (modalInstance) modalInstance.hide();
         setShowDeleteConfirm(true);
     };
 
@@ -531,7 +537,8 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     }));
 
     return (
-        <div className="modal fade" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
+        <>
+            <div className="modal fade" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header p-3 bg-info-subtle">
@@ -905,14 +912,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 </div>
             </div>
 
+            </div >
             <DeleteConfirmationModal
                 show={showDeleteConfirm}
                 onConfirm={handleDelete}
-                onClose={() => setShowDeleteConfirm(false)}
+                onClose={handleConfirmClose}
                 loading={isDeleting}
                 text="Are you sure you want to delete this appointment? This action cannot be undone."
             />
-        </div >
+        </>
     );
 });
 
