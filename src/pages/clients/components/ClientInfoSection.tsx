@@ -31,6 +31,7 @@ interface ClientInfoSectionProps {
     isLoading?: boolean;
     isHost?: boolean;
     settings?: any;
+    nonHostPlan?: any;
 }
 
 export default function ClientInfoSection({
@@ -42,14 +43,32 @@ export default function ClientInfoSection({
     cities,
     isLoading = false,
     isHost = false,
-    settings = null
+    settings = null,
+    nonHostPlan = null
 }: ClientInfoSectionProps) {
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
     React.useEffect(() => {
-        if (!isHost && settings?.non_host_enrollment_price && !formData.payment_amount) {
-            handleInputChange({ target: { name: 'payment_amount', value: settings.non_host_enrollment_price } });
-            handleInputChange({ target: { name: 'enrollment_type', value: 'Standard Enrollment' } });
+        if (!isHost) {
+            // Priority: Non-Host Plan -> Settings -> Default
+            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : (settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800);
+            const planType = nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || 'Standard Enrollment';
+
+            if (!formData.payment_amount || formData.payment_amount !== planAmount) {
+                // Only update if not already set or different (to avoid loops, though strict equality check on float might be risky, generally ok for assignment)
+                 // Better check: if it's 0 or undefined, set it. Or if it's explicitly different from what we want. 
+                 // The initial logic checked !formData.payment_amount. Let's stick to that but ensure we update if plan loads late?
+                 // Actually, if plan loads late, payment_amount might be 800 (default) but now we want e.g. 500.
+                 // So we should probably force update if !formData.payment_amount OR if it's the old default and we have a new plan. 
+                 // Safest is to just set it if we have a plan and valid amount.
+                 if (formData.payment_amount != planAmount) {
+                    handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
+                 }
+            }
+             if (formData.enrollment_type != planType) {
+                 handleInputChange({ target: { name: 'enrollment_type', value: planType } });
+             }
+
         } else if (isHost && formData.enrollment_type) {
             // Sync price for the current enrollment type (handles default values on mount)
             const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
@@ -456,15 +475,17 @@ export default function ClientInfoSection({
                         <div className="mb-3">
                             <label className="form-label">Enrollment Fee (Applied)</label>
                             <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
+                                {/* Hidden enrollment type for non-host - ACCURATE CODE PATTERN */}
+                                <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || ''} />
+                                
                                 <div className="flex-shrink-0 me-3">
                                     <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
                                         <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '2rem' }}></i>
                                     </div>
                                 </div>
                                 <div className="flex-grow-1 ps-2">
-                                    <h5 className="text-success fw-bold mb-1 fs-18">Standard Enrollment</h5>
                                     <p className="mb-0 text-muted fs-15 lh-base">
-                                        Fixed enrollment fee <span className="text-success fw-bold fs-18">${settings?.non_host_enrollment_price || '800.00'}</span>
+                                        Fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount).toFixed(2) : (settings?.non_host_enrollment_price || '800.00')}</span>
                                     </p>
                                 </div>
                             </div>

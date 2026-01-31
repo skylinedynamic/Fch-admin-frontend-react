@@ -50,7 +50,7 @@ const CheckoutForm = ({ amount, lead, borrowerId, invoiceId, onPaymentSuccess, o
         payment_method_id: paymentMethod.id,
         description: `Enrollment Fee for Borrower ${borrowerId} - ${lead?.contact_person || lead?.contact_name}`,
         entity_id: borrowerId,
-        entity_type: 'borrower',
+        entity_type: lead?.entity_type || lead?.lead_type || 'Borrower',
         borrower_id: borrowerId,
         partner_id: lead?.partner_id || null,
         invoice_id: invoiceId || lead?.invoice_id || null
@@ -193,6 +193,11 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
                 modalInstanceRef.current.dispose();
                 modalInstanceRef.current = null;
             }
+            // Robust cleanup of any orphaned backdrop elements
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.paddingRight = '';
+            document.body.style.overflow = '';
         };
     }, []);
 
@@ -202,7 +207,11 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
         if (show) {
             modal.show();
         } else {
-            modal.hide();
+            // Check if it's already hidden to avoid unnecessary calls
+            const modalElement = modalRef.current;
+            if (modalElement && modalElement.classList.contains('show')) {
+                modal.hide();
+            }
         }
     }, [show]);
 

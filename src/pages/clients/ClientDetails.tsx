@@ -9,8 +9,11 @@ import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 // @ts-ignore - JSX component imported in TSX file
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
+// @ts-ignore
 import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
-import { fetchSettings } from '../../modules/settings/services';
+// @ts-ignore
+import { fetchSettings } from '../../modules/settings/services'; 
+import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -65,6 +68,7 @@ export default function ClientDetails() {
     });
     const [statsLoading, setStatsLoading] = useState(false);
     const [settings, setSettings] = useState<any>(null);
+    const [nonHostPlan, setNonHostPlan] = useState<any>(null);
 
     // Initial form state
     const [formData, setFormData] = useState<Client>({
@@ -93,7 +97,7 @@ export default function ClientDetails() {
         industry_type: '',
         business_start_date: '',
         ssn_last_4: '',
-        enrollment_type: 'One Time Payment',
+        enrollment_type: '',
         notes: '',
 
         // Financials
@@ -134,9 +138,25 @@ export default function ClientDetails() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const settingsRes = await fetchSettings();
+                const settingPromise = fetchSettings();
+                const promises = [settingPromise];
+                
+                if (!isHost) {
+                    promises.push(fetchNonHostBorrowerPlans());
+                }
+
+                const results = await Promise.all(promises);
+                const settingsRes = results[0];
+                const plansRes = !isHost ? results[1] : null;
+
                 if (settingsRes.status) {
                     setSettings(settingsRes.data);
+                }
+                
+                // @ts-ignore
+                if (plansRes && plansRes.status && plansRes.data && plansRes.data.length > 0) {
+                    // @ts-ignore
+                    setNonHostPlan(plansRes.data[0]);
                 }
             } catch (err) {
                 console.error('Failed to fetch settings:', err);
@@ -362,8 +382,14 @@ export default function ClientDetails() {
                     // Use the payment_amount set in the UI for host clients
                     amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
                 } else {
-                    amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
-                    enrollment_type = settings?.non_host_enrollment_value || 'Standard Enrollment';
+                    // Use fetched plan or fallback to settings
+                    if (nonHostPlan) {
+                         amount = nonHostPlan.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 0;
+                         enrollment_type = nonHostPlan.enrollment_type;
+                    } else {
+                        amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
+                        enrollment_type = settings?.non_host_enrollment_value || '';
+                    }
                 }
 
                 // Accurate Payload Fields
@@ -372,6 +398,8 @@ export default function ClientDetails() {
                 payload.enrollment_type = enrollment_type;
                 // @ts-ignore
                 payload.payment_amount = amount; // Keeping both for safety as per earlier user request "payment_amount in payload"
+                // @ts-ignore
+                payload.entity_type = 'Borrower';
 
                 const response: any = await createClient(payload);
                 
@@ -670,8 +698,9 @@ export default function ClientDetails() {
                 }}
                 lead={{
                     ...formData,
-                    contact_person: `${formData.first_name} ${formData.last_name}`.trim()
-                }} // Pass constructed contact_person for modal UI accuracy
+                    contact_person: `${formData.first_name} ${formData.last_name}`.trim(),
+                    entity_type: 'Borrower'
+                }} // Pass constructed contact_person and role for modal UI/Logic accuracy
                 borrowerId={newBorrowerId}
                 invoiceId={paymentInvoiceId}
                 amount={paymentAmount}

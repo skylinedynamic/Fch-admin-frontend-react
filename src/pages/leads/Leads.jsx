@@ -330,7 +330,10 @@ export default function Leads() {
                     setPaymentAmount(payload.amount);
                     setPaymentInvoiceId(invId);
                     setShowConvertModal(false);
-                    setShowPaymentModal(true);
+                    // Add a small delay for LeadConvertModal to close before showing LeadPaymentModal
+                    setTimeout(() => {
+                        setShowPaymentModal(true);
+                    }, 300);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
                     return;
                 }

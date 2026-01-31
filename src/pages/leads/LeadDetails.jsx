@@ -12,6 +12,7 @@ import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCard
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
+import FormLoader from '../../components/Loader/FormLoader';
 import { Dropdown } from 'primereact/dropdown';
 import { 
     LEAD_PROBABILITY_OPTIONS, 
@@ -58,7 +59,8 @@ export default function LeadDetails() {
         }
     }, [isHost]);
 
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         lead_id: '',
         tasks_no: '',
@@ -182,7 +184,7 @@ export default function LeadDetails() {
             if (!formData.probability) newErrors.probability = 'Probability is required';
             if (!formData.lead_type) newErrors.lead_type = 'Lead Type is required';
             if (!formData.status) newErrors.status = 'Status is required';
-            if (!formData.salesperson_id) newErrors.salesperson_id = 'Salesperson is required';
+            // if (!formData.salesperson_id) newErrors.salesperson_id = 'Salesperson is required';
         }
 
         setErrors(newErrors);
@@ -198,7 +200,7 @@ export default function LeadDetails() {
         }
 
         setErrors({});
-        setLoading(true);
+        setIsSaving(true);
 
         try {
             const payload = { ...formData };
@@ -237,7 +239,7 @@ export default function LeadDetails() {
                 toast.error(err.response?.data?.message || 'Failed to save lead');
             }
         } finally {
-            setLoading(false);
+            setIsSaving(false);
         }
     };
 
@@ -285,7 +287,10 @@ export default function LeadDetails() {
                     setPaymentAmount(payload.amount);
                     setPaymentInvoiceId(invId);
                     setShowConvertModal(false);
-                    setShowPaymentModal(true);
+                    // Add a small delay for LeadConvertModal to close before showing LeadPaymentModal
+                    setTimeout(() => {
+                        setShowPaymentModal(true);
+                    }, 300);
                     toast.success(`Lead successfully converted. Please complete the payment.`);
                     return;
                 }
@@ -365,7 +370,7 @@ export default function LeadDetails() {
         if (!id) return;
 
         const loadLead = async () => {
-            setLoading(true);
+            setIsLoading(true);
             try {
                 const response = await getLead(id);
                 if (response.status && response.data) {
@@ -432,7 +437,7 @@ export default function LeadDetails() {
                 console.error('Failed to load lead details:', err);
                 toast.error('Failed to load lead details');
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
 
@@ -494,8 +499,17 @@ export default function LeadDetails() {
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
                                 {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && (
-                                    <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={loading}>
-                                        <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                    <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={isSaving || isLoading}>
+                                        {isSaving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                            </>
+                                        )}
                                     </button>
                                 )}
                             </div>
@@ -557,7 +571,11 @@ export default function LeadDetails() {
                             </div>
                             <div className="card-body p-4">
                                 <div className="tab-content">
-                                    {activeTab === 'leadDetails' && (
+                                    {isLoading ? (
+                                        <FormLoader count={12} />
+                                    ) : (
+                                        <>
+                                            {activeTab === 'leadDetails' && (
                                         <div className="row">
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
@@ -602,7 +620,9 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Salesperson <span className="text-danger">*</span></label>
+                                                    <label className="form-label">Salesperson
+                                                         {/* <span className="text-danger">*</span> */}
+                                                    </label>
                                                     <Dropdown
                                                         value={formData.salesperson_id}
                                                         options={users.map(user => ({ label: user.name, value: user.id }))}
@@ -611,7 +631,7 @@ export default function LeadDetails() {
                                                         filter
                                                         className={`w-100 ${errors.salesperson_id ? 'p-invalid' : ''}`}
                                                     />
-                                                    {errors.salesperson_id && <div className="invalid-feedback d-block">{errors.salesperson_id}</div>}
+                                                    {/* {errors.salesperson_id && <div className="invalid-feedback d-block">{errors.salesperson_id}</div>} */}
                                                 </div>
                                             </div>
                                             <div className="col-lg-6">
@@ -872,6 +892,8 @@ export default function LeadDetails() {
                                                 </div>
                                             </div>
                                         </div>
+                                    )}
+                                        </>
                                     )}
                                 </div>
                             </div>
