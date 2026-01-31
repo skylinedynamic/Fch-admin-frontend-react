@@ -20,6 +20,7 @@ interface ClientFormProps {
     isLoading?: boolean;
     isHost?: boolean;
     settings?: any;
+    nonHostPlan?: any;
 }
 
 export default function ClientForm({
@@ -34,7 +35,8 @@ export default function ClientForm({
     handleChecklistChange,
     isLoading,
     isHost,
-    settings
+    settings,
+    nonHostPlan
 }: ClientFormProps) {
     return (
         <div className="tab-content">
@@ -54,6 +56,7 @@ export default function ClientForm({
                             isLoading={isLoading}
                             isHost={isHost}
                             settings={settings}
+                            nonHostPlan={nonHostPlan}
                         />
                     )}
                 </div>
