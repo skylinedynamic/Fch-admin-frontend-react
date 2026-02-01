@@ -1,50 +1,49 @@
 import { AuthUser } from '../../store/auth/authStore';
+import { SUBSCRIPTION_STATUS_TYPES } from '../../config/partnerTypeOptions';
+
+const toDate = (d?: string | null) => {
+    if (!d) return null;
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+};
 
 /**
- * Checks if a user's subscription is overdue or expired, requiring restricted access.
- * 
- * Rules:
- * 1. Host users (is_host: 1) are never restricted.
- * 2. If status is not 'active' or 'Active', user is restricted.
- * 3. For 'Payment Plan (11-month plan)': restricted if today is >= next_installment_date.
- * 4. For 'One Time Payment': restricted if today is >= subscription_end_date.
+ * Returns true if the user should be restricted due to pending payment
  */
 export function isSubscriptionRestricted(user: AuthUser | null | undefined): boolean {
     if (!user) return false;
 
-    // Rule 1: Hosts are never restricted
+    // 1️⃣ Host users are never restricted
     if (user.is_host === 1) return false;
 
-    // Rule 2: Basic status check (case-insensitive for safety)
-    const status = (user.subscription_status || '').toString().toLowerCase();
-    if (status !== 'active') return true;
+    // 2️⃣ Non-active subscription is restricted
+    if ((user.subscription_status || '') !== SUBSCRIPTION_STATUS_TYPES.ACTIVE) {
+        return true;
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const enrollmentType = user.enrollment_type as string;
+    const nextInstallmentDate = toDate(user.next_installment_date);
+    const nextPlatformFeeDate = toDate(user.next_platform_fee_date);
 
-    // Rule 3: Payment Plan check
-    if (enrollmentType === 'Payment Plan (11-month plan)') {
-        if (user.next_installment_date) {
-            const installmentDate = new Date(user.next_installment_date as string);
-            // If today is equal to or past the installment date, access is restricted
-            if (today >= installmentDate) {
-                return true;
-            }
+    // 3️⃣ Enrollment phase restriction (one-time or installments)
+    if (user.phase === 'enrollment') {
+        if (nextInstallmentDate && today >= nextInstallmentDate) {
+            return true; // installment due → restrict
         }
+        return false; // not yet due → allow
     }
 
-    // Rule 4: One Time Payment check
-    if (enrollmentType === 'One Time Payment') {
-        if (user.subscription_end_date) {
-            const endDate = new Date(user.subscription_end_date as string);
-            // If today is equal to or past the end date, access is restricted
-            if (today >= endDate) {
-                return true;
-            }
+    // 4️⃣ Platform fee phase restriction (monthly after enrollment)
+    if (user.phase === 'platform_fee') {
+        if (nextPlatformFeeDate && today >= nextPlatformFeeDate) {
+            return true; // platform fee due → restrict
         }
+        return false; // not yet due → allow
     }
 
+    // 5️⃣ Default allow
     return false;
 }

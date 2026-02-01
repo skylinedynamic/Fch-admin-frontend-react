@@ -193,11 +193,6 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
                 modalInstanceRef.current.dispose();
                 modalInstanceRef.current = null;
             }
-            // Robust cleanup of any orphaned backdrop elements
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-            document.body.classList.remove('modal-open');
-            document.body.style.paddingRight = '';
-            document.body.style.overflow = '';
         };
     }, []);
 
@@ -207,11 +202,7 @@ export default function LeadPaymentModal({ show, onHide, onSuccess, lead, borrow
         if (show) {
             modal.show();
         } else {
-            // Check if it's already hidden to avoid unnecessary calls
-            const modalElement = modalRef.current;
-            if (modalElement && modalElement.classList.contains('show')) {
-                modal.hide();
-            }
+            modal.hide();
         }
     }, [show]);
 
