@@ -379,17 +379,10 @@ export default function ClientDetails() {
                 let enrollment_type = payload.enrollment_type;
 
                 if (isHost) {
-                    // Use the payment_amount set in the UI for host clients
                     amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
                 } else {
-                    // Use fetched plan or fallback to settings
-                    if (nonHostPlan) {
-                         amount = nonHostPlan.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 0;
-                         enrollment_type = nonHostPlan.enrollment_type;
-                    } else {
-                        amount = settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800;
-                        enrollment_type = settings?.non_host_enrollment_value || '';
-                    }
+                    amount = nonHostPlan.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 0;
+                    enrollment_type = nonHostPlan.enrollment_type;
                 }
 
                 // Accurate Payload Fields
