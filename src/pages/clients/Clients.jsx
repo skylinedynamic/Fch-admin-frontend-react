@@ -5,9 +5,10 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { deleteClients, fetchBorrowerStats, fetchBorrowerTiers } from '../../modules/client/services';
-import { fetchAllBorrowers, deleteBorrower, getAllUsers } from '../../modules/borrower/services';
+import { fetchBorrowerTiers } from '../../modules/client/services';
+import { getAllUsers } from '../../modules/borrower/services';
 import { fetchPartners } from '../../modules/partner/services';
+import { useClients, useClientListStats, useDeleteClients, usePartners, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
 import { getUser } from '../../lib/auth';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -20,10 +21,10 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function Clients() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
-    // State for clients
-    const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // State for clients (Managed by React Query now)
+    // const [clients, setClients] = useState([]);
+    // const [loading, setLoading] = useState(true);
+    // const [error, setError] = useState(null);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -50,20 +51,6 @@ export default function Clients() {
     const [selectedClients, setSelectedClients] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteRows, setDeleteRows] = useState([]);
-
-    // Dropdown data
-    const [partnersList, setPartnersList] = useState([]);
-    const [assignedUsersList, setAssignedUsersList] = useState([]);
-    const [tiersList, setTiersList] = useState([]);
-
-    // Statistics data
-    const [stats, setStats] = useState({
-        active_count: 0,
-        new_this_month: 0,
-        total_clients: 0,
-        inactive_count: 0
-    });
-    const [statsLoading, setStatsLoading] = useState(true);
 
     // Get current user and check if is_host
     const [currentUser, setCurrentUser] = useState(null);
@@ -97,103 +84,84 @@ export default function Clients() {
         initFilters();
     }, []);
 
-    // Load dropdown data based on user role
+    // Dropdown Data Hooks
+    const { data: partnersList = [] } = usePartners(isHost);
+    const { data: assignedUsersList = [] } = useAllUsers();
+    const { data: tiersList = [] } = useBorrowerTiers();
+
+    // React Query Mutations
+    const deleteClientsMutation = useDeleteClients();
+
+    // Prepare query params
+    const queryParams = {
+        search: appliedSearchText || '',
+        partner_id: appliedPartner || '',
+        assign_id: appliedAssignedUser || '',
+        current_tier: appliedTier || '',
+        filters: appliedFilters,
+        page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+    };
+
+    // Client List Query
+    const { 
+        data: clientsData, 
+        isLoading: clientsLoading, 
+        error: clientsError 
+    } = useClients(queryParams);
+
+    // Derived State from Query Data
+    const clients = clientsData?.data || [];
+    const meta = clientsData?.meta;
+    const loading = clientsLoading; // Alias for backward compatibility if needed
+
+    // Update total records when meta changes
     useEffect(() => {
-        // Only load partners if user is host
-        if (isHost) {
-            const loadPartners = async () => {
-                try {
-                    const result = await fetchPartners();
-                    if (result.status) {
-                        const formattedPartners = (result.data || []).map(partner => ({
-                            id: partner.id,
-                            full_name: partner.full_name,
-                            company_name: partner.company_name,
-                            displayLabel: `${partner.full_name} (${partner.company_name})`
-                        }));
-                        setPartnersList(formattedPartners);
-                    }
-                } catch (err) {
-                    console.error('Failed to load partners:', err);
-                }
-            };
-            loadPartners();
+        if (meta) {
+            setTotalRecords(typeof meta.total === 'number' ? meta.total : clients.length);
+        } else if (clientsData) {
+            setTotalRecords(clients.length);
         }
+    }, [meta, clientsData, clients.length]);
 
-        // Load assigned users for all users
-        const loadAssignedUsers = async () => {
-            try {
-                const result = await getAllUsers();
-                if (result.status) {
-                    const formattedUsers = (result.data || []).map(user => ({
-                        id: user.id,
-                        full_name: user.name,
-                        displayLabel: `${user.name}`
-                    }));
-                    setAssignedUsersList(formattedUsers);
-                }
-            } catch (err) {
-                console.error('Failed to load assigned users:', err);
-            }
-        };
-        loadAssignedUsers();
-
-        // Load tiers
-        const loadTiers = async () => {
-            try {
-                const result = await fetchBorrowerTiers();
-                if (result.status && result.data) {
-                    const formattedTiers = (result.data || []).map(tier => ({
-                        label: tier.name,
-                        value: tier.name
-                    }));
-                    setTiersList(formattedTiers);
-                }
-            } catch (err) {
-                console.error('Failed to load tiers:', err);
-                // Set to empty array on error
-                setTiersList([]);
-            }
-        };
-        loadTiers();
-    }, [isHost]); // Re-run when isHost changes
-
-    // Load clients statistics
+    // Error Handling Effect
     useEffect(() => {
-        const loadStats = async () => {
-            try {
-                setStatsLoading(true);
-                // Fetch stats from API - pass partner ID if user is not host
-                const partnerId = !isHost && currentUser?.partner_id ? currentUser.partner_id : undefined;
-                const result = await fetchBorrowerStats(partnerId);
-
-                if (result.status && result.data) {
-                    setStats({
-                        active_count: result.data.active_count || 0,
-                        new_this_month: result.data.new_this_month || 0,
-                        total_clients: result.data.total_borrowers || 0,
-                        inactive_count: result.data.inactive_count || 0
-                    });
-                }
-            } catch (err) {
-                console.error('Failed to load client statistics:', err);
-                // Set default values on error
-                setStats({
-                    active_count: 0,
-                    new_this_month: 0,
-                    total_clients: 0,
-                    inactive_count: 0
-                });
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-
-        // Only load stats when user data is available
-        if (currentUser) {
-            loadStats();
+        if (clientsError) {
+            const errorMessage = clientsError?.response?.data?.message || clientsError.message || 'Failed to fetch clients';
+            // setError(errorMessage); // Removed manual state
+            toast.error(errorMessage);
         }
-    }, [currentUser, isHost]);
+    }, [clientsError]);
+
+    // Stats Query
+    const partnerId = !isHost && currentUser?.partner_id ? currentUser.partner_id : undefined;
+    const { data: statsData, isLoading: statsIsLoading } = useClientListStats(partnerId, !!currentUser);
+    const statsLoading = statsIsLoading;
+
+    // Update stats state (or just use derived data directly, but keeping state for now to minimize render changes if structure differs)
+    // Actually, let's derive it to avoid useEffect
+    // But stats structure in component state matches API response?
+    // API: { active_count, new_this_month, total_borrowers, inactive_count }
+    // Component State: { active_count, new_this_month, total_clients, inactive_count }
+    // Mapping needed
+    
+    // Derived Stats
+    const derivedStats = {
+        active_count: statsData?.data?.active_count || 0,
+        new_this_month: statsData?.data?.new_this_month || 0,
+        total_clients: statsData?.data?.total_borrowers || 0,
+        inactive_count: statsData?.data?.inactive_count || 0
+    };
+    
+    // Overwrite derived stats if we want to sync 'total_clients' with list total? 
+    // The original code did: setStats(prev => ({...prev, total_clients: meta?.total}))
+    // So let's respect that logic.
+    const finalStats = {
+        ...derivedStats,
+        total_clients: meta?.total || derivedStats.total_clients
+    };
 
     // Statistics cards configuration
     const statisticsConfig = [
@@ -223,89 +191,8 @@ export default function Clients() {
         }
     ];
 
-    // Load clients data with filters
-    useEffect(() => {
-        if (!appliedFilters || Object.keys(appliedFilters).length === 0) return;
-
-        const load = async () => {
-            setLoading(true);
-            try {
-                const payload = {
-                    search: appliedSearchText || '',
-                    partner_id: appliedPartner || '',
-                    assign_id: appliedAssignedUser || '',
-                    current_tier: appliedTier || '',
-                    filters: appliedFilters,
-                    page,
-                    per_page: perPage,
-                    sort_field: sortField,
-                    sort_order: sortOrder,
-                };
-
-                const result = await fetchAllBorrowers(payload);
-                if (result.status) {
-                    const data = result.data || [];
-                    const meta = result.meta;
-
-                    setClients(data);
-                    setError(null);
-
-                    // Update pagination info from backend
-                    if (meta) {
-                        setTotalRecords(typeof meta.total === 'number' ? meta.total : data.length);
-                        if (typeof meta.current_page === 'number') setPage(meta.current_page);
-                        if (typeof meta.per_page === 'number') setPerPage(meta.per_page);
-                    } else {
-                        setTotalRecords(data.length);
-                    }
-
-                    // Update stats from total
-                    setStats(prev => ({
-                        ...prev,
-                        total_clients: meta?.total || data.length
-                    }));
-                } else {
-                    // API returned status: false
-                    const errorMsg = result.message || 'Failed to fetch clients';
-                    setError(errorMsg);
-                    toast.error(errorMsg);
-                    console.error('❌ API Error:', result);
-                }
-            } catch (err) {
-                // Network or other errors
-                console.error('❌ Fetch Error:', err);
-
-                // Extract error message from API response
-                let errorMessage = 'Failed to fetch clients';
-
-                if (err.response?.data?.message) {
-                    // Backend returned an error message
-                    errorMessage = err.response.data.message;
-                } else if (err.message) {
-                    errorMessage = err.message;
-                }
-
-                setError(errorMessage);
-                toast.error(errorMessage);
-
-                // Log detailed error for debugging
-                console.error('Error Details:', {
-                    message: errorMessage,
-                    response: err.response?.data,
-                    status: err.response?.status,
-                    fullError: err
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const timeout = setTimeout(() => {
-            load();
-        }, 300);
-
-        return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedTier, appliedFilters, page, perPage, sortField, sortOrder]);
+    // Original loadClients useEffect removed
+    // Original loadStats useEffect removed
 
     // Filter handlers
     const handleApplyFilters = () => {
@@ -371,27 +258,15 @@ export default function Clients() {
         if (!deleteRows || deleteRows.length === 0) return;
 
         const ids = deleteRows.map(c => c.id);
+        
         try {
-            setLoading(true);
-            const response = await deleteClients(ids);
-
-            if (response && response.status) {
-                toast.success(response.message || "Borrower(s) deleted successfully.");
-                setShowDeleteModal(false);
-                setSelectedClients([]);
-
-                // Trigger reload
-                setAppliedFilters({ ...appliedFilters });
-            } else {
-                toast.error(response?.message || "Failed to delete clients.");
-            }
+            await deleteClientsMutation.mutateAsync(ids);
+            toast.success("Borrower(s) deleted successfully.");
+            setShowDeleteModal(false);
+            setSelectedClients([]);
         } catch (err) {
-            console.error('Delete error:', err);
-            // Handle error response from axios if available
-            const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients. Please try again.';
-            toast.error(errorMsg);
-        } finally {
-            setLoading(false);
+             const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients.';
+             toast.error(errorMsg);
         }
     };
 
@@ -549,7 +424,7 @@ export default function Clients() {
                                 <StatisticsCard
                                     key={`stat-${index}`}
                                     title={config.title}
-                                    count={stats[config.dataKey] || 0}
+                                    count={finalStats[config.dataKey] || 0}
                                     icon={config.icon}
                                     colorVariant={config.colorVariant}
                                 />
@@ -805,7 +680,7 @@ export default function Clients() {
                     show={showDeleteModal}
                     onConfirm={handleDeleteConfirm}
                     onClose={closeDeleteModal}
-                    loading={loading}
+                    loading={deleteClientsMutation.isPending}
                     text="The selected clients and all associated data will be deleted."
                 />
 

@@ -1,16 +1,107 @@
-import React from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
+import { toast } from 'react-toastify';
 import type { Client } from '../../../modules/client/types';
+import { useClient, useUpdateClient } from '../../../modules/client/queries';
+
+const defaultFinancialsState: Client = {
+    first_name: '', last_name: '', phone_number: '', email: '', // Dummy required fields to satisfy Type
+    currency: 'USD',
+    monthly_revenue: '',
+    avg_bank_balance: '',
+    annual_revenue: '',
+    profit_margin: '',
+    current_business_debt: '',
+    fico_score: '',
+    paydex_score: '',
+    years_in_business: '',
+    number_of_employees: '',
+    nsf_days: '',
+    funding_urgency: ''
+} as Client;
 
 interface BusinessFinancialsSectionProps {
-    formData: Client;
-    errors: Record<string, string>;
-    handleInputChange: (e: any) => void;
-    isLoading?: boolean;
+    clientId?: string | null;
+    initialData?: Client;
+    errors?: Record<string, string>;
+    setErrors?: (errors: Record<string, string>) => void;
+    isLoading?: boolean; // Parent might still control loading UI initially
+    onSaveSuccess?: () => void;
 }
 
-export default function BusinessFinancialsSection({ formData, errors, handleInputChange, isLoading = false }: BusinessFinancialsSectionProps) {
-    if (isLoading) {
+export interface BusinessFinancialsSectionRef {
+    save: () => Promise<void>;
+}
+
+const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, BusinessFinancialsSectionProps>(({
+    clientId,
+    initialData,
+    errors = {},
+    setErrors,
+    isLoading: parentLoading = false,
+    onSaveSuccess
+}, ref) => {
+    
+    // 1. Data Fetching
+    const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
+    const updateMutation = useUpdateClient();
+
+    // 2. Local State
+    const [formData, setFormData] = useState<Client>(initialData || defaultFinancialsState);
+
+    // 3. Sync Fetch to Local State
+    useEffect(() => {
+        if (fetchedData) {
+            // @ts-ignore
+            const dataToSet = fetchedData.data || fetchedData;
+            setFormData(prev => ({ ...prev, ...dataToSet }));
+        }
+    }, [fetchedData]);
+
+    const handleInputChange = (e: any) => {
+        const name = e.target ? e.target.name : e.name;
+        const value = e.target ? e.target.value : e.value;
+
+        setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (setErrors && errors[name]) {
+            const newErrors = { ...errors };
+            delete newErrors[name];
+            setErrors(newErrors);
+        }
+    };
+
+    // 4. Expose Save via Ref
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+             const payload = { ...formData, id: clientId };
+             
+             return new Promise((resolve, reject) => {
+                // @ts-ignore
+                updateMutation.mutate({ id: clientId, data: payload }, {
+                    onSuccess: () => {
+                        toast.success("Business financials updated successfully");
+                         if (onSaveSuccess) onSaveSuccess();
+                        resolve();
+                    },
+                    onError: (error: any) => {
+                         console.error("Save error:", error);
+                        if (error.response && error.response.data && error.response.data.errors && setErrors) {
+                            const backendErrors = error.response.data.errors;
+                            const mappedErrors: Record<string, string> = {};
+                            Object.keys(backendErrors).forEach(key => {
+                                mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+                            });
+                            setErrors(mappedErrors);
+                        }
+                        reject(error);
+                    }
+                });
+             });
+        }
+    }));
+
+    if ((isFetching && clientId) || parentLoading) {
         return (
             <div className="row g-3">
                 {[1, 2, 3, 4, 5, 6].map(i => (
@@ -24,6 +115,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
             </div>
         );
     }
+
     const currencyOptions = [
         { label: 'USD', value: 'USD' },
         { label: 'EUR', value: 'EUR' },
@@ -31,10 +123,10 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
     ];
 
     return (
-        <form>
+        <form onSubmit={(e) => e.preventDefault()}>
             <div className="row g-3">
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="currency" className="form-label">Currency</label>
                         <Dropdown
                             value={formData.currency || 'USD'}
@@ -49,7 +141,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="monthly_revenue" className="form-label">Monthly Revenue</label>
                         <div className="input-group">
                             <span className="input-group-text">$</span>
@@ -67,7 +159,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                     </div>
                 </div>
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="avg_bank_balance" className="form-label">Avg. Bank Balance</label>
                         <div className="input-group">
                             <span className="input-group-text">$</span>
@@ -86,7 +178,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="annual_revenue" className="form-label">Annual Revenue</label>
                         <div className="input-group">
                             <span className="input-group-text">$</span>
@@ -104,7 +196,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                     </div>
                 </div>
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="profit_margin" className="form-label">Profit Margin (%)</label>
                         <div className="input-group">
                             <input
@@ -123,7 +215,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                     </div>
                 </div>
                 <div className="col-lg-4">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="current_business_debt" className="form-label">Current Business Debt</label>
                         <div className="input-group">
                             <span className="input-group-text">$</span>
@@ -142,7 +234,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-6">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="fico_score" className="form-label">Personal Credit Scores (FICO)</label>
                         <input
                             type="number"
@@ -157,7 +249,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                     </div>
                 </div>
                 <div className="col-lg-6">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="paydex_score" className="form-label">Business Credit Scores (D&amp;B PAYDEX)</label>
                         <input
                             type="number"
@@ -173,7 +265,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-6">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="years_in_business" className="form-label">Years in Business</label>
                         <input
                             type="number"
@@ -188,7 +280,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                     </div>
                 </div>
                 <div className="col-lg-6">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="number_of_employees" className="form-label">Number of Employees</label>
                         <input
                             type="number"
@@ -204,7 +296,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-6">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="nsf_days" className="form-label">NSF/Negative Days (Last 90 Days)</label>
                         <input
                             type="number"
@@ -220,7 +312,7 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
                 </div>
 
                 <div className="col-lg-12">
-                    <div className="mb-3">
+                    <div className="">
                         <label htmlFor="funding_urgency" className="form-label">Funding Urgency</label>
                         <input
                             type="text"
@@ -237,4 +329,6 @@ export default function BusinessFinancialsSection({ formData, errors, handleInpu
             </div>
         </form>
     );
-}
+});
+
+export default BusinessFinancialsSection;

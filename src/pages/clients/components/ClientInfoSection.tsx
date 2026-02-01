@@ -1,99 +1,251 @@
-import React from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
+import { toast } from 'react-toastify';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import type { Client } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
-// ENROLLMENT_TYPE_OPTIONS removed - using dynamic settings instead
+import { entityTypes, industryTypes } from '../../../config/borrower';
+import { locationData } from '../../../config'; // Import locationData
+import { useClient, useUpdateClient } from '../../../modules/client/queries';
+import { useQueryClient } from '@tanstack/react-query'; // Import queryClient if needed manually, or rely on hook
 
-const entityTypeOptions = [
-    { label: 'Corporation (C-Corp)', value: 'Corporation (C-Corp)' },
-    { label: 'Corporation (S-Corp)', value: 'Corporation (S-Corp)' },
-    { label: 'Franchise', value: 'Franchise' },
-    { label: 'Limited Liability Company (LLC)', value: 'Limited Liability Company (LLC)' }
-];
-
-const industryTypeOptions = [
-    { label: 'Accounting & Financial Services', value: 'Accounting & Financial Services' },
-    { label: 'Automotive Services & Dealerships', value: 'Automotive Services & Dealerships' }
-];
+// Default/Empty Client State
+const defaultClientState: Client = {
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    country_code: '+1',
+    email: '',
+    signup_id: '',
+    website: '',
+    legal_business_name: '',
+    business_ein: '',
+    state_file_number: '',
+    duns_number: '',
+    business_address: '',
+    country: 'United States',
+    city: '',
+    other_city: '',
+    state: '',
+    business_zip: '',
+    business_phone: '',
+    entity_type: '',
+    industry_type: '',
+    business_start_date: '',
+    ssn_last_4: '',
+    enrollment_type: '',
+    notes: '',
+    // Financials defaults
+    currency: 'USD',
+    monthly_revenue: '',
+    avg_bank_balance: '',
+    annual_revenue: '',
+    profit_margin: '',
+    current_business_debt: '',
+    fico_score: '',
+    paydex_score: '',
+    years_in_business: '',
+    number_of_employees: '',
+    nsf_days: '',
+    funding_urgency: ''
+};
 
 const DATE_PICKER_OPTIONS = { dateFormat: "d M, Y" };
 
 interface ClientInfoSectionProps {
-    formData: Client;
-    errors: Record<string, string>;
-    handleInputChange: (e: any) => void;
+    clientId?: string | null;
+    initialData?: Client; // Logic for Create Mode
+    // Common props for UI
+    errors?: Record<string, string>;
+    setErrors?: (errors: Record<string, string>) => void;
     countries: { label: string; value: string }[];
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
-    isLoading?: boolean;
+    handleLocationChange?: (name: string, value: any) => void; // Parent handles cascading location options for now
     isHost?: boolean;
     settings?: any;
     nonHostPlan?: any;
+    onSaveSuccess?: () => void;
 }
 
-export default function ClientInfoSection({
-    formData,
-    errors,
-    handleInputChange,
+export interface ClientInfoSectionRef {
+    save: () => Promise<void>;
+}
+
+const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProps>(({
+    clientId,
+    initialData,
+    errors = {},
+    setErrors,
     countries,
     states,
     cities,
-    isLoading = false,
+    handleLocationChange,
     isHost = false,
     settings = null,
-    nonHostPlan = null
-}: ClientInfoSectionProps) {
+    nonHostPlan = null,
+    onSaveSuccess
+}, ref) => {
+    // 1. Data Fetching (only if clientId exists)
+    const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
+    const updateMutation = useUpdateClient();
+
+    // 2. Local State
+    const [formData, setFormData] = useState<Client>(initialData || defaultClientState);
+
+    // 3. Sync Fetch to Local State
+    useEffect(() => {
+        if (fetchedData) {
+            // @ts-ignore
+            const dataToSet = fetchedData.data || fetchedData;
+            setFormData(prev => ({ ...prev, ...dataToSet }));
+        }
+    }, [fetchedData]);
+
+    // Local Location Options Logic
+    const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
+    const [localCities, setLocalCities] = useState<{ label: string; value: string }[]>([]);
+    
+    // Countries is static from locationData
+    const localCountries = React.useMemo(() => Object.keys(locationData).map(key => ({ 
+        label: locationData[key].name, 
+        value: locationData[key].name 
+    })), []);
+
+    useEffect(() => {
+        // Compute States based on Country
+        const countryName = formData.country;
+        const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === countryName);
+        const countryCode = countryEntry ? countryEntry[0] : (countryName === 'USA' ? 'USA' : 'USA'); // Default fallback
+
+        if (countryCode && locationData[countryCode]) {
+            const stateOpts = Object.keys(locationData[countryCode].states).map((key) => ({
+                label: locationData[countryCode].states[key].name,
+                value: locationData[countryCode].states[key].name
+            }));
+            setLocalStates(stateOpts);
+        } else {
+            setLocalStates([]);
+        }
+
+        // Compute Cities based on State
+        if (countryCode && formData.state && locationData[countryCode]) {
+             const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
+             const stateCode = stateEntry ? stateEntry[0] : null; // or match by name if stored by name
+             
+             // If stored by name, we need to find the key. 
+             // locationData structure: { USA: { name: 'USA', states: { AL: { name: 'Alabama', cities: [...] } } } }
+             
+             if (stateCode) {
+                 const cityList = locationData[countryCode].states[stateCode].cities;
+                 setLocalCities(cityList.map((city: string) => ({ label: city, value: city })));
+             } else {
+                 setLocalCities([]);
+             }
+        } else {
+            setLocalCities([]);
+        }
+
+    }, [formData.country, formData.state]);
+
+    // 4. Handle Inputs
+    const handleInputChange = (e: any) => {
+        const name = e.target ? e.target.name : e.name;
+        const value = e.target ? e.target.value : e.value;
+
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Notify parent of ALL changes (important for Create Mode and Location Logic)
+        if (handleLocationChange) {
+             handleLocationChange(name, value);
+        }
+
+        // Clear local error if any (if setErrors passed)
+        if (setErrors && errors[name]) {
+             const newErrors = { ...errors };
+             delete newErrors[name];
+             setErrors(newErrors);
+        }
+    };
+
+    // Summernote
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
-    React.useEffect(() => {
+
+    // 5. Expose Save via Ref
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+             // Basic Validation or logic
+             const payload = { ...formData, id: clientId };
+             if (payload.city === 'Others') {
+                 payload.city = payload.other_city;
+             }
+
+             return new Promise((resolve, reject) => {
+                // @ts-ignore
+                updateMutation.mutate({ id: clientId, data: payload }, {
+                    onSuccess: () => {
+                        toast.success("Client personal details updated successfully");
+                        if (onSaveSuccess) onSaveSuccess();
+                        resolve();
+                    },
+                    onError: (error: any) => {
+                        console.error("Save error:", error);
+                        if (error.response && error.response.data && error.response.data.errors && setErrors) {
+                            const backendErrors = error.response.data.errors;
+                            const mappedErrors: Record<string, string> = {};
+                            Object.keys(backendErrors).forEach(key => {
+                                mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+                            });
+                            setErrors(mappedErrors);
+                        }
+                        reject(error);
+                    }
+                });
+             });
+        }
+    }));
+
+    // 6. Settings Logic (Sync Payment Amount) - kept from original
+    useEffect(() => {
         if (!isHost) {
-            // Priority: Non-Host Plan -> Settings -> Default
             const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : (settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800);
             const planType = nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || 'Standard Enrollment';
 
-            if (!formData.payment_amount || formData.payment_amount !== planAmount) {
-                // Only update if not already set or different (to avoid loops, though strict equality check on float might be risky, generally ok for assignment)
-                 // Better check: if it's 0 or undefined, set it. Or if it's explicitly different from what we want. 
-                 // The initial logic checked !formData.payment_amount. Let's stick to that but ensure we update if plan loads late?
-                 // Actually, if plan loads late, payment_amount might be 800 (default) but now we want e.g. 500.
-                 // So we should probably force update if !formData.payment_amount OR if it's the old default and we have a new plan. 
-                 // Safest is to just set it if we have a plan and valid amount.
-                 if (formData.payment_amount != planAmount) {
-                    handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
-                 }
+            if (formData.payment_amount != planAmount && !clientId) { // Only force update if creating or explicitly needed? Existing logic was loose. Let's keep it safe.
+                 handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
             }
-             if (formData.enrollment_type != planType) {
+             if (formData.enrollment_type != planType && !clientId) {
                  handleInputChange({ target: { name: 'enrollment_type', value: planType } });
              }
 
         } else if (isHost && formData.enrollment_type) {
-            // Sync price for the current enrollment type (handles default values on mount)
             const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
             if (selectedOption && formData.payment_amount !== selectedOption.price) {
                 handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
             }
         }
-    }, [isHost, settings, formData.enrollment_type, formData.payment_amount]);
+    }, [isHost, settings, formData.enrollment_type, formData.payment_amount, nonHostPlan]);
 
 
-    if (isLoading) {
-        return (
-            <div className="row">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                    <div className="col-lg-6 mb-3" key={i}>
-                        <div className="placeholder-glow">
-                            <span className="placeholder col-4 mb-2"></span>
-                            <span className="placeholder col-12 p-3"></span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
+    if (isFetching && clientId) {
+         return (
+             <div className="row">
+                 {[1, 2, 3, 4, 5, 6].map(i => (
+                     <div className="col-lg-6 mb-3" key={i}>
+                         <div className="placeholder-glow">
+                             <span className="placeholder col-4 mb-2"></span>
+                             <span className="placeholder col-12 p-3"></span>
+                         </div>
+                     </div>
+                 ))}
+             </div>
+         );
     }
 
+    // Reuse rendering logic
     return (
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
@@ -270,7 +422,7 @@ export default function ClientInfoSection({
                         <label className="form-label">Country <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.country}
-                            options={countries || []}
+                            options={localCountries}
                             onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
@@ -287,7 +439,7 @@ export default function ClientInfoSection({
                         <label className="form-label">State <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.state}
-                            options={states || []}
+                            options={localStates}
                             onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
@@ -306,7 +458,7 @@ export default function ClientInfoSection({
                         <label className="form-label">City <span className="text-danger">*</span></label>
                         <Dropdown
                             value={formData.city}
-                            options={[...(cities || []), { label: 'Others', value: 'Others' }]}
+                            options={[...localCities, { label: 'Others', value: 'Others' }]}
                             onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
@@ -386,10 +538,11 @@ export default function ClientInfoSection({
                         <label htmlFor="entity_type" className="form-label">Entity Type</label>
                         <Dropdown
                             value={formData.entity_type}
-                            options={entityTypeOptions}
+                            options={entityTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select entity type"
+                            filter
                             className={`w-100 ${errors.entity_type ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
@@ -401,10 +554,11 @@ export default function ClientInfoSection({
                         <label htmlFor="industry_type" className="form-label">Industry Type</label>
                         <Dropdown
                             value={formData.industry_type}
-                            options={industryTypeOptions}
+                            options={industryTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select industry type"
+                            filter
                             className={`w-100 ${errors.industry_type ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
@@ -475,7 +629,6 @@ export default function ClientInfoSection({
                         <div className="mb-3">
                             <label className="form-label">Enrollment Fee (Applied)</label>
                             <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
-                                {/* Hidden enrollment type for non-host - ACCURATE CODE PATTERN */}
                                 <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || ''} />
                                 
                                 <div className="flex-shrink-0 me-3">
@@ -508,4 +661,6 @@ export default function ClientInfoSection({
             </div>
         </form>
     );
-}
+});
+
+export default ClientInfoSection;

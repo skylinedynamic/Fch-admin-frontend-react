@@ -783,7 +783,7 @@ export default function PartnerProfile() {
                 {/* Page Title */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column">
+                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Partner Profile</h4>
                                 <nav aria-label="breadcrumb">

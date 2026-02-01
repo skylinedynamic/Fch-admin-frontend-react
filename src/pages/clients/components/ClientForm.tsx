@@ -1,22 +1,34 @@
 import React from 'react';
-import ClientInfoSection from './ClientInfoSection';
-import BusinessFinancialsSection from './BusinessFinancialsSection';
-import DocumentChecklistSection from './DocumentChecklistSection';
+import ClientInfoSection, { ClientInfoSectionRef } from './ClientInfoSection';
+import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './BusinessFinancialsSection';
+import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
 import type { Client, ChecklistItem } from '../../../modules/client/types';
 // @ts-ignore
 import FormLoader from '../../../components/Loader/FormLoader';
 
 interface ClientFormProps {
+    clientId?: string | null;
     activeTab: string;
-    formData: Client;
+    // Refs
+    personalRef?: React.Ref<ClientInfoSectionRef>;
+    financialRef?: React.Ref<BusinessFinancialsSectionRef>;
+    checklistRef?: React.Ref<DocumentChecklistSectionRef>;
+    
+    // Logic / Data Props
+    formData?: Client;
+    initialData?: Client;
     errors: Record<string, string>;
+    setErrors?: (errors: Record<string, string>) => void;
     handleInputChange: (e: any) => void;
+    
+    // UI Options
     countries: { label: string; value: string }[];
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
-    checklist?: ChecklistItem[];
-    handleChecklistChange?: (itemId: number) => void;
+    
+    // Checklist removed -> handled internally
+    
     isLoading?: boolean;
     isHost?: boolean;
     settings?: any;
@@ -24,15 +36,19 @@ interface ClientFormProps {
 }
 
 export default function ClientForm({
+    clientId,
     activeTab,
+    personalRef,
+    financialRef,
+    checklistRef,
     formData,
+    initialData,
     errors,
+    setErrors,
     handleInputChange,
     countries,
     states,
     cities,
-    checklist,
-    handleChecklistChange,
     isLoading,
     isHost,
     settings,
@@ -43,17 +59,25 @@ export default function ClientForm({
             {/* Client Information Tab */}
             {activeTab === 'personalDetails' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    {isLoading ? (
+                    {/* Render Loader only if parent says loading AND we don't have our own handling? 
+                        Actually ClientInfoSection handles its own fetching loader. 
+                        Parent isLoading might be for "Create" submission or initial mount. 
+                    */}
+                    {isLoading && !clientId ? (
                         <FormLoader count={12} />
                     ) : (
                         <ClientInfoSection
-                            formData={formData}
+                            ref={personalRef}
+                            clientId={clientId}
+                            initialData={initialData || formData} // Fallback to formData for Create
                             errors={errors}
-                            handleInputChange={handleInputChange}
+                            setErrors={setErrors}
+                            // Pass handleInputChange as handleLocationChange to allow parent to track location updates
+                            handleLocationChange={(name, value) => handleInputChange({ target: { name, value } })} 
+                            
                             countries={countries}
                             states={states}
                             cities={cities}
-                            isLoading={isLoading}
                             isHost={isHost}
                             settings={settings}
                             nonHostPlan={nonHostPlan}
@@ -65,14 +89,16 @@ export default function ClientForm({
             {/* Business Financials Tab */}
             {activeTab === 'businessFinancials' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    {isLoading ? (
+                     {isLoading && !clientId ? (
                         <FormLoader count={12} />
                     ) : (
                         <BusinessFinancialsSection
-                            formData={formData}
+                            ref={financialRef}
+                            clientId={clientId}
+                            initialData={initialData || formData}
                             errors={errors}
-                            handleInputChange={handleInputChange}
-                            isLoading={isLoading}
+                            setErrors={setErrors}
+                            isLoading={isLoading && !clientId}
                         />
                     )}
                 </div>
@@ -81,14 +107,17 @@ export default function ClientForm({
             {/* Document Checklist Tab */}
             {activeTab === 'documentChecklist' && (
                 <div className="tab-pane active show" role="tabpanel">
-                    {isLoading ? (
+                    {isLoading && !clientId ? (
                         <FormLoader count={8} />
                     ) : (
-                        <DocumentChecklistSection
-                            checklist={checklist || []}
-                            handleChecklistChange={handleChecklistChange || (() => { })}
-                            isLoading={isLoading}
-                        />
+                        clientId ? (
+                            <DocumentChecklistSection
+                                ref={checklistRef}
+                                clientId={clientId}
+                            />
+                        ) : (
+                            <div>Please create the client first to view checklist.</div>
+                        )
                     )}
                 </div>
             )}
