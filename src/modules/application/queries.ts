@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -69,4 +69,15 @@ export const usePreQualificationStats = () => {
         queryKey: [...queryKeys.application.all, 'pre-qualification', ...queryKeys.application.summary],
         queryFn: getPreQualificationStats,
     });
+};
+
+export const useSaveFundingApplicationCommission = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveFundingApplicationCommission,
+    onSuccess: (data, variables) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
+    },
+  });
 };
