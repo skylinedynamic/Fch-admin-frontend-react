@@ -211,8 +211,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 6. Settings Logic (Sync Payment Amount) - kept from original
     useEffect(() => {
         if (!isHost) {
-            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : (settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800);
-            const planType = nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || 'Standard Enrollment';
+            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
+            const planType = nonHostPlan?.enrollment_type || 'Fixed enrollment';
 
             if (formData.payment_amount != planAmount && !clientId) { // Only force update if creating or explicitly needed? Existing logic was loose. Let's keep it safe.
                  handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
@@ -629,7 +629,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <div className="mb-3">
                             <label className="form-label">Enrollment Fee (Applied)</label>
                             <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
-                                <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || settings?.non_host_enrollment_value || ''} />
+                                <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
                                 
                                 <div className="flex-shrink-0 me-3">
                                     <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
@@ -638,7 +638,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 </div>
                                 <div className="flex-grow-1 ps-2">
                                     <p className="mb-0 text-muted fs-15 lh-base">
-                                        Fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount).toFixed(2) : (settings?.non_host_enrollment_price || '800.00')}</span>
+                                        Fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount).toFixed(2) : '800.00'}</span>
                                     </p>
                                 </div>
                             </div>

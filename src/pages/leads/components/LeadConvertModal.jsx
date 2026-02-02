@@ -90,8 +90,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 payload.amount = selectedOption ? selectedOption.price : 0;
             } else {
                 const plan = nonHostPlans?.[0];
-                payload.enrollment_type = plan?.enrollment_type || settings?.non_host_enrollment_value || '';
-                payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : (settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800);
+                payload.enrollment_type = plan?.enrollment_type || 'Fixed enrollment';
+                payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : 800;
             }
         } else if (targetType === 'Partner') {
             payload.partner_type = partnerType;
@@ -154,7 +154,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 ) : (
                                     <div className="mb-4 text-start bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                         {/* Hidden enrollment type for non-host */}
-                                        <input type="hidden" value={nonHostPlans?.[0]?.enrollment_type || settings?.non_host_enrollment_value || ''} />
+                                        <input type="hidden" value={nonHostPlans?.[0]?.enrollment_type || 'Fixed enrollment'} />
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
                                                 <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
@@ -163,7 +163,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         <div className="flex-grow-1 ps-2">
                                             <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                             <p className="mb-0 text-muted fs-15 lh-base">
-                                                A fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlans?.[0]?.payment_amount ? parseFloat(nonHostPlans[0].payment_amount).toFixed(2) : (settings?.non_host_enrollment_price || '800.00')}</span>
+                                                A fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlans?.[0]?.payment_amount ? parseFloat(nonHostPlans[0].payment_amount).toFixed(2) : '800.00' }</span>
                                             </p>
                                         </div>
                                     </div>

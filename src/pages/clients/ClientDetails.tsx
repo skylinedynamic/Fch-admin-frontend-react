@@ -271,8 +271,8 @@ export default function ClientDetails() {
                 if (isHost) {
                     amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
                 } else {
-                    amount = nonHostPlan.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 0;
-                    enrollment_type = nonHostPlan.enrollment_type;
+                    amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
+                    enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
                 }
 
                 // Accurate Payload Fields
@@ -538,6 +538,7 @@ export default function ClientDetails() {
                                     isHost={isHost}
                                     // @ts-ignore
                                     settings={settings}
+                                    nonHostPlan={nonHostPlan}
                                 />
                             </div>
                         </div>
