@@ -4,7 +4,6 @@ import { Dropdown } from 'primereact/dropdown';
 import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
 import { fetchPartnerPlans, fetchNonHostBorrowerPlans } from '../../../modules/partner/services';
-import { fetchSettings } from '../../../modules/settings/services';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
     const [enrollmentType, setEnrollmentType] = useState('One Time Payment');
@@ -12,7 +11,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const [partnerEnrollmentType, setPartnerEnrollmentType] = useState('');
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [nonHostPlans, setNonHostPlans] = useState([]);
-    const [settings, setSettings] = useState(null);
     
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -47,13 +45,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         if (!modal) return;
         if (show) {
             modal.show();
-            // Fetch plans and settings when modal opens
+            // Fetch plans when modal opens
             const loadData = async () => {
                 try {
-                    const promises = [
-                        fetchPartnerPlans(),
-                        fetchSettings()
-                    ];
+                    const promises = [fetchPartnerPlans()];
                     
                     if (!isHost) {
                         promises.push(fetchNonHostBorrowerPlans());
@@ -61,11 +56,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                     const results = await Promise.all(promises);
                     const plansRes = results[0];
-                    const settingsRes = results[1];
-                    const nonHostPlansRes = results[2];
+                    const nonHostPlansRes = !isHost ? results[1] : null;
 
                     if (plansRes.status) setPartnerPlans(plansRes.data || []);
-                    if (settingsRes.status) setSettings(settingsRes.data);
                     if (nonHostPlansRes && nonHostPlansRes.status) setNonHostPlans(nonHostPlansRes.data || []);
                 } catch (err) {
                     console.error('Failed to fetch lead conversion data:', err);
