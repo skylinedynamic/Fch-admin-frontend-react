@@ -212,6 +212,7 @@ export interface FundingApplicationDetails {
     admin_commission_amount?: string | number | null;
     partner_commission?: string | number | null;
     partner_commission_amount?: string | number | null;
+    total_commission?: string | number | null;
     total_funded_amount?: string | number | null;
     funded_note?: string | null;
     currency?: string | null;

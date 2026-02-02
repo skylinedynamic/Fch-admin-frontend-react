@@ -1,10 +1,10 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { 
-  PaginatedApiResponse, 
-  SingleApiResponse, 
-  PreQualificationApplication, 
-  FundingApplication, 
-  PreQualificationApplicationDetails, 
+import {
+  PaginatedApiResponse,
+  SingleApiResponse,
+  PreQualificationApplication,
+  FundingApplication,
+  PreQualificationApplicationDetails,
   FundingApplicationDetails,
   ApplicationStatistics
 } from './types';
@@ -49,7 +49,7 @@ export const getPreQualificationStats = async (): Promise<SingleApiResponse<Appl
   return response.data;
 };
 
-export const saveFundingApplicationCommission = async (payload: { funding_application_id: number | string; admin_commission: string | number | null; partner_commission: string | number | null }): Promise<SingleApiResponse<any>> => {
+export const saveFundingApplicationCommission = async (payload: { funding_application_id: number | string; total_commission: number; admin_commission: string | number | null; partner_commission: string | number | null }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/admin/funding-application/save-commission', payload);
   return response.data;
 };

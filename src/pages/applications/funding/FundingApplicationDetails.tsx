@@ -45,6 +45,7 @@ export default function FundingApplicationDetails() {
     const updateMutation = useUpdateFundingApplicationStatus();
 
     // Commission state
+    const [successFee, setSuccessFee] = useState<string>('');
     const [adminCommissionRate, setAdminCommissionRate] = useState<string>('');
     const [partnerCommissionRate, setPartnerCommissionRate] = useState<string>('');
     const [commissionErrors, setCommissionErrors] = useState<{ admin_commission?: string; partner_commission?: string }>({});
@@ -63,13 +64,35 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (app?.status) setStatus(app.status);
         if (app?.status_note) setStatusNote(app.status_note);
-        
+
         // Sync commission rates from response
-        if (app && 'admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
-            setAdminCommissionRate(app.admin_commission.toString());
-        }
-        if (app && 'partner_commission' in app && app.partner_commission !== null && app.partner_commission !== undefined) {
-            setPartnerCommissionRate(app.partner_commission.toString());
+        if (app) {
+            let fetchedSuccessFee = 0;
+            let fetchedPartnerShare = 0;
+            let fetchedAdminShare = 100;
+
+            // Determine Success Fee / Total Rate
+            if ('total_commission' in app && app.total_commission !== null && app.total_commission !== undefined) {
+                fetchedSuccessFee = parseFloat(app.total_commission.toString());
+            } else if ('admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
+                fetchedSuccessFee = parseFloat(app.admin_commission.toString());
+            }
+
+            // Determine Partner Share
+            if ('partner_commission' in app && app.partner_commission !== null && app.partner_commission !== undefined) {
+                fetchedPartnerShare = parseFloat(app.partner_commission.toString());
+            }
+
+            // Determine Admin Share
+            if ('total_commission' in app && 'admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
+                fetchedAdminShare = parseFloat(app.admin_commission.toString());
+            } else {
+                fetchedAdminShare = 100 - fetchedPartnerShare;
+            }
+
+            setSuccessFee(fetchedSuccessFee > 0 ? fetchedSuccessFee.toString() : '');
+            setPartnerCommissionRate(fetchedPartnerShare.toString());
+            setAdminCommissionRate(fetchedAdminShare.toString());
         }
     }, [app]);
 
@@ -122,34 +145,25 @@ export default function FundingApplicationDetails() {
     };
 
     const requestedAmount = parseCurrency(app.requested_amount);
-    
+
     // Hierarchical Calculation Logic
-    // totalRate is stored in adminCommissionRate state
-    // partnerRate is stored in partnerCommissionRate state (representing % of the total commission)
-    
-    // 1. Total Commission Amount (Requested Amount * Total Rate)
-    const totalCommissionAmount = requestedAmount * (parseFloat(adminCommissionRate || '0') / 100);
-        
-    // 2. Partner Commission Amount (Total Commission * Partner Rate %)
-    const partnerCommissionAmount = (partnerCommissionRate === app.partner_commission?.toString()) && (app as any).partner_commission_amount
-        ? parseCurrency((app as any).partner_commission_amount)
-        : totalCommissionAmount * (parseFloat(partnerCommissionRate || '0') / 100);
 
-    // 3. Admin Commission Amount (Total - Partner)
-    // If partner commission is hidden (same partner), admin gets the total
-    const adminCommissionAmount = showPartnerCommission 
-        ? totalCommissionAmount - partnerCommissionAmount 
-        : totalCommissionAmount;
+    // 1. Total Commission Amount (Requested Amount * Success Fee)
+    const totalCommissionAmount = requestedAmount * (parseFloat(successFee || '0') / 100);
 
-    // 4. Admin Commission effective rate for display (Total Rate - (Total Rate * Partner Rate %))
-    const effectiveAdminRate = showPartnerCommission
-        ? parseFloat(adminCommissionRate || '0') - (parseFloat(adminCommissionRate || '0') * (parseFloat(partnerCommissionRate || '0') / 100))
-        : parseFloat(adminCommissionRate || '0');
+    // Shares (Input as 0-100)
+    const adminShareVal = parseFloat(adminCommissionRate || '0');
+    const partnerShareVal = parseFloat(partnerCommissionRate || '0');
 
-    // 5. Admin share percentage of the Total Commission
-    const adminShareRate = showPartnerCommission
-        ? 100 - parseFloat(partnerCommissionRate || '0')
-        : 100;
+    // 2. Admin Commission Amount (Total Commission * Admin Share%)
+    const adminCommissionAmount = totalCommissionAmount * (adminShareVal / 100);
+
+    // 3. Partner Commission Amount (Total Commission * Partner Share%)
+    const partnerCommissionAmount = totalCommissionAmount * (partnerShareVal / 100);
+
+    // 4. Shares for Display
+    const adminShareRate = adminShareVal;
+    const partnerShareRate = partnerShareVal;
 
     // Helper for negative-safe currency display
     const formatCurrencyValue = (amount: number) => {
@@ -160,22 +174,23 @@ export default function FundingApplicationDetails() {
 
     const handleSaveCommission = () => {
         if (!app.id) return;
-        
+
         setCommissionErrors({});
-        
-        // Send rate as null if no value is entered
-        const adminRate = adminCommissionRate && adminCommissionRate !== '' 
-            ? parseFloat(adminCommissionRate)
-            : null;
-        
-        const partnerRate = partnerCommissionRate && partnerCommissionRate !== '' 
-            ? parseFloat(partnerCommissionRate)
-            : null;
-        
+
+        const totalRate = successFee && successFee !== '' ? parseFloat(successFee) : 0;
+        // adminCommissionRate is already the Share %
+        const aShare = adminCommissionRate && adminCommissionRate !== '' ? parseFloat(adminCommissionRate) : 0;
+        // partnerCommissionRate is already the Share %
+        const pShare = partnerCommissionRate && partnerCommissionRate !== '' ? parseFloat(partnerCommissionRate) : 0;
+
+        // We send Shares for admin/partner commission.
+        // We send Success Fee as total_commission.
+
         saveCommissionMutation.mutate({
             funding_application_id: app.id,
-            admin_commission: adminRate,
-            partner_commission: partnerRate
+            total_commission: totalRate,
+            admin_commission: aShare,
+            partner_commission: pShare
         }, {
             onSuccess: () => {
                 toast.success('Commission saved successfully');
@@ -184,11 +199,11 @@ export default function FundingApplicationDetails() {
                 if (error?.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     setCommissionErrors({
-                        admin_commission: Array.isArray(backendErrors.admin_commission) 
-                            ? backendErrors.admin_commission[0] 
+                        admin_commission: Array.isArray(backendErrors.admin_commission)
+                            ? backendErrors.admin_commission[0]
                             : backendErrors.admin_commission,
-                        partner_commission: Array.isArray(backendErrors.partner_commission) 
-                            ? backendErrors.partner_commission[0] 
+                        partner_commission: Array.isArray(backendErrors.partner_commission)
+                            ? backendErrors.partner_commission[0]
                             : backendErrors.partner_commission
                     });
                 } else {
@@ -524,19 +539,17 @@ export default function FundingApplicationDetails() {
                                                         e.preventDefault();
                                                         handleSaveCommission();
                                                     }}>
-                                                        <div className="mb-4">
-                                                            <label className="form-label fs-13 text-muted fw-medium text-primary">Commission Rate</label>
+                                                        <div className="mb-3">
+                                                            <label className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
                                                             <div className="input-group">
-                                                                <input 
-                                                                    type="number" 
-                                                                    className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''}`}
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
                                                                     placeholder="0"
-                                                                    value={adminCommissionRate}
+                                                                    value={successFee}
                                                                     onChange={(e) => {
-                                                                        setAdminCommissionRate(e.target.value);
-                                                                        if (commissionErrors.admin_commission) {
-                                                                            setCommissionErrors({ ...commissionErrors, admin_commission: undefined });
-                                                                        }
+                                                                        const val = e.target.value;
+                                                                        setSuccessFee(val);
                                                                     }}
                                                                     min="0"
                                                                     max="100"
@@ -544,43 +557,95 @@ export default function FundingApplicationDetails() {
                                                                 />
                                                                 <span className="input-group-text bg-white text-muted">%</span>
                                                             </div>
-                                                            {commissionErrors.admin_commission && (
-                                                                <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
-                                                            )}
-                                                            <div className="form-text fs-12 text-muted mt-1">
-                                                                Calculated from Requested Amount (${requestedAmount.toLocaleString()})
-                                                            </div>
                                                         </div>
 
                                                         {showPartnerCommission && (
-                                                            <div className="mb-0">
-                                                                <label className="form-label fs-13 text-muted fw-medium text-success">Partner Commission Rate</label>
-                                                                <div className="input-group">
-                                                                    <input 
-                                                                        type="number" 
-                                                                        className={`form-control ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''}`}
-                                                                        placeholder="0" 
-                                                                        value={partnerCommissionRate}
-                                                                        onChange={(e) => {
-                                                                            setPartnerCommissionRate(e.target.value);
-                                                                            if (commissionErrors.partner_commission) {
-                                                                                setCommissionErrors({ ...commissionErrors, partner_commission: undefined });
-                                                                            }
-                                                                        }}
-                                                                        min="0"
-                                                                        max="100"
-                                                                        step="0.1"
-                                                                    />
-                                                                    <span className="input-group-text bg-white text-muted">%</span>
+                                                            <div className="row">
+                                                                <div className="col-md-6 mb-0">
+                                                                    <label className="form-label fs-12 text-muted fw-medium text-primary">Admin Commission Rate</label>
+                                                                    <div className="input-group">
+                                                                        <input
+                                                                            type="number"
+                                                                            className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''}`}
+                                                                            placeholder="0"
+                                                                            value={adminCommissionRate}
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value;
+                                                                                setAdminCommissionRate(val);
+                                                                                const newAdminShare = parseFloat(val);
+
+                                                                                if (!isNaN(newAdminShare)) {
+                                                                                    const newPartnerShare = 100 - newAdminShare;
+                                                                                    setPartnerCommissionRate(newPartnerShare >= 0 ? newPartnerShare.toFixed(2).replace(/\.00$/, '') : '0');
+                                                                                }
+
+                                                                                if (commissionErrors.admin_commission) {
+                                                                                    setCommissionErrors({ ...commissionErrors, admin_commission: undefined });
+                                                                                }
+                                                                            }}
+                                                                            min="0"
+                                                                            max="100"
+                                                                            step="0.1"
+                                                                        />
+                                                                        <span className="input-group-text bg-white text-muted">%</span>
+                                                                    </div>
+                                                                    {commissionErrors.admin_commission && (
+                                                                        <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
+                                                                    )}
                                                                 </div>
-                                                                {commissionErrors.partner_commission && (
-                                                                    <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
-                                                                )}
-                                                                <div className="form-text fs-12 text-muted mt-1">
-                                                                    Calculated from Total Commission Amount used as base
+                                                                <div className="col-md-6 mb-0">
+                                                                    <label className="form-label fs-12 text-muted fw-medium text-success">Partner Commission Rate</label>
+                                                                    <div className="input-group">
+                                                                        <input
+                                                                            type="number"
+                                                                            className={`form-control ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''}`}
+                                                                            placeholder="0"
+                                                                            value={partnerCommissionRate}
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value;
+                                                                                setPartnerCommissionRate(val);
+                                                                                const newPartnerShare = parseFloat(val);
+
+                                                                                if (!isNaN(newPartnerShare)) {
+                                                                                    const newAdminShare = 100 - newPartnerShare;
+                                                                                    setAdminCommissionRate(newAdminShare >= 0 ? newAdminShare.toFixed(2).replace(/\.00$/, '') : '0');
+                                                                                }
+                                                                                if (commissionErrors.partner_commission) {
+                                                                                    setCommissionErrors({ ...commissionErrors, partner_commission: undefined });
+                                                                                }
+                                                                            }}
+                                                                            min="0"
+                                                                            max="100"
+                                                                            step="0.1"
+                                                                        />
+                                                                        <span className="input-group-text bg-white text-muted">%</span>
+                                                                    </div>
+                                                                    {commissionErrors.partner_commission && (
+                                                                        <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
+                                                        <div className="mt-4 text-end">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary"
+                                                                onClick={handleSaveCommission}
+                                                                disabled={saveCommissionMutation.isPending}
+                                                            >
+                                                                {saveCommissionMutation.isPending ? (
+                                                                    <>
+                                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                        Saving Commission...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <i className="ri-save-line me-2"></i>
+                                                                        Save Commission
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
                                                         {/* Hidden submit button to enable Enter key submission */}
                                                         <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
                                                     </form>
@@ -598,7 +663,7 @@ export default function FundingApplicationDetails() {
                                                                     <i className="bx bx-credit-card text-primary me-2"></i>
                                                                     <span className="fw-medium">Total Requested Amount:</span>
                                                                 </div>
-                                                                <h5 className="mb-0 fw-bold">${requestedAmount.toLocaleString()}</h5>
+                                                                <h5 className="mb-0 fw-bold">{formatCurrencyValue(requestedAmount)}</h5>
                                                             </div>
                                                         </div>
 
@@ -609,7 +674,7 @@ export default function FundingApplicationDetails() {
                                                                         <div className="d-flex justify-content-between align-items-center">
                                                                             <div>
                                                                                 <i className="ri-pie-chart-line text-secondary me-2"></i>
-                                                                                <span className="fw-medium">Total Commission Amount:</span>
+                                                                                <span className="fw-medium">Success Commission Amount:</span>
                                                                             </div>
                                                                             <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
                                                                         </div>
@@ -636,8 +701,8 @@ export default function FundingApplicationDetails() {
                                                                             {formatCurrencyValue(adminCommissionAmount)}
                                                                         </h4>
                                                                         <p className="text-muted mb-0 mt-2 fs-12">
-                                                                            <span className="badge bg-primary fs-10">{adminShareRate}%</span>
-                                                                            <span className="ms-1">of Total Commission Amount</span>
+                                                                            <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                            <span className="ms-1">Share of Success Fee</span>
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -663,8 +728,8 @@ export default function FundingApplicationDetails() {
                                                                                 {formatCurrencyValue(partnerCommissionAmount)}
                                                                             </h4>
                                                                             <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                <span className="badge bg-success fs-10">{partnerCommissionRate || '0'}%</span>
-                                                                                <span className="ms-1">of Total Commission Amount</span>
+                                                                                <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                <span className="ms-1">Share of Success Fee</span>
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -673,26 +738,7 @@ export default function FundingApplicationDetails() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-4 text-end">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-primary"
-                                                            onClick={handleSaveCommission}
-                                                            disabled={saveCommissionMutation.isPending}
-                                                        >
-                                                            {saveCommissionMutation.isPending ? (
-                                                                <>
-                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                    Saving Commission...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <i className="ri-save-line me-2"></i>
-                                                                    Save Commission
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
+
                                                 </div>
                                             </div>
                                         </div>
