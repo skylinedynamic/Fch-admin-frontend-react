@@ -1,13 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { ChecklistItem } from '../../../modules/client/types';
+import { useClientChecklist, useSaveClientChecklist } from '../../../modules/client/queries';
 
-interface DocumentChecklistSectionProps {
-    checklist: ChecklistItem[];
-    handleChecklistChange: (itemId: number) => void;
-    isLoading?: boolean;
+export interface DocumentChecklistSectionRef {
+    save: () => Promise<void>;
 }
 
-export default function DocumentChecklistSection({ checklist, handleChecklistChange, isLoading = false }: DocumentChecklistSectionProps) {
+interface DocumentChecklistSectionProps {
+    clientId: string | number;
+}
+
+const DocumentChecklistSection = forwardRef<DocumentChecklistSectionRef, DocumentChecklistSectionProps>(({ clientId }, ref) => {
+    
+    // Internal state for the checklist
+    const [localChecklist, setLocalChecklist] = useState<ChecklistItem[]>([]);
+
+    // Hooks
+    const { data: fetchedChecklist, isLoading, isError } = useClientChecklist(clientId, !!clientId);
+    const saveMutation = useSaveClientChecklist();
+
+    // Sync fetched data to local state
+    useEffect(() => {
+        if (fetchedChecklist && fetchedChecklist.data) {
+            // Sort by sort_order
+            const sortedList = [...fetchedChecklist.data].sort((a: ChecklistItem, b: ChecklistItem) => a.sort_order - b.sort_order);
+            setLocalChecklist(sortedList);
+        }
+    }, [fetchedChecklist]);
+
+    // Expose save method
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+            const checkedIds = localChecklist.filter(item => item.current_status).map(item => item.id);
+            await saveMutation.mutateAsync({ id: clientId, checkedIds });
+        }
+    }));
+
+    const handleChecklistChange = (itemId: number) => {
+        setLocalChecklist(prev => prev.map(item =>
+            item.id === itemId ? { ...item, current_status: !item.current_status } : item
+        ));
+    };
+
     if (isLoading) {
         return (
             <div className="card shadow-none border">
@@ -47,8 +81,7 @@ export default function DocumentChecklistSection({ checklist, handleChecklistCha
     }
 
     // Split checklist into two columns
-    // Handle case where checklist might be undefined/null just in case
-    const list = checklist || [];
+    const list = localChecklist || [];
     const midPoint = Math.ceil(list.length / 2);
     const firstColumn = list.slice(0, midPoint);
     const secondColumn = list.slice(midPoint);
@@ -103,10 +136,12 @@ export default function DocumentChecklistSection({ checklist, handleChecklistCha
 
                 {list.length === 0 && (
                     <div className="text-center text-muted py-4">
-                        Loading checklist...
+                        {isError ? "Failed to load checklist." : "No checklist items found."}
                     </div>
                 )}
             </div>
         </div>
     );
-}
+});
+
+export default DocumentChecklistSection;

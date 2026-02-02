@@ -22,6 +22,9 @@ import { fetchAppointments, updateAppointment } from '../../modules/appointment/
 // Components
 import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 
+// Custom CSS
+import '../../../assets/css/appointments.css';
+
 export default function Appointments() {
     const calendarRef = useRef(null);
     const appointmentModalRef = useRef(null);
@@ -203,7 +206,7 @@ export default function Appointments() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content appointments-page">
             <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row">
@@ -435,53 +438,6 @@ export default function Appointments() {
                         </div>
 
                         <div style={{ clear: 'both' }}></div>
-
-                        <style>
-                            {`
-                                .fc-event, 
-                                .fc-daygrid-event, 
-                                .fc-daygrid-block-event, 
-                                .fc-h-event, 
-                                .fc-v-event {
-                                    padding: 6px 12px !important;
-                                    font-size: 13px !important;
-                                    border-radius: 6px !important;
-                                    box-shadow: none !important;
-                                    margin-top: 2px !important;
-                                    margin-bottom: 2px !important;
-                                    min-height: 32px !important;
-                                    border-width: 1px !important; /* Subtle border same as bg */
-                                }
-                                .fc-event-main {
-                                    padding: 2px 4px !important;
-                                    color: inherit !important;
-                                    display: flex !important;
-                                    align-items: center !important;
-                                }
-                                .fc-event-title, .fc-event-main-frame {
-                                    font-weight: 600 !important;
-                                    white-space: nowrap !important;
-                                    overflow: hidden !important;
-                                    text-overflow: ellipsis !important;
-                                }
-                                .fc-daygrid-event-dot {
-                                    border-color: inherit !important;
-                                }
-                                .fc-event:hover {
-                                    opacity: 0.85 !important;
-                                    transform: translateY(-1px);
-                                    transition: all 0.2s ease;
-                                }
-                                .upcoming-event-card:hover {
-                                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-                                    transform: translateY(-2px);
-                                    border-color: #405189 !important;
-                                }
-                                .cursor-pointer {
-                                    cursor: pointer !important;
-                                }
-                            `}
-                        </style>
                     </div>
                 </div>
                 <AppointmentModal ref={appointmentModalRef} onSuccess={loadAppointments} />

@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClientForm from './components/ClientForm';
+import { ClientInfoSectionRef } from './components/ClientInfoSection';
+import { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
+import { DocumentChecklistSectionRef } from './components/DocumentChecklistSection';
 // @ts-ignore - JSX component imported in TSX file
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 // @ts-ignore - JSX component imported in TSX file
@@ -10,7 +13,8 @@ import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal'
 // @ts-ignore - JSX component imported in TSX file
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 // @ts-ignore
-import { createClient, updateClient, fetchClientById, fetchClientChecklist, saveClientChecklist, fetchBorrowerProfileStats } from '../../modules/client/services';
+import { createClient, updateClient } from '../../modules/client/services';
+import { useClientProfileStats } from '../../modules/client/queries';
 // @ts-ignore
 import { fetchSettings } from '../../modules/settings/services'; 
 import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
@@ -48,8 +52,6 @@ export default function ClientDetails() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-    const [originalChecklist, setOriginalChecklist] = useState<ChecklistItem[]>([]); // To detect changes if needed
 
     // Payment Modal State
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -66,9 +68,14 @@ export default function ClientDetails() {
         total_tickets: 0,
         total_documents: 0
     });
-    const [statsLoading, setStatsLoading] = useState(false);
+    // const [statsLoading, setStatsLoading] = useState(false); // Managed by Query
     const [settings, setSettings] = useState<any>(null);
     const [nonHostPlan, setNonHostPlan] = useState<any>(null);
+
+    // Refs for Child Components
+    const clientInfoRef = useRef<ClientInfoSectionRef>(null);
+    const financialsRef = useRef<BusinessFinancialsSectionRef>(null);
+    const checklistRef = useRef<DocumentChecklistSectionRef>(null);
 
     // Initial form state
     const [formData, setFormData] = useState<Client>({
@@ -100,7 +107,7 @@ export default function ClientDetails() {
         enrollment_type: '',
         notes: '',
 
-        // Financials
+        // Financials defaults
         currency: 'USD',
         monthly_revenue: '',
         avg_bank_balance: '',
@@ -115,28 +122,54 @@ export default function ClientDetails() {
         funding_urgency: ''
     });
 
-    // Location data state
+    // Location data state for Create Mode or simple passing (Child manages detailed logic)
     const [countries] = useState(
         Object.keys(locationData).map((key) => ({
             label: locationData[key].name,
             value: locationData[key].name
         }))
     );
-    const [states, setStates] = useState<{ label: string; value: string }[]>([]);
-    const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
+     // Parent doesn't need states/cities anymore for its own rendering, 
+     // but ClientForm might expect them if we kept the props. 
+     // We removed them from ClientInfoSection props usage but kept in ClientForm? 
+     // Actually ClientForm passes them to ClientInfoSection. 
+     // But ClientInfoSection ignores them now.
+     // So we can pass empty arrays or remove the props from ClientForm.
+     // Let's pass empty arrays to satisfy TS for now, or remove if we update ClientForm.
+     // Update: ClientDetails passes `states` and `cities` to ClientForm. 
+     // Ideally we should remove them from ClientForm props too, but to minimize changes:
+     const [states, setStates] = useState<{ label: string; value: string }[]>([]);
+     const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
+
 
     // Check for activeTab in navigation state (redirect from create)
     useEffect(() => {
         if (location.state && location.state.activeTab) {
             setActiveTab(location.state.activeTab);
-            // Optional: clear state so refresh doesn't keep resetting? 
-            // Standard behavior usually fine, but let's keep it simple.
         }
     }, [location.state]);
 
-    // Handle cascading    // Load Data and Settings on Mount
+    // Profile Stats Query
+    const { data: statsData, isLoading: statsLoading } = useClientProfileStats(id as string, !!id);
+
+    // Effect to update stats state when data arrives
+    useEffect(() => {
+        if (statsData && statsData.data) {
+             setProfileStats({
+                total_meetings: statsData.data.total_meetings || 0,
+                total_invoices: statsData.data.total_invoices || 0,
+                enrollment_type: statsData.data.enrollment_type || 'N/A',
+                total_prequalification: statsData.data.total_prequalification || 0,
+                total_tickets: statsData.data.total_tickets || 0,
+                total_documents: statsData.data.total_documents || 0
+            });
+        }
+    }, [statsData]);
+
+    // Initial Data Loading Effect (Settings only)
     useEffect(() => {
         const loadInitialData = async () => {
+             // ... kept same ...
             try {
                 const settingPromise = fetchSettings();
                 const promises = [settingPromise];
@@ -163,153 +196,14 @@ export default function ClientDetails() {
             }
         };
         loadInitialData();
+         // Removed redundant location logic here. Child handles it.
+    }, []);
 
-        // Find country code based on Name
-        const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country);
-        const countryCode = countryEntry ? countryEntry[0] : (formData.country === 'USA' ? 'USA' : 'USA'); // Default fallback/handling
-
-        if (countryCode && locationData[countryCode]) {
-            const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
-                label: locationData[countryCode].states[key].name,
-                value: locationData[countryCode].states[key].name
-            }));
-            setStates(stateOptions);
-        } else {
-            setStates([]);
-        }
-
-        // State -> City
-        if (countryCode && formData.state && locationData[countryCode]) {
-            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
-            const stateCode = stateEntry ? stateEntry[0] : null;
-
-            if (stateCode) {
-                const cityList = locationData[countryCode].states[stateCode].cities;
-                const cityOptions = cityList.map((city: string) => ({ label: city, value: city }));
-                setCities(cityOptions);
-            } else {
-                setCities([]);
-            }
-        } else {
-            setCities([]);
-        }
-    }, [formData.country, formData.state]);
-
-    // Fetch client data if id exists
-    useEffect(() => {
-        const loadData = async () => {
-            if (!id) return;
-
-            setIsLoading(true);
-            try {
-                // Fetch both in parallel
-                await Promise.all([fetchClient(), fetchChecklist(), fetchProfileStats()]);
-            } catch (error) {
-                console.error("Error loading data", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        const fetchClient = async () => {
-            try {
-                const response: any = await fetchClientById(id as string);
-                if (response) {
-                    // Check if response has 'data' property (Laravel Resource format)
-                    const clientData = response.data || response;
-
-                    // Logic to handle "Others" city if the fetched city isn't in valid list
-                    let finalCity = clientData.city;
-                    let finalOtherCity = clientData.other_city;
-
-                    // Normalize Country: If it matches a key in locationData, convert to Name
-                    let finalCountry = clientData.country;
-                    if (locationData[finalCountry]) {
-                        finalCountry = locationData[finalCountry].name;
-                    }
-
-                    // Normalize State: Name lookup needs Country Code first
-                    let finalState = clientData.state;
-                    // Find code for finalCountry
-                    const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
-                    const countryCode = countryEntry ? countryEntry[0] : null;
-
-                    if (countryCode && locationData[countryCode] && locationData[countryCode].states[finalState]) {
-                        // It was a code, convert to Name
-                        finalState = locationData[countryCode].states[finalState].name;
-                    }
-
-                    if (finalCountry && finalState && finalCity && finalCity !== 'Others') {
-                        const searchCountryCode = countryCode || 'USA'; // fallback
-                        // Find state code if finalState is Name
-                        let stateCode = null;
-                        if (locationData[searchCountryCode]) {
-                            const sEntry = Object.entries(locationData[searchCountryCode].states).find(([key, val]) => val.name === finalState);
-                            stateCode = sEntry ? sEntry[0] : finalState; // fallback to value itself
-                        }
-
-                        // Reconstruct logic from useEffect that derived cities
-                        if (locationData[searchCountryCode] && locationData[searchCountryCode].states[stateCode]) {
-                            const validCities = locationData[searchCountryCode].states[stateCode].cities;
-                            if (!validCities.includes(finalCity)) {
-                                // fetched city is NOT in the accepted list -> it's an "Others" city
-                                finalCity = 'Others';
-                                finalOtherCity = clientData.city;
-                            }
-                        }
-                    }
-
-                    setFormData(prev => ({
-                        ...prev,
-                        ...clientData,
-                        country: finalCountry,
-                        state: finalState,
-                        city: finalCity,
-                        other_city: finalOtherCity
-                    }));
-                }
-            } catch (error) {
-                console.error("Failed to fetch client details", error);
-                toast.error("Failed to load client details");
-            }
-        };
-
-        const fetchChecklist = async () => {
-            try {
-                const response = await fetchClientChecklist(id as string);
-                if (response && response.data) {
-                    const sortedList = response.data.sort((a: ChecklistItem, b: ChecklistItem) => a.sort_order - b.sort_order);
-                    setChecklist(sortedList);
-                    setOriginalChecklist(JSON.parse(JSON.stringify(sortedList)));
-                }
-            } catch (error) {
-                console.error("Failed to fetch checklist", error);
-            }
-        };
-
-        const fetchProfileStats = async () => {
-            try {
-                setStatsLoading(true);
-                const response = await fetchBorrowerProfileStats(id as string);
-                if (response && response.status && response.data) {
-                    setProfileStats({
-                        total_meetings: response.data.total_meetings || 0,
-                        total_invoices: response.data.total_invoices || 0,
-                        enrollment_type: response.data.enrollment_type || 'N/A',
-                        total_prequalification: response.data.total_prequalification || 0,
-                        total_tickets: response.data.total_tickets || 0,
-                        total_documents: response.data.total_documents || 0
-                    });
-                }
-            } catch (error) {
-                console.error("Failed to fetch profile stats", error);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-
-        loadData();
-    }, [id]);
+    // Fetch Stats only (Client Data fetched by Child)
+    // Refactored to use useClientProfileStats hook above
+    // useEffect(() => {
+    //    // ...
+    // }, [id]);
 
     const handleTabChange = (tabInfo: string) => {
         if (activeTab === tabInfo) return;
@@ -354,11 +248,7 @@ export default function ClientDetails() {
         }
     };
 
-    const handleChecklistChange = (itemId: number) => {
-        setChecklist(prev => prev.map(item =>
-            item.id === itemId ? { ...item, current_status: !item.current_status } : item
-        ));
-    };
+
 
     const handleSave = async (e: React.FormEvent | React.MouseEvent) => {
         if (e && e.preventDefault) e.preventDefault();
@@ -423,26 +313,20 @@ export default function ClientDetails() {
                     navigate('/clients');
                 }
             } else {
-                // UPDATE EXISTING CLIENT
+                // UPDATE EXISTING CLIENT (Use Refs)
 
-                if (activeTab === 'documentChecklist') {
-                    // SAVE CHECKLIST ONLY
-                    const checkedIds = checklist.filter(item => item.current_status).map(item => item.id);
-                    await saveClientChecklist(id, checkedIds);
+                if (activeTab === 'personalDetails' && clientInfoRef.current) {
+                    await clientInfoRef.current.save();
+                } else if (activeTab === 'businessFinancials' && financialsRef.current) {
+                    await financialsRef.current.save();
+                } else if (activeTab === 'documentChecklist' && checklistRef.current) {
+                    await checklistRef.current.save();
                     toast.success("Document checklist saved successfully");
                 } else if (activeTab === 'documents') {
-                    // Do nothing or maybe valid saving documents logic if needed
-                    // Usually documents are uploaded individually.
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else {
-                    // SAVE CLIENT DETAILS (Info or Financials)
-                    const payload = { ...formData };
-                    if (payload.city === 'Others') {
-                        payload.city = payload.other_city;
-                    }
-
-                    await updateClient(id, payload);
-                    toast.success("Client updated successfully");
+                    // Fallback
+                    toast.warn("No handler for this tab.");
                 }
             }
         } catch (error: any) {
@@ -639,15 +523,17 @@ export default function ClientDetails() {
                             </div>
                             <div className="card-body p-4">
                                 <ClientForm
+                                    clientId={id}
                                     activeTab={activeTab}
+                                    personalRef={clientInfoRef}
+                                    financialRef={financialsRef}
+                                    checklistRef={checklistRef}
                                     formData={formData}
                                     errors={errors}
                                     handleInputChange={handleInputChange}
                                     countries={countries}
                                     states={states}
                                     cities={cities}
-                                    checklist={checklist}
-                                    handleChecklistChange={handleChecklistChange}
                                     isLoading={isLoading}
                                     isHost={isHost}
                                     // @ts-ignore

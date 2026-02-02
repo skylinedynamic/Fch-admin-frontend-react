@@ -508,6 +508,11 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 disableMobile: true, // Forces custom UI on mobile
                 onChange: (selectedDates, dateStr) => {
                     setFormData(prev => ({ ...prev, date: dateStr }));
+                },
+                onReady: (selectedDates, dateStr, instance) => {
+                    if (instance.calendarContainer) {
+                        instance.calendarContainer.classList.add('appointment-modal-theme');
+                    }
                 }
             });
             return () => fp.destroy();
@@ -538,379 +543,379 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     return (
         <>
-            <div className="modal fade" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
-            <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content border-0 shadow-lg">
-                    <div className="modal-header p-3 bg-info-subtle">
-                        <h5 className="modal-title">
-                            {viewMode ? "Appointment Details" : (isNewEvent ? "Add Appointment" : "Edit Appointment")}
-                        </h5>
-                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+            <div className="modal fade appointment-modal-theme" id="appointmentModal" ref={eventModalRef} tabIndex="-1" aria-hidden="true">
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header p-3 bg-info-subtle">
+                            <h5 className="modal-title">
+                                {viewMode ? "Appointment Details" : (isNewEvent ? "Add Appointment" : "Edit Appointment")}
+                            </h5>
+                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
 
-                    <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
-                        {/* Details View */}
-                        {viewMode ? (
-                            loadingDetails ? (
-                                <div className="event-details-skeleton">
-                                    <div className="mb-4">
-                                        <Skeleton width="120px" height="12px" className="mb-2" />
-                                        <Skeleton width="70%" height="28px" />
-                                    </div>
-                                    <div className="mb-4">
-                                        <Skeleton width="100px" height="12px" className="mb-2" />
-                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
-                                            <Skeleton width="100%" height="14px" className="mb-2" />
-                                            <Skeleton width="90%" height="14px" className="mb-2" />
-                                            <Skeleton width="40%" height="14px" />
+                        <div className="modal-body p-4" style={{ backgroundColor: '#fdfdfd' }}>
+                            {/* Details View */}
+                            {viewMode ? (
+                                loadingDetails ? (
+                                    <div className="event-details-skeleton">
+                                        <div className="mb-4">
+                                            <Skeleton width="120px" height="12px" className="mb-2" />
+                                            <Skeleton width="70%" height="28px" />
                                         </div>
-                                    </div>
-                                    <div className="row g-4 mb-4">
-                                        {[1, 2, 3, 4].map(i => (
-                                            <div className="col-md-6" key={i}>
-                                                <div className="d-flex align-items-center">
-                                                    <Skeleton shape="circle" size="32px" className="me-3" />
-                                                    <div className="flex-grow-1">
-                                                        <Skeleton width="60px" height="10px" className="mb-2" />
-                                                        <Skeleton width="100px" height="14px" />
+                                        <div className="mb-4">
+                                            <Skeleton width="100px" height="12px" className="mb-2" />
+                                            <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                                <Skeleton width="100%" height="14px" className="mb-2" />
+                                                <Skeleton width="90%" height="14px" className="mb-2" />
+                                                <Skeleton width="40%" height="14px" />
+                                            </div>
+                                        </div>
+                                        <div className="row g-4 mb-4">
+                                            {[1, 2, 3, 4].map(i => (
+                                                <div className="col-md-6" key={i}>
+                                                    <div className="d-flex align-items-center">
+                                                        <Skeleton shape="circle" size="32px" className="me-3" />
+                                                        <div className="flex-grow-1">
+                                                            <Skeleton width="60px" height="10px" className="mb-2" />
+                                                            <Skeleton width="100px" height="14px" />
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            ))}
+                                        </div>
+                                        <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                            <Skeleton shape="circle" size="60px" className="me-3" />
+                                            <div className="flex-grow-1">
+                                                <Skeleton width="80px" height="10px" className="mb-2" />
+                                                <Skeleton width="150px" height="18px" />
                                             </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
-                                        <Skeleton shape="circle" size="60px" className="me-3" />
-                                        <div className="flex-grow-1">
-                                            <Skeleton width="80px" height="10px" className="mb-2" />
-                                            <Skeleton width="150px" height="18px" />
+                                        </div>
+                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                            <Skeleton width="80px" height="35px" borderRadius="4px" />
                                         </div>
                                     </div>
-                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                                        <Skeleton width="80px" height="35px" borderRadius="4px" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="event-details position-relative">
-                                    <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
-                                        {hasPermission('update appointments') && (
-                                            <button
-                                                className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
-                                                onClick={() => setViewMode(false)}
-                                                style={{
-                                                    fontWeight: "600",
-                                                    transition: "all 0.2s ease"
-                                                }}
-                                            >
-                                                <i className="ri-pencil-fill fs-14 me-1"></i> Edit
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <div className="d-flex align-items-center justify-content-between mb-1">
-                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                ) : (
+                                    <div className="event-details position-relative">
+                                        <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
+                                            {hasPermission('update appointments') && (
+                                                <button
+                                                    className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
+                                                    onClick={() => setViewMode(false)}
+                                                    style={{
+                                                        fontWeight: "600",
+                                                        transition: "all 0.2s ease"
+                                                    }}
+                                                >
+                                                    <i className="ri-pencil-fill fs-14 me-1"></i> Edit
+                                                </button>
+                                            )}
                                         </div>
-                                        <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
-                                    </div>
 
-                                    <div className="mb-4">
-                                        <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
-                                        <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
-                                            <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
-                                                {(() => {
-                                                    const description = displayData.description || "No Description";
-                                                    // Extract text and properly decode common entities for the preview
-                                                    const rawText = description
-                                                        .replace(/<[^>]*>/g, '')
-                                                        .replace(/&nbsp;/g, ' ')
-                                                        .replace(/&amp;/g, '&')
-                                                        .replace(/&lt;/g, '<')
-                                                        .replace(/&gt;/g, '>')
-                                                        .replace(/&quot;/g, '"');
+                                        <div className="mb-4">
+                                            <div className="d-flex align-items-center justify-content-between mb-1">
+                                                <label className="text-muted fs-11 text-uppercase fw-bold mb-0 letter-spacing-1">Appointment Title</label>
+                                            </div>
+                                            <h4 className="fw-bold mb-1 text-dark">{displayData.title || "No Title"}</h4>
+                                        </div>
 
-                                                    const limit = 180;
+                                        <div className="mb-4">
+                                            <label className="text-muted fs-11 text-uppercase fw-bold mb-2 d-block letter-spacing-1">Description</label>
+                                            <div className="bg-light-subtle rounded-3 p-3 border border-light-subtle">
+                                                <div className="text-dark fs-14" style={{ lineHeight: "1.7", letterSpacing: "0.2px" }}>
+                                                    {(() => {
+                                                        const description = displayData.description || "No Description";
+                                                        // Extract text and properly decode common entities for the preview
+                                                        const rawText = description
+                                                            .replace(/<[^>]*>/g, '')
+                                                            .replace(/&nbsp;/g, ' ')
+                                                            .replace(/&amp;/g, '&')
+                                                            .replace(/&lt;/g, '<')
+                                                            .replace(/&gt;/g, '>')
+                                                            .replace(/&quot;/g, '"');
 
-                                                    if (!isDescriptionExpanded && rawText.length > limit) {
+                                                        const limit = 180;
+
+                                                        if (!isDescriptionExpanded && rawText.length > limit) {
+                                                            return (
+                                                                <div className="description-content">
+                                                                    {rawText.substring(0, limit)}...
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                        onClick={() => setIsDescriptionExpanded(true)}
+                                                                    >
+                                                                        See more <i className="ri-arrow-down-s-line align-middle"></i>
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        }
+
                                                         return (
                                                             <div className="description-content">
-                                                                {rawText.substring(0, limit)}...
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-link p-0 ms-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                    onClick={() => setIsDescriptionExpanded(true)}
-                                                                >
-                                                                    See more <i className="ri-arrow-down-s-line align-middle"></i>
-                                                                </button>
+                                                                <div
+                                                                    className="rich-text-content"
+                                                                    dangerouslySetInnerHTML={{ __html: description }}
+                                                                ></div>
+                                                                {isDescriptionExpanded && rawText.length > limit && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
+                                                                        onClick={() => setIsDescriptionExpanded(false)}
+                                                                    >
+                                                                        See less <i className="ri-arrow-up-s-line align-middle"></i>
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         );
-                                                    }
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                                    return (
-                                                        <div className="description-content">
-                                                            <div
-                                                                className="rich-text-content"
-                                                                dangerouslySetInnerHTML={{ __html: description }}
-                                                            ></div>
-                                                            {isDescriptionExpanded && rawText.length > limit && (
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-link p-0 mt-2 fs-12 fw-bold text-primary text-decoration-none shadow-none text-uppercase"
-                                                                    onClick={() => setIsDescriptionExpanded(false)}
-                                                                >
-                                                                    See less <i className="ri-arrow-up-s-line align-middle"></i>
-                                                                </button>
-                                                            )}
+                                        <div className="row g-4 mb-2">
+                                            <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
+                                            <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
+                                            <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
+                                            <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
+                                        </div>
+
+                                        <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
+                                            <div className="flex-shrink-0 me-3">
+                                                <div className="avatar-md">
+                                                    {displayData.assignedForAvatar ? (
+                                                        <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <div className="avatar-title rounded-circle bg-primary text-white">
+                                                            <i className="ri-user-follow-line fs-24"></i>
                                                         </div>
-                                                    );
-                                                })()}
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex-grow-1 d-flex align-items-center gap-2">
+                                                <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
+                                                    Appointment With:
+                                                </p>
+
+                                                <h5 className="mb-0 fs-16 fw-bold">
+                                                    {displayData.assignedForType ? (
+                                                        <a
+                                                            href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
+                                                            className="text-primary text-decoration-none hover-primary"
+                                                        >
+                                                            {displayData.assignedFor}
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-dark">{displayData.assignedFor}</span>
+                                                    )}
+                                                </h5>
+
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="row g-4 mb-2">
-                                        <DetailItem icon="ri-calendar-event-line" label="Date" value={displayData.date} className="detail-item-col" />
-                                        <DetailItem icon="ri-time-line" label="Time Slot" value={`${displayData.timeStart} - ${displayData.timeEnd}`} className="detail-item-col" />
-                                        <DetailItem icon="ri-map-pin-line" label="Time Zone" value={displayData.location} className="detail-item-col" />
-                                        <DetailItem icon="ri-user-star-line" label="Scheduled By" value={displayData.scheduledBy} className="detail-item-col" />
+                                        <div className="mt-4 pt-3 border-top d-flex justify-content-end">
+                                            {hasPermission('delete appointments') && (
+                                                <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
+                                                    <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
+                                )
+                            ) : (
+                                /* Form View */
+                                <form onSubmit={handleSubmit}>
 
-                                    <div className="mt-4 p-3 rounded-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center">
-                                        <div className="flex-shrink-0 me-3">
-                                            <div className="avatar-md">
-                                                {displayData.assignedForAvatar ? (
-                                                    <img src={displayData.assignedForAvatar} alt="" className="rounded-circle img-thumbnail avatar-title" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                    <div className="row">
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
+                                            <input type="text" className={`form-control ${formErrors.subject ? "is-invalid" : ""}`}
+                                                value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} placeholder="Enter appointment title" />
+                                            {formErrors.subject && <div className="invalid-feedback">{formErrors.subject}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label">Type <span className="text-danger">*</span></label>
+                                            <Dropdown value={formData.category} options={APPOINTMENT_TYPE_OPTIONS}
+                                                onChange={(e) => setFormData(p => ({ ...p, category: e.value }))}
+                                                className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
+                                                placeholder="Select Type" appendTo="self" />
+                                            {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
+                                                <label className="form-label mb-0">
+                                                    {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
+                                                </label>
+                                                <div className="form-check">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        id="meeting-with-toggle"
+                                                        checked={isMeetingWithChecked}
+                                                        onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
+                                                        name={isHost ? "meeting_with" : "meeting_with_host"}
+                                                        value="1"
+                                                    />
+                                                    <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
+                                                        {isHost ? "Meeting with partner" : "Meeting with host"}
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div className="position-relative" style={{ minHeight: '38px' }}>
+                                                {loadingAssignedFor ? (
+                                                    <Skeleton width="100%" height="38px" className="rounded-2" />
                                                 ) : (
-                                                    <div className="avatar-title rounded-circle bg-primary text-white">
-                                                        <i className="ri-user-follow-line fs-24"></i>
+                                                    <Dropdown value={formData.entity_id} options={assignedOptions}
+                                                        onChange={(e) => {
+                                                            const selected = assignedOptions.find(opt => opt.value === e.value);
+                                                            const newType = selected?.entity_type?.toLowerCase() || '';
+                                                            setAssignedForType(newType);
+                                                            setFormData(p => ({
+                                                                ...p,
+                                                                entity_id: e.value,
+                                                                assigned_for: selected?.user_id || e.value,
+                                                                entity_type: newType
+                                                            }));
+                                                        }}
+                                                        placeholder="Select Users"
+                                                        className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
+                                                        appendTo="self" />
+                                                )}
+                                                {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
+                                            </div>
+                                        </div>
+
+                                        <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
+                                            <div className="row mx-0">
+                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                                    <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
+                                                    <div className="input-group">
+                                                        <input type="text" ref={dateInputRef} id="event-start-date-modal"
+                                                            className={`form-control ${formErrors.appointment_date ? 'is-invalid' : ''}`}
+                                                            value={formData.date} readOnly placeholder="Select date" />
+                                                        <span className="input-group-text bg-light"><i className="ri-calendar-event-line text-muted"></i></span>
+                                                        {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                     </div>
-                                                )}
+                                                </div>
+                                                <div className="col-md-6 col-12 mb-3 px-2">
+                                                    <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
+                                                    <div className="d-flex align-items-center gap-2 time-slot-container">
+                                                        <Dropdown value={formData.timeStart} options={TIME_SLOTS}
+                                                            onChange={(e) => {
+                                                                const startVal = e.value;
+                                                                setFormData(p => {
+                                                                    const newData = { ...p, timeStart: startVal };
+                                                                    // Automatically select the next 30-minute slot for timeEnd
+                                                                    const [h, m] = startVal.split(':').map(Number);
+                                                                    let endM = m + 30;
+                                                                    let endH = h;
+                                                                    if (endM >= 60) {
+                                                                        endH += 1;
+                                                                        endM = 0;
+                                                                    }
+                                                                    if (endH < 24) {
+                                                                        newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                    } else {
+                                                                        // Fallback if it's the last slot of the day
+                                                                        newData.timeEnd = startVal;
+                                                                    }
+                                                                    return newData;
+                                                                });
+                                                            }}
+                                                            className="flex-grow-1" placeholder="Start" appendTo="self" />
+                                                        <span className="text-muted fw-bold">to</span>
+                                                        <Dropdown value={formData.timeEnd}
+                                                            options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
+                                                            onChange={(e) => {
+                                                                setFormData(p => ({ ...p, timeEnd: e.value }));
+                                                            }}
+                                                            className="flex-grow-1" placeholder="End" appendTo="self" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex-grow-1 d-flex align-items-center gap-2">
-                                            <p className="text-primary-emphasis mb-0 fs-12 uppercase-label">
-                                                Appointment With:
-                                            </p>
 
-                                            <h5 className="mb-0 fs-16 fw-bold">
-                                                {displayData.assignedForType ? (
-                                                    <a
-                                                        href={`/${getShortType(displayData.assignedForType)}/${displayData.assignedForId}`}
-                                                        className="text-primary text-decoration-none hover-primary"
-                                                    >
-                                                        {displayData.assignedFor}
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-dark">{displayData.assignedFor}</span>
-                                                )}
-                                            </h5>
+                                        {/* Availability Alert - Animated Collapse */}
+                                        <div className="col-12 px-2 overflow-hidden"
+                                            style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
+                                            {(availabilityConflicts || lastConflictingAttempt) && (
+                                                <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
+                                                    <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
+                                                    <div className="flex-grow-1 pe-4">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <strong className="text-danger fs-13 text-uppercase">Scheduling Conflict</strong>
+                                                            <span className="badge bg-danger text-white fs-10 px-2 py-1">CONFLICTED</span>
+                                                        </div>
+                                                        <span className="fs-12 text-muted d-block mt-1">
+                                                            {(() => {
+                                                                const attempt = lastConflictingAttempt;
+                                                                if (attempt) {
+                                                                    const { attemptedStart, attemptedEnd, conflict } = attempt;
+                                                                    return (
+                                                                        <>
+                                                                            Your selected <span className="fw-bold">{tConvert(attemptedStart)} - {tConvert(attemptedEnd)}</span> conflicts with an existing appointment on <span className="fw-bold">{conflict.date}</span> from <span className="fw-bold">{tConvert(conflict.start_time)} to {tConvert(conflict.end_time)}</span>.
+                                                                        </>
+                                                                    );
+                                                                }
+                                                                return "Conflicting appointment found on this date.";
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <button type="button" className="btn-close fs-10 position-absolute"
+                                                        style={{ right: '8px', top: '8px' }}
+                                                        onClick={() => setIsConflictVisible(false)} aria-label="Close"></button>
+                                                </div>
+                                            )}
+                                        </div>
 
+                                        {/* Skeleton Loader for Availability Check */}
+                                        {isCheckingAvailability && (
+                                            <div className="col-12 px-2 mt-2">
+                                                <Skeleton width="100%" height="40px" className="rounded-2" />
+                                            </div>
+                                        )}
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label fs-13 fw-semibold">Time Zone</label>
+                                            <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
+                                                onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
+                                                className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} placeholder="Select Time Zone" appendTo="self" />
+                                            {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
+                                        </div>
+
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label fs-13 fw-semibold">Description</label>
+                                            <div ref={descriptionRef}></div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 pt-3 border-top d-flex justify-content-end">
-                                        {hasPermission('delete appointments') && (
-                                            <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
-                                                <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
+                                    <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
+                                        <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
+                                        {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
+                                            <button type="submit" className="btn btn-primary"
+                                                disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                        Loading...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
+                                                        {isNewEvent ? "Confirm Appointment" : "Save Changes"}
+                                                    </>
+                                                )}
                                             </button>
                                         )}
                                     </div>
-                                </div>
-                            )
-                        ) : (
-                            /* Form View */
-                            <form onSubmit={handleSubmit}>
-
-                                <div className="row">
-
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label">Appointment Title <span className="text-danger">*</span></label>
-                                        <input type="text" className={`form-control ${formErrors.subject ? "is-invalid" : ""}`}
-                                            value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} placeholder="Enter appointment title" />
-                                        {formErrors.subject && <div className="invalid-feedback">{formErrors.subject}</div>}
-                                    </div>
-
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label">Type <span className="text-danger">*</span></label>
-                                        <Dropdown value={formData.category} options={APPOINTMENT_TYPE_OPTIONS}
-                                            onChange={(e) => setFormData(p => ({ ...p, category: e.value }))}
-                                            className={`w-100 ${formErrors.meeting_type ? 'p-invalid' : ''}`}
-                                            placeholder="Select Type" appendTo="self" />
-                                        {formErrors.meeting_type && <div className="text-danger fs-11 mt-1">{formErrors.meeting_type}</div>}
-                                    </div>
-
-                                    <div className="col-12 mb-3">
-                                        <div className="d-flex align-items-center justify-content-between mb-2 mt-1">
-                                            <label className="form-label mb-0">
-                                                {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
-                                            </label>
-                                            <div className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    id="meeting-with-toggle"
-                                                    checked={isMeetingWithChecked}
-                                                    onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
-                                                    name={isHost ? "meeting_with" : "meeting_with_host"}
-                                                    value="1"
-                                                />
-                                                <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
-                                                    {isHost ? "Meeting with partner" : "Meeting with host"}
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div className="position-relative" style={{ minHeight: '38px' }}>
-                                            {loadingAssignedFor ? (
-                                                <Skeleton width="100%" height="38px" className="rounded-2" />
-                                            ) : (
-                                                <Dropdown value={formData.entity_id} options={assignedOptions}
-                                                    onChange={(e) => {
-                                                        const selected = assignedOptions.find(opt => opt.value === e.value);
-                                                        const newType = selected?.entity_type?.toLowerCase() || '';
-                                                        setAssignedForType(newType);
-                                                        setFormData(p => ({
-                                                            ...p,
-                                                            entity_id: e.value,
-                                                            assigned_for: selected?.user_id || e.value,
-                                                            entity_type: newType
-                                                        }));
-                                                    }}
-                                                    placeholder="Select Users"
-                                                    className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                    appendTo="self" />
-                                            )}
-                                            {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
-                                        </div>
-                                    </div>
-
-                                    <div className="col-12 position-relative px-0 mb-2" style={{ minHeight: '38px' }}>
-                                        <div className="row mx-0">
-                                            <div className="col-md-6 col-12 mb-3 px-2">
-                                                <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
-                                                <div className="input-group">
-                                                    <input type="text" ref={dateInputRef} id="event-start-date-modal"
-                                                        className={`form-control ${formErrors.appointment_date ? 'is-invalid' : ''}`}
-                                                        value={formData.date} readOnly placeholder="Select date" />
-                                                    <span className="input-group-text bg-light"><i className="ri-calendar-event-line text-muted"></i></span>
-                                                    {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
-                                                </div>
-                                            </div>
-                                            <div className="col-md-6 col-12 mb-3 px-2">
-                                                <label className="form-label fs-13 fw-semibold">Time Slot <span className="text-danger">*</span></label>
-                                                <div className="d-flex align-items-center gap-2 time-slot-container">
-                                                    <Dropdown value={formData.timeStart} options={TIME_SLOTS}
-                                                        onChange={(e) => {
-                                                            const startVal = e.value;
-                                                            setFormData(p => {
-                                                                const newData = { ...p, timeStart: startVal };
-                                                                // Automatically select the next 30-minute slot for timeEnd
-                                                                const [h, m] = startVal.split(':').map(Number);
-                                                                let endM = m + 30;
-                                                                let endH = h;
-                                                                if (endM >= 60) {
-                                                                    endH += 1;
-                                                                    endM = 0;
-                                                                }
-                                                                if (endH < 24) {
-                                                                    newData.timeEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                } else {
-                                                                    // Fallback if it's the last slot of the day
-                                                                    newData.timeEnd = startVal;
-                                                                }
-                                                                return newData;
-                                                            });
-                                                        }}
-                                                        className="flex-grow-1" placeholder="Start" appendTo="self" />
-                                                    <span className="text-muted fw-bold">to</span>
-                                                    <Dropdown value={formData.timeEnd}
-                                                        options={TIME_SLOTS.filter(slot => slot.value > formData.timeStart)}
-                                                        onChange={(e) => {
-                                                            setFormData(p => ({ ...p, timeEnd: e.value }));
-                                                        }}
-                                                        className="flex-grow-1" placeholder="End" appendTo="self" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Availability Alert - Animated Collapse */}
-                                    <div className="col-12 px-2 overflow-hidden"
-                                        style={{ transition: 'all 0.4s ease', maxHeight: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '200px' : '0', opacity: isConflictVisible ? 1 : 0, marginBottom: isConflictVisible && (availabilityConflicts || lastConflictingAttempt) ? '1rem' : '0' }}>
-                                        {(availabilityConflicts || lastConflictingAttempt) && (
-                                            <div className="alert alert-danger-subtle border border-danger-subtle d-flex align-items-center mb-0 py-2 position-relative" role="alert">
-                                                <i className="ri-error-warning-fill me-2 fs-18 text-danger"></i>
-                                                <div className="flex-grow-1 pe-4">
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <strong className="text-danger fs-13 text-uppercase">Scheduling Conflict</strong>
-                                                        <span className="badge bg-danger text-white fs-10 px-2 py-1">CONFLICTED</span>
-                                                    </div>
-                                                    <span className="fs-12 text-muted d-block mt-1">
-                                                        {(() => {
-                                                            const attempt = lastConflictingAttempt;
-                                                            if (attempt) {
-                                                                const { attemptedStart, attemptedEnd, conflict } = attempt;
-                                                                return (
-                                                                    <>
-                                                                        Your selected <span className="fw-bold">{tConvert(attemptedStart)} - {tConvert(attemptedEnd)}</span> conflicts with an existing appointment on <span className="fw-bold">{conflict.date}</span> from <span className="fw-bold">{tConvert(conflict.start_time)} to {tConvert(conflict.end_time)}</span>.
-                                                                    </>
-                                                                );
-                                                            }
-                                                            return "Conflicting appointment found on this date.";
-                                                        })()}
-                                                    </span>
-                                                </div>
-                                                <button type="button" className="btn-close fs-10 position-absolute"
-                                                    style={{ right: '8px', top: '8px' }}
-                                                    onClick={() => setIsConflictVisible(false)} aria-label="Close"></button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Skeleton Loader for Availability Check */}
-                                    {isCheckingAvailability && (
-                                        <div className="col-12 px-2 mt-2">
-                                            <Skeleton width="100%" height="40px" className="rounded-2" />
-                                        </div>
-                                    )}
-
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label fs-13 fw-semibold">Time Zone</label>
-                                        <Dropdown value={formData.location} options={TIMEZONE_OPTIONS}
-                                            onChange={(e) => setFormData(p => ({ ...p, location: e.value }))}
-                                            className={`w-100 ${formErrors.timezone ? 'p-invalid' : ''}`} placeholder="Select Time Zone" appendTo="self" />
-                                        {formErrors.timezone && <div className="text-danger fs-11 mt-1">{formErrors.timezone}</div>}
-                                    </div>
-
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label fs-13 fw-semibold">Description</label>
-                                        <div ref={descriptionRef}></div>
-                                    </div>
-                                </div>
-
-                                <div className="hstack gap-2 justify-content-end mt-4 pt-3 border-top">
-                                    <button type="button" className="btn btn-light" onClick={handleCancel}>Cancel</button>
-                                    {((isNewEvent && hasPermission('create appointments')) || (!isNewEvent && hasPermission('update appointments'))) && (
-                                        <button type="submit" className="btn btn-primary"
-                                            disabled={isSubmitting || isCheckingAvailability || isConflictVisible}>
-                                            {isSubmitting ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                    Loading...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className={`${isNewEvent ? 'ri-add-line' : 'ri-save-line'} me-1 align-middle`}></i>
-                                                    {isNewEvent ? "Confirm Appointment" : "Save Changes"}
-                                                </>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
-                        )}
+                                </form>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
             </div >
             <DeleteConfirmationModal

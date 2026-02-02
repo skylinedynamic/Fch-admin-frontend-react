@@ -5,8 +5,15 @@ import {
     createClient,
     updateClient,
     deleteClient,
-    deleteClients
+    deleteClients,
+    fetchClientChecklist,
+    saveClientChecklist,
+    fetchBorrowerProfileStats,
+    fetchBorrowerStats,
+    fetchBorrowerTiers
 } from './services';
+import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
+import { fetchPartners } from '../partner/services';
 import type { Client, ClientFilterParams } from './types';
 
 // Query Keys
@@ -16,13 +23,19 @@ export const clientKeys = {
     list: (params: ClientFilterParams) => [...clientKeys.lists(), params] as const,
     details: () => [...clientKeys.all, 'detail'] as const,
     detail: (id: string | number) => [...clientKeys.details(), id] as const,
+    checklist: (id: string | number) => [...clientKeys.detail(id), 'checklist'] as const,
+    stats: (id: string | number) => [...clientKeys.detail(id), 'stats'] as const,
+    listStats: (partnerId?: string | number) => [...clientKeys.lists(), 'stats', partnerId] as const,
+    partners: () => ['partners'] as const,
+    users: () => ['users'] as const,
+    tiers: () => ['tiers'] as const,
 };
 
 // Hooks
 export const useClients = (params: ClientFilterParams) => {
     return useQuery({
         queryKey: clientKeys.list(params),
-        queryFn: () => fetchClients(params),
+        queryFn: () => fetchAllBorrowers(params),
         placeholderData: (previousData: any) => previousData,
     });
 };
@@ -73,5 +86,84 @@ export const useDeleteClients = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
         },
+    });
+};
+
+export const useClientChecklist = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.checklist(id),
+        queryFn: () => fetchClientChecklist(id),
+        enabled: enabled && !!id,
+    });
+};
+
+export const useSaveClientChecklist = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, checkedIds }: { id: string | number; checkedIds: number[] }) => saveClientChecklist(id, checkedIds),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.checklist(variables.id) });
+        },
+    });
+};
+
+export const useClientProfileStats = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.stats(id),
+        queryFn: () => fetchBorrowerProfileStats(id),
+        enabled: enabled && !!id,
+    });
+};
+
+export const useClientListStats = (partnerId?: string | number) => {
+    return useQuery({
+        queryKey: clientKeys.listStats(partnerId),
+        queryFn: () => fetchBorrowerStats(partnerId),
+    });
+};
+
+export const usePartners = (enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.partners(),
+        queryFn: async () => {
+            const result = await fetchPartners();
+            return result.status ? (result.data || []).map((partner: any) => ({
+                id: partner.id,
+                full_name: partner.full_name,
+                company_name: partner.company_name,
+                displayLabel: `${partner.full_name} (${partner.company_name})`
+            })) : [];
+        },
+        enabled,
+        staleTime: 5 * 60 * 1000, 
+    });
+};
+
+export const useAllUsers = () => {
+    return useQuery({
+        queryKey: clientKeys.users(),
+        queryFn: async () => {
+            const result = await getAllUsers();
+            return result.status ? (result.data || []).map((user: any) => ({
+                id: user.id,
+                full_name: user.name,
+                displayLabel: `${user.name}`
+            })) : [];
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+};
+
+export const useBorrowerTiers = () => {
+    return useQuery({
+        queryKey: clientKeys.tiers(),
+        queryFn: async () => {
+            const result = await fetchBorrowerTiers();
+            return (result.status && result.data) ? (result.data || []).map((tier: any) => ({
+                label: tier.name,
+                value: tier.name
+            })) : [];
+        },
+        staleTime: 5 * 60 * 1000,
     });
 };
