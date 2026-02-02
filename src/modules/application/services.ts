@@ -34,7 +34,7 @@ export const getFundingApplicationDetails = async (id: string | number): Promise
   return response.data;
 };
 
-export const updateFundingApplicationStatus = async (payload: { id: number | string; status: string; status_note?: string }): Promise<SingleApiResponse<any>> => {
+export const updateFundingApplicationStatus = async (payload: { funding_application_id: number | string; status: string; status_note?: string }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/common/request-application/funding-application/status-update', payload);
   return response.data;
 };
@@ -46,5 +46,10 @@ export const getFundingApplicationStats = async (): Promise<SingleApiResponse<Ap
 
 export const getPreQualificationStats = async (): Promise<SingleApiResponse<ApplicationStatistics>> => {
   const response = await apiClient.get('/common/request-application/pre-qualification/card-summary');
+  return response.data;
+};
+
+export const saveFundingApplicationCommission = async (payload: { funding_application_id: number | string; admin_commission: string | number | null; partner_commission: string | number | null }): Promise<SingleApiResponse<any>> => {
+  const response = await apiClient.post('/admin/funding-application/save-commission', payload);
   return response.data;
 };

@@ -148,6 +148,7 @@ export interface ApplicationDocument {
 
 export interface FundingApplicationDetails {
     id: number;
+    partner_id: number;
     borrower_id: number;
     full_name: string;
     business_name: string;
@@ -207,6 +208,13 @@ export interface FundingApplicationDetails {
     attestation_authorization: boolean;
     co_borrowers?: CoBorrower[];
     documents?: ApplicationDocument[];
-    created_at: string;
-    updated_at: string;
+    admin_commission?: string | number | null;
+    admin_commission_amount?: string | number | null;
+    partner_commission?: string | number | null;
+    partner_commission_amount?: string | number | null;
+    total_funded_amount?: string | number | null;
+    funded_note?: string | null;
+    currency?: string | null;
+    currency_symbol?: string | null;
+    conversion_rate?: string | number | null;
 }
