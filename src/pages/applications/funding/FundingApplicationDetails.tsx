@@ -46,6 +46,9 @@ export default function FundingApplicationDetails() {
 
     // Commission state
     const [successFee, setSuccessFee] = useState<string>('');
+    const [requestedAmountInput, setRequestedAmountInput] = useState<string>('');
+    const [isEditingRequestedAmount, setIsEditingRequestedAmount] = useState<boolean>(false);
+    const [tempRequestedAmount, setTempRequestedAmount] = useState<string>('');
     const [adminCommissionRate, setAdminCommissionRate] = useState<string>('');
     const [partnerCommissionRate, setPartnerCommissionRate] = useState<string>('');
     const [commissionErrors, setCommissionErrors] = useState<{ admin_commission?: string; partner_commission?: string }>({});
@@ -64,35 +67,35 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (app?.status) setStatus(app.status);
         if (app?.status_note) setStatusNote(app.status_note);
+        if (app?.requested_amount) setRequestedAmountInput(app.requested_amount.toString());
 
         // Sync commission rates from response
         if (app) {
-            let fetchedSuccessFee = 0;
-            let fetchedPartnerShare = 0;
-            let fetchedAdminShare = 100;
+            let fetchedSuccessFee = '';
+            let fetchedPartnerShare = '';
+            let fetchedAdminShare = '';
 
             // Determine Success Fee / Total Rate
             if ('total_commission' in app && app.total_commission !== null && app.total_commission !== undefined) {
-                fetchedSuccessFee = parseFloat(app.total_commission.toString());
-            } else if ('admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
-                fetchedSuccessFee = parseFloat(app.admin_commission.toString());
+                fetchedSuccessFee = app.total_commission.toString();
             }
 
             // Determine Partner Share
             if ('partner_commission' in app && app.partner_commission !== null && app.partner_commission !== undefined) {
-                fetchedPartnerShare = parseFloat(app.partner_commission.toString());
+                fetchedPartnerShare = app.partner_commission.toString();
             }
 
             // Determine Admin Share
-            if ('total_commission' in app && 'admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
-                fetchedAdminShare = parseFloat(app.admin_commission.toString());
-            } else {
-                fetchedAdminShare = 100 - fetchedPartnerShare;
+            if ('admin_commission' in app && app.admin_commission !== null && app.admin_commission !== undefined) {
+                fetchedAdminShare = app.admin_commission.toString();
+            } else if (fetchedSuccessFee !== '') {
+                const pShare = parseFloat(fetchedPartnerShare || '0');
+                fetchedAdminShare = (100 - pShare).toString();
             }
 
-            setSuccessFee(fetchedSuccessFee > 0 ? fetchedSuccessFee.toString() : '');
-            setPartnerCommissionRate(fetchedPartnerShare.toString());
-            setAdminCommissionRate(fetchedAdminShare.toString());
+            setSuccessFee(fetchedSuccessFee);
+            setPartnerCommissionRate(fetchedPartnerShare);
+            setAdminCommissionRate(fetchedAdminShare);
         }
     }, [app]);
 
@@ -144,22 +147,29 @@ export default function FundingApplicationDetails() {
         return parseFloat(value.replace(/[^0-9.-]+/g, ''));
     };
 
-    const requestedAmount = parseCurrency(app.requested_amount);
+    const requestedAmount = parseFloat(requestedAmountInput || '0');
 
     // Hierarchical Calculation Logic
 
-    // 1. Total Commission Amount (Requested Amount * Success Fee)
-    const totalCommissionAmount = requestedAmount * (parseFloat(successFee || '0') / 100);
+    // 1. Total Commission Amount
+    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.total_commission_amount)
+        ? parseCurrency(app.total_commission_amount)
+        : requestedAmount * (parseFloat(successFee || '0') / 100);
 
     // Shares (Input as 0-100)
-    const adminShareVal = parseFloat(adminCommissionRate || '0');
-    const partnerShareVal = parseFloat(partnerCommissionRate || '0');
+    // If no partner is shown, Admin takes 100% of the Success Fee
+    const adminShareVal = showPartnerCommission ? parseFloat(adminCommissionRate || '0') : 100;
+    const partnerShareVal = showPartnerCommission ? parseFloat(partnerCommissionRate || '0') : 0;
 
-    // 2. Admin Commission Amount (Total Commission * Admin Share%)
-    const adminCommissionAmount = totalCommissionAmount * (adminShareVal / 100);
+    // 2. Admin Commission Amount
+    const adminCommissionAmount = (adminCommissionRate === (app.admin_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.admin_commission_amount)
+        ? parseCurrency(app.admin_commission_amount)
+        : totalCommissionAmount * (adminShareVal / 100);
 
-    // 3. Partner Commission Amount (Total Commission * Partner Share%)
-    const partnerCommissionAmount = totalCommissionAmount * (partnerShareVal / 100);
+    // 3. Partner Commission Amount
+    const partnerCommissionAmount = (partnerCommissionRate === (app.partner_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.partner_commission_amount)
+        ? parseCurrency(app.partner_commission_amount)
+        : totalCommissionAmount * (partnerShareVal / 100);
 
     // 4. Shares for Display
     const adminShareRate = adminShareVal;
@@ -178,20 +188,28 @@ export default function FundingApplicationDetails() {
         setCommissionErrors({});
 
         const totalRate = successFee && successFee !== '' ? parseFloat(successFee) : 0;
-        // adminCommissionRate is already the Share %
         const aShare = adminCommissionRate && adminCommissionRate !== '' ? parseFloat(adminCommissionRate) : 0;
-        // partnerCommissionRate is already the Share %
         const pShare = partnerCommissionRate && partnerCommissionRate !== '' ? parseFloat(partnerCommissionRate) : 0;
 
-        // We send Shares for admin/partner commission.
-        // We send Success Fee as total_commission.
-
-        saveCommissionMutation.mutate({
-            funding_application_id: app.id,
+        const payload: any = {
+            funding_application_id: Number(app.id),
             total_commission: totalRate,
-            admin_commission: aShare,
-            partner_commission: pShare
-        }, {
+        };
+
+        if (showPartnerCommission) {
+            payload.admin_commission = aShare;
+            payload.partner_commission = pShare;
+        } else {
+            // If no partner, admin commission matches the total success fee
+            payload.admin_commission = totalRate;
+        }
+
+        // Only pass requested_amount if it has changed from the original app data
+        if (requestedAmountInput !== app.requested_amount?.toString()) {
+            payload.requested_amount = parseFloat(requestedAmountInput || '0');
+        }
+
+        saveCommissionMutation.mutate(payload, {
             onSuccess: () => {
                 toast.success('Commission saved successfully');
             },
@@ -378,9 +396,18 @@ export default function FundingApplicationDetails() {
                 ))
             ) : (
                 <div className="col-12">
-                    <div className="alert alert-info">
-                        <i className="ri-information-line me-2"></i>
-                        No documents uploaded available for viewing.
+                    <div className="card border-dashed bg-light bg-opacity-50 py-5">
+                        <div className="card-body text-center">
+                            <div className="avatar-lg mx-auto mb-4">
+                                <div className="avatar-title bg-white text-primary rounded-circle shadow-sm border">
+                                    <i className="ri-file-search-line fs-48"></i>
+                                </div>
+                            </div>
+                            <h5 className="fs-16 fw-bold mb-2">No Documents Available</h5>
+                            <p className="text-muted mb-0 mx-auto" style={{ maxWidth: '300px' }}>
+                                There are currently no uploaded documents for this application step. 
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
@@ -663,77 +690,172 @@ export default function FundingApplicationDetails() {
                                                                     <i className="bx bx-credit-card text-primary me-2"></i>
                                                                     <span className="fw-medium">Total Requested Amount:</span>
                                                                 </div>
-                                                                <h5 className="mb-0 fw-bold">{formatCurrencyValue(requestedAmount)}</h5>
+                                                                {!isEditingRequestedAmount ? (
+                                                                    <div 
+                                                                        className="px-2 py-1 rounded transition-all cursor-pointer d-flex align-items-center bg-hover-light"
+                                                                        style={{ 
+                                                                            transition: 'all 0.2s ease',
+                                                                            border: '1px solid transparent'
+                                                                        }}
+                                                                        onClick={() => {
+                                                                            setTempRequestedAmount(requestedAmountInput);
+                                                                            setIsEditingRequestedAmount(true);
+                                                                        }}
+                                                                        onMouseEnter={(e) => {
+                                                                            e.currentTarget.style.backgroundColor = 'rgba(10, 179, 156, 0.05)';
+                                                                            e.currentTarget.style.borderColor = 'rgba(10, 179, 156, 0.1)';
+                                                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                        }}
+                                                                        onMouseLeave={(e) => {
+                                                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                                                            e.currentTarget.style.borderColor = 'transparent';
+                                                                            e.currentTarget.style.transform = 'translateY(0)';
+                                                                        }}
+                                                                    >
+                                                                        <h5 className="mb-0 fw-bold text-primary">
+                                                                            {formatCurrencyValue(requestedAmount)}
+                                                                        </h5>
+                                                                        <i className="ri-edit-2-line ms-2 fs-14"></i>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-sm" style={{ width: '200px' }}>
+                                                                        <div className="input-group input-group-sm">
+                                                                            <span className="input-group-text bg-transparent border-0 text-muted ps-1 pe-0">$</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control border-0 shadow-none ps-1"
+                                                                                value={tempRequestedAmount}
+                                                                                onChange={(e) => setTempRequestedAmount(e.target.value)}
+                                                                                autoFocus
+                                                                                placeholder="0.00"
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === 'Enter') {
+                                                                                        setRequestedAmountInput(tempRequestedAmount);
+                                                                                        setIsEditingRequestedAmount(false);
+                                                                                    } else if (e.key === 'Escape') {
+                                                                                        setIsEditingRequestedAmount(false);
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="d-flex gap-1">
+                                                                            <button
+                                                                                className="btn btn-sm btn-soft-primary px-2"
+                                                                                type="button"
+                                                                                title="Save"
+                                                                                onClick={() => {
+                                                                                    setRequestedAmountInput(tempRequestedAmount);
+                                                                                    setIsEditingRequestedAmount(false);
+                                                                                }}
+                                                                            >
+                                                                                <i className="ri-check-line"></i>
+                                                                            </button>
+                                                                            <button
+                                                                                className="btn btn-sm btn-soft-danger px-2"
+                                                                                type="button"
+                                                                                title="Cancel"
+                                                                                onClick={() => setIsEditingRequestedAmount(false)}
+                                                                            >
+                                                                                <i className="ri-close-line"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         <div className="row g-2">
-                                                            {showPartnerCommission && (
+                                                            {!showPartnerCommission ? (
                                                                 <div className="col-md-12">
-                                                                    <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
+                                                                    <div className="alert alert-success border mb-0 py-3 bg-success-subtle">
                                                                         <div className="d-flex justify-content-between align-items-center">
-                                                                            <div>
-                                                                                <i className="ri-pie-chart-line text-secondary me-2"></i>
-                                                                                <span className="fw-medium">Success Commission Amount:</span>
-                                                                            </div>
-                                                                            <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            <div className={`${showPartnerCommission ? 'col-md-6' : 'col-md-12'}`}>
-                                                                <div className="card border-0 bg-primary bg-opacity-10 mb-0">
-                                                                    <div className="card-body pt-3 px-4">
-                                                                        <div className="d-flex align-items-center mb-2">
-                                                                            <div className="flex-shrink-0">
-                                                                                <div className="avatar-xs">
-                                                                                    <span className="avatar-title bg-primary text-white rounded fs-14">
+                                                                            <div className="d-flex align-items-center">
+                                                                                <div className="avatar-xs me-3">
+                                                                                    <div className="avatar-title bg-success text-white rounded">
                                                                                         <i className="ri-admin-line"></i>
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="flex-grow-1 ms-2">
-                                                                                <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <h4 className="mb-0 fw-bold text-primary fs-18">
-                                                                            {formatCurrencyValue(adminCommissionAmount)}
-                                                                        </h4>
-                                                                        <p className="text-muted mb-0 mt-2 fs-12">
-                                                                            <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                            <span className="ms-1">Share of Success Fee</span>
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {showPartnerCommission && (
-                                                                <div className="col-md-6">
-                                                                    <div className="card border-0 bg-success bg-opacity-10 mb-0">
-                                                                        <div className="card-body pt-3 px-4">
-                                                                            <div className="d-flex align-items-center mb-2">
-                                                                                <div className="flex-shrink-0">
-                                                                                    <div className="avatar-xs">
-                                                                                        <span className="avatar-title bg-success text-white rounded fs-14">
-                                                                                            <i className="ri-shake-hands-line"></i>
-                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="flex-grow-1 ms-2">
-                                                                                    <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
+                                                                                <div>
+                                                                                    <span className="fw-medium text-muted fs-11 text-uppercase d-block">Admin Commission Amount</span>
+                                                                                    <h4 className="mb-0 fw-bold text-success">
+                                                                                        {formatCurrencyValue(totalCommissionAmount)}
+                                                                                    </h4>
                                                                                 </div>
                                                                             </div>
-                                                                            <h4 className="mb-0 fw-bold text-success fs-18">
-                                                                                {formatCurrencyValue(partnerCommissionAmount)}
-                                                                            </h4>
-                                                                            <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                <span className="ms-1">Share of Success Fee</span>
-                                                                            </p>
+                                                                            <div className="text-end">
+                                                                                <span className="badge bg-success text-white fs-12 px-3">
+                                                                                    {successFee || '0'}% Admin Commission
+                                                                                </span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="col-md-12">
+                                                                        <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
+                                                                            <div className="d-flex justify-content-between align-items-center">
+                                                                                <div>
+                                                                                    <i className="ri-pie-chart-line text-secondary me-2"></i>
+                                                                                    <span className="fw-medium">Success Commission Amount:</span>
+                                                                                </div>
+                                                                                <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="col-md-6">
+                                                                        <div className="card border-0 bg-primary bg-opacity-10 mb-0">
+                                                                            <div className="card-body pt-3 px-4">
+                                                                                <div className="d-flex align-items-center mb-2">
+                                                                                    <div className="flex-shrink-0">
+                                                                                        <div className="avatar-xs">
+                                                                                            <span className="avatar-title bg-primary text-white rounded fs-14">
+                                                                                                <i className="ri-admin-line"></i>
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex-grow-1 ms-2">
+                                                                                        <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <h4 className="mb-0 fw-bold text-primary fs-18">
+                                                                                    {formatCurrencyValue(adminCommissionAmount)}
+                                                                                </h4>
+                                                                                <p className="text-muted mb-0 mt-2 fs-12">
+                                                                                    <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span className="ms-1">Share of Success Fee</span>
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="col-md-6">
+                                                                        <div className="card border-0 bg-success bg-opacity-10 mb-0">
+                                                                            <div className="card-body pt-3 px-4">
+                                                                                <div className="d-flex align-items-center mb-2">
+                                                                                    <div className="flex-shrink-0">
+                                                                                        <div className="avatar-xs">
+                                                                                            <span className="avatar-title bg-success text-white rounded fs-14">
+                                                                                                <i className="ri-shake-hands-line"></i>
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex-grow-1 ms-2">
+                                                                                        <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <h4 className="mb-0 fw-bold text-success fs-18">
+                                                                                    {formatCurrencyValue(partnerCommissionAmount)}
+                                                                                </h4>
+                                                                                <p className="text-muted mb-0 mt-2 fs-12">
+                                                                                    <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                    <span className="ms-1">Share of Success Fee</span>
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
                                                             )}
                                                         </div>
                                                     </div>

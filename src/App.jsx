@@ -38,6 +38,7 @@ import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
 import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
+import CommissionList from './pages/commissions/CommissionList.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -159,6 +160,9 @@ export default function App() {
                 <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
               </>
             )}
+
+            {/* Commissions Route */}
+            <Route path="commissions" element={<CommissionList />} />
 
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>

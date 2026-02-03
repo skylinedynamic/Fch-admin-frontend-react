@@ -49,7 +49,9 @@ export const getPreQualificationStats = async (): Promise<SingleApiResponse<Appl
   return response.data;
 };
 
-export const saveFundingApplicationCommission = async (payload: { funding_application_id: number | string; total_commission: number; admin_commission: string | number | null; partner_commission: string | number | null }): Promise<SingleApiResponse<any>> => {
+export const saveFundingApplicationCommission = async (payload: { funding_application_id: number | string; total_commission: number; admin_commission: string | number | null; partner_commission: string | number | null; requested_amount?: number | string | null }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/admin/funding-application/save-commission', payload);
   return response.data;
 };
+
+

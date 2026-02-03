@@ -76,7 +76,7 @@ export const useSaveFundingApplicationCommission = () => {
   return useMutation({
     mutationFn: saveFundingApplicationCommission,
     onSuccess: (data, variables) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.funding_application_id) });
         queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
     },
   });

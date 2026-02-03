@@ -79,7 +79,7 @@ const menuItems = [
     ]
   },
   {
-    to: '/under-construction/commissions',
+    to: '/commissions',
     icon: 'bx bx-dollar',
     label: 'Commisions',
     permission: 'view commission',
@@ -362,7 +362,7 @@ export default function Sidebar() {
                     {!itemIsRestricted && (
                       <div className={`menu-dropdown sidebar-submenu-wrapper ${isExpanded ? 'open' : ''}`} id={`sidebar-${item.id}`}>
                         <div className="sidebar-submenu-inner">
-                          <ul className="flex-column">
+                          <ul className="flex-column py-0">
                             {item.subItems.map(subItem => (
                               <li className="nav-item" key={subItem.to}>
                                 <NavLink
@@ -382,7 +382,7 @@ export default function Sidebar() {
                                     return isPathActive ? 'nav-link active' : 'nav-link';
                                   }}
                                 >
-                                  <i className="ri-arrow-right-s-line align-bottom"></i>
+                                  <i className="ri-subtract-line align-bottom"></i>
                                   {subItem.icon && <i className={`${subItem.icon} align-bottom me-1`}></i>}
                                   <span>{subItem.label}</span>
                                 </NavLink>

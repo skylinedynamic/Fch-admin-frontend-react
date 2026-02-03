@@ -47,12 +47,14 @@ export const LEAD_STATUS_OPTIONS = [
 ];
 
 export const LEAD_SOURCE_OPTIONS = [
-    { label: 'Facebook', value: 'Facebook' },
-    { label: 'Instagram', value: 'Instagram' },
-    { label: 'LinkedIn', value: 'LinkedIn' },
-    { label: 'Google', value: 'Google' },
+    { label: 'Partner Referral', value: 'Partner Referral' },
+    { label: 'Client Referral', value: 'Client Referral' },
+    { label: 'Personal Network (Friends/Family)', value: 'Personal Network (Friends/Family)' },
+    { label: 'Social Media', value: 'Social Media' },
     { label: 'Website', value: 'Website' },
-    { label: 'Referral', value: 'Referral' },
+    { label: 'Networking Event', value: 'Networking Event' },
+    { label: 'Cold Outreach', value: 'Cold Outreach' },
+    { label: 'Professional Referral (CPA/Realtor/LO/etc.)', value: 'Professional Referral (CPA/Realtor/LO/etc.)' },
     { label: 'Other', value: 'Other' },
 ];
 
