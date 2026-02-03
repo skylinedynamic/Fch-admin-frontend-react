@@ -183,6 +183,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                  payload.city = payload.other_city;
              }
 
+             if (!isHost) {
+                 // @ts-ignore
+                 payload.is_partner_paying = true;
+             }
+
              return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
@@ -630,6 +635,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <label className="form-label">Enrollment Fee (Applied)</label>
                             <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                 <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
+                                <input type="hidden" name="is_partner_paying" value="true" />
                                 
                                 <div className="flex-shrink-0 me-3">
                                     <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>

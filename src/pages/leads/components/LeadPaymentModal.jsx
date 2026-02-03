@@ -53,7 +53,8 @@ const CheckoutForm = ({ amount, lead, borrowerId, invoiceId, onPaymentSuccess, o
         entity_type: lead?.entity_type || lead?.lead_type || 'Borrower',
         borrower_id: borrowerId,
         partner_id: lead?.partner_id || null,
-        invoice_id: invoiceId || lead?.invoice_id || null
+        invoice_id: invoiceId || lead?.invoice_id || null,
+        is_partner_paying: lead?.is_partner_paying || false
       });
 
       if (response.status) {
