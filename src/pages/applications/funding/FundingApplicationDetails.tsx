@@ -405,7 +405,7 @@ export default function FundingApplicationDetails() {
                             </div>
                             <h5 className="fs-16 fw-bold mb-2">No Documents Available</h5>
                             <p className="text-muted mb-0 mx-auto" style={{ maxWidth: '300px' }}>
-                                There are currently no uploaded documents for this application step. 
+                                There are currently no uploaded documents for this application step.
                             </p>
                         </div>
                     </div>
@@ -479,9 +479,9 @@ export default function FundingApplicationDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row mb-3 pb-1">
+                    <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row">
+                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Funding Application Details</h4>
                                     <nav aria-label="breadcrumb">
@@ -512,38 +512,28 @@ export default function FundingApplicationDetails() {
                                             </div>
                                             <div>
                                                 <h5 className="card-title mb-0 fs-16">Partner Commission Details</h5>
-                                                <p className="text-muted mb-0 fs-12">Below are the details of your calculated commission for this application.</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="card-body p-4">
-                                        <div className="row align-items-center">
-                                            <div className="col-md-4">
-                                                <div className="p-3 bg-light rounded text-center">
-                                                    <p className="text-muted text-uppercase mb-2 fs-11 fw-semibold">Total Requested Amount</p>
-                                                    <h3 className="mb-0 fw-bold">${requestedAmount.toLocaleString()}</h3>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-1 d-none d-md-block text-center text-muted">
-                                                <i className="ri-arrow-right-line fs-24"></i>
-                                            </div>
-                                            <div className="col-md-7">
-                                                <div className="card border-0 bg-success bg-opacity-10 mb-0">
-                                                    <div className="card-body p-4">
-                                                        <div className="d-flex align-items-start justify-content-between mb-3">
-                                                            <div>
-                                                                <p className="text-muted mb-1 fs-12 text-uppercase fw-semibold">Your Commission Amount</p>
-                                                                <h2 className="mb-0 fw-bold text-success">
-                                                                    {formatCurrencyValue(partnerCommissionAmount)}
-                                                                </h2>
+                                        {/* Commission Breakdown */}
+                                        <div className="card border border-success border-opacity-25 shadow-sm mb-0">
+                                            <div className="card-body p-4">
+                                                <div className="row align-items-center">
+                                                    <div className="col-lg-12">
+                                                        <div className="d-flex align-items-start">
+                                                            <div className="flex-shrink-0">
+                                                                <div className="avatar-md rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center">
+                                                                    <i className="ri-trophy-line text-success fs-2"></i>
+                                                                </div>
                                                             </div>
-                                                            <div className="badge bg-success bg-opacity-20 text-success fs-13 py-2 px-3">
-                                                                {partnerCommissionRate || '0'}% Commission Rate
+                                                            <div className="flex-grow-1 ms-4">
+                                                                <h5 className="mb-2 fw-semibold">Your Commission Breakdown</h5>
+                                                                <p className="text-muted mb-0 fs-13">
+                                                                    You will earn <strong className="text-success">{formatCurrencyValue(partnerCommissionAmount)}</strong> which is
+                                                                    <strong className="text-success"> {partnerCommissionRate || '0'}%</strong> of the total commission amount.
+                                                                </p>
                                                             </div>
-                                                        </div>
-                                                        <div className="d-flex align-items-center text-muted fs-13">
-                                                            <i className="ri-information-line me-2"></i>
-                                                            <span>Your commission is calculated based on the approved admin commission amount.</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -576,7 +566,14 @@ export default function FundingApplicationDetails() {
                                                                     value={successFee}
                                                                     onChange={(e) => {
                                                                         const val = e.target.value;
-                                                                        setSuccessFee(val);
+                                                                        if (val === '') {
+                                                                            setSuccessFee(val);
+                                                                            return;
+                                                                        }
+                                                                        const numVal = parseFloat(val);
+                                                                        if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
+                                                                            setSuccessFee(val);
+                                                                        }
                                                                     }}
                                                                     min="0"
                                                                     max="100"
@@ -598,10 +595,13 @@ export default function FundingApplicationDetails() {
                                                                             value={adminCommissionRate}
                                                                             onChange={(e) => {
                                                                                 const val = e.target.value;
-                                                                                setAdminCommissionRate(val);
+                                                                                if (val === '') {
+                                                                                    setAdminCommissionRate(val);
+                                                                                    return;
+                                                                                }
                                                                                 const newAdminShare = parseFloat(val);
-
-                                                                                if (!isNaN(newAdminShare)) {
+                                                                                if (!isNaN(newAdminShare) && newAdminShare >= 0 && newAdminShare <= 100) {
+                                                                                    setAdminCommissionRate(val);
                                                                                     const newPartnerShare = 100 - newAdminShare;
                                                                                     setPartnerCommissionRate(newPartnerShare >= 0 ? newPartnerShare.toFixed(2).replace(/\.00$/, '') : '0');
                                                                                 }
@@ -630,10 +630,14 @@ export default function FundingApplicationDetails() {
                                                                             value={partnerCommissionRate}
                                                                             onChange={(e) => {
                                                                                 const val = e.target.value;
-                                                                                setPartnerCommissionRate(val);
+                                                                                if (val === '') {
+                                                                                    setPartnerCommissionRate(val);
+                                                                                    return;
+                                                                                }
                                                                                 const newPartnerShare = parseFloat(val);
 
-                                                                                if (!isNaN(newPartnerShare)) {
+                                                                                if (!isNaN(newPartnerShare) && newPartnerShare >= 0 && newPartnerShare <= 100) {
+                                                                                    setPartnerCommissionRate(val);
                                                                                     const newAdminShare = 100 - newPartnerShare;
                                                                                     setAdminCommissionRate(newAdminShare >= 0 ? newAdminShare.toFixed(2).replace(/\.00$/, '') : '0');
                                                                                 }
@@ -691,9 +695,9 @@ export default function FundingApplicationDetails() {
                                                                     <span className="fw-medium">Total Requested Amount:</span>
                                                                 </div>
                                                                 {!isEditingRequestedAmount ? (
-                                                                    <div 
+                                                                    <div
                                                                         className="px-2 py-1 rounded transition-all cursor-pointer d-flex align-items-center bg-hover-light"
-                                                                        style={{ 
+                                                                        style={{
                                                                             transition: 'all 0.2s ease',
                                                                             border: '1px solid transparent'
                                                                         }}
@@ -905,43 +909,66 @@ export default function FundingApplicationDetails() {
                                 <div className="card-body">
                                     <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
 
-                                    <div className="mb-3">
-                                        <label htmlFor="status-select" className="form-label text-muted">Status</label>
-                                        <Dropdown
-                                            value={status}
-                                            options={FUNDING_APPLICATION_STATUS_OPTIONS}
-                                            onChange={(e) => setStatus(e.value)}
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Select status..."
-                                            className="w-100"
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
-                                        <textarea
-                                            className={`form-control ${notesError ? 'is-invalid' : ''}`}
-                                            id="status-notes"
-                                            rows={3}
-                                            placeholder="Add notes..."
-                                            value={status_note}
-                                            onChange={(e) => {
-                                                setStatusNote(e.target.value);
-                                                if (notesError) setNotesError('');
-                                            }}
-                                        ></textarea>
-                                        {notesError && <div className="invalid-feedback">{notesError}</div>}
-                                    </div>
-                                    <div className="d-grid">
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            onClick={handleUpdateClick}
-                                            disabled={updateMutation.isPending}
-                                        >
-                                            {updateMutation.isPending ? 'Updating...' : 'Update Status'}
-                                        </button>
-                                    </div>
+                                    {isPartner ? (
+                                        /* Partner View - Read Only */
+                                        <>
+                                            <div className="mb-3">
+                                                <label className="form-label text-muted">Status</label>
+                                                <div className="p-2 bg-light rounded">
+                                                    <span >
+                                                        {FUNDING_APPLICATION_STATUS_OPTIONS.find(opt => opt.value === status)?.label || status || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="form-label text-muted">Status Notes</label>
+                                                <div className="p-3 bg-light rounded text-muted">
+                                                    {status_note || 'No notes available'}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Admin View - Editable */
+                                        <>
+                                            <div className="mb-3">
+                                                <label htmlFor="status-select" className="form-label text-muted">Status</label>
+                                                <Dropdown
+                                                    value={status}
+                                                    options={FUNDING_APPLICATION_STATUS_OPTIONS}
+                                                    onChange={(e) => setStatus(e.value)}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Select status..."
+                                                    className="w-100"
+                                                />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
+                                                <textarea
+                                                    className={`form-control ${notesError ? 'is-invalid' : ''}`}
+                                                    id="status-notes"
+                                                    rows={3}
+                                                    placeholder="Add notes..."
+                                                    value={status_note}
+                                                    onChange={(e) => {
+                                                        setStatusNote(e.target.value);
+                                                        if (notesError) setNotesError('');
+                                                    }}
+                                                ></textarea>
+                                                {notesError && <div className="invalid-feedback">{notesError}</div>}
+                                            </div>
+                                            <div className="d-grid">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={handleUpdateClick}
+                                                    disabled={updateMutation.isPending}
+                                                >
+                                                    {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

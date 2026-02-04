@@ -27,7 +27,7 @@ import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerific
 import Appointments from './pages/appointments/Appointments.jsx';
 import Contacts from './pages/contacts/Contacts.jsx';
 import ContactDetails from './pages/contacts/ContactDetails.jsx';
-import ErrorPage from './pages/Utility/ErrorPage';
+import ErrorPage from './pages/Utility/ErrorPage.tsx';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
 import PreQualificationApplication from './pages/applications/pre-qualification/PreQualificationApplication.tsx';
@@ -38,7 +38,8 @@ import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
 import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
-import CommissionList from './pages/commissions/CommissionList.tsx';
+import CommissionList from './pages/commissions/CommissionList';
+import CommissionDetails from './pages/commissions/CommissionDetails';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -82,6 +83,10 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+
+            {/* Commissions Routes */}
+            <Route path="commissions" element={<CommissionList />} />
+            <Route path="commissions/:id" element={<CommissionDetails />} />
 
             {/* Partners Routes - requires 'view partners' permission */}
             <Route element={<PermissionRoute permission="view partners" />}>
@@ -160,9 +165,6 @@ export default function App() {
                 <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
               </>
             )}
-
-            {/* Commissions Route */}
-            <Route path="commissions" element={<CommissionList />} />
 
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>
