@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // Import assets - using relative paths from src/pages/Utility to root assets
 import error404 from '../../../assets/images/404-error.png';
@@ -13,6 +13,8 @@ interface ErrorPageProps {
 }
 
 export default function ErrorPage({ status = 404, title, message }: ErrorPageProps) {
+    const navigate = useNavigate();
+
     const config = {
         403: {
             image: errorGeneral,
@@ -58,8 +60,14 @@ export default function ErrorPage({ status = 404, title, message }: ErrorPagePro
                                     <h3 className="text-uppercase fw-semibold mt-2">{displayTitle}</h3>
                                     <p className="text-muted mb-4 pb-2 fs-16">{displayMessage}</p>
                                     <div className="d-flex gap-2 justify-content-center">
+                                        <button
+                                            onClick={() => navigate(-1)}
+                                            className="btn btn-soft-secondary btn-lg waves-effect waves-light mt-2"
+                                        >
+                                            <i className="ri-arrow-left-line me-2 align-bottom"></i> Back
+                                        </button>
                                         <Link to="/" className={`btn ${currentConfig.btnClass} btn-lg waves-effect waves-light mt-2`}>
-                                            <i className="ri-home-4-line me-2 align-bottom"></i> Back to Dashboard
+                                            <i className="ri-home-4-line me-2 align-bottom"></i> Go to Dashboard
                                         </Link>
                                     </div>
                                 </div>

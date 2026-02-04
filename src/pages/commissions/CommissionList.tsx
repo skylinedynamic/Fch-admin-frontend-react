@@ -8,8 +8,13 @@ import { Calendar } from 'primereact/calendar';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import TableLoader from '../../components/Loader/TableLoader';
 import { useCommissions } from '../../modules/commission/queries';
-import { Commission } from '../../modules/commission/types';
-import { MOCK_STATS } from '../../modules/commission/mockData';
+import { CommissionListItem } from '../../modules/commission/types';
+const STATS_DATA = {
+    total_commissions_paid: 154300,
+    pending_commissions: 34500,
+    avg_commission_rate: 12.5,
+    active_advisors: 42
+};
 
 const PAYMENT_STATUS_OPTIONS = [
     { label: 'Paid', value: 'paid' },
@@ -62,11 +67,11 @@ export default function CommissionList() {
 
     // Construct Payload for React Query
     const queryPayload = useMemo(() => ({
-        search_text: appliedFilters.searchText,
+        search: appliedFilters.searchText,
         partner_id: appliedFilters.selectedPartner,
-        status: appliedFilters.selectedStatus,
+        commission_status: appliedFilters.selectedStatus,
         payment_status: appliedFilters.selectedPaymentStatus,
-        date_range: appliedFilters.dateRange,
+        filters: [], // Add if needed based on API requirements, usually for complex filters
         page,
         per_page: perPage,
         sort_field: sortField,
@@ -133,7 +138,7 @@ export default function CommissionList() {
     }, []);
 
     // Template body
-    const statusBodyTemplate = (rowData: Commission) => {
+    const statusBodyTemplate = (rowData: CommissionListItem) => {
         const statusMap: { [key: string]: string } = {
             'pending': 'bg-warning-subtle text-warning',
             'approved': 'bg-success-subtle text-success',
@@ -144,21 +149,21 @@ export default function CommissionList() {
     };
 
     // Payment Status Template body
-    const paymentStatusBodyTemplate = (rowData: Commission) => {
+    const paymentStatusBodyTemplate = (rowData: CommissionListItem) => {
         const statusMap: { [key: string]: string } = {
             'pending': 'bg-warning-subtle text-warning',
             'paid': 'bg-success-subtle text-success',
             'cancelled': 'bg-danger-subtle text-danger'
         };
-        const className = statusMap[rowData.commission_payment_status?.toLowerCase()] || 'bg-light text-body';
-        return <span className={`badge ${className} text-uppercase px-2`}>{rowData.commission_payment_status}</span>;
+        const className = statusMap[rowData.payment_status?.toLowerCase()] || 'bg-light text-body';
+        return <span className={`badge ${className} text-uppercase px-2`}>{rowData.payment_status}</span>;
     };
 
     const statisticsConfig = useMemo(() => [
-        { title: "Total Commissions Paid", value: MOCK_STATS.total_commissions_paid, icon: "ri-money-dollar-circle-line", colorVariant: "secondary", isCurrency: true },
-        { title: "Pending Commissions", value: MOCK_STATS.pending_commissions, icon: "ri-time-line", colorVariant: "warning", isCurrency: true },
-        { title: "Avg Commission Rate", value: MOCK_STATS.avg_commission_rate, icon: "ri-percent-line", colorVariant: "info", isPercent: true },
-        { title: "Active Advisors", value: MOCK_STATS.active_advisors, icon: "ri-group-line", colorVariant: "success" }
+        { title: "Total Commissions Paid", value: STATS_DATA.total_commissions_paid, icon: "ri-money-dollar-circle-line", colorVariant: "secondary", isCurrency: true },
+        { title: "Pending Commissions", value: STATS_DATA.pending_commissions, icon: "ri-time-line", colorVariant: "warning", isCurrency: true },
+        { title: "Avg Commission Rate", value: STATS_DATA.avg_commission_rate, icon: "ri-percent-line", colorVariant: "info", isPercent: true },
+        { title: "Deal Completed", value: STATS_DATA.active_advisors, icon: "ri-group-line", colorVariant: "success" }
     ], []);
 
     return (
@@ -167,7 +172,7 @@ export default function CommissionList() {
                 {/* Header Section */}
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Commissions</h4>
                                 <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -258,13 +263,14 @@ export default function CommissionList() {
                                                 showClear
                                             />
                                         </div>
+
                                         <div className="col-xxl-3 col-sm-12">
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-primary flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Search
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn btn-soft-secondary py-2" onClick={handleClearFilters} title="Clear Filters">
-                                                    <i className="ri-refresh-line align-bottom"></i>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                 </button>
                                             </div>
                                         </div>
@@ -302,10 +308,11 @@ export default function CommissionList() {
                                             <Column field="borrower" header="Borrower" sortable style={{ minWidth: '150px' }} className="fw-medium" />
                                             <Column field="partner" header="Partner" sortable style={{ minWidth: '150px' }} />
                                             <Column field="commission_status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px' }} />
-                                            <Column header="Funded Amount" field="funded_amount" body={(rowData: Commission) => formatCurrency(rowData.funded_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
-                                            <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: Commission) => formatCurrency(rowData.admin_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
-                                            <Column header="Partner Comm." field="partner_commission_amount" body={(rowData: Commission) => formatCurrency(rowData.partner_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
-                                            <Column field="commission_payment_status" header="Payment" body={paymentStatusBodyTemplate} sortable style={{ minWidth: '110px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.requested_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
+                                            <Column header="Funded Amount" field="funded_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.funded_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
+                                            <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.admin_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
+                                            <Column header="Partner Comm." field="partner_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.partner_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
+                                            <Column field="payment_status" header="Payment Status" body={paymentStatusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                         </DataTable>
                                     </div>
                                 )}

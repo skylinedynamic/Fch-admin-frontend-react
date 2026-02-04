@@ -1,18 +1,57 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCommission } from '../../modules/commission/queries';
+import { CommissionDetail } from '../../modules/commission/types';
 import { useAuthStore } from '../../store/auth/authStore';
-import FormLoader from '../../components/Loader/FormLoader';
+import TableLoader from '../../components/Loader/TableLoader';
+import ErrorPage from '../Utility/ErrorPage';
+
+const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: string; value: React.ReactNode; className?: string }) => (
+    <div className={className}>
+        <label className="form-label fs-13">{label}</label>
+        <div className="fw-medium fs-13 text-muted">{value || '-'}</div>
+    </div>
+);
+
+const StatCard = ({ title, value, icon, color = 'primary', subValue }: { title: string; value: string; icon: string; color?: string; subValue?: string }) => (
+    <div className="card border-0 shadow-sm h-100">
+        <div className="card-body p-3">
+            <div className="d-flex align-items-center">
+                <div className={`avatar-sm flex-shrink-0 me-3`}>
+                    <div className={`avatar-title bg-${color}-subtle text-${color} rounded fs-20`}>
+                        <i className={icon}></i>
+                    </div>
+                </div>
+                <div className="flex-grow-1">
+                    <p className="text-muted fs-13 mb-1 text-uppercase">{title}</p>
+                    <h5 className="mb-0 fw-bold">{value}</h5>
+                    {subValue && <div className="text-muted fs-12 mt-1">{subValue}</div>}
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 export default function CommissionDetails() {
     const { id } = useParams<{ id: string }>();
-    const { data: commission, isLoading, error } = useCommission(id);
+    const navigate = useNavigate();
+    const { data: fetchedCommission, isLoading, error } = useCommission(id);
+    const [commissionState, setCommissionState] = useState<CommissionDetail | null>(null);
     const user = useAuthStore((state) => state.user);
+
+    // Update state when data is fetched
+    React.useEffect(() => {
+        if (fetchedCommission) {
+            setCommissionState(fetchedCommission);
+        }
+    }, [fetchedCommission]);
+
+    const commission = commissionState || fetchedCommission;
 
     // Determine if user is partner (is_host === false means partner)
     const isPartner = user?.is_host === false;
 
-    const formatCurrency = (amount: string | number | undefined) => {
+    const formatCurrency = (amount: string | number | undefined | null) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: commission?.currency || 'USD',
@@ -20,24 +59,11 @@ export default function CommissionDetails() {
         }).format(Number(amount) || 0);
     };
 
-    const getStatusBadgeClass = (status: string | undefined) => {
-        const s = status?.toLowerCase();
-        if (s === 'approved' || s === 'paid') return 'bg-success';
-        if (s === 'pending') return 'bg-warning';
-        if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'bg-danger';
-        return 'bg-secondary';
-    };
-
-    const handlePayout = () => {
-        // TODO: Implement payout functionality
-        alert('Payout functionality to be implemented');
-    };
-
     if (isLoading) {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <FormLoader count={10} />
+                    <TableLoader />
                 </div>
             </div>
         );
@@ -47,22 +73,31 @@ export default function CommissionDetails() {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <div className="alert alert-danger">
-                        <i className="ri-error-warning-line me-2"></i>
-                        Commission not found or an error occurred while fetching details.
-                    </div>
+                    <ErrorPage />
                 </div>
             </div>
         );
     }
 
+    // Determine badge colors based on status
+    const getStatusColor = (status: string | undefined) => {
+        const s = status?.toLowerCase();
+        if (s === 'approved' || s === 'paid' || s === 'funded') return 'success';
+        if (s === 'pending') return 'warning';
+        if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'danger';
+        return 'secondary';
+    };
+
+    const authPartnerId = (user as any)?.partner_id;
+    const showPartnerCommissionRow = commission?.partner_id !== authPartnerId;
+
     return (
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1 fw-semibold">Commission Details</h4>
                                 <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -74,370 +109,270 @@ export default function CommissionDetails() {
                                 </nav>
                             </div>
                             <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                                {!isPartner && commission?.commission_payment_status?.toLowerCase() !== 'paid' && (
+                                {/* {!isPartner && commission?.commission_payment_status?.toLowerCase() !== 'paid' && (
                                     <button
-                                        onClick={handlePayout}
                                         className="btn btn-success waves-effect waves-light"
                                     >
                                         <i className="ri-wallet-3-line align-middle me-1"></i> Process Payout
                                     </button>
-                                )}
-                                <Link to="/commissions" className="btn btn-soft-secondary waves-effect">
+                                )} */}
+                                <button onClick={() => navigate(-1)} className="btn btn-soft-secondary waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Hero Section with Gradient */}
+                {/* Key Metrics Stats Row */}
                 <div className="row mb-4">
-                    <div className="col-12">
-                        <div className="card border-0 shadow-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                            <div className="card-body p-4">
-                                <div className="row align-items-center">
-                                    <div className="col-lg-8">
-                                        <div className="d-flex align-items-center mb-3">
-                                            <div className="avatar-lg rounded-circle bg-white bg-opacity-25 me-3 d-flex align-items-center justify-content-center">
-                                                <i className="ri-money-dollar-circle-fill fs-1 text-white"></i>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-white mb-1 fw-bold">{commission.borrower_name}</h3>
-                                                <p className="text-white-50 mb-0 d-flex align-items-center gap-2">
-                                                    <span><i className="ri-building-line me-1"></i>{commission.borrower_business_name}</span>
-                                                    <span className="mx-2">•</span>
-                                                    <span><i className="ri-file-text-line me-1"></i>App #{commission.funding_application_id}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="row g-3">
-                                            <div className="col-sm-4">
-                                                <div className="text-white-50 fs-13 mb-1">Funded Amount</div>
-                                                <h4 className="text-white mb-0 fw-bold">{formatCurrency(commission.funding_total_funded_amount)}</h4>
-                                            </div>
-                                            <div className="col-sm-4">
-                                                <div className="text-white-50 fs-13 mb-1">{isPartner ? 'Your Commission' : 'Total Commission'}</div>
-                                                <h4 className="text-white mb-0 fw-bold">
-                                                    {formatCurrency(isPartner ? commission.partner_commission_amount : commission.total_commission_amount)}
-                                                </h4>
-                                            </div>
-                                            <div className="col-sm-4">
-                                                <div className="text-white-50 fs-13 mb-1">Commission Rate</div>
-                                                <h4 className="text-white mb-0 fw-bold">
-                                                    {isPartner ? commission.partner_commission : commission.total_commission}%
-                                                </h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                                        <div className="mb-3">
-                                            <span className={`badge ${getStatusBadgeClass(commission.commission_status)} fs-13 px-3 py-2 text-white`}>
-                                                <i className="ri-checkbox-circle-line me-1"></i>
-                                                {commission.commission_status}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className={`badge ${getStatusBadgeClass(commission.commission_payment_status)} fs-13 px-3 py-2 text-white`}>
-                                                <i className="ri-wallet-3-line me-1"></i>
-                                                {commission.commission_payment_status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
+                        <StatCard
+
+                            title="Requested Amount"
+                            value={formatCurrency(commission.funding_requested_amount)}
+                            icon="ri-money-dollar-circle-line"
+                            color="primary"
+                            subValue={`Funded Amount - ${formatCurrency(commission.funded_amount)}`}
+                        />
+                    </div>
+                    <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
+                        <StatCard
+                            title={isPartner ? "Your Commission" : "Total Commission"}
+                            value={formatCurrency(isPartner ? commission.partner_commission_amount : commission.total_commission_amount)}
+                            icon="ri-wallet-line"
+                            color="success"
+                            subValue={`${isPartner ? commission.partner_commission : commission.total_commission}% Rate`}
+                        />
+                    </div>
+                    <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
+                        <StatCard
+                            title="Commission Status"
+                            value={commission.commission_status}
+                            icon="ri-checkbox-circle-line"
+                            color={getStatusColor(commission.commission_status)}
+                        />
+                    </div>
+                    <div className="col-xl-3 col-md-6">
+                        <StatCard
+                            title="Payment Status"
+                            value={commission.commission_payment_status}
+                            icon="ri-secure-payment-line"
+                            color={getStatusColor(commission.commission_payment_status)}
+                        />
                     </div>
                 </div>
 
                 <div className="row">
-                    {/* Left Column */}
+                    {/* Left Column: Main Information */}
                     <div className="col-lg-8">
-                        {/* Commission Breakdown - Only for Hosts */}
-                        {!isPartner && (
-                            <div className="card border-0 shadow-sm mb-4">
-                                <div className="card-header bg-light border-0">
-                                    <h5 className="card-title mb-0 d-flex align-items-center">
-                                        <div className="avatar-xs rounded-circle bg-primary-subtle me-2 d-flex align-items-center justify-content-center">
-                                            <i className="ri-pie-chart-line text-primary"></i>
-                                        </div>
-                                        Commission Breakdown
-                                    </h5>
-                                </div>
-                                <div className="card-body p-4">
-                                    <div className="row g-3">
-                                        <div className="col-md-4">
-                                            <div className="p-3 rounded-3 text-center" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                                                <div className="text-white-50 fs-13 mb-2">Total Commission</div>
-                                                <h3 className="text-white mb-1 fw-bold">{formatCurrency(commission.total_commission_amount)}</h3>
-                                                <div className="text-white-50 fs-13">{commission.total_commission}%</div>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <div className="p-3 rounded-3 text-center bg-success-subtle">
-                                                <div className="text-success fs-13 mb-2">Admin Commission</div>
-                                                <h3 className="text-success mb-1 fw-bold">{formatCurrency(commission.admin_commission_amount)}</h3>
-                                                <div className="text-success fs-13">{commission.admin_commission}%</div>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <div className="p-3 rounded-3 text-center bg-info-subtle">
-                                                <div className="text-info fs-13 mb-2">Partner Commission</div>
-                                                <h3 className="text-info mb-1 fw-bold">{formatCurrency(commission.partner_commission_amount)}</h3>
-                                                <div className="text-info fs-13">{commission.partner_commission}%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Borrower Information */}
                         <div className="card border-0 shadow-sm mb-4">
-                            <div className="card-header bg-primary-subtle border-0">
-                                <h5 className="card-title mb-0 text-primary d-flex align-items-center">
-                                    <div className="avatar-xs rounded-circle bg-primary me-2 d-flex align-items-center justify-content-center">
-                                        <i className="ri-user-line text-white fs-16"></i>
-                                    </div>
+                            <div className="card-header bg-transparent border-bottom">
+                                <h5 className="card-title mb-0 d-flex align-items-center">
+                                    <i className="ri-user-line me-2 text-primary"></i>
                                     Borrower Information
                                 </h5>
                             </div>
-                            <div className="card-body p-4">
-                                <div className="row g-3">
-                                    <div className="col-md-6">
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-shrink-0">
-                                                <div className="avatar-sm rounded bg-primary-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-user-3-fill text-primary fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="text-muted mb-1 fs-13">Full Name</p>
-                                                <h6 className="mb-0">{commission.borrower_name || 'N/A'}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-shrink-0">
-                                                <div className="avatar-sm rounded bg-success-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-store-2-fill text-success fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="text-muted mb-1 fs-13">Business Name</p>
-                                                <h6 className="mb-0">{commission.borrower_business_name || 'N/A'}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-shrink-0">
-                                                <div className="avatar-sm rounded bg-info-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-mail-fill text-info fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="text-muted mb-1 fs-13">Email</p>
-                                                <h6 className="mb-0 text-break">{commission.borrower_business_email || 'N/A'}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-shrink-0">
-                                                <div className="avatar-sm rounded bg-warning-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-phone-fill text-warning fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="text-muted mb-1 fs-13">Phone</p>
-                                                <h6 className="mb-0">{commission.borrower_business_phone_no || 'N/A'}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div className="card-body">
+                                <div className="row">
+                                    <DetailRow
+                                        label="Full Name"
+                                        value={
+                                            commission.borrower_id ? (
+                                                <Link to={`/clients/${commission.borrower_id}`} className="text-muted text-decoration-underline-hover">
+                                                    {commission.borrower_name}
+                                                </Link>
+                                            ) : commission.borrower_name
+                                        }
+                                    />
+                                    <DetailRow label="Business Name" value={commission.borrower_business_name} />
+                                    <DetailRow label="Email" value={commission.borrower_business_email} />
+                                    <DetailRow label="Phone" value={commission.borrower_business_phone_no} />
                                     <div className="col-12">
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-shrink-0">
-                                                <div className="avatar-sm rounded bg-danger-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-map-pin-fill text-danger fs-18"></i>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow-1 ms-3">
-                                                <p className="text-muted mb-1 fs-13">Business Address</p>
-                                                <p className="mb-0">
-                                                    {commission.borrower_business_address && (
-                                                        <>
-                                                            {commission.borrower_business_address}
-                                                            {commission.borrower_business_city && `, ${commission.borrower_business_city}`}
-                                                            {commission.borrower_business_state && `, ${commission.borrower_business_state}`}
-                                                            {commission.business_postal_code && ` ${commission.business_postal_code}`}
-                                                            {commission.borrower_business_country && `, ${commission.borrower_business_country}`}
-                                                        </>
-                                                    ) || 'N/A'}
-                                                </p>
-                                            </div>
+                                        <label className="form-label fs-13 text-muted">Business Address</label>
+                                        <div className="fw-medium fs-14">
+                                            {commission.borrower_business_address && (
+                                                <>
+                                                    {commission.borrower_business_address}
+                                                    {commission.borrower_business_city && `, ${commission.borrower_business_city}`}
+                                                    {commission.borrower_business_state && `, ${commission.borrower_business_state}`}
+                                                    {commission.business_postal_code && ` ${commission.business_postal_code}`}
+                                                    {commission.borrower_business_country && `, ${commission.borrower_business_country}`}
+                                                </>
+                                            ) || '-'}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Funding Application Details */}
+                        {/* Funding Details */}
                         <div className="card border-0 shadow-sm mb-4">
-                            <div className="card-header bg-success-subtle border-0">
-                                <h5 className="card-title mb-0 text-success d-flex align-items-center">
-                                    <div className="avatar-xs rounded-circle bg-success me-2 d-flex align-items-center justify-content-center">
-                                        <i className="ri-funds-box-line text-white fs-16"></i>
-                                    </div>
-                                    Funding Application Details
+                            <div className="card-header bg-transparent border-bottom">
+                                <h5 className="card-title mb-0 d-flex align-items-center">
+                                    <i className="ri-funds-box-line me-2 text-primary"></i>
+                                    Funding Details
                                 </h5>
                             </div>
-                            <div className="card-body p-4">
-                                <div className="row g-3 mb-3">
-                                    <div className="col-md-6">
-                                        <div className="border border-success border-opacity-25 rounded-3 p-3 bg-success-subtle bg-opacity-10">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <p className="text-muted mb-1 fs-13">Requested Amount</p>
-                                                    <h5 className="mb-0 text-success">{formatCurrency(commission.funding_requested_amount)}</h5>
-                                                </div>
-                                                <div className="avatar-sm rounded-circle bg-success-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-hand-coin-line text-success fs-20"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="border border-primary border-opacity-25 rounded-3 p-3 bg-primary-subtle bg-opacity-10">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <p className="text-muted mb-1 fs-13">Funded Amount</p>
-                                                    <h5 className="mb-0 text-primary">{formatCurrency(commission.funding_total_funded_amount)}</h5>
-                                                </div>
-                                                <div className="avatar-sm rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center">
-                                                    <i className="ri-money-dollar-circle-line text-primary fs-20"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="row g-3">
-                                    <div className="col-md-4">
-                                        <p className="text-muted mb-1 fs-13">Status</p>
-                                        <span className={`badge ${getStatusBadgeClass(commission.funding_status)} text-white`}>
-                                            {commission.funding_status}
-                                        </span>
-                                    </div>
-                                    <div className="col-md-4">
-                                        <p className="text-muted mb-1 fs-13">Industry Type</p>
-                                        <p className="mb-0 fw-medium">{commission.funding_industry_type || 'N/A'}</p>
-                                    </div>
-                                    <div className="col-md-4">
-                                        <p className="text-muted mb-1 fs-13">Entity Type</p>
-                                        <p className="mb-0 fw-medium">{commission.funding_entity_type || 'N/A'}</p>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <p className="text-muted mb-1 fs-13">Funding Type</p>
-                                        <p className="mb-0 fw-medium">{commission.funding_preferred_funding_type || 'N/A'}</p>
-                                    </div>
-                                    {commission.funding_purpose_of_funds && (
-                                        <div className="col-12">
-                                            <p className="text-muted mb-1 fs-13">Purpose of Funds</p>
-                                            <div className="alert alert-info mb-0 py-2">
-                                                <i className="ri-information-line me-1"></i>
-                                                {commission.funding_purpose_of_funds}
-                                            </div>
-                                        </div>
-                                    )}
+                            <div className="card-body">
+                                <div className="row">
+                                    <DetailRow label="Requested Amount" value={formatCurrency(commission.funding_requested_amount)} />
+                                    <DetailRow label="Funded Amount" value={formatCurrency(commission.funded_amount)} text-success />
+                                    <DetailRow label="Funding Status" value={<span className={`badge bg-${getStatusColor(commission.funding_status)}-subtle text-${getStatusColor(commission.funding_status)}`}>{commission.funding_status}</span>} />
+                                    <DetailRow label="Funded Date" value={commission.funded_date} />
+                                    <div className="col-12"><hr className="my-2 border-dashed" /></div>
+                                    <DetailRow label="Industry Type" value={commission.funding_industry_type} />
+                                    <DetailRow label="Entity Type" value={commission.funding_entity_type} />
+                                    <DetailRow label="Funding Type" value={commission.funding_preferred_funding_type} />
+                                    <DetailRow label="Purpose of Funds" value={commission.funding_purpose_of_funds} />
                                 </div>
                             </div>
                         </div>
+
+
                     </div>
 
-                    {/* Right Column */}
+                    {/* Right Column: Partner & Notes */}
                     <div className="col-lg-4">
                         {/* Partner Information */}
-                        <div className="card border-0 shadow-sm mb-4" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-                            <div className="card-body p-4">
-                                <h5 className="card-title mb-4 text-white d-flex align-items-center">
-                                    <i className="ri-building-line me-2 fs-20"></i>
+                        <div className="card border-0 shadow-sm mb-4">
+                            <div className="card-header bg-transparent border-bottom">
+                                <h5 className="card-title mb-0 d-flex align-items-center">
+                                    <i className="ri-building-line me-2 text-primary"></i>
                                     Partner Information
                                 </h5>
-                                <div className="mb-3">
-                                    <p className="text-white-50 mb-1 fs-13">Partner Name</p>
-                                    <h6 className="mb-0 text-white">{commission.partner_name || 'N/A'}</h6>
-                                </div>
-                                <div className="mb-3">
-                                    <p className="text-white-50 mb-1 fs-13">Company</p>
-                                    <h6 className="mb-0 text-white">{commission.partner_company_name || 'N/A'}</h6>
-                                </div>
-                                <div className="mb-3">
-                                    <p className="text-white-50 mb-1 fs-13">Email</p>
-                                    <p className="mb-0 text-white text-break">{commission.partner_email || 'N/A'}</p>
-                                </div>
-                                <div className="mb-3">
-                                    <p className="text-white-50 mb-1 fs-13">Phone</p>
-                                    <p className="mb-0 text-white">{commission.partner_phone_number || 'N/A'}</p>
-                                </div>
-                                {commission.partner_type && (
-                                    <div className="mb-0">
-                                        <p className="text-white-50 mb-1 fs-13">Partner Type</p>
-                                        <span className="badge bg-white text-dark">{commission.partner_type}</span>
+                            </div>
+                            <div className="card-body">
+                                <div className="d-flex align-items-center mb-3">
+                                    <div className="flex-shrink-0">
+                                        <div className="avatar-sm">
+                                            <div className="avatar-title bg-light text-primary rounded-circle fs-20">
+                                                {commission.partner_company_name ? commission.partner_company_name.charAt(0) : 'P'}
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+                                    <div className="flex-grow-1 ms-3">
+                                        <Link to={`/partners/${commission.partner_id}`} className="text-reset text-decoration-none">
+                                            <h6 className="fs-15 mb-1 text-primary text-decoration-underline-hover">{commission.partner_company_name || 'N/A'}</h6>
+                                            <p className="text-muted mb-0 fs-13">{commission.partner_name}</p>
+                                        </Link>
+                                    </div>
+                                </div>
+                                <div className="mb-3">
+                                    <p className="text-muted mb-1 fs-12 text-uppercase fw-medium">Contact Details</p>
+                                    <ul className="list-unstyled mb-0 vstack gap-2 fs-13">
+                                        <li>
+                                            <i className="ri-mail-line me-2 text-muted align-middle"></i>
+                                            {commission.partner_email || 'N/A'}
+                                        </li>
+                                        <li>
+                                            <i className="ri-phone-line me-2 text-muted align-middle"></i>
+                                            {commission.partner_phone_number || 'N/A'}
+                                        </li>
+                                        {commission.partner_type && (
+                                            <li>
+                                                <i className="ri-star-line me-2 text-muted align-middle"></i>
+                                                <span className="badge bg-success-subtle text-success border">{commission.partner_type}</span>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Contact Person */}
-                        {(commission.partner_contact_person || commission.partner_contact_person_email || commission.partner_contact_person_phone_number) && (
+
+                        {/* Commission Breakdown (Admin View Only) */}
+                        {!isPartner && (
                             <div className="card border-0 shadow-sm mb-4">
-                                <div className="card-header bg-info-subtle border-0">
-                                    <h6 className="mb-0 text-info d-flex align-items-center">
-                                        <i className="ri-contacts-line me-2"></i>
-                                        Contact Person
-                                    </h6>
+                                <div className="card-header bg-transparent border-bottom">
+                                    <h5 className="card-title mb-0 d-flex align-items-center">
+                                        <i className="ri-pie-chart-line me-2 text-primary"></i>
+                                        Commission Breakdown
+                                    </h5>
                                 </div>
-                                <div className="card-body p-3">
-                                    {commission.partner_contact_person && (
-                                        <div className="mb-2">
-                                            <p className="text-muted mb-1 fs-13">Name</p>
-                                            <p className="mb-0 fw-medium">{commission.partner_contact_person}</p>
-                                        </div>
-                                    )}
-                                    {commission.partner_contact_person_email && (
-                                        <div className="mb-2">
-                                            <p className="text-muted mb-1 fs-13">Email</p>
-                                            <p className="mb-0 text-break">{commission.partner_contact_person_email}</p>
-                                        </div>
-                                    )}
-                                    {commission.partner_contact_person_phone_number && (
-                                        <div className="mb-0">
-                                            <p className="text-muted mb-1 fs-13">Phone</p>
-                                            <p className="mb-0">{commission.partner_contact_person_phone_number}</p>
-                                        </div>
-                                    )}
+                                <div className="card-body">
+                                    <div className="table-responsive">
+                                        <table className="table table-borderless table-nowrap mb-0 align-middle">
+                                            <thead className="table-light text-muted">
+                                                <tr>
+                                                    <th scope="col">Type</th>
+                                                    <th scope="col" className="text-end">Percentage</th>
+                                                    <th scope="col" className="text-end">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar-xs me-2">
+                                                                <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-16">T</div>
+                                                            </div>
+                                                            <span className="fw-medium">Success Fee</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end">{commission.total_commission}%</td>
+                                                    <td className="text-end fw-bold">{formatCurrency(commission.total_commission_amount)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar-xs me-2">
+                                                                <div className="avatar-title bg-success-subtle text-success rounded-circle fs-16">A</div>
+                                                            </div>
+                                                            <span className="fw-medium">Admin Commission</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end">{commission.admin_commission}%</td>
+                                                    <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount)}</td>
+                                                </tr>
+                                                {showPartnerCommissionRow && (
+                                                    <tr>
+                                                        <td>
+                                                            <div className="d-flex align-items-center">
+                                                                <div className="avatar-xs me-2">
+                                                                    <div className="avatar-title bg-info-subtle text-info rounded-circle fs-16">P</div>
+                                                                </div>
+                                                                <span className="fw-medium">Partner Commission</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-end">{commission.partner_commission}%</td>
+                                                        <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount)}</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* Commission Notes */}
-                        {commission.commission_note && (
-                            <div className="card border-0 shadow-sm">
-                                <div className="card-header bg-warning-subtle border-0">
-                                    <h6 className="mb-0 text-warning d-flex align-items-center">
-                                        <i className="ri-file-text-line me-2"></i>
-                                        Commission Notes
-                                    </h6>
-                                </div>
-                                <div className="card-body p-3">
-                                    <div className="alert alert-warning mb-0 py-2">
-                                        <p className="mb-0 fs-14" style={{ whiteSpace: 'pre-wrap' }}>
-                                            {commission.commission_note}
-                                        </p>
-                                    </div>
-                                </div>
+                        <div className="card border-0 shadow-sm">
+                            <div className="card-header bg-transparent border-bottom">
+                                <h5 className="card-title mb-0 d-flex align-items-center">
+                                    <i className="ri-sticky-note-line me-2 text-primary"></i>
+                                    Commission Notes
+                                </h5>
                             </div>
-                        )}
+                            <div className="card-body">
+                                {commission.commission_note ? (
+                                    <div className="alert alert-warning border-0 mb-0 py-3">
+                                        <div className="d-flex">
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="mb-0 fs-13" style={{ whiteSpace: 'pre-wrap' }}>
+                                                    {commission.commission_note}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted py-3">
+                                        <p className="mb-0 fs-13">No notes available.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

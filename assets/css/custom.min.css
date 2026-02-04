@@ -2,10 +2,14 @@
 
 /* Scoped styles for partner sidebar redesign */
 
-.row>* {
+/* .row>* {
   padding-right: calc(var(--vz-gutter-x) * .3);
   padding-left: calc(var(--vz-gutter-x) * .3);
 
+} */
+
+.page-content {
+  padding: calc(60px + var(--vz-grid-gutter-width)) calc(var(--vz-grid-gutter-width) * .5) 60px calc(var(--vz-grid-gutter-width) * .5) !important;
 }
 
 .partner-sidebar {
