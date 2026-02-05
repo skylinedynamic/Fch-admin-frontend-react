@@ -91,7 +91,10 @@ export default function LeadDetails() {
         ssn_last_4: '',
         requirement_details: '',
         partner_id: '',
-        partner_manager: ''
+        partner_manager: '',
+        lead_source_note: '',
+        entity_type_note: '',
+        industry_type_note: ''
     });
 
     const [users, setUsers] = useState([]);
@@ -185,6 +188,18 @@ export default function LeadDetails() {
             if (!formData.lead_type) newErrors.lead_type = 'Lead Type is required';
             if (!formData.status) newErrors.status = 'Status is required';
             // if (!formData.salesperson_id) newErrors.salesperson_id = 'Salesperson is required';
+
+            if (formData.lead_source === 'Other' && !formData.lead_source_note?.trim()) {
+                newErrors.lead_source_note = 'Please provide details for other lead source';
+            }
+            
+            if (formData.entity_type === 'Other / Unknown' && !formData.entity_type_note?.trim()) {
+                newErrors.entity_type_note = 'Please provide details for other entity type';
+            }
+
+            if (formData.industry_type === 'Other / Unknown' && !formData.industry_type_note?.trim()) {
+                newErrors.industry_type_note = 'Please provide details for other industry type';
+            }
         }
 
         setErrors(newErrors);
@@ -308,8 +323,11 @@ export default function LeadDetails() {
         }
     };
 
-    // Summernote for Requirement Details
+    // Summernote Editors
     const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 150 }, activeTab === 'contactInfo');
+    const { editorRef: sourceNoteRef } = useSummernote('lead_source_note', formData.lead_source_note, handleInputChange, { height: 100 }, activeTab === 'leadDetails' && formData.lead_source === 'Other');
+    const { editorRef: entityNoteRef } = useSummernote('entity_type_note', formData.entity_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.entity_type === 'Other / Unknown');
+    const { editorRef: industryNoteRef } = useSummernote('industry_type_note', formData.industry_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.industry_type === 'Other / Unknown');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -648,7 +666,7 @@ export default function LeadDetails() {
                                                     {errors.domain && <div className="invalid-feedback">{errors.domain}</div>}
                                                 </div>
                                             </div>
-                                            <div className="col-lg-6">
+                                             <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Lead Source</label>
                                                     <Dropdown
@@ -661,6 +679,24 @@ export default function LeadDetails() {
                                                     {errors.lead_source && <div className="invalid-feedback d-block">{errors.lead_source}</div>}
                                                 </div>
                                             </div>
+
+                                             {formData.lead_source === 'Other' && (
+                                                <div className="col-lg-12">
+                                                    <div className="mb-3">
+                                                        <label className="form-label">Lead Source Details <span className="text-danger">*</span></label>
+                                                        <textarea
+                                                            ref={sourceNoteRef}
+                                                            className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
+                                                            name="lead_source_note"
+                                                            value={formData.lead_source_note}
+                                                            onChange={handleInputChange}
+                                                            rows="2"
+                                                            placeholder="Please specify lead source"
+                                                        ></textarea>
+                                                        {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
+                                                    </div>
+                                                </div>
+                                            )}
                                             
                                         </div>
                                     )}
@@ -848,6 +884,24 @@ export default function LeadDetails() {
                                                     />
                                                 </div>
                                             </div>
+
+                                             {formData.entity_type === 'Other / Unknown' && (
+                                                <div className="col-lg-12">
+                                                    <div className="mb-3">
+                                                        <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                                                        <textarea
+                                                            ref={entityNoteRef}
+                                                            className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
+                                                            name="entity_type_note"
+                                                            value={formData.entity_type_note}
+                                                            onChange={handleInputChange}
+                                                            rows="2"
+                                                            placeholder="Please specify entity type"
+                                                        ></textarea>
+                                                        {errors.entity_type_note && <div className="invalid-feedback d-block">{errors.entity_type_note}</div>}
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Industry Type</label>
@@ -860,6 +914,24 @@ export default function LeadDetails() {
                                                     />
                                                 </div>
                                             </div>
+
+                                             {formData.industry_type === 'Other / Unknown' && (
+                                                <div className="col-lg-12">
+                                                    <div className="mb-3">
+                                                        <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
+                                                        <textarea
+                                                            ref={industryNoteRef}
+                                                            className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
+                                                            name="industry_type_note"
+                                                            value={formData.industry_type_note}
+                                                            onChange={handleInputChange}
+                                                            rows="2"
+                                                            placeholder="Please specify industry type"
+                                                        ></textarea>
+                                                        {errors.industry_type_note && <div className="invalid-feedback d-block">{errors.industry_type_note}</div>}
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
                                                     <label className="form-label">Business Start Date</label>
@@ -894,7 +966,7 @@ export default function LeadDetails() {
                                         </div>
                                     )}
                                         </>
-                                    )}
+                                )}
                                 </div>
                             </div>
                         </div>
