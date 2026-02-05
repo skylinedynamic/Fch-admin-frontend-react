@@ -55,7 +55,7 @@ export default function FundingApplicationDetails() {
     const saveCommissionMutation = useSaveFundingApplicationCommission();
 
     const { user } = useAuthStore();
-    const isPartner = user?.is_host === false;
+    const isPartner = user?.is_host == false;
     const authPartnerId = (user as any)?.partner_id;
 
     const { data: apiResponse, isLoading, error } = useFundingApplicationDetails(id || '');

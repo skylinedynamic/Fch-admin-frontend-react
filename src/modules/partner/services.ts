@@ -115,11 +115,11 @@ export const getNextPartnerId = async () => {
 };
 
 export const fetchPartnerPlans = async () => {
-    const { data } = await apiClient.get('/common/partner-plans');
-    return data;
+  const { data } = await apiClient.get('/common/partner-plans');
+  return data;
 };
 
 export const fetchNonHostBorrowerPlans = async () => {
-    const { data } = await apiClient.get('/common/non-host-borrower-plans');
-    return data;
+  const { data } = await apiClient.get('/common/non-host-borrower-plans');
+  return data;
 };

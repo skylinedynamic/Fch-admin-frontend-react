@@ -7,10 +7,10 @@ export type Client = {
     country_code?: string;
     email: string;
     signup_id?: string;
-    website?: string;
+    business_website?: string;
 
     // Business Info
-    legal_business_name?: string;
+    business_name?: string;
     business_ein?: string;
     state_file_number?: string;
     duns_number?: string;
@@ -19,12 +19,12 @@ export type Client = {
     city?: string;
     other_city?: string;
     state?: string;
-    business_zip?: string;
+    business_postal_code?: string;
     business_phone?: string;
-    entity_type?: string;
-    industry_type?: string;
+    business_entity_type?: string;
+    business_industry_type?: string;
     business_start_date?: string;
-    ssn_last_4?: string;
+    last_4_ssn?: string;
     enrollment_type?: string;
     notes?: string;
 

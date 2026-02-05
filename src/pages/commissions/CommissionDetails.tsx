@@ -49,7 +49,7 @@ export default function CommissionDetails() {
     const commission = commissionState || fetchedCommission;
 
     // Determine if user is partner (is_host === false means partner)
-    const isPartner = user?.is_host === false;
+    const isPartner = user?.is_host == false;
 
     const formatCurrency = (amount: string | number | undefined | null) => {
         return new Intl.NumberFormat('en-US', {

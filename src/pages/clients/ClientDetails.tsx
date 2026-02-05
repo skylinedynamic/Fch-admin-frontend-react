@@ -16,7 +16,7 @@ import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateMo
 import { createClient, updateClient } from '../../modules/client/services';
 import { useClientProfileStats } from '../../modules/client/queries';
 // @ts-ignore
-import { fetchSettings } from '../../modules/settings/services'; 
+import { fetchSettings } from '../../modules/settings/services';
 import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
 import type { Client, ChecklistItem } from '../../modules/client/types';
 import { locationData } from '../../config';
@@ -85,11 +85,8 @@ export default function ClientDetails() {
         phone_number: '',
         country_code: '+1',
         email: '',
-        signup_id: '',
-        website: '',
-
-        // Business Info
-        legal_business_name: '',
+        business_website: '',
+        business_name: '',
         business_ein: '',
         state_file_number: '',
         duns_number: '',
@@ -98,28 +95,14 @@ export default function ClientDetails() {
         city: '',
         other_city: '',
         state: '',
-        business_zip: '',
+        business_postal_code: '',
         business_phone: '',
-        entity_type: '',
-        industry_type: '',
+        business_entity_type: '',
+        business_industry_type: '',
         business_start_date: '',
-        ssn_last_4: '',
+        last_4_ssn: '',
         enrollment_type: '',
         notes: '',
-
-        // Financials defaults
-        currency: 'USD',
-        monthly_revenue: '',
-        avg_bank_balance: '',
-        annual_revenue: '',
-        profit_margin: '',
-        current_business_debt: '',
-        fico_score: '',
-        paydex_score: '',
-        years_in_business: '',
-        number_of_employees: '',
-        nsf_days: '',
-        funding_urgency: ''
     });
 
     // Location data state for Create Mode or simple passing (Child manages detailed logic)
@@ -129,17 +112,17 @@ export default function ClientDetails() {
             value: locationData[key].name
         }))
     );
-     // Parent doesn't need states/cities anymore for its own rendering, 
-     // but ClientForm might expect them if we kept the props. 
-     // We removed them from ClientInfoSection props usage but kept in ClientForm? 
-     // Actually ClientForm passes them to ClientInfoSection. 
-     // But ClientInfoSection ignores them now.
-     // So we can pass empty arrays or remove the props from ClientForm.
-     // Let's pass empty arrays to satisfy TS for now, or remove if we update ClientForm.
-     // Update: ClientDetails passes `states` and `cities` to ClientForm. 
-     // Ideally we should remove them from ClientForm props too, but to minimize changes:
-     const [states, setStates] = useState<{ label: string; value: string }[]>([]);
-     const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
+    // Parent doesn't need states/cities anymore for its own rendering, 
+    // but ClientForm might expect them if we kept the props. 
+    // We removed them from ClientInfoSection props usage but kept in ClientForm? 
+    // Actually ClientForm passes them to ClientInfoSection. 
+    // But ClientInfoSection ignores them now.
+    // So we can pass empty arrays or remove the props from ClientForm.
+    // Let's pass empty arrays to satisfy TS for now, or remove if we update ClientForm.
+    // Update: ClientDetails passes `states` and `cities` to ClientForm. 
+    // Ideally we should remove them from ClientForm props too, but to minimize changes:
+    const [states, setStates] = useState<{ label: string; value: string }[]>([]);
+    const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
 
 
     // Check for activeTab in navigation state (redirect from create)
@@ -155,7 +138,7 @@ export default function ClientDetails() {
     // Effect to update stats state when data arrives
     useEffect(() => {
         if (statsData && statsData.data) {
-             setProfileStats({
+            setProfileStats({
                 total_meetings: statsData.data.total_meetings || 0,
                 total_invoices: statsData.data.total_invoices || 0,
                 enrollment_type: statsData.data.enrollment_type || 'N/A',
@@ -169,11 +152,11 @@ export default function ClientDetails() {
     // Initial Data Loading Effect (Settings only)
     useEffect(() => {
         const loadInitialData = async () => {
-             // ... kept same ...
+            // ... kept same ...
             try {
                 const settingPromise = fetchSettings();
                 const promises = [settingPromise];
-                
+
                 if (!isHost) {
                     promises.push(fetchNonHostBorrowerPlans());
                 }
@@ -185,7 +168,7 @@ export default function ClientDetails() {
                 if (settingsRes.status) {
                     setSettings(settingsRes.data);
                 }
-                
+
                 // @ts-ignore
                 if (plansRes && plansRes.status && plansRes.data && plansRes.data.length > 0) {
                     // @ts-ignore
@@ -196,7 +179,7 @@ export default function ClientDetails() {
             }
         };
         loadInitialData();
-         // Removed redundant location logic here. Child handles it.
+        // Removed redundant location logic here. Child handles it.
     }, []);
 
     // Fetch Stats only (Client Data fetched by Child)
@@ -263,7 +246,7 @@ export default function ClientDetails() {
                 if (payload.city === 'Others') {
                     payload.city = payload.other_city;
                 }
-                
+
                 // Calculate Enrollment Type and Amount - ACCURATE LEAD PATTERN
                 let amount = 0;
                 let enrollment_type = payload.enrollment_type;
@@ -287,7 +270,7 @@ export default function ClientDetails() {
                 payload.is_partner_paying = !isHost;
 
                 const response: any = await createClient(payload);
-                
+
                 // Handle Payment for Non-Hosts - ACCURATE LEAD PATTERN (is_host == 0)
                 const clientData = response.data || response;
                 const bId = clientData?.borrower?.id || clientData?.id || response.id;
@@ -297,10 +280,10 @@ export default function ClientDetails() {
                     setNewBorrowerId(bId);
                     setPaymentInvoiceId(invId);
                     setPaymentAmount(amount);
-                    
+
                     // Sync formData with response
                     setFormData(prev => ({ ...prev, ...clientData }));
-                    
+
                     setShowPaymentModal(true);
                     toast.success("Client created. Please complete the payment.");
                     return;
@@ -566,7 +549,7 @@ export default function ClientDetails() {
                     // Let's navigate to edit page just like success, but maybe with a warning? 
                     // For now, let's just close modal. If they check "Clients" list, the client exists.
                     if (newBorrowerId) {
-                         navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
+                        navigate(`/clients/${newBorrowerId}`, { state: { activeTab: 'businessFinancials' } });
                     }
                 }}
                 onSuccess={() => {

@@ -506,21 +506,21 @@ export default function PartnerProfile() {
             const newValue = value;
             const currentPartnerType = name === 'partner_type' ? newValue : formData.partner_type;
             const currentEnrollmentType = name === 'enrollment_type' ? newValue : formData.enrollment_type;
-            
+
             let fees = {};
-            
+
             // Find the matching plan from fetched partnerPlans
-            const selectedPlan = partnerPlans.find(plan => 
-                plan.partner_type === currentPartnerType && 
+            const selectedPlan = partnerPlans.find(plan =>
+                plan.partner_type === currentPartnerType &&
                 plan.enrollment_type === currentEnrollmentType
             );
-            
+
             if (selectedPlan) {
                 fees.enrollment_amount = selectedPlan.payment_amount.toString();
                 fees.first_reg_amount = selectedPlan.payment_amount.toString();
                 fees.first_reg_payment = selectedPlan.payment_amount.toString();
                 fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
-                
+
                 // Special case for Payment Plan
                 if (currentEnrollmentType.includes('Payment Plan')) {
                     fees.recurring_amount = selectedPlan.payment_amount.toString();
@@ -532,9 +532,9 @@ export default function PartnerProfile() {
                 fees.first_reg_amount = '0';
                 fees.first_reg_payment = '0';
             }
-            
-            setFormData(prev => ({ 
-                ...prev, 
+
+            setFormData(prev => ({
+                ...prev,
                 [name]: newValue,
                 ...fees
             }));

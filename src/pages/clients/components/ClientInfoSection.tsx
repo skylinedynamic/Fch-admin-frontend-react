@@ -9,7 +9,6 @@ import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
 import { entityTypes, industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config'; // Import locationData
 import { useClient, useUpdateClient } from '../../../modules/client/queries';
-import { useQueryClient } from '@tanstack/react-query'; // Import queryClient if needed manually, or rely on hook
 
 // Default/Empty Client State
 const defaultClientState: Client = {
@@ -18,9 +17,8 @@ const defaultClientState: Client = {
     phone_number: '',
     country_code: '+1',
     email: '',
-    signup_id: '',
-    website: '',
-    legal_business_name: '',
+    business_website: '',
+    business_name: '',
     business_ein: '',
     state_file_number: '',
     duns_number: '',
@@ -29,27 +27,14 @@ const defaultClientState: Client = {
     city: '',
     other_city: '',
     state: '',
-    business_zip: '',
+    business_postal_code: '',
     business_phone: '',
-    entity_type: '',
-    industry_type: '',
+    business_entity_type: '',
+    business_industry_type: '',
     business_start_date: '',
-    ssn_last_4: '',
+    last_4_ssn: '',
     enrollment_type: '',
     notes: '',
-    // Financials defaults
-    currency: 'USD',
-    monthly_revenue: '',
-    avg_bank_balance: '',
-    annual_revenue: '',
-    profit_margin: '',
-    current_business_debt: '',
-    fico_score: '',
-    paydex_score: '',
-    years_in_business: '',
-    number_of_employees: '',
-    nsf_days: '',
-    funding_urgency: ''
 };
 
 const DATE_PICKER_OPTIONS = { dateFormat: "d M, Y" };
@@ -99,19 +84,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     useEffect(() => {
         if (fetchedData) {
             // @ts-ignore
-            const dataToSet = fetchedData.data || fetchedData;
-            setFormData(prev => ({ ...prev, ...dataToSet }));
+            const apiData = fetchedData.data || fetchedData;
+            setFormData(prev => ({ ...prev, ...apiData }));
         }
     }, [fetchedData]);
 
     // Local Location Options Logic
     const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
     const [localCities, setLocalCities] = useState<{ label: string; value: string }[]>([]);
-    
+
     // Countries is static from locationData
-    const localCountries = React.useMemo(() => Object.keys(locationData).map(key => ({ 
-        label: locationData[key].name, 
-        value: locationData[key].name 
+    const localCountries = React.useMemo(() => Object.keys(locationData).map(key => ({
+        label: locationData[key].name,
+        value: locationData[key].name
     })), []);
 
     useEffect(() => {
@@ -132,18 +117,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
         // Compute Cities based on State
         if (countryCode && formData.state && locationData[countryCode]) {
-             const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
-             const stateCode = stateEntry ? stateEntry[0] : null; // or match by name if stored by name
-             
-             // If stored by name, we need to find the key. 
-             // locationData structure: { USA: { name: 'USA', states: { AL: { name: 'Alabama', cities: [...] } } } }
-             
-             if (stateCode) {
-                 const cityList = locationData[countryCode].states[stateCode].cities;
-                 setLocalCities(cityList.map((city: string) => ({ label: city, value: city })));
-             } else {
-                 setLocalCities([]);
-             }
+            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
+            const stateCode = stateEntry ? stateEntry[0] : null; // or match by name if stored by name
+
+            // If stored by name, we need to find the key. 
+            // locationData structure: { USA: { name: 'USA', states: { AL: { name: 'Alabama', cities: [...] } } } }
+
+            if (stateCode) {
+                const cityList = locationData[countryCode].states[stateCode].cities;
+                setLocalCities(cityList.map((city: string) => ({ label: city, value: city })));
+            } else {
+                setLocalCities([]);
+            }
         } else {
             setLocalCities([]);
         }
@@ -156,39 +141,38 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         const value = e.target ? e.target.value : e.value;
 
         setFormData(prev => ({ ...prev, [name]: value }));
-        
+
         // Notify parent of ALL changes (important for Create Mode and Location Logic)
         if (handleLocationChange) {
-             handleLocationChange(name, value);
+            handleLocationChange(name, value);
         }
 
         // Clear local error if any (if setErrors passed)
         if (setErrors && errors[name]) {
-             const newErrors = { ...errors };
-             delete newErrors[name];
-             setErrors(newErrors);
+            const newErrors = { ...errors };
+            delete newErrors[name];
+            setErrors(newErrors);
         }
     };
 
     // Summernote
     const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
 
-
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-             // Basic Validation or logic
-             const payload = { ...formData, id: clientId };
-             if (payload.city === 'Others') {
-                 payload.city = payload.other_city;
-             }
+            const payload = {
+                ...formData,
+                id: clientId,
+                city: formData.city === 'Others' ? formData.other_city : formData.city
+            };
 
-             if (!isHost) {
-                 // @ts-ignore
-                 payload.is_partner_paying = true;
-             }
+            if (!isHost) {
+                // @ts-ignore
+                payload.is_partner_paying = true;
+            }
 
-             return new Promise((resolve, reject) => {
+            return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
                     onSuccess: () => {
@@ -209,7 +193,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         reject(error);
                     }
                 });
-             });
+            });
         }
     }));
 
@@ -220,11 +204,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             const planType = nonHostPlan?.enrollment_type || 'Fixed enrollment';
 
             if (formData.payment_amount != planAmount && !clientId) { // Only force update if creating or explicitly needed? Existing logic was loose. Let's keep it safe.
-                 handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
+                handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
             }
-             if (formData.enrollment_type != planType && !clientId) {
-                 handleInputChange({ target: { name: 'enrollment_type', value: planType } });
-             }
+            if (formData.enrollment_type != planType && !clientId) {
+                handleInputChange({ target: { name: 'enrollment_type', value: planType } });
+            }
 
         } else if (isHost && formData.enrollment_type) {
             const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
@@ -234,20 +218,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }, [isHost, settings, formData.enrollment_type, formData.payment_amount, nonHostPlan]);
 
-
     if (isFetching && clientId) {
-         return (
-             <div className="row">
-                 {[1, 2, 3, 4, 5, 6].map(i => (
-                     <div className="col-lg-6 mb-3" key={i}>
-                         <div className="placeholder-glow">
-                             <span className="placeholder col-4 mb-2"></span>
-                             <span className="placeholder col-12 p-3"></span>
-                         </div>
-                     </div>
-                 ))}
-             </div>
-         );
+        return (
+            <div className="row">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div className="col-lg-6 mb-3" key={i}>
+                        <div className="placeholder-glow">
+                            <span className="placeholder col-4 mb-2"></span>
+                            <span className="placeholder col-12 p-3"></span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     // Reuse rendering logic
@@ -329,34 +312,34 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="website" className="form-label">Website</label>
+                        <label htmlFor="business_website" className="form-label">Website</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.website ? 'is-invalid' : ''}`}
-                            id="website"
-                            name="website"
+                            className={`form-control ${errors.business_website ? 'is-invalid' : ''}`}
+                            id="business_website"
+                            name="business_website"
                             placeholder="www.example.com"
-                            value={formData.website || ''}
+                            value={formData.business_website || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.website && <div className="invalid-feedback">{errors.website}</div>}
+                        {errors.business_website && <div className="invalid-feedback">{errors.business_website}</div>}
                     </div>
                 </div>
 
                 {/* Business Information */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="legal_business_name" className="form-label">Legal Business Name</label>
+                        <label htmlFor="business_name" className="form-label">Legal Business Name</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.legal_business_name ? 'is-invalid' : ''}`}
-                            id="legal_business_name"
-                            name="legal_business_name"
+                            className={`form-control ${errors.business_name ? 'is-invalid' : ''}`}
+                            id="business_name"
+                            name="business_name"
                             placeholder="Enter legal business name"
-                            value={formData.legal_business_name || ''}
+                            value={formData.business_name || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.legal_business_name && <div className="invalid-feedback">{errors.legal_business_name}</div>}
+                        {errors.business_name && <div className="invalid-feedback">{errors.business_name}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -497,17 +480,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="business_zip" className="form-label">Zip Code</label>
+                        <label htmlFor="business_postal_code" className="form-label">Zip Code</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.business_zip ? 'is-invalid' : ''}`}
-                            id="business_zip"
-                            name="business_zip"
+                            className={`form-control ${errors.business_postal_code ? 'is-invalid' : ''}`}
+                            id="business_postal_code"
+                            name="business_postal_code"
                             placeholder="Enter zip code"
-                            value={formData.business_zip || ''}
+                            value={formData.business_postal_code || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.business_zip && <div className="invalid-feedback">{errors.business_zip}</div>}
+                        {errors.business_postal_code && <div className="invalid-feedback">{errors.business_postal_code}</div>}
                     </div>
                 </div>
 
@@ -540,34 +523,34 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="entity_type" className="form-label">Entity Type</label>
+                        <label htmlFor="business_entity_type" className="form-label">Entity Type</label>
                         <Dropdown
-                            value={formData.entity_type}
+                            value={formData.business_entity_type}
                             options={entityTypes}
-                            onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
+                            onChange={(e) => handleInputChange({ target: { name: 'business_entity_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select entity type"
                             filter
-                            className={`w-100 ${errors.entity_type ? 'p-invalid' : ''}`}
+                            className={`w-100 ${errors.business_entity_type ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
-                        {errors.entity_type && <small className="p-error">{errors.entity_type}</small>}
+                        {errors.business_entity_type && <small className="p-error">{errors.business_entity_type}</small>}
                     </div>
                 </div>
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="industry_type" className="form-label">Industry Type</label>
+                        <label htmlFor="business_industry_type" className="form-label">Industry Type</label>
                         <Dropdown
-                            value={formData.industry_type}
+                            value={formData.business_industry_type}
                             options={industryTypes}
-                            onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
+                            onChange={(e) => handleInputChange({ target: { name: 'business_industry_type', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select industry type"
                             filter
-                            className={`w-100 ${errors.industry_type ? 'p-invalid' : ''}`}
+                            className={`w-100 ${errors.business_industry_type ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
-                        {errors.industry_type && <small className="p-error">{errors.industry_type}</small>}
+                        {errors.business_industry_type && <small className="p-error">{errors.business_industry_type}</small>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -591,18 +574,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="ssn_last_4" className="form-label">SSN Last 4</label>
+                        <label htmlFor="last_4_ssn" className="form-label">SSN Last 4</label>
                         <input
                             type="text"
-                            className={`form-control ${errors.ssn_last_4 ? 'is-invalid' : ''}`}
-                            id="ssn_last_4"
-                            name="ssn_last_4"
+                            className={`form-control ${errors.last_4_ssn ? 'is-invalid' : ''}`}
+                            id="last_4_ssn"
+                            name="last_4_ssn"
                             placeholder="Enter last 4 digits of SSN"
                             maxLength={4}
-                            value={formData.ssn_last_4 || ''}
+                            value={formData.last_4_ssn || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.ssn_last_4 && <div className="invalid-feedback">{errors.ssn_last_4}</div>}
+                        {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
                     </div>
                 </div>
 
@@ -636,7 +619,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                 <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
                                 <input type="hidden" name="is_partner_paying" value="true" />
-                                
+
                                 <div className="flex-shrink-0 me-3">
                                     <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
                                         <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '2rem' }}></i>

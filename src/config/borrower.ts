@@ -1,33 +1,46 @@
 export const APPLICATION_STATUS = {
-    PENDING: 'Pending',
-    INTAKE_RECEIVED: 'Intake Received',
-    IN_REVIEW: 'In Review',
-    APPROVED: 'Approved',
-    DECLINED: 'Declined'
+  PENDING: 'Pending',
+  INTAKE_RECEIVED: 'Intake Received',
+  IN_REVIEW: 'In Review',
+  APPROVED: 'Approved',
+  DECLINED: 'Declined'
 };
 
 export const APPLICATION_STATUS_OPTIONS = [
-    { label: 'Pending', value: 'Pending' },
-    { label: 'Intake Received', value: 'Intake Received' },
-    { label: 'In Review', value: 'In Review' },
-    { label: 'Approved', value: 'Approved' },
-    { label: 'Declined', value: 'Declined' }
+  { label: 'Pending', value: 'Pending' },
+  { label: 'Intake Received', value: 'Intake Received' },
+  { label: 'In Review', value: 'In Review' },
+  { label: 'Approved', value: 'Approved' },
+  { label: 'Declined', value: 'Declined' }
 ];
 
 export const FUNDING_TYPE_OPTIONS = [
-    { label: 'Working Capital', value: 'Working Capital' },
-    { label: 'Equipment', value: 'Equipment' },
-    { label: 'Inventory', value: 'Inventory' },
-    { label: 'Marketing', value: 'Marketing' },
-    { label: 'Expansion', value: 'Expansion' },
-    { label: 'Other', value: 'Other' }
+  { label: 'Working Capital', value: 'Working Capital' },
+  { label: 'Equipment', value: 'Equipment' },
+  { label: 'Inventory', value: 'Inventory' },
+  { label: 'Marketing', value: 'Marketing' },
+  { label: 'Expansion', value: 'Expansion' },
+  { label: 'Other', value: 'Other' }
 ];
 
 
 export const FUNDING_APPLICATION_STATUS_OPTIONS = [
-    { label: 'Pending', value: 'Pending' },
-    { label: 'Approved', value: 'Approved' },
-    { label: 'Rejected', value: 'Rejected' }
+  { label: 'Pending', value: 'Pending' },
+  { label: 'Submitted (Received)', value: 'Submitted (Received)' },
+  { label: 'Underwriting Review', value: 'Underwriting Review' },
+  { label: 'Missing Documents (Action Required)', value: 'Missing Documents (Action Required)' },
+  { label: 'In Verification', value: 'In Verification' },
+  { label: 'Approved (Conditional)', value: 'Approved (Conditional)' },
+  { label: 'Approved (Final)', value: 'Approved (Final)' },
+  { label: 'Matched to Lender', value: 'Matched to Lender' },
+  { label: 'Submitted to Lender', value: 'Submitted to Lender' },
+  { label: 'Lender Reviewing', value: 'Lender Reviewing' },
+  { label: 'Offer Issued', value: 'Offer Issued' },
+  { label: 'Offer Accepted', value: 'Offer Accepted' },
+  { label: 'Contracting / Docs Out', value: 'Contracting / Docs Out' },
+  { label: 'Cleared to Fund', value: 'Cleared to Fund' },
+  { label: 'Funded', value: 'Funded' },
+  { label: 'Closed (Completed)', value: 'Closed (Completed)' }
 ];
 
 export const entityTypes = [

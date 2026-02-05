@@ -1,45 +1,26 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
-import { Calendar } from 'primereact/calendar';
 
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import TableLoader from '../../components/Loader/TableLoader';
 import { useCommissions } from '../../modules/commission/queries';
 import { CommissionListItem } from '../../modules/commission/types';
-const STATS_DATA = {
-    total_commissions_paid: 154300,
-    pending_commissions: 34500,
-    avg_commission_rate: 12.5,
-    active_advisors: 42
-};
-
-const PAYMENT_STATUS_OPTIONS = [
-    { label: 'Paid', value: 'paid' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Cancelled', value: 'cancelled' }
-];
-
-const COMMISSION_STATUS_OPTIONS = [
-    { label: 'Pending', value: 'Pending' },
-    { label: 'Approved', value: 'Approved' },
-    { label: 'Declined', value: 'Declined' }
-];
-
-const PARTNER_OPTIONS = [
-    { label: 'Acme Corp', value: 101 },
-    { label: 'Stark Ind', value: 102 },
-    { label: 'Wayne Ent', value: 103 },
-    { label: 'Cyberdyne', value: 104 },
-    { label: 'Massive Dynamic', value: 105 },
-    { label: 'Hooli', value: 106 },
-    { label: 'Pied Piper', value: 107 },
-];
+import { fetchPartners } from '../../modules/partner/services';
+import { useAuthStore } from '../../store/auth/authStore';
+import { PAYMENT_STATUS_OPTIONS, COMMISSION_STATUS_OPTIONS, PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
 
 export default function CommissionList() {
     const navigate = useNavigate();
+
+    // Auth - Determine if current user is a partner
+    const { user } = useAuthStore();
+    const isPartner = user?.is_host == false;
+
+    // State for partner dropdown options (only used for non-partner users)
+    const [partnersList, setPartnersList] = useState<Array<{ label: string, value: number }>>([]);
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
@@ -81,6 +62,62 @@ export default function CommissionList() {
     // Use Query Wrapper
     const { data: commissionData, isLoading, isFetching } = useCommissions(queryPayload);
 
+    // Calculate statistics from API data
+    const statistics = useMemo(() => {
+        // If the API provides summary data in the response, use it (Global stats)
+        // @ts-ignore
+        const apiSummary = commissionData?.summary || commissionData?.stats;
+
+        if (apiSummary) {
+            return {
+                total_commissions_paid: apiSummary.total_commissions_paid || 0,
+                pending_commissions: apiSummary.pending_commissions || 0,
+                avg_commission_rate: apiSummary.avg_commission_rate || 0,
+                deal_completed: apiSummary.deal_completed || 0
+            };
+        }
+
+        // Fallback: Calculate from currently visible data (Page stats)
+        const list = commissionData?.data || [];
+        let totalPaid = 0;
+        let totalPending = 0;
+        let totalRate = 0;
+        let dealCount = 0;
+
+        list.forEach((item: CommissionListItem) => {
+            const amountStr = isPartner ? item.partner_commission_amount : item.total_commission_amount;
+            const rateStr = isPartner ? item.partner_commission : item.total_commission;
+
+            const amount = parseFloat(amountStr) || 0;
+            const rate = parseFloat(rateStr) || 0;
+
+            if (item.payment_status?.toLowerCase() === 'paid') {
+                totalPaid += amount;
+            } else {
+                totalPending += amount;
+            }
+
+            totalRate += rate;
+            if (item.funded_amount && parseFloat(item.funded_amount) > 0) {
+                dealCount++;
+            }
+        });
+
+        return {
+            total_commissions_paid: totalPaid,
+            pending_commissions: totalPending,
+            avg_commission_rate: list.length > 0 ? (totalRate / list.length).toFixed(1) : 0,
+            deal_completed: dealCount
+        };
+    }, [commissionData, isPartner]);
+
+    const statisticsConfig = useMemo(() => [
+        { title: "Total Commissions Paid", value: statistics.total_commissions_paid, icon: "ri-money-dollar-circle-line", colorVariant: "secondary", isCurrency: true },
+        { title: "Pending Commissions", value: statistics.pending_commissions, icon: "ri-time-line", colorVariant: "warning", isCurrency: true },
+        { title: "Avg Commission Rate", value: statistics.avg_commission_rate, icon: "ri-percent-line", colorVariant: "info", isPercent: true },
+        { title: "Deal Completed", value: statistics.deal_completed, icon: "ri-group-line", colorVariant: "success" }
+    ], [statistics]);
+
     const handleApplyFilters = () => {
         setPage(1);
         setAppliedFilters({
@@ -91,6 +128,27 @@ export default function CommissionList() {
             dateRange
         });
     };
+
+    // Load partners for dropdown filter on mount (only for non-partner users)
+    useEffect(() => {
+        // Skip fetching partners if user is a partner (they won't see the filter)
+        if (isPartner) return;
+
+        const loadPartnersList = async () => {
+            try {
+                const result = await fetchPartners();
+                if (result.status) {
+                    setPartnersList((result.data || []).map((p: any) => ({
+                        label: p.company_name || p.full_name,
+                        value: p.id
+                    })));
+                }
+            } catch (err) {
+                console.error('Failed to load partners list:', err);
+            }
+        };
+        loadPartnersList();
+    }, [isPartner]);
 
     const handleClearFilters = () => {
         setSearchText('');
@@ -139,32 +197,15 @@ export default function CommissionList() {
 
     // Template body
     const statusBodyTemplate = (rowData: CommissionListItem) => {
-        const statusMap: { [key: string]: string } = {
-            'pending': 'bg-warning-subtle text-warning',
-            'approved': 'bg-success-subtle text-success',
-            'declined': 'bg-danger-subtle text-danger'
-        };
-        const className = statusMap[rowData.commission_status?.toLowerCase()] || 'bg-light text-body';
+        const className = COMMISSION_STATUS_CLASS_MAP[rowData.commission_status?.toLowerCase()] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase px-2`}>{rowData.commission_status}</span>;
     };
 
     // Payment Status Template body
     const paymentStatusBodyTemplate = (rowData: CommissionListItem) => {
-        const statusMap: { [key: string]: string } = {
-            'pending': 'bg-warning-subtle text-warning',
-            'paid': 'bg-success-subtle text-success',
-            'cancelled': 'bg-danger-subtle text-danger'
-        };
-        const className = statusMap[rowData.payment_status?.toLowerCase()] || 'bg-light text-body';
+        const className = PAYMENT_STATUS_CLASS_MAP[rowData.payment_status?.toLowerCase()] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase px-2`}>{rowData.payment_status}</span>;
     };
-
-    const statisticsConfig = useMemo(() => [
-        { title: "Total Commissions Paid", value: STATS_DATA.total_commissions_paid, icon: "ri-money-dollar-circle-line", colorVariant: "secondary", isCurrency: true },
-        { title: "Pending Commissions", value: STATS_DATA.pending_commissions, icon: "ri-time-line", colorVariant: "warning", isCurrency: true },
-        { title: "Avg Commission Rate", value: STATS_DATA.avg_commission_rate, icon: "ri-percent-line", colorVariant: "info", isPercent: true },
-        { title: "Deal Completed", value: STATS_DATA.active_advisors, icon: "ri-group-line", colorVariant: "success" }
-    ], []);
 
     return (
         <div className="page-content">
@@ -214,7 +255,7 @@ export default function CommissionList() {
                             <div className="card-body">
                                 <form className="table-filter mb-4" onSubmit={(e) => e.preventDefault()}>
                                     <div className="row g-3">
-                                        <div className="col-xxl-3 col-sm-6">
+                                        <div className={isPartner ? "col-xxl-4 col-sm-6" : "col-xxl-3 col-sm-6"}>
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -226,20 +267,22 @@ export default function CommissionList() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-2 col-sm-6">
-                                            <Dropdown
-                                                value={selectedPartner}
-                                                options={PARTNER_OPTIONS}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                onChange={(e) => setSelectedPartner(e.value)}
-                                                placeholder="Select Partner"
-                                                className="w-100 employee-filter-dropdown"
-                                                showClear
-                                                filter
-                                            />
-                                        </div>
-                                        <div className="col-xxl-2 col-sm-6">
+                                        {!isPartner && (
+                                            <div className="col-xxl-2 col-sm-6">
+                                                <Dropdown
+                                                    value={selectedPartner}
+                                                    options={partnersList}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(e) => setSelectedPartner(e.value)}
+                                                    placeholder="Select Partner"
+                                                    className="w-100 employee-filter-dropdown"
+                                                    showClear
+                                                    filter
+                                                />
+                                            </div>
+                                        )}
+                                        <div className={isPartner ? "col-xxl-3 col-sm-6" : "col-xxl-2 col-sm-6"}>
                                             <Dropdown
                                                 value={selectedStatus}
                                                 options={COMMISSION_STATUS_OPTIONS}
@@ -251,7 +294,7 @@ export default function CommissionList() {
                                                 showClear
                                             />
                                         </div>
-                                        <div className="col-xxl-2 col-sm-6">
+                                        <div className={isPartner ? "col-xxl-2 col-sm-6" : "col-xxl-2 col-sm-6"}>
                                             <Dropdown
                                                 value={selectedPaymentStatus}
                                                 options={PAYMENT_STATUS_OPTIONS}
@@ -280,7 +323,7 @@ export default function CommissionList() {
                                 {isLoading ? (
                                     <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
-                                    <div className="table-responsive table-card">
+                                    <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
                                             scrollHeight="600px"
@@ -306,11 +349,11 @@ export default function CommissionList() {
                                         >
                                             <Column field="date" header="Date" sortable style={{ minWidth: '110px' }} />
                                             <Column field="borrower" header="Borrower" sortable style={{ minWidth: '150px' }} className="fw-medium" />
-                                            <Column field="partner" header="Partner" sortable style={{ minWidth: '150px' }} />
+                                            {!isPartner && <Column field="partner" header="Partner" sortable style={{ minWidth: '150px' }} />}
                                             <Column field="commission_status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                             <Column header="Requested Amount" field="requested_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.requested_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Funded Amount" field="funded_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.funded_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
-                                            <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.admin_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
+                                            {!isPartner && <Column header="Admin Comm." field="admin_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.admin_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />}
                                             <Column header="Partner Comm." field="partner_commission_amount" body={(rowData: CommissionListItem) => formatCurrency(rowData.partner_commission_amount ?? 0)} sortable style={{ minWidth: '140px' }} />
                                             <Column field="payment_status" header="Payment Status" body={paymentStatusBodyTemplate} sortable style={{ minWidth: '110px' }} />
                                         </DataTable>
