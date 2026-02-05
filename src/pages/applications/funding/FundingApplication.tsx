@@ -14,7 +14,7 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 import TableLoader from '../../../components/Loader/TableLoader';
 import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
 
-import { APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
+import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 
 
 
@@ -176,14 +176,7 @@ export default function FundingApplication() {
 
     // Template body
     const statusBodyTemplate = (rowData: FundingApplicationType) => {
-        const statusMap: { [key: string]: string } = {
-            'pending': 'bg-warning-subtle text-warning',
-            'intake received': 'bg-info-subtle text-info',
-            'in review': 'bg-primary-subtle text-primary',
-            'approved': 'bg-success-subtle text-success',
-            'declined': 'bg-danger-subtle text-danger'
-        };
-        const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
+        const className = FUNDING_APPLICATION_STATUS_CLASS_MAP[rowData.status] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 

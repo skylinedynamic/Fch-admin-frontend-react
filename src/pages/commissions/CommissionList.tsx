@@ -197,13 +197,13 @@ export default function CommissionList() {
 
     // Template body
     const statusBodyTemplate = (rowData: CommissionListItem) => {
-        const className = COMMISSION_STATUS_CLASS_MAP[rowData.commission_status?.toLowerCase()] || 'bg-light text-body';
+        const className = COMMISSION_STATUS_CLASS_MAP[rowData.commission_status] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase px-2`}>{rowData.commission_status}</span>;
     };
 
     // Payment Status Template body
     const paymentStatusBodyTemplate = (rowData: CommissionListItem) => {
-        const className = PAYMENT_STATUS_CLASS_MAP[rowData.payment_status?.toLowerCase()] || 'bg-light text-body';
+        const className = PAYMENT_STATUS_CLASS_MAP[rowData.payment_status] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase px-2`}>{rowData.payment_status}</span>;
     };
 

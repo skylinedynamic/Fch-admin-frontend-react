@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FundingApplicationDetails as FundingApplicationDetailsType } from '../../../modules/application/types';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
+import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
@@ -914,8 +914,8 @@ export default function FundingApplicationDetails() {
                                         <>
                                             <div className="mb-3">
                                                 <label className="form-label text-muted">Status</label>
-                                                <div className="p-2 bg-light rounded">
-                                                    <span >
+                                                <div className="p-0 rounded">
+                                                    <span className={`badge ${FUNDING_APPLICATION_STATUS_CLASS_MAP[status] || 'bg-primary-subtle text-primary'} fs-12 text-uppercase`}>
                                                         {FUNDING_APPLICATION_STATUS_OPTIONS.find(opt => opt.value === status)?.label || status || 'N/A'}
                                                     </span>
                                                 </div>

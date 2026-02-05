@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PreQualificationApplicationDetails as PreQualificationApplicationDetailsType } from '../../../modules/application/types';
-import { APPLICATION_STATUS_OPTIONS } from '../../../config/borrower';
+import { APPLICATION_STATUS_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { usePreQualificationApplicationDetails, useUpdateApplicationStatus } from '../../../modules/application/queries';
@@ -10,6 +10,7 @@ import { usePreQualificationApplicationDetails, useUpdateApplicationStatus } fro
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
+import { useAuthStore } from '../../../store/auth';
 
 type StepType = 1 | 2 | 3;
 
@@ -34,7 +35,10 @@ export default function PreQualificationDetails() {
     const { id } = useParams();
     const { data: details, isLoading, error } = usePreQualificationApplicationDetails(id || '');
     const [currentStep, setCurrentStep] = useState<StepType>(1);
-    
+
+    const { user } = useAuthStore();
+    const isPartner = 1;
+
     // Status update state
     const app = (details?.data || details || {}) as PreQualificationApplicationDetailsType;
     const [status, setStatus] = useState<string>('');
@@ -74,8 +78,8 @@ export default function PreQualificationDetails() {
                     const backendErrors = error.response.data.errors;
                     // Check for status_note validation error
                     if (backendErrors.status_note) {
-                        const message = Array.isArray(backendErrors.status_note) 
-                            ? backendErrors.status_note[0] 
+                        const message = Array.isArray(backendErrors.status_note)
+                            ? backendErrors.status_note[0]
                             : backendErrors.status_note;
                         setNotesError(message);
                     }
@@ -109,8 +113,8 @@ export default function PreQualificationDetails() {
             <DetailRow label="Last Name" value={app.last_name} />
             <DetailRow label="Email" value={app.email} />
             <DetailRow label="Phone Number" value={app.phone_number} />
-             <DetailRow label="Business Website" value={<a href={app.business_website} target="_blank" rel="noopener noreferrer">{app.business_website}</a>} />
-             <DetailRow label="State of Incorporation" value={app.state_of_incorporation} />
+            <DetailRow label="Business Website" value={<a href={app.business_website} target="_blank" rel="noopener noreferrer">{app.business_website}</a>} />
+            <DetailRow label="State of Incorporation" value={app.state_of_incorporation} />
         </>
     );
 
@@ -127,14 +131,14 @@ export default function PreQualificationDetails() {
 
     const renderFundingNeeds = () => (
         <>
-             <DetailRow label="Funding Requested Amount" value={app.funding_requested_amount} />
-             <DetailRow label="Funding Urgency" value={app.funding_urgency} />
-             <DetailRow label="Purpose of Funding" value={app.purpose_of_funding} />
-             <DetailRow label="Personal Credit Score" value={app.personal_credit_score} />
-             <DetailRow label="Estimated Business Credit Score" value={app.estimated_business_credit_score} />
-             <DetailRow label="Existing Business Debt" value={app.existing_business_debt ? 'Yes' : 'No'} />
-             <DetailRow label="Debt Balance" value={app.debt_balance} />
-             <DetailRow label="Notes" value={app.notes} />
+            <DetailRow label="Funding Requested Amount" value={app.funding_requested_amount} />
+            <DetailRow label="Funding Urgency" value={app.funding_urgency} />
+            <DetailRow label="Purpose of Funding" value={app.purpose_of_funding} />
+            <DetailRow label="Personal Credit Score" value={app.personal_credit_score} />
+            <DetailRow label="Estimated Business Credit Score" value={app.estimated_business_credit_score} />
+            <DetailRow label="Existing Business Debt" value={app.existing_business_debt ? 'Yes' : 'No'} />
+            <DetailRow label="Debt Balance" value={app.debt_balance} />
+            <DetailRow label="Notes" value={app.notes} />
         </>
     );
 
@@ -145,17 +149,17 @@ export default function PreQualificationDetails() {
                     {/* Header */}
                     <div className="row mb-3 pb-1">
                         <div className="col-12">
-                             <div className="d-flex align-items-center justify-content-between flex-row">
-                                 <div className="flex-grow-1">
+                            <div className="d-flex align-items-center justify-content-between flex-row">
+                                <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Application Details</h4>
                                     <nav aria-label="breadcrumb">
                                         <ol className="breadcrumb m-0">
                                             <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                             <li className="breadcrumb-item"><Link to="/intake-review/pre-qualification">Pre-Qualification Applications</Link></li>
-                                             <li className="breadcrumb-item active" aria-current="page">Details</li>
+                                            <li className="breadcrumb-item"><Link to="/intake-review/pre-qualification">Pre-Qualification Applications</Link></li>
+                                            <li className="breadcrumb-item active" aria-current="page">Details</li>
                                         </ol>
                                     </nav>
-                                 </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -173,14 +177,14 @@ export default function PreQualificationDetails() {
                                         <button
                                             key={step.id}
                                             type="button"
-                                        className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
+                                            className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
                                             onClick={() => setCurrentStep(step.id as StepType)}
                                         >
                                             <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: '600' }}>
                                                 {step.id}
                                             </div>
                                             <div className="flex-grow-1">
-                                            <div className={`fw-medium ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '14px' }}>
+                                                <div className={`fw-medium ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '14px' }}>
                                                     {step.title}
                                                 </div>
                                             </div>
@@ -190,47 +194,66 @@ export default function PreQualificationDetails() {
                             </div>
                             {/* Status Card */}
                             <div className="card">
-                                 <div className="card-body">
-                                     <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
+                                <div className="card-body">
+                                    <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
 
-                                     <div className="mb-3">
-                                         <label htmlFor="status-select" className="form-label text-muted">Status</label>
-                                         <Dropdown
-                                            value={status}
-                                            options={APPLICATION_STATUS_OPTIONS}
-                                            onChange={(e) => setStatus(e.value)}
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Select status..."
-                                            className="w-100"
-                                         />
-                                     </div>
-                                     <div className="mb-3">
-                                         <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
-                                         <textarea 
-                                             className={`form-control ${notesError ? 'is-invalid' : ''}`}
-                                             id="status-notes" 
-                                             rows={3} 
-                                             placeholder="Add notes..."
-                                             value={status_note}
-                                             onChange={(e) => {
-                                                 setStatusNote(e.target.value);
-                                                 if (notesError) setNotesError('');
-                                             }}
-                                         ></textarea>
-                                         {notesError && <div className="invalid-feedback">{notesError}</div>}
-                                     </div>
-                                     <div className="d-grid">
-                                         <button 
-                                            type="button" 
-                                            className="btn btn-primary"
-                                            onClick={handleUpdateClick}
-                                            disabled={updateMutation.isPending}
-                                         >
-                                             {updateMutation.isPending ? 'Updating...' : 'Update Status'}
-                                         </button>
-                                     </div>
-                                 </div>
+                                    {!isPartner ? (
+                                        <>
+                                            <div className="mb-3">
+                                                <label htmlFor="status-select" className="form-label text-muted">Status</label>
+                                                <Dropdown
+                                                    value={status}
+                                                    options={APPLICATION_STATUS_OPTIONS}
+                                                    onChange={(e) => setStatus(e.value)}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    placeholder="Select status..."
+                                                    className="w-100"
+                                                />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
+                                                <textarea
+                                                    className={`form-control ${notesError ? 'is-invalid' : ''}`}
+                                                    id="status-notes"
+                                                    rows={3}
+                                                    placeholder="Add notes..."
+                                                    value={status_note}
+                                                    onChange={(e) => {
+                                                        setStatusNote(e.target.value);
+                                                        if (notesError) setNotesError('');
+                                                    }}
+                                                ></textarea>
+                                                {notesError && <div className="invalid-feedback">{notesError}</div>}
+                                            </div>
+                                            <div className="d-grid">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={handleUpdateClick}
+                                                    disabled={updateMutation.isPending}
+                                                >
+                                                    {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="mb-3">
+                                                <label className="form-label text-muted d-block">Status</label>
+                                                <span className={`badge ${APPLICATION_STATUS_CLASS_MAP[app.status] || 'bg-primary-subtle text-primary'} fs-12 text-uppercase`}>
+                                                    {app.status}
+                                                </span>
+                                            </div>
+                                            <div className="mb-0">
+                                                <label className="form-label text-muted d-block">Status Notes</label>
+                                                <div className="text-muted fs-14 bg-light p-3 rounded" style={{ minHeight: '80px' }}>
+                                                    {app.status_note || 'No notes available'}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -255,7 +278,7 @@ export default function PreQualificationDetails() {
                 </div>
             </div>
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 show={showConfirmModal}
                 onHide={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmUpdate}

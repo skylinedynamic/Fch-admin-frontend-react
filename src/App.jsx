@@ -155,17 +155,13 @@ export default function App() {
               <Route path="leads/:id" element={<LeadDetails />} />
             </Route>
 
-            {/* My Application Routes */}
-            {user?.user_type === 'Admin' && (
-              <>
-                <Route path="intake-review" >
-                  <Route path="pre-qualification" element={<PreQualificationApplication />} />
-                  <Route path="funding-review" element={<FundingApplication />} />
-                </Route>
-                <Route path="intake-review/pre-qualification/:id" element={<PreQualificationDetails />} />
-                <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
-              </>
-            )}
+            <Route path="intake-review" >
+              <Route path="pre-qualification" element={<PreQualificationApplication />} />
+              <Route path="funding-review" element={<FundingApplication />} />
+            </Route>
+            <Route path="intake-review/pre-qualification/:id" element={<PreQualificationDetails />} />
+            <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
+
 
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>
@@ -176,7 +172,7 @@ export default function App() {
             <Route element={<PermissionRoute permission="view payments" />}>
               <Route path="payments" element={<Payments />} />
             </Route>
-            
+
             {/* Subscriptions Routes */}
             <Route element={<PermissionRoute permission="view subscriptions" />}>
               <Route path="subscriptions" element={<Subscriptions />} />

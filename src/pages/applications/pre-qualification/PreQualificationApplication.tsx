@@ -12,7 +12,7 @@ import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { PreQualificationApplication as PreQualificationApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
-import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS } from '../../../config/borrower';
+import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 
 
 
@@ -197,14 +197,7 @@ export default function PreQualificationApplication() {
 
     // Template body
     const statusBodyTemplate = (rowData: PreQualificationApplicationType) => {
-        const statusMap: { [key: string]: string } = {
-            'pending': 'bg-warning-subtle text-warning',
-            'intake received': 'bg-info-subtle text-info',
-            'in review': 'bg-primary-subtle text-primary',
-            'approved': 'bg-success-subtle text-success',
-            'declined': 'bg-danger-subtle text-danger'
-        };
-        const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
+        const className = APPLICATION_STATUS_CLASS_MAP[rowData.status] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 

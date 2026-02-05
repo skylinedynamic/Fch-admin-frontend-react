@@ -14,6 +14,14 @@ export const APPLICATION_STATUS_OPTIONS = [
   { label: 'Declined', value: 'Declined' }
 ];
 
+export const APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
+  [APPLICATION_STATUS_OPTIONS[0].value]: 'bg-warning-subtle text-warning',
+  [APPLICATION_STATUS_OPTIONS[1].value]: 'bg-info-subtle text-info',
+  [APPLICATION_STATUS_OPTIONS[2].value]: 'bg-primary-subtle text-primary',
+  [APPLICATION_STATUS_OPTIONS[3].value]: 'bg-success-subtle text-success',
+  [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger'
+};
+
 export const FUNDING_TYPE_OPTIONS = [
   { label: 'Working Capital', value: 'Working Capital' },
   { label: 'Equipment', value: 'Equipment' },
@@ -42,6 +50,25 @@ export const FUNDING_APPLICATION_STATUS_OPTIONS = [
   { label: 'Funded', value: 'Funded' },
   { label: 'Closed (Completed)', value: 'Closed (Completed)' }
 ];
+
+export const FUNDING_APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
+  [FUNDING_APPLICATION_STATUS_OPTIONS[0].value]: 'bg-warning-subtle text-warning',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[1].value]: 'bg-info-subtle text-info',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[2].value]: 'bg-primary-subtle text-primary',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[3].value]: 'bg-danger-subtle text-danger',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[4].value]: 'bg-info-subtle text-info',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[5].value]: 'bg-success-subtle text-success',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[6].value]: 'bg-success text-white',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[7].value]: 'bg-primary-subtle text-primary',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[8].value]: 'bg-info-subtle text-info',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[9].value]: 'bg-primary-subtle text-primary',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[10].value]: 'bg-success-subtle text-success',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[11].value]: 'bg-success text-white',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[12].value]: 'bg-warning-subtle text-warning',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[13].value]: 'bg-success-subtle text-success',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[14].value]: 'bg-success text-white',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[15].value]: 'bg-secondary-subtle text-secondary',
+};
 
 export const entityTypes = [
   { label: 'LLC', value: 'LLC' },
