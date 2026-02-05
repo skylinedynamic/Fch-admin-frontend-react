@@ -37,6 +37,7 @@ import FundingApplicationDetails from './pages/applications/funding/FundingAppli
 import Settings from './pages/settings/Settings.jsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
+import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
 import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 
 
@@ -168,6 +169,11 @@ export default function App() {
             {/* Payments Routes */}
             <Route element={<PermissionRoute permission="view payments" />}>
               <Route path="payments" element={<Payments />} />
+            </Route>
+            
+            {/* Subscriptions Routes */}
+            <Route element={<PermissionRoute permission="view subscriptions" />}>
+              <Route path="subscriptions" element={<Subscriptions />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
