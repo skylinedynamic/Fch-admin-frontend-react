@@ -6,8 +6,7 @@ export interface SettingsData {
     stripe_key_production: string | null;
     stripe_secret_production: string | null;
     payment_method: string;
-    non_host_enrollment_price: string;
-    non_host_enrollment_value?: string;
+
     status: number;
     configuration: {
         theme: string;

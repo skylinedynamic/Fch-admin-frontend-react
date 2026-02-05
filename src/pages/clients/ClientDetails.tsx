@@ -271,8 +271,8 @@ export default function ClientDetails() {
                 if (isHost) {
                     amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
                 } else {
-                    amount = nonHostPlan.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 0;
-                    enrollment_type = nonHostPlan.enrollment_type;
+                    amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
+                    enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
                 }
 
                 // Accurate Payload Fields
@@ -283,6 +283,8 @@ export default function ClientDetails() {
                 payload.payment_amount = amount; // Keeping both for safety as per earlier user request "payment_amount in payload"
                 // @ts-ignore
                 payload.entity_type = 'Borrower';
+                // @ts-ignore
+                payload.is_partner_paying = !isHost;
 
                 const response: any = await createClient(payload);
                 
@@ -538,6 +540,7 @@ export default function ClientDetails() {
                                     isHost={isHost}
                                     // @ts-ignore
                                     settings={settings}
+                                    nonHostPlan={nonHostPlan}
                                 />
                             </div>
                         </div>
@@ -578,7 +581,8 @@ export default function ClientDetails() {
                 lead={{
                     ...formData,
                     contact_person: `${formData.first_name} ${formData.last_name}`.trim(),
-                    entity_type: 'Borrower'
+                    entity_type: 'Borrower',
+                    is_partner_paying: !isHost
                 }} // Pass constructed contact_person and role for modal UI/Logic accuracy
                 borrowerId={newBorrowerId}
                 invoiceId={paymentInvoiceId}

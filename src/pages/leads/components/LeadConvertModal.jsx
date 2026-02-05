@@ -4,7 +4,6 @@ import { Dropdown } from 'primereact/dropdown';
 import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
 import { fetchPartnerPlans, fetchNonHostBorrowerPlans } from '../../../modules/partner/services';
-import { fetchSettings } from '../../../modules/settings/services';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
     const [enrollmentType, setEnrollmentType] = useState('One Time Payment');
@@ -12,7 +11,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const [partnerEnrollmentType, setPartnerEnrollmentType] = useState('');
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [nonHostPlans, setNonHostPlans] = useState([]);
-    const [settings, setSettings] = useState(null);
     
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -47,13 +45,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         if (!modal) return;
         if (show) {
             modal.show();
-            // Fetch plans and settings when modal opens
+            // Fetch plans when modal opens
             const loadData = async () => {
                 try {
-                    const promises = [
-                        fetchPartnerPlans(),
-                        fetchSettings()
-                    ];
+                    const promises = [fetchPartnerPlans()];
                     
                     if (!isHost) {
                         promises.push(fetchNonHostBorrowerPlans());
@@ -61,11 +56,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                     const results = await Promise.all(promises);
                     const plansRes = results[0];
-                    const settingsRes = results[1];
-                    const nonHostPlansRes = results[2];
+                    const nonHostPlansRes = !isHost ? results[1] : null;
 
                     if (plansRes.status) setPartnerPlans(plansRes.data || []);
-                    if (settingsRes.status) setSettings(settingsRes.data);
                     if (nonHostPlansRes && nonHostPlansRes.status) setNonHostPlans(nonHostPlansRes.data || []);
                 } catch (err) {
                     console.error('Failed to fetch lead conversion data:', err);
@@ -90,8 +83,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 payload.amount = selectedOption ? selectedOption.price : 0;
             } else {
                 const plan = nonHostPlans?.[0];
-                payload.enrollment_type = plan?.enrollment_type || settings?.non_host_enrollment_value || '';
-                payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : (settings?.non_host_enrollment_price ? parseFloat(settings.non_host_enrollment_price) : 800);
+                payload.enrollment_type = plan?.enrollment_type || 'Fixed enrollment';
+                payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : 800;
             }
         } else if (targetType === 'Partner') {
             payload.partner_type = partnerType;
@@ -154,7 +147,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 ) : (
                                     <div className="mb-4 text-start bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                         {/* Hidden enrollment type for non-host */}
-                                        <input type="hidden" value={nonHostPlans?.[0]?.enrollment_type || settings?.non_host_enrollment_value || ''} />
+                                        <input type="hidden" value={nonHostPlans?.[0]?.enrollment_type || 'Fixed enrollment'} />
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
                                                 <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
@@ -163,7 +156,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         <div className="flex-grow-1 ps-2">
                                             <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                             <p className="mb-0 text-muted fs-15 lh-base">
-                                                A fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlans?.[0]?.payment_amount ? parseFloat(nonHostPlans[0].payment_amount).toFixed(2) : (settings?.non_host_enrollment_price || '800.00')}</span>
+                                                A fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlans?.[0]?.payment_amount ? parseFloat(nonHostPlans[0].payment_amount).toFixed(2) : '800.00' }</span>
                                             </p>
                                         </div>
                                     </div>
