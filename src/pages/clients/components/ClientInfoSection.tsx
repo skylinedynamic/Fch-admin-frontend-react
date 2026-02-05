@@ -606,10 +606,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {isHost ? (
+                {isHost && (
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label htmlFor="enrollment_type" className="form-label">Enrollment Amount <span className="text-danger">*</span></label>
+                            <label htmlFor="enrollment_type" className="form-label">
+                                Enrollment Type <span className="text-danger">*</span>
+                            </label>
                             <Dropdown
                                 value={formData.enrollment_type}
                                 options={ENROLLMENT_TYPE_OPTIONS}
@@ -629,23 +631,112 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             {errors.enrollment_type && <small className="p-error">{errors.enrollment_type}</small>}
                         </div>
                     </div>
-                ) : (
-                    <div className="col-lg-6">
+                )}
+
+                {/* Enrollment Amount - Dynamic Display */}
+                {(isHost ? formData.enrollment_type : true) && (
+                    <div className="col-lg-12">
                         <div className="mb-3">
-                            <label className="form-label">Enrollment Fee (Applied)</label>
-                            <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
-                                <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
-                                <input type="hidden" name="is_partner_paying" value="true" />
-                                
-                                <div className="flex-shrink-0 me-3">
-                                    <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                                        <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '2rem' }}></i>
-                                    </div>
-                                </div>
-                                <div className="flex-grow-1 ps-2">
-                                    <p className="mb-0 text-muted fs-15 lh-base">
-                                        Fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount).toFixed(2) : '800.00'}</span>
-                                    </p>
+                            <label className="form-label">Enrollment Amount</label>
+                            <div className="card border border-primary bg-light-subtle animate__animated animate__fadeIn">
+                                <div className="card-body p-3">
+                                    {(() => {
+                                        if (isHost) {
+                                            const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
+                                            if (!selectedOption) return null;
+
+                                            const isOneTime = selectedOption.value.includes('One Time');
+                                            const duration = isOneTime ? 1 : 6;
+                                            const totalAmount = isOneTime ? selectedOption.price : (selectedOption.price * 6);
+                                            const platformFee = 399; // Default for host clients
+
+                                            return (
+                                                <>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Client Type:</span>
+                                                        <span className="badge bg-primary-subtle text-primary">Host Client</span>
+                                                    </div>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Payment Plan:</span>
+                                                        <span className="text-muted">{selectedOption.value}</span>
+                                                    </div>
+                                                    <hr className="my-2" />
+                                                    {isOneTime ? (
+                                                        <>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="fw-semibold text-dark">One-Time Cost:</span>
+                                                                <span className="fs-5 fw-bold text-success">
+                                                                    ${selectedOption.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="fw-semibold text-dark">Monthly Payment:</span>
+                                                                <span className="fs-5 fw-bold text-primary">
+                                                                    ${selectedOption.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="text-muted">Duration:</span>
+                                                                <span className="text-muted">{duration} months</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="fw-semibold text-dark">Total:</span>
+                                                                <span className="fw-bold text-dark">
+                                                                    ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </>
+                                            );
+                                        } else {
+                                            // Non-Host Client
+                                            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
+                                            const totalAmount = nonHostPlan?.total_amount ? parseFloat(nonHostPlan.total_amount) : planAmount;
+                                            const installments = nonHostPlan?.total_installments_count || 1;
+                                            const platformFee = nonHostPlan?.platform_fee || 399;
+
+                                            return (
+                                                <>
+                                                    <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
+                                                    <input type="hidden" name="is_partner_paying" value="true" />
+                                                    
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Client Type:</span>
+                                                        <span className="badge bg-success-subtle text-success">Partner Client</span>
+                                                    </div>
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Payment Plan:</span>
+                                                        <span className="text-muted">{nonHostPlan?.enrollment_type || 'Fixed enrollment'}</span>
+                                                    </div>
+                                                    <hr className="my-2" />
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">
+                                                            {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
+                                                        </span>
+                                                        <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
+                                                            ${planAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    {installments > 1 && (
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="text-muted">Duration:</span>
+                                                            <span className="text-muted">{installments} months</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="fw-semibold text-dark">Total:</span>
+                                                        <span className="fw-bold text-dark">
+                                                            ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            );
+                                        }
+                                    })()}
                                 </div>
                             </div>
                         </div>

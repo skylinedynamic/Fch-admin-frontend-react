@@ -97,7 +97,7 @@ const menuItems = [
     permission: 'view payments',
   },
   {
-    to: '/under-construction/subscriptions',
+    to: '/subscriptions',
     icon: 'bx bx-sync',
     label: 'Subscriptions',
     permission: 'view subscriptions',

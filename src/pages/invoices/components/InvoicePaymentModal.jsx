@@ -72,10 +72,12 @@ const CheckoutForm = ({ amount, invoice, onPaymentSuccess, onCancel, loading }) 
         window.location.reload();
       } else {
         toast.error(response.message || "Payment failed");
+        onCancel();
       }
     } catch (err) {
       console.error('Payment Error:', err);
       toast.error(err.response?.data?.message || 'Failed to process payment');
+      onCancel();
     } finally {
       setIsProcessing(false);
     }
