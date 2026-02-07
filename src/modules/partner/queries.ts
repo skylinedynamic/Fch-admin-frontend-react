@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../lib/query'
-import { createPartner, deletePartner, fetchPartnerById, fetchPartners, updatePartner } from './services'
-import type { Partner } from './types'
+import { createPartner, deletePartner, fetchPartnerById, fetchPartners, updatePartner, fetchSubscriptionStats } from './services'
+import type { Partner, SubscriptionStats } from './types'
 
 export const usePartners = () => {
   return useQuery({
@@ -46,5 +46,12 @@ export const useDeletePartner = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.partner.list() })
     },
+  })
+}
+
+export const useSubscriptionStats = () => {
+  return useQuery({
+    queryKey: ['subscription-stats'], // Generic key since it's not in lib/query yet
+    queryFn: fetchSubscriptionStats,
   })
 }
