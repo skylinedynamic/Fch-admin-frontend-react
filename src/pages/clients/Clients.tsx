@@ -55,7 +55,7 @@ export default function Clients() {
 
         try {
             await deleteClientsMutation.mutateAsync(ids);
-            toast.success("Borrower(s) deleted successfully.");
+            toast.success("Client(s) deleted successfully.");
             setShowDeleteModal(false);
             setSelectedClients([]);
         } catch (err: any) {

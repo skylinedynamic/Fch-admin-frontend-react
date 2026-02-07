@@ -190,6 +190,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                 onChange={(e) => options.filterApplyCallback(e.value)}
                 optionLabel="label"
                 optionValue="value"
+                filterBy="label"
                 placeholder="Select Status"
                 className="p-column-filter"
                 showClear
@@ -205,6 +206,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             onChange={(e) => options.filterApplyCallback(e.value)}
             optionLabel="label"
             optionValue="value"
+            filterBy="label"
             placeholder="Select Tier"
             className="p-column-filter"
             showClear
@@ -235,6 +237,10 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                                 value={selectedPartner}
                                 onChange={(e) => setSelectedPartner(e.value)}
                                 options={[{ label: 'All Partners', value: '' }, ...partnersList.map((p: any) => ({ label: p.displayLabel, value: p.id }))]}
+                                optionLabel="label"
+                                optionValue="value"
+                                filter
+                                filterBy="label"
                                 placeholder="All Partners"
                                 className="w-100"
                             />
@@ -246,6 +252,10 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             value={selectedAssignedUser}
                             onChange={(e) => setSelectedAssignedUser(e.value)}
                             options={[{ label: 'All Sales Person', value: '' }, ...assignedUsersList.map((u: any) => ({ label: u.displayLabel, value: u.id }))]}
+                            optionLabel="label"
+                            optionValue="value"
+                            filter
+                            filterBy="label"
                             placeholder="All Sales Person"
                             className="w-100"
                         />
@@ -256,6 +266,9 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             value={selectedTier}
                             onChange={(e) => setSelectedTier(e.value)}
                             options={[{ label: 'All Tiers', value: '' }, ...tiersList]}
+                            optionLabel="label"
+                            optionValue="value"
+                            filterBy="label"
                             placeholder="All Tiers"
                             className="w-100"
                         />

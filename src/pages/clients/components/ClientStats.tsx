@@ -65,7 +65,7 @@ const ClientStats: React.FC<ClientStatsProps> = ({ isHost, partnerId, filteredTo
             title: "Inactive",
             dataKey: "inactive_count",
             icon: "ri-user-unfollow-line",
-            colorVariant: "success"
+            colorVariant: "danger"
         }
     ];
 
