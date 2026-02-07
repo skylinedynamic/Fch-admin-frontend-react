@@ -33,6 +33,7 @@ const defaultClientState: Client = {
     business_start_date: '',
     last_4_ssn: '',
     enrollment_type: '',
+    plan_id: '',
     notes: '',
 };
 
@@ -84,7 +85,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         const plans = isHost ? borrowerPlans : nonHostPlans;
         return plans.map((plan: any) => ({
             label: `${plan.enrollment_type} - $${plan.payment_amount}`,
-            value: plan.enrollment_type,
+            value: plan.id, // Use ID as value
             price: plan.payment_amount,
             ...plan
         }));
@@ -177,20 +178,25 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             const payload = {
                 ...formData,
                 id: clientId,
-                city: formData.city === 'Others' ? formData.other_city : formData.city
+                city: formData.city === 'Others' ? formData.other_city : formData.city,
             };
+
+            // Remove fields as requested by user
+            // @ts-ignore
+            delete payload.enrollment_type;
+            // @ts-ignore
+            delete payload.payment_amount;
+            // @ts-ignore
+            delete payload.amount;
+            // @ts-ignore
+            delete payload.enrollment_amount;
 
             if (!isHost) {
                 // @ts-ignore
                 payload.is_partner_paying = true;
             }
 
-            if (isHost && !payload.enrollment_type) {
-                const err = { enrollment_type: 'Enrollment type is required' };
-                if (setErrors) setErrors(err);
-                toast.error("Please select an enrollment type");
-                return Promise.reject(new Error("Validation failed"));
-            }
+
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
@@ -217,15 +223,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }));
 
-    // 6. Settings Logic (Sync Payment Amount)
-    useEffect(() => {
-        if (formData.enrollment_type) {
-            const selectedOption = enrollmentOptions.find(opt => opt.value === formData.enrollment_type);
-            if (selectedOption && formData.payment_amount !== selectedOption.price) {
-                handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
-            }
-        }
-    }, [isHost, enrollmentOptions, formData.enrollment_type, formData.payment_amount, clientId]);
+
 
     if (isFetching && clientId) {
         return (
@@ -605,53 +603,52 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             Enrollment Type <span className="text-danger">*</span>
                         </label>
                         <Dropdown
-                            value={formData.enrollment_type}
+                            value={formData.plan_id}
                             options={enrollmentOptions}
                             onChange={(e) => {
                                 const selectedVal = e.value;
                                 const selectedOption = enrollmentOptions.find(opt => opt.value === selectedVal);
-                                const price = selectedOption ? selectedOption.price : 0;
 
                                 setFormData(prev => ({
                                     ...prev,
-                                    enrollment_type: selectedVal,
-                                    payment_amount: price
+                                    plan_id: selectedVal,
+                                    enrollment_type: selectedOption ? selectedOption.enrollment_type : ''
                                 }));
 
                                 // Propagate changes
                                 if (handleLocationChange) {
-                                    handleLocationChange('enrollment_type', selectedVal);
+                                    handleLocationChange('plan_id', selectedVal);
                                 }
 
                                 // Clear error if present
-                                if (setErrors && errors.enrollment_type) {
+                                if (setErrors && errors.plan_id) {
                                     const newErrors = { ...errors };
-                                    delete newErrors.enrollment_type;
+                                    delete newErrors.plan_id;
                                     setErrors(newErrors);
                                 }
                             }}
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Select Enrollment Type"
-                            className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
+                            className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
-                        {errors.enrollment_type && <small className="p-error">{errors.enrollment_type}</small>}
+                        {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
                     </div>
                 </div>
 
                 {/* Enrollment Amount - Dynamic Display */}
-                {formData.enrollment_type && (
+                {formData.plan_id && (
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
                             <div className="card border border-primary bg-light-subtle animate__animated animate__fadeIn">
                                 <div className="card-body p-3">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find(opt => opt.value === formData.enrollment_type);
+                                        const selectedOption = enrollmentOptions.find(opt => opt.value === formData.plan_id);
                                         if (!selectedOption) return null;
 
-                                        const installments = selectedOption.total_installments_count || (selectedOption.value && selectedOption.value.includes('One Time') ? 1 : 1);
+                                        const installments = selectedOption.total_installments_count || (selectedOption.enrollment_type && selectedOption.enrollment_type.includes('One Time') ? 1 : (isHost ? 6 : 1));
                                         // For Host, if it's not One Time, it used to imply 6 months, but now we should probably trust the API data or fall back to previous logic if API doesn't send installments count for host
                                         // The JSON example for host showed "total_installments_count": null for One Time, and 6 for "6 Month Payment". So we can trust API.
 

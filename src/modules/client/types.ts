@@ -26,6 +26,7 @@ export type Client = {
     business_start_date?: string;
     last_4_ssn?: string;
     enrollment_type?: string;
+    plan_id?: number | string;
     notes?: string;
 
     // Financials
