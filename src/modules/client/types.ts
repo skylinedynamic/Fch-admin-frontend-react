@@ -45,6 +45,9 @@ export type Client = {
     // Metadata
     created_at?: string;
     updated_at?: string;
+    // Display helpers
+    current_tier_name?: string;
+
     [key: string]: any;
 };
 
@@ -63,5 +66,7 @@ export type ClientFilterParams = {
     sort_order?: 'asc' | 'desc';
     filters?: Record<string, any>;
     partner_id?: string | number;
-    assigned_user_id?: string | number;
+    assigned_user_id?: string | number; // Kept for compatibility if used elsewhere
+    assign_id?: string | number; // Used in Clients.jsx
+    current_tier?: string | number; // Used in Clients.jsx
 };

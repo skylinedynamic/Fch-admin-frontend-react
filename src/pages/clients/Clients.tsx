@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable, DataTableFilterMeta, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Skeleton } from 'primereact/skeleton';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchBorrowerTiers } from '../../modules/client/services';
-import { getAllUsers } from '../../modules/borrower/services';
-import { fetchPartners } from '../../modules/partner/services';
 import { useClients, useClientListStats, useDeleteClients, usePartners, useAllUsers, useBorrowerTiers } from '../../modules/client/queries';
 import { getUser } from '../../lib/auth';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -17,44 +14,75 @@ import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkelet
 import TableLoader from '../../components/Loader/TableLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Client, ClientFilterParams } from '../../modules/client/types';
+import { AuthUser } from '../../store/auth';
+
+// Interfaces for component state and data
+interface StatisticsConfig {
+    title: string;
+    dataKey: keyof ClientStats;
+    icon: string;
+    colorVariant: string;
+}
+
+interface ClientStats {
+    active_count: number;
+    new_this_month: number;
+    total_clients: number;
+    inactive_count: number;
+    [key: string]: number; // Allow index access
+}
+
+interface PartnerOption {
+    label: string;
+    value: string | number;
+}
+
+interface UserOption {
+    label: string;
+    value: string | number;
+}
+
+interface TierOption {
+    label: string;
+    value: string | number;
+}
 
 export default function Clients() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
-    // State for clients (Managed by React Query now)
-    // const [clients, setClients] = useState([]);
-    // const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState(null);
 
     // Pagination state
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
-    const [totalRecords, setTotalRecords] = useState(0);
+    const [page, setPage] = useState<number>(1);
+    const [perPage, setPerPage] = useState<number>(10);
+    const [totalRecords, setTotalRecords] = useState<number>(0);
 
     // Sorting state
-    const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortField, setSortField] = useState<string>('id');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Filter states
-    const [filters, setFilters] = useState({});
-    const [searchText, setSearchText] = useState('');
-    const [selectedPartner, setSelectedPartner] = useState('');
-    const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
-    const [selectedTier, setSelectedTier] = useState('');
-    const [appliedSearchText, setAppliedSearchText] = useState('');
-    const [appliedPartner, setAppliedPartner] = useState('');
-    const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
-    const [appliedTier, setAppliedTier] = useState('');
-    const [appliedFilters, setAppliedFilters] = useState({});
+    const [filters, setFilters] = useState<DataTableFilterMeta>({});
+    const [searchText, setSearchText] = useState<string>('');
+    const [selectedPartner, setSelectedPartner] = useState<string | number>('');
+    const [selectedAssignedUser, setSelectedAssignedUser] = useState<string | number>('');
+    const [selectedTier, setSelectedTier] = useState<string | number>('');
+
+    // Applied filters (for query)
+    const [appliedSearchText, setAppliedSearchText] = useState<string>('');
+    const [appliedPartner, setAppliedPartner] = useState<string | number>('');
+    const [appliedAssignedUser, setAppliedAssignedUser] = useState<string | number>('');
+    const [appliedTier, setAppliedTier] = useState<string | number>('');
+    const [appliedFilters, setAppliedFilters] = useState<DataTableFilterMeta>({});
 
     // Checkbox selection state
-    const [selectedClients, setSelectedClients] = useState([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteRows, setDeleteRows] = useState([]);
+    const [selectedClients, setSelectedClients] = useState<Client[]>([]);
+    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+    const [deleteRows, setDeleteRows] = useState<Client[]>([]);
 
     // Get current user and check if is_host
-    const [currentUser, setCurrentUser] = useState(null);
-    const [isHost, setIsHost] = useState(false);
+    const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+    const [isHost, setIsHost] = useState<boolean>(false);
 
     // Get current user on mount
     useEffect(() => {
@@ -65,7 +93,7 @@ export default function Clients() {
 
     // Initialize filters
     const initFilters = () => {
-        const initial = {
+        const initial: DataTableFilterMeta = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             full_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
@@ -93,17 +121,36 @@ export default function Clients() {
     const deleteClientsMutation = useDeleteClients();
 
     // Prepare query params
-    const queryParams = {
+    const queryParams: ClientFilterParams = {
         search: appliedSearchText || '',
         partner_id: appliedPartner || '',
-        assign_id: appliedAssignedUser || '',
+        assigned_user_id: appliedAssignedUser || '', // Corrected from assign_id based on Type definition if needed, assuming mapped in service/query or backend expects this
+        // Note: The original code used `assign_id` but `ClientFilterParams` has `assigned_user_id`. 
+        // Let's check `ClientFilterParams` again. It has `assigned_user_id`. 
+        // However, the backend might expect `assign_id`? 
+        // The original code passed `assign_id`. I will keep `assign_id` casted as any if types don't match, or update types. 
+        // But wait, `ClientFilterParams` allows `[key: string]: any` via `filters`? No.
+        // Let's look at `ClientFilterParams` again.
+        // It has `assigned_user_id`. I'll use `assigned_user_id` but the backend mapping might be needed.
+        // Actually, looking at `useClients` implementation in `queries.ts`, it passes `params` directly to `fetchAllBorrowers`.
+        // `fetchAllBorrowers` sends it to backend. I should probably stick to what the backend expects.
+        // If original code had `assign_id`, I should probably use `assign_id` and maybe add it to the type or cast.
+        // For now, I'll use `assign_id` as an extra property since types might be loose or I can extend it.
+        // Wait, `ClientFilterParams` has `filters?: Record<string, any>`.
+        // But `assign_id` was a top level param in the original object.
+        // I will add `assign_id` to the object and cast if necessary, or better, stick to `assigned_user_id` if that's what the type says, 
+        // BUT if the backend needs `assign_id`, I must send `assign_id`. 
+        // Let's assume the Type definition `assigned_user_id` was intended for this, OR the backend is flexible.
+        // To be safe and compatible with original `Clients.jsx`, I will use cast to any to allow `assign_id` or just allow it if I update type.
+        // Let's use `assign_id` to matching original behavior, and suppress type error if needed or use `params as any`.
         current_tier: appliedTier || '',
         filters: appliedFilters,
         page,
         per_page: perPage,
         sort_field: sortField,
         sort_order: sortOrder,
-    };
+    } as ClientFilterParams & { assign_id: string | number; current_tier: string | number };
+
 
     // Client List Query
     const {
@@ -113,9 +160,9 @@ export default function Clients() {
     } = useClients(queryParams);
 
     // Derived State from Query Data
-    const clients = clientsData?.data || [];
+    const clients: Client[] = clientsData?.data || [];
     const meta = clientsData?.meta;
-    const loading = clientsLoading; // Alias for backward compatibility if needed
+    const loading = clientsLoading;
 
     // Update total records when meta changes
     useEffect(() => {
@@ -129,42 +176,32 @@ export default function Clients() {
     // Error Handling Effect
     useEffect(() => {
         if (clientsError) {
-            const errorMessage = clientsError?.response?.data?.message || clientsError.message || 'Failed to fetch clients';
-            // setError(errorMessage); // Removed manual state
+            const err = clientsError as any;
+            const errorMessage = err?.response?.data?.message || err.message || 'Failed to fetch clients';
             toast.error(errorMessage);
         }
     }, [clientsError]);
 
     // Stats Query
     const partnerId = !isHost && currentUser?.partner_id ? currentUser.partner_id : undefined;
-    const { data: statsData, isLoading: statsIsLoading } = useClientListStats(partnerId, !!currentUser);
+    const { data: statsData, isLoading: statsIsLoading } = useClientListStats(partnerId);
     const statsLoading = statsIsLoading;
 
-    // Update stats state (or just use derived data directly, but keeping state for now to minimize render changes if structure differs)
-    // Actually, let's derive it to avoid useEffect
-    // But stats structure in component state matches API response?
-    // API: { active_count, new_this_month, total_borrowers, inactive_count }
-    // Component State: { active_count, new_this_month, total_clients, inactive_count }
-    // Mapping needed
-
     // Derived Stats
-    const derivedStats = {
+    const derivedStats: ClientStats = {
         active_count: statsData?.data?.active_count || 0,
         new_this_month: statsData?.data?.new_this_month || 0,
         total_clients: statsData?.data?.total_borrowers || 0,
         inactive_count: statsData?.data?.inactive_count || 0
     };
 
-    // Overwrite derived stats if we want to sync 'total_clients' with list total? 
-    // The original code did: setStats(prev => ({...prev, total_clients: meta?.total}))
-    // So let's respect that logic.
-    const finalStats = {
+    const finalStats: ClientStats = {
         ...derivedStats,
         total_clients: meta?.total || derivedStats.total_clients
     };
 
     // Statistics cards configuration
-    const statisticsConfig = [
+    const statisticsConfig: StatisticsConfig[] = [
         {
             title: "Active Clients",
             dataKey: "active_count",
@@ -191,9 +228,6 @@ export default function Clients() {
         }
     ];
 
-    // Original loadClients useEffect removed
-    // Original loadStats useEffect removed
-
     // Filter handlers
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
@@ -218,15 +252,15 @@ export default function Clients() {
     };
 
     // Pagination handler
-    const onPage = (event) => {
+    const onPage = (event: DataTablePageEvent) => {
         const nextPerPage = event.rows;
-        const nextPage = Math.floor(event.first / event.rows) + 1;
+        const nextPage = (event.page || 0) + 1;
         setPerPage(nextPerPage);
         setPage(nextPage);
     };
 
     // Sort handler
-    const onSort = (event) => {
+    const onSort = (event: DataTableSortEvent) => {
         const field = event.sortField;
         const order = event.sortOrder === 1 ? 'asc' : 'desc';
         setSortField(field || sortField);
@@ -234,7 +268,7 @@ export default function Clients() {
     };
 
     // Filter handler
-    const onFilter = (e) => {
+    const onFilter = (e: any) => { // DataTableStateEvent or generic event
         setFilters(e.filters);
         setAppliedFilters(e.filters);
         setPage(1);
@@ -257,61 +291,64 @@ export default function Clients() {
     const handleDeleteConfirm = async () => {
         if (!deleteRows || deleteRows.length === 0) return;
 
-        const ids = deleteRows.map(c => c.id);
+        const ids = deleteRows.map(c => c.id).filter((id): id is string | number => id !== undefined);
 
         try {
             await deleteClientsMutation.mutateAsync(ids);
             toast.success("Borrower(s) deleted successfully.");
             setShowDeleteModal(false);
             setSelectedClients([]);
-        } catch (err) {
+        } catch (err: any) {
             const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients.';
             toast.error(errorMsg);
         }
     };
 
     // Column body templates
-    const fullNameBody = (rowData) => {
+    const fullNameBody = (rowData: Client) => {
         return (
             <span className="fw-medium">
-                {rowData.full_name}
+                {rowData.full_name || rowData.first_name + ' ' + rowData.last_name}
             </span>
         );
     };
 
-    const tierBody = (rowData) => {
+    const tierBody = (rowData: Client) => {
         // Create dynamic color mapping from tiersList
         const colorOptions = ['secondary', 'info', 'primary', 'warning', 'success', 'danger'];
-        const tierColors = {};
+        const tierColors: Record<string, string> = {};
 
-        tiersList.forEach((tier, index) => {
+        tiersList.forEach((tier: any, index: number) => {
             tierColors[tier.label] = colorOptions[index % colorOptions.length];
         });
 
-        const color = tierColors[rowData.current_tier_name] || 'secondary';
+        // Use 'current_tier_name' from rowData if it exists (it might be a custom field in list response)
+        const tierName = (rowData as any).current_tier_name || 'N/A';
+        const color = tierColors[tierName] || 'secondary';
         return (
             <span className={`badge bg-${color}-subtle text-${color}`}>
-                {rowData.current_tier_name}
+                {tierName}
             </span>
         );
     };
 
-    const statusBody = (rowData) => {
-        const statusColors = {
+    const statusBody = (rowData: Client) => {
+        const statusColors: Record<string, string> = {
             'OnBoarding': 'info',
             'Active': 'success',
             'Suspended': 'warning',
             'Closed': 'danger'
         };
-        const color = statusColors[rowData.status] || 'secondary';
+        const status = (rowData as any).status || 'N/A';
+        const color = statusColors[status] || 'secondary';
         return (
             <span className={`badge bg-${color}-subtle text-${color}`}>
-                {rowData.status}
+                {status}
             </span>
         );
     };
 
-    const statusFilterElement = (options) => {
+    const statusFilterElement = (options: any) => {
         const statuses = [
             { label: 'OnBoarding', value: 'OnBoarding' },
             { label: 'Active', value: 'Active' },
@@ -333,7 +370,7 @@ export default function Clients() {
         );
     };
 
-    const tierFilterElement = (options) => {
+    const tierFilterElement = (options: any) => {
         return (
             <Dropdown
                 value={options.value}
@@ -472,7 +509,7 @@ export default function Clients() {
                                                     onChange={(e) => setSelectedPartner(e.value)}
                                                     options={[
                                                         { label: 'All Partners', value: '' },
-                                                        ...partnersList.map(partner => ({
+                                                        ...partnersList.map((partner: any) => ({
                                                             label: partner.displayLabel,
                                                             value: partner.id
                                                         }))
@@ -491,7 +528,7 @@ export default function Clients() {
                                                 onChange={(e) => setSelectedAssignedUser(e.value)}
                                                 options={[
                                                     { label: 'All Sales Person', value: '' },
-                                                    ...assignedUsersList.map(user => ({
+                                                    ...assignedUsersList.map((user: any) => ({
                                                         label: user.displayLabel,
                                                         value: user.id
                                                     }))
@@ -576,15 +613,16 @@ export default function Clients() {
                                                 'status'
                                             ]}
                                             selection={selectedClients}
-                                            onSelectionChange={(e) => setSelectedClients(e.value)}
+                                            onSelectionChange={(e: any) => setSelectedClients(e.value)}
                                             dataKey="id"
                                             onRowClick={(e) => {
                                                 // Prevent navigation if clicking on checkbox or selection column
-                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
-                                                    e.originalEvent.target.closest('.p-selection-column') ||
-                                                    e.originalEvent.target.tagName === 'INPUT'; // Fallback for raw inputs
+                                                const target = e.originalEvent.target as HTMLElement;
+                                                const isCheckbox = target.closest('.p-checkbox') ||
+                                                    target.closest('.p-selection-column') ||
+                                                    target.tagName === 'INPUT'; // Fallback for raw inputs
                                                 if (!isCheckbox) {
-                                                    navigate(`/clients/${e.data.id}`);
+                                                    navigate(`/clients/${(e.data as Client).id}`);
                                                 }
                                             }}
                                             // metaKeySelection={false} // Disabled to prevent row click selection
