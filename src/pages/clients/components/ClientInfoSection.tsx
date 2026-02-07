@@ -3,41 +3,20 @@ import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { toast } from 'react-toastify';
 import { formatPhoneNumber } from '../../../utils/formatters';
-import type { Client } from '../../../modules/client/types';
+import {
+    useClient,
+    useUpdateClient,
+    useBorrowerPlans,
+    useNonHostBorrowerPlans,
+    DEFAULT_CLIENT_STATE,
+    DATE_PICKER_OPTIONS,
+    mapClientUpdatePayload,
+    calculateEnrollmentDetails
+} from '../../../modules/client';
+import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { entityTypes, industryTypes } from '../../../config/borrower';
-import { locationData } from '../../../config'; // Import locationData
-import { useClient, useUpdateClient, useBorrowerPlans, useNonHostBorrowerPlans } from '../../../modules/client/queries';
-
-// Default/Empty Client State
-const defaultClientState: Client = {
-    first_name: '',
-    last_name: '',
-    phone_number: '',
-    country_code: '+1',
-    email: '',
-    business_website: '',
-    business_name: '',
-    business_ein: '',
-    state_file_number: '',
-    duns_number: '',
-    business_address: '',
-    country: 'United States',
-    city: '',
-    other_city: '',
-    state: '',
-    business_postal_code: '',
-    business_phone: '',
-    business_entity_type: '',
-    business_industry_type: '',
-    business_start_date: '',
-    last_4_ssn: '',
-    enrollment_type: '',
-    plan_id: '',
-    notes: '',
-};
-
-const DATE_PICKER_OPTIONS = { dateFormat: "d M, Y" };
+import { locationData } from '../../../config';
 
 interface ClientInfoSectionProps {
     clientId?: string | null;
@@ -83,7 +62,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = isHost ? borrowerPlans : nonHostPlans;
-        return plans.map((plan: any) => ({
+        return plans.map((plan: BorrowerPlan) => ({
             label: `${plan.enrollment_type} - $${plan.payment_amount}`,
             value: plan.id, // Use ID as value
             price: plan.payment_amount,
@@ -92,7 +71,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     }, [isHost, borrowerPlans, nonHostPlans]);
 
     // 2. Local State
-    const [formData, setFormData] = useState<Client>(initialData || defaultClientState);
+    const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
 
     // 3. Sync Fetch to Local State
     useEffect(() => {
@@ -175,28 +154,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            const payload = {
-                ...formData,
-                id: clientId,
-                city: formData.city === 'Others' ? formData.other_city : formData.city,
-            };
-
-            // Remove fields as requested by user
-            // @ts-ignore
-            delete payload.enrollment_type;
-            // @ts-ignore
-            delete payload.payment_amount;
-            // @ts-ignore
-            delete payload.amount;
-            // @ts-ignore
-            delete payload.enrollment_amount;
-
-            if (!isHost) {
-                // @ts-ignore
-                payload.is_partner_paying = true;
-            }
-
-
+            const payload = mapClientUpdatePayload(formData, isHost);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
@@ -648,12 +606,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         const selectedOption = enrollmentOptions.find(opt => opt.value === formData.plan_id);
                                         if (!selectedOption) return null;
 
-                                        const installments = selectedOption.total_installments_count || (selectedOption.enrollment_type && selectedOption.enrollment_type.includes('One Time') ? 1 : (isHost ? 6 : 1));
-                                        // For Host, if it's not One Time, it used to imply 6 months, but now we should probably trust the API data or fall back to previous logic if API doesn't send installments count for host
-                                        // The JSON example for host showed "total_installments_count": null for One Time, and 6 for "6 Month Payment". So we can trust API.
-
-                                        const totalAmount = selectedOption.total_amount || selectedOption.price; // Fallback
-                                        const duration = installments;
+                                        const { installments, totalAmount, price } = calculateEnrollmentDetails(selectedOption, isHost);
 
                                         return (
                                             <>
@@ -677,7 +630,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                         {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
                                                     </span>
                                                     <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
-                                                        ${selectedOption.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${(price as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                                 {installments > 1 && (
@@ -689,7 +642,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="fw-semibold text-dark">Total:</span>
                                                     <span className="fw-bold text-dark">
-                                                        ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${(totalAmount as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                             </>

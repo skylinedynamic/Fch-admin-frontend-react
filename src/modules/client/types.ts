@@ -49,6 +49,13 @@ export type Client = {
     // Display helpers
     current_tier_name?: string;
 
+    // Additional fields for payload logic
+    payment_amount?: string | number;
+    amount?: string | number;
+    enrollment_amount?: string | number;
+    entity_type?: string;
+    is_partner_paying?: boolean;
+
     [key: string]: any;
 };
 
@@ -70,4 +77,27 @@ export type ClientFilterParams = {
     assigned_user_id?: string | number; // Kept for compatibility if used elsewhere
     assign_id?: string | number; // Used in Clients.jsx
     current_tier?: string | number; // Used in Clients.jsx
+};
+
+export type ClientProfileStats = {
+    total_meetings: number;
+    total_invoices: number;
+    enrollment_type: string;
+    total_prequalification: number;
+    total_tickets: number;
+    total_documents: number;
+};
+
+export type BorrowerPlan = {
+    id: number | string;
+    enrollment_type: string;
+    payment_amount: string | number;
+    total_amount?: string | number;
+    total_installments_count?: number;
+    [key: string]: any;
+};
+
+export type DropdownOption = {
+    label: string;
+    value: string | number;
 };

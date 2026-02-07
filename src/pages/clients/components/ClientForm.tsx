@@ -3,7 +3,8 @@ import ClientInfoSection, { ClientInfoSectionRef } from './ClientInfoSection';
 import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './BusinessFinancialsSection';
 import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
-import type { Client, ChecklistItem } from '../../../modules/client/types';
+import { ENROLLMENT_TABS } from '../../../modules/client';
+import type { Client } from '../../../modules/client/types';
 // @ts-ignore
 import FormLoader from '../../../components/Loader/FormLoader';
 
@@ -57,7 +58,7 @@ export default function ClientForm({
     return (
         <div className="tab-content">
             {/* Client Information Tab */}
-            {activeTab === 'personalDetails' && (
+            {activeTab === ENROLLMENT_TABS.PERSONAL && (
                 <div className="tab-pane active show" role="tabpanel">
                     {/* Render Loader only if parent says loading AND we don't have our own handling? 
                         Actually ClientInfoSection handles its own fetching loader. 
@@ -87,7 +88,7 @@ export default function ClientForm({
             )}
 
             {/* Business Financials Tab */}
-            {activeTab === 'businessFinancials' && (
+            {activeTab === ENROLLMENT_TABS.FINANCIALS && (
                 <div className="tab-pane active show" role="tabpanel">
                     {isLoading && !clientId ? (
                         <FormLoader count={12} />
@@ -105,7 +106,7 @@ export default function ClientForm({
             )}
 
             {/* Document Checklist Tab */}
-            {activeTab === 'documentChecklist' && (
+            {activeTab === ENROLLMENT_TABS.CHECKLIST && (
                 <div className="tab-pane active show" role="tabpanel">
                     {isLoading && !clientId ? (
                         <FormLoader count={8} />
@@ -123,7 +124,7 @@ export default function ClientForm({
             )}
 
             {/* Documents Tab */}
-            {activeTab === 'documents' && (
+            {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
                 <div className="tab-pane active show" role="tabpanel">
                     <ClientDocumentsSection />
                 </div>

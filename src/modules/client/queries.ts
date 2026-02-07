@@ -10,8 +10,6 @@ import {
     saveClientChecklist,
     fetchBorrowerProfileStats,
     fetchBorrowerStats,
-    fetchBorrowerProfileStats,
-    fetchBorrowerStats,
     fetchBorrowerTiers,
     fetchBorrowerPlans,
     fetchNonHostBorrowerPlans
@@ -42,7 +40,6 @@ export const useClients = (params: ClientFilterParams) => {
     return useQuery({
         queryKey: clientKeys.list(params),
         queryFn: () => fetchAllBorrowers(params),
-        placeholderData: (previousData: any) => previousData,
     });
 };
 

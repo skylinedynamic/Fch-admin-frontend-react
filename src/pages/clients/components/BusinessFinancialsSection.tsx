@@ -1,24 +1,16 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
+import {
+    useClient,
+    useUpdateClient,
+    DEFAULT_CLIENT_STATE,
+    CURRENCY_OPTIONS,
+    mapClientUpdatePayload
+} from '../../../modules/client';
 import type { Client } from '../../../modules/client/types';
-import { useClient, useUpdateClient } from '../../../modules/client/queries';
 
-const defaultFinancialsState: Client = {
-    first_name: '', last_name: '', phone_number: '', email: '', // Dummy required fields to satisfy Type
-    currency: 'USD',
-    monthly_revenue: '',
-    avg_bank_balance: '',
-    annual_revenue: '',
-    profit_margin: '',
-    current_business_debt: '',
-    fico_score: '',
-    paydex_score: '',
-    years_in_business: '',
-    number_of_employees: '',
-    nsf_days: '',
-    funding_urgency: ''
-} as Client;
+const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
@@ -41,7 +33,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     isLoading: parentLoading = false,
     onSaveSuccess
 }, ref) => {
-    
+
     // 1. Data Fetching
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
     const updateMutation = useUpdateClient();
@@ -74,18 +66,18 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     // 4. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-             const payload = { ...formData, id: clientId };
-             
-             return new Promise((resolve, reject) => {
+            const payload = mapClientUpdatePayload(formData, true); // Financials usually host-agnostic for fields kept
+
+            return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
                     onSuccess: () => {
                         toast.success("Business financials updated successfully");
-                         if (onSaveSuccess) onSaveSuccess();
+                        if (onSaveSuccess) onSaveSuccess();
                         resolve();
                     },
                     onError: (error: any) => {
-                         console.error("Save error:", error);
+                        console.error("Save error:", error);
                         if (error.response && error.response.data && error.response.data.errors && setErrors) {
                             const backendErrors = error.response.data.errors;
                             const mappedErrors: Record<string, string> = {};
@@ -97,7 +89,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         reject(error);
                     }
                 });
-             });
+            });
         }
     }));
 
@@ -116,12 +108,6 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
         );
     }
 
-    const currencyOptions = [
-        { label: 'USD', value: 'USD' },
-        { label: 'EUR', value: 'EUR' },
-        { label: 'GBP', value: 'GBP' }
-    ];
-
     return (
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row g-3">
@@ -130,7 +116,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         <label htmlFor="currency" className="form-label">Currency</label>
                         <Dropdown
                             value={formData.currency || 'USD'}
-                            options={currencyOptions}
+                            options={CURRENCY_OPTIONS}
                             onChange={(e) => handleInputChange({ target: { name: 'currency', value: e.value } })}
                             optionLabel="label"
                             placeholder="Select Currency"
