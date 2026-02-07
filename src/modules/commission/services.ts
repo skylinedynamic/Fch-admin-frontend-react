@@ -1,9 +1,8 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { PaginatedApiResponse } from '../application/types';
-import { CommissionListItem, CommissionDetail, CommissionFilters } from './types';
+import { CommissionListItem, CommissionDetail, CommissionFilters, CommissionPaginatedResponse } from './types';
 
-export const getCommissions = async (payload: CommissionFilters): Promise<PaginatedApiResponse<CommissionListItem>> => {
-    const response = await apiClient.post<PaginatedApiResponse<CommissionListItem>>('/common/commissions', payload);
+export const getCommissions = async (payload: CommissionFilters): Promise<CommissionPaginatedResponse> => {
+    const response = await apiClient.post<CommissionPaginatedResponse>('/common/commissions', payload);
     return response.data;
 };
 

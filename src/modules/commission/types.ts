@@ -1,4 +1,18 @@
 // Common fields shared between list and detail
+import { PaginatedApiResponse } from '../application/types';
+
+export interface CommissionStatistics {
+    total_commission_amount: string;
+    avg_commission_rate: number;
+    total_deals: number;
+    partner_commission_amount: string;
+    total_funded_amount: number;
+}
+
+export interface CommissionPaginatedResponse extends PaginatedApiResponse<CommissionListItem> {
+    statistics: CommissionStatistics;
+}
+
 interface CommissionBase {
     id: number;
     funding_application_id: number;

@@ -1,5 +1,4 @@
 import React from 'react'
-import './SkeletonLoader.css'
 
 export default function TabLoader({ count = 12, colClass = 'col-md-6' }) {
     const defaultWidths = ['30%', '28%', '20%', '38%', '25%', '18%', '20%', '28%', '35%', '32%', '33%', '28%']

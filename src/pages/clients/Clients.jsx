@@ -106,10 +106,10 @@ export default function Clients() {
     };
 
     // Client List Query
-    const { 
-        data: clientsData, 
-        isLoading: clientsLoading, 
-        error: clientsError 
+    const {
+        data: clientsData,
+        isLoading: clientsLoading,
+        error: clientsError
     } = useClients(queryParams);
 
     // Derived State from Query Data
@@ -146,7 +146,7 @@ export default function Clients() {
     // API: { active_count, new_this_month, total_borrowers, inactive_count }
     // Component State: { active_count, new_this_month, total_clients, inactive_count }
     // Mapping needed
-    
+
     // Derived Stats
     const derivedStats = {
         active_count: statsData?.data?.active_count || 0,
@@ -154,7 +154,7 @@ export default function Clients() {
         total_clients: statsData?.data?.total_borrowers || 0,
         inactive_count: statsData?.data?.inactive_count || 0
     };
-    
+
     // Overwrite derived stats if we want to sync 'total_clients' with list total? 
     // The original code did: setStats(prev => ({...prev, total_clients: meta?.total}))
     // So let's respect that logic.
@@ -258,15 +258,15 @@ export default function Clients() {
         if (!deleteRows || deleteRows.length === 0) return;
 
         const ids = deleteRows.map(c => c.id);
-        
+
         try {
             await deleteClientsMutation.mutateAsync(ids);
             toast.success("Borrower(s) deleted successfully.");
             setShowDeleteModal(false);
             setSelectedClients([]);
         } catch (err) {
-             const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients.';
-             toast.error(errorMsg);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to delete clients.';
+            toast.error(errorMsg);
         }
     };
 

@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshUser } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshUser, HostRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -116,19 +116,24 @@ export default function App() {
 
 
             {/* Roles & Permissions Routes - requires 'view roles & permissions' permission */}
-            <Route element={<PermissionRoute permission="view roles & permissions" />}>
-              <Route path="roles-permissions" element={<RolesPermissions />} />
-              <Route path="roles-permissions/create" element={<CreateRole />} />
-              <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+            <Route element={<HostRoute />}>
+              <Route element={<PermissionRoute permission="view roles & permissions" />}>
+                <Route path="roles-permissions" element={<RolesPermissions />} />
+                <Route path="roles-permissions/create" element={<CreateRole />} />
+                <Route path="roles-permissions/edit/:id" element={<EditRole />} />
+              </Route>
             </Route>
 
             {/* Settings Route */}
-            <Route path="admin/settings" element={<Settings />} />
+            <Route element={<HostRoute />}>
+              <Route path="admin/settings" element={<Settings />} />
+            </Route>
+
             <Route path="change-password" element={<ChangePassword />} />
 
 
-            {/* Credit Builder Menu Routes */}
-            <Route>
+            {/* Credit Builder Menu Routes - Host Only */}
+            <Route element={<HostRoute />}>
               <Route path="tiers" element={<TiersList />} />
               <Route path="tiers/create" element={<TierForm />} />
               <Route path="tiers/:id" element={<TierForm />} />
@@ -174,8 +179,10 @@ export default function App() {
             </Route>
 
             {/* Subscriptions Routes */}
-            <Route element={<PermissionRoute permission="view subscriptions" />}>
-              <Route path="subscriptions" element={<Subscriptions />} />
+            <Route element={<HostRoute />}>
+              <Route element={<PermissionRoute permission="view subscriptions" />}>
+                <Route path="subscriptions" element={<Subscriptions />} />
+              </Route>
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import './SkeletonLoader.css';
 
 export default function TableLoader({ rows = 10, columns = 6, showHeader = true }) {
 
@@ -9,11 +8,11 @@ export default function TableLoader({ rows = 10, columns = 6, showHeader = true 
     const skeletonItems = Array.from({ length: rows }, (_, i) => ({ id: i }));
 
     const skeletonBody = () => {
-        return <div className="skeleton-line w-100" style={{ height: '20px', borderRadius: '4px' }}></div>;
+        return <div className="skeleton-line w-100 skeleton-table-cell"></div>;
     };
 
     const headerBody = () => {
-        return showHeader ? <div className="skeleton-line" style={{ width: '60%', height: '16px', borderRadius: '4px' }}></div> : null;
+        return showHeader ? <div className="skeleton-line skeleton-table-header" style={{ width: '60%' }}></div> : null;
     };
 
     // Create column definitions

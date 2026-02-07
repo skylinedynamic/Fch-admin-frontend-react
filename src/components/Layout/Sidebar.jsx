@@ -70,13 +70,15 @@ const menuItems = [
         to: '/tiers',
         label: 'Manage Tier',
         permission: 'view tiers',
+        isHostOnly: true,
       },
       {
         to: '/verification-center',
         label: 'Verification Center',
         permission: 'view verification center', // Reuse permission or add new one
+        isHostOnly: true,
       }
-    ]
+    ],
   },
   {
     to: '/commissions',
@@ -182,7 +184,7 @@ export default function Sidebar() {
 
   // Get current user and check if is_host
   const currentUser = useAuthStore((state) => state.user)
-  const isHost = currentUser?.is_host === 1
+  const isHost = currentUser?.is_host == 1
 
   useEffect(() => {
     const onResize = () => {
@@ -219,17 +221,6 @@ export default function Sidebar() {
       // 1. Basic permission check
       if (item.permission && !hasPermission(item.permission)) {
         return false;
-      }
-
-      // 2. Manage Tier: is_host && permission
-      if (item.label === 'Manage Tier') {
-        return isHost;
-      }
-
-      // 3. Verification Center: (WL && permission) || (is_host && permission)
-      if (item.label === 'Verification Center') {
-        const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
-        return isWL || isHost;
       }
 
       // 4. Special rule for Partners menu

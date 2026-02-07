@@ -14,21 +14,21 @@ interface ClientFormProps {
     personalRef?: React.Ref<ClientInfoSectionRef>;
     financialRef?: React.Ref<BusinessFinancialsSectionRef>;
     checklistRef?: React.Ref<DocumentChecklistSectionRef>;
-    
+
     // Logic / Data Props
     formData?: Client;
     initialData?: Client;
     errors: Record<string, string>;
     setErrors?: (errors: Record<string, string>) => void;
     handleInputChange: (e: any) => void;
-    
+
     // UI Options
     countries: { label: string; value: string }[];
     states: { label: string; value: string }[];
     cities: { label: string; value: string }[];
-    
+
     // Checklist removed -> handled internally
-    
+
     isLoading?: boolean;
     isHost?: boolean;
     settings?: any;
@@ -73,8 +73,8 @@ export default function ClientForm({
                             errors={errors}
                             setErrors={setErrors}
                             // Pass handleInputChange as handleLocationChange to allow parent to track location updates
-                            handleLocationChange={(name, value) => handleInputChange({ target: { name, value } })} 
-                            
+                            handleLocationChange={(name, value) => handleInputChange({ target: { name, value } })}
+
                             countries={countries}
                             states={states}
                             cities={cities}
@@ -89,7 +89,7 @@ export default function ClientForm({
             {/* Business Financials Tab */}
             {activeTab === 'businessFinancials' && (
                 <div className="tab-pane active show" role="tabpanel">
-                     {isLoading && !clientId ? (
+                    {isLoading && !clientId ? (
                         <FormLoader count={12} />
                     ) : (
                         <BusinessFinancialsSection

@@ -37,7 +37,7 @@ export default function PreQualificationDetails() {
     const [currentStep, setCurrentStep] = useState<StepType>(1);
 
     const { user } = useAuthStore();
-    const isPartner = 1;
+    const isPartner = user?.is_host == false;
 
     // Status update state
     const app = (details?.data || details || {}) as PreQualificationApplicationDetailsType;

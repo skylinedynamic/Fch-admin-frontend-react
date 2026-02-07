@@ -13,7 +13,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
 import TableLoader from '../../components/Loader/TableLoader';
-import '../../components/Loader/SkeletonLoader.css'; // Import Loader CSS
 
 export default function BorrowerVerificationRequests() {
     const location = useLocation();
@@ -23,7 +22,7 @@ export default function BorrowerVerificationRequests() {
 
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Profile Data State
     const [profileData, setProfileData] = useState(null);
     const [profileLoading, setProfileLoading] = useState(true);
@@ -93,7 +92,7 @@ export default function BorrowerVerificationRequests() {
         // Wait for profile data to get partner_id (or if it was passed in state fallback, but mainly rely on profile now)
         // If we don't have profileData yet, we can't load requests reliably if we need partner_id from it
         if (!borrower_id) return;
-        
+
 
         setLoading(true);
         try {
@@ -190,7 +189,7 @@ export default function BorrowerVerificationRequests() {
     const openActionModal = (type, rowData = null) => {
         setActionType(type);
         setValidationErrors(null); // Clear previous errors
-        
+
         if (rowData) {
             // Single action
             setSelectedRequest(rowData);
@@ -205,11 +204,11 @@ export default function BorrowerVerificationRequests() {
 
     const handleActionConfirm = async (reason) => {
         const requestsToProcess = isBulkAction ? selectedRequests : [selectedRequest];
-        
+
         if (!requestsToProcess || requestsToProcess.length === 0) return;
 
         setActionLoading(true);
-        
+
         // Convert to array of promises
         const promises = requestsToProcess.map(req => {
             const payload = {
@@ -222,7 +221,7 @@ export default function BorrowerVerificationRequests() {
 
         try {
             const results = await Promise.allSettled(promises);
-            
+
             let successCount = 0;
             let failCount = 0;
 
@@ -235,19 +234,19 @@ export default function BorrowerVerificationRequests() {
             });
 
             if (successCount > 0) {
-                 toast.success(`${successCount} request(s) ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
+                toast.success(`${successCount} request(s) ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
             }
             if (failCount > 0) {
-                 toast.error(`Failed to update ${failCount} request(s)`);
+                toast.error(`Failed to update ${failCount} request(s)`);
             }
 
             setShowActionModal(false);
             loadRequests(); // Refresh list
             setSelectedRequests([]); // Clear selection after bulk action
-            
+
         } catch (err) {
-             console.error("Bulk action error", err);
-             toast.error("An unexpected error occurred processing requests.");
+            console.error("Bulk action error", err);
+            toast.error("An unexpected error occurred processing requests.");
         } finally {
             setActionLoading(false);
         }
@@ -268,26 +267,26 @@ export default function BorrowerVerificationRequests() {
 
     const tierFilterTemplate = (options) => {
         return (
-            <Dropdown 
-                value={options.value} 
-                options={tiersList} 
-                onChange={(e) => options.filterCallback(e.value)} 
-                placeholder="Select Tier" 
-                className="p-column-filter" 
-                showClear 
+            <Dropdown
+                value={options.value}
+                options={tiersList}
+                onChange={(e) => options.filterCallback(e.value)}
+                placeholder="Select Tier"
+                className="p-column-filter"
+                showClear
             />
         );
     };
 
     const dateFilterTemplate = (options) => {
         return (
-            <Calendar 
-                value={options.value} 
-                onChange={(e) => options.filterCallback(e.value, options.index)} 
-                selectionMode="range" 
-                placeholder="Select Date Range" 
-                dateFormat="yy-mm-dd" 
-                className="p-column-filter" 
+            <Calendar
+                value={options.value}
+                onChange={(e) => options.filterCallback(e.value, options.index)}
+                selectionMode="range"
+                placeholder="Select Date Range"
+                dateFormat="yy-mm-dd"
+                className="p-column-filter"
                 showIcon
             />
         );
@@ -304,15 +303,15 @@ export default function BorrowerVerificationRequests() {
     const actionBodyTemplate = (rowData) => {
         return (
             <div className="d-flex gap-2 justify-content-center">
-                <button 
-                    className="btn btn-sm btn-soft-success" 
+                <button
+                    className="btn btn-sm btn-soft-success"
                     onClick={() => openActionModal('verify', rowData)}
                     title="Verify"
                 >
                     <i className="ri-check-line align-bottom"></i>
                 </button>
-                <button 
-                    className="btn btn-sm btn-soft-danger" 
+                <button
+                    className="btn btn-sm btn-soft-danger"
                     onClick={() => openActionModal('reject', rowData)}
                     title="Reject"
                 >
@@ -609,8 +608,8 @@ export default function BorrowerVerificationRequests() {
                                         <Column
                                             header="Action"
                                             body={actionBodyTemplate}
-                                            alignHeader={'center'} 
-                                            style={{ minWidth: '8rem', textAlign: 'center', width: '15%' }} 
+                                            alignHeader={'center'}
+                                            style={{ minWidth: '8rem', textAlign: 'center', width: '15%' }}
                                         />
                                     </DataTable>
                                 )}
@@ -640,3 +639,4 @@ export default function BorrowerVerificationRequests() {
         </div>
     );
 }
+

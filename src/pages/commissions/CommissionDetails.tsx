@@ -5,6 +5,8 @@ import { CommissionDetail } from '../../modules/commission/types';
 import { useAuthStore } from '../../store/auth/authStore';
 import TableLoader from '../../components/Loader/TableLoader';
 import ErrorPage from '../Utility/ErrorPage';
+import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
+import { formatCurrency } from '../../utils/helper';
 
 const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: string; value: React.ReactNode; className?: string }) => (
     <div className={className}>
@@ -13,12 +15,12 @@ const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: strin
     </div>
 );
 
-const StatCard = ({ title, value, icon, color = 'primary', subValue }: { title: string; value: string; icon: string; color?: string; subValue?: string }) => (
+const StatCard = ({ title, value, icon, color = 'primary', statusClass, subValue }: { title: string; value: string; icon: string; color?: string; statusClass?: string; subValue?: string }) => (
     <div className="card border-0 shadow-sm h-100">
         <div className="card-body p-3">
             <div className="d-flex align-items-center">
                 <div className={`avatar-sm flex-shrink-0 me-3`}>
-                    <div className={`avatar-title bg-${color}-subtle text-${color} rounded fs-20`}>
+                    <div className={`avatar-title ${statusClass || `bg-${color}-subtle text-${color}`} rounded fs-20`}>
                         <i className={icon}></i>
                     </div>
                 </div>
@@ -51,13 +53,7 @@ export default function CommissionDetails() {
     // Determine if user is partner (is_host === false means partner)
     const isPartner = user?.is_host == false;
 
-    const formatCurrency = (amount: string | number | undefined | null) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: commission?.currency || 'USD',
-            minimumFractionDigits: 0
-        }).format(Number(amount) || 0);
-    };
+
 
     if (isLoading) {
         return (
@@ -79,14 +75,7 @@ export default function CommissionDetails() {
         );
     }
 
-    // Determine badge colors based on status
-    const getStatusColor = (status: string | undefined) => {
-        const s = status?.toLowerCase();
-        if (s === 'approved' || s === 'paid' || s === 'funded') return 'success';
-        if (s === 'pending') return 'warning';
-        if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'danger';
-        return 'secondary';
-    };
+
 
     const authPartnerId = (user as any)?.partner_id;
     const showPartnerCommissionRow = commission?.partner_id !== authPartnerId;
@@ -128,18 +117,17 @@ export default function CommissionDetails() {
                 <div className="row mb-4">
                     <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
                         <StatCard
-
                             title="Requested Amount"
-                            value={formatCurrency(commission.funding_requested_amount)}
+                            value={formatCurrency(commission.funding_requested_amount, commission.currency_symbol, commission.conversion_rate, 0)}
                             icon="ri-money-dollar-circle-line"
                             color="primary"
-                            subValue={`Funded Amount - ${formatCurrency(commission.funded_amount)}`}
+                            subValue={`Funded Amount - ${formatCurrency(commission.funded_amount, commission.currency_symbol, commission.conversion_rate, 0)}`}
                         />
                     </div>
                     <div className="col-xl-3 col-md-6 mb-3 mb-xl-0">
                         <StatCard
                             title={isPartner ? "Your Commission" : "Total Commission"}
-                            value={formatCurrency(isPartner ? commission.partner_commission_amount : commission.total_commission_amount)}
+                            value={formatCurrency(isPartner ? commission.partner_commission_amount : commission.total_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}
                             icon="ri-wallet-line"
                             color="success"
                             subValue={`${isPartner ? commission.partner_commission : commission.total_commission}% Rate`}
@@ -150,7 +138,7 @@ export default function CommissionDetails() {
                             title="Commission Status"
                             value={commission.commission_status}
                             icon="ri-checkbox-circle-line"
-                            color={getStatusColor(commission.commission_status)}
+                            statusClass={COMMISSION_STATUS_CLASS_MAP[commission.commission_status]}
                         />
                     </div>
                     <div className="col-xl-3 col-md-6">
@@ -158,7 +146,7 @@ export default function CommissionDetails() {
                             title="Payment Status"
                             value={commission.commission_payment_status}
                             icon="ri-secure-payment-line"
-                            color={getStatusColor(commission.commission_payment_status)}
+                            statusClass={PAYMENT_STATUS_CLASS_MAP[commission.commission_payment_status]}
                         />
                     </div>
                 </div>
@@ -217,9 +205,9 @@ export default function CommissionDetails() {
                             </div>
                             <div className="card-body">
                                 <div className="row">
-                                    <DetailRow label="Requested Amount" value={formatCurrency(commission.funding_requested_amount)} />
-                                    <DetailRow label="Funded Amount" value={formatCurrency(commission.funded_amount)} text-success />
-                                    <DetailRow label="Funding Status" value={<span className={`badge bg-${getStatusColor(commission.funding_status)}-subtle text-${getStatusColor(commission.funding_status)}`}>{commission.funding_status}</span>} />
+                                    <DetailRow label="Requested Amount" value={formatCurrency(commission.funding_requested_amount, commission.currency_symbol, commission.conversion_rate, 0)} />
+                                    <DetailRow label="Funded Amount" value={formatCurrency(commission.funded_amount, commission.currency_symbol, commission.conversion_rate, 0)} text-success />
+                                    <DetailRow label="Funding Status" value={<span className={`badge ${COMMISSION_STATUS_CLASS_MAP[commission.funding_status] || 'bg-light text-body'}`}>{commission.funding_status}</span>} />
                                     <DetailRow label="Funded Date" value={commission.funded_date} />
                                     <div className="col-12"><hr className="my-2 border-dashed" /></div>
                                     <DetailRow label="Industry Type" value={commission.funding_industry_type} />
@@ -312,7 +300,7 @@ export default function CommissionDetails() {
                                                         </div>
                                                     </td>
                                                     <td className="text-end">{commission.total_commission}%</td>
-                                                    <td className="text-end fw-bold">{formatCurrency(commission.total_commission_amount)}</td>
+                                                    <td className="text-end fw-bold">{formatCurrency(commission.total_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>
@@ -324,7 +312,7 @@ export default function CommissionDetails() {
                                                         </div>
                                                     </td>
                                                     <td className="text-end">{commission.admin_commission}%</td>
-                                                    <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount)}</td>
+                                                    <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
                                                 </tr>
                                                 {showPartnerCommissionRow && (
                                                     <tr>
@@ -337,7 +325,7 @@ export default function CommissionDetails() {
                                                             </div>
                                                         </td>
                                                         <td className="text-end">{commission.partner_commission}%</td>
-                                                        <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount)}</td>
+                                                        <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
                                                     </tr>
                                                 )}
                                             </tbody>
