@@ -59,12 +59,19 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Fix for Sandbox/Production toggle to look premium */
-.form-check-inline .form-check-input:checked + .form-check-label {
+.form-check-inline .form-check-input:checked+.form-check-label {
   color: #002651;
   font-weight: 700;
 }

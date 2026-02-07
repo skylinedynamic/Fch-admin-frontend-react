@@ -68,11 +68,11 @@ export default function Settings() {
 
     const validateForm = () => {
         const newErrors = {};
-        
+
         if (activeSection === 'payment') {
             const mode = formData.payment_mode || 'sandbox';
             const suffix = `_${mode}`;
-            
+
             if (!formData[`stripe_key${suffix}`]) {
                 newErrors[`stripe_key${suffix}`] = 'Stripe Key is required.';
             }
@@ -87,7 +87,7 @@ export default function Settings() {
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }

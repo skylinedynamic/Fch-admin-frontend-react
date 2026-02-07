@@ -106,12 +106,12 @@ export default function SettingsForm({
                     <label className="form-label d-block fw-bold mb-3">Environment Mode</label>
                     <div className="d-flex gap-4">
                         <div className="form-check">
-                            <input 
-                                className="form-check-input" 
-                                type="radio" 
-                                name="payment_mode" 
-                                id="mode_sandbox" 
-                                value="sandbox" 
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="payment_mode"
+                                id="mode_sandbox"
+                                value="sandbox"
                                 checked={isSandbox}
                                 onChange={handleInputChange}
                             />
@@ -120,12 +120,12 @@ export default function SettingsForm({
                             </label>
                         </div>
                         <div className="form-check">
-                            <input 
-                                className="form-check-input" 
-                                type="radio" 
-                                name="payment_mode" 
-                                id="mode_production" 
-                                value="production" 
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="payment_mode"
+                                id="mode_production"
+                                value="production"
                                 checked={!isSandbox}
                                 onChange={handleInputChange}
                             />
@@ -196,7 +196,7 @@ export default function SettingsForm({
             <div className="col-lg-4 col-md-5">
                 {renderSidebar()}
             </div>
-            
+
             <div className="col-lg-8 col-md-7">
                 <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border-0 h-100">
                     <form onSubmit={onSubmit}>
