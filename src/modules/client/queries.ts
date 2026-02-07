@@ -10,7 +10,11 @@ import {
     saveClientChecklist,
     fetchBorrowerProfileStats,
     fetchBorrowerStats,
-    fetchBorrowerTiers
+    fetchBorrowerProfileStats,
+    fetchBorrowerStats,
+    fetchBorrowerTiers,
+    fetchBorrowerPlans,
+    fetchNonHostBorrowerPlans
 } from './services';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
 import { fetchPartners } from '../partner/services';
@@ -29,6 +33,8 @@ export const clientKeys = {
     partners: () => ['partners'] as const,
     users: () => ['users'] as const,
     tiers: () => ['tiers'] as const,
+    plans: () => ['plans', 'host'] as const,
+    nonHostPlans: () => ['plans', 'non-host'] as const,
 };
 
 // Hooks
@@ -135,7 +141,7 @@ export const usePartners = (enabled: boolean = true) => {
             })) : [];
         },
         enabled,
-        staleTime: 5 * 60 * 1000, 
+        staleTime: 5 * 60 * 1000,
     });
 };
 
@@ -165,5 +171,29 @@ export const useBorrowerTiers = () => {
             })) : [];
         },
         staleTime: 5 * 60 * 1000,
+    });
+};
+
+export const useBorrowerPlans = (enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.plans(),
+        queryFn: async () => {
+            const result = await fetchBorrowerPlans();
+            return (result.status && result.data) ? result.data : [];
+        },
+        staleTime: 5 * 60 * 1000,
+        enabled
+    });
+};
+
+export const useNonHostBorrowerPlans = (enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.nonHostPlans(),
+        queryFn: async () => {
+            const result = await fetchNonHostBorrowerPlans();
+            return (result.status && result.data) ? result.data : [];
+        },
+        staleTime: 5 * 60 * 1000,
+        enabled
     });
 };
