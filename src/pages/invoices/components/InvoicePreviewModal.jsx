@@ -123,13 +123,13 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                         <div className="card-header border-bottom-dashed p-4">
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
                                                 <div className="flex-grow-1 text-center text-sm-start">
-                                                    <img src="/assets/images/Four Corner Holdings LLC.png" className="card-logo card-logo-dark" alt="logo dark" height="80" />
+                                                    <img src="/assets/images/logo_mail.jpeg" className="card-logo card-logo-dark" alt="logo dark" height="80" />
                                                 </div>
                                                 <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{invoice.invoice_id || invoice.id}</span></h6>
-                                                    <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
+                                                    {/* <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Website:</span> <a href="https://fourcornerholdings.com" className="link-primary" target="_blank" id="website"> www.fourcornerholdings.com</a></h6>
-                                                    <h6 className="mb-0"><span className="text-muted fw-normal">Contact No: </span><span id="contact-no" className="fw-semibold"> +(01) 234 6789</span></h6>
+                                                    <h6 className="mb-0"><span className="text-muted fw-normal">Contact No: </span><span id="contact-no" className="fw-semibold"> +(01) 234 6789</span></h6> */}
                                                 </div>
                                             </div>
                                         </div>
@@ -144,10 +144,10 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 </div>
                                                 <div className="col-6 text-end">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Billing Address</h6>
-                                                    <p className="fw-medium mb-2" id="billing-name">{invoice.customer_name || 'Customer Name'}</p>
+                                                    <p className="fw-medium mb-2" id="billing-name">{invoice.customer_name || ''}</p>
                                                     <p className="text-muted mb-1" id="billing-address-line-1">{invoice.address || 'Address not specified'}</p>
-                                                    <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{invoice.phone || 'N/A'}</span></p>
-                                                    <p className="text-muted mb-0"><span>Country: </span><span id="billing-country">{invoice.country || 'N/A'}</span> </p>
+                                                    {/* <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{invoice.phone || ''}</span></p> */}
+                                                    <p className="text-muted mb-0"><span>email: </span><span id="billing-country">{invoice.email || ''}</span> </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -161,7 +161,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 </div>
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Date</p>
-                                                    <h5 className="fs-14 mb-0"><span id="invoice-date">{invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span></h5>
+                                                    <h5 className="fs-14 mb-0"><span id="invoice-date">{invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span></h5>
                                                 </div>
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Payment Status</p>
@@ -184,21 +184,16 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     <thead>
                                                         <tr className="table-active">
                                                             <th scope="col" style={{ width: '50px' }}>#</th>
-                                                            <th scope="col" className="text-start">Product Details</th>
-                                                            <th scope="col">Rate</th>
-                                                            <th scope="col">Quantity</th>
+                                                            <th scope="col" className="text-start">Enrollment Details</th>
                                                             <th scope="col" className="text-end">Amount</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="products-list">
                                                         <tr>
-                                                            <th scope="row">01</th>
                                                             <td className="text-start">
                                                                 <span className="fw-medium">{invoice.description || 'Platform Service Enrollment'}</span>
-                                                                <p className="text-muted mb-0">Payment Cycle: {invoice.cycle || 'One Time'}</p>
                                                             </td>
                                                             <td>{formatCurrency(subtotal)}</td>
-                                                            <td>01</td>
                                                             <td className="text-end">{formatCurrency(subtotal)}</td>
                                                         </tr>
                                                     </tbody>
