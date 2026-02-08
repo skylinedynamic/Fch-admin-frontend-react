@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
-import { downloadInvoice, sendInvoice } from '../../../modules/invoice/services';
+import { downloadInvoice, sendInvoice, fetchInvoiceDetails } from '../../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
 
@@ -18,6 +18,36 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
     const modalInstanceRef = useRef(null);
     const [downloadLoading, setDownloadLoading] = useState(false);
     const [sendLoading, setSendLoading] = useState(false);
+    const [fullInvoice, setFullInvoice] = useState(null);
+    const [fetching, setFetching] = useState(false);
+
+    useEffect(() => {
+        const loadInvoiceData = async () => {
+            if (show && invoice?.id) { // Keep invoice?.id here as it's the prop triggering the fetch
+                setFetching(true);
+                try {
+                    const response = await fetchInvoiceDetails(invoice.id); // Keep invoice.id here for the initial fetch
+                    if (response.status) {
+                        setFullInvoice(response.data);
+                    } else {
+                        // Fallback to passed invoice if API fails
+                        setFullInvoice(invoice); // Keep invoice here as it's the fallback
+                        toast.error(response.message || 'Failed to fetch full invoice details');
+                    }
+                } catch (error) {
+                    console.error('Error fetching invoice details:', error);
+                    setFullInvoice(invoice); // Keep invoice here as it's the fallback
+                    toast.error('Failed to load full invoice details');
+                } finally {
+                    setFetching(false);
+                }
+            } else {
+                setFullInvoice(null);
+            }
+        };
+
+        loadInvoiceData();
+    }, [show, invoice?.id]); // Keep invoice?.id here as it's the prop triggering the fetch
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -54,17 +84,17 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
             setDownloadLoading(false);
             setSendLoading(false);
         }
-    }, [show, invoice]);
+    }, [show, invoice]); // Keep invoice here as it's the prop that might change
 
     const handleDownload = async () => {
-        if (!invoice?.id || downloadLoading) return;
+        if (!displayInvoice?.id || downloadLoading) return;
         setDownloadLoading(true);
         try {
-            const blob = await downloadInvoice(invoice.id);
+            const blob = await downloadInvoice(displayInvoice.id);
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `invoice-${invoice.invoice_id || invoice.id}.pdf`);
+            link.setAttribute('download', `invoice-${displayInvoice.invoice_id || displayInvoice.id}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);
@@ -78,10 +108,10 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
     };
 
     const handleSend = async () => {
-        if (!invoice?.id || sendLoading) return;
+        if (!displayInvoice?.id || sendLoading) return;
         setSendLoading(true);
         try {
-            const response = await sendInvoice(invoice.id);
+            const response = await sendInvoice(displayInvoice.id);
             if (response.status) {
             } else {
                 toast.error(response.message || 'Failed to send invoice');
@@ -94,10 +124,15 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         }
     };
     
-    // Calculations - only if invoice exists
-    const amount = invoice ? (typeof invoice.payment_amount === 'string' 
-        ? parseFloat(invoice.payment_amount) 
-        : invoice.payment_amount || 0) : 0;
+    // Use fullInvoice if available, otherwise fallback to the row-level invoice
+    const displayInvoice = fullInvoice || invoice;
+
+    // Calculations - only if displayInvoice exists
+    const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string' 
+        ? parseFloat(displayInvoice.payable_amount_sub) 
+        : displayInvoice.payable_amount_sub || (typeof displayInvoice.payment_amount === 'string' 
+            ? parseFloat(displayInvoice.payment_amount) 
+            : displayInvoice.payment_amount || 0)) : 0;
     
     const subtotal = amount;
 
@@ -123,13 +158,13 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                         <div className="card-header border-bottom-dashed p-4">
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
                                                 <div className="flex-grow-1 text-center text-sm-start">
-                                                    <img src="/assets/images/Four Corner Holdings LLC.png" className="card-logo card-logo-dark" alt="logo dark" height="80" />
+                                                    <img src="/assets/images/logo_mail.jpeg" className="card-logo card-logo-dark" alt="logo dark" height="80" />
                                                 </div>
                                                 <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">
-                                                    <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{invoice.invoice_id || invoice.id}</span></h6>
-                                                    <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
+                                                    <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{displayInvoice.invoice_id || displayInvoice.id}</span></h6>
+                                                    {/* <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Website:</span> <a href="https://fourcornerholdings.com" className="link-primary" target="_blank" id="website"> www.fourcornerholdings.com</a></h6>
-                                                    <h6 className="mb-0"><span className="text-muted fw-normal">Contact No: </span><span id="contact-no" className="fw-semibold"> +(01) 234 6789</span></h6>
+                                                    <h6 className="mb-0"><span className="text-muted fw-normal">Contact No: </span><span id="contact-no" className="fw-semibold"> +(01) 234 6789</span></h6> */}
                                                 </div>
                                             </div>
                                         </div>
@@ -139,15 +174,15 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             <div className="row g-3">
                                                 <div className="col-6">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Address</h6>
-                                                    <p className="text-muted mb-1" id="address-details">California, United States</p>
-                                                    <p className="text-muted mb-0" id="zip-code"><span>Zip-code:</span> 90201</p>
+                                                    <p className="text-muted mb-1">Four Corner Holdings</p>
+                                                    {/* <p className="text-muted mb-0">California, United States</p> */}
                                                 </div>
                                                 <div className="col-6 text-end">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Billing Address</h6>
-                                                    <p className="fw-medium mb-2" id="billing-name">{invoice.customer_name || 'Customer Name'}</p>
-                                                    <p className="text-muted mb-1" id="billing-address-line-1">{invoice.address || 'Address not specified'}</p>
-                                                    <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{invoice.phone || 'N/A'}</span></p>
-                                                    <p className="text-muted mb-0"><span>Country: </span><span id="billing-country">{invoice.country || 'N/A'}</span> </p>
+                                                    <p className="fw-medium mb-2" id="billing-name">{displayInvoice.customer_name || displayInvoice.name || ''}</p>
+                                                    <p className="text-muted mb-1" id="billing-address-line-1">{displayInvoice.address || ''}</p>
+                                                    {displayInvoice.phone && <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{displayInvoice.phone}</span></p>}
+                                                    <p className="text-muted mb-0"><span>Email: </span><span id="billing-email">{displayInvoice.email || ''}</span> </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -157,16 +192,16 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             <div className="row g-3 text-center text-sm-start">
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Invoice No</p>
-                                                    <h5 className="fs-14 mb-0">#<span id="invoice-no">{invoice.invoice_id || invoice.id}</span></h5>
+                                                    <h5 className="fs-14 mb-0">#<span id="invoice-no">{displayInvoice.invoice_id || displayInvoice.id}</span></h5>
                                                 </div>
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Date</p>
-                                                    <h5 className="fs-14 mb-0"><span id="invoice-date">{invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span></h5>
+                                                    <h5 className="fs-14 mb-0"><span id="invoice-date">{displayInvoice.created_at ? new Date(displayInvoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span></h5>
                                                 </div>
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Payment Status</p>
-                                                    <span className={`badge bg-${invoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'}-subtle text-${invoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'} fs-11 text-uppercase`} id="payment-status">
-                                                        {invoice.status || 'Pending'}
+                                                    <span className={`badge bg-${displayInvoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'}-subtle text-${displayInvoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'} fs-11 text-uppercase`} id="payment-status">
+                                                        {displayInvoice.status || 'Pending'}
                                                     </span>
                                                 </div>
                                                 <div className="col-lg-3 col-6 text-sm-end">
@@ -183,22 +218,15 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 <table className="table table-borderless text-center table-nowrap align-middle mb-0">
                                                     <thead>
                                                         <tr className="table-active">
-                                                            <th scope="col" style={{ width: '50px' }}>#</th>
-                                                            <th scope="col" className="text-start">Product Details</th>
-                                                            <th scope="col">Rate</th>
-                                                            <th scope="col">Quantity</th>
+                                                            <th scope="col" className="text-start">Enrollment Details</th>
                                                             <th scope="col" className="text-end">Amount</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="products-list">
                                                         <tr>
-                                                            <th scope="row">01</th>
                                                             <td className="text-start">
-                                                                <span className="fw-medium">{invoice.description || 'Platform Service Enrollment'}</span>
-                                                                <p className="text-muted mb-0">Payment Cycle: {invoice.cycle || 'One Time'}</p>
+                                                                <span className="fw-medium">{displayInvoice.enrollment_type || ''}</span>
                                                             </td>
-                                                            <td>{formatCurrency(subtotal)}</td>
-                                                            <td>01</td>
                                                             <td className="text-end">{formatCurrency(subtotal)}</td>
                                                         </tr>
                                                     </tbody>
@@ -220,16 +248,19 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             </div>
                                             <div className="mt-3">
                                                 <h6 className="text-muted text-uppercase fw-semibold mb-3">Payment Details:</h6>
-                                                <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe / Card</span></p>
-                                                <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{invoice.customer_name}</span></p>
-                                                <p className="text-muted mb-1">Card Number: <span className="fw-medium" id="card-number">xxxx xxxx xxxx 1234</span></p>
-                                                <p className="text-muted">Total Amount: <span className="fw-medium">$ </span><span id="card-total-amount" className="fw-bold">{amount.toFixed(2)}</span></p>
+                                                <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>
+                                                <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
+                                                <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
+                                                {displayInvoice.status?.toLowerCase() === 'paid' && (
+                                                    <p className="text-muted mb-1">Card Number: <span className="fw-medium" id="card-number">xxxx xxxx xxxx 1234</span></p>
+                                                )}
+                                                <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                             </div>
                                             <div className="mt-4">
                                                 <div className="alert alert-info">
                                                     <p className="mb-0"><span className="fw-semibold">NOTES:</span>
-                                                        <span id="note"> All accounts are to be paid within 7 days from receipt of invoice. To be paid by cheque or
-                                                            credit card or direct payment online. If account is not paid within 7
+                                                        <span id="note"> All accounts are to be paid within 7 days from receipt of invoice. To be paid by Stripe.
+                                                            If account is not paid within 7
                                                             days the credits details supplied as confirmation of work undertaken
                                                             will be charged the agreed quoted fee noted above.
                                                         </span>
@@ -249,7 +280,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     )}
                                                     Download Invoice
                                                 </button>
-                                                {((invoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
+                                                {((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
                                                     <button 
                                                         className="btn btn-danger shadow-sm" 
                                                         onClick={handleSend}

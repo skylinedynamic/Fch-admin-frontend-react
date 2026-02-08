@@ -109,4 +109,8 @@ export const industryTypes = [
   { label: 'Other', value: 'Other' }
 ];
 
-
+export const CURRENCY_OPTIONS = [
+  { label: 'USD', value: 'USD' },
+  { label: 'EUR', value: 'EUR' },
+  { label: 'GBP', value: 'GBP' }
+];

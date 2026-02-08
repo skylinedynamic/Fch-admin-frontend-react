@@ -103,6 +103,7 @@ const menuItems = [
     icon: 'bx bx-sync',
     label: 'Subscriptions',
     permission: 'view subscriptions',
+    isHostOnly: true,
   },
   {
     to: '/appointments',

@@ -34,7 +34,7 @@ export default function PaymentStats({ stats, loading }) {
         }
     ];
 
-    if (loading || !stats) {
+    if (loading && !stats) {
         return (
             <div className="row">
                 {config.map((_, index) => (

@@ -13,12 +13,17 @@ import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal'
 // @ts-ignore - JSX component imported in TSX file
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 // @ts-ignore
-import { createClient, updateClient } from '../../modules/client/services';
-import { useClientProfileStats } from '../../modules/client/queries';
-// @ts-ignore
+import {
+    useClientProfileStats,
+    createClient,
+    updateClient,
+    DEFAULT_CLIENT_STATE,
+    ENROLLMENT_TABS,
+    mapClientPayload
+} from '../../modules/client';
 import { fetchSettings } from '../../modules/settings/services';
 import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
-import type { Client, ChecklistItem } from '../../modules/client/types';
+import type { Client, ClientProfileStats } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
@@ -48,7 +53,7 @@ export default function ClientDetails() {
         return <Navigate to="/access-denied" replace />;
     }
 
-    const [activeTab, setActiveTab] = useState('personalDetails');
+    const [activeTab, setActiveTab] = useState(ENROLLMENT_TABS.PERSONAL);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,7 +65,7 @@ export default function ClientDetails() {
     const [paymentAmount, setPaymentAmount] = useState(0);
 
     // Profile stats state
-    const [profileStats, setProfileStats] = useState({
+    const [profileStats, setProfileStats] = useState<ClientProfileStats>({
         total_meetings: 0,
         total_invoices: 0,
         enrollment_type: 'N/A',
@@ -78,32 +83,7 @@ export default function ClientDetails() {
     const checklistRef = useRef<DocumentChecklistSectionRef>(null);
 
     // Initial form state
-    const [formData, setFormData] = useState<Client>({
-        // Personal Details
-        first_name: '',
-        last_name: '',
-        phone_number: '',
-        country_code: '+1',
-        email: '',
-        business_website: '',
-        business_name: '',
-        business_ein: '',
-        state_file_number: '',
-        duns_number: '',
-        business_address: '',
-        country: 'United States',
-        city: '',
-        other_city: '',
-        state: '',
-        business_postal_code: '',
-        business_phone: '',
-        business_entity_type: '',
-        business_industry_type: '',
-        business_start_date: '',
-        last_4_ssn: '',
-        enrollment_type: '',
-        notes: '',
-    });
+    const [formData, setFormData] = useState<Client>(DEFAULT_CLIENT_STATE);
 
     // Location data state for Create Mode or simple passing (Child manages detailed logic)
     const [countries] = useState(
@@ -241,33 +221,10 @@ export default function ClientDetails() {
 
         try {
             if (!id) {
-                // CREATE NEW CLIENT
-                const payload = { ...formData };
-                if (payload.city === 'Others') {
-                    payload.city = payload.other_city;
-                }
+                // CREATE NEW CLIENT - Use centralized mapping logic
+                const payload = mapClientPayload(formData, isHost, nonHostPlan);
 
-                // Calculate Enrollment Type and Amount - ACCURATE LEAD PATTERN
-                let amount = 0;
-                let enrollment_type = payload.enrollment_type;
-
-                if (isHost) {
-                    amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
-                } else {
-                    amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
-                    enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
-                }
-
-                // Accurate Payload Fields
-                // @ts-ignore
-                payload.amount = amount;
-                payload.enrollment_type = enrollment_type;
-                // @ts-ignore
-                payload.payment_amount = amount; // Keeping both for safety as per earlier user request "payment_amount in payload"
-                // @ts-ignore
-                payload.entity_type = 'Borrower';
-                // @ts-ignore
-                payload.is_partner_paying = !isHost;
+                const amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
 
                 const response: any = await createClient(payload);
 
@@ -300,14 +257,14 @@ export default function ClientDetails() {
             } else {
                 // UPDATE EXISTING CLIENT (Use Refs)
 
-                if (activeTab === 'personalDetails' && clientInfoRef.current) {
+                if (activeTab === ENROLLMENT_TABS.PERSONAL && clientInfoRef.current) {
                     await clientInfoRef.current.save();
-                } else if (activeTab === 'businessFinancials' && financialsRef.current) {
+                } else if (activeTab === ENROLLMENT_TABS.FINANCIALS && financialsRef.current) {
                     await financialsRef.current.save();
-                } else if (activeTab === 'documentChecklist' && checklistRef.current) {
+                } else if (activeTab === ENROLLMENT_TABS.CHECKLIST && checklistRef.current) {
                     await checklistRef.current.save();
                     toast.success("Document checklist saved successfully");
-                } else if (activeTab === 'documents') {
+                } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else {
                     // Fallback
@@ -462,8 +419,8 @@ export default function ClientDetails() {
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
                                     <li className="nav-item">
                                         <button
-                                            className={`nav-link ${activeTab === 'personalDetails' ? 'active' : ''}`}
-                                            onClick={() => handleTabChange('personalDetails')}
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.PERSONAL ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.PERSONAL)}
                                             type="button"
                                             role="tab"
                                         >
@@ -472,8 +429,8 @@ export default function ClientDetails() {
                                     </li>
                                     <li className="nav-item">
                                         <button
-                                            className={`nav-link ${activeTab === 'businessFinancials' ? 'active' : ''}`}
-                                            onClick={() => handleTabChange('businessFinancials')}
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FINANCIALS ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FINANCIALS)}
                                             type="button"
                                             role="tab"
                                             disabled={!id}
@@ -483,8 +440,8 @@ export default function ClientDetails() {
                                     </li>
                                     <li className="nav-item">
                                         <button
-                                            className={`nav-link ${activeTab === 'documentChecklist' ? 'active' : ''}`}
-                                            onClick={() => handleTabChange('documentChecklist')}
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CHECKLIST ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CHECKLIST)}
                                             type="button"
                                             role="tab"
                                             disabled={!id}
@@ -494,8 +451,8 @@ export default function ClientDetails() {
                                     </li>
                                     <li className="nav-item">
                                         <button
-                                            className={`nav-link ${activeTab === 'documents' ? 'active' : ''}`}
-                                            onClick={() => handleTabChange('documents')}
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.DOCUMENTS ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.DOCUMENTS)}
                                             type="button"
                                             role="tab"
                                             disabled={!id}

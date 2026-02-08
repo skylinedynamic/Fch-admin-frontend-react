@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchGlobalSubscriptions } from '../../modules/partner/services';
+import { fetchGlobalSubscriptions, fetchSubscriptionStats } from '../../modules/partner/services';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionFilters from './components/SubscriptionFilters';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import StatisticsCard from '../../components/Common/StatisticsCard';
+import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 
 export default function Subscriptions() {
     const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
     const [subscriptions, setSubscriptions] = useState([]);
     
+    // Stats state
+    const [stats, setStats] = useState({
+        total_subscriptions: 0,
+        active_subscriptions: 0,
+        expiring_soon: 0,
+        expired_subscriptions: 0,
+        revenue_this_month: 0
+    });
+
     // Pagination state
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -39,7 +51,7 @@ export default function Subscriptions() {
             next_installment_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             next_platform_fee_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             created_at: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -47,7 +59,22 @@ export default function Subscriptions() {
 
     useEffect(() => {
         initFilters();
+        loadStats();
     }, []);
+
+    const loadStats = async () => {
+        setStatsLoading(true);
+        try {
+            const response = await fetchSubscriptionStats();
+            if (response.status) {
+                setStats(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching subscription stats:', error);
+        } finally {
+            setStatsLoading(false);
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -111,8 +138,40 @@ export default function Subscriptions() {
 
     const onFilter = (e) => {
         setFilters(e.filters);
+        setAppliedFilters(e.filters);
         setPage(1);
     };
+
+    const statWidgets = [
+        {
+            id: 1,
+            label: "Total Subscriptions",
+            counter: stats.total_subscriptions,
+            icon: "ri-group-line",
+            color: "primary",
+        },
+        {
+            id: 2,
+            label: "Active Subscriptions",
+            counter: stats.active_subscriptions,
+            icon: "ri-checkbox-circle-line",
+            color: "warning",
+        },
+        {
+            id: 3,
+            label: "Expiring Soon",
+            counter: stats.expiring_soon,
+            icon: "ri-hourglass-2-line",
+            color: "info",
+        },
+        {
+            id: 4,
+            label: "Revenue (This Month)",
+            counter: `${stats.revenue_this_month}`,
+            icon: "ri-money-dollar-circle-line",
+            color: "success",
+        },
+    ];
 
     return (
         <div className="page-content">
@@ -135,6 +194,27 @@ export default function Subscriptions() {
                 </div>
 
                 <div className="row">
+                    {statsLoading && (!stats || stats.total_subscriptions === 0) ? (
+                        <>
+                            <StatisticsCardSkeleton />
+                            <StatisticsCardSkeleton />
+                            <StatisticsCardSkeleton />
+                            <StatisticsCardSkeleton />
+                        </>
+                    ) : (
+                        statWidgets.map((widget, index) => (
+                            <StatisticsCard
+                                key={index}
+                                title={widget.label}
+                                count={widget.counter}
+                                icon={widget.icon}
+                                colorVariant={widget.color}
+                                colSize="col-xl-3 col-md-6"
+                            />
+                        ))
+                    )}
+                </div>
+                <div className="row">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
@@ -143,6 +223,7 @@ export default function Subscriptions() {
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
+                                    loading={loading}
                                 />
                                 
                                 <SubscriptionTable 

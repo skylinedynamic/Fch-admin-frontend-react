@@ -12,6 +12,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserModal from './components/UserModal';
 import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 
 export default function Users() {
@@ -378,7 +379,15 @@ export default function Users() {
                           e.preventDefault();
                           onApplyFilters();
                         }}>
-                          <div className="row g-3 mb-3">
+                          {loading ? (
+                            <FilterLoader config={[
+                              { col: "col-xxl-4 col-sm-12" }, // Search
+                              { col: "col-xxl-3 col-sm-4" },  // Status
+                              { col: "col-xxl-3 col-sm-4" },  // Role
+                              { col: "col-xxl-2 col-sm-4", isButton: true } // Buttons
+                            ]} />
+                          ) : (
+                            <div className="row g-3 mb-3">
                             <div className="col-xxl-4 col-sm-12">
                               <div className="search-box">
                                 <input
@@ -432,7 +441,8 @@ export default function Users() {
                               </div>
                             </div>
                           </div>
-                        </form>
+                        )}
+                      </form>
 
                         {/* TableLoader applied here */}
                         {loading ? (

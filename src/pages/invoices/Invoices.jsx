@@ -58,7 +58,6 @@ export default function Invoices() {
 
     useEffect(() => {
         initFilters();
-        loadStats();
     }, []);
 
     const loadStats = async (params = {}) => {
@@ -209,6 +208,7 @@ export default function Invoices() {
                                     dateRange={dateRange} setDateRange={setDateRange}
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
+                                    loading={loading}
                                 />
                                 
                                 <InvoiceTable 

@@ -3,41 +3,20 @@ import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { toast } from 'react-toastify';
 import { formatPhoneNumber } from '../../../utils/formatters';
-import type { Client } from '../../../modules/client/types';
+import {
+    useClient,
+    useUpdateClient,
+    useBorrowerPlans,
+    useNonHostBorrowerPlans,
+    DEFAULT_CLIENT_STATE,
+    DATE_PICKER_OPTIONS,
+    mapClientUpdatePayload,
+    calculateEnrollmentDetails
+} from '../../../modules/client';
+import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
 import { entityTypes, industryTypes } from '../../../config/borrower';
-import { locationData } from '../../../config'; // Import locationData
-import { useClient, useUpdateClient } from '../../../modules/client/queries';
-
-// Default/Empty Client State
-const defaultClientState: Client = {
-    first_name: '',
-    last_name: '',
-    phone_number: '',
-    country_code: '+1',
-    email: '',
-    business_website: '',
-    business_name: '',
-    business_ein: '',
-    state_file_number: '',
-    duns_number: '',
-    business_address: '',
-    country: 'United States',
-    city: '',
-    other_city: '',
-    state: '',
-    business_postal_code: '',
-    business_phone: '',
-    business_entity_type: '',
-    business_industry_type: '',
-    business_start_date: '',
-    last_4_ssn: '',
-    enrollment_type: '',
-    notes: '',
-};
-
-const DATE_PICKER_OPTIONS = { dateFormat: "d M, Y" };
+import { locationData } from '../../../config';
 
 interface ClientInfoSectionProps {
     clientId?: string | null;
@@ -77,17 +56,71 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
     const updateMutation = useUpdateClient();
 
-    // 2. Local State
-    const [formData, setFormData] = useState<Client>(initialData || defaultClientState);
+    // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
+    const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+
+    // Fetch Plans
+    const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
+    const { data: nonHostPlans = [] } = useNonHostBorrowerPlans(!isHost);
+
+    const enrollmentOptions = React.useMemo(() => {
+        const plans = isHost ? borrowerPlans : nonHostPlans;
+        const options = plans.map((plan: BorrowerPlan) => ({
+            label: `${plan.enrollment_type} - $${plan.payment_amount}`,
+            value: plan.id, // Use ID as value
+            price: Number(plan.payment_amount),
+            ...plan
+        }));
+
+        // Ensure current selection is visible even if not in the plans list
+        if (formData.plan_id && !options.find(opt => String(opt.value) === String(formData.plan_id))) {
+            const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+            options.unshift({
+                label: formData.enrollment_type ? `${formData.enrollment_type} (Current)` : 'Current Plan',
+                value: formData.plan_id,
+                enrollment_type: formData.enrollment_type,
+                payment_amount: currentPrice,
+                price: currentPrice
+            });
+        } else if (formData.enrollment_type && !formData.plan_id) {
+            // If we have type but no ID, try to find matching option to get the ID
+            const match = options.find(opt => opt.enrollment_type === formData.enrollment_type);
+            if (!match) {
+                const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+                options.unshift({
+                    label: `${formData.enrollment_type} (Current)`,
+                    value: 'current',
+                    enrollment_type: formData.enrollment_type,
+                    payment_amount: currentPrice,
+                    price: currentPrice
+                });
+            }
+        }
+
+        return options;
+    }, [isHost, borrowerPlans, nonHostPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
 
     // 3. Sync Fetch to Local State
     useEffect(() => {
         if (fetchedData) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
+            
+            // If plan_id is missing but enrollment_type exists, try to find plan_id
+            if (!apiData.plan_id && apiData.enrollment_type) {
+                const plans = isHost ? borrowerPlans : nonHostPlans;
+                const matchedPlan = plans.find(p => p.enrollment_type === apiData.enrollment_type);
+                if (matchedPlan) {
+                    apiData.plan_id = matchedPlan.id;
+                } else {
+                    // Force a consistent value if still not found to trigger selection logic
+                    apiData.plan_id = apiData.plan_id || 'unmatched';
+                }
+            }
+            
             setFormData(prev => ({ ...prev, ...apiData }));
         }
-    }, [fetchedData]);
+    }, [fetchedData, borrowerPlans, nonHostPlans, isHost]);
 
     // Local Location Options Logic
     const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
@@ -161,16 +194,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
-            const payload = {
-                ...formData,
-                id: clientId,
-                city: formData.city === 'Others' ? formData.other_city : formData.city
-            };
-
-            if (!isHost) {
-                // @ts-ignore
-                payload.is_partner_paying = true;
-            }
+            const payload = mapClientUpdatePayload(formData, isHost);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
@@ -197,26 +221,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }));
 
-    // 6. Settings Logic (Sync Payment Amount) - kept from original
-    useEffect(() => {
-        if (!isHost) {
-            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
-            const planType = nonHostPlan?.enrollment_type || 'Fixed enrollment';
 
-            if (formData.payment_amount != planAmount && !clientId) { // Only force update if creating or explicitly needed? Existing logic was loose. Let's keep it safe.
-                handleInputChange({ target: { name: 'payment_amount', value: planAmount } });
-            }
-            if (formData.enrollment_type != planType && !clientId) {
-                handleInputChange({ target: { name: 'enrollment_type', value: planType } });
-            }
-
-        } else if (isHost && formData.enrollment_type) {
-            const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
-            if (selectedOption && formData.payment_amount !== selectedOption.price) {
-                handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
-            }
-        }
-    }, [isHost, settings, formData.enrollment_type, formData.payment_amount, nonHostPlan]);
 
     if (isFetching && clientId) {
         return (
@@ -589,136 +594,120 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {isHost && (
-                    <div className="col-lg-6">
-                        <div className="mb-3">
-                            <label htmlFor="enrollment_type" className="form-label">
-                                Enrollment Type <span className="text-danger">*</span>
-                            </label>
-                            <Dropdown
-                                value={formData.enrollment_type}
-                                options={ENROLLMENT_TYPE_OPTIONS}
-                                onChange={(e) => {
-                                    handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
-                                    const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === e.value);
-                                    if (selectedOption) {
-                                        handleInputChange({ target: { name: 'payment_amount', value: selectedOption.price } });
-                                    }
-                                }}
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Select enrollment amount"
-                                className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
-                                appendTo="self"
-                            />
-                            {errors.enrollment_type && <small className="p-error">{errors.enrollment_type}</small>}
-                        </div>
+                {/* Enrollment Type Dropdown (Now for both Host and Non-Host) */}
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="enrollment_type" className="form-label">
+                            Enrollment Type <span className="text-danger">*</span>
+                        </label>
+                        <Dropdown
+                            value={formData.plan_id}
+                            options={enrollmentOptions}
+                            onChange={(e) => {
+                                const selectedVal = e.value;
+                                const selectedOption = enrollmentOptions.find(opt => opt.value === selectedVal);
+
+                                setFormData(prev => ({
+                                    ...prev,
+                                    plan_id: selectedVal,
+                                    enrollment_type: selectedOption ? selectedOption.enrollment_type : ''
+                                }));
+
+                                // Propagate changes
+                                if (handleLocationChange) {
+                                    handleLocationChange('plan_id', selectedVal);
+                                }
+
+                                // Clear error if present
+                                if (setErrors && errors.plan_id) {
+                                    const newErrors = { ...errors };
+                                    delete newErrors.plan_id;
+                                    setErrors(newErrors);
+                                }
+                            }}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Select Enrollment Type"
+                            className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
+                            disabled={!!clientId}
+                            appendTo="self"
+                        />
+                        {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
                     </div>
-                )}
+                </div>
 
                 {/* Enrollment Amount - Dynamic Display */}
-                {(isHost ? formData.enrollment_type : true) && (
+                {(formData.plan_id || formData.enrollment_type) && (
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
                             <div className="card border border-primary bg-light-subtle animate__animated animate__fadeIn">
                                 <div className="card-body p-3">
                                     {(() => {
-                                        if (isHost) {
-                                            const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === formData.enrollment_type);
-                                            if (!selectedOption) return null;
+                                        const selectedOption = enrollmentOptions.find(opt => 
+                                            String(opt.value) === String(formData.plan_id)
+                                        ) || enrollmentOptions.find(opt => 
+                                            opt.enrollment_type === formData.enrollment_type
+                                        );
 
-                                            const isOneTime = selectedOption.value.includes('One Time');
-                                            const duration = isOneTime ? 1 : 6;
-                                            const totalAmount = isOneTime ? selectedOption.price : (selectedOption.price * 6);
-                                            const platformFee = 399; // Default for host clients
+                                        if (!selectedOption && !formData.enrollment_type) return null;
 
-                                            return (
-                                                <>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Client Type:</span>
-                                                        <span className="badge bg-primary-subtle text-primary">Host Client</span>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                        <span className="text-muted">{selectedOption.value}</span>
-                                                    </div>
-                                                    <hr className="my-2" />
-                                                    {isOneTime ? (
-                                                        <>
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="fw-semibold text-dark">One-Time Cost:</span>
-                                                                <span className="fs-5 fw-bold text-success">
-                                                                    ${selectedOption.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="fw-semibold text-dark">Monthly Payment:</span>
-                                                                <span className="fs-5 fw-bold text-primary">
-                                                                    ${selectedOption.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="text-muted">Duration:</span>
-                                                                <span className="text-muted">{duration} months</span>
-                                                            </div>
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="fw-semibold text-dark">Total:</span>
-                                                                <span className="fw-bold text-dark">
-                                                                    ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </>
-                                            );
-                                        } else {
-                                            // Non-Host Client
-                                            const planAmount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount) : 800;
-                                            const totalAmount = nonHostPlan?.total_amount ? parseFloat(nonHostPlan.total_amount) : planAmount;
-                                            const installments = nonHostPlan?.total_installments_count || 1;
-                                            const platformFee = nonHostPlan?.platform_fee || 399;
+                                        const { installments, totalAmount, price } = selectedOption 
+                                            ? calculateEnrollmentDetails({
+                                                ...selectedOption,
+                                                payment_amount: selectedOption.payment_amount || formData.payment_amount || formData.amount || 0
+                                            }, isHost)
+                                            : { 
+                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 : 
+                                                             (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
+                                                totalAmount: formData.payment_amount || formData.amount || 0,
+                                                price: formData.payment_amount || formData.amount || 0
+                                              };
+                                        
+                                        // Final total calculation if it's a multi-payment plan and totalAmount is just the installment price
+                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price)) 
+                                            ? Number(price) * installments 
+                                            : Number(totalAmount);
 
-                                            return (
-                                                <>
-                                                    <input type="hidden" name="enrollment_type" value={nonHostPlan?.enrollment_type || 'Fixed enrollment'} />
+                                        return (
+                                            <>
+                                                {!isHost && (
                                                     <input type="hidden" name="is_partner_paying" value="true" />
+                                                )}
 
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-semibold text-dark">Client Type:</span>
+                                                    <span className={`badge ${isHost ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
+                                                        {isHost ? 'Host Client' : 'Partner Client'}
+                                                    </span>
+                                                </div>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-semibold text-dark">Payment Plan:</span>
+                                                    <span className="text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
+                                                </div>
+                                                <hr className="my-2" />
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-semibold text-dark">
+                                                        {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
+                                                    </span>
+                                                    <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
+                                                        ${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                {installments > 1 && (
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Client Type:</span>
-                                                        <span className="badge bg-success-subtle text-success">Partner Client</span>
+                                                        <span className="text-muted">Duration:</span>
+                                                        <span className="text-muted">{installments} months</span>
                                                     </div>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                        <span className="text-muted">{nonHostPlan?.enrollment_type || 'Fixed enrollment'}</span>
-                                                    </div>
-                                                    <hr className="my-2" />
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">
-                                                            {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
-                                                        </span>
-                                                        <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
-                                                            ${planAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    {installments > 1 && (
-                                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                                            <span className="text-muted">Duration:</span>
-                                                            <span className="text-muted">{installments} months</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Total:</span>
-                                                        <span className="fw-bold text-dark">
-                                                            ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                </>
-                                            );
-                                        }
+                                                )}
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="fw-semibold text-dark">Total:</span>
+                                                    <span className="fw-bold text-dark">
+                                                        ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                            </>
+                                        );
                                     })()}
                                 </div>
                             </div>

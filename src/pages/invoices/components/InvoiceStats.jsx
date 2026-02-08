@@ -1,7 +1,19 @@
 import React from 'react';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
+import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 
-export default function InvoiceStats({ stats }) {
+export default function InvoiceStats({ stats, loading }) {
+    if (loading && !stats) {
+        return (
+            <div className="row g-4 mt-1">
+                <StatisticsCardSkeleton />
+                <StatisticsCardSkeleton />
+                <StatisticsCardSkeleton />
+                <StatisticsCardSkeleton />
+            </div>
+        );
+    }
+
     const statCards = [
         {
             title: 'Invoices Sent',

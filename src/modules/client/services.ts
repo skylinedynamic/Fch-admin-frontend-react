@@ -128,3 +128,15 @@ export const fetchBorrowerTiers = async (): Promise<any> => {
     const { data } = await apiClient.post('/common/tiers/fetch-all-tiers');
     return data;
 };
+
+// Fetch borrower plans (for host clients)
+export const fetchBorrowerPlans = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/borrower-plans');
+    return data;
+};
+
+// Fetch non-host borrower plans (for partner clients)
+export const fetchNonHostBorrowerPlans = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/non-host-borrower-plans');
+    return data;
+};

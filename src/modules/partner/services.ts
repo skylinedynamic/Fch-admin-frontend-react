@@ -104,6 +104,11 @@ export const fetchGlobalSubscriptions = async (payload: any = {}) => {
   return data;
 };
 
+export const fetchSubscriptionStats = async () => {
+    const { data } = await apiClient.post('/admin/partners/subscriptions-stats');
+    return data;
+};
+
 export const fetchPartnerStats = async () => {
   const { data } = await apiClient.post('/admin/partners-stats', {});
   return data;

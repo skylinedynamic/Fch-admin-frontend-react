@@ -18,7 +18,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Partners from './pages/partners/Partners.jsx';
 import PartnerProfile from './pages/partners/PartnerProfile.jsx';
-import Clients from './pages/clients/Clients.jsx';
+import Clients from './pages/clients/Clients';
 import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
