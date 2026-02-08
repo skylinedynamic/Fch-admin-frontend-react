@@ -589,6 +589,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             optionValue="value"
                             placeholder="Select Enrollment Type"
                             className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
+                            disabled={!!clientId}
                             appendTo="self"
                         />
                         {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}

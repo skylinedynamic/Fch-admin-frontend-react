@@ -39,8 +39,8 @@ export default function PartnerProfile() {
     const getInitialTab = () => {
         // Priority 1: URL query parameter
         if (searchParams.get('tab')) return searchParams.get('tab');
-        // Priority 2: Navigation state (from Link)
-        if (location.state?.activeTab) return location.state.activeTab;
+        // Priority 2: Navigation state (from Link or navigate)
+        if (location.state && location.state.activeTab) return location.state.activeTab;
         // Priority 3: Default based on whether it's a new partner or existing
         return id ? 'statusAgent' : 'personalDetails';
     };
@@ -634,6 +634,11 @@ export default function PartnerProfile() {
                 // Append all form fields with proper field name mapping
                 Object.entries(formData).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
+                        // Skip partner_type and enrollment_type during update to prevent changes
+                        if (id && (key === 'partner_type' || key === 'enrollment_type')) {
+                            return;
+                        }
+
                         if (key === 'partner_image') {
                             // Append if it's a File object (user selected a new image) or a string path (from file manager)
                             if (value instanceof File) {

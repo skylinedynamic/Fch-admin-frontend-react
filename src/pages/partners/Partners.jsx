@@ -421,7 +421,7 @@ export default function Partners() {
                                             onRowClick={(e) => {
                                                 const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
                                                                   e.originalEvent.target.closest('.p-selection-column');
-                                                if (!isCheckbox) navigate(`/partners/${e.data.id}`);
+                                                if (!isCheckbox) navigate(`/partners/${e.data.id}`, { state: { activeTab: 'personalDetails' } });
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"

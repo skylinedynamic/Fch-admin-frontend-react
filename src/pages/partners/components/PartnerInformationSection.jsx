@@ -388,6 +388,7 @@ export default function PartnerInformationSection({
                         optionValue="value"
                         placeholder="Select partner type..."
                         className={`w-100 ${errors.partner_type || errors.partner_type_id ? 'p-invalid' : ''}`}
+                        disabled={!!partnerId}
                         appendTo="self"
                     />
                     {/* Partner Type Error Handling */}
@@ -421,7 +422,7 @@ export default function PartnerInformationSection({
                         optionValue="value"
                         placeholder="Select enrollment type..."
                         className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
-                        disabled={!formData.partner_type}
+                        disabled={!formData.partner_type || !!partnerId}
                         appendTo="self"
                     />
                     {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}

@@ -49,6 +49,7 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
     delete payload.payment_amount;
     delete payload.amount;
     delete payload.enrollment_amount;
+    delete payload.plan_id;
 
     if (!isHost) {
         payload.is_partner_paying = true;
