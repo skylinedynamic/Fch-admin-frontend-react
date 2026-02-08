@@ -379,10 +379,16 @@ export default function PartnerInformationSection({
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
                     <Dropdown
                         value={formData.partner_type}
-                        options={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).map(type => ({
-                            label: type,
-                            value: type
-                        }))}
+                        options={(() => {
+                            const types = new Set((partnerPlans || []).map(p => p.partner_type));
+                            // Ensure current value is included so it's visible when disabled
+                            if (formData.partner_type) types.add(formData.partner_type);
+                            
+                            return Array.from(types).map(type => ({
+                                label: type,
+                                value: type
+                            }));
+                        })()}
                         onChange={(e) => handleInputChange({ target: { name: 'partner_type', value: e.value } })}
                         optionLabel="label"
                         optionValue="value"
@@ -407,15 +413,25 @@ export default function PartnerInformationSection({
                     <Dropdown
                         value={formData.enrollment_type}
                         options={(() => {
-                            if (!partnerPlans || partnerPlans.length === 0) return PAYMENT_TYPE_OPTIONS || [];
+                            // Base options from plans matching partner type
+                            const matchedPlans = partnerPlans.filter(plan => 
+                                plan.partner_type === formData.partner_type
+                            );
+                            
+                            const options = matchedPlans.map(plan => ({
+                                label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
+                                value: plan.enrollment_type
+                            }));
 
-                            // Filter plans for the selected partner type
-                            return partnerPlans
-                                .filter(plan => plan.partner_type === formData.partner_type)
-                                .map(plan => ({
-                                    label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
-                                    value: plan.enrollment_type
-                                }));
+                            // Ensure current enrollment type is in the list
+                            if (formData.enrollment_type && !options.find(opt => opt.value === formData.enrollment_type)) {
+                                options.unshift({
+                                    label: formData.enrollment_type,
+                                    value: formData.enrollment_type
+                                });
+                            }
+
+                            return options.length > 0 ? options : (PAYMENT_TYPE_OPTIONS || []);
                         })()}
                         onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
                         optionLabel="label"
@@ -437,14 +453,20 @@ export default function PartnerInformationSection({
                         <div className="card border border-primary bg-light-subtle">
                             <div className="card-body p-3">
                                 {(() => {
-                                    const selectedPlan = partnerPlans.find(
-                                        plan => plan.partner_type === formData.partner_type && plan.enrollment_type === formData.enrollment_type
+                                    // Try strict match first
+                                    let selectedPlan = partnerPlans.find(
+                                        plan => plan.partner_type === formData.partner_type && 
+                                               plan.enrollment_type === formData.enrollment_type
                                     );
                                     
-                                    if (!selectedPlan) return null;
+                                    // If no strict match and we have data in formData, use a fallback
+                                    const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
+                                    const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
+                                    const paymentAmount = selectedPlan?.payment_amount || formData.enrollment_amount || formData.first_reg_amount || 0;
+                                    const platformFee = selectedPlan?.platform_fee || formData.recurring_amount || 0;
+                                    const isOneTime = enrollmentTypeName?.includes('One Time');
 
-                                    const isOneTime = selectedPlan.enrollment_type.includes('One Time');
-                                    const partnerTypeName = selectedPlan.partner_type;
+                                    if (!enrollmentTypeName) return null;
 
                                     return (
                                         <>
@@ -454,7 +476,7 @@ export default function PartnerInformationSection({
                                             </div>
                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                 <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                <span className="text-muted">{selectedPlan.enrollment_type}</span>
+                                                <span className="text-muted">{enrollmentTypeName}</span>
                                             </div>
                                             <hr className="my-2" />
                                             {isOneTime ? (
@@ -462,13 +484,13 @@ export default function PartnerInformationSection({
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="fw-semibold text-dark">One-Time Cost:</span>
                                                         <span className="fs-5 fw-bold text-success">
-                                                            ${selectedPlan.payment_amount?.toLocaleString()}
+                                                            ${Number(paymentAmount).toLocaleString()}
                                                         </span>
                                                     </div>
                                                     <div className="alert alert-info p-2 mb-0 mt-2">
                                                         <small>
                                                             <i className="ri-information-line me-1"></i>
-                                                            Platform fee of <strong>${selectedPlan.platform_fee}/month</strong> starts on the 12th month
+                                                            Platform fee of <strong>${Number(platformFee).toLocaleString()}/month</strong> starts on the 12th month
                                                         </small>
                                                     </div>
                                                 </>
@@ -477,23 +499,23 @@ export default function PartnerInformationSection({
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="fw-semibold text-dark">Monthly Payment:</span>
                                                         <span className="fs-5 fw-bold text-primary">
-                                                            ${selectedPlan.payment_amount?.toLocaleString()}
+                                                            ${Number(paymentAmount).toLocaleString()}
                                                         </span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="text-muted">Duration:</span>
-                                                        <span className="text-muted">{selectedPlan.total_installments_count || 11} months</span>
+                                                        <span className="text-muted">{selectedPlan?.total_installments_count || 11} months</span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="fw-semibold text-dark">Total:</span>
                                                         <span className="fw-bold text-dark">
-                                                            ${(selectedPlan.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            ${Number(selectedPlan?.total_amount || (Number(paymentAmount) * (selectedPlan?.total_installments_count || 11))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                     <div className="alert alert-info p-2 mb-0 mt-2">
                                                         <small>
                                                             <i className="ri-information-line me-1"></i>
-                                                            Platform fee of <strong>${selectedPlan.platform_fee}/month</strong> starts on the 12th month from first payment
+                                                            Platform fee of <strong>${Number(platformFee).toLocaleString()}/month</strong> starts on the 12th month from first payment
                                                         </small>
                                                     </div>
                                                 </>
