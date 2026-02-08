@@ -2,6 +2,8 @@ import React from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Badge } from 'primereact/badge';
+import { Dropdown } from 'primereact/dropdown';
+import { SUBSCRIPTION_STATUS_OPTIONS, SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
 
 export default function SubscriptionTable({ 
     data, loading, totalRecords, page, perPage, 
@@ -9,8 +11,21 @@ export default function SubscriptionTable({
     sortField, sortOrder 
 }) {
     const statusBodyTemplate = (rowData) => {
-        const severity = rowData.status === 'Active' ? 'success' : 'warning';
+        const severity = SUBSCRIPTION_STATUS_COLORS[rowData.status] || 'info';
         return <Badge value={rowData.status} severity={severity}></Badge>;
+    };
+
+    const statusFilterTemplate = (options) => {
+        return (
+            <Dropdown 
+                value={options.value} 
+                options={SUBSCRIPTION_STATUS_OPTIONS} 
+                onChange={(e) => options.filterApplyCallback(e.value)} 
+                placeholder="Select Status" 
+                className="p-column-filter" 
+                showClear 
+            />
+        );
     };
 
     const amountBodyTemplate = (field) => (rowData) => {
@@ -20,21 +35,19 @@ export default function SubscriptionTable({
 
     const nameBodyTemplate = (rowData) => (
         <div>
-            <div className="fw-medium">{rowData.partner_name}</div>
-            <small className="text-muted">{rowData.company_name}</small>
+            {rowData.borrower_id ? (
+                <>
+                    <div className="fw-medium">{rowData.borrower_name} <span className="text-muted small">(Borrower)</span></div>
+                </>
+            ) : (
+                <>
+                    <div className="fw-medium">{rowData.partner_name} <span className="text-muted small">(Partner)</span></div>
+                </>
+            )}
         </div>
     );
 
-    const borrowerBodyTemplate = (rowData) => (
-        <div>
-            {rowData.borrower_name ? (
-                <>
-                    <div className="fw-medium">{rowData.borrower_name}</div>
-                    <small className="text-muted">{rowData.borrower_email}</small>
-                </>
-            ) : <span className="text-muted">-</span>}
-        </div>
-    );
+
 
     const dateBodyTemplate = (field) => (rowData) => {
         return rowData[field] || <span className="text-muted">-</span>;
@@ -64,13 +77,25 @@ export default function SubscriptionTable({
                 className="p-datatable-sm"
                 emptyMessage="No subscriptions found"
             >
-                <Column field="partner_name" header="Partner" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by partner" style={{ minWidth: '200px' }} />
+                <Column field="partner_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by Name" style={{ minWidth: '200px' }} />
                 <Column field="enrollment_type" header="Enrollment Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '180px' }} />
                 <Column field="payable_amount" header="Payable Amount" body={amountBodyTemplate('payable_amount')} sortable filter filterPlaceholder="Search by amount" style={{ minWidth: '130px' }} />
                 <Column field="next_installment_date" header="Next Installment" body={dateBodyTemplate('next_installment_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
                 <Column field="next_platform_fee_date" header="Next Platform Fee" body={dateBodyTemplate('next_platform_fee_date')} sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
                 <Column field="created_at" header="Created At" sortable filter filterPlaceholder="Search by date" style={{ minWidth: '150px' }} />
-                <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '100px' }} />
+                <Column 
+                    field="status" 
+                    header="Status" 
+                    body={statusBodyTemplate} 
+                    sortable 
+                    filter 
+                    filterElement={statusFilterTemplate} 
+                    showFilterMatchModes={false}
+                    showFilterOperator={false}
+                    showAddButton={false}
+                    filterMenuStyle={{ width: '14rem' }} 
+                    style={{ minWidth: '120px' }} 
+                />
             </DataTable>
         </div>
     );
