@@ -9,8 +9,8 @@ export default function PermissionCardsLoader() {
   } as React.CSSProperties
   return (
     <div className="row g-3 module-grid">
-      {Array.from({ length: 4 }).map((_, idx) => (
-        <div className="col-xl-6 col-lg-6" key={`perm-skel-${idx}`}>
+      {Array.from({ length: 8 }).map((_, idx) => (
+        <div className="col-xl-3 col-lg-3" key={`perm-skel-${idx}`}>
           <div className="module-card perm-section module-accent open rounded-3">
             <div className="module-header placeholder-glow">
               <div className="title-wrap d-flex align-items-center justify-content-between w-100">
@@ -35,11 +35,11 @@ export default function PermissionCardsLoader() {
               </div>
             </div>
             <div className="module-body" style={{ height: 'auto', opacity: 1 }}>
-              <div className="perm-grid placeholder-glow">
+              <div className="d-block placeholder-glow">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={`perm-skel-pill-${i}`}>
                     <span
-                      className="placeholder rounded-pill border"
+                      className="placeholder rounded-pill border mt-2"
                       style={{ display: 'block', width: '80%', height: '1.6rem', ...outlinePill }}
                     ></span>
                   </div>
