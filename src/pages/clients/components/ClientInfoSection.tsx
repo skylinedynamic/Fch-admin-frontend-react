@@ -56,31 +56,71 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
     const updateMutation = useUpdateClient();
 
+    // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
+    const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+
     // Fetch Plans
     const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
     const { data: nonHostPlans = [] } = useNonHostBorrowerPlans(!isHost);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = isHost ? borrowerPlans : nonHostPlans;
-        return plans.map((plan: BorrowerPlan) => ({
+        const options = plans.map((plan: BorrowerPlan) => ({
             label: `${plan.enrollment_type} - $${plan.payment_amount}`,
             value: plan.id, // Use ID as value
-            price: plan.payment_amount,
+            price: Number(plan.payment_amount),
             ...plan
         }));
-    }, [isHost, borrowerPlans, nonHostPlans]);
 
-    // 2. Local State
-    const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+        // Ensure current selection is visible even if not in the plans list
+        if (formData.plan_id && !options.find(opt => String(opt.value) === String(formData.plan_id))) {
+            const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+            options.unshift({
+                label: formData.enrollment_type ? `${formData.enrollment_type} (Current)` : 'Current Plan',
+                value: formData.plan_id,
+                enrollment_type: formData.enrollment_type,
+                payment_amount: currentPrice,
+                price: currentPrice
+            });
+        } else if (formData.enrollment_type && !formData.plan_id) {
+            // If we have type but no ID, try to find matching option to get the ID
+            const match = options.find(opt => opt.enrollment_type === formData.enrollment_type);
+            if (!match) {
+                const currentPrice = Number(formData.payment_amount || formData.amount || 0);
+                options.unshift({
+                    label: `${formData.enrollment_type} (Current)`,
+                    value: 'current',
+                    enrollment_type: formData.enrollment_type,
+                    payment_amount: currentPrice,
+                    price: currentPrice
+                });
+            }
+        }
+
+        return options;
+    }, [isHost, borrowerPlans, nonHostPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
 
     // 3. Sync Fetch to Local State
     useEffect(() => {
         if (fetchedData) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
+            
+            // If plan_id is missing but enrollment_type exists, try to find plan_id
+            if (!apiData.plan_id && apiData.enrollment_type) {
+                const plans = isHost ? borrowerPlans : nonHostPlans;
+                const matchedPlan = plans.find(p => p.enrollment_type === apiData.enrollment_type);
+                if (matchedPlan) {
+                    apiData.plan_id = matchedPlan.id;
+                } else {
+                    // Force a consistent value if still not found to trigger selection logic
+                    apiData.plan_id = apiData.plan_id || 'unmatched';
+                }
+            }
+            
             setFormData(prev => ({ ...prev, ...apiData }));
         }
-    }, [fetchedData]);
+    }, [fetchedData, borrowerPlans, nonHostPlans, isHost]);
 
     // Local Location Options Logic
     const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
@@ -597,17 +637,37 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
 
                 {/* Enrollment Amount - Dynamic Display */}
-                {formData.plan_id && (
+                {(formData.plan_id || formData.enrollment_type) && (
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
                             <div className="card border border-primary bg-light-subtle animate__animated animate__fadeIn">
                                 <div className="card-body p-3">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find(opt => opt.value === formData.plan_id);
-                                        if (!selectedOption) return null;
+                                        const selectedOption = enrollmentOptions.find(opt => 
+                                            String(opt.value) === String(formData.plan_id)
+                                        ) || enrollmentOptions.find(opt => 
+                                            opt.enrollment_type === formData.enrollment_type
+                                        );
 
-                                        const { installments, totalAmount, price } = calculateEnrollmentDetails(selectedOption, isHost);
+                                        if (!selectedOption && !formData.enrollment_type) return null;
+
+                                        const { installments, totalAmount, price } = selectedOption 
+                                            ? calculateEnrollmentDetails({
+                                                ...selectedOption,
+                                                payment_amount: selectedOption.payment_amount || formData.payment_amount || formData.amount || 0
+                                            }, isHost)
+                                            : { 
+                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 : 
+                                                             (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
+                                                totalAmount: formData.payment_amount || formData.amount || 0,
+                                                price: formData.payment_amount || formData.amount || 0
+                                              };
+                                        
+                                        // Final total calculation if it's a multi-payment plan and totalAmount is just the installment price
+                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price)) 
+                                            ? Number(price) * installments 
+                                            : Number(totalAmount);
 
                                         return (
                                             <>
@@ -623,7 +683,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 </div>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                    <span className="text-muted">{selectedOption.enrollment_type}</span>
+                                                    <span className="text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
                                                 </div>
                                                 <hr className="my-2" />
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -631,7 +691,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                         {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
                                                     </span>
                                                     <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
-                                                        ${(price as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                                 {installments > 1 && (
@@ -643,7 +703,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="fw-semibold text-dark">Total:</span>
                                                     <span className="fw-bold text-dark">
-                                                        ${(totalAmount as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                             </>
