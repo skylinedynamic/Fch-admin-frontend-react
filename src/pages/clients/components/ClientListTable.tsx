@@ -9,6 +9,8 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 
+import FilterLoader from '../../../components/Loader/FilterLoader';
+
 interface ClientListTableProps {
     isHost: boolean;
     partnersList: any[];
@@ -214,10 +216,22 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         />
     );
 
+    // Dynamic loader config for Clients
+    const loaderConfig = [
+        { col: isHost ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12" }, // Search
+        ...(!partnerId && isHost ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
+        { col: isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Sales Person
+        { col: isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Tiers
+        { col: isHost ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12", isButton: true } // Buttons
+    ];
+
     return (
         <>
             <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
-                <div className="row g-3 mb-3">
+                {clientsLoading ? (
+                    <FilterLoader config={loaderConfig} />
+                ) : (
+                    <div className="row g-3 mb-3">
                     <div className={isHost ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12"}>
                         <div className="search-box">
                             <input
@@ -279,8 +293,9 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
                             <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
                         </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </form>
 
             {clientsLoading ? (

@@ -9,6 +9,7 @@ import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfir
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -338,7 +339,15 @@ export default function Partners() {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
-                                    <div className="row g-3 mb-3">
+                                    {loading ? (
+                                        <FilterLoader config={[
+                                            { col: "col-xxl-4 col-sm-12" }, // Search
+                                            { col: "col-xxl-3 col-sm-4" },  // Partners
+                                            { col: "col-xxl-2 col-sm-4" },  // Assigned Users
+                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+                                        ]} />
+                                    ) : (
+                                        <div className="row g-3 mb-3">
                                         <div className="col-xxl-4 col-sm-12">
                                             <div className="search-box">
                                                 <input
@@ -381,7 +390,8 @@ export default function Partners() {
                                             </div>
                                         </div>
                                     </div>
-                                </form>
+                                )}
+                            </form>
 
                                 {loading ? (
                                     <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '150px' } })} />

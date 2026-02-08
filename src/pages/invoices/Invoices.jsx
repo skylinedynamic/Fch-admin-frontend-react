@@ -209,6 +209,7 @@ export default function Invoices() {
                                     dateRange={dateRange} setDateRange={setDateRange}
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
+                                    loading={loading}
                                 />
                                 
                                 <InvoiceTable 

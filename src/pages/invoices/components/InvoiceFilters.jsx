@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { INVOICE_STATUS_OPTIONS, INVOICE_CYCLE_OPTIONS } from '../../../config/invoiceConfig';
+import FilterLoader from '../../../components/Loader/FilterLoader';
 
 export default function InvoiceFilters({ 
     searchText, setSearchText,
@@ -10,10 +11,25 @@ export default function InvoiceFilters({
     selectedCycle, setSelectedCycle,
     dateRange, setDateRange,
     onApply,
-    onClear
+    onClear,
+    loading
 }) {
+    const loaderConfig = [
+        { col: 'col-xxl-3 col-sm-12' }, // Search
+        { col: 'col-xxl-3 col-sm-6' },  // Date Range
+        { col: 'col-xxl-3 col-sm-6' },  // Status
+        { col: 'col-xxl-3 col-sm-12', isButton: true } // Buttons
+    ];
+
     return (
-        <div className="row g-3 mb-3 align-items-center">
+        <form onSubmit={(e) => {
+            e.preventDefault();
+            onApply();
+        }}>
+            {loading ? (
+                <FilterLoader config={loaderConfig} />
+            ) : (
+                <div className="row g-3 mb-3 align-items-center">
             <div className="col-xxl-3 col-sm-12">
                 <div className="search-box">
                     <input
@@ -80,5 +96,7 @@ export default function InvoiceFilters({
                 </div>
             </div>
         </div>
+            )}
+        </form>
     );
 }

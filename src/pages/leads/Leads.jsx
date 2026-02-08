@@ -12,6 +12,7 @@ import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfir
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
@@ -428,7 +429,16 @@ export default function Leads() {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
-                                    <div className="row g-3 mb-3">
+                                    {loading ? (
+                                        <FilterLoader config={[
+                                            { col: "col-xxl-3 col-sm-12" }, // Search
+                                            ...(isHost ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Lead Type
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-4` }, // Status
+                                            { col: `col-xxl-${isHost ? '2' : '3'} col-sm-4` }, // Salesperson
+                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+                                        ]} />
+                                    ) : (
+                                        <div className="row g-3 mb-3">
                                         <div className="col-xxl-3 col-sm-12">
                                             <div className="search-box">
                                                 <input
@@ -483,7 +493,8 @@ export default function Leads() {
                                             </div>
                                         </div>
                                     </div>
-                                </form>
+                                )}
+                            </form>
 
                                 {loading ? (
                                     <TableLoader rows={10} columns={new Array(9).fill({ style: { minWidth: '100px' } })} />

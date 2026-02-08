@@ -100,6 +100,7 @@ export default function Employees() {
                         departments={departments}
                         onApplyFilters={onApplyFilters}
                         onClearFilters={onClearFilters}
+                        loading={loading}
                       />
 
                       <EmployeeTable
