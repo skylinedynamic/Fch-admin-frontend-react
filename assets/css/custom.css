@@ -7,515 +7,512 @@ File: Custom Css File
 */
 
 .navbar-menu {
-    background: #001F3F;
+  background: #001f3f;
 }
-
 
 /* Roles & Permissions page scoped styles */
 
 #roles-permissions-page .roles-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
 }
 
 @media (max-width: 1399.98px) {
-    #roles-permissions-page .roles-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  #roles-permissions-page .roles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 767.98px) {
-    #roles-permissions-page .roles-grid {
-        grid-template-columns: 1fr;
-    }
+  #roles-permissions-page .roles-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 #roles-permissions-page .role-summary-card {
-    border: 1px solid var(--vz-border-color);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
-    border-radius: .75rem;
-    background: var(--bs-body-bg);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    height: 425px;
+  border: 1px solid var(--vz-border-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 0.75rem;
+  background: var(--bs-body-bg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 425px;
 }
 
 #roles-permissions-page .role-summary-card h5 {
-    font-weight: 700;
-    margin-bottom: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
 #roles-permissions-page .role-meta {
-    color: var(--vz-gray);
+  color: var(--vz-gray);
 }
 
 #roles-permissions-page .role-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 #roles-permissions-page .count-badge {
-    background: var(--bs-primary-bg-subtle);
-    color: var(--bs-primary);
-    border-radius: 999px;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 600;
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 #roles-permissions-page .count-badge.solid {
-    background: #d4af37;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
+  background: #d4af37;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 #roles-permissions-page .bullet-list {
-    list-style: none;
-    padding-left: 0;
-    margin: 16px 0;
-    flex: 0 0 auto;
+  list-style: none;
+  padding-left: 0;
+  margin: 16px 0;
+  flex: 0 0 auto;
 }
 
 #roles-permissions-page .bullet-list li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    color: var(--vz-body-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: var(--vz-body-color);
 }
 
 #roles-permissions-page .bullet-list li::before {
-    content: '•';
-    color: var(--bs-primary);
+  content: "•";
+  color: var(--bs-primary);
 }
 
 #roles-permissions-page .card-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: auto;
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
 }
 
 #roles-permissions-page .add-role-card {
-    border: 1px dashed var(--vz-border-color);
-    border-radius: .75rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
-    background: var(--bs-body-bg);
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    height: 425px;
+  border: 1px dashed var(--vz-border-color);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: var(--bs-body-bg);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  height: 425px;
 }
 
 #roles-permissions-page .add-role-card img {
-    max-width: 120px;
-    opacity: .9;
-    margin-bottom: 12px;
+  max-width: 120px;
+  opacity: 0.9;
+  margin-bottom: 12px;
 }
 
 /* Fixed height for role cards in the grid */
 #roles-permissions-page .card .card-body {
-    overflow: auto;
+  overflow: auto;
 }
 
 #roles-permissions-page .users-modal .card {
-    border: 1px solid var(--vz-border-color);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
+  border: 1px solid var(--vz-border-color);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
 }
 
 #roles-permissions-page .section-title {
-    font-weight: 600;
-    font-size: 16px;
-    margin: 0;
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0;
 }
 
 #roles-permissions-page .user-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 10px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
 }
 
 #roles-permissions-page .user-table thead th {
-    font-size: 12px;
-    text-transform: uppercase;
-    color: #6b7280;
-    font-weight: 600;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 10px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 12px;
 }
 
 #roles-permissions-page .user-table tbody tr {
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 #roles-permissions-page .user-table tbody td {
-    padding: 12px;
-    border-top: 1px solid #f3f4f6;
-    vertical-align: middle;
+  padding: 12px;
+  border-top: 1px solid #f3f4f6;
+  vertical-align: middle;
 }
 
 #roles-permissions-page .avatar-dot {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: #fff;
-    background: linear-gradient(135deg, #ef4444, #f59e0b);
-    margin-right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #f59e0b);
+  margin-right: 10px;
 }
 
 #roles-permissions-page .user-identity {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 #roles-permissions-page .user-identity .name {
-    font-weight: 600;
-    color: #111827;
+  font-weight: 600;
+  color: #111827;
 }
 
 #roles-permissions-page .user-identity .email {
-    color: #6b7280;
-    font-size: 12px;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 #roles-permissions-page .table-actions .btn {
-    padding: 6px 10px;
+  padding: 6px 10px;
 }
 
 #roles-permissions-page .modal-header .badge-count {
-    font-size: 12px;
-    color: #6b7280;
-    margin-left: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 8px;
 }
 
 #roles-permissions-page .permissions-scroll {
-    max-height: 300px;
-    overflow: auto;
-    border: 1px solid var(--vz-border-color);
-    border-radius: .5rem;
-    padding: 12px;
-    background: var(--bs-body-bg);
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--vz-border-color);
+  border-radius: 0.5rem;
+  padding: 12px;
+  background: var(--bs-body-bg);
 }
 
 #roles-permissions-page .modal-backdrop-custom {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .35);
-    z-index: 1040;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1040;
 }
 
 #roles-permissions-page .users-modal {
-    z-index: 1055;
+  z-index: 1055;
 }
 
 /* Sidebar Sub-menu Custom Styling moved from Sidebar.jsx */
 @media (max-width: 991.98px) {
-    .navbar-brand-box {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background: var(--bs-body-bg);
-        display: block !important
-    }
+  .navbar-brand-box {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bs-body-bg);
+    display: block !important;
+  }
 }
 
 /* Parent menu collapse arrow */
 /* Parent menu collapse arrow */
 .nav-link.menu-link[aria-expanded="true"]::after {
-    transform: rotate(90deg);
+  transform: rotate(90deg);
 }
 
 .nav-link.menu-link[aria-expanded]::after {
-    content: "\F0142";
-    font-family: "Material Design Icons";
-    margin-left: auto;
-    transition: transform 0.2s;
-    font-size: 1.05rem;
-    position: absolute;
-    right: 18px;
-    color: #919da9;
+  content: "\F0142";
+  font-family: "Material Design Icons";
+  margin-left: auto;
+  transition: transform 0.2s;
+  font-size: 1.05rem;
+  position: absolute;
+  right: 18px;
+  color: #919da9;
 }
 
 /* Sub-menu container */
 .menu-dropdown {
-    background: transparent;
-    border-left: none;
-    margin-left: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-left: 0;
+  background: transparent;
+  border-left: none;
+  margin-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 0;
 }
 
 /* Sub-menu list */
 .menu-dropdown .flex-column {
-    padding: 0.5rem 0;
-    list-style: none;
-    margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+  margin: 0;
 }
 
 /* Sub-menu items */
 .menu-dropdown .nav-item {
-    margin: 0.25rem 0.5rem;
+  margin: 0.25rem 0.5rem;
 }
 
 /* Sub-menu links */
 .menu-dropdown .nav-link {
-    padding: 0.5rem 1rem 0.5rem 2.2rem !important;
-    /* Indent text */
-    color: #abb9e8;
-    background: transparent;
-    font-size: 0.813rem;
-    position: relative;
-    transition: all 0.4s;
-    display: flex;
-    align-items: center;
+  padding: 0.5rem 1rem 0.5rem 2.2rem !important;
+  /* Indent text */
+  color: #abb9e8;
+  background: transparent;
+  font-size: 0.813rem;
+  position: relative;
+  transition: all 0.4s;
+  display: flex;
+  align-items: center;
 }
 
 /* Sub-menu link hover effect */
 .menu-dropdown .nav-link:hover {
-    color: #fff;
-    background: transparent;
+  color: #fff;
+  background: transparent;
 }
 
 /* Sub-menu link active state */
 .menu-dropdown .nav-link.active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.05);
-    font-weight: 500;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 500;
 }
 
 /* Arrow icon styling - Positioned absolutely or flexed before text */
 .menu-dropdown .nav-link .ri-arrow-right-s-line {
-    font-size: 1rem;
-    margin-right: 0.5rem;
-    margin-left: -1rem;
-    /* Pull icon back into indentation space */
-    transition: transform 0.2s;
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  margin-left: -1rem;
+  /* Pull icon back into indentation space */
+  transition: transform 0.2s;
 }
 
 .menu-dropdown .nav-link:hover .ri-arrow-right-s-line,
 .menu-dropdown .nav-link.active .ri-arrow-right-s-line {
-    transform: translateX(2px);
-    opacity: 1;
+  transform: translateX(2px);
+  opacity: 1;
 }
 
 /* Smooth collapse animation */
 /* Enhanced Sidebar Animation using Grid */
 .sidebar-submenu-wrapper {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.35s ease-out;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s ease-out;
 }
 
 .sidebar-submenu-wrapper.open {
-    grid-template-rows: 1fr;
+  grid-template-rows: 1fr;
 }
 
 .sidebar-submenu-inner {
-    overflow: hidden;
-    min-height: 0;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Choices.js Custom Premium Styling for Modals */
 .choices {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .choices__inner {
-    border-radius: 0.375rem !important;
-    border: 1px solid #ced4da !important;
-    background-color: #fff !important;
-    padding: 4px 8px !important;
-    min-height: 38px !important;
-    display: flex;
-    align-items: center;
-    font-size: 0.875rem;
+  border-radius: 0.375rem !important;
+  border: 1px solid #ced4da !important;
+  background-color: #fff !important;
+  padding: 4px 8px !important;
+  min-height: 38px !important;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
 }
 
 .choices__list--dropdown {
-    z-index: 1080 !important;
-    /* Higher than bootstrap modal */
-    border: 1px solid #e9ebec !important;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
-    border-radius: 0.5rem !important;
-    padding: 0.5rem 0 !important;
-    margin-top: 5px !important;
-    background-color: #fff !important;
+  z-index: 1080 !important;
+  /* Higher than bootstrap modal */
+  border: 1px solid #e9ebec !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0 !important;
+  margin-top: 5px !important;
+  background-color: #fff !important;
 }
 
 .choices__list--dropdown .choices__item {
-    padding: 10px 16px !important;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
+  padding: 10px 16px !important;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
 }
 
 .choices__list--dropdown .choices__item--selectable.is-highlighted {
-    background-color: #f3f6f9 !important;
-    color: #405189 !important;
+  background-color: #f3f6f9 !important;
+  color: #405189 !important;
 }
 
 .choices__list--dropdown .choices__placeholder {
-    display: none !important;
-    /* Hide redundant placeholder in list */
+  display: none !important;
+  /* Hide redundant placeholder in list */
 }
 
 /* Custom scrollbar for Choices list */
 .choices__list--dropdown .choices__list {
-    max-height: 250px !important;
+  max-height: 250px !important;
 }
 
 .choices__list--dropdown .choices__list::-webkit-scrollbar {
-    width: 5px;
+  width: 5px;
 }
 
 .choices__list--dropdown .choices__list::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 
 .choices__list--dropdown .choices__list::-webkit-scrollbar-track {
-    background: #fff;
+  background: #fff;
 }
 
 /* Fix for Choices interaction in modal - ensuring parent doesn't capture clicks weirdly */
 .choices[data-type*="select-one"]::after {
-    border-color: #919da9 transparent transparent transparent !important;
-    border-width: 5px !important;
-    right: 15px !important;
+  border-color: #919da9 transparent transparent transparent !important;
+  border-width: 5px !important;
+  right: 15px !important;
 }
 
 .choices[data-type*="select-one"].is-open::after {
-    border-color: transparent transparent #919da9 transparent !important;
-    margin-top: -7.5px !important;
+  border-color: transparent transparent #919da9 transparent !important;
+  margin-top: -7.5px !important;
 }
 
 .choices.is-focused .choices__inner {
-    border-color: #80bdff !important;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: #80bdff !important;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* Premium Form Design for Appointments Modal */
 .modal-header.bg-info-subtle {
-    background-color: #f3f6f9 !important;
-    border-bottom: 1px solid #e9ebec !important;
+  background-color: #f3f6f9 !important;
+  border-bottom: 1px solid #e9ebec !important;
 }
 
 /* Custom FullCalendar header (matches template) */
 .fc-custom-header .btn-calendar {
-    background: var(--bs-primary) !important;
-    color: #fff !important;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 6px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+  background: var(--bs-primary) !important;
+  color: #fff !important;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .fc-custom-header .btn-calendar i[class^="ri-"],
 .fc-custom-header .btn-calendar i[class*=" ri-"] {
-    font-family: 'remixicon' !important;
-    font-size: 20px;
+  font-family: "remixicon" !important;
+  font-size: 20px;
 }
 
-.fc-custom-header .btn-calendar+.btn-calendar {
-    margin-left: 8px;
+.fc-custom-header .btn-calendar + .btn-calendar {
+  margin-left: 8px;
 }
 
 .fc-custom-title {
-    background: var(--bs-primary);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    min-width: 110px;
-    display: inline-block;
-    text-align: center;
+  background: var(--bs-primary);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  min-width: 110px;
+  display: inline-block;
+  text-align: center;
 }
 
 .fc-custom-title .month {
-    display: block;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 1px;
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
 }
 
 .fc-custom-title .year {
-    display: block;
-    font-size: 12px;
-    opacity: 0.95;
+  display: block;
+  font-size: 12px;
+  opacity: 0.95;
 }
 
 @media (max-width: 576px) {
-    .fc-custom-header {
-        flex-direction: column;
-        gap: 8px;
-        align-items: stretch;
-    }
+  .fc-custom-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
 
-    .fc-custom-header .d-flex.gap-2 {
-        justify-content: center;
-    }
+  .fc-custom-header .d-flex.gap-2 {
+    justify-content: center;
+  }
 }
-
 
 /* FullCalendar header & icon tweaks to match template design ✅ */
 .fc .fc-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Make the month title uppercase, heavier and use the template heading font */
 .fc .fc-toolbar-title {
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    font-weight: 600;
-    font-family: var(--vz-headings-font-family, 'Poppins', sans-serif);
-    font-size: 18px;
-    color: #283046;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+  font-family: var(--vz-headings-font-family, "Poppins", sans-serif);
+  font-size: 18px;
+  color: #283046;
 }
 
 /* Ensure remixicon icons used in header/buttons render correctly */
 .fc .fc-button i[class^="ri-"],
 .fc .fc-button i[class*=" ri-"] {
-    font-family: 'remixicon' !important;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  font-family: "remixicon" !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Slight padding tweaks for header buttons to match template spacing */
 .fc .fc-button {
-    padding: 0.45rem 0.7rem;
-    border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
 }
 
 /* Optional: adjust Today/Month/Week button active style to match screenshot */
 .fc .fc-button.fc-button-primary {
-    background-color: #405189;
-    color: #fff;
-    border: none;
+  background-color: #405189;
+  color: #fff;
+  border: none;
 }
 
 /* Small responsive tweak so header keeps centered on narrow screens */
 @media (max-width: 767px) {
-    .fc .fc-toolbar-title {
-        font-size: 16px;
-    }
+  .fc .fc-toolbar-title {
+    font-size: 16px;
+  }
 }
-
 
 /* .modal-title {
     color: #405189 !important;
@@ -523,50 +520,50 @@ File: Custom Css File
 } */
 
 #form-event .form-label {
-    font-weight: 500;
-    margin-bottom: 0.6rem;
-    color: #495057;
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+  color: #495057;
 }
 
 #form-event .form-control,
 #form-event .form-select {
-    border-color: #ced4da;
-    border-radius: 0.375rem;
+  border-color: #ced4da;
+  border-radius: 0.375rem;
 }
 
 #form-event .form-control:focus,
 #form-event .form-select:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.15rem rgba(64, 81, 137, 0.15);
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(64, 81, 137, 0.15);
 }
 
 #form-event .form-check-input:checked {
-    background-color: #405189;
-    border-color: #405189;
+  background-color: #405189;
+  border-color: #405189;
 }
 
 #form-event .form-check-label {
-    margin-left: 0.25rem;
-    color: #495057;
+  margin-left: 0.25rem;
+  color: #495057;
 }
 
 /* Choices Custom highlighting */
 .choices__list--dropdown .choices__item--selectable.is-highlighted {
-    background-color: #f3f6fa !important;
-    color: #405189 !important;
+  background-color: #f3f6fa !important;
+  color: #405189 !important;
 }
 
 .choices__list--dropdown .choices__item {
-    font-weight: 400;
+  font-weight: 400;
 }
 
 .choices__inner.border-radius-custom {
-    border-radius: 0.375rem !important;
+  border-radius: 0.375rem !important;
 }
 
 /* Fix for Select entity label dynamic change spacing */
 .col-12 .mb-3 label.form-label {
-    display: block;
+  display: block;
 }
 
 /* Universal Validation Styling - Premium Look */
@@ -575,139 +572,155 @@ File: Custom Css File
 .form-select.is-invalid,
 .choices.is-invalid .choices__inner,
 .flatpickr-input.is-invalid {
-    border-color: #f1734f !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23f1734f'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23f1734f' stroke='none'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-size: 16px 16px !important;
+  border-color: #f1734f !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23f1734f'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23f1734f' stroke='none'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-size: 16px 16px !important;
 }
 
 .form-control.is-invalid,
 .form-select.is-invalid {
-    background-position: right 12px center !important;
+  background-position: right 12px center !important;
 }
 
 .choices.is-invalid .choices__inner {
-    background-position: right 30px center !important;
+  background-position: right 30px center !important;
 }
 
 .flatpickr-input.is-invalid {
-    background-position: right 10px center !important;
-    background-size: 14px 14px !important;
+  background-position: right 10px center !important;
+  background-size: 14px 14px !important;
 }
 
 .choices {
-    margin-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .invalid-feedback.d-block {
-    color: #f1734f !important;
-    font-size: 13px !important;
-    margin-top: 8px !important;
-    margin-bottom: 0 !important;
-    font-weight: 400 !important;
-    display: block !important;
+  color: #f1734f !important;
+  font-size: 13px !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  font-weight: 400 !important;
+  display: block !important;
 }
 
 .choices.is-invalid::after {
-    right: 55px !important;
+  right: 55px !important;
 }
 
 /* FullCalendar Premium Toolbar Styling */
 .fc .fc-toolbar-title {
-    font-size: 1.1rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    color: #495057 !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: #495057 !important;
 }
 
 .fc .fc-button-primary {
-    background-color: #e2eafc !important;
-    border-color: transparent !important;
-    color: #405189 !important;
-    font-weight: 500 !important;
-    text-transform: capitalize !important;
-    padding: 6px 14px !important;
-    box-shadow: none !important;
-    border-radius: 4px !important;
-    transition: all 0.2s ease !important;
+  background-color: #e2eafc !important;
+  border-color: transparent !important;
+  color: #405189 !important;
+  font-weight: 500 !important;
+  text-transform: capitalize !important;
+  padding: 6px 14px !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
 }
 
 .fc .fc-button-primary:hover {
-    background-color: #d0defa !important;
-    color: #405189 !important;
+  background-color: #d0defa !important;
+  color: #405189 !important;
 }
 
 .fc .fc-button-primary:disabled {
-    opacity: 0.7 !important;
+  opacity: 0.7 !important;
 }
 
 /* Active & Today State */
 .fc .fc-button-primary.fc-today-button,
 .fc .fc-button-primary.fc-button-active {
-    background-color: #405189 !important;
-    border-color: #405189 !important;
-    color: #ffffff !important;
+  background-color: #405189 !important;
+  border-color: #405189 !important;
+  color: #ffffff !important;
 }
 
 /* Icon (Prev/Next) Styling */
 .fc .fc-button .fc-icon {
-    font-size: 1.1em !important;
-    vertical-align: middle !important;
+  font-size: 1.1em !important;
+  vertical-align: middle !important;
 }
 
-.fc .fc-button-group>.fc-button:not(:last-child) {
-    margin-right: 2px !important;
+.fc .fc-button-group > .fc-button:not(:last-child) {
+  margin-right: 2px !important;
 }
 
 .fc .fc-toolbar-chunk {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .fc .fc-toolbar-chunk:first-child .fc-button-group {
-    margin-right: 8px !important;
+  margin-right: 8px !important;
 }
 
 .p-datatable .p-datatable-emptymessage td {
-    text-align: center !important;
-    vertical-align: middle !important;
-    padding: 1rem 0 !important;
-    font-size: 1rem;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 1rem 0 !important;
+  font-size: 1rem;
 }
 
 /* Skeleton Loader Styles */
 .skeleton-line {
     background: #f0f2f5;
-    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
-    background-size: 400% 100%;
-    animation: skeleton-loading 1.4s ease infinite;
+    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    display: inline-block;
+    height: 1em;
+    vertical-align: middle;
+    border-radius: 4px;
+}
+
+/* Override Bootstrap placeholder to match skeleton-line */
+.placeholder {
+    background-color: #f0f2f5 !important;
+    opacity: 1 !important;
+}
+
+.placeholder-glow .placeholder {
+    background: #f0f2f5 !important;
+    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%) !important;
+    background-size: 200% 100% !important;
+    animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
 }
 
 @keyframes skeleton-loading {
     0% {
-        background-position: 100% 50%;
+        background-position: 200% 0;
     }
-
     100% {
-        background-position: 0 50%;
+        background-position: -200% 0;
     }
 }
 
 .fade-panel {
-    animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+  from {
+    opacity: 0;
+  }
 
-    to {
-        opacity: 1;
-    }
+  to {
+    opacity: 1;
+  }
 }
 
 .skeleton-filter-item {
-    height: 38px;
-    border-radius: 4px;
+  height: 38px;
+  border-radius: 4px;
 }

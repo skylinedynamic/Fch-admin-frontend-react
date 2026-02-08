@@ -248,7 +248,7 @@ export default function CreateRole() {
                           {!permsLoading && modules.map((mod) => {
                             const allChecked = isModuleAllChecked(mod)
                             return (
-                              <div className="col-xl-6 col-lg-6" key={mod.key}>
+                              <div className="col-xl-3 col-lg-3" key={mod.key}>
                                 <div className={`module-card perm-section module-accent ${expanded[mod.key] ? 'open' : ''}`}>
                                   <div className="module-header" role="button" aria-expanded={expanded[mod.key] ? 'true' : 'false'} onClick={() => toggleExpand(mod.key)}>
                                     <div className="title-wrap">
@@ -266,7 +266,7 @@ export default function CreateRole() {
                                     </div>
                                   </div>
                                   <div className="module-body" style={{ height: expanded[mod.key] ? 'auto' : '0px', opacity: expanded[mod.key] ? 1 : 0 }}>
-                                    <div className="perm-grid">
+                                    <div className="d-block">
                                       {mod.permissions.map((p) => {
                                         const checked = !!selected[mod.key]?.[p.key]
                                         return (

@@ -162,9 +162,15 @@ export default function RolesPermissions() {
                         <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid text-white">{Number(r.users_count ?? 0)} users</span></div>
                         {r.description && <p className="text-muted fs-14 mb-0 role-desc" title={r.description}>{r.description}</p>}
                         <ul className="bullet-list">
-                          {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
-                          {remainingCount(r.permissions) > 0 && (
-                            <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
+                          {r.permissions.length === 0 ? (
+                            <li className="text-muted fst-italic">No permissions assigned to this role</li>
+                          ) : (
+                            <>
+                              {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
+                              {remainingCount(r.permissions) > 0 && (
+                                <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
+                              )}
+                            </>
                           )}
                         </ul>
                         <div className="card-actions d-flex align-items-center">

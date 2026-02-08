@@ -28,9 +28,7 @@ export default function Dashboard() {
           <div className="d-flex align-items-end justify-content-between mt-4">
             <div>
               {isLoading ? (
-                <div className="placeholder-glow">
-                  <span className="placeholder col-8 h-25px"></span>
-                </div>
+                <div className="skeleton-line col-8 mb-3 d-block" style={{ height: '28px' }}></div>
               ) : (
                 <h4 className="fs-22 fw-semibold ff-secondary">
                   {isCurrency ? formatCurrency(count) : count}
@@ -270,9 +268,9 @@ export default function Dashboard() {
                     </div>
                     <div className="card-body pt-0">
                       {isLoading ? (
-                        <div className="placeholder-glow py-3">
-                          <span className="placeholder col-12 mb-2"></span>
-                          <span className="placeholder col-10"></span>
+                        <div className="py-3">
+                          <div className="skeleton-line col-12 mb-2 d-block" style={{ height: '16px' }}></div>
+                          <div className="skeleton-line col-10 d-block" style={{ height: '16px' }}></div>
                         </div>
                       ) : (dashboardData?.upcoming_meetings?.length > 0) ? (
                         <ul className="list-group list-group-flush border-dashed">
@@ -325,50 +323,46 @@ export default function Dashboard() {
                   <div className="card">
                     <div className="card-header align-items-center d-flex">
                       <h4 className="card-title mb-0 flex-grow-1">
-                        <i className="ri-shield-check-line align-middle me-1 text-info"></i> Verification Requests
+                        <i className="ri-shield-check-line align-middle me-1 text-info"></i> Latest Leads
                       </h4>
                       <div className="flex-shrink-0">
-                        <Link to="/verification-center" className="text-decoration-underline text-muted">View All</Link>
+                        <Link to="/leads" className="text-decoration-underline text-muted">View All</Link>
                       </div>
                     </div>
                     <div className="card-body">
                       <div className="table-responsive table-card">
-                        <table className="table table-borderless table-hover table-nowrap align-middle mb-0">
-                          <thead className="table-light">
-                            <tr className="text-muted">
-                              <th scope="col">Borrower</th>
-                              <th scope="col">Tier</th>
-                              <th scope="col">Pending</th>
-                              <th scope="col">Date</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="fw-medium">John Doe</td>
-                              <td><span className="badge bg-primary-subtle text-primary">Silver Tier</span></td>
-                              <td><span className="text-danger fw-bold">3 Docs</span></td>
-                              <td>Oct 20, 2025</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium">Jane Smith</td>
-                              <td><span className="badge bg-warning-subtle text-warning">Gold Tier</span></td>
-                              <td><span className="text-warning fw-bold">1 Doc</span></td>
-                              <td>Oct 22, 2025</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium">Mike Johnson</td>
-                              <td><span className="badge bg-info-subtle text-info">Platinum Tier</span></td>
-                              <td><span className="text-success fw-bold">0 Pending</span></td>
-                              <td>Oct 24, 2025</td>
-                            </tr>
-                            <tr>
-                              <td className="fw-medium">Sarah Wilson</td>
-                              <td><span className="badge bg-secondary-subtle text-secondary">Basic Tier</span></td>
-                              <td><span className="text-danger fw-bold">5 Docs</span></td>
-                              <td>Oct 25, 2025</td>
-                            </tr>
-                          </tbody>
-                        </table>
+                        {isLoading ? (
+                          <TableLoader rows={5} columns={new Array(3).fill({ style: { minWidth: '100px' } })} />
+                        ) : (
+                          <table className="table table-borderless table-hover table-nowrap align-middle mb-0">
+                            <thead className="table-light">
+                              <tr className="text-muted text-uppercase">
+                                <th scope="col">Contact Person</th>
+                                <th scope="col">Type</th>
+                                <th className="text-end" scope="col">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dashboardData?.latest_leads?.length > 0 ? (
+                                dashboardData.latest_leads.map((lead) => (
+                                  <tr key={lead.id} className="cursor-pointer" onClick={() => navigate(`/leads/${lead.id}`)}>
+                                    <td>{lead.contact_person}</td>
+                                    <td>{lead.lead_type}</td>
+                                    <td className="text-end">
+                                      <span className="badge bg-primary-subtle text-primary p-2 text-uppercase">
+                                        {lead.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan="6" className="text-center py-4 text-muted">No leads found</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        )}
                       </div>
                     </div>
                   </div>
