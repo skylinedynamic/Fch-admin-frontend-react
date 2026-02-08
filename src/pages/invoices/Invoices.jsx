@@ -58,7 +58,6 @@ export default function Invoices() {
 
     useEffect(() => {
         initFilters();
-        loadStats();
     }, []);
 
     const loadStats = async (params = {}) => {
