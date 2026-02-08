@@ -2,6 +2,7 @@ import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { PAYMENT_STATUS_OPTIONS, PAYMENT_CYCLE_OPTIONS } from '../../../config/paymentConfig';
+import FilterLoader from '../../../components/Loader/FilterLoader';
 
 export default function PaymentFilters({
     searchText, setSearchText,
@@ -10,15 +11,26 @@ export default function PaymentFilters({
     selectedCycle, setSelectedCycle,
     dateRange, setDateRange,
     onApply,
-    onClear
+    onClear,
+    loading
 }) {
+    // Dynamic loader config for Payments
+    const loaderConfig = [
+        { col: 'col-xxl-3 col-sm-6' }, // Search
+        { col: 'col-xxl-4 col-sm-6' }, // Date Range
+        { col: 'col-xxl-3 col-sm-6' }, // Status
+        { col: 'col-xxl-2 col-sm-12', isButton: true } // Buttons
+    ];
 
     return (
         <form onSubmit={(e) => {
             e.preventDefault();
             onApply();
         }}>
-            <div className="row g-3 mb-3">
+            {loading ? (
+                <FilterLoader config={loaderConfig} />
+            ) : (
+                <div className="row g-3 mb-3">
                 <div className="col-xxl-3 col-sm-6">
                     <div className="search-box">
                         <input
@@ -87,6 +99,7 @@ export default function PaymentFilters({
                     </button>
                 </div>
             </div>
-        </form>
-    );
+        )}
+    </form>
+);
 }

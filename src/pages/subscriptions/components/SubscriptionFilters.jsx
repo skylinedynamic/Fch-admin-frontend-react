@@ -8,13 +8,21 @@ export default function SubscriptionFilters({
     selectedStatus, setSelectedStatus, 
     onApply, onClear, loading
 }) {
+    // Exact layout config for Subscriptions (4 items: Search, Status, Button, Button)
+    // Map to 3 columns: Search(6), Status(3), Buttons(3)
+    const loaderConfig = [
+        { col: 'col-xxl-6 col-sm-12' },   // Search
+        { col: 'col-xxl-3 col-sm-6' },    // Status
+        { col: 'col-xxl-3 col-sm-12', isButton: true } // Filters & Clear
+    ];
+
     return (
         <form onSubmit={(e) => {
             e.preventDefault();
             onApply();
         }}>
             {loading ? (
-                <FilterLoader />
+                <FilterLoader config={loaderConfig} />
             ) : (
                 <div className="row g-3 mb-3">
                     <div className="col-xxl-6 col-sm-12">

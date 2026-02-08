@@ -14,3 +14,8 @@ export const SUBSCRIPTION_STATUS_COLORS: { [key: string]: string } = {
     [STATUS_EXPIRED]: 'danger',
     [STATUS_PENDING]: 'warning'
 };
+
+export const ENROLLMENT_TYPE_OPTIONS = [
+    { label: 'One Time Payment', value: 'One Time Payment' },
+    { label: 'Installment', value: 'Installment' }
+];
