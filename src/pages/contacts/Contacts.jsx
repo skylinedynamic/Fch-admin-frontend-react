@@ -7,6 +7,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchContacts, deleteContacts } from '../../modules/contact/services';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../components/Loader/TableLoader';
+import FilterLoader from '../../components/Loader/FilterLoader';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
@@ -264,31 +265,38 @@ export default function Contacts() {
                                     e.preventDefault();
                                     handleApplyFilters();
                                 }}>
-                                    <div className="d-flex align-items-center gap-2 mb-3">
-                                        <div className="flex-grow-1 position-relative">
-                                            <div className="search-box">
-                                                <input
-                                                    type="text"
-                                                    className="form-control search bg-light border-light"
-                                                    placeholder="Search here..."
-                                                    autoComplete="off"
-                                                    value={searchText}
-                                                    onChange={(e) => setSearchText(e.target.value)}
-                                                />
-                                                <i className="ri-search-line search-icon"></i>
+                                    {loading ? (
+                                        <FilterLoader config={[
+                                            { col: "col-xxl-9 col-sm-8" }, // Search
+                                            { col: "col-xxl-3 col-sm-4", isButton: true } // Buttons
+                                        ]} />
+                                    ) : (
+                                        <div className="d-flex align-items-center gap-2 mb-3">
+                                            <div className="flex-grow-1 position-relative">
+                                                <div className="search-box">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control search bg-light border-light"
+                                                        placeholder="Search here..."
+                                                        autoComplete="off"
+                                                        value={searchText}
+                                                        onChange={(e) => setSearchText(e.target.value)}
+                                                    />
+                                                    <i className="ri-search-line search-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                                <div className="d-flex gap-2">
+                                                    <button type="button" className="btn btn-warning" onClick={handleApplyFilters}>
+                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    </button>
+                                                    <button type="button" className="btn btn-default" onClick={handleClearFilters}>
+                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex-shrink-0">
-                                            <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                </button>
-                                                <button type="button" className="btn btn-default" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
                                 </form>
 
                                 {/* DataTable */}
