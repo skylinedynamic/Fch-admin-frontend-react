@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
-import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
-import { ENROLLMENT_TYPE_OPTIONS } from '../../../config/enrollmentOptions';
-import { fetchPartnerPlans, fetchNonHostBorrowerPlans } from '../../../modules/partner/services';
+import { fetchPartnerPlans } from '../../../modules/partner/services';
+import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
-    const [enrollmentType, setEnrollmentType] = useState('One Time Payment');
+    const [planId, setPlanId] = useState(null);
+    const [enrollmentType, setEnrollmentType] = useState('');
     const [partnerType, setPartnerType] = useState('');
     const [partnerEnrollmentType, setPartnerEnrollmentType] = useState('');
     const [partnerPlans, setPartnerPlans] = useState([]);
-    const [nonHostPlans, setNonHostPlans] = useState([]);
+    const [borrowerPlans, setBorrowerPlans] = useState([]);
     
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -50,16 +50,28 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 try {
                     const promises = [fetchPartnerPlans()];
                     
-                    if (!isHost) {
-                        promises.push(fetchNonHostBorrowerPlans());
+                    if (targetType === 'Borrower') {
+                        if (isHost) {
+                            promises.push(fetchBorrowerPlans());
+                        } else {
+                            promises.push(fetchNonHostBorrowerPlans());
+                        }
                     }
 
                     const results = await Promise.all(promises);
-                    const plansRes = results[0];
-                    const nonHostPlansRes = !isHost ? results[1] : null;
+                    const partnerPlansRes = results[0];
+                    const borrowerPlansRes = results[1];
 
-                    if (plansRes.status) setPartnerPlans(plansRes.data || []);
-                    if (nonHostPlansRes && nonHostPlansRes.status) setNonHostPlans(nonHostPlansRes.data || []);
+                    if (partnerPlansRes.status) setPartnerPlans(partnerPlansRes.data || []);
+                    if (borrowerPlansRes && borrowerPlansRes.status) {
+                        const plans = borrowerPlansRes.data || [];
+                        setBorrowerPlans(plans);
+                        // Auto-select first plan (especially for non-host)
+                        if (plans.length > 0) {
+                            setPlanId(plans[0].id);
+                            setEnrollmentType(plans[0].enrollment_type);
+                        }
+                    }
                 } catch (err) {
                     console.error('Failed to fetch lead conversion data:', err);
                 }
@@ -71,20 +83,30 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             if (modalElement && modalElement.classList.contains('show')) {
                 modal.hide();
             }
+            // Reset state
+            setPlanId(null);
+            setEnrollmentType('');
         }
-    }, [show, isHost]);
+    }, [show, isHost, targetType]);
+
+    const enrollmentOptions = useMemo(() => {
+        return borrowerPlans.map(plan => ({
+            label: `${plan.enrollment_type} ($${Number(plan.payment_amount).toLocaleString()})`,
+            value: plan.id,
+            price: Number(plan.payment_amount),
+            enrollment_type: plan.enrollment_type
+        }));
+    }, [borrowerPlans]);
 
     const handleConfirm = () => {
         const payload = {};
         if (targetType === 'Borrower') {
-            if (isHost) {
-                payload.enrollment_type = enrollmentType;
-                const selectedOption = ENROLLMENT_TYPE_OPTIONS.find(opt => opt.value === enrollmentType);
-                payload.amount = selectedOption ? selectedOption.price : 0;
-            } else {
-                const plan = nonHostPlans?.[0];
-                payload.enrollment_type = plan?.enrollment_type || '';
-                payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : 800;
+            payload.plan_id = planId;
+            payload.enrollment_type = enrollmentType;
+            
+            const selectedPlan = borrowerPlans.find(plan => plan.id === planId);
+            if (selectedPlan) {
+                payload.amount = selectedPlan.payment_amount;
             }
         } else if (targetType === 'Partner') {
             payload.partner_type = partnerType;
@@ -97,6 +119,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             );
             
             if (selectedPlan) {
+                payload.plan_id = selectedPlan.id;
                 payload.enrollment_amount = selectedPlan.payment_amount;
                 payload.amount = selectedPlan.payment_amount;
             }
@@ -113,6 +136,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const confirmBtnText = `Convert to ${targetType}`;
     const icon = targetType === 'Partner' ? 'ri-shake-hands-line text-success' : 'ri-user-received-2-line text-primary';
 
+    const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
+
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
@@ -127,27 +152,32 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                         {/* Borrower Conversion Fees - Dynamic */}
                         {targetType === 'Borrower' && (
-                            <>
+                            <div className="mb-4 text-start">
                                 {isHost ? (
-                                    <div className="mb-4 text-start">
-                                        <div className="mb-3">
-                                            <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
-                                            <Dropdown
-                                                value={enrollmentType}
-                                                options={ENROLLMENT_TYPE_OPTIONS}
-                                                onChange={(e) => setEnrollmentType(e.value)}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                placeholder="Select Enrollment Type"
-                                                className="w-100"
-                                                appendTo="self"
-                                            />
-                                        </div>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
+                                        <Dropdown
+                                            value={planId}
+                                            options={enrollmentOptions}
+                                            onChange={(e) => {
+                                                setPlanId(e.value);
+                                                const opt = enrollmentOptions.find(o => o.value === e.value);
+                                                setEnrollmentType(opt ? opt.enrollment_type : '');
+                                            }}
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            placeholder="Select Enrollment Type"
+                                            className="w-100"
+                                            appendTo="self"
+                                        />
                                     </div>
                                 ) : (
-                                    <div className="mb-4 text-start bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
-                                        {/* Hidden enrollment type for non-host */}
-                                        <input type="hidden" value={nonHostPlans?.[0]?.enrollment_type || 'Fixed enrollment'} />
+                                    /* Hidden plan selector logic for non-host - happens in useEffect */
+                                    null
+                                )}
+
+                                {selectedBorrowerPlan && (
+                                    <div className="bg-success bg-opacity-10 p-4 rounded-4 border border-success border-opacity-10 d-flex align-items-center animate__animated animate__fadeInUp">
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
                                                 <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
@@ -156,12 +186,15 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         <div className="flex-grow-1 ps-2">
                                             <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                             <p className="mb-0 text-muted fs-15 lh-base">
-                                                A fixed enrollment fee <span className="text-success fw-bold fs-18">${nonHostPlans?.[0]?.payment_amount ? parseFloat(nonHostPlans[0].payment_amount).toFixed(2) : '800.00' }</span>
+                                                A {selectedBorrowerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(selectedBorrowerPlan.payment_amount).toFixed(2)}</span>
+                                                {selectedBorrowerPlan.total_installments_count && (
+                                                    <span> for {selectedBorrowerPlan.total_installments_count} installments</span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
                                 )}
-                            </>
+                            </div>
                         )}
 
                         {/* Partner Conversion Fields */}
@@ -227,7 +260,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 type="button"
                                 className={`btn ${confirmBtnClass}`}
                                 onClick={handleConfirm}
-                                disabled={loading || (targetType === 'Partner' && (
+                                disabled={loading || (targetType === 'Borrower' && !planId) || (targetType === 'Partner' && (
                                     (Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType) || 
                                     !partnerEnrollmentType
                                 ))}
