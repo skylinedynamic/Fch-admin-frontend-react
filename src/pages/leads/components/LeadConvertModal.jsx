@@ -83,7 +83,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 payload.amount = selectedOption ? selectedOption.price : 0;
             } else {
                 const plan = nonHostPlans?.[0];
-                payload.enrollment_type = plan?.enrollment_type || 'Fixed enrollment';
+                payload.enrollment_type = plan?.enrollment_type || '';
                 payload.amount = plan?.payment_amount ? parseFloat(plan.payment_amount) : 800;
             }
         } else if (targetType === 'Partner') {

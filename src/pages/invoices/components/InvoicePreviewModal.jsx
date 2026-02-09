@@ -251,9 +251,6 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>
                                                 <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
                                                 <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
-                                                {displayInvoice.status?.toLowerCase() === 'paid' && (
-                                                    <p className="text-muted mb-1">Card Number: <span className="fw-medium" id="card-number">xxxx xxxx xxxx 1234</span></p>
-                                                )}
                                                 <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                             </div>
                                             <div className="mt-4">
