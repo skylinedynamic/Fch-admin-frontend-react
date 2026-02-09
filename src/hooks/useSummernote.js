@@ -15,6 +15,10 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
     const isInternalChange = useRef(false);
     const lastContentRef = useRef(fieldValue || '');
     const isInitialized = useRef(false);
+    
+    // Keep track of the latest value to handle race conditions during async init
+    const latestValueRef = useRef(fieldValue);
+    latestValueRef.current = fieldValue;
 
     // Helper to normalize HTML for comparison (handles <p><br></p>, etc.)
     const normalize = (html) => {
@@ -61,7 +65,14 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
             const $j = window.jQuery || window.$;
             if ($j && editorRef.current && $j(editorRef.current).summernote) {
                 const $editor = $j(editorRef.current);
-                const initialCode = fieldValue || '';
+                // Use the latest value from ref, not the closure value which might be stale
+                const initialCode = latestValueRef.current || '';
+                
+                console.log('[useSummernote] Initializing editor:', { 
+                    fieldName, 
+                    initialCode, 
+                    fieldValue 
+                });
 
                 $editor.summernote({
                     ...config,
@@ -79,6 +90,7 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
                             }, 150);
                         },
                         onInit: function () {
+                            console.log('[useSummernote] Editor initialized for:', fieldName);
                             // Fix for nested modals - only apply if Summernote is inside a modal
                             const parentModal = $j(editorRef.current).closest('.modal');
 
