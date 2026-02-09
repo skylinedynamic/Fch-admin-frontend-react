@@ -270,7 +270,7 @@ export default function Partners() {
             <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header mirrored from Clients.jsx */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">

@@ -17,7 +17,7 @@ export default function FilterLoader({ config = [] }) {
     const displayConfig = config.length > 0 ? config : defaultConfig;
 
     return (
-        <div className="row g-3 fade-panel">
+        <div className="row g-3 fade-panel mb-3">
             {displayConfig.map((item, index) => (
                 <div key={index} className={item.col}>
                     {item.isButton ? (

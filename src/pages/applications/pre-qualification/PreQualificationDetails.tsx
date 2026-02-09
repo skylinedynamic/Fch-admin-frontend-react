@@ -147,9 +147,9 @@ export default function PreQualificationDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row mb-3 pb-1">
+                    <div className="row pb-1">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row">
+                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Application Details</h4>
                                     <nav aria-label="breadcrumb">

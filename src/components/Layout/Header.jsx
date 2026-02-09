@@ -79,7 +79,7 @@ export default function Header() {
                   <img src="/assets/images/Favicon.png" alt="" height="22" />
                 </span>
                 <span className="logo-lg">
-                  <img src="/assets/images/logo.png" alt="" height="17" />
+                  <img src="/assets/images/fch-logo-wide.png" alt="" height="17" />
                 </span>
               </a>
 
@@ -88,7 +88,7 @@ export default function Header() {
                   <img src="/assets/images/Favicon.png" alt="" height="22" />
                 </span>
                 <span className="logo-lg">
-                  <img src="/assets/images/logo.png" alt="" height="17" />
+                  <img src="/assets/images/fch-logo-wide.png" alt="" height="17" />
                 </span>
               </a>
             </div>
