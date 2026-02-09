@@ -15,5 +15,6 @@ export function useSummernote(
     fieldName: string,
     fieldValue: string | undefined,
     onChange: (e: { target: { name: string; value: string } }) => void,
-    options?: UseSummernoteOptions
+    options?: UseSummernoteOptions,
+    enabled?: boolean
 ): UseSummernoteReturn;

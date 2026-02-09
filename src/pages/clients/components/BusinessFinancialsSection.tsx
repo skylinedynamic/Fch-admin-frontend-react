@@ -66,18 +66,22 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     // 4. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
+            console.log('[BusinessFinancialsSection] Starting save...', { clientId, formData });
             const payload = mapClientUpdatePayload(formData, true); // Financials usually host-agnostic for fields kept
+            console.log('[BusinessFinancialsSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
-                    onSuccess: () => {
+                    onSuccess: (data) => {
+                        console.log('[BusinessFinancialsSection] Save SUCCESS!', data);
                         toast.success("Business financials updated successfully");
                         if (onSaveSuccess) onSaveSuccess();
                         resolve();
                     },
                     onError: (error: any) => {
-                        console.error("Save error:", error);
+                        console.error("[BusinessFinancialsSection] Save ERROR:", error);
+                        toast.error("Failed to update business financials");
                         if (error.response && error.response.data && error.response.data.errors && setErrors) {
                             const backendErrors = error.response.data.errors;
                             const mappedErrors: Record<string, string> = {};

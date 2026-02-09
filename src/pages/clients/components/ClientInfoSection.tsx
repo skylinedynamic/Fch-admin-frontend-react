@@ -73,7 +73,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }));
 
         // Ensure current selection is visible even if not in the plans list
-        if (formData.plan_id && !options.find(opt => String(opt.value) === String(formData.plan_id))) {
+        if (formData.plan_id && !options.find((opt: any) => String(opt.value) === String(formData.plan_id))) {
             const currentPrice = Number(formData.payment_amount || formData.amount || 0);
             options.unshift({
                 label: formData.enrollment_type ? `${formData.enrollment_type} (Current)` : 'Current Plan',
@@ -84,12 +84,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             });
         } else if (formData.enrollment_type && !formData.plan_id) {
             // If we have type but no ID, try to find matching option to get the ID
-            const match = options.find(opt => opt.enrollment_type === formData.enrollment_type);
+            const match = options.find((opt: any) => opt.enrollment_type === formData.enrollment_type);
             if (!match) {
                 const currentPrice = Number(formData.payment_amount || formData.amount || 0);
                 options.unshift({
                     label: `${formData.enrollment_type} (Current)`,
-                    value: 'current',
+                    value: 'current_selection',
                     enrollment_type: formData.enrollment_type,
                     payment_amount: currentPrice,
                     price: currentPrice
@@ -100,25 +100,27 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         return options;
     }, [isHost, borrowerPlans, nonHostPlans, formData.plan_id, formData.enrollment_type, formData.payment_amount, formData.amount]);
 
-    // 3. Sync Fetch to Local State
+    // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
+    const hasSyncedData = React.useRef(false);
+    
     useEffect(() => {
-        if (fetchedData) {
+        if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
             
             // If plan_id is missing but enrollment_type exists, try to find plan_id
             if (!apiData.plan_id && apiData.enrollment_type) {
                 const plans = isHost ? borrowerPlans : nonHostPlans;
-                const matchedPlan = plans.find(p => p.enrollment_type === apiData.enrollment_type);
+                const matchedPlan = plans.find((p: any) => p.enrollment_type === apiData.enrollment_type);
                 if (matchedPlan) {
                     apiData.plan_id = matchedPlan.id;
                 } else {
-                    // Force a consistent value if still not found to trigger selection logic
-                    apiData.plan_id = apiData.plan_id || 'unmatched';
+                    apiData.plan_id = 'current_selection';
                 }
             }
             
             setFormData(prev => ({ ...prev, ...apiData }));
+            hasSyncedData.current = true;
         }
     }, [fetchedData, borrowerPlans, nonHostPlans, isHost]);
 
@@ -189,23 +191,48 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     };
 
     // Summernote
-    const { editorRef } = useSummernote('notes', formData.notes, handleInputChange);
+    const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, !isFetching);
+
+    // Date Robust Parsing
+    const parseDate = (dateStr: any) => {
+        if (!dateStr) return undefined;
+        if (dateStr instanceof Date) return dateStr;
+        
+        // Handle MM-DD-YYYY or YYYY-MM-DD
+        const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                // YYYY-MM-DD
+                return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (parts[2].length === 4) {
+                // MM-DD-YYYY
+                return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+            }
+        }
+        
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? undefined : d;
+    };
 
     // 5. Expose Save via Ref
     useImperativeHandle(ref, () => ({
         save: async () => {
+            console.log('[ClientInfoSection] Starting save...', { clientId, formData });
             const payload = mapClientUpdatePayload(formData, isHost);
+            console.log('[ClientInfoSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {
                 // @ts-ignore
                 updateMutation.mutate({ id: clientId, data: payload }, {
-                    onSuccess: () => {
+                    onSuccess: (data) => {
+                        console.log('[ClientInfoSection] Save SUCCESS!', data);
                         toast.success("Client personal details updated successfully");
                         if (onSaveSuccess) onSaveSuccess();
                         resolve();
                     },
                     onError: (error: any) => {
-                        console.error("Save error:", error);
+                        console.error("[ClientInfoSection] Save ERROR:", error);
+                        toast.error("Failed to update client details");
                         if (error.response && error.response.data && error.response.data.errors && setErrors) {
                             const backendErrors = error.response.data.errors;
                             const mappedErrors: Record<string, string> = {};
@@ -288,7 +315,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
                                 id="phone_number"
                                 name="phone_number"
-                                placeholder="(555) 555-5555"
+                                placeholder="Enter phone number"
                                 value={formData.phone_number || ''}
                                 onChange={(e) => {
                                     const formatted = formatPhoneNumber(e.target.value);
@@ -307,7 +334,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                             id="email"
                             name="email"
-                            placeholder="Enter email"
+                            placeholder="Enter email address"
                             value={formData.email || ''}
                             onChange={handleInputChange}
                         />
@@ -472,7 +499,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <input
                                 type="text"
                                 className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
-                                id="city"
+                                id="other_city"
                                 name="other_city"
                                 placeholder="Enter city name"
                                 value={formData.other_city || ''}
@@ -563,11 +590,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
                         <Flatpickr
                             options={DATE_PICKER_OPTIONS}
-                            value={formData.business_start_date ? new Date(formData.business_start_date) : undefined}
+                            value={parseDate(formData.business_start_date)}
                             onChange={(dates) => {
                                 const date = dates[0];
                                 const dateString = date
-                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    ? `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${date.getFullYear()}`
                                     : "";
                                 handleInputChange({ target: { name: "business_start_date", value: dateString } });
                             }}
@@ -641,7 +668,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
-                            <div className="card border border-primary bg-light-subtle animate__animated animate__fadeIn">
+                            <div className="card border border-primary bg-light-subtle">
                                 <div className="card-body p-3">
                                     {(() => {
                                         const selectedOption = enrollmentOptions.find(opt => 
@@ -655,7 +682,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         const { installments, totalAmount, price } = selectedOption 
                                             ? calculateEnrollmentDetails({
                                                 ...selectedOption,
-                                                payment_amount: selectedOption.payment_amount || formData.payment_amount || formData.amount || 0
+                                                payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
                                             }, isHost)
                                             : { 
                                                 installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 : 
@@ -691,7 +718,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                         {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
                                                     </span>
                                                     <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
-                                                        ${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${Number(price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                                 {installments > 1 && (
@@ -703,7 +730,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="fw-semibold text-dark">Total:</span>
                                                     <span className="fw-bold text-dark">
-                                                        ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ${Number(displayTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                             </>

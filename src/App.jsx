@@ -55,6 +55,9 @@ import '../assets/css/summernote-fixes.css';
 import 'remixicon/fonts/remixicon.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+// Import Flatpickr CSS
+import 'flatpickr/dist/flatpickr.css';
+
 export default function App() {
   useEffect(() => {
     // Check session immediately on app load

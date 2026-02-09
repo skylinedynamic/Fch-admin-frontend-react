@@ -44,12 +44,12 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         city: formData.city === 'Others' ? formData.other_city : formData.city,
     };
 
-    // Remove enrollment specific fields as requested by backend/user rules
-    delete payload.enrollment_type;
-    delete payload.payment_amount;
-    delete payload.amount;
-    delete payload.enrollment_amount;
-    delete payload.plan_id;
+    // Keep enrollment fields for now to address "wrong data update" issue
+    // delete payload.enrollment_type;
+    // delete payload.payment_amount;
+    // delete payload.amount;
+    // delete payload.enrollment_amount;
+    // delete payload.plan_id;
 
     if (!isHost) {
         payload.is_partner_paying = true;

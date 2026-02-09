@@ -271,7 +271,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             filter
                             filterBy="label"
                             placeholder="All Sales Person"
-                            className="w-100"
+                            className="w-100 bg-light border-light"
                         />
                     </div>
 
@@ -284,7 +284,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             optionValue="value"
                             filterBy="label"
                             placeholder="All Tiers"
-                            className="w-100"
+                            className="w-100 bg-light border-light"
                         />
                     </div>
 

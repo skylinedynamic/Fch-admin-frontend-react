@@ -43,7 +43,7 @@ export default function SubscriptionFilters({
                             options={SUBSCRIPTION_STATUS_OPTIONS}
                             onChange={(e) => setSelectedStatus(e.value)}
                             placeholder="Select Status"
-                            className="w-100"
+                            className="w-100 employee-filter-dropdown"
                             showClear
                         />
                     </div>
