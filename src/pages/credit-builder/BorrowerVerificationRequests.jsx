@@ -301,24 +301,44 @@ export default function BorrowerVerificationRequests() {
     };
 
     const actionBodyTemplate = (rowData) => {
-        return (
-            <div className="d-flex gap-2 justify-content-center">
-                <button
-                    className="btn btn-sm btn-soft-success"
-                    onClick={() => openActionModal('verify', rowData)}
-                    title="Verify"
+        // Show buttons only for processing status, otherwise show status
+        if (rowData.status === VERIFICATION_STATUS.PROCESSING) {
+            return (
+                <div className="d-flex gap-2 justify-content-center">
+                    <button
+                        className="btn btn-sm btn-soft-success"
+                        onClick={() => openActionModal('verify', rowData)}
+                        title="Verify"
+                    >
+                        <i className="ri-check-line align-bottom"></i>
+                    </button>
+                    <button
+                        className="btn btn-sm btn-soft-danger"
+                        onClick={() => openActionModal('reject', rowData)}
+                        title="Reject"
+                    >
+                        <i className="ri-close-line align-bottom"></i>
+                    </button>
+                </div>
+            );
+        }
+
+        // For rejected status, show badge with rejection reason tooltip
+        if (rowData.status === VERIFICATION_STATUS.REJECTED && rowData.rejection_reason) {
+            let badgeClass = 'bg-danger-subtle text-danger';
+            return (
+                <span 
+                    className={`badge ${badgeClass} fs-12 text-capitalize`}
+                    title={rowData.rejection_reason}
+                    style={{ cursor: 'help' }}
                 >
-                    <i className="ri-check-line align-bottom"></i>
-                </button>
-                <button
-                    className="btn btn-sm btn-soft-danger"
-                    onClick={() => openActionModal('reject', rowData)}
-                    title="Reject"
-                >
-                    <i className="ri-close-line align-bottom"></i>
-                </button>
-            </div>
-        );
+                    {rowData.status}
+                </span>
+            );
+        }
+
+        // For other statuses, show the status badge
+        return statusTemplate(rowData);
     };
 
     return (
