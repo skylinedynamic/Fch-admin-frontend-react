@@ -58,6 +58,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
+    const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
 
     // Fetch Plans
     const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
@@ -119,10 +120,27 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 }
             }
             
+            // If other_city has a value, set city to 'Others' to show the dropdown correctly
+            if (apiData.other_city && apiData.other_city.trim() !== '') {
+                apiData.city = 'Others';
+            }
+            
+            console.log('[ClientInfoSection] Syncing data:', { 
+                notes: apiData.notes, 
+                other_city: apiData.other_city,
+                city: apiData.city 
+            });
+            
             setFormData(prev => ({ ...prev, ...apiData }));
+
             hasSyncedData.current = true;
+            setIsSynced(true);
+        } else if (!clientId && !hasSyncedData.current) {
+             // If creating new client (no ID), we are synced immediately
+             setIsSynced(true);
+             hasSyncedData.current = true;
         }
-    }, [fetchedData, borrowerPlans, nonHostPlans, isHost]);
+    }, [fetchedData, borrowerPlans, nonHostPlans, isHost, clientId]);
 
     // Local Location Options Logic
     const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
@@ -191,7 +209,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     };
 
     // Summernote
-    const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, !isFetching);
+    // Enable editor only when data is synced to prevent empty initialization race condition
+    const isEditorEnabled = !isFetching && isSynced;
+    const { editorRef } = useSummernote('notes', formData.notes, handleInputChange, {}, isEditorEnabled);
 
     // Date Robust Parsing
     const parseDate = (dateStr: any) => {
@@ -250,7 +270,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
 
 
-    if (isFetching && clientId) {
+    if ((isFetching && clientId) || (clientId && !isSynced)) {
         return (
             <div className="row">
                 {[1, 2, 3, 4, 5, 6].map(i => (
