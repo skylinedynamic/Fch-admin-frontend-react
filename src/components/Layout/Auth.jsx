@@ -1,5 +1,5 @@
 import React from 'react'
-import logoImg from '../../../assets/images/logo.png'
+import logoImg from '../../../assets/images/fch-logo-wide.png'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   return (
@@ -23,10 +23,10 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
         <div className="container">
           <div className="row">
             <div className="col-lg-12">
-              <div className="text-center mt-sm-5 mb-4 text-white-50">
+              <div className="text-center text-white-50 mt-5 mb-3">
                 <div>
                   <a href="/" className="d-inline-block auth-logo">
-                    <img src={logoImg} alt="FourCorner" height="40" />
+                    <img src={logoImg} alt="FourCorner" width="250" height="auto" />
                   </a>
                 </div>
               </div>
@@ -53,7 +53,7 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
           <div className="row">
             <div className="col-lg-12">
               <div className="text-center">
-                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()} Four Corner Holding. All rights reserved.</p>
+                <p className="mb-0 text-muted">&copy; {new Date().getFullYear()} Four Corner Funding. All rights reserved.</p>
               </div>
             </div>
           </div>
