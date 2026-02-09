@@ -340,34 +340,90 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 date: start.toISOString().split('T')[0],
                 timeStart: hh_mm_full,
                 timeEnd: hh_mm_end_full,
+                entity_id: '',
+                assigned_for: '',
+                entity_type: ''
             });
 
-            setIsMeetingWithChecked(apt.meeting_with === 1 || apt.meeting_with_host === 1);
+            // Set meeting_with checkbox state FIRST
+            // Auto-check if:
+            // - Host user and assigned to Partner
+            // - Partner user and assigned to Borrower/Host
+            let meetingWithValue = apt.meeting_with === 1 || apt.meeting_with_host === 1;
+            
+            console.log('[AppointmentModal] Checkbox logic:', {
+                isHost,
+                assigned_for: apt.assigned_for,
+                entity_type: apt.assigned_for?.entity_type,
+                initial_meetingWithValue: meetingWithValue
+            });
+            
+            if (apt.assigned_for && apt.assigned_for.entity_type) {
+                const entityType = apt.assigned_for.entity_type.toLowerCase();
+                console.log('[AppointmentModal] Checking entity_type:', entityType);
+                
+                if (isHost && entityType === 'partner') {
+                    console.log('[AppointmentModal] Host + Partner detected - checking checkbox');
+                    meetingWithValue = true;
+                } else if (!isHost && (entityType === 'borrower' || entityType === 'host')) {
+                    console.log('[AppointmentModal] Partner + Borrower/Host detected - checking checkbox');
+                    meetingWithValue = true;
+                }
+            }
+            
+            console.log('[AppointmentModal] Final meetingWithValue:', meetingWithValue);
+            setIsMeetingWithChecked(meetingWithValue);
 
+            // Load selectable users with the correct meeting_with state
             if (apt.assigned_for) {
-                const rawType = apt.assigned_for.entity_type || '';
-                const formattedType = rawType.toLowerCase();
-                setAssignedForType(formattedType);
-                setFormData(p => ({
-                    ...p,
-                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
-                    assigned_for: apt.assigned_for.id,
-                    entity_type: formattedType
-                }));
+                try {
+                    setLoadingAssignedFor(true);
+                    const payload = {
+                        [isHost ? 'meeting_with' : 'meeting_with_host']: meetingWithValue ? 1 : 0
+                    };
+                    const response = await fetchSelectableUsers(payload);
+                    if (response.status) {
+                        setSelectableUsers(response.data || []);
+                    }
 
-                // Set Original Data for Comparison
-                setOriginalData({
-                    subject: apt.subject,
-                    category: apt.meeting_type || 'Business Review',
-                    location: apt.timezone || "UTC (GMT+00:00)",
-                    description: apt.description || "",
-                    date: start.toISOString().split('T')[0],
-                    timeStart: hh_mm_full,
-                    timeEnd: hh_mm_end_full,
-                    entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
-                    assigned_for: apt.assigned_for.id,
-                    entity_type: formattedType
-                });
+                    // NOW set the assigned_for data after users are loaded
+                    const rawType = apt.assigned_for.entity_type || '';
+                    const formattedType = rawType.toLowerCase();
+                    setAssignedForType(formattedType);
+                    
+                    console.log('[AppointmentModal] Setting assigned_for:', {
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType,
+                        raw_assigned_for: apt.assigned_for,
+                        loaded_users: response.data
+                    });
+                    
+                    setFormData(p => ({
+                        ...p,
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType
+                    }));
+
+                    // Set Original Data for Comparison
+                    setOriginalData({
+                        subject: apt.subject,
+                        category: apt.meeting_type || 'Business Review',
+                        location: apt.timezone || "UTC (GMT+00:00)",
+                        description: apt.description || "",
+                        date: start.toISOString().split('T')[0],
+                        timeStart: hh_mm_full,
+                        timeEnd: hh_mm_end_full,
+                        entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
+                        assigned_for: apt.assigned_for.id,
+                        entity_type: formattedType
+                    });
+                } catch (error) {
+                    console.error("Failed to load selectable users", error);
+                } finally {
+                    setLoadingAssignedFor(false);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch details", error);
@@ -540,6 +596,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         entity_type: u.entity_type,
         actual_entity_id: u.entity_id
     }));
+
+    // Debug logging
+    if (assignedOptions.length > 0 && formData.entity_id) {
+        console.log('[AppointmentModal] Dropdown state:', {
+            formData_entity_id: formData.entity_id,
+            assignedOptions,
+            match: assignedOptions.find(opt => opt.value === formData.entity_id)
+        });
+    }
 
     return (
         <>
