@@ -83,17 +83,17 @@ export default function Header() {
                 </span>
               </a>
 
-              <a href="/" className="logo logo-light">
+              {/* <a href="/" className="logo logo-light">
                 <span className="logo-sm">
                   <img src="/assets/images/Favicon.png" alt="" height="22" />
                 </span>
                 <span className="logo-lg">
                   <img src="/assets/images/fch-logo-wide.png" alt="" height="17" />
                 </span>
-              </a>
+              </a> */}
             </div>
 
-            {/* <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon" onClick={toggleSidebar}>
+            <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon" onClick={toggleSidebar}>
               {isSidebarCollapsed ? (
                 <i className="bx bx-chevron-right fs-20"></i>
               ) : (
@@ -103,7 +103,7 @@ export default function Header() {
                   <span></span>
                 </span>
               )}
-            </button> */}
+            </button>
 
             {/* <form className="app-search d-none d-md-block">
               <div className="position-relative">

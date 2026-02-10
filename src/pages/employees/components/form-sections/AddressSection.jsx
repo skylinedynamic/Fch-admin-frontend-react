@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
+import { parseDate } from '../../../../utils/formatters';
 import { formatPhoneNumber } from '../../../../utils/formatters';
 
 export default function AddressSection({
@@ -82,7 +83,7 @@ export default function AddressSection({
                     <label className="form-label">Joining Date</label>
                     <Flatpickr
                         options={{ dateFormat: "d M, Y" }}
-                        value={employee.joining_date ? new Date(employee.joining_date.replace(/-/g, '/')) : null}
+                        value={parseDate(employee.joining_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date

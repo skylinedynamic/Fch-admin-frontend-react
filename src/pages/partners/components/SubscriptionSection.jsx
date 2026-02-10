@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import Flatpickr from 'react-flatpickr';
+import { parseDate } from '../../../utils/formatters';
 import { Dropdown } from 'primereact/dropdown';
 import { PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, SUBSCRIPTION_PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_STATUS_OPTIONS } from '../../../config/partnerTypeOptions';
 
@@ -190,7 +191,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">First Registration Date <span className="text-danger">*</span></label>
                     <Flatpickr
                         options={{ dateFormat: "d/m/Y" }}
-                        value={formData.first_reg_date ? new Date(formData.first_reg_date.replace(/-/g, '/')) : null}
+                        value={parseDate(formData.first_reg_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
@@ -220,7 +221,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                     <label className="form-label">Subscription Start Date <span className="text-danger">*</span></label>
                     <Flatpickr
                         options={{ dateFormat: "d/m/Y" }}
-                        value={formData.subscription_start_date ? new Date(formData.subscription_start_date.replace(/-/g, '/')) : null}
+                        value={parseDate(formData.subscription_start_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
@@ -244,7 +245,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                             dateFormat: "d/m/Y",
                             clickOpens: isOneTime // Only open calendar if One-Time (enabled)
                         }}
-                        value={formData.subscription_end_date ? new Date(formData.subscription_end_date.replace(/-/g, '/')) : null}
+                        value={parseDate(formData.subscription_end_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
@@ -288,7 +289,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                             dateFormat: "d/m/Y",
                             allowInput: true
                         }}
-                        value={formData.expiry_date ? new Date(formData.expiry_date.replace(/-/g, '/')) : null}
+                        value={parseDate(formData.expiry_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
@@ -312,7 +313,7 @@ export default function SubscriptionSection({ formData, handleInputChange, error
                             dateFormat: "d/m/Y",
                             allowInput: true
                         }}
-                        value={formData.termination_date ? new Date(formData.termination_date.replace(/-/g, '/')) : null}
+                        value={parseDate(formData.termination_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date

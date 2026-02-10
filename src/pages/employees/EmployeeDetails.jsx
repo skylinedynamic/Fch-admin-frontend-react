@@ -48,7 +48,6 @@ export default function EmployeeDetails() {
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
-  const [showFileManager, setShowFileManager] = useState(false);
 
   // Location states
   const [countries] = useState(
@@ -64,6 +63,7 @@ export default function EmployeeDetails() {
     phone_number_2: 'US',
     emergency_phone: 'US'
   });
+  const [profileImage, setProfileImage] = useState(avatarDefault);
 
   const countryCodeOptions = [
     { label: 'USA (+1)', value: 'US', phoneCode: '+1' },
@@ -216,6 +216,11 @@ export default function EmployeeDetails() {
             image: data.image || null
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
+          
+          // Set profile image matches partner pattern
+          if (data.image) {
+            setProfileImage(data.image);
+          }
         })
         .catch((err) => console.error('Failed to fetch employee', err))
         .finally(() => setLoading(false));
@@ -389,6 +394,13 @@ export default function EmployeeDetails() {
         // Clear any previous errors
         setErrors(prev => ({ ...prev, image: null }));
         setEmployee((prev) => ({ ...prev, image: file }));
+
+        // Matches partner pattern for immediate preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProfileImage(reader.result);
+        };
+        reader.readAsDataURL(file);
       }
       return;
     } else {
@@ -401,23 +413,9 @@ export default function EmployeeDetails() {
     validateField(name, newValue);
   };
 
-  // Handle department modal success
   const handleDepartmentSuccess = async () => {
     const data = await fetchDepartments();
     setDepartments(data);
-  };
-
-  // Handle save
-  // Handle File Manager Selection
-  const handleFileManagerSelect = (files) => {
-    // Assuming single file selection for profile image
-    const file = Array.isArray(files) ? files[0] : files;
-    if (file) {
-      // Logic to extract path or URL
-      const filePath = file.path || file.url || file;
-      setEmployee(prev => ({ ...prev, image: filePath }));
-    }
-    setShowFileManager(false);
   };
 
   const handleSave = async () => {
@@ -449,6 +447,8 @@ export default function EmployeeDetails() {
         if (value !== null && value !== undefined) {
           if (key === 'image') {
             if (value instanceof File) {
+              formData.append(key, value);
+            } else if (typeof value === 'string' && value.trim() !== '' && !value.startsWith('http')) {
               formData.append(key, value);
             }
           } else if (key === 'create_account') {
@@ -603,7 +603,8 @@ export default function EmployeeDetails() {
                         phonePrefix={phonePrefix}
                         onPhonePrefixChange={setPhonePrefix}
                         onAddDepartment={() => setShowDepartmentModal(true)}
-                        onOpenFileManager={() => setShowFileManager(true)}
+                        onOpenFileManager={() => {}} // Local modal now handled in component
+                        profileImage={profileImage}
                         isEditMode={!!id}
                         employeeId={id || employee.employee_code}
                       />
@@ -693,15 +694,6 @@ export default function EmployeeDetails() {
         <EmailComposeModal />
 
         <ActivityCreateModal />
-
-        <FileManagerModal
-          isOpen={showFileManager}
-          toggle={() => setShowFileManager(false)}
-          onSelectFiles={handleFileManagerSelect}
-          selectionMode={true}
-          entityType="employees"
-          entityId={id || employee.employee_code}
-        />
       </div>
     </div>
   );

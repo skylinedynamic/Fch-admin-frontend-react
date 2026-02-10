@@ -3,7 +3,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { formatPhoneNumber } from '../../../../utils/formatters';
 
 
-export default function EmergencyContactSection({ employee, onChange }) {
+export default function EmergencyContactSection({ employee, onChange, errors }) {
     return (
         <>
             <div className="col-lg-12 mt-3">
@@ -14,12 +14,13 @@ export default function EmergencyContactSection({ employee, onChange }) {
                             <label className="form-label">Name</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control ${errors?.emergency_contact ? 'is-invalid' : ''}`}
                                 name="emergency_contact"
                                 value={employee.emergency_contact}
                                 onChange={onChange}
                                 placeholder="Enter emergency contact name"
                             />
+                            {errors?.emergency_contact && <div className="invalid-feedback">{errors.emergency_contact}</div>}
                         </div>
                     </div>
                     <div className="col-lg-6">
@@ -35,7 +36,7 @@ export default function EmergencyContactSection({ employee, onChange }) {
                                 )}
                                 <input
                                     type="text"
-                                    className="form-control"
+                                    className={`form-control ${errors?.emergency_phone ? 'is-invalid' : ''}`}
                                     name="emergency_phone"
                                     value={employee.emergency_phone}
                                     onChange={(e) => {
@@ -44,6 +45,7 @@ export default function EmergencyContactSection({ employee, onChange }) {
                                     }}
                                     placeholder="(555) 555-5555"
                                 />
+                                {errors?.emergency_phone && <div className="invalid-feedback">{errors.emergency_phone}</div>}
                             </div>
                         </div>
                     </div>

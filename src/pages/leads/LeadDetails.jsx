@@ -26,6 +26,7 @@ import { locationData } from '../../config';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
+import { parseDate as parseDateHelper } from '../../utils/formatters';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
@@ -937,7 +938,7 @@ export default function LeadDetails() {
                                                     <label className="form-label">Business Start Date</label>
                                                     <Flatpickr
                                                         options={{ dateFormat: "d M, Y" }}
-                                                        value={formData.business_start_date ? new Date(formData.business_start_date.replace(/-/g, '/')) : undefined}
+                                                        value={parseDateHelper(formData.business_start_date)}
                                                         onChange={(dates) => {
                                                             const date = dates[0];
                                                             const dateString = date

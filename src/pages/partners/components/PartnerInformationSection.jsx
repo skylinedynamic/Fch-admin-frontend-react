@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
+import { parseDate } from '../../../utils/formatters';
 import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
@@ -342,7 +343,7 @@ export default function PartnerInformationSection({
                     <label className="form-label">Joining Date</label>
                     <Flatpickr
                         options={{ dateFormat: "d M, Y" }}
-                        value={formData.joining_date ? new Date(formData.joining_date) : null}
+                        value={parseDate(formData.joining_date)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date

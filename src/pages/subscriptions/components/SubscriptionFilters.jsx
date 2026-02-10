@@ -25,7 +25,7 @@ export default function SubscriptionFilters({
                 <FilterLoader config={loaderConfig} />
             ) : (
                 <div className="row g-3 mb-3">
-                    <div className="col-xxl-6 col-sm-12">
+                    <div className="col-xxl-6 col-sm-6">
                         <div className="search-box">
                             <input
                                 type="text"

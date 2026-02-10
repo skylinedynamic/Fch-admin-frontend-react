@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../../utils/formatters';
 import avatarDefault from '../../../../../assets/images/users/avatar-1.jpg';
+import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
+import { toast } from 'react-toastify';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
@@ -16,12 +18,42 @@ export default function PersonalInfoSection({
     countryCodeOptions,
     phonePrefix,
     onPhonePrefixChange,
-    onOpenFileManager,
+    onOpenFileManager, // Now used for parent if needed, but we'll use local state
+    profileImage,
     employeeId
 }) {
-    // Helper function to get image source
-    // Helper function to get image source
+    const [showFileManager, setShowFileManager] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState(null);
+
+    // Filter results from file manager based on allowed extensions - Matches Partner Pattern
+    const handleFileSelection = (selectedFiles) => {
+        if (!selectedFiles || selectedFiles.length === 0) return;
+
+        const file = selectedFiles[0];
+        const extension = file.path.split('.').pop()?.toLowerCase();
+        const allowed = ['jpg', 'jpeg', 'png'];
+
+        if (!extension || !allowed.includes(extension)) {
+            toast.error(`File type ".${extension}" not allowed. Please select JPG, JPEG or PNG.`);
+            return;
+        }
+
+        // Set local preview URL for immediate display
+        setPreviewUrl(file.url);
+
+        // Update form data with the selected file path for backend
+        onChange({
+            target: {
+                name: 'image',
+                value: file.path
+            }
+        });
+        setShowFileManager(false);
+    };
+
+    // Helper function to get image source - matches PartnerInformationSection pattern
     const getImageSrc = () => {
+        // 1. If user selected a new image file from browser (Blob)
         if (employee.image instanceof File) {
             return URL.createObjectURL(employee.image);
         }
@@ -41,8 +73,6 @@ export default function PersonalInfoSection({
 
             // Ensure employees structure if missing
             if (employeeId && !cleanPath.includes('employees/')) {
-                // If it already has some other path, we preserve it,
-                // but if it's just a filename, we add the employee path
                 if (!cleanPath.includes('/')) {
                     cleanPath = `employees/${employeeId}/${cleanPath}`;
                 }
@@ -53,10 +83,35 @@ export default function PersonalInfoSection({
             return fullUrl.replace(/([^:]\/)\/+/g, "$1");
         };
 
+        // 2. If we have a profileImage prop that is a full URL (preview from file manager)
+        if (profileImage && typeof profileImage === 'string' && profileImage.startsWith('http')) {
+            return profileImage;
+        }
+
+        // 3. If we have a preview URL from file manager selection
+        if (previewUrl && employee.image && typeof employee.image === 'string' && !employee.image.startsWith('http')) {
+            return buildUrl(previewUrl);
+        }
+
+        // 4. Fallback to image path if it's a string
         if (typeof employee.image === 'string' && employee.image.trim() !== '') {
             return buildUrl(employee.image);
         }
+
+        // 4. Fallback to profileImage prop if it's not a full URL
+        if (typeof profileImage === 'string' && profileImage.trim() !== '') {
+            return buildUrl(profileImage);
+        }
+
         return avatarDefault;
+    };
+
+    const fileInputRef = React.useRef(null);
+
+    const handleIconClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
     };
 
     return (
@@ -70,18 +125,36 @@ export default function PersonalInfoSection({
                             alt="user-profile-image"
                         />
                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                            <div
-                                role="button"
-                                className="profile-photo-edit avatar-xs"
-                                onClick={onOpenFileManager}
+                            <input
+                                type="file"
+                                className="d-none"
+                                ref={fileInputRef}
+                                name="image"
+                                accept="image/png, image/jpeg, image/jpg"
+                                onChange={onChange}
+                            />
+                            <button
+                                type="button"
+                                className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
+                                onClick={() => setShowFileManager(true)}
                                 title="Select profile image"
                             >
                                 <span className="avatar-title rounded-circle bg-light text-body material-shadow">
                                     <i className="ri-camera-fill"></i>
                                 </span>
-                            </div>
+                            </button>
                         </div>
                     </div>
+
+                    <FileManagerModal
+                        isOpen={showFileManager}
+                        toggle={() => setShowFileManager(!showFileManager)}
+                        selectionMode={true}
+                        onSelectFiles={handleFileSelection}
+                        entityType="employees"
+                        entityId={employeeId || employee?.id || employee?.employee_code}
+                    />
+
                     <div className="text-center mb-3">
                         <span className="badge bg-light text-muted border">
                             <i className="ri-information-line me-1"></i>

@@ -1,15 +1,19 @@
 import React from 'react';
 import Flatpickr from 'react-flatpickr';
+import { parseDate } from '../../../../utils/formatters';
 
-export default function PersonalDetailsSection({ employee, onChange }) {
+export default function PersonalDetailsSection({ employee, onChange, errors }) {
     return (
         <>
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Date of Birth</label>
                     <Flatpickr
-                        options={{ dateFormat: "d M, Y" }}
-                        value={employee.date_of_birth ? new Date(employee.date_of_birth.replace(/-/g, '/')) : null}
+                        options={{
+                            dateFormat: "d M, Y",
+                            maxDate: "today"
+                        }}
+                        value={parseDate(employee.date_of_birth)}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
@@ -17,10 +21,11 @@ export default function PersonalDetailsSection({ employee, onChange }) {
                                 : "";
                             onChange({ target: { name: "date_of_birth", value: dateString } });
                         }}
-                        className="form-control"
+                        className={`form-control ${errors?.date_of_birth ? 'is-invalid' : ''}`}
                         placeholder="Select date"
                         readOnly
                     />
+                    {errors?.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
                 </div>
             </div>
         </>

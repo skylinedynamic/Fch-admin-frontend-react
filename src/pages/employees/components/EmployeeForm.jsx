@@ -50,7 +50,7 @@ export default function EmployeeForm({
 
 
 
-                <PersonalDetailsSection employee={employee} onChange={onChange} />
+                <PersonalDetailsSection employee={employee} onChange={onChange} errors={errors} />
 
                 <AccountSection
                     employee={employee}
@@ -60,7 +60,7 @@ export default function EmployeeForm({
                     errors={errors}
                 />
 
-                <EmergencyContactSection employee={employee} onChange={onChange} />
+                <EmergencyContactSection employee={employee} onChange={onChange} errors={errors} />
             </div>
         </form>
     );
