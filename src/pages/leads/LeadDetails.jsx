@@ -937,7 +937,7 @@ export default function LeadDetails() {
                                                     <label className="form-label">Business Start Date</label>
                                                     <Flatpickr
                                                         options={{ dateFormat: "d M, Y" }}
-                                                        value={formData.business_start_date ? new Date(formData.business_start_date) : undefined}
+                                                        value={formData.business_start_date ? new Date(formData.business_start_date.replace(/-/g, '/')) : undefined}
                                                         onChange={(dates) => {
                                                             const date = dates[0];
                                                             const dateString = date

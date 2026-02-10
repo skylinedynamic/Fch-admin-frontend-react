@@ -9,7 +9,7 @@ export default function PersonalDetailsSection({ employee, onChange }) {
                     <label className="form-label">Date of Birth</label>
                     <Flatpickr
                         options={{ dateFormat: "d M, Y" }}
-                        value={employee.date_of_birth ? new Date(employee.date_of_birth) : null}
+                        value={employee.date_of_birth ? new Date(employee.date_of_birth.replace(/-/g, '/')) : null}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date

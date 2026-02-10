@@ -82,7 +82,7 @@ export default function AddressSection({
                     <label className="form-label">Joining Date</label>
                     <Flatpickr
                         options={{ dateFormat: "d M, Y" }}
-                        value={employee.joining_date ? new Date(employee.joining_date) : null}
+                        value={employee.joining_date ? new Date(employee.joining_date.replace(/-/g, '/')) : null}
                         onChange={(dates) => {
                             const date = dates[0];
                             const dateString = date
