@@ -61,7 +61,7 @@ export default function EmployeeFilters({
                         </div>
                     </div>
 
-                    <div className="col-xxl-3 col-sm-4">
+                    <div className="col-xxl-2 col-sm-3">
                         <Dropdown
                             value={statusFilter}
                             onChange={(e) => onStatusChange({ target: { value: e.value } })}
@@ -73,7 +73,7 @@ export default function EmployeeFilters({
                         />
                     </div>
 
-                    <div className="col-xxl-3 col-sm-4">
+                    <div className="col-xxl-2 col-sm-3">
                         <Dropdown
                             value={deptFilter}
                             onChange={(e) => onDeptChange({ target: { value: e.value } })}
@@ -85,7 +85,7 @@ export default function EmployeeFilters({
                         />
                     </div>
 
-                    <div className="col-xxl-2 col-sm-4">
+                    <div className="col-xxl-4 col-sm-4">
                         <div className="d-flex gap-2">
                             <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
                                 <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters

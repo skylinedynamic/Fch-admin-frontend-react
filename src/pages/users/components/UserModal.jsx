@@ -32,11 +32,6 @@ const UserModal = ({
     let tempErrors = {};
     let isValid = true;
 
-    if (!user.user_id) {
-      tempErrors.user_id = "User ID is required";
-      isValid = false;
-    }
-
     if (!user.name) {
       tempErrors.name = "Name is required";
       isValid = false;
@@ -120,24 +115,6 @@ const UserModal = ({
             </div>
             <div className="modal-body">
               <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label">
-                    User ID <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="user_id"
-                    className={`form-control ${
-                      allErrors.user_id ? "is-invalid" : ""
-                    }`}
-                    value={user.user_id}
-                    onChange={onChange}
-                    placeholder="Enter User ID (e.g. EMP-001)"
-                  />
-                  {allErrors.user_id && (
-                    <div className="invalid-feedback">{allErrors.user_id}</div>
-                  )}
-                </div>
                 <div className="mb-3">
                   <label className="form-label">
                     Name <span className="text-danger">*</span>
