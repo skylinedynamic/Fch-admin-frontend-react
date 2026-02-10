@@ -298,7 +298,7 @@ export default function ContactDetails() {
 
                 <div className="row">
                     {/* Left Side: Contact Form */}
-                    <div className="col-xxl-8">
+                    <div className="col-xxl-12">
                         <div className="card">
                             <div className="card-header">
                                 <h5 className="card-title mb-0">Contact Information</h5>
@@ -322,9 +322,9 @@ export default function ContactDetails() {
                     </div>
 
                     {/* Right Side: Activity Sidebar */}
-                    <div className="col-xxl-4">
+                    {/* <div className="col-xxl-4">
                         <ActivitySidebar entityId={id} entityType="Contact" />
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Modals */}
