@@ -32,6 +32,11 @@ const UserModal = ({
     let tempErrors = {};
     let isValid = true;
 
+    if (!user.user_id) {
+      tempErrors.user_id = "User ID is required";
+      isValid = false;
+    }
+
     if (!user.name) {
       tempErrors.name = "Name is required";
       isValid = false;
@@ -61,7 +66,19 @@ const UserModal = ({
         isValid = false;
       }
       if (showPasswordFields) {
-        if (user.new_password && user.new_password !== user.confirm_password) {
+        if (!user.new_password) {
+          tempErrors.new_password = "New password is required";
+          isValid = false;
+        }
+        if (!user.confirm_password) {
+          tempErrors.confirm_password = "Confirm password is required";
+          isValid = false;
+        }
+        if (
+          user.new_password &&
+          user.confirm_password &&
+          user.new_password !== user.confirm_password
+        ) {
           tempErrors.confirm_password = "Passwords do not match";
           isValid = false;
         }
@@ -103,6 +120,24 @@ const UserModal = ({
             </div>
             <div className="modal-body">
               <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label">
+                    User ID <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="user_id"
+                    className={`form-control ${
+                      allErrors.user_id ? "is-invalid" : ""
+                    }`}
+                    value={user.user_id}
+                    onChange={onChange}
+                    placeholder="Enter User ID (e.g. EMP-001)"
+                  />
+                  {allErrors.user_id && (
+                    <div className="invalid-feedback">{allErrors.user_id}</div>
+                  )}
+                </div>
                 <div className="mb-3">
                   <label className="form-label">
                     Name <span className="text-danger">*</span>
@@ -244,19 +279,30 @@ const UserModal = ({
                 {isEdit && showPasswordFields && (
                   <>
                     <div className="mb-3">
-                      <label className="form-label">New Password</label>
+                      <label className="form-label">
+                        New Password <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="password"
                         name="new_password"
-                        className="form-control"
+                        className={`form-control ${
+                          allErrors.new_password ? "is-invalid" : ""
+                        }`}
                         value={user.new_password}
                         onChange={onChange}
                         placeholder="Enter new password"
                       />
+                      {allErrors.new_password && (
+                        <div className="invalid-feedback">
+                          {allErrors.new_password}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">
-                      <label className="form-label">Confirm Password</label>
+                      <label className="form-label">
+                        Confirm Password <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="password"
                         name="confirm_password"

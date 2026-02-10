@@ -46,6 +46,7 @@ export default function Users() {
   const { hasPermission } = usePermissions();
 
   const [newUser, setNewUser] = useState({
+    user_id: '',
     name: '',
     email: '',
     phone_number: '',
@@ -199,6 +200,7 @@ export default function Users() {
         setEditingUserId(rowData.id);
         setBackendErrors({});
         setNewUser({
+          user_id: rowData.user_id || '',
           name: rowData.name || '',
           email: rowData.email || '',
           phone_number: rowData.phone_number || '',
@@ -245,16 +247,22 @@ export default function Users() {
     }
 
     const payload = {
+      user_id: newUser.user_id,
       name: newUser.name,
       email: newUser.email,
       phone_number: newUser.phone_number.replace(/\D/g, ''), // Remove formatting before sending
       role_id: newUser.role_id ? Number(newUser.role_id) : null,
-      password: newUser.password,
       status: newUser.status,
       ...(editingUserId
-        ? showPasswordFields && newUser.new_password
-          ? { password: newUser.new_password }
-          : {}
+        ? {
+            change_password: showPasswordFields && newUser.new_password ? true : false,
+            ...(showPasswordFields && newUser.new_password
+              ? {
+                  new_password: newUser.new_password,
+                  confirm_password: newUser.confirm_password,
+                }
+              : {})
+          }
         : { password: newUser.password })
     }
 
@@ -381,7 +389,7 @@ export default function Users() {
                                     setShowAddUser(true);
                                     setEditingUserId(null);
                                     setBackendErrors({});
-                                    setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+                                    setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
                                   }}>
                                     <i className="ri-add-fill me-1 align-bottom"></i> Add User
                                   </button>
@@ -540,6 +548,7 @@ export default function Users() {
                                             setEditingUserId(rowData.id);
                                             setBackendErrors({});
                                             setNewUser({
+                                              user_id: rowData.user_id || '',
                                               name: rowData.name || '',
                                               email: rowData.email || '',
                                               phone_number: rowData.phone_number || '',
