@@ -56,6 +56,8 @@ export default function Users() {
     confirm_password: '',
   });
 
+  const [backendErrors, setBackendErrors] = useState({});
+
   const statusOptions = [
     { label: 'All Status', value: '' },
     { label: 'Active', value: 'active' },
@@ -195,6 +197,7 @@ export default function Users() {
       onClick={() => {
         if (!hasPermission('update users')) return;
         setEditingUserId(rowData.id);
+        setBackendErrors({});
         setNewUser({
           name: rowData.name || '',
           email: rowData.email || '',
@@ -232,6 +235,10 @@ export default function Users() {
 
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear previous backend errors
+    setBackendErrors({});
+    
     if (editingUserId && newUser.new_password && newUser.new_password !== newUser.confirm_password) {
       toast.error("New password and confirm password do not match");
       return;
@@ -258,9 +265,25 @@ export default function Users() {
       toast.success(`User ${editingUserId ? 'updated' : 'created'} successfully`);
       setShowAddUser(false)
       setEditingUserId(null)
+      setBackendErrors({});
       loadUsers()
     } catch (error) {
-      toast.error("Failed to save user")
+      // Handle backend validation errors
+      if (error?.response?.data?.errors) {
+        // Backend returned field-specific validation errors
+        const errors = error.response.data.errors;
+        setBackendErrors(errors);
+        
+        // Show the first error message as a toast
+        const firstErrorMessage = error.response.data.message || Object.values(errors)[0];
+        // toast.error(firstErrorMessage);
+      } else if (error?.response?.data?.message) {
+        // Backend returned a general error message
+        // toast.error(error.response.data.message);
+      } else {
+        // Generic error
+        toast.error("Failed to save user");
+      }
       console.error(error)
     }
     finally {
@@ -357,6 +380,7 @@ export default function Users() {
                                   <button className="btn btn-primary fw-medium" onClick={() => {
                                     setShowAddUser(true);
                                     setEditingUserId(null);
+                                    setBackendErrors({});
                                     setNewUser({ name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
                                   }}>
                                     <i className="ri-add-fill me-1 align-bottom"></i> Add User
@@ -408,7 +432,7 @@ export default function Users() {
                                 <i className="ri-search-line search-icon"></i>
                               </div>
                             </div>
-                            <div className="col-xxl-3 col-sm-4">
+                            <div className="col-xxl-2 col-sm-4">
                               <Dropdown
                                 value={statusFilter}
                                 onChange={(e) => onStatusChange({ target: { value: e.value } })}
@@ -419,7 +443,7 @@ export default function Users() {
                                 className="w-100 employee-filter-dropdown"
                               />
                             </div>
-                            <div className="col-xxl-3 col-sm-4">
+                            <div className="col-xxl-2 col-sm-4">
                               <Dropdown
                                 value={roleFilter || ''}
                                 onChange={(e) => onRoleChange({ target: { value: e.value } })}
@@ -430,7 +454,7 @@ export default function Users() {
                                 className="w-100 employee-filter-dropdown"
                               />
                             </div>
-                            <div className="col-xxl-2 col-sm-4">
+                            <div className="col-xxl-4 col-sm-4">
                               <div className="d-flex gap-2">
                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
                                   <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -514,6 +538,7 @@ export default function Users() {
                                           aria-label="Edit user"
                                           onClick={() => {
                                             setEditingUserId(rowData.id);
+                                            setBackendErrors({});
                                             setNewUser({
                                               name: rowData.name || '',
                                               email: rowData.email || '',
@@ -564,6 +589,7 @@ export default function Users() {
                     setShowAddUser(false);
                     setEditingUserId(null);
                     setShowPasswordFields(false);
+                    setBackendErrors({});
                   }}
                   onSubmit={handleAddUserSubmit}
                   user={newUser}
@@ -573,6 +599,7 @@ export default function Users() {
                   loadingSave={loadingSave}
                   showPasswordFields={showPasswordFields}
                   onPasswordFieldsToggle={setShowPasswordFields}
+                  backendErrors={backendErrors}
                 />
 
                 <DeleteConfirmationModal
