@@ -1,4 +1,5 @@
 import React from 'react'
+import { APP_CONFIG } from '../../config'
 
 export default function Footer() {
   return (
@@ -6,7 +7,7 @@ export default function Footer() {
       <div className="container-fluid">
         <div className="row">
           <div className="col-sm-6">
-            <span>{new Date().getFullYear()} © Four Corner Holdings.</span>
+            <span>{new Date().getFullYear()} © {APP_CONFIG.name}.</span>
           </div>
           <div className="col-sm-6">
             <div className="text-sm-end d-none d-sm-block">

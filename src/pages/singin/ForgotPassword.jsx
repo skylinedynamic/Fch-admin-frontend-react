@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { forgotPassword } from '../../lib/auth'
 import Auth from '../../components/Layout/Auth'
+import { APP_CONFIG } from '../../config'
 
 export default function ForgotPassword() {
   const navigate = useNavigate()
@@ -37,7 +38,7 @@ export default function ForgotPassword() {
       header={(
         <div className="text-center mt-2">
           <h5 className="text-primary">Forgot Password?</h5>
-          <p className="text-muted">Reset password with Four Corner Holdings</p>
+          <p className="text-muted">Reset password with {APP_CONFIG.name}</p>
           <i className="ri-mail-send-line display-5 text-success mb-3"></i>
         </div>
       )}

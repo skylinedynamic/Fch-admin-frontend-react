@@ -5,7 +5,7 @@
  * Import from this file for better maintainability and consistency.
  * 
  * Usage:
- * import { PARTNER_TYPE_OPTIONS, GENDER_OPTIONS, STATUS } from '@/config';
+ * import { PARTNER_TYPE_OPTIONS, GENDER_OPTIONS, STATUS } from '@/config'; // Or relative path
  */
 
 // Partner related configurations
@@ -30,4 +30,7 @@ export { TIMEZONE_OPTIONS } from './timezoneOptions';
 
 // Credit Builder related configurations
 export { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS,VENDOR_STATUS_OPTIONS, type ConfigOption } from './creditBuilder';
+
+// App configuration
+export { APP_CONFIG } from './appConfig';
 

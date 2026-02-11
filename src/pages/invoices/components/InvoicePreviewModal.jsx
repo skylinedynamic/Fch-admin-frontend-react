@@ -3,6 +3,7 @@ import Modal from 'bootstrap/js/dist/modal';
 import { downloadInvoice, sendInvoice, fetchInvoiceDetails } from '../../../modules/invoice/services';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
+import { APP_CONFIG } from '../../../config';
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -174,7 +175,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             <div className="row g-3">
                                                 <div className="col-6">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Address</h6>
-                                                    <p className="text-muted mb-1">Four Corner Holdings</p>
+                                                    <p className="text-muted mb-1">{APP_CONFIG.name}</p>
                                                     {/* <p className="text-muted mb-0">California, United States</p> */}
                                                 </div>
                                                 <div className="col-6 text-end">
