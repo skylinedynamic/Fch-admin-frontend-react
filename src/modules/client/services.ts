@@ -28,6 +28,11 @@ export const updateClient = async (id: string | number, payload: Partial<Client>
     return data;
 };
 
+export const updateBusinessFinancials = async (id: string | number, payload: Partial<Client>): Promise<Client> => {
+    const { data } = await apiClient.post(`/common/borrowers/${id}/business-financials`, payload);
+    return data;
+};
+
 export const deleteClient = async (id: string | number): Promise<void> => {
     await apiClient.delete(`/common/borrowers/${id}`);
 };

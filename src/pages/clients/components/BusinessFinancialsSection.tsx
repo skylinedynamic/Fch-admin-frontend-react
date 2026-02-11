@@ -3,7 +3,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import {
     useClient,
-    useUpdateClient,
+    useUpdateBusinessFinancials,
     DEFAULT_CLIENT_STATE,
     CURRENCY_OPTIONS,
     mapClientUpdatePayload
@@ -36,7 +36,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
     // 1. Data Fetching
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
-    const updateMutation = useUpdateClient();
+    const updateMutation = useUpdateBusinessFinancials();
 
     // 2. Local State
     const [formData, setFormData] = useState<Client>(initialData || defaultFinancialsState);

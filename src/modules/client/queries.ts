@@ -4,6 +4,7 @@ import {
     fetchClientById,
     createClient,
     updateClient,
+    updateBusinessFinancials,
     deleteClient,
     deleteClients,
     fetchClientChecklist,
@@ -65,6 +66,17 @@ export const useUpdateClient = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ id, data }: { id: string | number; data: Partial<Client> }) => updateClient(id, data),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: clientKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
+        },
+    });
+};
+
+export const useUpdateBusinessFinancials = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string | number; data: Partial<Client> }) => updateBusinessFinancials(id, data),
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: clientKeys.detail(variables.id) });
             queryClient.invalidateQueries({ queryKey: clientKeys.lists() });

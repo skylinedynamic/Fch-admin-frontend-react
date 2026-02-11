@@ -256,7 +256,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                                 filter
                                 filterBy="label"
                                 placeholder="All Partners"
-                                className="w-100"
+                                className="w-100 bg-light border-light"
                             />
                         </div>
                     )}
