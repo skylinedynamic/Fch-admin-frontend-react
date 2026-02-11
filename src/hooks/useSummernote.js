@@ -40,7 +40,13 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
             ['table', ['table']],
             ['insert', ['link', 'picture', 'video']],
             ['view', ['codeview', 'help']]
-        ]
+        ],
+        popover: {
+            table: [
+                ['add', ['addRowDown', 'addRowUp', 'addColLeft', 'addColRight']],
+                ['delete', ['deleteRow', 'deleteCol', 'deleteTable']],
+            ],
+        },
     };
 
     const config = { ...defaultConfig, ...options };

@@ -475,9 +475,9 @@ export default function Leads() {
                                         <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
                                             <Dropdown
                                                 value={selectedSalesperson}
-                                                options={[{ label: 'All Sales Person', value: '' }, ...salespersonsList]}
+                                                options={[{ label: 'All Lead Owner', value: '' }, ...salespersonsList]}
                                                 onChange={(e) => setSelectedSalesperson(e.value)}
-                                                placeholder="All Sales Person"
+                                                placeholder="All Lead Owner"
                                                 filter
                                                 className="w-100 employee-filter-dropdown"
                                             />

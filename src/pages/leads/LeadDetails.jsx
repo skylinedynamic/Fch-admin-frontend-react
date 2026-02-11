@@ -325,7 +325,7 @@ export default function LeadDetails() {
     };
 
     // Summernote Editors
-    const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 150 }, activeTab === 'contactInfo');
+    const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'contactInfo');
     const { editorRef: sourceNoteRef } = useSummernote('lead_source_note', formData.lead_source_note, handleInputChange, { height: 100 }, activeTab === 'leadDetails' && formData.lead_source === 'Other');
     const { editorRef: entityNoteRef } = useSummernote('entity_type_note', formData.entity_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.entity_type === 'Other / Unknown');
     const { editorRef: industryNoteRef } = useSummernote('industry_type_note', formData.industry_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.industry_type === 'Other / Unknown');
@@ -639,14 +639,14 @@ export default function LeadDetails() {
                                             </div>
                                             <div className="col-lg-6">
                                                 <div className="mb-3">
-                                                    <label className="form-label">Salesperson
+                                                    <label className="form-label">Lead Owner
                                                          {/* <span className="text-danger">*</span> */}
                                                     </label>
                                                     <Dropdown
                                                         value={formData.salesperson_id}
                                                         options={users.map(user => ({ label: user.name, value: user.id }))}
                                                         onChange={(e) => handleInputChange({ target: { name: 'salesperson_id', value: e.value } })}
-                                                        placeholder="Select salesperson"
+                                                        placeholder="Select Lead Owner"
                                                         filter
                                                         className={`w-100 ${errors.salesperson_id ? 'p-invalid' : ''}`}
                                                     />
@@ -937,7 +937,10 @@ export default function LeadDetails() {
                                                 <div className="mb-3">
                                                     <label className="form-label">Business Start Date</label>
                                                     <Flatpickr
-                                                        options={{ dateFormat: "d M, Y" }}
+                                                        options={{ 
+                                                            dateFormat: "d M, Y",
+                                                            allowInput: true
+                                                        }}
                                                         value={parseDateHelper(formData.business_start_date)}
                                                         onChange={(dates) => {
                                                             const date = dates[0];
