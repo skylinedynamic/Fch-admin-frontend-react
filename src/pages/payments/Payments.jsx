@@ -13,7 +13,7 @@ export default function Payments() {
     const [payments, setPayments] = useState([]);
     const [stats, setStats] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
-    
+
     // Pagination state
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -114,7 +114,7 @@ export default function Payments() {
             } else {
                 toast.error(response.message || 'Failed to fetch payments');
             }
-            
+
             // Also load stats with the same filter parameters
             loadStats({
                 date_from: dateFrom,
@@ -178,12 +178,11 @@ export default function Payments() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Payments</h4>
                                 <nav aria-label="breadcrumb">
@@ -203,11 +202,11 @@ export default function Payments() {
                 <PaymentStats stats={stats} loading={statsLoading} />
 
                 {/* Filters and Table Section */}
-                <div className="row mt-4">
+                <div className="row">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body list-fluid-card">
-                                <PaymentFilters 
+                                <PaymentFilters
                                     searchText={searchText} setSearchText={setSearchText}
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
                                     selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
@@ -217,10 +216,10 @@ export default function Payments() {
                                     onClear={handleClearFilters}
                                     loading={loading}
                                 />
-                                
-                                <PaymentTable 
-                                    data={payments} 
-                                    loading={loading} 
+
+                                <PaymentTable
+                                    data={payments}
+                                    loading={loading}
                                     totalRecords={totalRecords}
                                     page={page}
                                     perPage={perPage}

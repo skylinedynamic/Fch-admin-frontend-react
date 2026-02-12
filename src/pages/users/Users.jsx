@@ -237,10 +237,10 @@ export default function Users() {
 
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous backend errors
     setBackendErrors({});
-    
+
     if (editingUserId && newUser.new_password && newUser.new_password !== newUser.confirm_password) {
       toast.error("New password and confirm password do not match");
       return;
@@ -255,14 +255,14 @@ export default function Users() {
       status: newUser.status,
       ...(editingUserId
         ? {
-            change_password: showPasswordFields && newUser.new_password ? true : false,
-            ...(showPasswordFields && newUser.new_password
-              ? {
-                  new_password: newUser.new_password,
-                  confirm_password: newUser.confirm_password,
-                }
-              : {})
-          }
+          change_password: showPasswordFields && newUser.new_password ? true : false,
+          ...(showPasswordFields && newUser.new_password
+            ? {
+              new_password: newUser.new_password,
+              confirm_password: newUser.confirm_password,
+            }
+            : {})
+        }
         : { password: newUser.password })
     }
 
@@ -281,7 +281,7 @@ export default function Users() {
         // Backend returned field-specific validation errors
         const errors = error.response.data.errors;
         setBackendErrors(errors);
-        
+
         // Show the first error message as a toast
         const firstErrorMessage = error.response.data.message || Object.values(errors)[0];
         // toast.error(firstErrorMessage);
@@ -420,61 +420,61 @@ export default function Users() {
                             ]} />
                           ) : (
                             <div className="row g-3 mb-3">
-                            <div className="col-xxl-4 col-sm-12">
-                              <div className="search-box">
-                                <input
-                                  type="text"
-                                  className="form-control search bg-light border-light"
-                                  id="searchStatus"
-                                  autoComplete="off"
-                                  placeholder="Search here..."
-                                  value={globalFilterValue}
-                                  onChange={(e) => setGlobalFilterValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      onApplyFilters();
-                                    }
-                                  }}
+                              <div className="col-xxl-4 col-sm-12">
+                                <div className="search-box">
+                                  <input
+                                    type="text"
+                                    className="form-control search bg-light border-light"
+                                    id="searchStatus"
+                                    autoComplete="off"
+                                    placeholder="Search here..."
+                                    value={globalFilterValue}
+                                    onChange={(e) => setGlobalFilterValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        onApplyFilters();
+                                      }
+                                    }}
+                                  />
+                                  <i className="ri-search-line search-icon"></i>
+                                </div>
+                              </div>
+                              <div className="col-xxl-2 col-sm-4">
+                                <Dropdown
+                                  value={statusFilter}
+                                  onChange={(e) => onStatusChange({ target: { value: e.value } })}
+                                  options={statusOptions}
+                                  optionLabel="label"
+                                  optionValue="value"
+                                  placeholder="All Status"
+                                  className="w-100 employee-filter-dropdown"
                                 />
-                                <i className="ri-search-line search-icon"></i>
+                              </div>
+                              <div className="col-xxl-2 col-sm-4">
+                                <Dropdown
+                                  value={roleFilter || ''}
+                                  onChange={(e) => onRoleChange({ target: { value: e.value } })}
+                                  options={[{ id: '', name: 'All Role' }, ...roles]}
+                                  optionLabel="name"
+                                  optionValue="id"
+                                  placeholder="All Role"
+                                  className="w-100 employee-filter-dropdown"
+                                />
+                              </div>
+                              <div className="col-xxl-4 col-sm-4">
+                                <div className="d-flex gap-2">
+                                  <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                  </button>
+                                  <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
+                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                            <div className="col-xxl-2 col-sm-4">
-                              <Dropdown
-                                value={statusFilter}
-                                onChange={(e) => onStatusChange({ target: { value: e.value } })}
-                                options={statusOptions}
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="All Status"
-                                className="w-100 employee-filter-dropdown"
-                              />
-                            </div>
-                            <div className="col-xxl-2 col-sm-4">
-                              <Dropdown
-                                value={roleFilter || ''}
-                                onChange={(e) => onRoleChange({ target: { value: e.value } })}
-                                options={[{ id: '', name: 'All Role' }, ...roles]}
-                                optionLabel="name"
-                                optionValue="id"
-                                placeholder="All Role"
-                                className="w-100 employee-filter-dropdown"
-                              />
-                            </div>
-                            <div className="col-xxl-4 col-sm-4">
-                              <div className="d-flex gap-2">
-                                <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
-                                  <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                </button>
-                                <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
-                                  <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </form>
+                          )}
+                        </form>
 
                         {/* TableLoader applied here */}
                         {loading ? (
@@ -515,7 +515,6 @@ export default function Users() {
                                 'name',
                                 'phone_number',
                                 'email',
-                                'entity_type',
                                 'role',
                                 'status',
                               ]}
@@ -532,7 +531,6 @@ export default function Users() {
                               <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
                               <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                               <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
-                              <Column field="entity_type" header="Entity Type" sortable filter showFilterMatchModes filterPlaceholder="Search Entity Type"></Column>
                               <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
                               <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
                               {(hasPermission('update users') || hasPermission('delete users')) && (
