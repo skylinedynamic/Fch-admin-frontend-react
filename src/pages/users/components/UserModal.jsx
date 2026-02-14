@@ -100,7 +100,7 @@ const UserModal = ({
 
   return (
     <>
-      <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+      <div className="modal fade flip show d-block" tabIndex="-1" role="dialog">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
@@ -262,9 +262,8 @@ const UserModal = ({
                       <input
                         type="password"
                         name="new_password"
-                        className={`form-control ${
-                          allErrors.new_password ? "is-invalid" : ""
-                        }`}
+                        className={`form-control ${allErrors.new_password ? "is-invalid" : ""
+                          }`}
                         value={user.new_password}
                         onChange={onChange}
                         placeholder="Enter new password"
@@ -306,31 +305,30 @@ const UserModal = ({
                   </button>
                   {((isEdit && hasPermission("update users")) ||
                     (!isEdit && hasPermission("create users"))) && (
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={loadingSave}
-                    >
-                      {/* Loading Spinner */}
-                      {loadingSave && (
-                        <span
-                          className="spinner-border spinner-border-sm me-1"
-                          role="status"
-                          aria-hidden="true"
-                        ></span>
-                      )}
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={loadingSave}
+                      >
+                        {/* Loading Spinner */}
+                        {loadingSave && (
+                          <span
+                            className="spinner-border spinner-border-sm me-1"
+                            role="status"
+                            aria-hidden="true"
+                          ></span>
+                        )}
 
-                      {/* Dynamic Icon */}
-                      <i
-                        className={`me-1 align-bottom ${
-                          isEdit ? "ri-edit-2-fill" : "ri-save-3-fill"
-                        }`}
-                      ></i>
+                        {/* Dynamic Icon */}
+                        <i
+                          className={`me-1 align-bottom ${isEdit ? "ri-edit-2-fill" : "ri-save-3-fill"
+                            }`}
+                        ></i>
 
-                      {/* Dynamic Text */}
-                      {isEdit ? "Update" : "Submit"}
-                    </button>
-                  )}
+                        {/* Dynamic Text */}
+                        {isEdit ? "Update" : "Submit"}
+                      </button>
+                    )}
                 </div>
               </form>
             </div>

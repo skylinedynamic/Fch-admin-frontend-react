@@ -47,7 +47,7 @@ export const LEAD_STATUS_OPTIONS = [
 ];
 
 export const LEAD_SOURCE_OPTIONS = [
-    { label: 'Partner Referral', value: 'Partner Referral' },
+    { label: 'Referral Partner', value: 'Referral Partner' },
     { label: 'Client Referral', value: 'Client Referral' },
     { label: 'Personal Network (Friends/Family)', value: 'Personal Network (Friends/Family)' },
     { label: 'Social Media', value: 'Social Media' },

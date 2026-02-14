@@ -250,7 +250,7 @@ export default function Users() {
       user_id: newUser.user_id,
       name: newUser.name,
       email: newUser.email,
-      phone_number: newUser.phone_number.replace(/\D/g, ''), // Remove formatting before sending
+      phone_number: newUser.phone_number,
       role_id: newUser.role_id ? Number(newUser.role_id) : null,
       status: newUser.status,
       ...(editingUserId

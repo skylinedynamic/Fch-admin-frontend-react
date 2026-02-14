@@ -7,6 +7,8 @@ export interface DashboardCounts {
 
 export interface LatestFundingApplication {
     id: number;
+    browser: string | null;
+    partner: string | null;
     requested_amount: string | null;
     entity_type: string;
     industry_type: string;
@@ -22,6 +24,8 @@ export interface LatestFundingApplication {
 
 export interface LatestPreQualification {
     id: number;
+    browser: string | null;
+    partner: string | null;
     purpose_of_funding: string | null;
     industry_type: string;
     business_structure: string;
