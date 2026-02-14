@@ -6,8 +6,6 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import ClientStats from './components/ClientStats';
 import ClientListTable from './components/ClientListTable';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { Client } from '../../modules/client/types';
 import { AuthUser } from '../../store/auth';
 
@@ -66,7 +64,6 @@ export default function Clients() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row pb-1 page-subheader-sticky bg-body">

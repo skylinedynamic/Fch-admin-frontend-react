@@ -8,10 +8,6 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 
-// Toast
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
 // Auth Store
 import { useAuthStore } from '../../store/auth/authStore';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -57,31 +53,22 @@ export default function Appointments() {
                     // Calculate end time based on duration_minutes
                     const end = new Date(start.getTime() + (apt.duration_minutes || 60) * 60000);
 
-                    // High-fidelity palette matched to 'same-to-same' design reference
+                    // High-fidelity palette classes mapped to 'appointments.css'
                     const PALETTE = [
-                        { key: 'blue', bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1' },    // Billing/Support
-                        { key: 'emerald', bg: '#d1fae5', border: '#a7f3d0', text: '#059669' }, // Marketing
-                        { key: 'violet', bg: '#ede9fe', border: '#ddd6fe', text: '#7c3aed' },  // Kickoff
-                        { key: 'sky', bg: '#e0f2fe', border: '#bae6fd', text: '#0284c7' },     // Product Demo
-                        { key: 'rose', bg: '#fee2e2', border: '#fecaca', text: '#dc2626' },    // Invoice/Release
-                        { key: 'amber', bg: '#fef3c7', border: '#fde68a', text: '#d97706' },   // Quarterly
-                        { key: 'gray', bg: '#f3f4f6', border: '#e5e7eb', text: '#4b5563' },    // Team Offsite
-                        { key: 'indigo', bg: '#e0e7ff', border: '#c7d2fe', text: '#4f46e5' },
-                        { key: 'teal', bg: '#ccfbf1', border: '#99f6e4', text: '#0d9488' },
-                        { key: 'cyan', bg: '#cffafe', border: '#a5f3fc', text: '#0891b2' },
-                        { key: 'orange', bg: '#ffedd5', border: '#fed7aa', text: '#d97706' },
-                        { key: 'fuchsia', bg: '#fae8ff', border: '#f5d0fe', text: '#a21caf' }
+                        'apt-blue', 'apt-emerald', 'apt-violet', 'apt-sky',
+                        'apt-rose', 'apt-amber', 'apt-gray', 'apt-indigo',
+                        'apt-teal', 'apt-cyan', 'apt-orange', 'apt-fuchsia'
                     ];
 
-                    let style = PALETTE[0]; // Default
+                    let colorClass = PALETTE[0]; // Default
                     if (apt.status === 'cancelled') {
-                        style = PALETTE[4]; // Rose/Red
+                        colorClass = 'apt-rose';
                     } else if (apt.status === 'completed') {
-                        style = PALETTE[1]; // Emerald
+                        colorClass = 'apt-emerald';
                     } else {
                         // Maximize difference using a prime shift
                         const colorIndex = (parseInt(apt.id) * 11) % PALETTE.length;
-                        style = PALETTE[colorIndex];
+                        colorClass = PALETTE[colorIndex];
                     }
 
                     return {
@@ -90,17 +77,11 @@ export default function Appointments() {
                         start: start,
                         end: end,
                         allDay: false,
-                        backgroundColor: style.bg,
-                        borderColor: style.border,
-                        textColor: style.text,
-                        className: `fc-custom-event`,
+                        className: `fc-custom-event ${colorClass}`,
                         description: apt.description,
                         location: apt.timezone,
                         extendedProps: {
-                            colorKey: style.key,
-                            bg: style.bg,
-                            text: style.text,
-                            border: style.border,
+                            colorClass: colorClass,
                             description: apt.description,
                             location: apt.location,
                             timezone: apt.timezone,
@@ -133,14 +114,11 @@ export default function Appointments() {
         return `${h}:${m} ${ampm}`;
     };
 
-    // Update upcoming events list (From Today)
+    // Update upcoming events list (From Today or recent past)
     useEffect(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
-
-        const sorted = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
-        const fromToday = sorted.filter(e => new Date(e.start) >= today);
-        setUpcomingEvents(fromToday.slice(0, 15)); // Show up to 15
+        // Sort by date (descending to show most recent first, or ascending for chronological)
+        const sorted = [...events].sort((a, b) => new Date(b.start) - new Date(a.start));
+        setUpcomingEvents(sorted.slice(0, 15)); // Show most recent 15
     }, [events]);
 
     // Actions
@@ -207,7 +185,6 @@ export default function Appointments() {
 
     return (
         <div className="page-content appointments-page">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row">
                     <div className="col-12">
@@ -222,9 +199,9 @@ export default function Appointments() {
                                     </div>
                                 </div>
                                 <div>
-                                    <h5 className="mb-1">Upcoming Appointment</h5>
+                                    <h5 className="mb-1">All Appointments</h5>
                                     <p className="text-muted">Don't miss scheduled appointments</p>
-                                    <div className="pe-2 me-n1 mb-3" data-simplebar style={{ height: "750px" }}>
+                                    <div className="pe-2 me-n1 mb-3 upcoming-event-list-scroll" data-simplebar>
                                         <div id="upcoming-event-list">
                                             {loading && (
                                                 <>
@@ -268,38 +245,54 @@ export default function Appointments() {
                                                     }
                                                 }
 
-                                                const eventStyles = evt.extendedProps?.bg ? {
-                                                    bg: evt.extendedProps.bg,
-                                                    text: evt.extendedProps.text,
-                                                    border: evt.extendedProps.border,
-                                                    key: evt.extendedProps.colorKey || 'info'
-                                                } : { bg: '#cff4fc', text: '#055160', border: '#9eeaf9', key: 'info' };
+                                                const colorClass = evt.extendedProps?.colorClass || 'apt-blue';
+
+                                                // Determine Status Badge
+                                                const status = evt.extendedProps?.status || 'pending';
+                                                const isPast = new Date() > s;
+                                                let statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+                                                let statusClass = 'bg-info-subtle text-info';
+
+                                                if (status === 'cancelled') {
+                                                    statusClass = 'bg-danger-subtle text-danger';
+                                                } else if (status === 'completed') {
+                                                    statusClass = 'bg-success-subtle text-success';
+                                                } else if (status === 'pending') {
+                                                    if (isPast) {
+                                                        statusLabel = 'Expired';
+                                                        statusClass = 'bg-danger-subtle text-danger';
+                                                    } else {
+                                                        statusClass = 'bg-warning-subtle text-warning';
+                                                    }
+                                                }
 
                                                 let badge;
                                                 const startTime = s ? tConvert(s.toTimeString().slice(0, 5)) : '';
                                                 const endTime = e ? tConvert(e.toTimeString().slice(0, 5)) : '';
 
                                                 if (evt.allDay || !e || !endTime) {
-                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>Full day</small>;
+                                                    badge = <small className="badge border-0 py-1 px-2 time-badge-item">Full day</small>;
                                                 } else {
-                                                    badge = <small className="badge border-0 py-1 px-2" style={{ backgroundColor: eventStyles.bg, color: eventStyles.text, borderRadius: '4px' }}>{startTime} to {endTime}</small>;
+                                                    badge = <small className="badge border-0 py-1 px-2 time-badge-item">{startTime} to {endTime}</small>;
                                                 }
 
                                                 return (
-                                                    <div className="card mb-3 upcoming-event-card cursor-pointer" key={evt.id}
-                                                        onClick={() => handleEventClick({ event: { id: evt.id } })}
-                                                        style={{ transition: 'all 0.3s ease' }}>
+                                                    <div className={`card mb-3 upcoming-event-card cursor-pointer ${colorClass}`} key={evt.id}
+                                                        onClick={() => handleEventClick({ event: { id: evt.id } })}>
                                                         <div className="card-body">
                                                             <div className="d-flex mb-3 align-items-center">
                                                                 <div className="flex-grow-1">
-                                                                    <i className="mdi mdi-checkbox-blank-circle me-2" style={{ color: eventStyles.text, fontSize: '10px' }}></i>
+                                                                    <i className="mdi mdi-checkbox-blank-circle me-2 event-dot-icon apt-card-icon"></i>
                                                                     <span className="fw-medium text-dark">{dateStr}</span>
                                                                 </div>
-                                                                <div className="flex-shrink-0">
+                                                                <div className="flex-shrink-0 d-flex gap-1">
                                                                     {badge}
+                                                                    {statusLabel === 'Expired' && (
+                                                                        <span className={`badge ${statusClass}`}>{statusLabel}</span>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                            <h6 className="card-title fs-16" style={{ color: eventStyles.text }}>{evt.title}</h6>
+                                                            <h6 className="card-title fs-16 apt-card-title">{evt.title}</h6>
                                                             <div
                                                                 className="text-muted text-truncate-two-lines mb-0 fs-12"
                                                                 dangerouslySetInnerHTML={{ __html: evt.extendedProps?.description || evt.description || "" }}
@@ -317,7 +310,7 @@ export default function Appointments() {
                                 <div className="card card-h-100">
                                     <div className="card-body">
                                         {loading ? (
-                                            <div style={{ minHeight: '750px' }} className="placeholder-glow">
+                                            <div className="placeholder-glow skeleton-calendar">
                                                 <div className="d-flex justify-content-between mb-4">
                                                     <div className="d-flex gap-1">
                                                         <span className="placeholder rounded bg-secondary-subtle" style={{ width: '30px', height: '35px' }}></span>
@@ -342,11 +335,11 @@ export default function Appointments() {
                                                         ))}
                                                     </div>
                                                     {[...Array(5)].map((_, row) => (
-                                                        <div key={row} className="d-flex border-bottom" style={{ height: '100px' }}>
+                                                        <div key={row} className="d-flex border-bottom skeleton-row">
                                                             {[...Array(7)].map((_, col) => (
                                                                 <div key={col} className="flex-fill border-end p-1">
                                                                     {((row + col) % 5 === 0) && (
-                                                                        <div className="rounded bg-secondary-subtle mt-3 mx-1" style={{ height: '20px', opacity: 0.5 }}></div>
+                                                                        <div className="rounded bg-secondary-subtle mt-3 mx-1 skeleton-bar"></div>
                                                                     )}
                                                                 </div>
                                                             ))}
@@ -355,7 +348,7 @@ export default function Appointments() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div id="calendar" style={{ minHeight: '750px' }}>
+                                            <div id="calendar" className="calendar-wrapper">
                                                 <FullCalendar
                                                     ref={calendarRef}
                                                     plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
@@ -389,31 +382,7 @@ export default function Appointments() {
                                                     selectable={hasPermission('create appointments')}
                                                     height={750}
                                                     eventDidMount={(info) => {
-                                                        // Force style overrides directly on the DOM
-                                                        const { backgroundColor, borderColor, textColor } = info.event;
-                                                        if (backgroundColor) {
-                                                            info.el.style.backgroundColor = backgroundColor;
-                                                            info.el.style.setProperty('background-color', backgroundColor, 'important');
-                                                        }
-                                                        if (borderColor) {
-                                                            info.el.style.borderColor = borderColor;
-                                                            info.el.style.setProperty('border-color', borderColor, 'important');
-                                                            // Also apply to the dot for list/day views
-                                                            const dotEl = info.el.querySelector('.fc-daygrid-event-dot');
-                                                            if (dotEl) {
-                                                                dotEl.style.borderColor = borderColor;
-                                                                dotEl.style.setProperty('border-color', borderColor, 'important');
-                                                            }
-                                                        }
-                                                        if (textColor) {
-                                                            const titleEl = info.el.querySelector('.fc-event-title') || info.el.querySelector('.fc-list-event-title');
-                                                            if (titleEl) {
-                                                                titleEl.style.color = textColor;
-                                                                titleEl.style.setProperty('color', textColor, 'important');
-                                                            }
-                                                            info.el.style.color = textColor;
-                                                            info.el.style.setProperty('color', textColor, 'important');
-                                                        }
+                                                        // Styles governed by color classes in appointments.css
                                                     }}
                                                     dateClick={(arg) => handleNewEvent(arg.dateStr)}
                                                     eventClick={handleEventClick}

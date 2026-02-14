@@ -10,6 +10,10 @@ File: Custom Css File
   background: #001f3f;
 }
 
+.border {
+  border: 1px solid #ced4da !important;
+}
+
 /* Roles & Permissions page scoped styles */
 
 #roles-permissions-page .roles-grid {
@@ -430,7 +434,7 @@ File: Custom Css File
   font-size: 20px;
 }
 
-.fc-custom-header .btn-calendar + .btn-calendar {
+.fc-custom-header .btn-calendar+.btn-calendar {
   margin-left: 8px;
 }
 
@@ -652,7 +656,7 @@ File: Custom Css File
   vertical-align: middle !important;
 }
 
-.fc .fc-button-group > .fc-button:not(:last-child) {
+.fc .fc-button-group>.fc-button:not(:last-child) {
   margin-right: 2px !important;
 }
 
@@ -674,36 +678,37 @@ File: Custom Css File
 
 /* Skeleton Loader Styles */
 .skeleton-line {
-    background: #f0f2f5;
-    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    display: inline-block;
-    height: 1em;
-    vertical-align: middle;
-    border-radius: 4px;
+  background: #f0f2f5;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  display: inline-block;
+  height: 1em;
+  vertical-align: middle;
+  border-radius: 4px;
 }
 
 /* Override Bootstrap placeholder to match skeleton-line */
 .placeholder {
-    background-color: #f0f2f5 !important;
-    opacity: 1 !important;
+  background-color: #f0f2f5 !important;
+  opacity: 1 !important;
 }
 
 .placeholder-glow .placeholder {
-    background: #f0f2f5 !important;
-    background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%) !important;
-    background-size: 200% 100% !important;
-    animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+  background: #f0f2f5 !important;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
 }
 
 @keyframes skeleton-loading {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .fade-panel {

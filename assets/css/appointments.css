@@ -39,10 +39,145 @@
     transition: all 0.2s ease;
 }
 
+/* Appointment Palette */
+.apt-blue {
+    --apt-bg: #e0f2fe;
+    --apt-border: #bae6fd;
+    --apt-text: #0369a1;
+}
+
+.apt-emerald {
+    --apt-bg: #d1fae5;
+    --apt-border: #a7f3d0;
+    --apt-text: #059669;
+}
+
+.apt-violet {
+    --apt-bg: #ede9fe;
+    --apt-border: #ddd6fe;
+    --apt-text: #7c3aed;
+}
+
+.apt-sky {
+    --apt-bg: #e0f2fe;
+    --apt-border: #bae6fd;
+    --apt-text: #0284c7;
+}
+
+.apt-rose {
+    --apt-bg: #fee2e2;
+    --apt-border: #fecaca;
+    --apt-text: #dc2626;
+}
+
+.apt-amber {
+    --apt-bg: #fef3c7;
+    --apt-border: #fde68a;
+    --apt-text: #d97706;
+}
+
+.apt-gray {
+    --apt-bg: #f3f4f6;
+    --apt-border: #e5e7eb;
+    --apt-text: #4b5563;
+}
+
+.apt-indigo {
+    --apt-bg: #e0e7ff;
+    --apt-border: #c7d2fe;
+    --apt-text: #4f46e5;
+}
+
+.apt-teal {
+    --apt-bg: #ccfbf1;
+    --apt-border: #99f6e4;
+    --apt-text: #0d9488;
+}
+
+.apt-cyan {
+    --apt-bg: #cffafe;
+    --apt-border: #a5f3fc;
+    --apt-text: #0891b2;
+}
+
+.apt-orange {
+    --apt-bg: #ffedd5;
+    --apt-border: #fed7aa;
+    --apt-text: #d97706;
+}
+
+.apt-fuchsia {
+    --apt-bg: #fae8ff;
+    --apt-border: #f5d0fe;
+    --apt-text: #a21caf;
+}
+
+/* Apply Palette to Sidebar Cards and Badges */
+.appointments-page .apt-card-icon {
+    color: var(--apt-text) !important;
+}
+
+.appointments-page .apt-card-title {
+    color: var(--apt-text) !important;
+}
+
+.appointments-page .time-badge-item {
+    background-color: var(--apt-bg) !important;
+    color: var(--apt-text) !important;
+    border-radius: 4px !important;
+}
+
+/* Apply Palette to FullCalendar Events */
+.appointments-page .fc-event[class*="apt-"] {
+    background-color: var(--apt-bg) !important;
+    border-color: var(--apt-border) !important;
+    color: var(--apt-text) !important;
+}
+
+.appointments-page .fc-event[class*="apt-"] .fc-event-title,
+.appointments-page .fc-event[class*="apt-"] .fc-event-time,
+.appointments-page .fc-event[class*="apt-"] .fc-list-event-title {
+    color: var(--apt-text) !important;
+}
+
+.appointments-page .fc-event[class*="apt-"] .fc-daygrid-event-dot {
+    border-color: var(--apt-text) !important;
+}
+
+.appointments-page .upcoming-event-list-scroll {
+    height: 750px;
+}
+
+.appointments-page .upcoming-event-card {
+    transition: all 0.3s ease !important;
+}
+
 .appointments-page .upcoming-event-card:hover {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
     border-color: #405189 !important;
+}
+
+.appointments-page .event-dot-icon {
+    font-size: 10px;
+}
+
+.appointments-page .calendar-wrapper,
+.appointments-page .skeleton-calendar {
+    min-height: 750px;
+}
+
+.appointments-page .skeleton-row {
+    height: 100px;
+}
+
+.appointments-page .skeleton-bar {
+    height: 20px;
+    opacity: 0.5;
+}
+
+.appointments-page .time-badge-item {
+    border-radius: 4px !important;
 }
 
 .appointments-page .cursor-pointer {

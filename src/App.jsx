@@ -77,7 +77,7 @@ export default function App() {
 
   return (
     <>
-      <ToastContainer theme="colored" />
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>
           <Route path="login" element={<SignIn />} />
