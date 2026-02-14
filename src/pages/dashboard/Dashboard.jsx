@@ -166,7 +166,7 @@ export default function Dashboard() {
                                 <th scope="col">Funding Type</th>
                                 <th scope="col">Date</th>
                                 <th scope="col">Borrower</th>
-                                <th scope="col">Industry</th>
+                                {/* <th scope="col">Industry</th> */}
                                 <th scope="col">Business Structure</th>
                                 <th scope="col">Requested Amount</th>
                                 <th scope="col">Status</th>
@@ -179,7 +179,7 @@ export default function Dashboard() {
                                     <td className="fw-medium">{app.purpose_of_funding || 'N/A'}</td>
                                     <td>{app.formatted_created_at}</td>
                                     <td>{app.borrower || 'N/A'}</td>
-                                    <td>{app.industry_type || 'N/A'}</td>
+                                    {/* <td>{app.industry_type || 'N/A'}</td> */}
                                     <td>{app.business_structure || 'N/A'}</td>
                                     <td>{formatCurrency(app.funding_requested_amount)}</td>
                                     <td>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                                 <th scope="col">Date</th>
                                 <th scope="col">Borrower</th>
                                 <th scope="col">Entity Type</th>
-                                <th scope="col">Industry</th>
+                                {/* <th scope="col">Industry</th> */}
                                 <th scope="col">Requested Amount</th>
                                 <th scope="col">Funded Amount</th>
                                 <th scope="col">Status</th>
@@ -238,7 +238,7 @@ export default function Dashboard() {
                                     <td>{app.formatted_created_at}</td>
                                     <td>{app.borrower || 'N/A'}</td>
                                     <td>{app.entity_type || 'N/A'}</td>
-                                    <td>{app.industry_type || 'N/A'}</td>
+                                    {/* <td>{app.industry_type || 'N/A'}</td> */}
                                     <td>{formatCurrency(app.requested_amount, app.currency_symbol, app.conversion_rate)}</td>
                                     <td>{formatCurrency(app.total_funded_amount, app.currency_symbol, app.conversion_rate)}</td>
                                     <td>
