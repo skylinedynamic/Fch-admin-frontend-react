@@ -145,7 +145,7 @@ const menuItems = [
     icon: 'ri-shield-user-fill',
     label: 'Roles & Permissions',
     permission: 'view roles & permissions',
-    isHostOnly: true,
+    isHostOnly: false,
   },
   {
     to: '/admin/settings',

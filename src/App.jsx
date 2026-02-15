@@ -119,13 +119,13 @@ export default function App() {
 
 
             {/* Roles & Permissions Routes - requires 'view roles & permissions' permission */}
-            <Route element={<HostRoute />}>
-              <Route element={<PermissionRoute permission="view roles & permissions" />}>
-                <Route path="roles-permissions" element={<RolesPermissions />} />
-                <Route path="roles-permissions/create" element={<CreateRole />} />
-                <Route path="roles-permissions/edit/:id" element={<EditRole />} />
-              </Route>
+
+            <Route element={<PermissionRoute permission="view roles & permissions" />}>
+              <Route path="roles-permissions" element={<RolesPermissions />} />
+              <Route path="roles-permissions/create" element={<CreateRole />} />
+              <Route path="roles-permissions/edit/:id" element={<EditRole />} />
             </Route>
+
 
             {/* Settings Route */}
             <Route element={<HostRoute />}>

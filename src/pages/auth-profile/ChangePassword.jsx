@@ -74,7 +74,12 @@ const ChangePassword = () => {
             const response = await updatePassword(formData);
             if (response.status) {
                 toast.success(response.message || 'Password updated successfully!');
-                navigate('/dashboard');
+                setFormData({
+                    current_password: '',
+                    new_password: '',
+                    new_password_confirmation: ''
+                });
+                setPasswordStrength(0);
             } else {
                 toast.error(response.message || 'Failed to update password');
             }

@@ -4,8 +4,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchGlobalSubscriptions, fetchSubscriptionStats } from '../../modules/partner/services';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionFilters from './components/SubscriptionFilters';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 
@@ -13,7 +12,7 @@ export default function Subscriptions() {
     const [loading, setLoading] = useState(true);
     const [statsLoading, setStatsLoading] = useState(true);
     const [subscriptions, setSubscriptions] = useState([]);
-    
+
     // Stats state
     const [stats, setStats] = useState({
         total_subscriptions: 0,
@@ -175,7 +174,6 @@ export default function Subscriptions() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
@@ -218,17 +216,17 @@ export default function Subscriptions() {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                <SubscriptionFilters 
+                                <SubscriptionFilters
                                     searchText={searchText} setSearchText={setSearchText}
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
                                     onApply={handleApplyFilters}
                                     onClear={handleClearFilters}
                                     loading={loading}
                                 />
-                                
-                                <SubscriptionTable 
-                                    data={subscriptions} 
-                                    loading={loading} 
+
+                                <SubscriptionTable
+                                    data={subscriptions}
+                                    loading={loading}
                                     totalRecords={totalRecords}
                                     page={page}
                                     perPage={perPage}

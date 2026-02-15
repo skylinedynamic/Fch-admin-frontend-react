@@ -10,14 +10,13 @@ import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
 export default function Partners() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
-    
+
     // State for partners
     const [partners, setPartners] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -79,7 +78,7 @@ export default function Partners() {
     // Initialize on mount
     useEffect(() => {
         initFilters();
-        
+
         // Load partners for dropdown
         const loadPartnersList = async () => {
             try {
@@ -267,7 +266,6 @@ export default function Partners() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header mirrored from Clients.jsx */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
@@ -348,50 +346,50 @@ export default function Partners() {
                                         ]} />
                                     ) : (
                                         <div className="row g-3 mb-3">
-                                        <div className="col-xxl-4 col-sm-12">
-                                            <div className="search-box">
-                                                <input
-                                                    type="text"
-                                                    className="form-control search bg-light border-light"
-                                                    placeholder="Search here..."
-                                                    value={searchText}
-                                                    onChange={(e) => setSearchText(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                            <div className="col-xxl-4 col-sm-12">
+                                                <div className="search-box">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control search bg-light border-light"
+                                                        placeholder="Search here..."
+                                                        value={searchText}
+                                                        onChange={(e) => setSearchText(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                                    />
+                                                    <i className="ri-search-line search-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div className="col-xxl-3 col-sm-4">
+                                                <Dropdown
+                                                    value={selectedPartner}
+                                                    options={[{ label: 'All Partners', value: '' }, ...partnersList]}
+                                                    onChange={(e) => setSelectedPartner(e.value)}
+                                                    placeholder="All Partners"
+                                                    className="w-100 employee-filter-dropdown"
                                                 />
-                                                <i className="ri-search-line search-icon"></i>
+                                            </div>
+                                            <div className="col-xxl-2 col-sm-4">
+                                                <Dropdown
+                                                    value={selectedAssignedUser}
+                                                    options={[{ label: 'Assigned Users', value: '' }, ...assignedUsersList]}
+                                                    onChange={(e) => setSelectedAssignedUser(e.value)}
+                                                    placeholder="Assigned Users"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                            <div className="col-xxl-3 col-sm-12">
+                                                <div className="d-flex gap-2">
+                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    </button>
+                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-4">
-                                            <Dropdown
-                                                value={selectedPartner}
-                                                options={[{ label: 'All Partners', value: '' }, ...partnersList]}
-                                                onChange={(e) => setSelectedPartner(e.value)}
-                                                placeholder="All Partners"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-2 col-sm-4">
-                                            <Dropdown
-                                                value={selectedAssignedUser}
-                                                options={[{ label: 'Assigned Users', value: '' }, ...assignedUsersList]}
-                                                onChange={(e) => setSelectedAssignedUser(e.value)}
-                                                placeholder="Assigned Users"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-3 col-sm-12">
-                                            <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </form>
+                                    )}
+                                </form>
 
                                 {loading ? (
                                     <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '150px' } })} />
@@ -419,8 +417,8 @@ export default function Partners() {
                                             onSelectionChange={(e) => setSelectedPartners(e.value)}
                                             dataKey="id"
                                             onRowClick={(e) => {
-                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
-                                                                  e.originalEvent.target.closest('.p-selection-column');
+                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                    e.originalEvent.target.closest('.p-selection-column');
                                                 if (!isCheckbox) navigate(`/partners/${e.data.id}`, { state: { activeTab: 'personalDetails' } });
                                             }}
                                             responsiveLayout="scroll"

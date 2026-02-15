@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { getLead, createLead, updateLead, convertLead, fetchGlobalStats } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -494,7 +493,6 @@ export default function LeadDetails() {
         <>
             {!hasPermission('view leads') && <Navigate to="/" replace />}
             <div className="page-content">
-                <ToastContainer position="top-right" autoClose={3000} />
                 <div className="container-fluid">
                     {/* Page Title */}
                     <div className="row mb-3 pb-1 page-subheader-sticky bg-body">

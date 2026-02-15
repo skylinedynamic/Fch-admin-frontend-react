@@ -142,7 +142,7 @@ export default function CreateRole() {
     try {
       const res = await createRole({ name, description, permission_ids: permissionIds })
       const successMsg = (res as any)?.message || 'Role created successfully.'
-      toast(successMsg,)
+      toast.success(successMsg)
       navigate('/roles-permissions')
     } catch (err: any) {
       const data = err?.response?.data

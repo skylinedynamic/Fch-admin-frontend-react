@@ -13,8 +13,7 @@ import StatisticsCard from '../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
@@ -27,7 +26,7 @@ export default function Leads() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
-    
+
     // State for leads
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -98,7 +97,7 @@ export default function Leads() {
     // Initialize on mount
     useEffect(() => {
         initFilters();
-        
+
         // Load salespersons
         const loadSalespersons = async () => {
             try {
@@ -321,11 +320,11 @@ export default function Leads() {
         try {
             setConversionLoading(true);
             const response = await convertLead(targetLead.id, payload);
-            
+
             if (response.status || response.id) {
                 const bId = response.data?.borrower?.id || response.data?.id || response.id;
                 const invId = response.data?.invoice?.id || null;
-                
+
                 // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
                 if (!isHost && targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
@@ -355,7 +354,6 @@ export default function Leads() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header Section mirrored from Clients.jsx */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
@@ -439,62 +437,62 @@ export default function Leads() {
                                         ]} />
                                     ) : (
                                         <div className="row g-3 mb-3">
-                                        <div className="col-xxl-3 col-sm-12">
-                                            <div className="search-box">
-                                                <input
-                                                    type="text"
-                                                    className="form-control search bg-light border-light"
-                                                    placeholder="Search here..."
-                                                    value={searchText}
-                                                    onChange={(e) => setSearchText(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
-                                                />
-                                                <i className="ri-search-line search-icon"></i>
+                                            <div className="col-xxl-3 col-sm-12">
+                                                <div className="search-box">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control search bg-light border-light"
+                                                        placeholder="Search here..."
+                                                        value={searchText}
+                                                        onChange={(e) => setSearchText(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                                    />
+                                                    <i className="ri-search-line search-icon"></i>
+                                                </div>
                                             </div>
-                                        </div>
-                                        {isHost && (
-                                            <div className="col-xxl-2 col-sm-4">
+                                            {isHost && (
+                                                <div className="col-xxl-2 col-sm-4">
+                                                    <Dropdown
+                                                        value={selectedLeadType}
+                                                        options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
+                                                        onChange={(e) => setSelectedLeadType(e.value)}
+                                                        placeholder="All Lead Types"
+                                                        className="w-100 employee-filter-dropdown"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
                                                 <Dropdown
-                                                    value={selectedLeadType}
-                                                    options={[{ label: 'All Lead Types', value: '' }, ...LEAD_TYPE_OPTIONS]}
-                                                    onChange={(e) => setSelectedLeadType(e.value)}
-                                                    placeholder="All Lead Types"
+                                                    value={selectedStatus}
+                                                    options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    placeholder="All Status"
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                        )}
-                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...LEAD_STATUS_OPTIONS]}
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                placeholder="All Status"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
-                                            <Dropdown
-                                                value={selectedSalesperson}
-                                                options={[{ label: 'All Lead Owner', value: '' }, ...salespersonsList]}
-                                                onChange={(e) => setSelectedSalesperson(e.value)}
-                                                placeholder="All Lead Owner"
-                                                filter
-                                                className="w-100 employee-filter-dropdown"
-                                            />
-                                        </div>
-                                        <div className="col-xxl-3 col-sm-12">
-                                            <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                </button>
+                                            <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
+                                                <Dropdown
+                                                    value={selectedSalesperson}
+                                                    options={[{ label: 'All Lead Owner', value: '' }, ...salespersonsList]}
+                                                    onChange={(e) => setSelectedSalesperson(e.value)}
+                                                    placeholder="All Lead Owner"
+                                                    filter
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                            <div className="col-xxl-3 col-sm-12">
+                                                <div className="d-flex gap-2">
+                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    </button>
+                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                            </form>
+                                    )}
+                                </form>
 
                                 {loading ? (
                                     <TableLoader rows={10} columns={new Array(9).fill({ style: { minWidth: '100px' } })} />
@@ -522,9 +520,9 @@ export default function Leads() {
                                             onSelectionChange={(e) => setSelectedLeads(e.value)}
                                             dataKey="id"
                                             onRowClick={(e) => {
-                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') || 
-                                                                  e.originalEvent.target.closest('.p-selection-column') ||
-                                                                  e.originalEvent.target.closest('.btn'); // Don't navigate if button clicked
+                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                    e.originalEvent.target.closest('.p-selection-column') ||
+                                                    e.originalEvent.target.closest('.btn'); // Don't navigate if button clicked
                                                 if (!isCheckbox) navigate(`/leads/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
@@ -540,30 +538,30 @@ export default function Leads() {
                                             {isHost && <Column field="lead_type" header="Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
                                             <Column
-                                            header="Action"
-                                            body={(rowData) => {
-                                                const isConverted = !!rowData.convert_to;
-                                                const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
-                                                return (
-                                                    <div className="d-flex">
-                                                        {isConverted ? (
-                                                            <span className="badge bg-success-subtle text-success fs-12 p-2">
-                                                                <i className="ri-checkbox-circle-line align-middle me-1"></i>
-                                                                Converted as a {targetType}
-                                                            </span>
-                                                        ) : (
-                                                            <button 
-                                                                className={`btn ${targetType === 'Partner' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} btn-sm waves-effect waves-light fw-medium border-0`}
-                                                                onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
-                                                            >
-                                                                <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
-                                                                Convert to {targetType}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                );
-                                            }}
-                                        />
+                                                header="Action"
+                                                body={(rowData) => {
+                                                    const isConverted = !!rowData.convert_to;
+                                                    const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
+                                                    return (
+                                                        <div className="d-flex">
+                                                            {isConverted ? (
+                                                                <span className="badge bg-success-subtle text-success fs-12 p-2">
+                                                                    <i className="ri-checkbox-circle-line align-middle me-1"></i>
+                                                                    Converted as a {targetType}
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    className={`btn ${targetType === 'Partner' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} btn-sm waves-effect waves-light fw-medium border-0`}
+                                                                    onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
+                                                                >
+                                                                    <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
+                                                                    Convert to {targetType}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }}
+                                            />
                                         </DataTable>
                                     </div>
                                 )}

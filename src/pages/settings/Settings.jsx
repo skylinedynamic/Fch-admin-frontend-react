@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSettings, updateSettings } from '../../modules/settings/services';
 import SettingsForm from './components/SettingsForm';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import './settings-redesign.css';
 
 export default function Settings() {
@@ -118,7 +117,6 @@ export default function Settings() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Header */}
                 <div className="row mb-4">

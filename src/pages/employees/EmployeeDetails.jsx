@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import '../../../assets/css/datepicker.css';
 
 import {
@@ -216,7 +215,7 @@ export default function EmployeeDetails() {
             image: data.image || null
           };
           setEmployee((prev) => ({ ...prev, ...normalizedData }));
-          
+
           // Set profile image matches partner pattern
           if (data.image) {
             setProfileImage(data.image);
@@ -516,7 +515,6 @@ export default function EmployeeDetails() {
 
   return (
     <div className="page-content">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         {/* Header */}
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
@@ -603,7 +601,7 @@ export default function EmployeeDetails() {
                         phonePrefix={phonePrefix}
                         onPhonePrefixChange={setPhonePrefix}
                         onAddDepartment={() => setShowDepartmentModal(true)}
-                        onOpenFileManager={() => {}} // Local modal now handled in component
+                        onOpenFileManager={() => { }} // Local modal now handled in component
                         profileImage={profileImage}
                         isEditMode={!!id}
                         employeeId={id || employee.employee_code}

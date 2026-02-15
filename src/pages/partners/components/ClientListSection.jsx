@@ -4,7 +4,6 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowers } from '../../../modules/partner/services';
-import { toast } from 'react-toastify';
 import { Skeleton } from 'primereact/skeleton';
 
 export default function ClientListSection() {

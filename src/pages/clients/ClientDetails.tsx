@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import ClientForm from './components/ClientForm';
 import { ClientInfoSectionRef } from './components/ClientInfoSection';
 import { BusinessFinancialsSectionRef } from './components/BusinessFinancialsSection';
@@ -303,7 +302,6 @@ export default function ClientDetails() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row pb-1 page-subheader-sticky bg-body">

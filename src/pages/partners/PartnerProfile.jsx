@@ -13,6 +13,7 @@ import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal'
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -116,7 +117,6 @@ export default function PartnerProfile() {
                     setPartnerPlans(response.data || []);
                 }
             } catch (err) {
-                console.error('Failed to fetch partner plans:', err);
                 toast.error('Failed to load partner plans');
             }
         };
@@ -132,7 +132,6 @@ export default function PartnerProfile() {
                     setUsers(response.data);
                 }
             } catch (error) {
-                console.error('Failed to fetch users', error);
                 toast.error('Failed to load users');
             }
         };
@@ -240,7 +239,6 @@ export default function PartnerProfile() {
                     setProfileStats(result.data);
                 }
             } catch (error) {
-                console.error('Failed to load profile statistics:', error);
             } finally {
                 setProfileStatsLoading(false);
             }
@@ -259,8 +257,6 @@ export default function PartnerProfile() {
             try {
                 const response = await getPartner(id);
                 const data = response.data || response; // Handle both response.data and direct data
-
-                console.log('Fetched partner data:', data); // Debug log
 
                 // Normalize Country: Ensure it's a key (USA/Canada)
                 let finalCountry = data.country;
@@ -332,7 +328,6 @@ export default function PartnerProfile() {
                 }
 
             } catch (error) {
-                console.error("Failed to fetch partner data", error);
                 toast.error("Failed to load partner data");
             } finally {
                 setIsPartnerLoading(false);
@@ -595,7 +590,6 @@ export default function PartnerProfile() {
 
             // Stay on subscription tab after save (no redirect)
         } catch (error) {
-            console.error('Subscription save error:', error);
             if (error.response?.data?.errors) {
                 const backendErrors = error.response.data.errors;
                 // Set errors in state for display
@@ -680,11 +674,6 @@ export default function PartnerProfile() {
                     }
                 });
 
-                // Debug: Log what we're sending
-                console.log('Sending FormData with:');
-                for (let pair of formDataToSend.entries()) {
-                    console.log(pair[0] + ': ', pair[1]);
-                }
 
                 if (id) {
                     await updatePartner(id, formDataToSend);
@@ -708,7 +697,6 @@ export default function PartnerProfile() {
                             setSelectedDocumentsToAttach([]);
                         }
                     } catch (e) {
-                        console.error('Attach documents failed', e);
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
                     const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
@@ -746,7 +734,6 @@ export default function PartnerProfile() {
                                 setSelectedDocumentsToAttach([]);
                             }
                         } catch (e) {
-                            console.error('Attach documents failed', e);
                             toast.error(e.response?.data?.message || 'Failed to attach documents');
                         }
                         // Redirect to the partner profile page with Status & Agent tab active
@@ -758,7 +745,6 @@ export default function PartnerProfile() {
                 }
 
             } catch (error) {
-                console.error('Save error:', error);
                 if (error.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
                     const newErrors = {};

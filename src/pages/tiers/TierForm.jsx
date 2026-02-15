@@ -2,8 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 import { createTier, updateTier, getTier } from '../../modules/tiers/services';
 import FormLoader from '../../components/Loader/FormLoader';
@@ -147,7 +146,6 @@ export default function TierForm() {
     if (initialLoading) {
         return (
             <div className="page-content">
-                <ToastContainer position="top-right" autoClose={3000} />
                 <div className="container-fluid">
                     <div className="row pb-1 mb-3 page-subheader-sticky bg-body">
                         <div className="col-12">
@@ -180,7 +178,6 @@ export default function TierForm() {
     }
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">

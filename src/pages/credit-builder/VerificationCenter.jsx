@@ -4,8 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 import TableLoader from '../../components/Loader/TableLoader';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -163,7 +162,6 @@ export default function VerificationCenter() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">

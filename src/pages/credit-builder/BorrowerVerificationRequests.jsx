@@ -8,8 +8,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
 import TableLoader from '../../components/Loader/TableLoader';
@@ -327,7 +326,7 @@ export default function BorrowerVerificationRequests() {
         if (rowData.status === VERIFICATION_STATUS.REJECTED && rowData.rejection_reason) {
             let badgeClass = 'bg-danger-subtle text-danger';
             return (
-                <span 
+                <span
                     className={`badge ${badgeClass} fs-12 text-capitalize`}
                     title={rowData.rejection_reason}
                     style={{ cursor: 'help' }}
@@ -343,7 +342,6 @@ export default function BorrowerVerificationRequests() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">

@@ -6,8 +6,7 @@ import RolesGridLoader from '../../components/Loader/RolesGridLoader'
 import ErrorState from '../../components/Loader/ErrorState'
 import { fetchRoleDetail } from '../../modules/role/services'
 import type { RoleDetail, RoleDetailUser, Role } from '../../modules/role/types'
-import { ToastContainer, toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+import { toast } from 'react-toastify'
 // @ts-ignore
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal.jsx'
 
@@ -123,7 +122,6 @@ export default function RolesPermissions() {
 
   return (
     <div id="roles-permissions-page" className="page-content">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
@@ -222,72 +220,72 @@ export default function RolesPermissions() {
                             ) : detailError ? (
                               <ErrorState message={detailError} />
                             ) : (
-                            <div className="row g-4">
-                              <div className="col-lg-4">
-                                <div className="card">
-                                  <div className="card-body position-relative">
-                                    <h6 className="section-title mb-3">{roleDetail?.name || selectedRole.name}</h6>
-                                    <div className="permissions-scroll mt-2">
-                                      <div className="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 className="section-title mb-0">All Permissions</h6>
+                              <div className="row g-4">
+                                <div className="col-lg-4">
+                                  <div className="card">
+                                    <div className="card-body position-relative">
+                                      <h6 className="section-title mb-3">{roleDetail?.name || selectedRole.name}</h6>
+                                      <div className="permissions-scroll mt-2">
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                          <h6 className="section-title mb-0">All Permissions</h6>
+                                        </div>
+                                        <ul className="bullet-list mb-0">
+                                          {(roleDetail?.permission || []).map((p, i) => (<li key={p + i}>{p}</li>))}
+                                        </ul>
                                       </div>
-                                      <ul className="bullet-list mb-0">
-                                        {(roleDetail?.permission || []).map((p, i) => (<li key={p + i}>{p}</li>))}
-                                      </ul>
+
                                     </div>
-                                
                                   </div>
                                 </div>
-                              </div>
-                              <div className="col-lg-8">
-                                <div className="card">
-                                  <div className="card-body permissions-user-scroll">
-                                    <div className="user-table-wrapper">
-                                      <table className="user-table w-100">
-                                      <thead>
-                                        <tr>
-                                          <th>ID</th>
-                                          <th>User</th>
-                                          <th>Name</th>
-                                          <th>Email</th>
-                                          <th>Phone</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {(roleDetail?.users || []).length === 0 ? (
-                                          <tr className="empty-row">
-                                            <td colSpan={5}>No users found assigned to this role.</td>
-                                          </tr>
-                                        ) : (
-                                          (roleDetail?.users || []).map((u: RoleDetailUser) => (
-                                            <tr key={u.id}>
-                                              <td>{u.id}</td>
-                                              <td>
-                                                {u.image ? (
-                                                  <img src={u.image} alt={u.name} className="user-avatar" />
-                                                ) : (
-                                                  <span className="avatar-dot">{initials(u.name)}</span>
-                                                )}
-                                              </td>
-                                              <td>
-                                                <div className="user-identity compact">
-                                                  <div>
-                                                    <div className="name">{u.name}</div>
-                                                  </div>
-                                                </div>
-                                              </td>
-                                              <td>{u.email}</td>
-                                              <td>{u.phone_number}</td>
+                                <div className="col-lg-8">
+                                  <div className="card">
+                                    <div className="card-body permissions-user-scroll">
+                                      <div className="user-table-wrapper">
+                                        <table className="user-table w-100">
+                                          <thead>
+                                            <tr>
+                                              <th>ID</th>
+                                              <th>User</th>
+                                              <th>Name</th>
+                                              <th>Email</th>
+                                              <th>Phone</th>
                                             </tr>
-                                          ))
-                                        )}
-                                      </tbody>
-                                      </table>
+                                          </thead>
+                                          <tbody>
+                                            {(roleDetail?.users || []).length === 0 ? (
+                                              <tr className="empty-row">
+                                                <td colSpan={5}>No users found assigned to this role.</td>
+                                              </tr>
+                                            ) : (
+                                              (roleDetail?.users || []).map((u: RoleDetailUser) => (
+                                                <tr key={u.id}>
+                                                  <td>{u.id}</td>
+                                                  <td>
+                                                    {u.image ? (
+                                                      <img src={u.image} alt={u.name} className="user-avatar" />
+                                                    ) : (
+                                                      <span className="avatar-dot">{initials(u.name)}</span>
+                                                    )}
+                                                  </td>
+                                                  <td>
+                                                    <div className="user-identity compact">
+                                                      <div>
+                                                        <div className="name">{u.name}</div>
+                                                      </div>
+                                                    </div>
+                                                  </td>
+                                                  <td>{u.email}</td>
+                                                  <td>{u.phone_number}</td>
+                                                </tr>
+                                              ))
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
                             )}
                           </div>
                         </div>

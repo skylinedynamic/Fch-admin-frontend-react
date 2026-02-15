@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
@@ -24,6 +24,17 @@ export default function PartnerInformationSection({
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
+
+    // Auto-scroll to first error field
+    useEffect(() => {
+        if (errors && Object.keys(errors).length > 0) {
+            // Find the first error field
+            const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [errors]);
 
     // Filter results from file manager based on allowed extensions
     const handleFileSelection = (selectedFiles) => {
@@ -235,7 +246,7 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-           
+
 
             {/* Address */}
             <div className="col-lg-6">
@@ -374,7 +385,7 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-             {/* Partner Type */}
+            {/* Partner Type */}
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Partner Type <span className="text-danger">*</span></label>
@@ -384,7 +395,7 @@ export default function PartnerInformationSection({
                             const types = new Set((partnerPlans || []).map(p => p.partner_type));
                             // Ensure current value is included so it's visible when disabled
                             if (formData.partner_type) types.add(formData.partner_type);
-                            
+
                             return Array.from(types).map(type => ({
                                 label: type,
                                 value: type
@@ -415,10 +426,10 @@ export default function PartnerInformationSection({
                         value={formData.enrollment_type}
                         options={(() => {
                             // Base options from plans matching partner type
-                            const matchedPlans = partnerPlans.filter(plan => 
+                            const matchedPlans = partnerPlans.filter(plan =>
                                 plan.partner_type === formData.partner_type
                             );
-                            
+
                             const options = matchedPlans.map(plan => ({
                                 label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
                                 value: plan.enrollment_type
@@ -456,10 +467,10 @@ export default function PartnerInformationSection({
                                 {(() => {
                                     // Try strict match first
                                     let selectedPlan = partnerPlans.find(
-                                        plan => plan.partner_type === formData.partner_type && 
-                                               plan.enrollment_type === formData.enrollment_type
+                                        plan => plan.partner_type === formData.partner_type &&
+                                            plan.enrollment_type === formData.enrollment_type
                                     );
-                                    
+
                                     // If no strict match and we have data in formData, use a fallback
                                     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
                                     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
@@ -532,7 +543,7 @@ export default function PartnerInformationSection({
 
             {/* Secondary Contact Section */}
             <div className="col-lg-12">
-                <h5 className="border-bottom pb-2 mb-3 mt-3">Secondary Contact</h5>
+                <h5 className="pb-2 mb-3 mt-3">Secondary Contact</h5>
             </div>
 
             <div className="col-lg-6">

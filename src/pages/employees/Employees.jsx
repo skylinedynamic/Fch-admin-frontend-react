@@ -1,6 +1,5 @@
 import React from 'react';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 import { useEmployeeList } from './hooks/useEmployeeList';
 import EmployeeListHeader from './components/EmployeeListHeader';
@@ -76,7 +75,6 @@ export default function Employees() {
 
   return (
     <div className="page-content">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row mb-0 pb-0 bg-body">
           <div className="col">

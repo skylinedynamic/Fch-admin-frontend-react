@@ -8,8 +8,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers } from '../../modules/user/services';
 import { formatPhoneNumber } from '../../utils/formatters';
 import '../../../assets/css/bootstrap.min.css';
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import UserModal from './components/UserModal';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
@@ -334,7 +333,6 @@ export default function Users() {
 
   return (
     <div className="page-content">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container-fluid">
         <div className="row bg-body">
           <div className="row bg-body">
