@@ -27,6 +27,7 @@ export type Client = {
     last_4_ssn?: string;
     enrollment_type?: string;
     plan_id?: number | string;
+    assign_id?: number | string;
     notes?: string;
 
     // Financials

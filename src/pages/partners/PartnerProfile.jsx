@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import '../../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
@@ -783,7 +781,6 @@ export default function PartnerProfile() {
 
     return (
         <div className="page-content">
-            <ToastContainer position="top-right" autoClose={3000} />
             <div className="container-fluid">
                 {/* Page Title */}
                 <div className="row pb-1 page-subheader-sticky bg-body">

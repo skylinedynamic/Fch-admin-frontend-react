@@ -18,6 +18,7 @@ interface Document {
     id: number;
     document_name: string;
     document_namea?: string;
+    document_number?: string;
     type: string;
     size: string;
     date: string;
@@ -262,10 +263,11 @@ export default function ClientDocumentsSection() {
                         <thead className="table-light text-muted">
                             <tr>
                                 <th scope="col" style={{ width: '25%' }}>File Name</th>
-                                <th scope="col" style={{ width: '25%' }}>Document Type</th>
+                                <th scope="col" style={{ width: '15%' }}>Document Number</th>
+                                <th scope="col" style={{ width: '15%' }}>Document Type</th>
                                 <th scope="col" style={{ width: '10%' }}>Size</th>
                                 <th scope="col" style={{ width: '15%' }}>Upload Date</th>
-                                <th scope="col" style={{ width: '15%' }}>Status</th>
+                                <th scope="col" style={{ width: '10%' }}>Status</th>
                                 <th scope="col" className="text-end" style={{ width: '10%' }}>Action</th>
                             </tr>
                         </thead>
@@ -274,6 +276,7 @@ export default function ClientDocumentsSection() {
                                 Array.from({ length: 5 }).map((_, index) => (
                                     <tr key={index}>
                                         <td><Skeleton width="100%" height="1.5rem" /></td>
+                                        <td><Skeleton width="60%" height="1.5rem" /></td>
                                         <td><Skeleton width="80%" height="1.5rem" /></td>
                                         <td><Skeleton width="60%" height="1.5rem" /></td>
                                         <td><Skeleton width="70%" height="1.5rem" /></td>
@@ -283,7 +286,7 @@ export default function ClientDocumentsSection() {
                                 ))
                             ) : documents.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-4 text-muted">
+                                    <td colSpan={7} className="text-center py-4 text-muted">
                                         No documents found
                                     </td>
                                 </tr>
@@ -312,6 +315,11 @@ export default function ClientDocumentsSection() {
                                                         </h6>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <span className="text-muted d-block text-truncate">
+                                                    {doc.document_number || '-'}
+                                                </span>
                                             </td>
                                             <td>
                                                 <span className="text-muted d-block text-truncate" title={doc.type}>

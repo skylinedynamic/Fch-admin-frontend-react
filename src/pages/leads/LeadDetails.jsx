@@ -60,7 +60,7 @@ export default function LeadDetails() {
         }
     }, [isHost]);
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         lead_id: '',
@@ -280,7 +280,6 @@ export default function LeadDetails() {
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
         } catch (err) {
-            console.error('Update missing info error:', err);
             toast.error(err.response?.data?.message || 'Failed to update lead information');
         } finally {
             setConversionLoading(false);
@@ -326,9 +325,6 @@ export default function LeadDetails() {
 
     // Summernote Editors
     const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'contactInfo');
-    const { editorRef: sourceNoteRef } = useSummernote('lead_source_note', formData.lead_source_note, handleInputChange, { height: 100 }, activeTab === 'leadDetails' && formData.lead_source === 'Other');
-    const { editorRef: entityNoteRef } = useSummernote('entity_type_note', formData.entity_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.entity_type === 'Other / Unknown');
-    const { editorRef: industryNoteRef } = useSummernote('industry_type_note', formData.industry_type_note, handleInputChange, { height: 100 }, activeTab === 'contactInfo' && formData.industry_type === 'Other / Unknown');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -449,6 +445,7 @@ export default function LeadDetails() {
                         country: finalCountry,
                         state: finalState,
                         city: cityValue,
+                        legal_business_name: data.company_name,
                         other_city: otherCityValue
                     }));
                 }
@@ -682,19 +679,18 @@ export default function LeadDetails() {
                                                         </div>
 
                                                         {formData.lead_source === 'Other' && (
-                                                            <div className="col-lg-12">
+                                                            <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Lead Source Details <span className="text-danger">*</span></label>
-                                                                    <textarea
-                                                                        ref={sourceNoteRef}
+                                                                    <label className="form-label">Note <span className="text-danger">*</span></label>
+                                                                    <input
+                                                                        type="text"
                                                                         className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
                                                                         name="lead_source_note"
                                                                         value={formData.lead_source_note}
                                                                         onChange={handleInputChange}
-                                                                        rows="2"
                                                                         placeholder="Please specify lead source"
-                                                                    ></textarea>
-                                                                    {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
+                                                                    />
+                                                                    {errors.lead_source_note && <div className="invalid-feedback">{errors.lead_source_note}</div>}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -887,19 +883,18 @@ export default function LeadDetails() {
                                                         </div>
 
                                                         {formData.entity_type === 'Other / Unknown' && (
-                                                            <div className="col-lg-12">
+                                                            <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
-                                                                    <textarea
-                                                                        ref={entityNoteRef}
+                                                                    <input
+                                                                        type="text"
                                                                         className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
                                                                         name="entity_type_note"
                                                                         value={formData.entity_type_note}
                                                                         onChange={handleInputChange}
-                                                                        rows="2"
                                                                         placeholder="Please specify entity type"
-                                                                    ></textarea>
-                                                                    {errors.entity_type_note && <div className="invalid-feedback d-block">{errors.entity_type_note}</div>}
+                                                                    />
+                                                                    {errors.entity_type_note && <div className="invalid-feedback">{errors.entity_type_note}</div>}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -917,19 +912,18 @@ export default function LeadDetails() {
                                                         </div>
 
                                                         {formData.industry_type === 'Other / Unknown' && (
-                                                            <div className="col-lg-12">
+                                                            <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
-                                                                    <textarea
-                                                                        ref={industryNoteRef}
+                                                                    <input
+                                                                        type="text"
                                                                         className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
                                                                         name="industry_type_note"
                                                                         value={formData.industry_type_note}
                                                                         onChange={handleInputChange}
-                                                                        rows="2"
                                                                         placeholder="Please specify industry type"
-                                                                    ></textarea>
-                                                                    {errors.industry_type_note && <div className="invalid-feedback d-block">{errors.industry_type_note}</div>}
+                                                                    />
+                                                                    {errors.industry_type_note && <div className="invalid-feedback">{errors.industry_type_note}</div>}
                                                                 </div>
                                                             </div>
                                                         )}

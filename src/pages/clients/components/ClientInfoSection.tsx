@@ -17,6 +17,7 @@ import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { entityTypes, industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config';
+import { allUsers } from '../../../modules/partner/services';
 
 interface ClientInfoSectionProps {
     clientId?: string | null;
@@ -59,6 +60,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
+    const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
 
     // Fetch Plans
     const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
@@ -141,6 +143,21 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
              hasSyncedData.current = true;
         }
     }, [fetchedData, borrowerPlans, nonHostPlans, isHost, clientId]);
+
+    // Fetch Users for Assign to dropdown
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await allUsers();
+                if (response.status && response.data) {
+                    setUsers(response.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch users:', error);
+            }
+        };
+        fetchUsers();
+    }, []);
 
     // Local Location Options Logic
     const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
@@ -609,15 +626,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
                         <Flatpickr
-                            options={DATE_PICKER_OPTIONS}
+                            options={{ dateFormat: "d M, Y" }}
                             value={parseDate(formData.business_start_date)}
-                            onChange={(dates) => {
-                                const date = dates[0];
-                                const dateString = date
-                                    ? `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${date.getFullYear()}`
-                                    : "";
-                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
-                            }}
                             className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
                             placeholder="Select date"
                         />
@@ -638,6 +648,24 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             onChange={handleInputChange}
                         />
                         {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
+                    </div>
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="assign_id" className="form-label">Assign to</label>
+                        <Dropdown
+                            value={formData.assign_id}
+                            options={users.map(user => ({ label: user.name, value: user.id }))}
+                            onChange={(e) => handleInputChange({ target: { name: 'assign_id', value: e.value } })}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Select User"
+                            filter
+                            className={`w-100 ${errors.assign_id ? 'p-invalid' : ''}`}
+                            appendTo="self"
+                        />
+                        {errors.assign_id && <small className="p-error">{errors.assign_id}</small>}
                     </div>
                 </div>
 

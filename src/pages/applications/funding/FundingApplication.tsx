@@ -279,7 +279,7 @@ export default function FundingApplication() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(7).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -310,6 +310,17 @@ export default function FundingApplication() {
                                             emptyMessage="No applications found"
                                         >
                                             <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
+                                            <Column
+                                                field="application_number"
+                                                header="App No"
+                                                body={(rowData: FundingApplicationType) => {
+                                                    return rowData.application_number || <span className="text-muted">-</span>;
+                                                }}
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search application no"
+                                                style={{ minWidth: '150px' }}
+                                            />
                                             <Column field="industry_type" header="Industry Type" sortable filter filterPlaceholder="Search industry" style={{ minWidth: '150px' }} />
                                             <Column field="entity_type" header="Entity Type" sortable filter filterPlaceholder="Search entity" style={{ minWidth: '150px' }} />
                                             <Column field="purpose_of_funds" header="Purpose" sortable filter filterPlaceholder="Search purpose" style={{ minWidth: '160px' }} />

@@ -42,6 +42,7 @@ export interface PreQualificationApplication {
 
 export interface FundingApplication {
     id: number;
+    application_number?: string;
     full_name: string;
     industry_type: string;
     entity_type: string;
