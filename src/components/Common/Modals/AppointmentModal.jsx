@@ -350,18 +350,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             // - Host user and assigned to Partner
             // - Partner user and assigned to Borrower/Host
             let meetingWithValue = apt.meeting_with === 1 || apt.meeting_with_host === 1;
-            
+
             console.log('[AppointmentModal] Checkbox logic:', {
                 isHost,
                 assigned_for: apt.assigned_for,
                 entity_type: apt.assigned_for?.entity_type,
                 initial_meetingWithValue: meetingWithValue
             });
-            
+
             if (apt.assigned_for && apt.assigned_for.entity_type) {
                 const entityType = apt.assigned_for.entity_type.toLowerCase();
                 console.log('[AppointmentModal] Checking entity_type:', entityType);
-                
+
                 if (isHost && entityType === 'partner') {
                     console.log('[AppointmentModal] Host + Partner detected - checking checkbox');
                     meetingWithValue = true;
@@ -370,7 +370,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     meetingWithValue = true;
                 }
             }
-            
+
             console.log('[AppointmentModal] Final meetingWithValue:', meetingWithValue);
             setIsMeetingWithChecked(meetingWithValue);
 
@@ -390,7 +390,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     const rawType = apt.assigned_for.entity_type || '';
                     const formattedType = rawType.toLowerCase();
                     setAssignedForType(formattedType);
-                    
+
                     console.log('[AppointmentModal] Setting assigned_for:', {
                         entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
                         assigned_for: apt.assigned_for.id,
@@ -398,7 +398,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         raw_assigned_for: apt.assigned_for,
                         loaded_users: response.data
                     });
-                    
+
                     setFormData(p => ({
                         ...p,
                         entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
@@ -847,7 +847,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         }}
                                                         placeholder="Select Users"
                                                         className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                        appendTo="self" />
+                                                        appendTo="self"
+                                                        filter
+                                                        filterPlaceholder="Search users..." />
                                                 )}
                                                 {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                             </div>
