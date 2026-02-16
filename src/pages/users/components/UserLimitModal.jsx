@@ -52,7 +52,7 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
                             <h4 className="fw-bold">User Limit Reached</h4>
                             <p className="text-muted fs-15 mb-4">
                                 You have reached your limit of <b>{freeLimit}</b>. 
-                                <br />Purchase additional users to add more users.
+                                <br />Purchase additional users to add more accounts. Payment is required.
                             </p>
                             
                             <div className="mb-4 text-start mx-auto" style={{ maxWidth: '250px' }}>

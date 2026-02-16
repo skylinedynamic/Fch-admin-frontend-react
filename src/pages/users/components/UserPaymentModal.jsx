@@ -34,7 +34,7 @@ const CheckoutForm = ({ amount, quantity, onPaymentSuccess, onCancel, loading })
         type: 'card',
         card: cardNumberElement,
         billing_details: {
-          name: user?.name || 'User',
+          name: user?.name || '',
           email: user?.email || '',
           phone: user?.phone_number || '',
         },
