@@ -8,7 +8,7 @@ const jobStatusOptions = [
     ...STATUS
 ];
 
-export default function AccountSection({ employee, roles, onChange, isEditMode, errors = {} }) {
+export default function AccountSection({ employee, roles, onChange, isEditMode, errors = {}, loadingLimitCheck }) {
     // Transform roles to dropdown options
     const roleOptions = [
         { label: 'Select role', value: '' },
@@ -47,6 +47,7 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                             className="form-check-input"
                             name="create_account"
                             checked={!!employee.create_account}
+                            disabled={loadingLimitCheck}
                             onChange={(e) => {
                                 const checked = e.target.checked;
                                 onChange({
@@ -59,8 +60,11 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                                 });
                             }}
                         />
-                        <label className="form-check-label" htmlFor="createAccountCheckbox">
+                        <label className="form-check-label d-flex align-items-center" htmlFor="createAccountCheckbox">
                             Create account
+                            {loadingLimitCheck && (
+                                <span className="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+                            )}
                         </label>
                     </div>
                 </div>
