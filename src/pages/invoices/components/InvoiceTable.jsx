@@ -61,10 +61,10 @@ export default function InvoiceTable({
     };
 
     const statusBodyTemplate = (rowData) => {
-        const severity = INVOICE_STATUS_COLORS[rowData.status?.toLowerCase()] || 'primary';
+        const severity = INVOICE_STATUS_COLORS[rowData.status] || 'primary';
         
         return (
-            <span className={`badge bg-${severity} text-white px-3 py-1 rounded-pill fw-medium text-uppercase`}>
+            <span className={`badge bg-${severity}-subtle text-${severity} px-3 py-1 rounded-pill fw-medium`}>
                 {rowData.status}
             </span>
         );

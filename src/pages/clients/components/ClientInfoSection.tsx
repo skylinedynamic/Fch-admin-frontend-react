@@ -15,7 +15,8 @@ import {
 } from '../../../modules/client';
 import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { entityTypes, industryTypes } from '../../../config/borrower';
+import { industryTypes, entityTypes } from '../../../config/borrower';
+import { scrollToFirstError } from '../../../utils/formUtils';
 import { locationData } from '../../../config';
 import { allUsers } from '../../../modules/partner/services';
 
@@ -277,6 +278,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                             });
                             setErrors(mappedErrors);
+                            scrollToFirstError(mappedErrors);
                         }
                         reject(error);
                     }
@@ -478,6 +480,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">Country <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="country"
                             value={formData.country}
                             options={localCountries}
                             onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
@@ -495,6 +498,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">State <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="state"
                             value={formData.state}
                             options={localStates}
                             onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
@@ -514,6 +518,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">City <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="city"
                             value={formData.city}
                             options={[...localCities, { label: 'Others', value: 'Others' }]}
                             onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
@@ -594,6 +599,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_entity_type" className="form-label">Entity Type</label>
                         <Dropdown
+                            inputId="business_entity_type"
                             value={formData.business_entity_type}
                             options={entityTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'business_entity_type', value: e.value } })}
@@ -610,6 +616,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_industry_type" className="form-label">Industry Type</label>
                         <Dropdown
+                            inputId="business_industry_type"
                             value={formData.business_industry_type}
                             options={industryTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'business_industry_type', value: e.value } })}
@@ -626,6 +633,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
                         <Flatpickr
+                            id="business_start_date"
+                            name="business_start_date"
                             options={{ dateFormat: "d M, Y" }}
                             value={parseDate(formData.business_start_date)}
                             className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
@@ -655,6 +664,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="assign_id" className="form-label">Assign to</label>
                         <Dropdown
+                            inputId="assign_id"
                             value={formData.assign_id}
                             options={users.map(user => ({ label: user.name, value: user.id }))}
                             onChange={(e) => handleInputChange({ target: { name: 'assign_id', value: e.value } })}
@@ -676,6 +686,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             Enrollment Type <span className="text-danger">*</span>
                         </label>
                         <Dropdown
+                            inputId="plan_id"
                             value={formData.plan_id}
                             options={enrollmentOptions}
                             onChange={(e) => {
@@ -716,8 +727,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
-                            <div className="card border border-primary bg-light-subtle">
-                                <div className="card-body p-3">
+                            <div className="enrollment-base-alert">
+                                <div className="card-body">
                                     {(() => {
                                         const selectedOption = enrollmentOptions.find(opt => 
                                             String(opt.value) === String(formData.plan_id)
@@ -751,33 +762,42 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 )}
 
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Client Type:</span>
-                                                    <span className={`badge ${isHost ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
+                                                    <span className="info-label">
+                                                        <i className="ri-user-settings-line"></i> Client Type:
+                                                    </span>
+                                                    <span className={`info-value ${isHost ? 'text-primary' : 'text-success'}`}>
                                                         {isHost ? 'Host Client' : 'Partner Client'}
                                                     </span>
                                                 </div>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                    <span className="text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
-                                                </div>
-                                                <hr className="my-2" />
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">
-                                                        {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
+                                                    <span className="info-label">
+                                                        <i className="ri-bank-card-line"></i> Payment Plan:
                                                     </span>
-                                                    <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
+                                                    <span className="info-value text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
+                                                </div>
+                                                <hr />
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="info-label">
+                                                        <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i> 
+                                                        {installments > 1 ? ' Monthly Payment:' : ' One-Time Cost:'}
+                                                    </span>
+                                                    <span className={`amount-value ${installments > 1 ? 'text-success' : 'text-success'}`}>
                                                         ${Number(price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                                 {installments > 1 && (
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="text-muted">Duration:</span>
-                                                        <span className="text-muted">{installments} months</span>
+                                                        <span className="info-label">
+                                                            <i className="ri-calendar-line"></i> Duration:
+                                                        </span>
+                                                        <span className="info-value text-muted">{installments} months</span>
                                                     </div>
                                                 )}
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Total:</span>
-                                                    <span className="fw-bold text-dark">
+                                                    <span className="info-label">
+                                                        <i className="ri-calculator-line"></i> Total:
+                                                    </span>
+                                                    <span className="amount-value text-success">
                                                         ${Number(displayTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>

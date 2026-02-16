@@ -462,8 +462,8 @@ export default function PartnerInformationSection({
                 <div className="col-lg-12">
                     <div className="mb-3">
                         <label className="form-label">Enrollment Amount</label>
-                        <div className="card border border-primary bg-light-subtle">
-                            <div className="card-body p-3">
+                        <div className="enrollment-base-alert">
+                            <div className="card-body">
                                 {(() => {
                                     // Try strict match first
                                     let selectedPlan = partnerPlans.find(
@@ -483,52 +483,64 @@ export default function PartnerInformationSection({
                                     return (
                                         <>
                                             <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <span className="fw-semibold text-dark">Partner Type:</span>
-                                                <span className="badge bg-primary-subtle text-primary">{partnerTypeName}</span>
+                                                <span className="info-label">
+                                                    <i className="ri-building-line"></i> Partner Type:
+                                                </span>
+                                                <span className="info-value text-success">{partnerTypeName}</span>
                                             </div>
                                             <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                <span className="text-muted">{enrollmentTypeName}</span>
+                                                <span className="info-label">
+                                                    <i className="ri-bank-card-line"></i> Payment Plan:
+                                                </span>
+                                                <span className="info-value">{enrollmentTypeName}</span>
                                             </div>
-                                            <hr className="my-2" />
+                                            <hr />
                                             {isOneTime ? (
                                                 <>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">One-Time Cost:</span>
-                                                        <span className="fs-5 fw-bold text-success">
+                                                        <span className="info-label">
+                                                            <i className="ri-hand-coin-line"></i> One-Time Cost:
+                                                        </span>
+                                                        <span className="amount-value amount-success">
                                                             ${Number(paymentAmount).toLocaleString()}
                                                         </span>
                                                     </div>
-                                                    <div className="alert alert-info p-2 mb-0 mt-2">
-                                                        <small>
-                                                            <i className="ri-information-line me-1"></i>
+                                                    <div className="custom-notice">
+                                                        <i className="ri-information-line"></i>
+                                                        <p className="custom-notice-text">
                                                             Platform fee of <strong>${Number(platformFee).toLocaleString()}/month</strong> starts on the 12th month
-                                                        </small>
+                                                        </p>
                                                     </div>
                                                 </>
                                             ) : (
                                                 <>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Monthly Payment:</span>
-                                                        <span className="fs-5 fw-bold text-primary">
+                                                        <span className="info-label">
+                                                            <i className="ri-money-dollar-circle-line"></i> Monthly Payment:
+                                                        </span>
+                                                        <span className="amount-value text-success">
                                                             ${Number(paymentAmount).toLocaleString()}
                                                         </span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="text-muted">Duration:</span>
-                                                        <span className="text-muted">{selectedPlan?.total_installments_count || 11} months</span>
+                                                        <span className="info-label">
+                                                            <i className="ri-calendar-line"></i> Duration:
+                                                        </span>
+                                                        <span className="info-value text-muted">{selectedPlan?.total_installments_count || 11} months</span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="fw-semibold text-dark">Total:</span>
-                                                        <span className="fw-bold text-dark">
+                                                        <span className="info-label">
+                                                            <i className="ri-calculator-line"></i> Total Investment:
+                                                        </span>
+                                                        <span className="info-value text-success">
                                                             ${Number(selectedPlan?.total_amount || (Number(paymentAmount) * (selectedPlan?.total_installments_count || 11))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
-                                                    <div className="alert alert-info p-2 mb-0 mt-2">
-                                                        <small>
-                                                            <i className="ri-information-line me-1"></i>
-                                                            Platform fee of <strong>${Number(platformFee).toLocaleString()}/month</strong> starts on the 12th month from first payment
-                                                        </small>
+                                                    <div className="custom-notice">
+                                                        <i className="ri-information-line text-success"></i>
+                                                        <p className="custom-notice-text">
+                                                            Platform fee: <strong>${Number(platformFee).toLocaleString()}/month</strong> (Starts month 12)
+                                                        </p>
                                                     </div>
                                                 </>
                                             )}

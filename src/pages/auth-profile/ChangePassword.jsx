@@ -5,7 +5,7 @@ import { useUpdatePassword } from '../../modules/auth-profile';
 
 const ChangePassword = () => {
     const navigate = useNavigate();
-    const { mutateAsync: updatePassword, isLoading: isSubmitting } = useUpdatePassword();
+    const { mutateAsync: updatePassword, isPending: isSubmitting } = useUpdatePassword();
 
     const [formData, setFormData] = useState({
         current_password: '',

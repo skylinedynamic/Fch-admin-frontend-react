@@ -98,7 +98,7 @@ export default function LeadDetails() {
     });
 
     const [users, setUsers] = useState([]);
-    const [partners, setPartners] = useState([]);
+ 
     const [profileStats, setProfileStats] = useState({
         total_meetings: 0,
         total_clients: 0,
@@ -330,10 +330,6 @@ export default function LeadDetails() {
             try {
                 const usersRes = await allUsers();
                 if (usersRes.status) setUsers(usersRes.data);
-
-                // Fetch partners list for the dropdown
-                const partnersRes = await fetch('/api/admin/partners/get-all-partners').then(res => res.json());
-                if (partnersRes.status) setPartners(partnersRes.data);
             } catch (err) {
                 console.error(err);
             }
@@ -747,14 +743,23 @@ export default function LeadDetails() {
                                                         <div className="col-lg-6">
                                                             <div className="mb-3">
                                                                 <label className="form-label">Business EIN</label>
-                                                                <input type="text" className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`} name="business_ein" value={formData.business_ein} onChange={handleInputChange} placeholder="Enter 9-digit EIN" />
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
+                                                                    name="business_ein"
+                                                                    value={formData.business_ein}
+                                                                    onChange={handleInputChange}
+                                                                    placeholder="Enter 9-digit EIN"
+                                                                    onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
+                                                                    onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                />
                                                                 {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
                                                             </div>
                                                         </div>
                                                         <div className="col-lg-6">
                                                             <div className="mb-3">
                                                                 <label className="form-label">State File Number</label>
-                                                                <input type="text" className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`} name="state_file_number" value={formData.state_file_number} onChange={handleInputChange} placeholder="Enter state file number" />
+                                                                <input type="text" onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`} name="state_file_number" value={formData.state_file_number} onChange={handleInputChange} placeholder="Enter state file number" />
                                                                 {errors.state_file_number && <div className="invalid-feedback">{errors.state_file_number}</div>}
                                                             </div>
                                                         </div>
@@ -768,6 +773,7 @@ export default function LeadDetails() {
                                                                     value={formData.duns_number}
                                                                     onChange={handleInputChange}
                                                                     placeholder="Enter 9-digit D-U-N-S"
+                                                                    onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
                                                                     onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                 />
                                                                 {errors.duns_number && <div className="invalid-feedback">{errors.duns_number}</div>}
@@ -950,13 +956,27 @@ export default function LeadDetails() {
                                                         <div className="col-lg-6">
                                                             <div className="mb-3">
                                                                 <label className="form-label">SSN Last 4</label>
-                                                                <input type="text" className="form-control" name="ssn_last_4" value={formData.ssn_last_4} onChange={handleInputChange} placeholder="Enter last 4 digits of SSN" />
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    name="ssn_last_4"
+                                                                    value={formData.ssn_last_4}
+                                                                    onChange={handleInputChange}
+                                                                    placeholder="Enter last 4 digits"
+                                                                    onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
+                                                                    onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                />
                                                             </div>
                                                         </div>
                                                         <div className="col-lg-12">
                                                             <div className="mb-3">
                                                                 <label className="form-label">Requirement Details</label>
-                                                                <textarea ref={editorRef} className="form-control" name="requirement_details" value={formData.requirement_details} onChange={handleInputChange} rows="3" placeholder="Enter details"></textarea>
+                                                                <textarea 
+                                                                    ref={editorRef} 
+                                                                    className="form-control" 
+                                                                    name="requirement_details" 
+                                                                    placeholder="Enter details"
+                                                                ></textarea>
                                                             </div>
                                                         </div>
                                                     </div>
