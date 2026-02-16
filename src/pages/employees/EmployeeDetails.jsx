@@ -314,11 +314,23 @@ export default function EmployeeDetails() {
         if (!hasExistingAccount) {
           const performLimitCheck = async () => {
              try {
-               setLoadingLimitCheck(true);
-               
-               // Fetch fresh user details to get latest total_free_users/total_paid_users
+               // Fetch fresh user details to check if host
                const detailsRes = await getUserDetails();
                const freshUser = detailsRes?.data?.user;
+               
+               // Bypass limit check for host users - no loading state
+               if (freshUser?.is_host === 1) {
+                  setEmployee((prev) => ({
+                    ...prev,
+                    create_account: true,
+                    role_id: prev.role_id,
+                    user: !id ? prev.user : (prev.user || {})
+                  }));
+                  return;
+               }
+               
+               // Non-host users: show loading and perform limit check
+               setLoadingLimitCheck(true);
                
                const data = await getUserCount();
                const currentCount = data?.data?.count || 0;

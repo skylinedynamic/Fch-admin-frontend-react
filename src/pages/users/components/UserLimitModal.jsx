@@ -40,8 +40,16 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
     return (
         <div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                    <div className="modal-body p-5 text-center">
+                <div className="modal-content border-0">
+                    <div className="modal-body p-5 text-center px-4">
+                        <button
+                            type="button"
+                            className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle position-absolute end-0 top-0 m-2"
+                            onClick={onHide}
+                        >
+                            <i className="ri-close-line fs-22"></i>
+                        </button>
+                        
                         <lord-icon
                             src="https://cdn.lordicon.com/qhviklyi.json" // Wallet/Payment icon
                             trigger="loop"
@@ -94,8 +102,9 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
 
                             <div className="hstack gap-2 justify-content-center remove">
                                 <button
-                                    className="btn btn-link link-success fw-medium text-decoration-none"
+                                    className="btn btn-danger text-white fw-medium text-decoration-none"
                                     onClick={onHide}
+                                    style={{ color: '#f06548' }} // Hardcoded to match Velzon danger primary
                                 >
                                     Cancel
                                 </button>

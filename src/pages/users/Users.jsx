@@ -54,6 +54,15 @@ export default function Users() {
   const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, totalPrice: 0 });
 
   const handleAddUserClick = async () => {
+    // Check if current user is host from store (no API call needed)
+    if (user?.is_host === 1) {
+       setShowAddUser(true);
+       setEditingUserId(null);
+       setBackendErrors({});
+       setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+       return;
+    }
+
     try {
       setLoadingLimitCheck(true);
       
@@ -65,8 +74,7 @@ export default function Users() {
       const freeLimit = freshUser?.total_free_users || 0;
       const paidLimit = freshUser?.total_paid_users || 0;
       const totalAllowed = freeLimit + paidLimit;
-      console.log(currentCount);
-      console.log(totalAllowed);
+      
       if (currentCount < totalAllowed) {
          setShowAddUser(true);
          setEditingUserId(null);
@@ -78,7 +86,7 @@ export default function Users() {
              price: data.data.per_user_price,
              limit: totalAllowed,
              quantity: 1,
-             totalPrice: parseFloat(data.per_user_price || 0)
+             totalPrice: parseFloat(data.data.per_user_price || 0)
          });
          setShowLimitModal(true);
       }
