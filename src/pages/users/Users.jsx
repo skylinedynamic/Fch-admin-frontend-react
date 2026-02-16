@@ -5,7 +5,8 @@ import { DataTable } from '../../components/Table/DataTableWrapper'
 import { Column } from 'primereact/column'
 import { Dropdown } from 'primereact/dropdown'
 import { FilterMatchMode, FilterOperator } from 'primereact/api'
-import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers } from '../../modules/user/services';
+import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
 import '../../../assets/css/bootstrap.min.css';
 import { toast } from "react-toastify";
@@ -13,6 +14,9 @@ import UserModal from './components/UserModal';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { useAuthStore } from '../../store/auth/authStore';
+import UserLimitModal from './components/UserLimitModal';
+import UserPaymentModal from './components/UserPaymentModal';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -43,6 +47,60 @@ export default function Users() {
   const navigate = useNavigate();
   const location = useLocation();
   const { hasPermission } = usePermissions();
+  const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, totalPrice: 0 });
+
+  const handleAddUserClick = async () => {
+    try {
+      setLoadingLimitCheck(true);
+      
+      const detailsRes = await getUserDetails();
+      const freshUser = detailsRes.data?.user;
+      
+      const data = await getUserCount();
+      const currentCount = data.data.count || 0;
+      const freeLimit = freshUser?.total_free_users || 0;
+      const paidLimit = freshUser?.total_paid_users || 0;
+      const totalAllowed = freeLimit + paidLimit;
+      console.log(currentCount);
+      console.log(totalAllowed);
+      if (currentCount < totalAllowed) {
+         setShowAddUser(true);
+         setEditingUserId(null);
+         setBackendErrors({});
+         setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+      } else {
+         setLimitData({
+             count: currentCount,
+             price: data.data.per_user_price,
+             limit: totalAllowed,
+             quantity: 1,
+             totalPrice: parseFloat(data.per_user_price || 0)
+         });
+         setShowLimitModal(true);
+      }
+    } catch (error) {
+      console.error("Failed to check user limit:", error);
+      toast.error("Failed to check user limit");
+    } finally {
+      setLoadingLimitCheck(false);
+    }
+  };
+
+  const handleLimitProceed = (quantity, totalPrice) => {
+    setLimitData(prev => ({ ...prev, quantity, totalPrice }));
+    setShowLimitModal(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    // Reload window to refresh all limits and UI state from server
+    window.location.reload();
+  };
 
   const [newUser, setNewUser] = useState({
     user_id: '',
@@ -383,13 +441,17 @@ export default function Users() {
                                     </ul>
                                   </>
                                 ) : hasPermission('create users') ? (
-                                  <button className="btn btn-primary fw-medium" onClick={() => {
-                                    setShowAddUser(true);
-                                    setEditingUserId(null);
-                                    setBackendErrors({});
-                                    setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
-                                  }}>
-                                    <i className="ri-add-fill me-1 align-bottom"></i> Add User
+                                  <button 
+                                    className="btn btn-primary fw-medium" 
+                                    onClick={handleAddUserClick}
+                                    disabled={loadingLimitCheck}
+                                  >
+                                    {loadingLimitCheck ? (
+                                      <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    ) : (
+                                      <i className="ri-add-fill me-1 align-bottom"></i>
+                                    )}
+                                    Add User
                                   </button>
                                 ) : null}
                               </div>
@@ -620,6 +682,22 @@ export default function Users() {
                       ? "Deleting this user will remove all information."
                       : "Deleting selected users will remove all information."
                   }
+                />
+                <UserLimitModal 
+                  show={showLimitModal} 
+                  onHide={() => setShowLimitModal(false)} 
+                  onProceed={handleLimitProceed}
+                  userCount={limitData.count} 
+                  freeLimit={limitData.limit} 
+                  perUserPrice={limitData.price} 
+                />
+
+                <UserPaymentModal
+                  show={showPaymentModal}
+                  onHide={() => setShowPaymentModal(false)}
+                  onSuccess={handlePaymentSuccess}
+                  amount={limitData.totalPrice}
+                  quantity={limitData.quantity}
                 />
               </div>
             </div>
