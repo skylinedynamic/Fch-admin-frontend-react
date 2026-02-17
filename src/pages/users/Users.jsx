@@ -366,10 +366,13 @@ export default function Users() {
           setBackendErrors({});
           loadUsers()
       } else {
-          await createUser(payload)
+          const res = await createUser(payload)
           toast.success(`User created successfully`);
           
           if (isPurchaseFlow) {
+              const invoiceId = res.data?.invoice_id; 
+              const userId = res.data?.id;
+              setLimitData(prev => ({ ...prev, invoiceId, userId }));
               // User created, now proceed to payment
               setShowAddUser(false);
               setShowPaymentModal(true);
@@ -750,6 +753,8 @@ export default function Users() {
                   amount={limitData.totalPrice}
                   quantity={limitData.quantity}
                   months={limitData.months}
+                  invoiceId={limitData.invoiceId}
+                  userId={limitData.userId}
                 />
               </div>
             </div>

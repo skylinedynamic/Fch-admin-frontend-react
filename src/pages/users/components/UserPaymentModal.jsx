@@ -14,7 +14,7 @@ import { purchaseUserSeats } from '../../../modules/user/services';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth/authStore';
 
-const CheckoutForm = ({ amount, quantity, onPaymentSuccess, onCancel, loading }) => {
+const CheckoutForm = ({ amount, quantity, invoiceId, userId, onPaymentSuccess, onCancel, loading }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,6 +51,8 @@ const CheckoutForm = ({ amount, quantity, onPaymentSuccess, onCancel, loading })
         currency: 'usd',
         payment_method_id: paymentMethod.id,
         quantity: quantity,
+        invoice_id: invoiceId,
+        user_id: userId,
         description: `Purchase ${quantity} additional user seat(s) for ${user?.name || ''}`,
         partner_id: user?.partner_id,
         entity_id: user?.entity_id,
@@ -176,7 +178,7 @@ const CheckoutForm = ({ amount, quantity, onPaymentSuccess, onCancel, loading })
   );
 };
 
-export default function UserPaymentModal({ show, onHide, onSuccess, amount, quantity }) {
+export default function UserPaymentModal({ show, onHide, onSuccess, amount, quantity, invoiceId, userId }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [stripePromise, setStripePromise] = useState(null);
@@ -244,6 +246,8 @@ export default function UserPaymentModal({ show, onHide, onSuccess, amount, quan
                             <CheckoutForm 
                               amount={amount} 
                               quantity={quantity}
+                              invoiceId={invoiceId}
+                              userId={userId}
                               onPaymentSuccess={onSuccess} 
                               onCancel={onHide}
                             />
