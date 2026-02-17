@@ -1,5 +1,11 @@
 import { apiClient } from '../http'
-import { setAuth, AuthUser } from './auth'
+import { setAuth, AuthUser, setUserSubscription } from './auth'
+
+export interface ApiResponse<T = any> {
+  status: boolean
+  message?: string
+  data?: T
+}
 
 export type LoginSuccess = { token: string; user: AuthUser }
 
@@ -9,8 +15,9 @@ export async function login(email: string, password: string, remember: boolean =
     const data = res?.data
 
     if (data?.status === true) {
-      const token: string | undefined = data?.data?.token
-      const user: AuthUser | undefined = data?.data?.user
+      const loginData = data.data as { token: string; user: AuthUser }
+      const token: string | undefined = loginData?.token
+      const user: AuthUser | undefined = loginData?.user
       if (!token || !user) {
         // preserve server message shape in response for UI consumption
         const error: any = new Error('Login response missing token or user')
@@ -18,11 +25,26 @@ export async function login(email: string, password: string, remember: boolean =
         throw error
       }
       setAuth(token, user, remember)
+
+      setUserSubscription({
+        enrollment_type: user.enrollment_type as string | undefined,
+        subscription_status: user.subscription_status as string | undefined,
+        first_payment_date: user.first_payment_date as string | null | undefined,
+        platform_fee_start_date: user.platform_fee_start_date as string | null | undefined,
+        next_installment_date: user.next_installment_date as string | null | undefined,
+        next_platform_fee_date: user.next_platform_fee_date as string | null | undefined,
+        enrollment_completed_at: user.enrollment_completed_at as string | null | undefined,
+        subscription_start_date: user.subscription_start_date as string | null | undefined,
+        subscription_end_date: user.subscription_end_date as string | null | undefined,
+        phase: user.phase as string | undefined,
+        is_host: user.is_host as boolean | undefined
+      })
+
       return { token, user }
     }
 
     // If API returned 200 with status=false, throw an error carrying server data
-    const error: any = new Error(data?.message ?? 'Login failed')
+    const error: any = new Error((data as ApiResponse)?.message ?? 'Login failed')
     error.response = { data }
     throw error
   } catch (err) {
@@ -49,7 +71,7 @@ export async function forgotPassword(email: string): Promise<any> {
     if (data?.status === true) {
       return data
     }
-    const error: any = new Error(data?.message ?? 'Unable to process request.')
+    const error: any = new Error((data as ApiResponse)?.message ?? 'Unable to process request.')
     error.response = { data }
     throw error
   } catch (err) {
@@ -70,7 +92,7 @@ export async function resetPassword(payload: {
     if (data?.status === true) {
       return data
     }
-    const error: any = new Error(data?.message ?? 'Unable to reset password.')
+    const error: any = new Error((data as ApiResponse)?.message ?? 'Unable to reset password.')
     error.response = { data }
     throw error
   } catch (err) {

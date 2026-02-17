@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshUser, HostRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -63,7 +63,8 @@ export default function App() {
     // Check session immediately on app load
     checkSession();
     // Refresh user details to ensure permissions/subscription are up to date
-    refreshUser();
+    console.log('Refreshing subscription...');
+    refreshSubscription();
 
     // Optional: Set up periodic session validation (every 5 minutes)
     const intervalId = setInterval(() => {

@@ -1,4 +1,4 @@
-import { AuthUser } from '../../store/auth/authStore';
+import { UserSubscription } from './auth';
 import { SUBSCRIPTION_STATUS_TYPES } from '../../config/partnerTypeOptions';
 
 /**
@@ -14,22 +14,22 @@ const toDate = (d?: string | null) => {
 /**
  * Determine if a user is restricted from using the platform
  */
-export function isSubscriptionRestricted(user: AuthUser | null | undefined): boolean {
-    if (!user) return false;
+export function isSubscriptionRestricted(subscription: UserSubscription | null | undefined): boolean {
+    if (!subscription) return false;
 
     // Hosts are never restricted
-    if (user.is_host === 1) return false;
+    if (subscription.is_host) return false;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const endDate = toDate(user.subscription_end_date);
-    const nextInstallmentDate = toDate(user.next_installment_date);
-    const nextPlatformFeeDate = toDate(user.next_platform_fee_date);
-    const phase = user.phase;
+    const endDate = toDate(subscription.subscription_end_date);
+    const nextInstallmentDate = toDate(subscription.next_installment_date);
+    const nextPlatformFeeDate = toDate(subscription.next_platform_fee_date);
+    const phase = subscription.phase;
 
     // Subscription inactive → restricted
-    if ((user.subscription_status || '') !== SUBSCRIPTION_STATUS_TYPES.ACTIVE) {
+    if ((subscription.subscription_status || '') !== SUBSCRIPTION_STATUS_TYPES.ACTIVE) {
         return true;
     }
 

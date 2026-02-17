@@ -3,6 +3,7 @@ export interface DashboardCounts {
     total_clients: number;
     total_leads: number;
     total_commission: number;
+    funding_application: number;
 }
 
 export interface LatestFundingApplication {
