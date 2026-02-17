@@ -635,8 +635,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <Flatpickr
                             id="business_start_date"
                             name="business_start_date"
-                            options={{ dateFormat: "d M, Y" }}
+                            options={{ 
+                                dateFormat: "Y-m-d",
+                                altInput: true,
+                                altFormat: "d M, Y"
+                            }}
                             value={parseDate(formData.business_start_date)}
+                            onChange={(dates) => {
+                                const date = dates[0];
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                            }}
                             className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
                             placeholder="Select date"
                         />
