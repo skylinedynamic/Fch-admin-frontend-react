@@ -555,8 +555,8 @@ export default function Leads() {
                                                                     Converted as a {targetType}
                                                                 </span>
                                                             ) : (
-                                                                <button
-                                                                    className={`btn ${targetType === 'Partner' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} btn-sm waves-effect waves-light fw-medium border-0`}
+                                                                 <button
+                                                                    className={`btn ${targetType === 'Partner' ? 'btn-info' : 'btn-primary'} btn-sm waves-effect waves-light fw-medium border-0 btn-hover-custom`}
                                                                     onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
                                                                 >
                                                                     <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>

@@ -729,3 +729,14 @@ File: Custom Css File
   height: 38px;
   border-radius: 4px;
 }
+
+.btn-hover-custom {
+  transition: all 0.3s ease;
+}
+
+
+.btn-hover-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
+}
