@@ -20,6 +20,7 @@ export function usePermissions() {
  
     const isRestricted = useMemo(() => isSubscriptionRestricted(subscription), [subscription])
 
+
     const hasPermission = useMemo(() => (permission: string): boolean => {
         return permissions.includes(permission)
     }, [permissions])
