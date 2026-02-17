@@ -54,11 +54,16 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         if (!modalRef.current) return;
         if (!modalInstanceRef.current) {
             modalInstanceRef.current = new Modal(modalRef.current, {
-                backdrop: 'static',
+                backdrop: true,
                 keyboard: true,
             });
+
+            // Handle Bootstrap's internal hide events (backdrop click, esc key)
+            modalRef.current.addEventListener('hidden.bs.modal', () => {
+                if (onHide) onHide();
+            });
         }
-        
+
         return () => {
             if (modalInstanceRef.current) {
                 modalInstanceRef.current.hide();
@@ -101,8 +106,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
             link.parentNode.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Error downloading invoice:', error);
-            toast.error('Failed to download invoice');
+
         } finally {
             setDownloadLoading(false);
         }
@@ -124,17 +128,17 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
             setSendLoading(false);
         }
     };
-    
+
     // Use fullInvoice if available, otherwise fallback to the row-level invoice
     const displayInvoice = fullInvoice || invoice;
 
     // Calculations - only if displayInvoice exists
-    const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string' 
-        ? parseFloat(displayInvoice.payable_amount_sub) 
-        : displayInvoice.payable_amount_sub || (typeof displayInvoice.payment_amount === 'string' 
-            ? parseFloat(displayInvoice.payment_amount) 
+    const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string'
+        ? parseFloat(displayInvoice.payable_amount_sub)
+        : displayInvoice.payable_amount_sub || (typeof displayInvoice.payment_amount === 'string'
+            ? parseFloat(displayInvoice.payment_amount)
             : displayInvoice.payment_amount || 0)) : 0;
-    
+
     const subtotal = amount;
 
     return (
@@ -262,8 +266,8 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 </div>
                                             </div>
                                             <div className="hstack gap-2 justify-content-center justify-content-sm-end d-print-none mt-4 flex-wrap">
-                                                <button 
-                                                    className="btn btn-primary shadow-sm" 
+                                                <button
+                                                    className="btn btn-primary shadow-sm"
                                                     onClick={handleDownload}
                                                     disabled={downloadLoading}
                                                 >
@@ -272,11 +276,11 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     ) : (
                                                         <i className="ri-download-2-line align-bottom me-1"></i>
                                                     )}
-                                                    Download Invoice
+                                                    Download
                                                 </button>
                                                 {((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
-                                                    <button 
-                                                        className="btn btn-danger shadow-sm" 
+                                                    <button
+                                                        className="btn btn-danger shadow-sm"
                                                         onClick={handleSend}
                                                         disabled={sendLoading}
                                                     >
@@ -285,7 +289,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                         ) : (
                                                             <i className="ri-send-plane-fill align-bottom me-1"></i>
                                                         )}
-                                                        Send Invoice
+                                                        Mail Invoice
                                                     </button>
                                                 )}
                                             </div>

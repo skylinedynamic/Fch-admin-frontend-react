@@ -782,23 +782,25 @@ export default function PartnerProfile() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
-                                    {isSaving ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            {id ? 'Updating...' : 'Saving...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                        </>
-                                    )}
-                                </button>
-                            </div>
+                            {!['documents', 'clientList', 'subscription'].includes(activeTab) && (
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
+                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                    </Link>
+                                    <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
+                                        {isSaving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                {id ? 'Updating...' : 'Saving...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

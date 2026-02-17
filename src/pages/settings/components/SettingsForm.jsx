@@ -13,32 +13,45 @@ export default function SettingsForm({
 }) {
     const renderSkeleton = () => (
         <div className="row g-4 align-items-stretch animate__animated animate__fadeIn">
-            {/* Sidebar Skeleton (Keep for layout stability) */}
-            <div className="col-lg-4 col-md-5">
-                <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
-                    <div className="app-progress-card mb-4">
+            {/* Sidebar Skeleton */}
+            <div className="col-lg-3">
+                <div className="card shadow-sm border-0 overflow-hidden">
+                    <div className="card-header bg-light bg-opacity-50 py-3">
                         <div className="placeholder-glow">
-                            <span className="placeholder col-6 mb-2"></span>
-                            <span className="placeholder col-12 mb-3"></span>
-                        </div>
-                        <div className="progress-bar-container">
-                            <div className="progress-bar-fill" style={{ width: '0%' }}></div>
+                            <span className="placeholder col-8"></span>
                         </div>
                     </div>
-                    <div className="d-flex flex-column gap-2 mt-4">
-                        {[1].map(i => (
-                            <div key={i} className="placeholder-glow p-3 rounded-3 bg-light">
-                                <span className="placeholder col-10"></span>
+                    <div className="list-group list-group-flush p-2">
+                        {[1, 2].map(i => (
+                            <div key={i} className="list-group-item d-flex align-items-center py-2 border-0 mb-1">
+                                <div className="placeholder-glow me-3">
+                                    <span className="placeholder rounded-circle" style={{ width: '28px', height: '28px', display: 'block' }}></span>
+                                </div>
+                                <div className="placeholder-glow flex-grow-1">
+                                    <span className="placeholder col-10"></span>
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Content Skeleton - Using FormLoader to follow "others" */}
-            <div className="col-lg-8 col-md-7">
-                <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border-0 h-100">
-                    <FormLoader count={6} colClass="col-12" />
+            {/* Content Skeleton */}
+            <div className="col-lg-9">
+                <div className="card shadow-sm border-0 h-100 overflow-hidden">
+                    <div className="card-header bg-white border-bottom border-light py-3 px-4">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <div className="placeholder-glow col-4">
+                                <span className="placeholder col-12"></span>
+                            </div>
+                            <div className="placeholder-glow">
+                                <span className="placeholder px-4 py-2 rounded-pill"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="card-body p-4">
+                        <FormLoader count={4} colClass="col-12" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -48,41 +61,42 @@ export default function SettingsForm({
 
     const renderSidebar = () => {
         const sections = [
-            { id: 'payment', label: 'Payment Information', icon: 'ri-bank-card-line', num: 1 },
-            // { id: 'system', label: 'System Settings', icon: 'ri-settings-line', num: 2 },
-            // { id: 'others', label: 'Business Information', icon: 'ri-building-line', num: 3 }
+            { id: 'payment', label: 'Payment Integration', icon: 'ri-bank-card-2-line', num: 1 },
+            // { id: 'system', label: 'System Settings', icon: 'ri-settings-4-line', num: 2 },
+            // { id: 'others', label: 'Business Profile', icon: 'ri-community-line', num: 3 }
         ];
 
-        // Progress is 100% since only Payment info is currently active and handled in Step 1
-        const progress = 100;
-
         return (
-            <div className="bg-white p-4 rounded-4 shadow-sm border-0 h-100">
-                <div className="app-progress-card mb-4">
-                    <div className="progress-header d-flex justify-content-between align-items-center mb-2">
-                        <h6 className="mb-0 fw-bold">Setup Progress</h6>
-                        <span className="progress-badge">{progress}%</span>
-                    </div>
-                    <p className="text-muted mb-3 small">Step 1 of 1</p>
-                    <div className="progress-bar-container">
-                        <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+            <div className="card border-0 shadow-sm overflow-hidden">
+                <div className="card-header bg-light bg-opacity-50 py-2 border-bottom border-light">
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="bg-primary bg-opacity-10 p-1 rounded">
+                            <i className="ri-list-settings-line text-primary fs-16"></i>
+                        </div>
+                        <h6 className="card-title mb-0 fs-13 fw-bold text-uppercase tracking-wider">Settings Menu</h6>
                     </div>
                 </div>
-
-                <div className="d-flex flex-column gap-2">
-                    {sections.map(section => (
+                <div className="list-group list-group-flush p-2">
+                    {sections.map((section) => (
                         <button
                             key={section.id}
                             type="button"
-                            className={`nav-item-btn d-flex align-items-center gap-3 p-3 rounded-3 border-0 text-start ${activeSection === section.id ? 'active bg-primary text-white shadow' : 'bg-transparent text-dark'}`}
+                            className={`list-group-item list-group-item-action d-flex align-items-center rounded-3 border-0 py-2 mb-1 transition-all ${activeSection === section.id ? 'active shadow-sm' : 'bg-transparent text-muted'}`}
                             onClick={() => setActiveSection(section.id)}
-                            style={{ width: '100%' }}
                         >
-                            <div className={`nav-item-number d-flex align-items-center justify-content-center rounded-circle ${activeSection === section.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', minWidth: '32px', fontWeight: 'bold' }}>
-                                {section.num}
+                            <div className={`avatar-xs d-flex align-items-center justify-content-center me-3 rounded-circle transition-all ${activeSection === section.id ? 'bg-white text-primary' : 'bg-light text-secondary'}`} style={{ width: '28px', height: '28px' }}>
+                                <i className={`${section.icon} fs-14`}></i>
                             </div>
-                            <div className="nav-item-label fw-semibold flex-grow-1">{section.label}</div>
-                            <i className={`ri-arrow-right-s-line ${activeSection === section.id ? 'text-white' : 'text-muted opacity-50'}`}></i>
+                            <div className="flex-grow-1">
+                                <div className={`fw-semibold ${activeSection === section.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '13.5px' }}>
+                                    {section.label}
+                                </div>
+                            </div>
+                            {activeSection === section.id ? (
+                                <i className="ri-checkbox-circle-fill text-white opacity-75 fs-15"></i>
+                            ) : (
+                                <i className="ri-arrow-right-s-line opacity-50 fs-14"></i>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -97,132 +111,130 @@ export default function SettingsForm({
 
         return (
             <div className="animate__animated animate__fadeIn">
-                <div className="mb-4">
-                    <h4 className="fw-bold mb-1">Step 1 of 1: Payment Information</h4>
-                    <p className="text-muted small">Configure your Stripe integration for payments.</p>
+                <div className="mb-4 pb-2 border-bottom border-light">
+                    <div className="d-flex align-items-center gap-3 mb-2">
+                        <div className="bg-primary-subtle p-2 rounded-3 text-primary">
+                            <i className="ri-bank-card-2-line fs-20"></i>
+                        </div>
+                        <div>
+                            <h5 className="fw-bold mb-0 fs-16">Stripe Integration</h5>
+                            <p className="text-muted fs-13 mb-0">Securely manage your payment gateway credentials</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="mb-4">
-                    <label className="form-label d-block fw-bold mb-3">Environment Mode</label>
-                    <div className="d-flex gap-4">
-                        <div className="form-check">
-                            <input
-                                className="form-check-input"
-                                type="radio"
-                                name="payment_mode"
-                                id="mode_sandbox"
-                                value="sandbox"
-                                checked={isSandbox}
-                                onChange={handleInputChange}
-                            />
-                            <label className="form-check-label fw-semibold" htmlFor="mode_sandbox">
-                                <i className="ri-flask-line me-1 text-primary"></i> Sandbox
-                            </label>
-                        </div>
-                        <div className="form-check">
-                            <input
-                                className="form-check-input"
-                                type="radio"
-                                name="payment_mode"
-                                id="mode_production"
-                                value="production"
-                                checked={!isSandbox}
-                                onChange={handleInputChange}
-                            />
-                            <label className="form-check-label fw-semibold" htmlFor="mode_production">
-                                <i className="ri-rocket-line me-1 text-success"></i> Production
-                            </label>
+                    <label className="form-label d-block fw-bold mb-3 fs-13 text-uppercase text-muted tracking-wide">Environment Configuration</label>
+                    <div className="bg-light p-1 rounded-3 d-inline-flex border">
+                        <button
+                            type="button"
+                            className={`btn btn-sm px-4 py-1 rounded-2 fw-semibold transition-all ${isSandbox ? 'btn-primary shadow-sm' : 'btn-link text-muted text-decoration-none'}`}
+                            onClick={() => handleInputChange({ target: { name: 'payment_mode', value: 'sandbox' } })}
+                        >
+                            <i className="ri-flask-line me-2"></i>Sandbox
+                        </button>
+                        <button
+                            type="button"
+                            className={`btn btn-sm px-4 py-1 rounded-2 fw-semibold transition-all ${!isSandbox ? 'btn-success shadow-sm' : 'btn-link text-muted text-decoration-none'}`}
+                            onClick={() => handleInputChange({ target: { name: 'payment_mode', value: 'production' } })}
+                        >
+                            <i className="ri-rocket-line me-2"></i>Production
+                        </button>
+                    </div>
+                    <div className="mt-3">
+                        <div className={`alert ${isSandbox ? 'alert-info' : 'alert-warning'} bg-opacity-10 border-0 fs-13 d-flex align-items-start gap-2 py-2 mb-0`} role="alert">
+                            <i className={`${isSandbox ? 'ri-information-line' : 'ri-error-warning-line'} fs-16`}></i>
+                            <div>
+                                <strong>{isSandbox ? 'Testing Mode' : 'Live Mode'}:</strong> {isSandbox
+                                    ? 'Using test keys. Transactions will not be charged.'
+                                    : 'Using production keys. Real transactions will be processed.'}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="row g-4">
                     <div className="col-12">
-                        <label className="form-label fw-semibold mb-2">Stripe Key <span className="text-danger">*</span></label>
-                        <div className="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span className={`input-group-text bg-light border-end-0 ${errors[`stripe_key${suffix}`] ? 'is-invalid border-danger' : ''}`}>
-                                <i className="ri-key-2-line"></i>
-                            </span>
-                            <input
-                                type="text"
-                                className={`form-control border-start-0 py-3 ${errors[`stripe_key${suffix}`] ? 'is-invalid' : ''}`}
-                                name={`stripe_key${suffix}`}
-                                value={formData[`stripe_key${suffix}`] || ''}
-                                onChange={handleInputChange}
-                                placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
-                            />
+                        <label className="form-label fw-bold mb-2 fs-13">API Publishable Key <span className="text-danger">*</span></label>
+                        <div className="input-with-icon">
+                            <div className="input-group shadow-none overflow-hidden border rounded-3 transition-all">
+                                <span className={`input-group-text bg-light border-0 px-3 ${errors[`stripe_key${suffix}`] ? 'text-danger' : 'text-muted'}`}>
+                                    <i className="ri-key-2-line fs-16"></i>
+                                </span>
+                                <input
+                                    type="text"
+                                    className={`form-control border-0 fs-14 bg-transparent ${errors[`stripe_key${suffix}`] ? 'is-invalid' : ''}`}
+                                    name={`stripe_key${suffix}`}
+                                    value={formData[`stripe_key${suffix}`] || ''}
+                                    onChange={handleInputChange}
+                                    placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
+                                    style={{ boxShadow: 'none' }}
+                                />
+                            </div>
                         </div>
-                        {errors[`stripe_key${suffix}`] && <small className="text-danger mt-1 d-block">{errors[`stripe_key${suffix}`]}</small>}
+                        {errors[`stripe_key${suffix}`] && <small className="text-danger mt-1 fw-medium d-block"><i className="ri-error-warning-line me-1"></i>{errors[`stripe_key${suffix}`]}</small>}
                     </div>
                     <div className="col-12">
-                        <label className="form-label fw-semibold mb-2">Stripe Secret <span className="text-danger">*</span></label>
-                        <div className="input-group shadow-sm rounded-3 overflow-hidden">
-                            <span className={`input-group-text bg-light border-end-0 ${errors[`stripe_secret${suffix}`] ? 'is-invalid border-danger' : ''}`}>
-                                <i className="ri-lock-2-line"></i>
-                            </span>
-                            <input
-                                type="password"
-                                className={`form-control border-start-0 py-3 ${errors[`stripe_secret${suffix}`] ? 'is-invalid' : ''}`}
-                                name={`stripe_secret${suffix}`}
-                                value={formData[`stripe_secret${suffix}`] || ''}
-                                onChange={handleInputChange}
-                                placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
-                            />
+                        <label className="form-label fw-bold mb-2 fs-13">API Secret Key <span className="text-danger">*</span></label>
+                        <div className="input-with-icon">
+                            <div className="input-group shadow-none overflow-hidden border rounded-3 transition-all">
+                                <span className={`input-group-text bg-light border-0 px-3 ${errors[`stripe_secret${suffix}`] ? 'text-danger' : 'text-muted'}`}>
+                                    <i className="ri-lock-password-line fs-16"></i>
+                                </span>
+                                <input
+                                    type="password"
+                                    className={`form-control border-0 fs-14 bg-transparent ${errors[`stripe_secret${suffix}`] ? 'is-invalid' : ''}`}
+                                    name={`stripe_secret${suffix}`}
+                                    value={formData[`stripe_secret${suffix}`] || ''}
+                                    onChange={handleInputChange}
+                                    placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
+                                    style={{ boxShadow: 'none' }}
+                                />
+                            </div>
                         </div>
-                        {errors[`stripe_secret${suffix}`] && <small className="text-danger mt-1 d-block">{errors[`stripe_secret${suffix}`]}</small>}
+                        {errors[`stripe_secret${suffix}`] && <small className="text-danger mt-1 fw-medium d-block"><i className="ri-error-warning-line me-1"></i>{errors[`stripe_secret${suffix}`]}</small>}
                     </div>
                 </div>
             </div>
         );
     };
 
-    /* Non-payment settings commented as requested */
-    /*
-    const renderSystemSettings = () => (
-        <div className="animate__animated animate__fadeIn">
-            ...
-        </div>
-    );
-
-    const renderOtherSettings = () => (
-        <div className="animate__animated animate__fadeIn">
-            ...
-        </div>
-    );
-    */
-
     return (
         <div className="row g-4 align-items-stretch">
-            <div className="col-lg-4 col-md-5">
+            <div className="col-lg-3">
                 {renderSidebar()}
             </div>
 
-            <div className="col-lg-8 col-md-7">
-                <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border-0 h-100">
-                    <form onSubmit={onSubmit}>
-                        {activeSection === 'payment' && renderPaymentSettings()}
-                        {/* {activeSection === 'system' && renderSystemSettings()} */}
-                        {/* {activeSection === 'others' && renderOtherSettings()} */}
+            <div className="col-lg-9">
+                <div className="card shadow-sm border-0 h-100 overflow-hidden">
 
-                        <div className="footer-actions d-flex justify-content-end mt-5 pt-4">
-                            <button
-                                type="submit"
-                                className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow waves-effect waves-light"
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="ri-save-3-line align-middle me-2"></i> Save Settings
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                    <div className="card-body">
+                        <form onSubmit={onSubmit}>
+                            {activeSection === 'payment' && renderPaymentSettings()}
+                            {/* {activeSection === 'system' && renderSystemSettings()} */}
+                            {/* {activeSection === 'others' && renderOtherSettings()} */}
+
+                            <div className="d-flex justify-content-end mt-5 pt-4 border-top border-light">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary w-lg waves-effect waves-light d-flex align-items-center justify-content-center gap-2"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ri-save-fill fs-18"></i>
+                                            <span>Save Changes</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
