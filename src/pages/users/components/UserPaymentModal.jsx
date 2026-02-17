@@ -47,11 +47,11 @@ const CheckoutForm = ({ amount, quantity, onPaymentSuccess, onCancel, loading })
       }
 
       const response = await purchaseUserSeats({
-        amount: Math.round(amount * 100),
+        amount: Math.round(amount),
         currency: 'usd',
         payment_method_id: paymentMethod.id,
         quantity: quantity,
-        description: `Purchase ${quantity} additional user seat(s) for ${user?.name || 'User'}`,
+        description: `Purchase ${quantity} additional user seat(s) for ${user?.name || ''}`,
         partner_id: user?.partner_id,
         entity_id: user?.entity_id,
         entity_type: user?.entity_type,

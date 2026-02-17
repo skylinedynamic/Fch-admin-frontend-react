@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
+import { USER_LIMIT_MONTH_OPTIONS } from '../../../config/limitOptions';
 
 const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUserPrice }) => {
-    const [quantity, setQuantity] = useState(1);
+    const [months, setMonths] = useState(1);
     const [totalPrice, setTotalPrice] = useState(0);
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -22,7 +23,7 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
         if (!modal) return;
         if (show) {
             modal.show();
-            setQuantity(1);
+            setMonths(1);
         } else {
             modal.hide();
         }
@@ -30,11 +31,11 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
 
     useEffect(() => {
         const price = parseFloat(perUserPrice || 0);
-        setTotalPrice(quantity * price);
-    }, [quantity, perUserPrice]);
+        setTotalPrice(months * price);
+    }, [months, perUserPrice]);
 
     const handleProceed = () => {
-        onProceed(quantity, totalPrice);
+        onProceed(months, totalPrice);
     };
 
     return (
@@ -63,36 +64,30 @@ const UserLimitModal = ({ show, onHide, onProceed, userCount, freeLimit, perUser
                                 <br />Purchase additional users to add more accounts. Payment is required.
                             </p>
                             
-                            <div className="mb-4 text-start mx-auto" style={{ maxWidth: '250px' }}>
-                                <label className="form-label text-muted small uppercase fw-bold">Number of users to add</label>
-                                <div className="input-group">
-                                    <button 
-                                        className="btn btn-outline-light border text-dark" 
-                                        type="button"
-                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    >
-                                        <i className="ri-subtract-line"></i>
-                                    </button>
-                                    <input 
-                                        type="number" 
-                                        className="form-control text-center bg-light border-0 fw-bold" 
-                                        value={quantity} 
-                                        readOnly 
-                                    />
-                                    <button 
-                                        className="btn btn-outline-light border text-dark" 
-                                        type="button"
-                                        onClick={() => setQuantity(quantity + 1)}
-                                    >
-                                        <i className="ri-add-line"></i>
-                                    </button>
+                            <div className="mb-4 text-center">
+                                <label className="form-label text-muted small uppercase fw-bold">Select Duration (Months)</label>
+                                <div className="d-flex justify-content-center gap-2 flex-wrap">
+                                    {USER_LIMIT_MONTH_OPTIONS.map((m) => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            className={`btn ${months === m ? 'btn-primary' : 'btn-outline-primary'}`}
+                                            onClick={() => setMonths(m)}
+                                        >
+                                            {m} Month{m > 1 ? 's' : ''}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
                             <div className="p-3 bg-light rounded-3 mb-4">
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span className="text-muted">Price per user:</span>
-                                    <span className="fw-medium">${parseFloat(perUserPrice).toFixed(2)}</span>
+                                    <span className="text-muted">Price per month:</span>
+                                    <span className="fw-medium">${parseFloat(perUserPrice || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span className="text-muted">Duration:</span>
+                                    <span className="fw-medium">{months} Month{months > 1 ? 's' : ''}</span>
                                 </div>
                                 <div className="d-flex justify-content-between align-items-center pt-2 border-top">
                                     <span className="fw-bold">Total Amount:</span>

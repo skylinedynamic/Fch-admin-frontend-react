@@ -8,6 +8,7 @@ import { FilterMatchMode, FilterOperator } from 'primereact/api'
 import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCount, purchaseUserSeats } from '../../modules/user/services';
 import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
+import { USER_STATUS } from '../../config/statusOptions';
 import '../../../assets/css/bootstrap.min.css';
 import { toast } from "react-toastify";
 import UserModal from './components/UserModal';
@@ -51,13 +52,15 @@ export default function Users() {
   const user = useAuthStore((state) => state.user);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, totalPrice: 0 });
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0 });
+  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
 
   const handleAddUserClick = async () => {
     // Check if current user is host from store (no API call needed)
     if (user?.is_host === 1) {
        setShowAddUser(true);
        setEditingUserId(null);
+       setIsPurchaseFlow(false);
        setBackendErrors({});
        setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
        return;
@@ -78,6 +81,7 @@ export default function Users() {
       if (currentCount < totalAllowed) {
          setShowAddUser(true);
          setEditingUserId(null);
+         setIsPurchaseFlow(false);
          setBackendErrors({});
          setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
       } else {
@@ -98,15 +102,28 @@ export default function Users() {
     }
   };
 
-  const handleLimitProceed = (quantity, totalPrice) => {
-    setLimitData(prev => ({ ...prev, quantity, totalPrice }));
+  const handleLimitProceed = (months, totalPrice) => {
+    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
     setShowLimitModal(false);
-    setShowPaymentModal(true);
+    setIsPurchaseFlow(true);
+    setEditingUserId(null);
+    setNewUser({ 
+      user_id: '', 
+      name: '', 
+      email: '', 
+      phone_number: '', 
+      role_id: '', 
+      password: '', 
+      new_password: '', 
+      confirm_password: '',
+      is_paid: true 
+    });
+    setShowAddUser(true);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setShowPaymentModal(false);
-    // Reload window to refresh all limits and UI state from server
+    toast.success("Payment completed successfully!");
     window.location.reload();
   };
 
@@ -126,8 +143,7 @@ export default function Users() {
 
   const statusOptions = [
     { label: 'All Status', value: '' },
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' }
+    ...USER_STATUS
   ]
 
   const initFilters = () => {
@@ -303,6 +319,8 @@ export default function Users() {
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
 
+
+
     // Clear previous backend errors
     setBackendErrors({});
 
@@ -328,18 +346,42 @@ export default function Users() {
             }
             : {})
         }
-        : { password: newUser.password })
+        : { 
+            password: newUser.password,
+            // If purchase flow, include these fields. 
+            // Note: Backend must accept is_paid:true or handle it appropriately.
+            // If backend rejects 'is_paid' for creation without payment, this flow might fail.
+            // Assuming backend allows creation or we handle payment after.
+            ...(isPurchaseFlow ? { is_paid: true, months: limitData.months, amount: limitData.totalPrice } : {})
+        })
     }
 
     try {
       setLoadingSave(true);
-      if (editingUserId) await updateUser(editingUserId, payload)
-      else await createUser(payload)
-      toast.success(`User ${editingUserId ? 'updated' : 'created'} successfully`);
-      setShowAddUser(false)
-      setEditingUserId(null)
-      setBackendErrors({});
-      loadUsers()
+      if (editingUserId) {
+          await updateUser(editingUserId, payload)
+          toast.success(`User updated successfully`);
+          setShowAddUser(false)
+          setEditingUserId(null)
+          setBackendErrors({});
+          loadUsers()
+      } else {
+          await createUser(payload)
+          toast.success(`User created successfully`);
+          
+          if (isPurchaseFlow) {
+              // User created, now proceed to payment
+              setShowAddUser(false);
+              setShowPaymentModal(true);
+              // Do NOT clear editingUserId or newUser yet if we might need them? 
+              // Actually, user is created. We move to payment.
+          } else {
+              setShowAddUser(false)
+              setEditingUserId(null)
+              setBackendErrors({});
+              loadUsers()
+          }
+      }
     } catch (error) {
       // Handle backend validation errors
       if (error?.response?.data?.errors) {
@@ -663,6 +705,7 @@ export default function Users() {
                   onHide={() => {
                     setShowAddUser(false);
                     setEditingUserId(null);
+                    setIsPurchaseFlow(false);
                     setShowPasswordFields(false);
                     setBackendErrors({});
                   }}
@@ -706,6 +749,7 @@ export default function Users() {
                   onSuccess={handlePaymentSuccess}
                   amount={limitData.totalPrice}
                   quantity={limitData.quantity}
+                  months={limitData.months}
                 />
               </div>
             </div>

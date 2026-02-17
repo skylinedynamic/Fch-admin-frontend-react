@@ -8,6 +8,11 @@ export const STATUS: StatusOption[] = [
     { label: 'Inactive', value: 'Inactive' },
 ];
 
+export const USER_STATUS: StatusOption[] = [
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+];
+
 export const PAYMENT_STATUS_OPTIONS: StatusOption[] = [
     { label: 'Paid', value: 'Paid' },
     { label: 'Pending', value: 'Pending' },
