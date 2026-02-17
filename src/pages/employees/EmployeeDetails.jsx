@@ -56,7 +56,8 @@ export default function EmployeeDetails() {
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, totalPrice: 0 });
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null });
+  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
 
   // Location states
   const [countries] = useState(
@@ -355,6 +356,7 @@ export default function EmployeeDetails() {
                       price: data?.data?.per_user_price || '0',
                       limit: totalAllowed,
                       quantity: 1,
+                      months: 1,
                       totalPrice: parseFloat(data?.data?.per_user_price || 0)
                   });
                   setShowLimitModal(true);
@@ -491,10 +493,11 @@ export default function EmployeeDetails() {
     setDepartments(data);
   };
 
-  const handleLimitProceed = (quantity, totalPrice) => {
-    setLimitData(prev => ({ ...prev, quantity, totalPrice }));
+  const handleLimitProceed = (months, totalPrice) => {
+    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
     setShowLimitModal(false);
-    setShowPaymentModal(true);
+    setIsPurchaseFlow(true);
+    setEmployee(prev => ({ ...prev, create_account: true }));
   };
 
   const handlePaymentSuccess = () => {
@@ -561,12 +564,27 @@ export default function EmployeeDetails() {
         }
       });
 
+      if (isPurchaseFlow) {
+        formData.append('is_paid', 'true');
+        formData.append('months', limitData.months);
+        formData.append('amount', limitData.totalPrice);
+      }
+
       if (id) {
         await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
       } else {
-        await createEmployee(formData);
+        const res = await createEmployee(formData);
         toast.success('Employee created successfully');
+
+        if (isPurchaseFlow) {
+          const invoiceId = res.data?.invoice_id;
+          const userId = res.data?.id;
+          setLimitData(prev => ({ ...prev, invoiceId, userId }));
+          setIsSaving(false);
+          setShowPaymentModal(true);
+          return;
+        }
       }
 
       setTimeout(() => navigate('/employees'), 800);
@@ -789,6 +807,9 @@ export default function EmployeeDetails() {
           onSuccess={handlePaymentSuccess}
           amount={limitData.totalPrice}
           quantity={limitData.quantity}
+          months={limitData.months}
+          invoiceId={limitData.invoiceId}
+          userId={limitData.userId}
         />
 
         <EmailComposeModal />
