@@ -47,7 +47,7 @@ const CheckoutForm = ({ amount, quantity, invoiceId, userId, onPaymentSuccess, o
       }
 
       const response = await purchaseUserSeats({
-        amount: Math.round(amount),
+        amount: Math.round(amount * 100),
         currency: 'usd',
         payment_method_id: paymentMethod.id,
         quantity: quantity,
