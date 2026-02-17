@@ -312,6 +312,14 @@ export default function EmployeeDetails() {
         const hasExistingAccount = id && employee.user && Object.keys(employee.user).length > 0;
         
         if (!hasExistingAccount) {
+          // Immediately check the checkbox for better UX
+          setEmployee((prev) => ({
+            ...prev,
+            create_account: true,
+            role_id: prev.role_id,
+            user: !id ? prev.user : (prev.user || {})
+          }));
+
           const performLimitCheck = async () => {
              try {
                // Fetch fresh user details to check if host
@@ -320,12 +328,7 @@ export default function EmployeeDetails() {
                
                // Bypass limit check for host users - no loading state
                if (freshUser?.is_host === 1) {
-                  setEmployee((prev) => ({
-                    ...prev,
-                    create_account: true,
-                    role_id: prev.role_id,
-                    user: !id ? prev.user : (prev.user || {})
-                  }));
+                  // Already checked above, nothing more to do
                   return;
                }
                
@@ -339,7 +342,14 @@ export default function EmployeeDetails() {
                const totalAllowed = freeLimit + paidLimit;
 
                if (currentCount >= totalAllowed) {
-                  // Limit reached! Show modal and don't check the box yet
+                  // Limit reached! Uncheck the box and show modal
+                  setEmployee((prev) => ({
+                    ...prev,
+                    create_account: false,
+                    role_id: '',
+                    user: {}
+                  }));
+                  
                   setLimitData({
                       count: currentCount,
                       price: data?.data?.per_user_price || '0',
@@ -348,21 +358,21 @@ export default function EmployeeDetails() {
                       totalPrice: parseFloat(data?.data?.per_user_price || 0)
                   });
                   setShowLimitModal(true);
-                  // Checkbox stays unchecked
                   return;
                }
                
-               // All good, set the checkbox
-               setEmployee((prev) => ({
-                 ...prev,
-                 create_account: true,
-                 role_id: prev.role_id,
-                 user: !id ? prev.user : (prev.user || {})
-               }));
+               // Limit OK - checkbox already checked above
 
              } catch (error) {
                console.error("Failed to check user limit:", error);
                toast.error("Failed to check user limit");
+               // Revert checkbox on error
+               setEmployee((prev) => ({
+                 ...prev,
+                 create_account: false,
+                 role_id: '',
+                 user: {}
+               }));
              } finally {
                setLoadingLimitCheck(false);
              }
@@ -373,24 +383,12 @@ export default function EmployeeDetails() {
       }
 
       // Default behavior for unchecking or if account already exists
-      if (!id) {
-        setEmployee((prev) => ({
-          ...prev,
-          create_account: checked,
-          role_id: checked ? prev.role_id : ''
-        }));
-      } else {
-        setEmployee((prev) => ({
-          ...prev,
-          create_account: checked,
-          user: checked ? prev.user || {} : null,
-          role_id: checked ? prev.role_id : ''
-        }));
-      }
-      // Clear role_id error when unchecking create_account
-      if (!checked) {
-        setErrors((prev) => ({ ...prev, role_id: null }));
-      }
+      setEmployee((prev) => ({
+        ...prev,
+        create_account: checked,
+        role_id: checked ? prev.role_id : '',
+        user: checked ? (prev.user || {}) : {}
+      }));
       return;
     }
 
