@@ -106,12 +106,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
-    
+
     useEffect(() => {
         if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
-            
+
             // If plan_id is missing but enrollment_type exists, try to find plan_id
             if (!apiData.plan_id && apiData.enrollment_type) {
                 const plans = isHost ? borrowerPlans : nonHostPlans;
@@ -122,26 +122,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     apiData.plan_id = 'current_selection';
                 }
             }
-            
+
             // If other_city has a value, set city to 'Others' to show the dropdown correctly
             if (apiData.other_city && apiData.other_city.trim() !== '') {
                 apiData.city = 'Others';
             }
-            
-            console.log('[ClientInfoSection] Syncing data:', { 
-                notes: apiData.notes, 
+
+            console.log('[ClientInfoSection] Syncing data:', {
+                notes: apiData.notes,
                 other_city: apiData.other_city,
-                city: apiData.city 
+                city: apiData.city
             });
-            
+
             setFormData(prev => ({ ...prev, ...apiData }));
 
             hasSyncedData.current = true;
             setIsSynced(true);
         } else if (!clientId && !hasSyncedData.current) {
-             // If creating new client (no ID), we are synced immediately
-             setIsSynced(true);
-             hasSyncedData.current = true;
+            // If creating new client (no ID), we are synced immediately
+            setIsSynced(true);
+            hasSyncedData.current = true;
         }
     }, [fetchedData, borrowerPlans, nonHostPlans, isHost, clientId]);
 
@@ -235,7 +235,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const parseDate = (dateStr: any) => {
         if (!dateStr) return undefined;
         if (dateStr instanceof Date) return dateStr;
-        
+
         // Handle MM-DD-YYYY or YYYY-MM-DD
         const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
         if (parts.length === 3) {
@@ -247,7 +247,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
             }
         }
-        
+
         const d = new Date(dateStr);
         return isNaN(d.getTime()) ? undefined : d;
     };
@@ -635,7 +635,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <Flatpickr
                             id="business_start_date"
                             name="business_start_date"
-                            options={{ 
+                            options={{
                                 dateFormat: "Y-m-d",
                                 altInput: true,
                                 altFormat: "d M, Y"
@@ -741,29 +741,29 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="enrollment-base-alert">
                                 <div className="card-body">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find(opt => 
+                                        const selectedOption = enrollmentOptions.find(opt =>
                                             String(opt.value) === String(formData.plan_id)
-                                        ) || enrollmentOptions.find(opt => 
+                                        ) || enrollmentOptions.find(opt =>
                                             opt.enrollment_type === formData.enrollment_type
                                         );
 
                                         if (!selectedOption && !formData.enrollment_type) return null;
 
-                                        const { installments, totalAmount, price } = selectedOption 
+                                        const { installments, totalAmount, price } = selectedOption
                                             ? calculateEnrollmentDetails({
                                                 ...selectedOption,
                                                 payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
                                             }, isHost)
-                                            : { 
-                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 : 
-                                                             (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
+                                            : {
+                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 :
+                                                    (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
                                                 totalAmount: formData.payment_amount || formData.amount || 0,
                                                 price: formData.payment_amount || formData.amount || 0
-                                              };
-                                        
+                                            };
+
                                         // Final total calculation if it's a multi-payment plan and totalAmount is just the installment price
-                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price)) 
-                                            ? Number(price) * installments 
+                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price))
+                                            ? Number(price) * installments
                                             : Number(totalAmount);
 
                                         return (
@@ -789,7 +789,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 <hr />
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="info-label">
-                                                        <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i> 
+                                                        <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i>
                                                         {installments > 1 ? ' Monthly Payment:' : ' One-Time Cost:'}
                                                     </span>
                                                     <span className={`amount-value ${installments > 1 ? 'text-success' : 'text-success'}`}>
