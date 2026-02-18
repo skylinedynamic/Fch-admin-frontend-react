@@ -72,19 +72,22 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
 
             <div className="col-lg-6">
                 {((isEditMode && employee.user) || (!isEditMode && employee.create_account)) && (
-                    <div className="mb-3">
-                        <label htmlFor="roleSelect" className="form-label">
-                            Assign role <span className="text-danger">*</span>
-                        </label>
-                        <Dropdown
-                            value={employee.role_id ?? ''}
-                            options={roleOptions}
-                            onChange={(e) => onChange({ target: { name: 'role_id', value: e.value } })}
-                            placeholder="Select role"
-                            className={`w-100 ${errors.role_id ? 'p-invalid' : ''}`}
-                        />
-                        {errors.role_id && <div className="invalid-feedback d-block">{errors.role_id}</div>}
-                    </div>
+                    <>
+                        <div className="mb-3">
+                            <label htmlFor="roleSelect" className="form-label">
+                                Assign role <span className="text-danger">*</span>
+                            </label>
+                            <Dropdown
+                                id="roleSelect"
+                                value={employee.role_id ?? ''}
+                                options={roleOptions}
+                                onChange={(e) => onChange({ target: { name: 'role_id', value: e.value } })}
+                                placeholder="Select role"
+                                className={`w-100 ${errors.role_id ? 'p-invalid' : ''}`}
+                            />
+                            {errors.role_id && <div className="invalid-feedback d-block">{errors.role_id}</div>}
+                        </div>
+                    </>
                 )}
             </div>
         </>

@@ -102,6 +102,8 @@ export default function EmployeeDetails() {
     employee_code: '',
     create_account: false,
     role_id: '',
+    password: '',
+    confirm_password: '',
     image: ''
   });
 
@@ -579,7 +581,7 @@ export default function EmployeeDetails() {
 
         if (isPurchaseFlow) {
           const invoiceId = res.data?.invoice_id;
-          const userId = res.data?.id;
+          const userId = res.data?.user_id || res.data?.id;
           setLimitData(prev => ({ ...prev, invoiceId, userId }));
           setIsSaving(false);
           setShowPaymentModal(true);
