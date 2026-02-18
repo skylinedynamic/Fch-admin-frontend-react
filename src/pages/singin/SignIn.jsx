@@ -122,16 +122,27 @@ export default function SignIn() {
           <div className="mt-4">
             <button className="btn btn-success w-100" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
           </div>
-            {emailError && (emailError.toLowerCase().includes('subscription') || emailError.toLowerCase().includes('expired')) ? (
-              <div className="alert alert-danger mt-2" role="alert">
-                <strong>Alert:</strong> Your subscription has expired.
-                Please contact the administrator to renew your subscription.
-              </div>
-            ) : (
-              <div className="invalid-feedback">
-                {emailError || 'Please enter your email address.'}
-              </div>
-            )}
+              {emailError &&
+                (emailError.toLowerCase().includes('subscription') ||
+                emailError.toLowerCase().includes('expired') ||
+                emailError.toLowerCase().includes('payment')) ? (
+                  
+                  <div className="alert alert-danger mt-2" role="alert">
+                    <strong>Alert:</strong>{" "}
+                    
+                    {emailError.toLowerCase().includes('expired')
+                      ? "Your subscription has expired. Please contact your partner to renew your subscription."
+                      : emailError.toLowerCase().includes('payment')
+                      ? "Your payment was not completed. Please contact your partner for assistance."
+                      : ""}
+                      
+                  </div>
+
+                ) : (
+                  <div className="invalid-feedback">
+                    {emailError || "Please enter your email address."}
+                  </div>
+                )}
         </form>
       </div>
     </Auth>
