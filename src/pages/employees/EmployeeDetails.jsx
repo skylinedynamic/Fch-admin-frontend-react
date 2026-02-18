@@ -22,6 +22,7 @@ import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateMo
 import FormLoader from '../../components/Loader/FormLoader';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { scrollToFirstError } from '../../utils/formUtils';
 
 export default function EmployeeDetails() {
   const { id } = useParams();
@@ -499,6 +500,7 @@ export default function EmployeeDetails() {
         });
 
         setErrors(mappedErrors);
+        scrollToFirstError(mappedErrors);
 
         // No toast notifications for validation errors - errors shown inline only
         // toast.error for validation errors removed as per requirement
@@ -517,9 +519,9 @@ export default function EmployeeDetails() {
     <div className="page-content">
       <div className="container-fluid">
         {/* Header */}
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+        <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row">
+            <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Employee Details</h4>
                 <nav aria-label="breadcrumb" className="d-none d-sm-block">

@@ -33,6 +33,7 @@ export default function AddressSection({
                 <div className="mb-3">
                     <label className="form-label">Country <span className="text-danger">*</span></label>
                     <Dropdown
+                        inputId="country"
                         value={employee.country}
                         options={countries}
                         onChange={(e) => onChange({ target: { name: 'country', value: e.value } })}
@@ -49,6 +50,7 @@ export default function AddressSection({
                 <div className="mb-3">
                     <label className="form-label">State <span className="text-danger">*</span></label>
                     <Dropdown
+                        inputId="state"
                         value={employee.state}
                         options={states}
                         onChange={(e) => onChange({ target: { name: 'state', value: e.value } })}
@@ -66,6 +68,7 @@ export default function AddressSection({
                 <div className="mb-3">
                     <label className="form-label">City <span className="text-danger">*</span></label>
                     <Dropdown
+                        inputId="city"
                         value={employee.city}
                         options={[...cities, { label: 'Others', value: 'Others' }]}
                         onChange={(e) => onChange({ target: { name: 'city', value: e.value } })}

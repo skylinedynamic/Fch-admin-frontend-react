@@ -164,9 +164,9 @@ export default function CreateRole() {
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+        <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row">
+            <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Create Roles &amp; Permissions</h4>
                 <nav aria-label="breadcrumb" className="d-none d-sm-block">

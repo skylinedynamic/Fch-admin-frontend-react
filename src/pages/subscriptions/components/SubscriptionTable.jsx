@@ -1,9 +1,8 @@
 import React from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import { Badge } from 'primereact/badge';
 import { Dropdown } from 'primereact/dropdown';
-import { SUBSCRIPTION_STATUS_OPTIONS, SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
+import { SUBSCRIPTION_STATUS_OPTIONS,SUBSCRIPTION_STATUS_COLORS } from '../../../config/subscriptionConfig';
 
 export default function SubscriptionTable({ 
     data, loading, totalRecords, page, perPage, 
@@ -11,8 +10,9 @@ export default function SubscriptionTable({
     sortField, sortOrder 
 }) {
     const statusBodyTemplate = (rowData) => {
-        const severity = SUBSCRIPTION_STATUS_COLORS[rowData.status] || 'info';
-        return <Badge value={rowData.status} severity={severity}></Badge>;
+        const status = rowData.status || 'N/A';
+        const color = SUBSCRIPTION_STATUS_COLORS[status] || 'secondary';
+        return <span className={`badge bg-${color}-subtle text-${color}`}>{status}</span>;
     };
 
     const statusFilterTemplate = (options) => {

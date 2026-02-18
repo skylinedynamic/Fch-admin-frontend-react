@@ -24,6 +24,7 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                 <div className="mb-3">
                     <label className="form-label">Job Status</label>
                     <Dropdown
+                        inputId="job_status"
                         value={employee.job_status}
                         options={jobStatusOptions}
                         onChange={(e) => onChange({ target: { name: 'job_status', value: e.value } })}
@@ -73,6 +74,7 @@ export default function AccountSection({ employee, roles, onChange, isEditMode, 
                             Assign role <span className="text-danger">*</span>
                         </label>
                         <Dropdown
+                            inputId="role_id"
                             value={employee.role_id ?? ''}
                             options={roleOptions}
                             onChange={(e) => onChange({ target: { name: 'role_id', value: e.value } })}
