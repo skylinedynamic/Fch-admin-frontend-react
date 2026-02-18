@@ -62,10 +62,8 @@ const CheckoutForm = ({ amount, quantity, invoiceId, userId, entityId, entityTyp
 
 
       if (response.status) {
-        toast.success("Payment completed successfully!");
         onPaymentSuccess(response.data?.id || response.data?.payment_intent_id);
       } else {
-        toast.error(response.message || "Payment failed");
         onCancel();
       }
     } catch (err) {
@@ -248,6 +246,8 @@ export default function UserPaymentModal({ show, onHide, onSuccess, amount, quan
                               quantity={quantity}
                               invoiceId={invoiceId}
                               userId={userId}
+                              entityId={entityId}
+                              entityType={entityType}
                               onPaymentSuccess={onSuccess} 
                               onCancel={onHide}
                             />

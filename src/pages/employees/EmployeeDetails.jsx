@@ -504,8 +504,11 @@ export default function EmployeeDetails() {
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
-    // Reload window to refresh all limits and UI state from server
-    window.location.reload();
+    toast.success('Payment completed successfully!');
+    // Delay reload to allow toast to be seen
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
   };
 
   const handleSave = async () => {
