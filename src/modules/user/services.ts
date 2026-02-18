@@ -21,7 +21,7 @@ export const fetchRoles = async (partner_id?: string): Promise<Role[]> => {
     });
 
     // Pluck only id and name
-    const roles = (res.data.data || []).map((role) => ({
+    const roles = (res.data.data || []).map((role: any) => ({
       id: role.id,
       name: role.name,
     }));
@@ -34,7 +34,7 @@ export const fetchRoles = async (partner_id?: string): Promise<Role[]> => {
 };
 
 
-export const fetchUsers = async (payload?: UsersPayload) => {
+export const fetchUsers = async (payload: { role?: string; status?: string; search?: string; filters?: any; page?: number; per_page?: number; sort_field?: string; sort_order?: string }) => {
   const res = await apiClient.post('/common/users/fetch-users', payload || {})
   return res.data // { status, message, data, links, pagination }
 }
@@ -60,3 +60,18 @@ export const deleteUsers = async (ids: Array<number | string>) => {
   return res.data; // API response
 };
 
+
+interface UserCountResponse {
+  count: number;
+  per_user_price: string;
+}
+
+export const getUserCount = async () => {
+    const res = await apiClient.get('/common/user-count')
+    return res.data // { count, per_user_price }
+}
+
+export const purchaseUserSeats = async (payload: any) => {
+  const res = await apiClient.post('/process-payment-for-users', payload);
+  return res.data;
+};

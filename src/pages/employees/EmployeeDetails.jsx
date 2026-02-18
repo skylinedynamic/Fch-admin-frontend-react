@@ -11,7 +11,11 @@ import {
   fetchDepartments,
   getNextEmployeeId
 } from '../../modules/employee';
-import { fetchRoles } from '../../modules/user/services';
+import { fetchRoles, getUserCount, purchaseUserSeats } from '../../modules/user/services';
+import { getUserDetails } from '../../lib/auth/authApi';
+import UserLimitModal from '../users/components/UserLimitModal';
+import UserPaymentModal from '../users/components/UserPaymentModal';
+import { useAuthStore } from '../../store/auth/authStore';
 import { locationData } from '../../config';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 
@@ -48,6 +52,13 @@ export default function EmployeeDetails() {
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+
+  // User Limit States
+  const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
+  const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
 
   // Location states
   const [countries] = useState(
@@ -92,6 +103,8 @@ export default function EmployeeDetails() {
     employee_code: '',
     create_account: false,
     role_id: '',
+    password: '',
+    confirm_password: '',
     image: ''
   });
 
@@ -298,24 +311,89 @@ export default function EmployeeDetails() {
 
     // Special handling for create_account checkbox
     if (name === 'create_account') {
-      if (!id) {
-        setEmployee((prev) => ({
-          ...prev,
-          create_account: checked,
-          role_id: checked ? prev.role_id : ''
-        }));
-      } else {
-        setEmployee((prev) => ({
-          ...prev,
-          create_account: checked,
-          user: checked ? prev.user || {} : null,
-          role_id: checked ? prev.role_id : ''
-        }));
+      if (checked) {
+        // Only perform check if it's a new employee OR if existing employee doesn't have a user account yet
+        const hasExistingAccount = id && employee.user && Object.keys(employee.user).length > 0;
+        
+        if (!hasExistingAccount) {
+          // Immediately check the checkbox for better UX
+          setEmployee((prev) => ({
+            ...prev,
+            create_account: true,
+            role_id: prev.role_id,
+            user: !id ? prev.user : (prev.user || {})
+          }));
+
+          const performLimitCheck = async () => {
+             try {
+               // Fetch fresh user details to check if host
+               const detailsRes = await getUserDetails();
+               const freshUser = detailsRes?.data?.user;
+               
+               // Bypass limit check for host users - no loading state
+               if (freshUser?.is_host === 1) {
+                  // Already checked above, nothing more to do
+                  return;
+               }
+               
+               // Non-host users: show loading and perform limit check
+               setLoadingLimitCheck(true);
+               
+               const data = await getUserCount();
+               const currentCount = data?.data?.count || 0;
+               const freeLimit = freshUser?.total_free_users || 0;
+               const paidLimit = freshUser?.total_paid_users || 0;
+               const totalAllowed = freeLimit + paidLimit;
+
+               if (currentCount >= totalAllowed) {
+                  // Limit reached! Uncheck the box and show modal
+                  setEmployee((prev) => ({
+                    ...prev,
+                    create_account: false,
+                    role_id: '',
+                    user: {}
+                  }));
+                  
+                  setLimitData({
+                      count: currentCount,
+                      price: data?.data?.per_user_price || '0',
+                      limit: totalAllowed,
+                      quantity: 1,
+                      months: 1,
+                      totalPrice: parseFloat(data?.data?.per_user_price || 0)
+                  });
+                  setShowLimitModal(true);
+                  return;
+               }
+               
+               // Limit OK - checkbox already checked above
+
+             } catch (error) {
+               console.error("Failed to check user limit:", error);
+               toast.error("Failed to check user limit");
+               // Revert checkbox on error
+               setEmployee((prev) => ({
+                 ...prev,
+                 create_account: false,
+                 role_id: '',
+                 user: {}
+               }));
+             } finally {
+               setLoadingLimitCheck(false);
+             }
+          };
+          performLimitCheck();
+          return; // Exit early as we handle state inside async block
+        }
       }
-      // Clear role_id error when unchecking create_account
-      if (!checked) {
-        setErrors((prev) => ({ ...prev, role_id: null }));
-      }
+
+      // Default behavior for unchecking or if account already exists
+      setEmployee((prev) => ({
+        ...prev,
+        create_account: checked,
+        role_id: checked ? prev.role_id : '',
+        user: checked ? (prev.user || {}) : {}
+      }));
       return;
     }
 
@@ -418,6 +496,19 @@ export default function EmployeeDetails() {
     setDepartments(data);
   };
 
+  const handleLimitProceed = (months, totalPrice) => {
+    setLimitData(prev => ({ ...prev, months, quantity: 1, totalPrice }));
+    setShowLimitModal(false);
+    setIsPurchaseFlow(true);
+    setEmployee(prev => ({ ...prev, create_account: true }));
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    // Reload window to refresh all limits and UI state from server
+    window.location.reload();
+  };
+
   const handleSave = async () => {
     setErrors({});
     setIsSaving(true);
@@ -476,12 +567,29 @@ export default function EmployeeDetails() {
         }
       });
 
+      if (isPurchaseFlow) {
+        formData.append('is_paid', 'true');
+        formData.append('months', limitData.months);
+        formData.append('amount', limitData.totalPrice);
+      }
+
       if (id) {
         await updateEmployee(id, formData);
         toast.success('Employee updated successfully');
       } else {
-        await createEmployee(formData);
+        const res = await createEmployee(formData);
         toast.success('Employee created successfully');
+
+        if (isPurchaseFlow) {
+          const invoiceId = res.data?.invoice_id || res.data?.user?.invoice_id;
+          const userId = res.data?.user_id || res.data?.user?.id || res.data?.id;
+          const entityId = res.data?.user?.entity_id;
+          const entityType = res.data?.user?.entity_type;
+          setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
+          setIsSaving(false);
+          setShowPaymentModal(true);
+          return;
+        }
       }
 
       setTimeout(() => navigate('/employees'), 800);
@@ -607,6 +715,7 @@ export default function EmployeeDetails() {
                         profileImage={profileImage}
                         isEditMode={!!id}
                         employeeId={id || employee.employee_code}
+                        loadingLimitCheck={loadingLimitCheck}
                       />
                     )}
                   </div>
@@ -689,7 +798,25 @@ export default function EmployeeDetails() {
           departments={departments}
         />
 
+        <UserLimitModal
+          show={showLimitModal}
+          onHide={() => setShowLimitModal(false)}
+          onProceed={handleLimitProceed}
+          userCount={limitData.count}
+          freeLimit={limitData.limit}
+          perUserPrice={limitData.price}
+        />
 
+        <UserPaymentModal
+          show={showPaymentModal}
+          onHide={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          amount={limitData.totalPrice}
+          quantity={limitData.quantity}
+          months={limitData.months}
+          invoiceId={limitData.invoiceId}
+          userId={limitData.userId}
+        />
 
         <EmailComposeModal />
 

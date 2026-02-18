@@ -11,6 +11,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { getStripe } from '../../../lib/stripe';
 import { processInvoicePayment } from '../../../modules/invoice/services';
+import { purchaseUserSeats } from '../../../modules/user/services';
 import { refreshSubscription } from '../../../lib/auth';
 import { toast } from 'react-toastify';
 
@@ -45,23 +46,24 @@ const CheckoutForm = ({ amount, invoice, onPaymentSuccess, onCancel, loading }) 
         return;
       }
 
-    //   console.log('Invoice Payment Payload:', {
-    //     amount: amount * 100, // convert to cents
-    //     currency: 'usd',
-    //     payment_method_id: paymentMethod.id,
-    //     description: `Invoice Payment #${invoice?.invoice_id} - ${invoice?.customer_name}`,
-    //     invoice_id: invoice?.id,
-    //   });
+      const isUserSeatPayment = invoice?.entity_type === 'App\\Models\\User\\User' || 
+                               invoice?.entity_type === 'App\\Models\\Employee\\Employee';
 
-      const response = await processInvoicePayment({
-        amount: amount * 100, // convert to cents
+      const payload = {
+        amount: Math.round(amount * 100), // convert to cents
         currency: 'usd',
         payment_method_id: paymentMethod.id,
         description: `Invoice Payment #${invoice?.invoice_id} - ${invoice?.customer_name}`,
         invoice_id: invoice?.id, // Send the internal ID
-        entity_id: invoice?.id, // For consistency if backend expects entity_id
-        entity_type: invoice?.entity_type, // If backend requires type
-      });
+        entity_id: invoice?.entity_id, // Corrected: Use invoice's entity_id
+        entity_type: invoice?.entity_type, 
+        partner_id: invoice?.partner_id,
+        ...(isUserSeatPayment ? { user_id: invoice?.entity_id } : {})
+      };
+
+      const response = isUserSeatPayment 
+        ? await purchaseUserSeats(payload)
+        : await processInvoicePayment(payload);
 
       if (response.status) {
         toast.success("Payment completed successfully!");

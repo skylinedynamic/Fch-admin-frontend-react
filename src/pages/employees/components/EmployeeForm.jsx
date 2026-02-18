@@ -21,7 +21,8 @@ export default function EmployeeForm({
     onAddDepartment,
     isEditMode,
     onOpenFileManager,
-    employeeId
+    employeeId,
+    loadingLimitCheck
 }) {
     return (
         <form onSubmit={(e) => e.preventDefault()}>
@@ -58,6 +59,7 @@ export default function EmployeeForm({
                     onChange={onChange}
                     isEditMode={isEditMode}
                     errors={errors}
+                    loadingLimitCheck={loadingLimitCheck}
                 />
 
                 <EmergencyContactSection employee={employee} onChange={onChange} errors={errors} />

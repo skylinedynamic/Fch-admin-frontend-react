@@ -82,15 +82,16 @@ export default function PaymentTable({
                 <Column field="transaction_date" header="Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
                 <Column field="invoice_id" header="Invoice ID" sortable filter showFilterMatchModes filterPlaceholder="Search by invoice ID" style={{ minWidth: '100px' }}></Column>
                 <Column field="from" header="Payment Method" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
+               
                 <Column 
                     field="payment_type" 
                     header="Payment Type" 
                     body={(rowData) => {
-                        const type = rowData.partner_name ? 'Partner' : 'Borrower';
+                        // const type = rowData.partner_name ? 'Partner' : 'Borrower';
                         return (
                             <div>
                                 <div className="fw-medium">{rowData.payment_type}</div>
-                                <div className="text-muted fs-11">{type} Payment</div>
+                                {/* <div className="text-muted fs-11">{type} Payment</div> */}
                             </div>
                         );
                     }}
