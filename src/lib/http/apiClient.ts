@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
         const message = offline
           ? 'You appear to be offline. Please reconnect and try again.'
           : 'Network error: Unable to reach the server. Please try again later.'
-        toast(message, { toastId: 'network-error' })
+        toast.error(message, { toastId: 'network-error' })
       }
     }
 
