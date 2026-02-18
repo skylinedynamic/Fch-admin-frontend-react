@@ -56,7 +56,7 @@ export default function EmployeeDetails() {
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null });
+  const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0, invoiceId: null, userId: null, entityId: null, entityType: null });
   const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
 
   // Location states
@@ -580,9 +580,11 @@ export default function EmployeeDetails() {
         toast.success('Employee created successfully');
 
         if (isPurchaseFlow) {
-          const invoiceId = res.data?.invoice_id;
-          const userId = res.data?.user_id || res.data?.id;
-          setLimitData(prev => ({ ...prev, invoiceId, userId }));
+          const invoiceId = res.data?.invoice_id || res.data?.user?.invoice_id;
+          const userId = res.data?.user_id || res.data?.user?.id || res.data?.id;
+          const entityId = res.data?.user?.entity_id;
+          const entityType = res.data?.user?.entity_type;
+          setLimitData(prev => ({ ...prev, invoiceId, userId, entityId, entityType }));
           setIsSaving(false);
           setShowPaymentModal(true);
           return;

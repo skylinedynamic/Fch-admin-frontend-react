@@ -14,7 +14,7 @@ import { purchaseUserSeats } from '../../../modules/user/services';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth/authStore';
 
-const CheckoutForm = ({ amount, quantity, invoiceId, userId, onPaymentSuccess, onCancel, loading }) => {
+const CheckoutForm = ({ amount, quantity, invoiceId, userId, entityId, entityType, onPaymentSuccess, onCancel, loading }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -55,8 +55,8 @@ const CheckoutForm = ({ amount, quantity, invoiceId, userId, onPaymentSuccess, o
         user_id: userId,
         description: `Purchase ${quantity} additional user seat(s) for ${user?.name || ''}`,
         partner_id: user?.partner_id,
-        entity_id: user?.entity_id,
-        entity_type: user?.entity_type,
+        entity_id: entityId || user?.entity_id,
+        entity_type: entityType || user?.entity_type,
       });
 
 
@@ -178,7 +178,7 @@ const CheckoutForm = ({ amount, quantity, invoiceId, userId, onPaymentSuccess, o
   );
 };
 
-export default function UserPaymentModal({ show, onHide, onSuccess, amount, quantity, invoiceId, userId }) {
+export default function UserPaymentModal({ show, onHide, onSuccess, amount, quantity, invoiceId, userId, entityId, entityType }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [stripePromise, setStripePromise] = useState(null);
