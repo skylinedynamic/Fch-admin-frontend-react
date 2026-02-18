@@ -25,6 +25,7 @@ import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
 import type { Client, ClientProfileStats } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { scrollToFirstError } from '../../utils/formUtils';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
 // @ts-ignore
@@ -285,10 +286,7 @@ export default function ClientDetails() {
                             : backendErrors[key];
                     });
                     setErrors(mappedErrors);
-
-
-                    // Show a general toast if there are errors, to alert user
-                    // toast.error("Please check the form for errors.");
+                    scrollToFirstError(mappedErrors);
                 } else if (message) {
                     // toast.error(message);
                 }

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { fetchSettings, updateSettings } from '../../modules/settings/services';
 import SettingsForm from './components/SettingsForm';
 import { toast } from 'react-toastify';
-import './settings-redesign.css';
 
 export default function Settings() {
     const [loading, setLoading] = useState(false);
@@ -118,26 +117,37 @@ export default function Settings() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Header */}
-                <div className="row mb-4">
-                    <div className="col-12 mt-2">
-                        <div className="text-center mb-4">
-                            <h2 className="fw-bold text-dark">System Administration</h2>
-                            <p className="text-muted">Configure your platform settings and payment integrations.</p>
+                {/* Header Section */}
+                <div className="row page-subheader-sticky bg-body border-bottom border-light shadow-sm-bottom">
+                    <div className="col-12">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="flex-grow-1">
+                                <h4 className="fs-20 mb-1">System Administration</h4>
+                                <nav aria-label="breadcrumb">
+                                    <ol className="breadcrumb m-0">
+                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
+                                        <li className="breadcrumb-item active text-primary" aria-current="page">Settings</li>
+                                    </ol>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <SettingsForm
-                    formData={formData}
-                    handleInputChange={handleInputChange}
-                    onSubmit={handleSubmit}
-                    loading={loading}
-                    fetching={fetching}
-                    errors={errors}
-                    activeSection={activeSection}
-                    setActiveSection={setActiveSection}
-                />
+                <div className="row">
+                    <div className="col-12">
+                        <SettingsForm
+                            formData={formData}
+                            handleInputChange={handleInputChange}
+                            onSubmit={handleSubmit}
+                            loading={loading}
+                            fetching={fetching}
+                            errors={errors}
+                            activeSection={activeSection}
+                            setActiveSection={setActiveSection}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );

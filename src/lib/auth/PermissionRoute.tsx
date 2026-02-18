@@ -1,8 +1,9 @@
 import React from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { hasPermission } from './rbac'
-import { getUser } from './auth'
 import { isSubscriptionRestricted } from './subscriptionUtils'
+import { useAuthStore } from '../../store/auth'
+
 
 type Props = {
     permission: string
@@ -15,14 +16,22 @@ type Props = {
  * Also enforces subscription restrictions for non-host partners.
  */
 export default function PermissionRoute({ permission, redirectTo = '/' }: Props) {
-    const user = getUser()
-    const isRestricted = isSubscriptionRestricted(user)
+    const user = useAuthStore((state) => state.user)
+    const userSubscription = useAuthStore((state) => state.userSubscription)
+    const isRestricted = isSubscriptionRestricted(userSubscription)
+
     
     // Check if the current route is allowed even when restricted
     const isAllowedWhenRestricted = ['view dashboard', 'view invoices', 'view payments'].includes(permission)
     
     // If restricted and NOT on an allowed route, block access
-    const allowed = hasPermission(permission) && (!isRestricted || isAllowedWhenRestricted)
+    let allowed = false;
+
+    if(permission){
+        allowed = hasPermission(permission) && (!isRestricted || isAllowedWhenRestricted)
+    }else{
+        allowed = (!isRestricted || isAllowedWhenRestricted)
+    }
 
     // Debug logging
     if (!allowed) {

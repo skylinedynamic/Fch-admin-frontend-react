@@ -66,6 +66,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         timeEnd: '',
         location: '',
         description: '',
+        scheduledById: '',
         scheduledBy: '',
         assignedFor: '',
         appointmentCode: '',
@@ -314,6 +315,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 timeEnd: tConvert(end.toTimeString().slice(0, 5)),
                 location: apt.timezone || "Virtual",
                 description: apt.description || "No Description",
+                scheduledById: apt.scheduled_by?.id,
                 scheduledBy: apt.scheduled_by?.name || "FCH Admin",
                 assignedFor: apt.assigned_for?.name || "N/A",
                 assignedForId: apt.assigned_for?.entity_id || apt.assigned_for?.id,
@@ -350,18 +352,18 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             // - Host user and assigned to Partner
             // - Partner user and assigned to Borrower/Host
             let meetingWithValue = apt.meeting_with === 1 || apt.meeting_with_host === 1;
-            
+
             console.log('[AppointmentModal] Checkbox logic:', {
                 isHost,
                 assigned_for: apt.assigned_for,
                 entity_type: apt.assigned_for?.entity_type,
                 initial_meetingWithValue: meetingWithValue
             });
-            
+
             if (apt.assigned_for && apt.assigned_for.entity_type) {
                 const entityType = apt.assigned_for.entity_type.toLowerCase();
                 console.log('[AppointmentModal] Checking entity_type:', entityType);
-                
+
                 if (isHost && entityType === 'partner') {
                     console.log('[AppointmentModal] Host + Partner detected - checking checkbox');
                     meetingWithValue = true;
@@ -370,7 +372,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     meetingWithValue = true;
                 }
             }
-            
+
             console.log('[AppointmentModal] Final meetingWithValue:', meetingWithValue);
             setIsMeetingWithChecked(meetingWithValue);
 
@@ -390,7 +392,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                     const rawType = apt.assigned_for.entity_type || '';
                     const formattedType = rawType.toLowerCase();
                     setAssignedForType(formattedType);
-                    
+
                     console.log('[AppointmentModal] Setting assigned_for:', {
                         entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
                         assigned_for: apt.assigned_for.id,
@@ -398,7 +400,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                         raw_assigned_for: apt.assigned_for,
                         loaded_users: response.data
                     });
-                    
+
                     setFormData(p => ({
                         ...p,
                         entity_id: apt.assigned_for.entity_id || apt.assigned_for.id,
@@ -662,7 +664,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                 ) : (
                                     <div className="event-details position-relative">
                                         <div className="d-flex justify-content-end mb-3" style={{ position: 'absolute', right: '5px', top: '-10px', zIndex: 1 }}>
-                                            {hasPermission('update appointments') && (
+                                            {(hasPermission('update appointments') && currentUser?.id == displayData.scheduledById) && (
                                                 <button
                                                     className="btn btn-sm btn-soft-primary d-flex align-items-center px-3 shadow-none"
                                                     onClick={() => setViewMode(false)}
@@ -778,7 +780,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                         </div>
 
                                         <div className="mt-4 pt-3 border-top d-flex justify-content-end">
-                                            {hasPermission('delete appointments') && (
+                                            {(hasPermission('delete appointments') && currentUser?.id == displayData.scheduledById) && (
                                                 <button className="btn btn-soft-danger fw-medium" onClick={confirmDelete} disabled={isDeleting}>
                                                     <i className="ri-delete-bin-line me-1"></i> {isDeleting ? "Deleting..." : "Delete"}
                                                 </button>
@@ -847,7 +849,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                         }}
                                                         placeholder="Select Users"
                                                         className={`w-100 ${formErrors.assigned_for ? 'p-invalid' : ''}`}
-                                                        appendTo="self" />
+                                                        appendTo="self"
+                                                        filter
+                                                        filterPlaceholder="Search users..." />
                                                 )}
                                                 {formErrors.assigned_for && <div className="text-danger fs-11 mt-1">{formErrors.assigned_for}</div>}
                                             </div>

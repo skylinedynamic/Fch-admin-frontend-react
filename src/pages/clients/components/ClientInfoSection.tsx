@@ -15,7 +15,8 @@ import {
 } from '../../../modules/client';
 import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { entityTypes, industryTypes } from '../../../config/borrower';
+import { industryTypes, entityTypes } from '../../../config/borrower';
+import { scrollToFirstError } from '../../../utils/formUtils';
 import { locationData } from '../../../config';
 import { allUsers } from '../../../modules/partner/services';
 
@@ -105,12 +106,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // 3. Sync Fetch to Local State - Use ref to prevent infinite loops
     const hasSyncedData = React.useRef(false);
-    
+
     useEffect(() => {
         if (fetchedData && !hasSyncedData.current) {
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
-            
+
             // If plan_id is missing but enrollment_type exists, try to find plan_id
             if (!apiData.plan_id && apiData.enrollment_type) {
                 const plans = isHost ? borrowerPlans : nonHostPlans;
@@ -121,26 +122,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     apiData.plan_id = 'current_selection';
                 }
             }
-            
+
             // If other_city has a value, set city to 'Others' to show the dropdown correctly
             if (apiData.other_city && apiData.other_city.trim() !== '') {
                 apiData.city = 'Others';
             }
-            
-            console.log('[ClientInfoSection] Syncing data:', { 
-                notes: apiData.notes, 
+
+            console.log('[ClientInfoSection] Syncing data:', {
+                notes: apiData.notes,
                 other_city: apiData.other_city,
-                city: apiData.city 
+                city: apiData.city
             });
-            
+
             setFormData(prev => ({ ...prev, ...apiData }));
 
             hasSyncedData.current = true;
             setIsSynced(true);
         } else if (!clientId && !hasSyncedData.current) {
-             // If creating new client (no ID), we are synced immediately
-             setIsSynced(true);
-             hasSyncedData.current = true;
+            // If creating new client (no ID), we are synced immediately
+            setIsSynced(true);
+            hasSyncedData.current = true;
         }
     }, [fetchedData, borrowerPlans, nonHostPlans, isHost, clientId]);
 
@@ -234,7 +235,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const parseDate = (dateStr: any) => {
         if (!dateStr) return undefined;
         if (dateStr instanceof Date) return dateStr;
-        
+
         // Handle MM-DD-YYYY or YYYY-MM-DD
         const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
         if (parts.length === 3) {
@@ -246,7 +247,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
             }
         }
-        
+
         const d = new Date(dateStr);
         return isNaN(d.getTime()) ? undefined : d;
     };
@@ -277,6 +278,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                             });
                             setErrors(mappedErrors);
+                            scrollToFirstError(mappedErrors);
                         }
                         reject(error);
                     }
@@ -478,6 +480,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">Country <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="country"
                             value={formData.country}
                             options={localCountries}
                             onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
@@ -495,6 +498,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">State <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="state"
                             value={formData.state}
                             options={localStates}
                             onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
@@ -514,6 +518,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">City <span className="text-danger">*</span></label>
                         <Dropdown
+                            inputId="city"
                             value={formData.city}
                             options={[...localCities, { label: 'Others', value: 'Others' }]}
                             onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
@@ -594,6 +599,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_entity_type" className="form-label">Entity Type</label>
                         <Dropdown
+                            inputId="business_entity_type"
                             value={formData.business_entity_type}
                             options={entityTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'business_entity_type', value: e.value } })}
@@ -610,6 +616,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_industry_type" className="form-label">Industry Type</label>
                         <Dropdown
+                            inputId="business_industry_type"
                             value={formData.business_industry_type}
                             options={industryTypes}
                             onChange={(e) => handleInputChange({ target: { name: 'business_industry_type', value: e.value } })}
@@ -626,8 +633,21 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
                         <Flatpickr
-                            options={{ dateFormat: "d M, Y" }}
+                            id="business_start_date"
+                            name="business_start_date"
+                            options={{
+                                dateFormat: "Y-m-d",
+                                altInput: true,
+                                altFormat: "d M, Y"
+                            }}
                             value={parseDate(formData.business_start_date)}
+                            onChange={(dates) => {
+                                const date = dates[0];
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                            }}
                             className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
                             placeholder="Select date"
                         />
@@ -655,6 +675,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="assign_id" className="form-label">Assign to</label>
                         <Dropdown
+                            inputId="assign_id"
                             value={formData.assign_id}
                             options={users.map(user => ({ label: user.name, value: user.id }))}
                             onChange={(e) => handleInputChange({ target: { name: 'assign_id', value: e.value } })}
@@ -676,6 +697,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             Enrollment Type <span className="text-danger">*</span>
                         </label>
                         <Dropdown
+                            inputId="plan_id"
                             value={formData.plan_id}
                             options={enrollmentOptions}
                             onChange={(e) => {
@@ -716,32 +738,32 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="col-lg-12">
                         <div className="mb-3">
                             <label className="form-label">Enrollment Amount</label>
-                            <div className="card border border-primary bg-light-subtle">
-                                <div className="card-body p-3">
+                            <div className="enrollment-base-alert">
+                                <div className="card-body">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find(opt => 
+                                        const selectedOption = enrollmentOptions.find(opt =>
                                             String(opt.value) === String(formData.plan_id)
-                                        ) || enrollmentOptions.find(opt => 
+                                        ) || enrollmentOptions.find(opt =>
                                             opt.enrollment_type === formData.enrollment_type
                                         );
 
                                         if (!selectedOption && !formData.enrollment_type) return null;
 
-                                        const { installments, totalAmount, price } = selectedOption 
+                                        const { installments, totalAmount, price } = selectedOption
                                             ? calculateEnrollmentDetails({
                                                 ...selectedOption,
                                                 payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
                                             }, isHost)
-                                            : { 
-                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 : 
-                                                             (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
+                                            : {
+                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 :
+                                                    (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
                                                 totalAmount: formData.payment_amount || formData.amount || 0,
                                                 price: formData.payment_amount || formData.amount || 0
-                                              };
-                                        
+                                            };
+
                                         // Final total calculation if it's a multi-payment plan and totalAmount is just the installment price
-                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price)) 
-                                            ? Number(price) * installments 
+                                        const displayTotal = (installments > 1 && Number(totalAmount) === Number(price))
+                                            ? Number(price) * installments
                                             : Number(totalAmount);
 
                                         return (
@@ -751,33 +773,42 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 )}
 
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Client Type:</span>
-                                                    <span className={`badge ${isHost ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
+                                                    <span className="info-label">
+                                                        <i className="ri-user-settings-line"></i> Client Type:
+                                                    </span>
+                                                    <span className={`info-value ${isHost ? 'text-primary' : 'text-success'}`}>
                                                         {isHost ? 'Host Client' : 'Partner Client'}
                                                     </span>
                                                 </div>
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Payment Plan:</span>
-                                                    <span className="text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
-                                                </div>
-                                                <hr className="my-2" />
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">
-                                                        {installments > 1 ? 'Monthly Payment:' : 'One-Time Cost:'}
+                                                    <span className="info-label">
+                                                        <i className="ri-bank-card-line"></i> Payment Plan:
                                                     </span>
-                                                    <span className={`fs-5 fw-bold ${installments > 1 ? 'text-primary' : 'text-success'}`}>
+                                                    <span className="info-value text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
+                                                </div>
+                                                <hr />
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="info-label">
+                                                        <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i>
+                                                        {installments > 1 ? ' Monthly Payment:' : ' One-Time Cost:'}
+                                                    </span>
+                                                    <span className={`amount-value ${installments > 1 ? 'text-success' : 'text-success'}`}>
                                                         ${Number(price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
                                                 {installments > 1 && (
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="text-muted">Duration:</span>
-                                                        <span className="text-muted">{installments} months</span>
+                                                        <span className="info-label">
+                                                            <i className="ri-calendar-line"></i> Duration:
+                                                        </span>
+                                                        <span className="info-value text-muted">{installments} months</span>
                                                     </div>
                                                 )}
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="fw-semibold text-dark">Total:</span>
-                                                    <span className="fw-bold text-dark">
+                                                    <span className="info-label">
+                                                        <i className="ri-calculator-line"></i> Total:
+                                                    </span>
+                                                    <span className="amount-value text-success">
                                                         ${Number(displayTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>

@@ -13,11 +13,29 @@ export type AuthUser = {
   [key: string]: unknown
 }
 
+export type UserSubscription = {
+  enrollment_type?: string
+  subscription_status?: string
+  first_payment_date?: string | null
+  platform_fee_start_date?: string | null
+  next_installment_date?: string | null
+  next_platform_fee_date?: string | null
+  enrollment_completed_at?: string | null
+  subscription_start_date?: string | null
+  subscription_end_date?: string | null
+  phase?: string
+  is_host?: boolean
+  [key: string]: unknown
+}
+
+
 type AuthState = {
   token?: string
   user?: AuthUser | null
   rememberMe?: boolean
+  userSubscription?: UserSubscription | null
   setCredentials: (payload: { token?: string; user?: AuthUser | null; rememberMe?: boolean }) => void
+  setUserSubscription: (subscription: UserSubscription | null) => void
   clearCredentials: () => void
 }
 
@@ -28,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       rememberMe: true,
       setCredentials: ({ token, user, rememberMe }) => set(() => ({ token, user, rememberMe })),
+      setUserSubscription: (subscription) => set(() => ({ userSubscription: subscription })),
       clearCredentials: () => set(() => ({ token: undefined, user: null })),
     }),
     {
@@ -55,4 +74,13 @@ export const setAuthState = (payload: { token?: string; user?: AuthUser | null; 
 
 export const clearAuthState = () => {
   useAuthStore.getState().clearCredentials()
+}
+
+export const setUserSubscriptionState = (subscription: UserSubscription | null) => {
+  useAuthStore.getState().setUserSubscription(subscription)
+}
+
+export const getUserSubscriptionState = () => {
+  const { userSubscription } = useAuthStore.getState()
+  return userSubscription
 }

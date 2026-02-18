@@ -8,6 +8,7 @@ import {
     CURRENCY_OPTIONS,
     mapClientUpdatePayload
 } from '../../../modules/client';
+import { scrollToFirstError } from '../../../utils/formUtils';
 import type { Client } from '../../../modules/client/types';
 
 const defaultFinancialsState = DEFAULT_CLIENT_STATE;
@@ -89,6 +90,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                                 mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                             });
                             setErrors(mappedErrors);
+                            scrollToFirstError(mappedErrors);
                         }
                         reject(error);
                     }
@@ -119,6 +121,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     <div className="">
                         <label htmlFor="currency" className="form-label">Currency</label>
                         <Dropdown
+                            inputId="currency"
                             value={formData.currency || 'USD'}
                             options={CURRENCY_OPTIONS}
                             onChange={(e) => handleInputChange({ target: { name: 'currency', value: e.value } })}

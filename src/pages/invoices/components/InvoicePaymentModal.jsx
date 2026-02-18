@@ -12,7 +12,7 @@ import {
 import { getStripe } from '../../../lib/stripe';
 import { processInvoicePayment } from '../../../modules/invoice/services';
 import { purchaseUserSeats } from '../../../modules/user/services';
-import { refreshUser } from '../../../lib/auth';
+import { refreshSubscription } from '../../../lib/auth';
 import { toast } from 'react-toastify';
 
 const CheckoutForm = ({ amount, invoice, onPaymentSuccess, onCancel, loading }) => {
@@ -68,7 +68,7 @@ const CheckoutForm = ({ amount, invoice, onPaymentSuccess, onCancel, loading }) 
       if (response.status) {
         toast.success("Payment completed successfully!");
         // Refresh user details to unlock features
-        await refreshUser();
+        await refreshSubscription();
         onPaymentSuccess(response.data?.id || response.data?.payment_intent_id);
         // Force reload to ensure all states (like subscription restrictions) are fresh
         window.location.reload();

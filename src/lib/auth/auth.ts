@@ -1,5 +1,5 @@
 // Auth utilities backed by Zustand store with persist
-import { getAuthState, setAuthState, clearAuthState, AuthUser } from '../../store/auth'
+import { getAuthState, setAuthState, clearAuthState, AuthUser,setUserSubscriptionState, UserSubscription, getUserSubscriptionState  } from '../../store/auth'
 import { getUserDetails } from './authApi'
 
 const COOKIE_NAME = 'auth_session_active'
@@ -29,7 +29,7 @@ function eraseCookie(name: string) {
   document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
 }
 
-export type { AuthUser }
+export type { AuthUser, UserSubscription }
 
 export function getToken(): string {
   const { token } = getAuthState()
@@ -40,6 +40,16 @@ export function getUser(): AuthUser | null {
   const { user } = getAuthState()
   return (user as AuthUser | null) ?? null
 }
+
+
+export function setUserSubscription(subscription: UserSubscription | null): void {
+  setUserSubscriptionState(subscription)
+}
+
+export function getUserSubscription(): UserSubscription | null {
+  return getUserSubscriptionState() ?? null
+}
+
 
 export function setAuth(token?: string | null, user?: AuthUser | null, rememberMe: boolean = true): void {
   setAuthState({ token: token || undefined, user: user ?? null, rememberMe })
@@ -82,15 +92,27 @@ export function checkSession(): void {
   }
 }
 
-export async function refreshUser(): Promise<void> {
+export async function refreshSubscription(): Promise<void> {
     if (!isAuthenticated()) return
 
     try {
         const response = await getUserDetails()
         if (response?.status && response?.data?.user) {
             // Update store, keep existing token
-            const { token, rememberMe } = getAuthState()
-            setAuth(token, response.data.user, rememberMe)
+            const user = response.data.user
+            setUserSubscription({
+                enrollment_type: user.enrollment_type,
+                subscription_status: user.subscription_status,
+                first_payment_date: user.first_payment_date,
+                platform_fee_start_date: user.platform_fee_start_date,
+                next_installment_date: user.next_installment_date,
+                next_platform_fee_date: user.next_platform_fee_date,
+                enrollment_completed_at: user.enrollment_completed_at,
+                subscription_start_date: user.subscription_start_date,
+                subscription_end_date: user.subscription_end_date,
+                phase: user.phase,
+                is_host: user.is_host
+            })
         }
     } catch (error) {
         console.error("Failed to refresh user details", error)

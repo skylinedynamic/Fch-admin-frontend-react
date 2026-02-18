@@ -557,6 +557,180 @@
   z-index: 1055;
 }
 
+/* Enrollment Alert Card - Premium Alert Aesthetic */
+.enrollment-alert-card {
+  background: #f0f4ff !important;
+  border: 1px solid rgba(64, 81, 137, 0.12) !important;
+  border-left: 4px solid #405189 !important;
+  border-radius: 0.3rem !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(64, 81, 137, 0.05) !important;
+}
+
+.enrollment-alert-card .card-body {
+  padding: 1rem !important;
+}
+
+.enrollment-alert-card .info-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.enrollment-alert-card .info-row:last-child {
+  margin-bottom: 0 !important;
+}
+
+.enrollment-alert-card .info-icon-box {
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #405189;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 4px rgba(64, 81, 137, 0.08);
+  flex-shrink: 0;
+}
+
+.enrollment-alert-card .info-content {
+  flex-grow: 1;
+}
+
+.enrollment-alert-card .info-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #878a99;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.15rem;
+}
+
+.enrollment-alert-card .info-text {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2a2f3b;
+}
+
+.enrollment-alert-card .badge-alert {
+  background-color: #405189;
+  color: #ffffff;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.enrollment-alert-card hr {
+  margin: 1rem 0 !important;
+  border-top: 1px dashed rgba(64, 81, 137, 0.15) !important;
+  opacity: 1 !important;
+}
+
+.enrollment-alert-card .amount-accent {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: #405189 !important;
+  letter-spacing: -0.025em;
+}
+
+.enrollment-alert-card .amount-success {
+  color: #0ab39c !important;
+}
+
+/* Enrollment Card - Success-Subtle Polished Alert */
+.enrollment-base-alert {
+  background: linear-gradient(135deg, #e6f7f5 0%, #f0faf9 100%) !important;
+  border: 1px solid rgba(10, 179, 156, 0.1) !important;
+  border-left: 4px solid #0ab39c !important;
+  border-radius: 0.3rem !important;
+  box-shadow: 0 4px 12px rgba(10, 179, 156, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.3s ease;
+}
+
+.enrollment-base-alert:hover {
+  box-shadow: 0 8px 16px rgba(10, 179, 156, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+.enrollment-base-alert .card-body {
+  padding: 1rem !important;
+}
+
+.enrollment-base-alert .info-label {
+  font-weight: 600;
+  color: #5b7a76;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.enrollment-base-alert .info-label i {
+  font-size: 1rem;
+  color: #0ab39c;
+  opacity: 0.8;
+}
+
+.enrollment-base-alert .info-value {
+  color: #5b7a9bc7;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.enrollment-base-alert hr {
+  margin: .3rem 0 !important;
+  border-top: 1px solid rgba(10, 179, 156, 0.25) !important;
+  opacity: 1 !important;
+}
+
+.enrollment-base-alert .amount-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0ab39c;
+  letter-spacing: -0.02em;
+}
+
+.enrollment-base-alert .amount-success {
+  color: #0ab39c !important;
+}
+
+.enrollment-base-alert .custom-notice {
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(10, 179, 156, 0.08);
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  margin-top: 1rem;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  backdrop-filter: blur(4px);
+}
+
+.enrollment-base-alert .custom-notice i {
+  color: #0ab39c;
+  font-size: 1.1rem;
+}
+
+.enrollment-base-alert .custom-notice-text {
+  font-size: 0.775rem;
+  color: #495057;
+  margin-bottom: 0;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.enrollment-base-alert .custom-notice-text strong {
+  color: #0ab39c;
+  font-weight: 700;
+}
+
 
 .role-form .section-title {
   font-weight: 600;

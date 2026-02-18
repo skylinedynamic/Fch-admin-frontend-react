@@ -105,38 +105,78 @@ export default function Dashboard() {
 
           {/* KPI Cards */}
           <div className="row">
-            {renderKPI(
-              "Total Partners",
-              dashboardData?.counts?.total_partners || 0,
-              "las la-handshake",
-              "success",
-              "/partners",
-              "View all partners"
-            )}
-            {renderKPI(
-              "Total Clients",
-              dashboardData?.counts?.total_clients || 0,
-              "las la-user-friends",
-              "info",
-              "/clients",
-              "View all clients"
-            )}
-            {renderKPI(
-              "Total Leads",
-              dashboardData?.counts?.total_leads || 0,
-              "las la-chart-pie",
-              "warning",
-              "/leads",
-              "View all Leads"
-            )}
-            {renderKPI(
-              "My Commission",
-              dashboardData?.counts?.total_commission || 0,
-              "bx bx-wallet",
-              "primary",
-              '/commissions',
-              "View All Commissions",
-              true
+            {isHost ? (
+              <>
+                {renderKPI(
+                  "Total Partners",
+                  dashboardData?.counts?.total_partners || 0,
+                  "las la-handshake",
+                  "success",
+                  "/partners",
+                  "View all partners"
+                )}
+                {renderKPI(
+                  "Total Clients",
+                  dashboardData?.counts?.total_clients || 0,
+                  "las la-user-friends",
+                  "info",
+                  "/clients",
+                  "View all clients"
+                )}
+                {renderKPI(
+                  "Total Leads",
+                  dashboardData?.counts?.total_leads || 0,
+                  "las la-chart-pie",
+                  "warning",
+                  "/leads",
+                  "View all Leads"
+                )}
+                {renderKPI(
+                  "My Commission",
+                  dashboardData?.counts?.total_commission || 0,
+                  "bx bx-wallet",
+                  "primary",
+                  '/commissions',
+                  "View All Commissions",
+                  true
+                )}
+              </>
+            ) : (
+              <>
+                {renderKPI(
+                  "Total Clients",
+                  dashboardData?.counts?.total_clients || 0,
+                  "las la-user-friends",
+                  "info",
+                  "/clients",
+                  "View all clients"
+                )}
+                {renderKPI(
+                  "Total Leads",
+                  dashboardData?.counts?.total_leads || 0,
+                  "las la-chart-pie",
+                  "warning",
+                  "/leads",
+                  "View all Leads"
+                )}
+                {renderKPI(
+                  "Total Commission",
+                  dashboardData?.counts?.total_commission || 0,
+                  "bx bx-wallet",
+                  "primary",
+                  '/commissions',
+                  "View All Commissions",
+                  true
+                )}
+                {renderKPI(
+                  "Total Funding Applications",
+                  dashboardData?.counts?.funding_application || 0,
+                  "ri-file-list-3-line",
+                  "success",
+                  "/intake-review/funding-review",
+                  "View all Applications"
+                )}
+              </>
             )}
           </div>
 
