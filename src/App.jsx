@@ -165,11 +165,15 @@ export default function App() {
             </Route>
 
             <Route path="intake-review" >
-              <Route path="pre-qualification" element={<PreQualificationApplication />} />
-              <Route path="funding-review" element={<FundingApplication />} />
+              <Route element={<PermissionRoute permission="view pre qualification" />}>
+                <Route path="pre-qualification" element={<PreQualificationApplication />} />
+                <Route path="pre-qualification/:id" element={<PreQualificationDetails />} />
+              </Route>
+              <Route element={<PermissionRoute permission="view funding application" />}>
+                <Route path="funding-review" element={<FundingApplication />} />
+                <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
+              </Route>
             </Route>
-            <Route path="intake-review/pre-qualification/:id" element={<PreQualificationDetails />} />
-            <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
 
 
             {/* Invoices Routes */}
