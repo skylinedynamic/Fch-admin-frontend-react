@@ -22,6 +22,7 @@ export default function PersonalDetailsSection({ employee, onChange, errors }) {
                             onChange({ target: { name: "date_of_birth", value: dateString } });
                         }}
                         className={`form-control ${errors?.date_of_birth ? 'is-invalid' : ''}`}
+                        name="date_of_birth"
                         placeholder="Select date"
                         readOnly
                     />

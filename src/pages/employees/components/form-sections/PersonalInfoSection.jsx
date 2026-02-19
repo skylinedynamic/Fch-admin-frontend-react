@@ -208,6 +208,7 @@ export default function PersonalInfoSection({
                         </button>
                     </label>
                     <Dropdown
+                        inputId="department"
                         value={employee.department}
                         options={departments}
                         onChange={(e) => onChange({ target: { name: 'department', value: e.value } })}

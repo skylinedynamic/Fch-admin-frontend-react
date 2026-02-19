@@ -491,9 +491,9 @@ export default function LeadDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Page Title */}
-                    <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                    <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row">
+                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Lead Profile</h4>
                                     <nav aria-label="breadcrumb">
