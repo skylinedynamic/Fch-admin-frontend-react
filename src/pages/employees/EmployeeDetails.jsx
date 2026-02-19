@@ -325,7 +325,11 @@ export default function EmployeeDetails() {
           }));
 
           const performLimitCheck = async () => {
+             if (user?.is_host == 1) {
+                return;
+             }
              try {
+               // Fresh check as fallback/verification for non-hosts
                // Fetch fresh user details to check if host
                const detailsRes = await getUserDetails();
                const freshUser = detailsRes?.data?.user;
