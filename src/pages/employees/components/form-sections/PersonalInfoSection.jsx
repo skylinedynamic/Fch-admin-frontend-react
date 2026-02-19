@@ -202,8 +202,15 @@ export default function PersonalInfoSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label d-flex justify-content-between align-items-center">
-                        Department <span className="text-danger">*</span>
-                        <button type="button" className="btn btn-sm btn-link p-0" onClick={onAddDepartment}>
+                        <span>
+                            Department <span className="text-danger">*</span>
+                        </span>
+
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-link p-0"
+                            onClick={onAddDepartment}
+                        >
                             <i className="ri-add-circle-line"></i> Add New
                         </button>
                     </label>
