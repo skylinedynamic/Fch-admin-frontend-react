@@ -10,6 +10,7 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
+import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { PreQualificationApplication as PreQualificationApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
 import { APPLICATION_STATUS_OPTIONS, FUNDING_TYPE_OPTIONS, APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';

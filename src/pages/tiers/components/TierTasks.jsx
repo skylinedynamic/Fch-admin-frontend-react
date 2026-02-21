@@ -17,10 +17,12 @@ import TableLoader from '../../../components/Loader/TableLoader';
 import TierTaskModal from './TierTaskModal';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { useTierRelatedApis, useTierVendors, useTier } from '../../../modules/tiers/queries';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 export default function TierTasks({ tierId }) {
     const { user } = useAuthStore();
     const isDeveloper = user?.role_name === 'Developer';
+    const { hasPermission } = usePermissions();
 
     // Fetch Tier Details to get code
     const { data: tier } = useTier(tierId);
@@ -59,10 +61,10 @@ export default function TierTasks({ tierId }) {
 
     // Fetch related APIs once on page load for this tier
     const { data: relatedApis = [], isLoading: loadingApis } = useTierRelatedApis(tierId);
-    
+
     // Fetch vendors for this tier (for Related Vendor dropdown)
     // We fetch a large number to ensure we get all for the dropdown
-    const { data: vendorData } = useTierVendors({ 
+    const { data: vendorData } = useTierVendors({
         tier_id: tierId,
         per_page: 9999,
         status: 'Active'
@@ -232,11 +234,7 @@ export default function TierTasks({ tierId }) {
 
     const titleBodyTemplate = (rowData) => {
         return (
-            <span
-                className="fw-medium cursor-pointer"
-                style={{ cursor: 'pointer' }}
-                onClick={() => openEditModal(rowData)}
-            >
+            <span className="fw-medium text-primary">
                 {rowData.title}
             </span>
         );
@@ -344,6 +342,15 @@ export default function TierTasks({ tierId }) {
                     filters={filters}
                     filterDisplay="menu"
                     onFilter={onFilter}
+                    onRowClick={(e) => {
+                        const target = e.originalEvent.target;
+                        if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT' && !target.closest('button')) {
+                            if (hasPermission('update tier')) {
+                                openEditModal(e.data);
+                            }
+                        }
+                    }}
+                    rowClassName={() => hasPermission('update tier') ? 'cursor-pointer' : ''}
                 >
                     {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
@@ -354,26 +361,30 @@ export default function TierTasks({ tierId }) {
                 </DataTable>
             )}
 
-            <TierTaskModal
-                show={showModal}
-                onHide={() => setShowModal(false)}
-                onSubmit={handleModalSubmit}
-                task={editTask}
-                tierId={tierId}
-                tier={tier?.data}
-                relatedApis={relatedApis}
-                vendors={vendors}
-                loadingApis={loadingApis}
-                loadingSave={loadingSave}
-            />
+            {hasPermission('update tier') && (
+                <>
+                    <TierTaskModal
+                        show={showModal}
+                        onHide={() => setShowModal(false)}
+                        onSubmit={handleModalSubmit}
+                        task={editTask}
+                        tierId={tierId}
+                        tier={tier?.data}
+                        relatedApis={relatedApis}
+                        vendors={vendors}
+                        loadingApis={loadingApis}
+                        loadingSave={loadingSave}
+                    />
 
-            <DeleteConfirmationModal
-                show={showDeleteModal}
-                onConfirm={handleDeleteConfirm}
-                onClose={() => setShowDeleteModal(false)}
-                loading={loading} // Modal might not use loading prop? Checked: it does "loading={loading}" in TiersList.jsx
-                text="The selected tasks will be deleted."
-            />
+                    <DeleteConfirmationModal
+                        show={showDeleteModal}
+                        onConfirm={handleDeleteConfirm}
+                        onClose={() => setShowDeleteModal(false)}
+                        loading={loading} // Modal might not use loading prop? Checked: it does "loading={loading}" in TiersList.jsx
+                        text="The selected tasks will be deleted."
+                    />
+                </>
+            )}
         </React.Fragment>
     );
 }

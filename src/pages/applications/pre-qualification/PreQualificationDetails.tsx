@@ -11,6 +11,7 @@ import ConfirmationModal from '../../../components/Common/Modals/ConfirmationMod
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 import { useAuthStore } from '../../../store/auth';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 type StepType = 1 | 2 | 3;
 
@@ -38,6 +39,7 @@ export default function PreQualificationDetails() {
 
     const { user } = useAuthStore();
     const isPartner = user?.is_host == false;
+    const { hasPermission } = usePermissions();
 
     // Status update state
     const app = (details?.data || details || {}) as PreQualificationApplicationDetailsType;
@@ -209,6 +211,7 @@ export default function PreQualificationDetails() {
                                                     optionValue="value"
                                                     placeholder="Select status..."
                                                     className="w-100"
+                                                    disabled={!hasPermission("update pre qualification")}
                                                 />
                                             </div>
                                             <div className="mb-3">
@@ -223,19 +226,23 @@ export default function PreQualificationDetails() {
                                                         setStatusNote(e.target.value);
                                                         if (notesError) setNotesError('');
                                                     }}
+                                                    disabled={!hasPermission("update pre qualification")}
                                                 ></textarea>
                                                 {notesError && <div className="invalid-feedback">{notesError}</div>}
                                             </div>
-                                            <div className="d-grid">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={handleUpdateClick}
-                                                    disabled={updateMutation.isPending}
-                                                >
-                                                    {updateMutation.isPending ? 'Updating...' : 'Update Status'}
-                                                </button>
-                                            </div>
+
+                                            {hasPermission("update pre qualification") && (
+                                                <div className="d-grid">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary"
+                                                        onClick={handleUpdateClick}
+                                                        disabled={updateMutation.isPending}
+                                                    >
+                                                        {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
                                         <>
@@ -276,7 +283,7 @@ export default function PreQualificationDetails() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <ConfirmationModal
                 show={showConfirmModal}

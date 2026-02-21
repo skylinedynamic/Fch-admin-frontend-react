@@ -9,12 +9,15 @@ import FormLoader from '../../components/Loader/FormLoader';
 import TierTasks from './components/TierTasks';
 import TierVendors from './components/TierVendors';
 import { useSummernote } from '../../hooks/useSummernote';
+import { usePermissions } from '../../lib/auth/usePermissions';
+
 
 export default function TierForm() {
     const navigate = useNavigate();
     const location = useLocation();
     const { id } = useParams();
     const isEditMode = !!id;
+    const { hasPermission } = usePermissions();
 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
@@ -87,9 +90,9 @@ export default function TierForm() {
                     // Show success toast
                     toast.success(result?.message || 'Tier updated successfully');
                     // Switch to Task Information tab after a short delay
-                    setTimeout(() => {
-                        setActiveTab('taskInfo');
-                    }, 500);
+                    // setTimeout(() => {
+                    //     setActiveTab('taskInfo');
+                    // }, 500);
                 } else {
                     result = await createTier(formData);
                     // Show success toast
@@ -104,7 +107,6 @@ export default function TierForm() {
                 }
             }
         } catch (err) {
-            console.error(err);
             if (err.response?.data?.errors) {
                 // Validation errors from backend - set in state for field display only
                 const backendErrors = err.response.data.errors;
@@ -147,9 +149,9 @@ export default function TierForm() {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <div className="row pb-1 mb-3 page-subheader-sticky bg-body">
+                    <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column">
+                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Edit Tier</h4>
                                     <nav aria-label="breadcrumb">
@@ -181,7 +183,7 @@ export default function TierForm() {
             <div className="container-fluid">
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column">
+                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">{isEditMode ? 'Edit Tier' : 'Add New Tier'}</h4>
                                 <nav aria-label="breadcrumb">
@@ -197,67 +199,72 @@ export default function TierForm() {
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
 
-                                {/* Show Save button only for Tier Info tab */}
-                                {activeTab === 'tierInfo' && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary w-lg waves-effect"
-                                        onClick={handleSubmit}
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> Save
-                                            </>
+                                {hasPermission('update tier') && (
+                                    <>
+                                        {/* Show Save button only for Tier Info tab */}
+                                        {activeTab === 'tierInfo' && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary w-lg waves-effect"
+                                                onClick={handleSubmit}
+                                                disabled={loading}
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                        Updating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-save-3-line align-middle me-1"></i> Update
+                                                    </>
+                                                )}
+                                            </button>
                                         )}
-                                    </button>
+
+                                        {/* Show Add Vendor or Delete Selected button for Vendors tab */}
+                                        {activeTab === 'vendorInfo' && (
+                                            selectedVendorsCount > 0 ? (
+                                                <div className="btn-group">
+                                                    <button type="button" className="btn bg-success text-white fw-medium">
+                                                        Actions
+                                                    </button>
+                                                    <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span className="visually-hidden">Toggle dropdown</span>
+                                                    </button>
+                                                    <ul className="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                className="dropdown-item text-danger"
+                                                                onClick={() => {
+                                                                    if (vendorsRef.current) {
+                                                                        vendorsRef.current.openDeleteModal();
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary w-lg waves-effect"
+                                                    onClick={() => {
+                                                        if (vendorsRef.current) {
+                                                            vendorsRef.current.openAddModal();
+                                                        }
+                                                    }}
+                                                >
+                                                    <i className="ri-add-line align-middle me-1"></i> Add Vendor
+                                                </button>
+                                            )
+                                        )}
+                                    </>
                                 )}
 
-                                {/* Show Add Vendor or Delete Selected button for Vendors tab */}
-                                {activeTab === 'vendorInfo' && (
-                                    selectedVendorsCount > 0 ? (
-                                        <div className="btn-group">
-                                            <button type="button" className="btn bg-success text-white fw-medium">
-                                                Actions
-                                            </button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button
-                                                        type="button"
-                                                        className="dropdown-item text-danger"
-                                                        onClick={() => {
-                                                            if (vendorsRef.current) {
-                                                                vendorsRef.current.openDeleteModal();
-                                                            }
-                                                        }}
-                                                    >
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary w-lg waves-effect"
-                                            onClick={() => {
-                                                if (vendorsRef.current) {
-                                                    vendorsRef.current.openAddModal();
-                                                }
-                                            }}
-                                        >
-                                            <i className="ri-add-line align-middle me-1"></i> Add Vendor
-                                        </button>
-                                    )
-                                )}
                             </div>
                         </div>
                     </div>

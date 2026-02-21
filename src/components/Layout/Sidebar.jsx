@@ -48,10 +48,12 @@ const menuItems = [
       {
         to: '/intake-review/pre-qualification',
         label: 'Pre-Qualification',
+        permission: 'view pre qualification',
       },
       {
         to: '/intake-review/funding-review',
         label: 'Funding Review',
+        permission: 'view funding application',
       }
     ]
   },

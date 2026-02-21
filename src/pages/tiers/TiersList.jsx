@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Dropdown } from 'primereact/dropdown';
 import { Column } from 'primereact/column';
@@ -10,10 +10,15 @@ import { fetchTiers, deleteTier, deleteTiers } from '../../modules/tiers/service
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../components/Loader/TableLoader';
 import { useAuthStore } from '../../store/auth/authStore';
+import { usePermissions } from '../../lib/auth/usePermissions';
+
 
 export default function TiersList() {
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const isDeveloper = user?.role_name === 'Developer';
+    const { hasPermission } = usePermissions();
+
 
     const [tiers, setTiers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -204,7 +209,7 @@ export default function TiersList() {
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <div className="row g-3 mb-0 align-items-center">
                                         <div className="col-sm-auto">
-                                            {isDeveloper && (
+                                            {isDeveloper && hasPermission('update tier') && (
                                                 <div className="btn-group">
                                                     {Array.isArray(selectedTiers) && selectedTiers.length > 0 ? (
                                                         <>
@@ -310,10 +315,17 @@ export default function TiersList() {
                                         onFilter={onFilter}
                                         className="p-datatable-sm"
                                         tableStyle={{ minWidth: '50rem' }}
+                                        rowClassName={() => 'cursor-pointer'}
                                         selection={selectedTiers}
                                         onSelectionChange={(e) => setSelectedTiers(e.value)}
                                         selectionMode={isDeveloper ? "multiple" : null}
                                         dataKey="id"
+                                        onRowClick={(e) => {
+                                            const target = e.originalEvent.target;
+                                            if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
+                                                navigate(`/tiers/${e.data.id}`);
+                                            }
+                                        }}
                                     >
                                         {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                                         <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '25%' }} />

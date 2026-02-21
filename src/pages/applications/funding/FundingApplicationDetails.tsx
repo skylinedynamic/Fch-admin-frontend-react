@@ -11,6 +11,7 @@ import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDeta
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -55,6 +56,7 @@ export default function FundingApplicationDetails() {
     const saveCommissionMutation = useSaveFundingApplicationCommission();
 
     const { user } = useAuthStore();
+    const { hasPermission } = usePermissions();
     const isPartner = user?.is_host == false;
     const authPartnerId = (user as any)?.partner_id;
 
@@ -543,333 +545,350 @@ export default function FundingApplicationDetails() {
                                 </div>
                             ) : (
                                 /* Admin View - Calculator */
-                                <div className="card shadow-sm border-0 mb-4 overflow-hidden">
-                                    <div className="card-header bg-white border-bottom">
-                                        <h5 className="card-title mb-0 fs-16">Commission Details</h5>
-                                    </div>
-                                    <div className="card-body p-0">
-                                        <div className="row g-0">
-                                            {/* Left Side: Inputs */}
-                                            <div className="col-md-5 border-end border-light">
-                                                <div className="p-4 h-100 bg-light bg-opacity-50">
-                                                    <form onSubmit={(e) => {
-                                                        e.preventDefault();
-                                                        handleSaveCommission();
-                                                    }}>
-                                                        <div className="mb-3">
-                                                            <label className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
-                                                            <div className="input-group">
-                                                                <input
-                                                                    type="number"
-                                                                    className="form-control"
-                                                                    placeholder="0"
-                                                                    value={successFee}
-                                                                    onChange={(e) => {
-                                                                        const val = e.target.value;
-                                                                        if (val === '') {
-                                                                            setSuccessFee(val);
-                                                                            return;
-                                                                        }
-                                                                        const numVal = parseFloat(val);
-                                                                        if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
-                                                                            setSuccessFee(val);
-                                                                        }
-                                                                    }}
-                                                                    min="0"
-                                                                    max="100"
-                                                                    step="0.1"
-                                                                />
-                                                                <span className="input-group-text bg-white text-muted">%</span>
-                                                            </div>
-                                                        </div>
 
-                                                        {showPartnerCommission && (
-                                                            <div className="row">
-                                                                <div className="col-md-6 mb-0">
-                                                                    <label className="form-label fs-12 text-muted fw-medium text-primary">Admin Commission Rate</label>
-                                                                    <div className="input-group">
-                                                                        <input
-                                                                            type="number"
-                                                                            className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''}`}
-                                                                            placeholder="0"
-                                                                            value={adminCommissionRate}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value;
-                                                                                if (val === '') {
-                                                                                    setAdminCommissionRate(val);
-                                                                                    return;
-                                                                                }
-                                                                                const newAdminShare = parseFloat(val);
-                                                                                if (!isNaN(newAdminShare) && newAdminShare >= 0 && newAdminShare <= 100) {
-                                                                                    setAdminCommissionRate(val);
-                                                                                    const newPartnerShare = 100 - newAdminShare;
-                                                                                    setPartnerCommissionRate(newPartnerShare >= 0 ? newPartnerShare.toFixed(2).replace(/\.00$/, '') : '0');
-                                                                                }
-
-                                                                                if (commissionErrors.admin_commission) {
-                                                                                    setCommissionErrors({ ...commissionErrors, admin_commission: undefined });
-                                                                                }
-                                                                            }}
-                                                                            min="0"
-                                                                            max="100"
-                                                                            step="0.1"
-                                                                        />
-                                                                        <span className="input-group-text bg-white text-muted">%</span>
-                                                                    </div>
-                                                                    {commissionErrors.admin_commission && (
-                                                                        <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="col-md-6 mb-0">
-                                                                    <label className="form-label fs-12 text-muted fw-medium text-success">Partner Commission Rate</label>
-                                                                    <div className="input-group">
-                                                                        <input
-                                                                            type="number"
-                                                                            className={`form-control ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''}`}
-                                                                            placeholder="0"
-                                                                            value={partnerCommissionRate}
-                                                                            onChange={(e) => {
-                                                                                const val = e.target.value;
-                                                                                if (val === '') {
-                                                                                    setPartnerCommissionRate(val);
-                                                                                    return;
-                                                                                }
-                                                                                const newPartnerShare = parseFloat(val);
-
-                                                                                if (!isNaN(newPartnerShare) && newPartnerShare >= 0 && newPartnerShare <= 100) {
-                                                                                    setPartnerCommissionRate(val);
-                                                                                    const newAdminShare = 100 - newPartnerShare;
-                                                                                    setAdminCommissionRate(newAdminShare >= 0 ? newAdminShare.toFixed(2).replace(/\.00$/, '') : '0');
-                                                                                }
-                                                                                if (commissionErrors.partner_commission) {
-                                                                                    setCommissionErrors({ ...commissionErrors, partner_commission: undefined });
-                                                                                }
-                                                                            }}
-                                                                            min="0"
-                                                                            max="100"
-                                                                            step="0.1"
-                                                                        />
-                                                                        <span className="input-group-text bg-white text-muted">%</span>
-                                                                    </div>
-                                                                    {commissionErrors.partner_commission && (
-                                                                        <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
-                                                                    )}
+                                hasPermission('view commission') && (
+                                    <div className="card shadow-sm border-0 mb-4 overflow-hidden">
+                                        <div className="card-header bg-white border-bottom">
+                                            <h5 className="card-title mb-0 fs-16">Commission Details</h5>
+                                        </div>
+                                        <div className="card-body p-0">
+                                            <div className="row g-0">
+                                                {/* Left Side: Inputs */}
+                                                <div className="col-md-5 border-end border-light">
+                                                    <div className="p-4 h-100 bg-light bg-opacity-50">
+                                                        <form onSubmit={(e) => {
+                                                            e.preventDefault();
+                                                            if (hasPermission('update commission')) {
+                                                                handleSaveCommission();
+                                                            }
+                                                        }}>
+                                                            <div className="mb-3">
+                                                                <label className="form-label fs-12 text-muted fw-medium text-primary">Success Fee (%)</label>
+                                                                <div className="input-group">
+                                                                    <input
+                                                                        type="number"
+                                                                        className="form-control"
+                                                                        placeholder="0"
+                                                                        value={successFee}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value;
+                                                                            if (val === '') {
+                                                                                setSuccessFee(val);
+                                                                                return;
+                                                                            }
+                                                                            const numVal = parseFloat(val);
+                                                                            if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
+                                                                                setSuccessFee(val);
+                                                                            }
+                                                                        }}
+                                                                        min="0"
+                                                                        max="100"
+                                                                        step="0.1"
+                                                                    />
+                                                                    <span className="input-group-text bg-white text-muted">%</span>
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        <div className="mt-4 text-end">
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-primary"
-                                                                onClick={handleSaveCommission}
-                                                                disabled={saveCommissionMutation.isPending}
-                                                            >
-                                                                {saveCommissionMutation.isPending ? (
-                                                                    <>
-                                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                        Saving Commission...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <i className="ri-save-line me-2"></i>
-                                                                        Save Commission
-                                                                    </>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                        {/* Hidden submit button to enable Enter key submission */}
-                                                        <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
-                                                    </form>
-                                                </div>
-                                            </div>
 
-                                            {/* Right Side: Results */}
-                                            <div className="col-md-7">
-                                                <div className="p-3 h-100 d-flex flex-column">
-                                                    <div className="flex-grow-1">
-                                                        {/* Requested Amount - Top */}
-                                                        <div className="alert alert-primary border mb-3 py-2">
-                                                            <div className="d-flex justify-content-between align-items-center">
-                                                                <div>
-                                                                    <i className="bx bx-credit-card text-primary me-2"></i>
-                                                                    <span className="fw-medium">Total Requested Amount:</span>
-                                                                </div>
-                                                                {!isEditingRequestedAmount ? (
-                                                                    <div
-                                                                        className="px-2 py-1 rounded transition-all cursor-pointer d-flex align-items-center bg-hover-light"
-                                                                        style={{
-                                                                            transition: 'all 0.2s ease',
-                                                                            border: '1px solid transparent'
-                                                                        }}
-                                                                        onClick={() => {
-                                                                            setTempRequestedAmount(requestedAmountInput);
-                                                                            setIsEditingRequestedAmount(true);
-                                                                        }}
-                                                                        onMouseEnter={(e) => {
-                                                                            e.currentTarget.style.backgroundColor = 'rgba(10, 179, 156, 0.05)';
-                                                                            e.currentTarget.style.borderColor = 'rgba(10, 179, 156, 0.1)';
-                                                                            e.currentTarget.style.transform = 'translateY(-1px)';
-                                                                        }}
-                                                                        onMouseLeave={(e) => {
-                                                                            e.currentTarget.style.backgroundColor = 'transparent';
-                                                                            e.currentTarget.style.borderColor = 'transparent';
-                                                                            e.currentTarget.style.transform = 'translateY(0)';
-                                                                        }}
-                                                                    >
-                                                                        <h5 className="mb-0 fw-bold text-primary">
-                                                                            {formatCurrencyValue(requestedAmount)}
-                                                                        </h5>
-                                                                        <i className="ri-edit-2-line ms-2 fs-14"></i>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-sm" style={{ width: '200px' }}>
-                                                                        <div className="input-group input-group-sm">
-                                                                            <span className="input-group-text bg-transparent border-0 text-muted ps-1 pe-0">$</span>
+                                                            {showPartnerCommission && (
+                                                                <div className="row">
+                                                                    <div className="col-md-6 mb-0">
+                                                                        <label className="form-label fs-12 text-muted fw-medium text-primary">Admin Commission Rate</label>
+                                                                        <div className="input-group">
                                                                             <input
                                                                                 type="number"
-                                                                                className="form-control border-0 shadow-none ps-1"
-                                                                                value={tempRequestedAmount}
-                                                                                onChange={(e) => setTempRequestedAmount(e.target.value)}
-                                                                                autoFocus
-                                                                                placeholder="0.00"
-                                                                                onKeyDown={(e) => {
-                                                                                    if (e.key === 'Enter') {
-                                                                                        setRequestedAmountInput(tempRequestedAmount);
-                                                                                        setIsEditingRequestedAmount(false);
-                                                                                    } else if (e.key === 'Escape') {
-                                                                                        setIsEditingRequestedAmount(false);
+                                                                                className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''}`}
+                                                                                placeholder="0"
+                                                                                value={adminCommissionRate}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value;
+                                                                                    if (val === '') {
+                                                                                        setAdminCommissionRate(val);
+                                                                                        return;
+                                                                                    }
+                                                                                    const newAdminShare = parseFloat(val);
+                                                                                    if (!isNaN(newAdminShare) && newAdminShare >= 0 && newAdminShare <= 100) {
+                                                                                        setAdminCommissionRate(val);
+                                                                                        const newPartnerShare = 100 - newAdminShare;
+                                                                                        setPartnerCommissionRate(newPartnerShare >= 0 ? newPartnerShare.toFixed(2).replace(/\.00$/, '') : '0');
+                                                                                    }
+
+                                                                                    if (commissionErrors.admin_commission) {
+                                                                                        setCommissionErrors({ ...commissionErrors, admin_commission: undefined });
                                                                                     }
                                                                                 }}
+                                                                                min="0"
+                                                                                max="100"
+                                                                                step="0.1"
                                                                             />
+                                                                            <span className="input-group-text bg-white text-muted">%</span>
                                                                         </div>
-                                                                        <div className="d-flex gap-1">
-                                                                            <button
-                                                                                className="btn btn-sm btn-soft-primary px-2"
-                                                                                type="button"
-                                                                                title="Save"
-                                                                                onClick={() => {
-                                                                                    setRequestedAmountInput(tempRequestedAmount);
-                                                                                    setIsEditingRequestedAmount(false);
+                                                                        {commissionErrors.admin_commission && (
+                                                                            <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="col-md-6 mb-0">
+                                                                        <label className="form-label fs-12 text-muted fw-medium text-success">Partner Commission Rate</label>
+                                                                        <div className="input-group">
+                                                                            <input
+                                                                                type="number"
+                                                                                className={`form-control bg-white ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''}`}
+                                                                                placeholder="0"
+                                                                                value={partnerCommissionRate}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value;
+                                                                                    if (val === '') {
+                                                                                        setPartnerCommissionRate(val);
+                                                                                        return;
+                                                                                    }
+                                                                                    const newPartnerShare = parseFloat(val);
+
+                                                                                    if (!isNaN(newPartnerShare) && newPartnerShare >= 0 && newPartnerShare <= 100) {
+                                                                                        setPartnerCommissionRate(val);
+                                                                                        const newAdminShare = 100 - newPartnerShare;
+                                                                                        setAdminCommissionRate(newAdminShare >= 0 ? newAdminShare.toFixed(2).replace(/\.00$/, '') : '0');
+                                                                                    }
+                                                                                    if (commissionErrors.partner_commission) {
+                                                                                        setCommissionErrors({ ...commissionErrors, partner_commission: undefined });
+                                                                                    }
                                                                                 }}
-                                                                            >
-                                                                                <i className="ri-check-line"></i>
-                                                                            </button>
-                                                                            <button
-                                                                                className="btn btn-sm btn-soft-danger px-2"
-                                                                                type="button"
-                                                                                title="Cancel"
-                                                                                onClick={() => setIsEditingRequestedAmount(false)}
-                                                                            >
-                                                                                <i className="ri-close-line"></i>
-                                                                            </button>
+                                                                                min="0"
+                                                                                max="100"
+                                                                                step="0.1"
+                                                                            />
+                                                                            <span className="input-group-text bg-white text-muted">%</span>
+                                                                        </div>
+                                                                        {commissionErrors.partner_commission && (
+                                                                            <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {hasPermission('update commission') && (
+                                                                <>
+                                                                    <div className="mt-4 text-end">
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-primary"
+                                                                            onClick={handleSaveCommission}
+                                                                            disabled={saveCommissionMutation.isPending}
+                                                                        >
+                                                                            {saveCommissionMutation.isPending ? (
+                                                                                <>
+                                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                                    Saving Commission...
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <i className="ri-save-line me-2"></i>
+                                                                                    Save Commission
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                    </div>
+                                                                    {/* Hidden submit button to enable Enter key submission */}
+                                                                    <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
+                                                                </>
+                                                            )}
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right Side: Results */}
+                                                <div className="col-md-7">
+                                                    <div className="p-3 h-100 d-flex flex-column">
+                                                        <div className="flex-grow-1">
+                                                            {/* Requested Amount - Top */}
+                                                            <div className="alert alert-primary border mb-3 py-2">
+                                                                <div className="d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <i className="bx bx-credit-card text-primary me-2"></i>
+                                                                        <span className="fw-medium">Total Requested Amount:</span>
+                                                                    </div>
+                                                                    {!isEditingRequestedAmount ? (
+                                                                        <div
+                                                                            className={`px-2 py-1 rounded transition-all d-flex align-items-center ${hasPermission('update commission') ? 'cursor-pointer bg-hover-light' : ''}`}
+                                                                            style={{
+                                                                                transition: 'all 0.2s ease',
+                                                                                border: '1px solid transparent'
+                                                                            }}
+                                                                            onClick={() => {
+                                                                                if (hasPermission('update commission')) {
+                                                                                    setTempRequestedAmount(requestedAmountInput);
+                                                                                    setIsEditingRequestedAmount(true);
+                                                                                }
+                                                                            }}
+                                                                            onMouseEnter={(e) => {
+                                                                                if (hasPermission('update commission')) {
+                                                                                    e.currentTarget.style.backgroundColor = 'rgba(10, 179, 156, 0.05)';
+                                                                                    e.currentTarget.style.borderColor = 'rgba(10, 179, 156, 0.1)';
+                                                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                                }
+                                                                            }}
+                                                                            onMouseLeave={(e) => {
+                                                                                if (hasPermission('update commission')) {
+                                                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                                                    e.currentTarget.style.borderColor = 'transparent';
+                                                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <h5 className="mb-0 fw-bold text-primary">
+                                                                                {formatCurrencyValue(requestedAmount)}
+                                                                            </h5>
+                                                                            {hasPermission('update commission') && (
+                                                                                <i className="ri-edit-2-line ms-2 fs-14"></i>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-sm" style={{ width: '200px' }}>
+                                                                            <div className="input-group input-group-sm">
+                                                                                <span className="input-group-text bg-transparent border-0 text-muted ps-1 pe-0">$</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control border-0 shadow-none ps-1"
+                                                                                    value={tempRequestedAmount}
+                                                                                    onChange={(e) => setTempRequestedAmount(e.target.value)}
+                                                                                    autoFocus
+                                                                                    placeholder="0.00"
+                                                                                    onKeyDown={(e) => {
+                                                                                        if (e.key === 'Enter') {
+                                                                                            setRequestedAmountInput(tempRequestedAmount);
+                                                                                            setIsEditingRequestedAmount(false);
+                                                                                        } else if (e.key === 'Escape') {
+                                                                                            setIsEditingRequestedAmount(false);
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="d-flex gap-1">
+                                                                                <button
+                                                                                    className="btn btn-sm btn-soft-primary px-2"
+                                                                                    type="button"
+                                                                                    title="Save"
+                                                                                    onClick={() => {
+                                                                                        setRequestedAmountInput(tempRequestedAmount);
+                                                                                        setIsEditingRequestedAmount(false);
+                                                                                    }}
+                                                                                >
+                                                                                    <i className="ri-check-line"></i>
+                                                                                </button>
+                                                                                <button
+                                                                                    className="btn btn-sm btn-soft-danger px-2"
+                                                                                    type="button"
+                                                                                    title="Cancel"
+                                                                                    onClick={() => setIsEditingRequestedAmount(false)}
+                                                                                >
+                                                                                    <i className="ri-close-line"></i>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="row g-2">
+                                                                {!showPartnerCommission ? (
+                                                                    <div className="col-md-12">
+                                                                        <div className="alert alert-success border mb-0 py-3 bg-success-subtle">
+                                                                            <div className="d-flex justify-content-between align-items-center">
+                                                                                <div className="d-flex align-items-center">
+                                                                                    <div className="avatar-xs me-3">
+                                                                                        <div className="avatar-title bg-success text-white rounded">
+                                                                                            <i className="ri-admin-line"></i>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="fw-medium text-muted fs-11 text-uppercase d-block">Admin Commission Amount</span>
+                                                                                        <h4 className="mb-0 fw-bold text-success">
+                                                                                            {formatCurrencyValue(totalCommissionAmount)}
+                                                                                        </h4>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="text-end">
+                                                                                    <span className="badge bg-success text-white fs-12 px-3">
+                                                                                        {successFee || '0'}% Admin Commission
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="col-md-12">
+                                                                            <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
+                                                                                <div className="d-flex justify-content-between align-items-center">
+                                                                                    <div>
+                                                                                        <i className="ri-pie-chart-line text-secondary me-2"></i>
+                                                                                        <span className="fw-medium">Success Commission Amount:</span>
+                                                                                    </div>
+                                                                                    <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-md-6">
+                                                                            <div className="card border-0 bg-primary bg-opacity-10 mb-0">
+                                                                                <div className="card-body pt-3 px-4">
+                                                                                    <div className="d-flex align-items-center mb-2">
+                                                                                        <div className="flex-shrink-0">
+                                                                                            <div className="avatar-xs">
+                                                                                                <span className="avatar-title bg-primary text-white rounded fs-14">
+                                                                                                    <i className="ri-admin-line"></i>
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="flex-grow-1 ms-2">
+                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <h4 className="mb-0 fw-bold text-primary fs-18">
+                                                                                        {formatCurrencyValue(adminCommissionAmount)}
+                                                                                    </h4>
+                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
+                                                                                        <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                        <span className="ms-1">Share of Success Fee</span>
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-md-6">
+                                                                            <div className="card border-0 bg-success bg-opacity-10 mb-0">
+                                                                                <div className="card-body pt-3 px-4">
+                                                                                    <div className="d-flex align-items-center mb-2">
+                                                                                        <div className="flex-shrink-0">
+                                                                                            <div className="avatar-xs">
+                                                                                                <span className="avatar-title bg-success text-white rounded fs-14">
+                                                                                                    <i className="ri-shake-hands-line"></i>
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="flex-grow-1 ms-2">
+                                                                                            <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <h4 className="mb-0 fw-bold text-success fs-18">
+                                                                                        {formatCurrencyValue(partnerCommissionAmount)}
+                                                                                    </h4>
+                                                                                    <p className="text-muted mb-0 mt-2 fs-12">
+                                                                                        <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
+                                                                                        <span className="ms-1">Share of Success Fee</span>
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </div>
 
-                                                        <div className="row g-2">
-                                                            {!showPartnerCommission ? (
-                                                                <div className="col-md-12">
-                                                                    <div className="alert alert-success border mb-0 py-3 bg-success-subtle">
-                                                                        <div className="d-flex justify-content-between align-items-center">
-                                                                            <div className="d-flex align-items-center">
-                                                                                <div className="avatar-xs me-3">
-                                                                                    <div className="avatar-title bg-success text-white rounded">
-                                                                                        <i className="ri-admin-line"></i>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div>
-                                                                                    <span className="fw-medium text-muted fs-11 text-uppercase d-block">Admin Commission Amount</span>
-                                                                                    <h4 className="mb-0 fw-bold text-success">
-                                                                                        {formatCurrencyValue(totalCommissionAmount)}
-                                                                                    </h4>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-end">
-                                                                                <span className="badge bg-success text-white fs-12 px-3">
-                                                                                    {successFee || '0'}% Admin Commission
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <div className="col-md-12">
-                                                                        <div className="alert alert-secondary border-dashed mb-3 py-2 bg-light">
-                                                                            <div className="d-flex justify-content-between align-items-center">
-                                                                                <div>
-                                                                                    <i className="ri-pie-chart-line text-secondary me-2"></i>
-                                                                                    <span className="fw-medium">Success Commission Amount:</span>
-                                                                                </div>
-                                                                                <h5 className="mb-0 fw-bold">{formatCurrencyValue(totalCommissionAmount)}</h5>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
 
-                                                                    <div className="col-md-6">
-                                                                        <div className="card border-0 bg-primary bg-opacity-10 mb-0">
-                                                                            <div className="card-body pt-3 px-4">
-                                                                                <div className="d-flex align-items-center mb-2">
-                                                                                    <div className="flex-shrink-0">
-                                                                                        <div className="avatar-xs">
-                                                                                            <span className="avatar-title bg-primary text-white rounded fs-14">
-                                                                                                <i className="ri-admin-line"></i>
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="flex-grow-1 ms-2">
-                                                                                        <p className="text-muted mb-0 fs-11 text-uppercase">Admin Commission</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <h4 className="mb-0 fw-bold text-primary fs-18">
-                                                                                    {formatCurrencyValue(adminCommissionAmount)}
-                                                                                </h4>
-                                                                                <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                    <span className="badge bg-primary fs-10">{adminShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                    <span className="ms-1">Share of Success Fee</span>
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="col-md-6">
-                                                                        <div className="card border-0 bg-success bg-opacity-10 mb-0">
-                                                                            <div className="card-body pt-3 px-4">
-                                                                                <div className="d-flex align-items-center mb-2">
-                                                                                    <div className="flex-shrink-0">
-                                                                                        <div className="avatar-xs">
-                                                                                            <span className="avatar-title bg-success text-white rounded fs-14">
-                                                                                                <i className="ri-shake-hands-line"></i>
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="flex-grow-1 ms-2">
-                                                                                        <p className="text-muted mb-0 fs-11 text-uppercase">Partner Commission</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <h4 className="mb-0 fw-bold text-success fs-18">
-                                                                                    {formatCurrencyValue(partnerCommissionAmount)}
-                                                                                </h4>
-                                                                                <p className="text-muted mb-0 mt-2 fs-12">
-                                                                                    <span className="badge bg-success fs-10">{partnerShareRate.toFixed(1).replace(/\.0$/, '')}%</span>
-                                                                                    <span className="ms-1">Share of Success Fee</span>
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
                                                     </div>
-
-
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                )
                             )}
                         </div>
                     </div>
@@ -940,6 +959,7 @@ export default function FundingApplicationDetails() {
                                                     optionValue="value"
                                                     placeholder="Select status..."
                                                     className="w-100"
+                                                    disabled={!hasPermission("update funding application")}
                                                 />
                                             </div>
                                             <div className="mb-3">
@@ -954,19 +974,22 @@ export default function FundingApplicationDetails() {
                                                         setStatusNote(e.target.value);
                                                         if (notesError) setNotesError('');
                                                     }}
+                                                    disabled={!hasPermission("update funding application")}
                                                 ></textarea>
                                                 {notesError && <div className="invalid-feedback">{notesError}</div>}
                                             </div>
-                                            <div className="d-grid">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={handleUpdateClick}
-                                                    disabled={updateMutation.isPending}
-                                                >
-                                                    {updateMutation.isPending ? 'Updating...' : 'Update Status'}
-                                                </button>
-                                            </div>
+                                            {hasPermission("update funding application") && (
+                                                <div className="d-grid">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary"
+                                                        onClick={handleUpdateClick}
+                                                        disabled={updateMutation.isPending}
+                                                    >
+                                                        {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -1010,7 +1033,7 @@ export default function FundingApplicationDetails() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <ConfirmationModal
                 show={showConfirmModal}

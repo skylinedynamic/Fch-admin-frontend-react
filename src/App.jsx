@@ -63,7 +63,6 @@ export default function App() {
     // Check session immediately on app load
     checkSession();
     // Refresh user details to ensure permissions/subscription are up to date
-    console.log('Refreshing subscription...');
     refreshSubscription();
 
     // Optional: Set up periodic session validation (every 5 minutes)
@@ -90,14 +89,21 @@ export default function App() {
             <Route index element={<Dashboard />} />
 
             {/* Commissions Routes */}
-            <Route path="commissions" element={<CommissionList />} />
-            <Route path="commissions/:id" element={<CommissionDetails />} />
+            <Route element={<PermissionRoute permission="view commission" />}>
+              <Route path="commissions" element={<CommissionList />} />
+              <Route path="commissions/:id" element={<CommissionDetails />} />
+            </Route>
 
             {/* Partners Routes - requires 'view partners' permission */}
             <Route element={<PermissionRoute permission="view partners" />}>
               <Route path="partners" element={<Partners />} />
-              <Route path="partners/create" element={<PartnerProfile />} />
+
+              <Route element={<PermissionRoute permission="create partners" />}>
+                <Route path="partners/create" element={<PartnerProfile />} />
+              </Route>
+
               <Route path="partners/:id" element={<PartnerProfile />} />
+
             </Route>
 
             {/* Employees Routes - requires 'view employees' permission */}
@@ -109,7 +115,11 @@ export default function App() {
             {/* Clients Routes - requires 'view clients' permission */}
             <Route element={<PermissionRoute permission="view clients" />}>
               <Route path="clients" element={<Clients />} />
-              <Route path="clients/create" element={<ClientDetails />} />
+
+              <Route element={<PermissionRoute permission="create clients" />}>
+                <Route path="clients/create" element={<ClientDetails />} />
+              </Route>
+
               <Route path="clients/:id" element={<ClientDetails />} />
             </Route>
 
@@ -160,16 +170,29 @@ export default function App() {
 
             <Route element={<PermissionRoute permission="view leads" />}>
               <Route path="leads" element={<Leads />} />
-              <Route path="leads/create" element={<LeadDetails />} />
+              <Route element={<PermissionRoute permission="create leads" />}>
+                <Route path="leads/create" element={<LeadDetails />} />
+              </Route>
               <Route path="leads/:id" element={<LeadDetails />} />
             </Route>
 
-            <Route path="intake-review" >
-              <Route path="pre-qualification" element={<PreQualificationApplication />} />
-              <Route path="funding-review" element={<FundingApplication />} />
+
+            <Route path="intake-review">
+
+              <Route element={<PermissionRoute permission="view pre qualification" />}>
+                <Route path="pre-qualification" element={<PreQualificationApplication />} />
+                <Route path="pre-qualification/:id" element={<PreQualificationDetails />} />
+              </Route>
+
+              <Route element={<PermissionRoute permission="view funding application" />}>
+                <Route path="funding-review" element={<FundingApplication />} />
+                <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
+              </Route>
+
             </Route>
-            <Route path="intake-review/pre-qualification/:id" element={<PreQualificationDetails />} />
-            <Route path="intake-review/funding-review/:id" element={<FundingApplicationDetails />} />
+
+
+
 
 
             {/* Invoices Routes */}

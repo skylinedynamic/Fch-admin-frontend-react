@@ -1,5 +1,6 @@
 import { apiClient } from '../http'
 import { setAuth, AuthUser, setUserSubscription } from './auth'
+import { getAuthState } from '../../store/auth'
 
 export interface ApiResponse<T = any> {
   status: boolean
@@ -102,14 +103,36 @@ export async function resetPassword(payload: {
 
 // Get fresh user details
 export async function getUserDetails(): Promise<any> {
-    try {
-        const res = await apiClient.get('/common/user-details')
-        const data = res?.data
-        if (data?.status === true) {
-            return data
-        }
-        return null
-    } catch (err) {
-        return null
+  try {
+    const res = await apiClient.get('/common/user-details')
+    const data = res?.data
+    if (data?.status === true) {
+      if (data?.data?.user?.is_refresh) {
+        return refreshUser();
+      }
+      return data
     }
+    return null
+  } catch (err) {
+    return null
+  }
+}
+// Refresh user profile data
+export async function refreshUser(): Promise<any> {
+  try {
+    const res = await apiClient.get('/common/refresh-user')
+    const data = res?.data
+    if (data?.status === true && data.data) {
+      const { token, rememberMe } = getAuthState()
+      const newUser = data.data as AuthUser
+
+      // Set the fresh user data in the auth state
+      setAuth(token, newUser, rememberMe)
+
+      return data
+    }
+    return null
+  } catch (err) {
+    return null
+  }
 }

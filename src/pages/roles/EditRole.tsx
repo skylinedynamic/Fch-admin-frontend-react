@@ -28,7 +28,7 @@ const mapApiModuleToDef = (m: ApiModulePermissions): ModuleDef => {
     const verb = (p.name.split(' ')[0] || '').toLowerCase()
     return {
       id: p.id,
-      key: verb || toKey(p.name),
+      key: toKey(p.name),
       label: titleCase(p.name),
       icon: permIconByVerb[verb] || 'ri-checkbox-line',
     }
@@ -42,7 +42,7 @@ const parsePermissionText = (text: string) => {
   const verb = (parts[0] || '').toLowerCase()
   const moduleName = parts.slice(1).join(' ').trim()
   const modKey = toKey(moduleName)
-  const permKey = verb || toKey(text)
+  const permKey = toKey(text)
   return { modKey, permKey, label: titleCase(text) }
 }
 
@@ -218,7 +218,7 @@ export default function EditRole() {
     try {
       const res = await updateRole({ id: roleId, payload: { name, description, permission_ids: permissionIds } })
       const msg = (res as any)?.message || 'Role updated successfully.'
-      toast(msg)
+      toast.success(msg)
       navigate('/roles-permissions')
     } catch (err: any) {
       const data = err?.response?.data

@@ -24,12 +24,10 @@ export default function PartnerProfile() {
 
     // Permission checks
     const canCreate = hasPermission('create partners');
-    const canUpdate = hasPermission('update partners');
+
 
     // Access control: redirect to access-denied if lacks required permission
-    if (id && !canUpdate) {
-        return <Navigate to="/access-denied" replace />;
-    }
+
     if (!id && !canCreate) {
         return <Navigate to="/access-denied" replace />;
     }
@@ -787,18 +785,20 @@ export default function PartnerProfile() {
                                     <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
-                                    <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
-                                        {isSaving ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {id ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                            </>
-                                        )}
-                                    </button>
+                                    {(id && hasPermission('update partners')) || (!id && hasPermission('create partners')) && (
+                                        <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
+                                            {isSaving ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    {id ? 'Updating...' : 'Saving...'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

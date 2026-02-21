@@ -39,26 +39,6 @@ export default function LeadDetails() {
     const isHost = currentUser?.is_host === 1;
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leadDetails');
-
-    useEffect(() => {
-        const tab = searchParams.get('tab');
-        if (tab) {
-            if (tab === 'contactInfo' && !id) {
-                setActiveTab('leadDetails');
-                navigate('?tab=leadDetails', { replace: true });
-            } else {
-                setActiveTab(tab);
-            }
-        }
-    }, [searchParams, id]);
-
-    // Force Lead Type to Borrower if not host
-    useEffect(() => {
-        if (!isHost) {
-            setFormData(prev => ({ ...prev, lead_type: 'Borrower' }));
-        }
-    }, [isHost]);
-
     const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -98,7 +78,7 @@ export default function LeadDetails() {
     });
 
     const [users, setUsers] = useState([]);
- 
+
     const [profileStats, setProfileStats] = useState({
         total_meetings: 0,
         total_clients: 0,
@@ -127,6 +107,28 @@ export default function LeadDetails() {
     );
     const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
+
+    // ── Effects (all state is declared above, so setFormData etc. are safe to use here) ──
+    // NOTE: Do NOT move useEffects above the useState declarations — setFormData would be in TDZ
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab) {
+            if (tab === 'contactInfo' && !id) {
+                setActiveTab('leadDetails');
+                navigate('?tab=leadDetails', { replace: true });
+            } else {
+                setActiveTab(tab);
+            }
+        }
+    }, [searchParams, id]);
+
+    // Force Lead Type to Borrower if not host
+    useEffect(() => {
+        if (!isHost) {
+            setFormData(prev => ({ ...prev, lead_type: 'Borrower' }));
+        }
+    }, [isHost]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -323,7 +325,7 @@ export default function LeadDetails() {
     };
 
     // Summernote Editors
-    const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'contactInfo');
+    const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'leadDetails' && !isLoading);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -453,7 +455,7 @@ export default function LeadDetails() {
         };
 
         loadLead();
-    }, [id, navigate]);
+    }, [id]);
 
     // Fetch Stats
     useEffect(() => {
@@ -586,397 +588,401 @@ export default function LeadDetails() {
                                         ) : (
                                             <>
                                                 {activeTab === 'leadDetails' && (
-                                                    <div className="row">
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Probability (%) <span className="text-danger">*</span></label>
-                                                                <Dropdown
-                                                                    value={formData.probability}
-                                                                    options={LEAD_PROBABILITY_OPTIONS}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'probability', value: e.value } })}
-                                                                    placeholder="Select probability"
-                                                                    className={`w-100 ${errors.probability ? 'p-invalid' : ''}`}
-                                                                />
-                                                                {errors.probability && <div className="invalid-feedback d-block">{errors.probability}</div>}
-                                                            </div>
-                                                        </div>
-                                                        {isHost && (
+                                                    <div className="tab-pane active fade show">
+                                                        <div className="row">
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Lead Type <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">Probability (%) <span className="text-danger">*</span></label>
                                                                     <Dropdown
-                                                                        value={formData.lead_type}
-                                                                        options={LEAD_TYPE_OPTIONS}
-                                                                        onChange={(e) => handleInputChange({ target: { name: 'lead_type', value: e.value } })}
-                                                                        placeholder="Select type"
-                                                                        className={`w-100 ${errors.lead_type ? 'p-invalid' : ''}`}
+                                                                        value={formData.probability}
+                                                                        options={LEAD_PROBABILITY_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'probability', value: e.value } })}
+                                                                        placeholder="Select probability"
+                                                                        className={`w-100 ${errors.probability ? 'p-invalid' : ''}`}
                                                                     />
-                                                                    {errors.lead_type && <div className="invalid-feedback d-block">{errors.lead_type}</div>}
+                                                                    {errors.probability && <div className="invalid-feedback d-block">{errors.probability}</div>}
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Status <span className="text-danger">*</span></label>
-                                                                <Dropdown
-                                                                    value={formData.status}
-                                                                    options={LEAD_STATUS_OPTIONS}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
-                                                                    placeholder="Select status"
-                                                                    className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
-                                                                />
-                                                                {errors.status && <div className="invalid-feedback d-block">{errors.status}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Lead Owner
-                                                                    {/* <span className="text-danger">*</span> */}
-                                                                </label>
-                                                                <Dropdown
-                                                                    value={formData.salesperson_id}
-                                                                    options={users.map(user => ({ label: user.name, value: user.id }))}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'salesperson_id', value: e.value } })}
-                                                                    placeholder="Select Lead Owner"
-                                                                    filter
-                                                                    className={`w-100 ${errors.salesperson_id ? 'p-invalid' : ''}`}
-                                                                />
-                                                                {/* {errors.salesperson_id && <div className="invalid-feedback d-block">{errors.salesperson_id}</div>} */}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Organization Name <span className="text-danger">*</span></label>
-                                                                <input type="text" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} name="company_name" value={formData.company_name} onChange={handleInputChange} placeholder="Enter organization name" />
-                                                                {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Domain</label>
-                                                                <input type="text" className={`form-control ${errors.domain ? 'is-invalid' : ''}`} name="domain" value={formData.domain} onChange={handleInputChange} placeholder="Enter domain" />
-                                                                {errors.domain && <div className="invalid-feedback">{errors.domain}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Lead Source</label>
-                                                                <Dropdown
-                                                                    value={formData.lead_source}
-                                                                    options={LEAD_SOURCE_OPTIONS}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'lead_source', value: e.value } })}
-                                                                    placeholder="Select source"
-                                                                    className={`w-100 ${errors.lead_source ? 'p-invalid' : ''}`}
-                                                                />
-                                                                {errors.lead_source && <div className="invalid-feedback d-block">{errors.lead_source}</div>}
-                                                            </div>
-                                                        </div>
-
-                                                        {formData.lead_source === 'Other' && (
+                                                            {isHost && (
+                                                                <div className="col-lg-6">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Lead Type <span className="text-danger">*</span></label>
+                                                                        <Dropdown
+                                                                            value={formData.lead_type}
+                                                                            options={LEAD_TYPE_OPTIONS}
+                                                                            onChange={(e) => handleInputChange({ target: { name: 'lead_type', value: e.value } })}
+                                                                            placeholder="Select type"
+                                                                            className={`w-100 ${errors.lead_type ? 'p-invalid' : ''}`}
+                                                                        />
+                                                                        {errors.lead_type && <div className="invalid-feedback d-block">{errors.lead_type}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Note <span className="text-danger">*</span></label>
-                                                                    <input
-                                                                        type="text"
-                                                                        className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
-                                                                        name="lead_source_note"
-                                                                        value={formData.lead_source_note}
-                                                                        onChange={handleInputChange}
-                                                                        placeholder="Please specify lead source"
+                                                                    <label className="form-label">Status <span className="text-danger">*</span></label>
+                                                                    <Dropdown
+                                                                        value={formData.status}
+                                                                        options={LEAD_STATUS_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
+                                                                        placeholder="Select status"
+                                                                        className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
                                                                     />
-                                                                    {errors.lead_source_note && <div className="invalid-feedback">{errors.lead_source_note}</div>}
+                                                                    {errors.status && <div className="invalid-feedback d-block">{errors.status}</div>}
                                                                 </div>
                                                             </div>
-                                                        )}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Lead Owner
+                                                                        {/* <span className="text-danger">*</span> */}
+                                                                    </label>
+                                                                    <Dropdown
+                                                                        value={formData.salesperson_id}
+                                                                        options={Array.isArray(users) ? users.map(user => ({ label: user.name, value: user.id })) : []}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'salesperson_id', value: e.value } })}
+                                                                        placeholder="Select Lead Owner"
+                                                                        filter
+                                                                        className={`w-100 ${errors.salesperson_id ? 'p-invalid' : ''}`}
+                                                                    />
+                                                                    {/* {errors.salesperson_id && <div className="invalid-feedback d-block">{errors.salesperson_id}</div>} */}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Organization Name <span className="text-danger">*</span></label>
+                                                                    <input type="text" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} name="company_name" value={formData.company_name} onChange={handleInputChange} placeholder="Enter organization name" />
+                                                                    {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Domain</label>
+                                                                    <input type="text" className={`form-control ${errors.domain ? 'is-invalid' : ''}`} name="domain" value={formData.domain} onChange={handleInputChange} placeholder="Enter domain" />
+                                                                    {errors.domain && <div className="invalid-feedback">{errors.domain}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Lead Source</label>
+                                                                    <Dropdown
+                                                                        value={formData.lead_source}
+                                                                        options={LEAD_SOURCE_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'lead_source', value: e.value } })}
+                                                                        placeholder="Select source"
+                                                                        className={`w-100 ${errors.lead_source ? 'p-invalid' : ''}`}
+                                                                    />
+                                                                    {errors.lead_source && <div className="invalid-feedback d-block">{errors.lead_source}</div>}
+                                                                </div>
+                                                            </div>
 
+                                                            {formData.lead_source === 'Other' && (
+                                                                <div className="col-lg-6">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Note <span className="text-danger">*</span></label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
+                                                                            name="lead_source_note"
+                                                                            value={formData.lead_source_note}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Please specify lead source"
+                                                                        />
+                                                                        {errors.lead_source_note && <div className="invalid-feedback">{errors.lead_source_note}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="col-lg-12" key="requirement-details-field">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Requirement Details</label>
+                                                                    <textarea
+                                                                        ref={editorRef}
+                                                                        className="form-control"
+                                                                        name="requirement_details"
+                                                                        placeholder="Enter details"
+                                                                    ></textarea>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
 
                                                 {activeTab === 'contactInfo' && (
-                                                    <div className="row">
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Contact person <span className="text-danger">*</span></label>
-                                                                <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" value={formData.contact_person} onChange={handleInputChange} placeholder="Dave" />
-                                                                {errors.contact_person && <div className="invalid-feedback">{errors.contact_person}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Phone Number <span className="text-danger">*</span></label>
-                                                                <div className="input-group">
-                                                                    {(formData.country === 'United States' || formData.country === 'Canada') && (
-                                                                        <span className="input-group-text bg-light border">
-                                                                            <span className="me-1">{formData.country === 'United States' ? 'USA' : 'CAN'}</span>
-                                                                            <span className="text-muted">+1</span>
-                                                                        </span>
-                                                                    )}
-                                                                    <input
-                                                                        type="text"
-                                                                        className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
-                                                                        name="phone_number"
-                                                                        value={formData.phone_number}
-                                                                        onChange={(e) => {
-                                                                            const formatted = formatPhoneNumber(e.target.value);
-                                                                            handleInputChange({ target: { name: 'phone_number', value: formatted } });
-                                                                        }}
-                                                                        placeholder="(555) 555-5555"
-                                                                    />
-                                                                    {errors.phone_number && <div className="invalid-feedback d-block">{errors.phone_number}</div>}
+                                                    <div className="tab-pane active fade show">
+                                                        <div className="row">
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Contact person <span className="text-danger">*</span></label>
+                                                                    <input type="text" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} name="contact_person" value={formData.contact_person} onChange={handleInputChange} placeholder="Dave" />
+                                                                    {errors.contact_person && <div className="invalid-feedback">{errors.contact_person}</div>}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Lead Contact Email <span className="text-danger">*</span></label>
-                                                                <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} name="email" value={formData.email} onChange={handleInputChange} placeholder="dave@example.com" />
-                                                                {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Phone Number <span className="text-danger">*</span></label>
+                                                                    <div className="input-group">
+                                                                        {(formData.country === 'United States' || formData.country === 'Canada') && (
+                                                                            <span className="input-group-text bg-light border">
+                                                                                <span className="me-1">{formData.country === 'United States' ? 'USA' : 'CAN'}</span>
+                                                                                <span className="text-muted">+1</span>
+                                                                            </span>
+                                                                        )}
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
+                                                                            name="phone_number"
+                                                                            value={formData.phone_number}
+                                                                            onChange={(e) => {
+                                                                                const formatted = formatPhoneNumber(e.target.value);
+                                                                                handleInputChange({ target: { name: 'phone_number', value: formatted } });
+                                                                            }}
+                                                                            placeholder="(555) 555-5555"
+                                                                        />
+                                                                        {errors.phone_number && <div className="invalid-feedback d-block">{errors.phone_number}</div>}
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Legal Business Name</label>
-                                                                <input type="text" className={`form-control ${errors.legal_business_name ? 'is-invalid' : ''}`} name="legal_business_name" value={formData.legal_business_name} onChange={handleInputChange} placeholder="Enter business name" />
-                                                                {errors.legal_business_name && <div className="invalid-feedback">{errors.legal_business_name}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Lead Contact Email <span className="text-danger">*</span></label>
+                                                                    <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} name="email" value={formData.email} onChange={handleInputChange} placeholder="dave@example.com" />
+                                                                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Business EIN</label>
-                                                                <input
-                                                                    type="number"
-                                                                    className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
-                                                                    name="business_ein"
-                                                                    value={formData.business_ein}
-                                                                    onChange={handleInputChange}
-                                                                    placeholder="Enter 9-digit EIN"
-                                                                    onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
-                                                                    onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
-                                                                />
-                                                                {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Legal Business Name</label>
+                                                                    <input type="text" className={`form-control ${errors.legal_business_name ? 'is-invalid' : ''}`} name="legal_business_name" value={formData.legal_business_name} onChange={handleInputChange} placeholder="Enter business name" />
+                                                                    {errors.legal_business_name && <div className="invalid-feedback">{errors.legal_business_name}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">State File Number</label>
-                                                                <input type="text" onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`} name="state_file_number" value={formData.state_file_number} onChange={handleInputChange} placeholder="Enter state file number" />
-                                                                {errors.state_file_number && <div className="invalid-feedback">{errors.state_file_number}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Business EIN</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
+                                                                        name="business_ein"
+                                                                        value={formData.business_ein}
+                                                                        onChange={handleInputChange}
+                                                                        placeholder="Enter 9-digit EIN"
+                                                                        onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
+                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                    />
+                                                                    {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">D-U-N-S Number</label>
-                                                                <input
-                                                                    type="number"
-                                                                    className={`form-control ${errors.duns_number ? 'is-invalid' : ''}`}
-                                                                    name="duns_number"
-                                                                    value={formData.duns_number}
-                                                                    onChange={handleInputChange}
-                                                                    placeholder="Enter 9-digit D-U-N-S"
-                                                                    onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
-                                                                    onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
-                                                                />
-                                                                {errors.duns_number && <div className="invalid-feedback">{errors.duns_number}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">State File Number</label>
+                                                                    <input type="text" onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`} name="state_file_number" value={formData.state_file_number} onChange={handleInputChange} placeholder="Enter state file number" />
+                                                                    {errors.state_file_number && <div className="invalid-feedback">{errors.state_file_number}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Business Address</label>
-                                                                <input type="text" className={`form-control ${errors.business_address ? 'is-invalid' : ''}`} name="business_address" value={formData.business_address} onChange={handleInputChange} placeholder="Enter business address" />
-                                                                {errors.business_address && <div className="invalid-feedback">{errors.business_address}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">D-U-N-S Number</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control ${errors.duns_number ? 'is-invalid' : ''}`}
+                                                                        name="duns_number"
+                                                                        value={formData.duns_number}
+                                                                        onChange={handleInputChange}
+                                                                        placeholder="Enter 9-digit D-U-N-S"
+                                                                        onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
+                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
+                                                                    />
+                                                                    {errors.duns_number && <div className="invalid-feedback">{errors.duns_number}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-4">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Country <span className="text-danger">*</span></label>
-                                                                <Dropdown
-                                                                    value={formData.country}
-                                                                    options={countries}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
-                                                                    optionLabel="label"
-                                                                    placeholder="Select Country"
-                                                                    filter
-                                                                    className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
-                                                                />
-                                                                {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Business Address</label>
+                                                                    <input type="text" className={`form-control ${errors.business_address ? 'is-invalid' : ''}`} name="business_address" value={formData.business_address} onChange={handleInputChange} placeholder="Enter business address" />
+                                                                    {errors.business_address && <div className="invalid-feedback">{errors.business_address}</div>}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-4">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">State <span className="text-danger">*</span></label>
-                                                                <Dropdown
-                                                                    value={formData.state}
-                                                                    options={states}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
-                                                                    optionLabel="label"
-                                                                    placeholder="Select State"
-                                                                    filter
-                                                                    className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
-                                                                    disabled={!formData.country}
-                                                                />
-                                                                {errors.state && <div className="invalid-feedback d-block">{errors.state}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-4">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">City <span className="text-danger">*</span></label>
-                                                                <Dropdown
-                                                                    value={formData.city}
-                                                                    options={[...cities, { label: 'Others', value: 'Others' }]}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
-                                                                    optionLabel="label"
-                                                                    placeholder="Select City"
-                                                                    filter
-                                                                    className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
-                                                                    disabled={!formData.state}
-                                                                />
-                                                                {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
-                                                            </div>
-                                                        </div>
-                                                        {formData.city === 'Others' && (
                                                             <div className="col-lg-4">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Other City <span className="text-danger">*</span></label>
-                                                                    <input type="text" className="form-control" name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
+                                                                    <label className="form-label">Country <span className="text-danger">*</span></label>
+                                                                    <Dropdown
+                                                                        value={formData.country}
+                                                                        options={countries}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
+                                                                        optionLabel="label"
+                                                                        placeholder="Select Country"
+                                                                        filter
+                                                                        className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
+                                                                    />
+                                                                    {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
                                                                 </div>
                                                             </div>
-                                                        )}
+                                                            <div className="col-lg-4">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">State <span className="text-danger">*</span></label>
+                                                                    <Dropdown
+                                                                        value={formData.state}
+                                                                        options={states}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
+                                                                        optionLabel="label"
+                                                                        placeholder="Select State"
+                                                                        filter
+                                                                        className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
+                                                                        disabled={!formData.country}
+                                                                    />
+                                                                    {errors.state && <div className="invalid-feedback d-block">{errors.state}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-4">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">City <span className="text-danger">*</span></label>
+                                                                    <Dropdown
+                                                                        value={formData.city}
+                                                                        options={[...cities, { label: 'Others', value: 'Others' }]}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
+                                                                        optionLabel="label"
+                                                                        placeholder="Select City"
+                                                                        filter
+                                                                        className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
+                                                                        disabled={!formData.state}
+                                                                    />
+                                                                    {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
+                                                                </div>
+                                                            </div>
+                                                            {formData.city === 'Others' && (
+                                                                <div className="col-lg-4">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Other City <span className="text-danger">*</span></label>
+                                                                        <input type="text" className="form-control" name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Business Phone</label>
-                                                                <div className="input-group">
-                                                                    {(formData.country === 'United States' || formData.country === 'Canada') && (
-                                                                        <span className="input-group-text bg-light border">
-                                                                            <span className="me-1">{formData.country === 'United States' ? 'USA' : 'CAN'}</span>
-                                                                            <span className="text-muted">+1</span>
-                                                                        </span>
-                                                                    )}
-                                                                    <input
-                                                                        type="text"
-                                                                        className={`form-control ${errors.business_phone ? 'is-invalid' : ''}`}
-                                                                        name="business_phone"
-                                                                        value={formData.business_phone}
-                                                                        onChange={(e) => {
-                                                                            const formatted = formatPhoneNumber(e.target.value);
-                                                                            handleInputChange({ target: { name: 'business_phone', value: formatted } });
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Business Phone</label>
+                                                                    <div className="input-group">
+                                                                        {(formData.country === 'United States' || formData.country === 'Canada') && (
+                                                                            <span className="input-group-text bg-light border">
+                                                                                <span className="me-1">{formData.country === 'United States' ? 'USA' : 'CAN'}</span>
+                                                                                <span className="text-muted">+1</span>
+                                                                            </span>
+                                                                        )}
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control ${errors.business_phone ? 'is-invalid' : ''}`}
+                                                                            name="business_phone"
+                                                                            value={formData.business_phone}
+                                                                            onChange={(e) => {
+                                                                                const formatted = formatPhoneNumber(e.target.value);
+                                                                                handleInputChange({ target: { name: 'business_phone', value: formatted } });
+                                                                            }}
+                                                                            placeholder="(555) 555-5555"
+                                                                        />
+                                                                        {errors.business_phone && <div className="invalid-feedback d-block">{errors.business_phone}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Zip Code</label>
+                                                                    <input type="text" className="form-control" name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Entity Type</label>
+                                                                    <Dropdown
+                                                                        value={formData.entity_type}
+                                                                        options={LEAD_ENTITY_TYPE_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
+                                                                        placeholder="Select entity type"
+                                                                        className="w-100"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {formData.entity_type === 'Other / Unknown' && (
+                                                                <div className="col-lg-6">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
+                                                                            name="entity_type_note"
+                                                                            value={formData.entity_type_note}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Please specify entity type"
+                                                                        />
+                                                                        {errors.entity_type_note && <div className="invalid-feedback">{errors.entity_type_note}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Industry Type</label>
+                                                                    <Dropdown
+                                                                        value={formData.industry_type}
+                                                                        options={LEAD_INDUSTRY_TYPE_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
+                                                                        placeholder="Select industry type"
+                                                                        className="w-100"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {formData.industry_type === 'Other / Unknown' && (
+                                                                <div className="col-lg-6">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
+                                                                            name="industry_type_note"
+                                                                            value={formData.industry_type_note}
+                                                                            onChange={handleInputChange}
+                                                                            placeholder="Please specify industry type"
+                                                                        />
+                                                                        {errors.industry_type_note && <div className="invalid-feedback">{errors.industry_type_note}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
+                                                                    <label className="form-label">Business Start Date</label>
+                                                                    <Flatpickr
+                                                                        options={{
+                                                                            dateFormat: "d M, Y",
+                                                                            allowInput: true
                                                                         }}
-                                                                        placeholder="(555) 555-5555"
+                                                                        value={parseDateHelper(formData.business_start_date)}
+                                                                        onChange={(dates) => {
+                                                                            const date = dates[0];
+                                                                            const dateString = date
+                                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                                : "";
+                                                                            handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                                                                        }}
+                                                                        className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
+                                                                        placeholder="Select date"
                                                                     />
-                                                                    {errors.business_phone && <div className="invalid-feedback d-block">{errors.business_phone}</div>}
+                                                                    {errors.business_start_date && <div className="invalid-feedback d-block">{errors.business_start_date}</div>}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Zip Code</label>
-                                                                <input type="text" className="form-control" name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Entity Type</label>
-                                                                <Dropdown
-                                                                    value={formData.entity_type}
-                                                                    options={LEAD_ENTITY_TYPE_OPTIONS}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
-                                                                    placeholder="Select entity type"
-                                                                    className="w-100"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        {formData.entity_type === 'Other / Unknown' && (
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
-                                                                    <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                                                                    <label className="form-label">SSN Last 4</label>
                                                                     <input
-                                                                        type="text"
-                                                                        className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
-                                                                        name="entity_type_note"
-                                                                        value={formData.entity_type_note}
+                                                                        type="number"
+                                                                        className="form-control"
+                                                                        name="ssn_last_4"
+                                                                        value={formData.ssn_last_4}
                                                                         onChange={handleInputChange}
-                                                                        placeholder="Please specify entity type"
+                                                                        placeholder="Enter last 4 digits"
+                                                                        onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
+                                                                        onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                     />
-                                                                    {errors.entity_type_note && <div className="invalid-feedback">{errors.entity_type_note}</div>}
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Industry Type</label>
-                                                                <Dropdown
-                                                                    value={formData.industry_type}
-                                                                    options={LEAD_INDUSTRY_TYPE_OPTIONS}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
-                                                                    placeholder="Select industry type"
-                                                                    className="w-100"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        {formData.industry_type === 'Other / Unknown' && (
-                                                            <div className="col-lg-6">
-                                                                <div className="mb-3">
-                                                                    <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
-                                                                    <input
-                                                                        type="text"
-                                                                        className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
-                                                                        name="industry_type_note"
-                                                                        value={formData.industry_type_note}
-                                                                        onChange={handleInputChange}
-                                                                        placeholder="Please specify industry type"
-                                                                    />
-                                                                    {errors.industry_type_note && <div className="invalid-feedback">{errors.industry_type_note}</div>}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Business Start Date</label>
-                                                                <Flatpickr
-                                                                    options={{
-                                                                        dateFormat: "d M, Y",
-                                                                        allowInput: true
-                                                                    }}
-                                                                    value={parseDateHelper(formData.business_start_date)}
-                                                                    onChange={(dates) => {
-                                                                        const date = dates[0];
-                                                                        const dateString = date
-                                                                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                                            : "";
-                                                                        handleInputChange({ target: { name: "business_start_date", value: dateString } });
-                                                                    }}
-                                                                    className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
-                                                                    placeholder="Select date"
-                                                                />
-                                                                {errors.business_start_date && <div className="invalid-feedback d-block">{errors.business_start_date}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-6">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">SSN Last 4</label>
-                                                                <input
-                                                                    type="number"
-                                                                    className="form-control"
-                                                                    name="ssn_last_4"
-                                                                    value={formData.ssn_last_4}
-                                                                    onChange={handleInputChange}
-                                                                    placeholder="Enter last 4 digits"
-                                                                    onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
-                                                                    onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-lg-12">
-                                                            <div className="mb-3">
-                                                                <label className="form-label">Requirement Details</label>
-                                                                <textarea 
-                                                                    ref={editorRef} 
-                                                                    className="form-control" 
-                                                                    name="requirement_details" 
-                                                                    placeholder="Enter details"
-                                                                ></textarea>
                                                             </div>
                                                         </div>
                                                     </div>

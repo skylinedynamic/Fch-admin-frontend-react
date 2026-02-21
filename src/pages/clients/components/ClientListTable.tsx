@@ -232,67 +232,67 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                     <FilterLoader config={loaderConfig} />
                 ) : (
                     <div className="row g-3 mb-3">
-                    <div className={isHost ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12"}>
-                        <div className="search-box">
-                            <input
-                                type="text"
-                                className="form-control search bg-light border-light"
-                                placeholder="Search here..."
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                            />
-                            <i className="ri-search-line search-icon"></i>
+                        <div className={isHost ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12"}>
+                            <div className="search-box">
+                                <input
+                                    type="text"
+                                    className="form-control search bg-light border-light"
+                                    placeholder="Search here..."
+                                    value={searchText}
+                                    onChange={(e) => setSearchText(e.target.value)}
+                                />
+                                <i className="ri-search-line search-icon"></i>
+                            </div>
                         </div>
-                    </div>
 
-                    {!partnerId && isHost && (
-                        <div className="col-xxl-2 col-sm-4">
+                        {!partnerId && isHost && (
+                            <div className="col-xxl-2 col-sm-4">
+                                <Dropdown
+                                    value={selectedPartner}
+                                    onChange={(e) => setSelectedPartner(e.value)}
+                                    options={[{ label: 'All Partners', value: '' }, ...partnersList.map((p: any) => ({ label: p.displayLabel, value: p.id }))]}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    filter
+                                    filterBy="label"
+                                    placeholder="All Partners"
+                                    className="w-100 bg-light border-light"
+                                />
+                            </div>
+                        )}
+
+                        <div className={isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
                             <Dropdown
-                                value={selectedPartner}
-                                onChange={(e) => setSelectedPartner(e.value)}
-                                options={[{ label: 'All Partners', value: '' }, ...partnersList.map((p: any) => ({ label: p.displayLabel, value: p.id }))]}
+                                value={selectedAssignedUser}
+                                onChange={(e) => setSelectedAssignedUser(e.value)}
+                                options={[{ label: 'All Sales Person', value: '' }, ...assignedUsersList.map((u: any) => ({ label: u.displayLabel, value: u.id }))]}
                                 optionLabel="label"
                                 optionValue="value"
                                 filter
                                 filterBy="label"
-                                placeholder="All Partners"
+                                placeholder="All Sales Person"
                                 className="w-100 bg-light border-light"
                             />
                         </div>
-                    )}
 
-                    <div className={isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
-                        <Dropdown
-                            value={selectedAssignedUser}
-                            onChange={(e) => setSelectedAssignedUser(e.value)}
-                            options={[{ label: 'All Sales Person', value: '' }, ...assignedUsersList.map((u: any) => ({ label: u.displayLabel, value: u.id }))]}
-                            optionLabel="label"
-                            optionValue="value"
-                            filter
-                            filterBy="label"
-                            placeholder="All Sales Person"
-                            className="w-100 bg-light border-light"
-                        />
-                    </div>
-
-                    <div className={isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
-                        <Dropdown
-                            value={selectedTier}
-                            onChange={(e) => setSelectedTier(e.value)}
-                            options={[{ label: 'All Tiers', value: '' }, ...tiersList]}
-                            optionLabel="label"
-                            optionValue="value"
-                            filterBy="label"
-                            placeholder="All Tiers"
-                            className="w-100 bg-light border-light"
-                        />
-                    </div>
-
-                    <div className={isHost ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
-                        <div className="d-flex gap-2">
-                            <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                            <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                        <div className={isHost ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
+                            <Dropdown
+                                value={selectedTier}
+                                onChange={(e) => setSelectedTier(e.value)}
+                                options={[{ label: 'All Tiers', value: '' }, ...tiersList]}
+                                optionLabel="label"
+                                optionValue="value"
+                                filterBy="label"
+                                placeholder="All Tiers"
+                                className="w-100 bg-light border-light"
+                            />
                         </div>
+
+                        <div className={isHost ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
+                            <div className="d-flex gap-2">
+                                <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -315,6 +315,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             }
                         }}
                         className="p-datatable-sm" emptyMessage="No clients found"
+                        rowClassName={() => 'cursor-pointer'}
                     >
                         {deletePermission && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                         <Column field="full_name" header="Full Name" body={fullNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by name" style={{ minWidth: '180px' }} />

@@ -29,7 +29,7 @@ const mapApiModuleToDef = (m: ApiModulePermissions): ModuleDef => {
     const verb = (p.name.split(' ')[0] || '').toLowerCase()
     return {
       id: p.id,
-      key: verb || toKey(p.name),
+      key: toKey(p.name),
       label: titleCase(p.name),
       icon: permIconByVerb[verb] || 'ri-checkbox-line',
     }

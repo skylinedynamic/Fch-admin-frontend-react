@@ -1,10 +1,15 @@
 import React from 'react';
 
-/**
- * Dynamic Filter Loader
- * @param {Array} config - Array of objects defining column sizes { col: string }
- */
-export default function FilterLoader({ config = [] }) {
+interface FilterLoaderConfig {
+    col: string;
+    isButton?: boolean;
+}
+
+interface FilterLoaderProps {
+    config?: FilterLoaderConfig[];
+}
+
+export default function FilterLoader({ config = [] }: FilterLoaderProps) {
     // Default config if none provided (legacy compatibility or default)
     const defaultConfig = [
         { col: 'col-xxl-3 col-sm-6' }, // Search

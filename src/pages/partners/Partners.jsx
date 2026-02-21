@@ -425,7 +425,7 @@ export default function Partners() {
                                             className="p-datatable-sm"
                                             emptyMessage="No partners found"
                                         >
-                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                                            {hasPermission('delete partners') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             <Column field="company_name" header="Company Name" body={companyNameBody} sortable filter filterPlaceholder="Search by company" style={{ minWidth: '200px' }} />
                                             <Column field="full_name" header="Partner Name" sortable filter filterPlaceholder="Search by name" style={{ minWidth: '160px' }} />
                                             <Column field="email" header="Email" sortable filter filterPlaceholder="Search by email" style={{ minWidth: '200px' }} />

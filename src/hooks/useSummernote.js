@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import 'summernote/dist/summernote-lite.js';
 
 /**
@@ -15,7 +15,7 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
     const isInternalChange = useRef(false);
     const lastContentRef = useRef(fieldValue || '');
     const isInitialized = useRef(false);
-    
+
     // Keep track of the latest value to handle race conditions during async init
     const latestValueRef = useRef(fieldValue);
     latestValueRef.current = fieldValue;
@@ -51,101 +51,69 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
 
     const config = { ...defaultConfig, ...options };
 
-    // Initialize/Destroy Summernote based on 'enabled' and element presence
-    useEffect(() => {
-        const $ = window.jQuery || window.$;
+    const initEditor = () => {
+        const $j = window.jQuery || window.$;
+        if (!enabled || !editorRef.current || isInitialized.current) return;
 
-        if (!enabled || !editorRef.current) {
-            if (isInitialized.current && $ && editorRef.current) {
-                try {
-                    $(editorRef.current).summernote('destroy');
-                } catch (e) { }
-            }
-            isInitialized.current = false;
-            return;
-        }
+        if ($j && editorRef.current && $j(editorRef.current).summernote) {
+            const $editor = $j(editorRef.current);
+            const initialCode = latestValueRef.current || '';
 
-        if (isInitialized.current) return;
+            console.log('[useSummernote] Initializing editor:', { fieldName });
 
-        const initEditor = () => {
-            const $j = window.jQuery || window.$;
-            if ($j && editorRef.current && $j(editorRef.current).summernote) {
-                const $editor = $j(editorRef.current);
-                // Use the latest value from ref, not the closure value which might be stale
-                const initialCode = latestValueRef.current || '';
-                
-                console.log('[useSummernote] Initializing editor:', { 
-                    fieldName, 
-                    initialCode, 
-                    fieldValue 
-                });
-
-                $editor.summernote({
-                    ...config,
-                    callbacks: {
-                        onChange: (contents) => {
-                            const normalized = normalize(contents);
-                            isInternalChange.current = true;
-                            lastContentRef.current = normalized;
-
-                            // Send normalized empty string if applicable
-                            onChange({ target: { name: fieldName, value: normalized } });
-
-                            setTimeout(() => {
-                                isInternalChange.current = false;
-                            }, 150);
-                        },
-                        onInit: function () {
-                            console.log('[useSummernote] Editor initialized for:', fieldName);
-                            // Fix for nested modals - only apply if Summernote is inside a modal
-                            const parentModal = $j(editorRef.current).closest('.modal');
-
-                            if (parentModal.length > 0) {
-                                // Only add listeners if we're inside a modal
-                                $j(document).on('show.bs.modal.summernote', '.note-modal', function (e) {
-                                    // Temporarily allow overflow on parent modal
-                                    parentModal.css('overflow', 'visible');
-
-                                    // Ensure Summernote modal appears above parent
-                                    const parentZIndex = parseInt(parentModal.css('z-index')) || 1050;
-                                    $j(this).css('z-index', parentZIndex + 10);
-
-                                    // Fix backdrop z-index
-                                    setTimeout(() => {
-                                        $j('.modal-backdrop').last().css('z-index', parentZIndex + 9);
-                                    }, 50);
-                                });
-
-                                // Restore parent modal overflow when Summernote modal closes
-                                $j(document).on('hidden.bs.modal.summernote', '.note-modal', function (e) {
-                                    parentModal.css('overflow', '');
-                                });
-                            }
-                        }
+            $editor.summernote({
+                ...config,
+                callbacks: {
+                    onChange: (contents) => {
+                        const normalized = normalize(contents);
+                        isInternalChange.current = true;
+                        lastContentRef.current = normalized;
+                        onChange({ target: { name: fieldName, value: normalized } });
+                        setTimeout(() => { isInternalChange.current = false; }, 150);
+                    },
+                    onInit: function () {
+                        console.log('[useSummernote] Editor initialized for:', fieldName);
                     }
-                });
+                }
+            });
 
-                $editor.summernote('code', initialCode);
-                lastContentRef.current = normalize(initialCode);
-                isInitialized.current = true;
-            } else if ($j && editorRef.current) {
-                setTimeout(initEditor, 100);
-            }
-        };
+            $editor.summernote('code', initialCode);
+            lastContentRef.current = normalize(initialCode);
+            isInitialized.current = true;
+        } else if ($j && editorRef.current) {
+            setTimeout(initEditor, 100);
+        }
+    };
 
-        initEditor();
+    const destroyEditor = () => {
+        const $ = window.jQuery || window.$;
+        if (isInitialized.current && $ && editorRef.current) {
+            try {
+                $(editorRef.current).summernote('destroy');
+            } catch (e) { }
+        }
+        isInitialized.current = false;
+    };
 
-        return () => {
-            if (isInitialized.current && $ && editorRef.current) {
-                try {
-                    // Clean up namespaced event listeners
-                    $(document).off('.summernote');
-                    $(editorRef.current).summernote('destroy');
-                } catch (e) { }
-            }
-            isInitialized.current = false;
-        };
-    }, [enabled, fieldName]); // Re-init if enabled flag or field name changes
+    // Re-initialize when enabled or fieldName changes
+    useEffect(() => {
+        if (enabled && editorRef.current) {
+            initEditor();
+        } else {
+            destroyEditor();
+        }
+    }, [enabled, fieldName]);
+
+    // Handle initial mount or ref assignment
+    const setRef = useCallback(node => {
+        if (node) {
+            editorRef.current = node;
+            if (enabled) initEditor();
+        } else {
+            destroyEditor();
+            editorRef.current = null;
+        }
+    }, [enabled, fieldName]);
 
     // Sync external updates
     useEffect(() => {
@@ -169,5 +137,5 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
         }
     }, [fieldValue, enabled]);
 
-    return { editorRef };
+    return { editorRef: setRef };
 };

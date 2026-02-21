@@ -40,18 +40,8 @@ export default function ClientDetails() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
     const isHost = currentUser?.is_host === 1;
-
-    // Permission checks
     const canCreate = hasPermission('create clients');
     const canUpdate = hasPermission('update clients');
-
-    // Access control: redirect to access-denied if lacks required permission
-    if (id && !canUpdate) {
-        return <Navigate to="/access-denied" replace />;
-    }
-    if (!id && !canCreate) {
-        return <Navigate to="/access-denied" replace />;
-    }
 
     const [activeTab, setActiveTab] = useState(ENROLLMENT_TABS.PERSONAL);
     const [isLoading, setIsLoading] = useState(false);
@@ -319,23 +309,25 @@ export default function ClientDetails() {
                                 <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="btn btn-primary w-lg waves-effect"
-                                    onClick={handleSave}
-                                    disabled={isSaving || isLoading}
-                                >
-                                    {isSaving ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line align-middle me-1"></i> Save
-                                        </>
-                                    )}
-                                </button>
+                                {(id ? canUpdate : canCreate) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary w-lg waves-effect"
+                                        onClick={handleSave}
+                                        disabled={isSaving || isLoading}
+                                    >
+                                        {isSaving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                {id ? 'Updating...' : 'Saving...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

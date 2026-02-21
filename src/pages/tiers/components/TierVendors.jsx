@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import TableLoader from '../../../components/Loader/TableLoader';
 import TierVendorModal from './TierVendorModal';
-
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 import { CATEGORY_OPTIONS } from '../../../config';
 import { useTierVendors, useCreateTierVendor, useUpdateTierVendor, useDeleteTierVendor, useDeleteTierVendors } from '../../../modules/tiers/queries';
@@ -22,6 +22,7 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
     const [totalRecords, setTotalRecords] = useState(0);
     const [sortField, setSortField] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
+    const { hasPermission } = usePermissions();
 
     // Filters
     const [searchText, setSearchText] = useState('');
@@ -132,34 +133,34 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
             // Since we added a file input, we should check if 'logo' is a File object
             // or always send as FormData to be safe if logo is present
             const isMultipart = formData.logo instanceof File;
-            
+
             if (isMultipart) {
-                 const data = new FormData();
-                 Object.keys(formData).forEach(key => {
-                     const value = formData[key];
-                     if (Array.isArray(value)) {
-                         value.forEach((item, index) => {
-                             data.append(`${key}[${index}]`, item);
-                         });
-                     } else if (value !== null && value !== undefined) {
-                         if (value instanceof File) {
-                             // Sanitize filename: replace spaces with underscores
-                             const sanitizedName = value.name.replace(/\s+/g, '_');
-                             const sanitizedFile = new File([value], sanitizedName, { type: value.type });
-                             data.append(key, sanitizedFile);
-                         } else {
-                             data.append(key, value);
-                         }
-                     }
-                 });
-                 // For update, we might need to handle _method field if using PUT with FormData (Laravel quirk)
-                 // But react-query mutation usually handles it? No, axios needs it.
-                 // Assuming POST for create, PUT for update.
-                 // If update and file, typically we need POST with _method=PUT for Laravel
-                 if (editVendor) {
-                     data.append('_method', 'PUT');
-                 }
-                 payload = data;
+                const data = new FormData();
+                Object.keys(formData).forEach(key => {
+                    const value = formData[key];
+                    if (Array.isArray(value)) {
+                        value.forEach((item, index) => {
+                            data.append(`${key}[${index}]`, item);
+                        });
+                    } else if (value !== null && value !== undefined) {
+                        if (value instanceof File) {
+                            // Sanitize filename: replace spaces with underscores
+                            const sanitizedName = value.name.replace(/\s+/g, '_');
+                            const sanitizedFile = new File([value], sanitizedName, { type: value.type });
+                            data.append(key, sanitizedFile);
+                        } else {
+                            data.append(key, value);
+                        }
+                    }
+                });
+                // For update, we might need to handle _method field if using PUT with FormData (Laravel quirk)
+                // But react-query mutation usually handles it? No, axios needs it.
+                // Assuming POST for create, PUT for update.
+                // If update and file, typically we need POST with _method=PUT for Laravel
+                if (editVendor) {
+                    data.append('_method', 'PUT');
+                }
+                payload = data;
             }
 
             if (editVendor) {
@@ -238,14 +239,7 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
 
     const nameBodyTemplate = (rowData) => {
         return (
-            <span
-                className="fw-medium cursor-pointer"
-                style={{ cursor: 'pointer' }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    openEditModal(rowData);
-                }}
-            >
+            <span className="fw-medium text-primary">
                 {rowData.name}
             </span>
         );
@@ -376,13 +370,29 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                     tableStyle={{ minWidth: '50rem' }}
                     selection={selectedVendors}
                     onSelectionChange={(e) => setSelectedVendors(e.value)}
-                    metaKeySelection={true}
                     dataKey="id"
+                    rowClickSelection={false}
+                    metaKeySelection={false}
                     filters={filters}
                     filterDisplay="menu"
                     onFilter={onFilter}
+                    onRowClick={(e) => {
+                        const target = e.originalEvent.target;
+                        // Prevent opening modal if clicking on selection checkbox or buttons
+                        if (
+                            !target.closest('.p-checkbox') &&
+                            !target.closest('.p-selection-column') &&
+                            target.tagName !== 'INPUT' &&
+                            !target.closest('button')
+                        ) {
+                            if (hasPermission('update tier')) {
+                                openEditModal(e.data);
+                            }
+                        }
+                    }}
+                    rowClassName={() => (hasPermission('update tier') ? 'cursor-pointer' : '')}
                 >
-                    <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />
+                    {hasPermission('update tier') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '20%' }} />
                     <Column field="category" header="Category" sortable filter filterPlaceholder="Search Category" style={{ width: '15%' }} />
                     <Column field="requirements" header="Requirements" body={(rowData) => arrayBadgeBodyTemplate(rowData, 'requirements', 'bg-info')} style={{ width: '20%' }} />
@@ -404,23 +414,27 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                 </DataTable>
             )}
 
-            <TierVendorModal
-                show={showModal}
-                onHide={() => setShowModal(false)}
-                onSubmit={handleModalSubmit}
-                vendor={editVendor}
-                tierId={tierId}
-                loadingSave={createMutation.isPending || updateMutation.isPending}
-                serverErrors={serverErrors}
-            />
+            {hasPermission('update tier') && (
+                <TierVendorModal
+                    show={showModal}
+                    onHide={() => setShowModal(false)}
+                    onSubmit={handleModalSubmit}
+                    vendor={editVendor}
+                    tierId={tierId}
+                    loadingSave={createMutation.isPending || updateMutation.isPending}
+                    serverErrors={serverErrors}
+                />
+            )}
 
-            <DeleteConfirmationModal
-                show={showDeleteModal}
-                onConfirm={handleDeleteConfirm}
-                onClose={() => setShowDeleteModal(false)}
-                loading={deleteMutation.isPending || deleteMutations.isPending}
-                text="The selected vendors will be deleted."
-            />
+            {hasPermission('update tier') && (
+                <DeleteConfirmationModal
+                    show={showDeleteModal}
+                    onConfirm={handleDeleteConfirm}
+                    onClose={() => setShowDeleteModal(false)}
+                    loading={deleteMutation.isPending || deleteMutations.isPending}
+                    text="The selected vendors will be deleted."
+                />
+            )}
         </React.Fragment>
     );
 

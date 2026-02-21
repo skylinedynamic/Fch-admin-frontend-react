@@ -8,6 +8,7 @@ import ClientStats from './components/ClientStats';
 import ClientListTable from './components/ClientListTable';
 import { Client } from '../../modules/client/types';
 import { AuthUser } from '../../store/auth';
+import { toast } from 'react-toastify';
 
 export default function Clients() {
     const navigate = useNavigate();

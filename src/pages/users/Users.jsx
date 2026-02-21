@@ -58,41 +58,41 @@ export default function Users() {
   const handleAddUserClick = async () => {
     // Check if current user is host from store (no API call needed)
     if (user?.is_host === 1) {
-       setShowAddUser(true);
-       setEditingUserId(null);
-       setIsPurchaseFlow(false);
-       setBackendErrors({});
-       setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
-       return;
+      setShowAddUser(true);
+      setEditingUserId(null);
+      setIsPurchaseFlow(false);
+      setBackendErrors({});
+      setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+      return;
     }
 
     try {
       setLoadingLimitCheck(true);
-      
+
       const detailsRes = await getUserDetails();
       const freshUser = detailsRes.data?.user;
-      
+
       const data = await getUserCount();
       const currentCount = data.data.count || 0;
       const freeLimit = freshUser?.total_free_users || 0;
       const paidLimit = freshUser?.total_paid_users || 0;
       const totalAllowed = freeLimit + paidLimit;
-      
+
       if (currentCount < totalAllowed) {
-         setShowAddUser(true);
-         setEditingUserId(null);
-         setIsPurchaseFlow(false);
-         setBackendErrors({});
-         setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
+        setShowAddUser(true);
+        setEditingUserId(null);
+        setIsPurchaseFlow(false);
+        setBackendErrors({});
+        setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
       } else {
-         setLimitData({
-             count: currentCount,
-             price: data.data.per_user_price,
-             limit: totalAllowed,
-             quantity: 1,
-             totalPrice: parseFloat(data.data.per_user_price || 0)
-         });
-         setShowLimitModal(true);
+        setLimitData({
+          count: currentCount,
+          price: data.data.per_user_price,
+          limit: totalAllowed,
+          quantity: 1,
+          totalPrice: parseFloat(data.data.per_user_price || 0)
+        });
+        setShowLimitModal(true);
       }
     } catch (error) {
       console.error("Failed to check user limit:", error);
@@ -107,16 +107,16 @@ export default function Users() {
     setShowLimitModal(false);
     setIsPurchaseFlow(true);
     setEditingUserId(null);
-    setNewUser({ 
-      user_id: '', 
-      name: '', 
-      email: '', 
-      phone_number: '', 
-      role_id: '', 
-      password: '', 
-      new_password: '', 
+    setNewUser({
+      user_id: '',
+      name: '',
+      email: '',
+      phone_number: '',
+      role_id: '',
+      password: '',
+      new_password: '',
       confirm_password: '',
-      is_paid: true 
+      is_paid: true
     });
     setShowAddUser(true);
   };
@@ -346,44 +346,44 @@ export default function Users() {
             }
             : {})
         }
-        : { 
-            password: newUser.password,
-            // If purchase flow, include these fields. 
-            // Note: Backend must accept is_paid:true or handle it appropriately.
-            // If backend rejects 'is_paid' for creation without payment, this flow might fail.
-            // Assuming backend allows creation or we handle payment after.
-            ...(isPurchaseFlow ? { is_paid: true, months: limitData.months, amount: limitData.totalPrice } : {})
+        : {
+          password: newUser.password,
+          // If purchase flow, include these fields. 
+          // Note: Backend must accept is_paid:true or handle it appropriately.
+          // If backend rejects 'is_paid' for creation without payment, this flow might fail.
+          // Assuming backend allows creation or we handle payment after.
+          ...(isPurchaseFlow ? { is_paid: true, months: limitData.months, amount: limitData.totalPrice } : {})
         })
     }
 
     try {
       setLoadingSave(true);
       if (editingUserId) {
-          await updateUser(editingUserId, payload)
-          toast.success(`User updated successfully`);
+        await updateUser(editingUserId, payload)
+        toast.success(`User updated successfully`);
+        setShowAddUser(false)
+        setEditingUserId(null)
+        setBackendErrors({});
+        loadUsers()
+      } else {
+        const res = await createUser(payload)
+        toast.success(`User created successfully`);
+
+        if (isPurchaseFlow) {
+          const invoiceId = res.data?.invoice_id;
+          const userId = res.data?.id;
+          setLimitData(prev => ({ ...prev, invoiceId, userId }));
+          // User created, now proceed to payment
+          setShowAddUser(false);
+          setShowPaymentModal(true);
+          // Do NOT clear editingUserId or newUser yet if we might need them? 
+          // Actually, user is created. We move to payment.
+        } else {
           setShowAddUser(false)
           setEditingUserId(null)
           setBackendErrors({});
           loadUsers()
-      } else {
-          const res = await createUser(payload)
-          toast.success(`User created successfully`);
-          
-          if (isPurchaseFlow) {
-              const invoiceId = res.data?.invoice_id; 
-              const userId = res.data?.id;
-              setLimitData(prev => ({ ...prev, invoiceId, userId }));
-              // User created, now proceed to payment
-              setShowAddUser(false);
-              setShowPaymentModal(true);
-              // Do NOT clear editingUserId or newUser yet if we might need them? 
-              // Actually, user is created. We move to payment.
-          } else {
-              setShowAddUser(false)
-              setEditingUserId(null)
-              setBackendErrors({});
-              loadUsers()
-          }
+        }
       }
     } catch (error) {
       // Handle backend validation errors
@@ -446,317 +446,315 @@ export default function Users() {
     <div className="page-content">
       <div className="container-fluid">
         <div className="row bg-body">
-          <div className="row bg-body">
-            <div className="col">
-              <div className="h-100">
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                  <div className="col-12">
-                    <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                      <div className="flex-grow-1">
-                        <h4 className="fs-20 mb-1">Users</h4>
-                        <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                          <ol className="breadcrumb m-0">
-                            <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
-                            <li className="breadcrumb-item active" aria-current="page">Users</li>
-                          </ol>
-                        </nav>
-                      </div>
-                      <div className="mt-0">
-                        <form onSubmit={(e) => e.preventDefault()}>
-                          <div className="row g-3 mb-0 align-items-center">
-                            <div className="col-sm-auto">
-                              <div className="btn-group">
-                                {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
-                                  <>
-                                    <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
-                                      Actions
-                                    </button>
-                                    <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                      <span className="visually-hidden">Toggle dropdown</span>
-                                    </button>
-                                    <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
-                                      <li>
-                                        <button
-                                          className="dropdown-item text-danger"
-                                          type="button"
-                                          onClick={() => {
-                                            if (!selection || selection.length === 0) {
-                                              toast.warn("No users selected for deletion");
-                                              return;
-                                            }
-                                            setDeletingUserId(null);
-                                            setShowDeleteModal(true);
-                                          }}
-                                        >
-                                          <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                        </button>
-                                      </li>
-                                    </ul>
-                                  </>
-                                ) : hasPermission('create users') ? (
-                                  <button 
-                                    className="btn btn-primary fw-medium" 
-                                    onClick={handleAddUserClick}
-                                    disabled={loadingLimitCheck}
-                                  >
-                                    {loadingLimitCheck ? (
-                                      <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                    ) : (
-                                      <i className="ri-add-fill me-1 align-bottom"></i>
-                                    )}
-                                    Add User
+          <div className="col">
+            <div className="h-100">
+              <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="col-12">
+                  <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                    <div className="flex-grow-1">
+                      <h4 className="fs-20 mb-1">Users</h4>
+                      <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                        <ol className="breadcrumb m-0">
+                          <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
+                          <li className="breadcrumb-item active" aria-current="page">Users</li>
+                        </ol>
+                      </nav>
+                    </div>
+                    <div className="mt-0">
+                      <form onSubmit={(e) => e.preventDefault()}>
+                        <div className="row g-3 mb-0 align-items-center">
+                          <div className="col-sm-auto">
+                            <div className="btn-group">
+                              {hasPermission('delete users') && Array.isArray(selection) && selection.length > 0 ? (
+                                <>
+                                  <button type="button" id="primaryActionBtn" className="btn bg-success text-white fw-medium">
+                                    Actions
                                   </button>
-                                ) : null}
-                              </div>
+                                  <button type="button" id="primaryActionToggleBtn" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                  </button>
+                                  <ul className="dropdown-menu dropdown-menu-end" id="primaryActionMenu">
+                                    <li>
+                                      <button
+                                        className="dropdown-item text-danger"
+                                        type="button"
+                                        onClick={() => {
+                                          if (!selection || selection.length === 0) {
+                                            toast.warn("No users selected for deletion");
+                                            return;
+                                          }
+                                          setDeletingUserId(null);
+                                          setShowDeleteModal(true);
+                                        }}
+                                      >
+                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                      </button>
+                                    </li>
+                                  </ul>
+                                </>
+                              ) : hasPermission('create users') ? (
+                                <button
+                                  className="btn btn-primary fw-medium"
+                                  onClick={handleAddUserClick}
+                                  disabled={loadingLimitCheck}
+                                >
+                                  {loadingLimitCheck ? (
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                  ) : (
+                                    <i className="ri-add-fill me-1 align-bottom"></i>
+                                  )}
+                                  Add User
+                                </button>
+                              ) : null}
                             </div>
                           </div>
-                        </form>
-                      </div>
+                        </div>
+                      </form>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="row">
-                  <div className="col-lg-12">
-                    <div className="card">
-                      <div className="card-body list-fluid-card">
-                        <form onSubmit={(e) => {
-                          e.preventDefault();
-                          onApplyFilters();
-                        }}>
-                          {loading ? (
-                            <FilterLoader config={[
-                              { col: "col-xxl-4 col-sm-12" }, // Search
-                              { col: "col-xxl-3 col-sm-4" },  // Status
-                              { col: "col-xxl-3 col-sm-4" },  // Role
-                              { col: "col-xxl-2 col-sm-4", isButton: true } // Buttons
-                            ]} />
-                          ) : (
-                            <div className="row g-3 mb-3">
-                              <div className="col-xxl-4 col-sm-12">
-                                <div className="search-box">
-                                  <input
-                                    type="text"
-                                    className="form-control search bg-light border-light"
-                                    id="searchStatus"
-                                    autoComplete="off"
-                                    placeholder="Search here..."
-                                    value={globalFilterValue}
-                                    onChange={(e) => setGlobalFilterValue(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        onApplyFilters();
-                                      }
-                                    }}
-                                  />
-                                  <i className="ri-search-line search-icon"></i>
-                                </div>
-                              </div>
-                              <div className="col-xxl-2 col-sm-4">
-                                <Dropdown
-                                  value={statusFilter}
-                                  onChange={(e) => onStatusChange({ target: { value: e.value } })}
-                                  options={statusOptions}
-                                  optionLabel="label"
-                                  optionValue="value"
-                                  placeholder="All Status"
-                                  className="w-100 employee-filter-dropdown"
+              <div className="row">
+                <div className="col-lg-12">
+                  <div className="card">
+                    <div className="card-body list-fluid-card">
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        onApplyFilters();
+                      }}>
+                        {loading ? (
+                          <FilterLoader config={[
+                            { col: "col-xxl-4 col-sm-12" }, // Search
+                            { col: "col-xxl-3 col-sm-4" },  // Status
+                            { col: "col-xxl-3 col-sm-4" },  // Role
+                            { col: "col-xxl-2 col-sm-4", isButton: true } // Buttons
+                          ]} />
+                        ) : (
+                          <div className="row g-3 mb-3">
+                            <div className="col-xxl-4 col-sm-12">
+                              <div className="search-box">
+                                <input
+                                  type="text"
+                                  className="form-control search bg-light border-light"
+                                  id="searchStatus"
+                                  autoComplete="off"
+                                  placeholder="Search here..."
+                                  value={globalFilterValue}
+                                  onChange={(e) => setGlobalFilterValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      onApplyFilters();
+                                    }
+                                  }}
                                 />
-                              </div>
-                              <div className="col-xxl-2 col-sm-4">
-                                <Dropdown
-                                  value={roleFilter || ''}
-                                  onChange={(e) => onRoleChange({ target: { value: e.value } })}
-                                  options={[{ id: '', name: 'All Role' }, ...roles]}
-                                  optionLabel="name"
-                                  optionValue="id"
-                                  placeholder="All Role"
-                                  className="w-100 employee-filter-dropdown"
-                                />
-                              </div>
-                              <div className="col-xxl-4 col-sm-4">
-                                <div className="d-flex gap-2">
-                                  <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
-                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                  </button>
-                                  <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
-                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                  </button>
-                                </div>
+                                <i className="ri-search-line search-icon"></i>
                               </div>
                             </div>
-                          )}
-                        </form>
-
-                        {/* TableLoader applied here */}
-                        {loading ? (
-                          <TableLoader
-                            rows={10}
-                            columns={[
-                              { style: { width: '3rem' } }, // Selection
-                              { style: { minWidth: '' } }, // Name
-                              { style: { minWidth: '' } }, // Phone
-                              { style: { minWidth: '' } }, // Email
-                              { style: { minWidth: '' } }, // Entity Type
-                              { style: { minWidth: '' } }, // Role
-                              { style: { minWidth: '' } }, // Status
-                              { style: { width: '12rem' } } // Action
-                            ]}
-                          />
-                        ) : (
-                          <div className="table-responsive table-card mt-1">
-                            <DataTable
-                              scrollable
-                              scrollHeight="calc(100vh - 370px)"
-                              value={rows}
-                              paginator
-                              lazy
-                              totalRecords={totalRecords}
-                              first={(page - 1) * perPage}
-                              rows={perPage}
-                              rowsPerPageOptions={[10, 25, 50, 100]}
-                              sortMode="single"
-                              sortField={sortField}
-                              sortOrder={sortOrder === 'asc' ? 1 : -1}
-                              filterDisplay="menu"
-                              filters={filters}
-                              onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
-                              onPage={onPage}
-                              onSort={onSort}
-                              globalFilterFields={[
-                                'name',
-                                'phone_number',
-                                'email',
-                                'role',
-                                'status',
-                              ]}
-                              selection={selection}
-                              onSelectionChange={(e) => setSelection(e.value)}
-                              dataKey="id"
-                              responsiveLayout="scroll"
-                              className="p-datatable-sm"
-                              emptyMessage="No Users found"
-                            >
-                              {hasPermission('delete users') && (
-                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
-                              )}
-                              <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
-                              <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
-                              <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
-                              <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
-                              <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                              {(hasPermission('update users') || hasPermission('delete users')) && (
-                                <Column
-                                  header="Action"
-                                  body={(rowData) => (
-                                    <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
-                                      {hasPermission('update users') && (
-                                        <button
-                                          className="btn btn-sm btn-primary"
-                                          aria-label="Edit user"
-                                          onClick={() => {
-                                            setEditingUserId(rowData.id);
-                                            setBackendErrors({});
-                                            setNewUser({
-                                              user_id: rowData.user_id || '',
-                                              name: rowData.name || '',
-                                              email: rowData.email || '',
-                                              phone_number: rowData.phone_number || '',
-                                              role_id: resolveRoleId(rowData),
-                                              password: rowData.password || '',
-                                              status: rowData.status || '',
-                                              new_password: '',
-                                              confirm_password: '',
-                                            });
-                                            setShowAddUser(true);
-                                          }}
-                                        >
-                                          <i className="ri-edit-2-fill align-bottom"></i>
-                                          <span className="d-none d-sm-inline ms-1">Edit</span>
-                                        </button>
-                                      )}
-                                      {hasPermission('delete users') && (
-                                        <button
-                                          className="btn btn-sm btn-danger"
-                                          aria-label="Delete user"
-                                          onClick={() => {
-                                            setDeletingUserId(rowData.id);
-                                            setShowDeleteModal(true);
-                                          }}
-                                        >
-                                          <i className="ri-delete-bin-6-fill align-bottom"></i>
-                                          <span className="d-none d-sm-inline ms-1">Delete</span>
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                  style={{ textAlign: 'center', width: '12rem' }}
-                                />
-                              )}
-                            </DataTable>
+                            <div className="col-xxl-2 col-sm-4">
+                              <Dropdown
+                                value={statusFilter}
+                                onChange={(e) => onStatusChange({ target: { value: e.value } })}
+                                options={statusOptions}
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="All Status"
+                                className="w-100 employee-filter-dropdown"
+                              />
+                            </div>
+                            <div className="col-xxl-2 col-sm-4">
+                              <Dropdown
+                                value={roleFilter || ''}
+                                onChange={(e) => onRoleChange({ target: { value: e.value } })}
+                                options={[{ id: '', name: 'All Role' }, ...roles]}
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="All Role"
+                                className="w-100 employee-filter-dropdown"
+                              />
+                            </div>
+                            <div className="col-xxl-4 col-sm-4">
+                              <div className="d-flex gap-2">
+                                <button type="button" className="btn btn-warning flex-grow-1" onClick={onApplyFilters}>
+                                  <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                </button>
+                                <button type="button" className="btn btn-default flex-grow-1" onClick={onClearFilters}>
+                                  <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         )}
+                      </form>
 
-                      </div>
+                      {/* TableLoader applied here */}
+                      {loading ? (
+                        <TableLoader
+                          rows={10}
+                          columns={[
+                            { style: { width: '3rem' } }, // Selection
+                            { style: { minWidth: '' } }, // Name
+                            { style: { minWidth: '' } }, // Phone
+                            { style: { minWidth: '' } }, // Email
+                            { style: { minWidth: '' } }, // Entity Type
+                            { style: { minWidth: '' } }, // Role
+                            { style: { minWidth: '' } }, // Status
+                            { style: { width: '12rem' } } // Action
+                          ]}
+                        />
+                      ) : (
+                        <div className="table-responsive table-card mt-1">
+                          <DataTable
+                            scrollable
+                            scrollHeight="calc(100vh - 370px)"
+                            value={rows}
+                            paginator
+                            lazy
+                            totalRecords={totalRecords}
+                            first={(page - 1) * perPage}
+                            rows={perPage}
+                            rowsPerPageOptions={[10, 25, 50, 100]}
+                            sortMode="single"
+                            sortField={sortField}
+                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                            filterDisplay="menu"
+                            filters={filters}
+                            onFilter={(e) => { setFilters(e.filters); setAppliedFilters(e.filters); setPage(1); }}
+                            onPage={onPage}
+                            onSort={onSort}
+                            globalFilterFields={[
+                              'name',
+                              'phone_number',
+                              'email',
+                              'role',
+                              'status',
+                            ]}
+                            selection={selection}
+                            onSelectionChange={(e) => setSelection(e.value)}
+                            dataKey="id"
+                            responsiveLayout="scroll"
+                            className="p-datatable-sm"
+                            emptyMessage="No Users found"
+                          >
+                            {hasPermission('delete users') && (
+                              <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
+                            )}
+                            <Column field="name" header="User Name" sortable filter showFilterMatchModes filterPlaceholder="Search name" body={nameBody}></Column>
+                            <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
+                            <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
+                            <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
+                            {(hasPermission('update users') || hasPermission('delete users')) && (
+                              <Column
+                                header="Action"
+                                body={(rowData) => (
+                                  <div className="d-flex align-items-center gap-2 justify-content-center justify-content-sm-start">
+                                    {hasPermission('update users') && (
+                                      <button
+                                        className="btn btn-sm btn-primary"
+                                        aria-label="Edit user"
+                                        onClick={() => {
+                                          setEditingUserId(rowData.id);
+                                          setBackendErrors({});
+                                          setNewUser({
+                                            user_id: rowData.user_id || '',
+                                            name: rowData.name || '',
+                                            email: rowData.email || '',
+                                            phone_number: rowData.phone_number || '',
+                                            role_id: resolveRoleId(rowData),
+                                            password: rowData.password || '',
+                                            status: rowData.status || '',
+                                            new_password: '',
+                                            confirm_password: '',
+                                          });
+                                          setShowAddUser(true);
+                                        }}
+                                      >
+                                        <i className="ri-edit-2-fill align-bottom"></i>
+                                        <span className="d-none d-sm-inline ms-1">Edit</span>
+                                      </button>
+                                    )}
+                                    {hasPermission('delete users') && (
+                                      <button
+                                        className="btn btn-sm btn-danger"
+                                        aria-label="Delete user"
+                                        onClick={() => {
+                                          setDeletingUserId(rowData.id);
+                                          setShowDeleteModal(true);
+                                        }}
+                                      >
+                                        <i className="ri-delete-bin-6-fill align-bottom"></i>
+                                        <span className="d-none d-sm-inline ms-1">Delete</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                style={{ textAlign: 'center', width: '12rem' }}
+                              />
+                            )}
+                          </DataTable>
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </div>
-
-                <UserModal
-                  show={showAddUser}
-                  onHide={() => {
-                    setShowAddUser(false);
-                    setEditingUserId(null);
-                    setIsPurchaseFlow(false);
-                    setShowPasswordFields(false);
-                    setBackendErrors({});
-                  }}
-                  onSubmit={handleAddUserSubmit}
-                  user={newUser}
-                  onChange={handleAddUserInput}
-                  roles={roles}
-                  isEdit={!!editingUserId}
-                  loadingSave={loadingSave}
-                  showPasswordFields={showPasswordFields}
-                  onPasswordFieldsToggle={setShowPasswordFields}
-                  backendErrors={backendErrors}
-                />
-
-                <DeleteConfirmationModal
-                  show={showDeleteModal}
-                  onConfirm={handleDeleteUsers}
-                  onClose={() => {
-                    setShowDeleteModal(false);
-                    setDeletingUserId(null);
-                  }}
-                  loading={loadingDelete}
-                  text={
-                    deletingUserId
-                      ? "Deleting this user will remove all information."
-                      : "Deleting selected users will remove all information."
-                  }
-                />
-                <UserLimitModal 
-                  show={showLimitModal} 
-                  onHide={() => setShowLimitModal(false)} 
-                  onProceed={handleLimitProceed}
-                  userCount={limitData.count} 
-                  freeLimit={limitData.limit} 
-                  perUserPrice={limitData.price} 
-                />
-
-                <UserPaymentModal
-                  show={showPaymentModal}
-                  onHide={() => setShowPaymentModal(false)}
-                  onSuccess={handlePaymentSuccess}
-                  amount={limitData.totalPrice}
-                  quantity={limitData.quantity}
-                  months={limitData.months}
-                  invoiceId={limitData.invoiceId}
-                  userId={limitData.userId}
-                />
               </div>
+
+              <UserModal
+                show={showAddUser}
+                onHide={() => {
+                  setShowAddUser(false);
+                  setEditingUserId(null);
+                  setIsPurchaseFlow(false);
+                  setShowPasswordFields(false);
+                  setBackendErrors({});
+                }}
+                onSubmit={handleAddUserSubmit}
+                user={newUser}
+                onChange={handleAddUserInput}
+                roles={roles}
+                isEdit={!!editingUserId}
+                loadingSave={loadingSave}
+                showPasswordFields={showPasswordFields}
+                onPasswordFieldsToggle={setShowPasswordFields}
+                backendErrors={backendErrors}
+              />
+
+              <DeleteConfirmationModal
+                show={showDeleteModal}
+                onConfirm={handleDeleteUsers}
+                onClose={() => {
+                  setShowDeleteModal(false);
+                  setDeletingUserId(null);
+                }}
+                loading={loadingDelete}
+                text={
+                  deletingUserId
+                    ? "Deleting this user will remove all information."
+                    : "Deleting selected users will remove all information."
+                }
+              />
+              <UserLimitModal
+                show={showLimitModal}
+                onHide={() => setShowLimitModal(false)}
+                onProceed={handleLimitProceed}
+                userCount={limitData.count}
+                freeLimit={limitData.limit}
+                perUserPrice={limitData.price}
+              />
+
+              <UserPaymentModal
+                show={showPaymentModal}
+                onHide={() => setShowPaymentModal(false)}
+                onSuccess={handlePaymentSuccess}
+                amount={limitData.totalPrice}
+                quantity={limitData.quantity}
+                months={limitData.months}
+                invoiceId={limitData.invoiceId}
+                userId={limitData.userId}
+              />
             </div>
           </div>
         </div>
