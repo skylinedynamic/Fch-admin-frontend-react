@@ -785,7 +785,7 @@ export default function PartnerProfile() {
                                     <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
-                                    {(id && hasPermission('update partners')) || (!id && hasPermission('create partners')) && (
+                                    {((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                                         <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                             {isSaving ? (
                                                 <>
