@@ -12,7 +12,7 @@ const menuItems = [
     to: "/",
     icon: "ri-dashboard-2-line",
     label: "Dashboard",
-    permission: "view dashboard",
+    permission: "",
     exact: true,
   },
   {
@@ -369,7 +369,7 @@ export default function Sidebar() {
               e.preventDefault();
               import("../../lib/auth").then(({ logout, clearAuth }) => {
                 logout()
-                  .catch(() => {})
+                  .catch(() => { })
                   .finally(() => {
                     clearAuth();
                     window.location.href = "/login";
@@ -454,7 +454,7 @@ export default function Sidebar() {
                                     // Special check for active state on Child Routes
                                     if (
                                       subItem.to ===
-                                        "/intake-review/pre-qualification" &&
+                                      "/intake-review/pre-qualification" &&
                                       location.pathname.startsWith(
                                         "/intake-review/pre-qualification/",
                                       )
@@ -463,7 +463,7 @@ export default function Sidebar() {
                                     }
                                     if (
                                       subItem.to ===
-                                        "/intake-review/funding-review" &&
+                                      "/intake-review/funding-review" &&
                                       location.pathname.startsWith(
                                         "/intake-review/funding-review/",
                                       )
