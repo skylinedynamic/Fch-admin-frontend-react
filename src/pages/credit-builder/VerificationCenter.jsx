@@ -293,7 +293,7 @@ export default function VerificationCenter() {
                                         />
                                         <Column
                                             field="tier_name"
-                                            header="Tier Name"
+                                            header="Current Tier"
                                             sortable
                                             filter
                                             filterPlaceholder="Search Tier"
