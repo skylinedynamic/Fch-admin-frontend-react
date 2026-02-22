@@ -102,3 +102,11 @@ export type DropdownOption = {
     label: string;
     value: string | number;
 };
+
+export type ClientListStatistics = {
+    total_borrowers: number;
+    active_borrowers: number;
+    inactive_borrowers: number;
+    new_this_month: number;
+};
+

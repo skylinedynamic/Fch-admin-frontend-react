@@ -1,83 +1,67 @@
 import React from 'react';
-import { useClientListStats } from '../../../modules/client/queries';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
-
-interface ClientStatsData {
-    active_count: number;
-    new_this_month: number;
-    total_clients: number;
-    inactive_count: number;
-    [key: string]: number;
-}
-
-interface StatisticsConfig {
-    title: string;
-    dataKey: keyof ClientStatsData;
-    icon: string;
-    colorVariant: string;
-}
+import { ClientListStatistics } from '../../../modules/client/types';
 
 interface ClientStatsProps {
     isHost: boolean;
-    partnerId?: string | number;
+    partnerId?: string | number | unknown;
     filteredTotal?: number;
+    stats: ClientListStatistics | null;
+    isLoading?: boolean;
 }
 
-const ClientStats: React.FC<ClientStatsProps> = ({ isHost, partnerId, filteredTotal }) => {
-    // Fetch stats
-    const { data: statsData, isLoading: statsLoading } = useClientListStats(isHost ? undefined : partnerId);
-
-    // Derived Stats
-    const derivedStats: ClientStatsData = {
-        active_count: statsData?.data?.active_count || 0,
-        new_this_month: statsData?.data?.new_this_month || 0,
-        total_clients: statsData?.data?.total_borrowers || 0,
-        inactive_count: statsData?.data?.inactive_count || 0
-    };
-
-    // Use filtered total if provided, otherwise use fetched total
-    const finalStats: ClientStatsData = {
-        ...derivedStats,
-        total_clients: filteredTotal !== undefined ? filteredTotal : derivedStats.total_clients
-    };
-
-    const statisticsConfig: StatisticsConfig[] = [
-        {
-            title: "Active Clients",
-            dataKey: "active_count",
-            icon: "ri-user-line",
-            colorVariant: "primary"
-        },
-        {
-            title: "New This Month",
-            dataKey: "new_this_month",
-            icon: "ri-user-add-line",
-            colorVariant: "warning"
-        },
-        {
-            title: "Total Clients",
-            dataKey: "total_clients",
-            icon: "ri-group-line",
-            colorVariant: "info"
-        },
-        {
-            title: "Inactive",
-            dataKey: "inactive_count",
-            icon: "ri-user-unfollow-line",
-            colorVariant: "danger"
-        }
-    ];
-
-    if (statsLoading) {
+const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoading }) => {
+    if (isLoading || !stats) {
         return (
             <div className="row">
-                {statisticsConfig.map((_, index) => (
+                {[1, 2, 3, 4].map((index) => (
                     <StatisticsCardSkeleton key={`skeleton-${index}`} />
                 ))}
             </div>
         );
     }
+
+    // Derived Stats
+    const derivedStats = {
+        active_count: stats?.active_borrowers || 0,
+        new_this_month: stats?.new_this_month || 0,
+        total_clients: stats?.total_borrowers || 0,
+        inactive_count: stats?.inactive_borrowers || 0
+    };
+
+    // Use filtered total if provided, otherwise use fetched total
+    const finalStats = {
+        ...derivedStats,
+        total_clients: filteredTotal !== undefined ? filteredTotal : derivedStats.total_clients
+    };
+
+    const statisticsConfig = [
+        {
+            title: "Active Clients",
+            count: finalStats.active_count,
+            icon: "ri-user-line",
+            colorVariant: "primary"
+        },
+        {
+            title: "New This Month",
+            count: finalStats.new_this_month,
+            icon: "ri-user-add-line",
+            colorVariant: "warning"
+        },
+        {
+            title: "Total Clients",
+            count: finalStats.total_clients,
+            icon: "ri-group-line",
+            colorVariant: "info"
+        },
+        {
+            title: "Inactive Clients",
+            count: finalStats.inactive_count,
+            icon: "ri-user-unfollow-line",
+            colorVariant: "danger"
+        }
+    ];
 
     return (
         <div className="row">
@@ -85,7 +69,7 @@ const ClientStats: React.FC<ClientStatsProps> = ({ isHost, partnerId, filteredTo
                 <StatisticsCard
                     key={`stat-${index}`}
                     title={config.title}
-                    count={finalStats[config.dataKey] || 0}
+                    count={config.count}
                     icon={config.icon}
                     colorVariant={config.colorVariant}
                 />
@@ -95,3 +79,4 @@ const ClientStats: React.FC<ClientStatsProps> = ({ isHost, partnerId, filteredTo
 };
 
 export default ClientStats;
+

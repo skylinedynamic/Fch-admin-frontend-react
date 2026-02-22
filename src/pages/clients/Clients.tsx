@@ -6,7 +6,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import ClientStats from './components/ClientStats';
 import ClientListTable from './components/ClientListTable';
-import { Client } from '../../modules/client/types';
+import { Client, ClientListStatistics } from '../../modules/client/types';
 import { AuthUser } from '../../store/auth';
 import { toast } from 'react-toastify';
 
@@ -17,6 +17,8 @@ export default function Clients() {
     // Shared state between header and components
     const [selectedClients, setSelectedClients] = useState<Client[]>([]);
     const [totalRecords, setTotalRecords] = useState<number>(0);
+    const [stats, setStats] = useState<ClientListStatistics | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [deleteRows, setDeleteRows] = useState<Client[]>([]);
 
@@ -115,6 +117,8 @@ export default function Clients() {
                     isHost={isHost}
                     partnerId={currentUser?.partner_id}
                     filteredTotal={totalRecords}
+                    stats={stats}
+                    isLoading={isLoading}
                 />
 
                 {/* Filters and Table */}
@@ -131,6 +135,8 @@ export default function Clients() {
                                     selectedClients={selectedClients}
                                     onSelectionChange={setSelectedClients}
                                     onTotalRecordsChange={setTotalRecords}
+                                    onStatsChange={setStats}
+                                    onLoadingChange={setIsLoading}
                                 />
                             </div>
                         </div>

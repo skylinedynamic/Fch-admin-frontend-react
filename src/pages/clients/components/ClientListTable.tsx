@@ -6,7 +6,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useClients, DEFAULT_CLIENT_FILTERS } from '../../../modules/client';
 import TableLoader from '../../../components/Loader/TableLoader';
-import type { Client, ClientFilterParams } from '../../../modules/client/types';
+import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
@@ -20,6 +20,8 @@ interface ClientListTableProps {
     selectedClients: Client[];
     onSelectionChange: (selected: Client[]) => void;
     onTotalRecordsChange?: (total: number) => void;
+    onStatsChange?: (stats: ClientListStatistics) => void;
+    onLoadingChange?: (loading: boolean) => void;
     partnerId?: string | number;
 }
 
@@ -32,6 +34,8 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     selectedClients,
     onSelectionChange,
     onTotalRecordsChange,
+    onStatsChange,
+    onLoadingChange,
     partnerId
 }) => {
     const navigate = useNavigate();
@@ -91,8 +95,9 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
 
     const clients: Client[] = clientsData?.data || [];
     const meta = clientsData?.meta;
+    const statistics = clientsData?.statistics;
 
-    // Update total records
+    // Update total records and statistics
     useEffect(() => {
         if (meta) {
             const total = typeof meta.total === 'number' ? meta.total : clients.length;
@@ -103,7 +108,17 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             setTotalRecords(total);
             if (onTotalRecordsChange) onTotalRecordsChange(total);
         }
-    }, [meta, clientsData, clients.length, onTotalRecordsChange]);
+
+        if (statistics && onStatsChange) {
+            onStatsChange(statistics);
+        }
+    }, [meta, clientsData, clients.length, onTotalRecordsChange, statistics, onStatsChange]);
+
+    useEffect(() => {
+        if (onLoadingChange) {
+            onLoadingChange(clientsLoading);
+        }
+    }, [clientsLoading, onLoadingChange]);
 
     // Error Handling
     useEffect(() => {
