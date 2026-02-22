@@ -2,7 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { toast } from 'react-toastify';
-import { formatPhoneNumber } from '../../../utils/formatters';
+import { formatPhoneNumber, normalizeDate } from '../../../utils/formatters';
 import {
     useClient,
     useUpdateClient,
@@ -126,6 +126,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             // If other_city has a value, set city to 'Others' to show the dropdown correctly
             if (apiData.other_city && apiData.other_city.trim() !== '') {
                 apiData.city = 'Others';
+            }
+
+            // Normalize date
+            if (apiData.business_start_date) {
+                apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
             console.log('[ClientInfoSection] Syncing data:', {
@@ -644,7 +649,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             onChange={(dates) => {
                                 const date = dates[0];
                                 const dateString = date
-                                    ? `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${date.getFullYear()}`
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
                                     : "";
                                 handleInputChange({ target: { name: "business_start_date", value: dateString } });
                             }}
@@ -702,7 +707,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             options={enrollmentOptions}
                             onChange={(e) => {
                                 const selectedVal = e.value;
-                                const selectedOption = enrollmentOptions.find(opt => opt.value === selectedVal);
+                                const selectedOption = enrollmentOptions.find((opt: any) => opt.value === selectedVal);
 
                                 setFormData(prev => ({
                                     ...prev,
@@ -741,9 +746,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="enrollment-base-alert">
                                 <div className="card-body">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find(opt =>
+                                        const selectedOption = enrollmentOptions.find((opt: any) =>
                                             String(opt.value) === String(formData.plan_id)
-                                        ) || enrollmentOptions.find(opt =>
+                                        ) || enrollmentOptions.find((opt: any) =>
                                             opt.enrollment_type === formData.enrollment_type
                                         );
 

@@ -41,7 +41,7 @@ export const DEFAULT_CLIENT_STATE: Client = {
 };
 
 export const DATE_PICKER_OPTIONS = {
-    dateFormat: "m-d-Y"
+    dateFormat: "Y-m-d"
 };
 
 export const ENROLLMENT_TABS: Record<string, string> = {

@@ -122,7 +122,7 @@ export const fetchBorrowerDocumentTypes = async () => {
 
 // Fetch all users for borrower module
 export const fetchBorrowerUsers = async (): Promise<any> => {
-    const { data } = await apiClient.post('/common/borrowers-get-all-users');
+    const { data } = await apiClient.post('/common/get-all-users');
     return data;
 };
 

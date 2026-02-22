@@ -25,7 +25,7 @@ import { locationData } from '../../config';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
-import { parseDate as parseDateHelper } from '../../utils/formatters';
+import { parseDate as parseDateHelper, normalizeDate } from '../../utils/formatters';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
@@ -223,6 +223,9 @@ export default function LeadDetails() {
             const payload = { ...formData };
             if (payload.city === 'Others') {
                 payload.city = payload.other_city || '';
+            }
+            if (payload.business_start_date) {
+                payload.business_start_date = normalizeDate(payload.business_start_date);
             }
             delete payload.other_city;
 
@@ -443,7 +446,8 @@ export default function LeadDetails() {
                         state: finalState,
                         city: cityValue,
                         legal_business_name: data.company_name,
-                        other_city: otherCityValue
+                        other_city: otherCityValue,
+                        business_start_date: data.business_start_date ? normalizeDate(data.business_start_date) : ''
                     }));
                 }
             } catch (err) {
@@ -952,8 +956,9 @@ export default function LeadDetails() {
                                                                     <label className="form-label">Business Start Date</label>
                                                                     <Flatpickr
                                                                         options={{
-                                                                            dateFormat: "d M, Y",
-                                                                            allowInput: true
+                                                                            dateFormat: "Y-m-d",
+                                                                            altInput: true,
+                                                                            altFormat: "d M, Y"
                                                                         }}
                                                                         value={parseDateHelper(formData.business_start_date)}
                                                                         onChange={(dates) => {
