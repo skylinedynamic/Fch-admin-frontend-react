@@ -46,6 +46,7 @@ export default function EmployeeDetails() {
   }
 
   // State
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -325,24 +326,27 @@ export default function EmployeeDetails() {
           }));
 
           const performLimitCheck = async () => {
+             // Skip limit check for host users (superadmins)
+             if (user?.is_host == 1) {
+                return;
+             }
+
              try {
-               // Fetch fresh user details to check if host
+               setLoadingLimitCheck(true);
+               
+               // Fetch fresh user details to check if host or limits
                const detailsRes = await getUserDetails();
                const freshUser = detailsRes?.data?.user;
                
-               // Bypass limit check for host users - no loading state
-               if (freshUser?.is_host === 1) {
-                  // Already checked above, nothing more to do
+               // Double check host status from fresh data
+               if (freshUser?.is_host == 1) {
                   return;
                }
                
-               // Non-host users: show loading and perform limit check
-               setLoadingLimitCheck(true);
-               
                const data = await getUserCount();
-               const currentCount = data?.data?.count || 0;
-               const freeLimit = freshUser?.total_free_users || 0;
-               const paidLimit = freshUser?.total_paid_users || 0;
+               const currentCount = parseInt(data?.data?.count || 0);
+               const freeLimit = parseInt(freshUser?.total_free_users || 0);
+               const paidLimit = parseInt(freshUser?.total_paid_users || 0);
                const totalAllowed = freeLimit + paidLimit;
 
                if (currentCount >= totalAllowed) {
@@ -505,8 +509,11 @@ export default function EmployeeDetails() {
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
-    // Reload window to refresh all limits and UI state from server
-    window.location.reload();
+    toast.success('Payment completed successfully!');
+    // Delay reload to allow toast to be seen
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
   };
 
   const handleSave = async () => {

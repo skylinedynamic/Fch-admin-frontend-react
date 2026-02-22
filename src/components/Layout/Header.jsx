@@ -3,9 +3,11 @@ import { clearAuth, getUser } from '../../lib/auth'
 import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link } from 'react-router-dom'
+import { usePermissions } from '../../lib/auth/usePermissions'
 
 export default function Header() {
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
   const [user, setUser] = useState(null)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof document !== 'undefined') {
@@ -186,7 +188,12 @@ export default function Header() {
                 <a className="dropdown-item" href="#"><i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Help</span></a>
                 <div className="dropdown-divider"></div>
                 <a className="dropdown-item" href="#"><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a> */}
-                <Link className="dropdown-item" to="/contacts"><i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Contacts</span></Link>
+                {hasPermission('view contacts') && (
+                  <Link className="dropdown-item" to="/contacts">
+                    <i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i> 
+                    <span className="align-middle">Contacts</span>
+                  </Link>
+                )}
                 <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>
                 <a className="dropdown-item" href="#" onClick={handleLogout}><i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span></a>
               </div>

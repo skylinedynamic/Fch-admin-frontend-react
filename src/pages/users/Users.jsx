@@ -124,7 +124,10 @@ export default function Users() {
   const handlePaymentSuccess = async () => {
     setShowPaymentModal(false);
     toast.success("Payment completed successfully!");
-    window.location.reload();
+    // Delay reload to allow toast to be seen
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   };
 
   const [newUser, setNewUser] = useState({

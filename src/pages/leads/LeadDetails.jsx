@@ -331,7 +331,7 @@ export default function LeadDetails() {
         const fetchData = async () => {
             try {
                 const usersRes = await allUsers();
-                if (usersRes.status) setUsers(usersRes.data);
+                if (usersRes.status) setUsers(usersRes.data || []);
             } catch (err) {
                 console.error(err);
             }
@@ -369,7 +369,7 @@ export default function LeadDetails() {
 
                 if (stateCode && locationData[countryCode].states[stateCode]) {
                     const cityList = locationData[countryCode].states[stateCode].cities;
-                    const cityOptions = cityList.map((city) => ({ label: city, value: city }));
+                    const cityOptions = (cityList || []).map((city) => ({ label: city, value: city }));
                     setCities(cityOptions);
                 } else {
                     setCities([]);
@@ -419,7 +419,7 @@ export default function LeadDetails() {
 
                         if (stateCode && locationData[countryCode].states[stateCode]) {
                             const cityList = locationData[countryCode].states[stateCode].cities;
-                            cityOptions = cityList.map((city) => ({ label: city, value: city }));
+                            cityOptions = (cityList || []).map((city) => ({ label: city, value: city }));
                             setCities(cityOptions);
                         }
                     }
