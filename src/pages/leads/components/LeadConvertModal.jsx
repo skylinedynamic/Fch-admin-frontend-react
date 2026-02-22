@@ -3,7 +3,7 @@ import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchPartnerPlans } from '../../../modules/partner/services';
 import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
-import LeadConvertSkeleton from '../../../components/loader/LeadConvertSkeleton';
+import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
     const [planId, setPlanId] = useState(null);
