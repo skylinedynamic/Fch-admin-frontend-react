@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchLeads, deleteLead, fetchLeadStats, convertLead, updateLead } from '../../modules/leads/services';
+import { fetchLeads, deleteLead, convertLead, updateLead } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -18,8 +18,6 @@ import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
-// 
-
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -72,10 +70,9 @@ export default function Leads() {
     const [stats, setStats] = useState({
         total_leads: 0,
         new_leads: 0,
-        qualified_rate: '0%',
-        declined_rate: '0%'
+        qualified_rate: '0',
+        declined_rate: '0'
     });
-    const [statsLoading, setStatsLoading] = useState(true);
     const [newBorrowerId, setNewBorrowerId] = useState(null);
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
@@ -115,24 +112,6 @@ export default function Leads() {
         loadSalespersons();
     }, []);
 
-    // Load statistics
-    useEffect(() => {
-        const loadStats = async () => {
-            try {
-                setStatsLoading(true);
-                const result = await fetchLeadStats();
-                if (result.status && result.data) {
-                    setStats(result.data);
-                }
-            } catch (err) {
-                console.error('Failed to load lead statistics:', err);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-        loadStats();
-    }, []);
-
     const statisticsConfig = [
         { title: "Total Leads", dataKey: "total_leads", icon: "ri-coupon-line", colorVariant: "secondary" },
         { title: "New Leads", dataKey: "new_leads", icon: "ri-folder-open-line", colorVariant: "warning" },
@@ -163,6 +142,12 @@ export default function Leads() {
                 if (result.status) {
                     setLeads(result.data || []);
                     setTotalRecords(result.meta?.total || (result.data ? result.data.length : 0));
+                    
+                    // Update statistics from the same response
+                    if (result.statistics) {
+                        setStats(result.statistics);
+                    }
+                    
                     setError(null);
                 } else {
                     setError(result.message || 'Failed to fetch leads');
@@ -408,18 +393,21 @@ export default function Leads() {
 
                 {/* Statistics Cards */}
                 <div className="row">
-                    {statsLoading ? (
+                    {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (
-                        statisticsConfig.map((config, index) => (
-                            <StatisticsCard
-                                key={index}
-                                title={config.title}
-                                count={config.dataKey.includes('rate') ? `${stats[config.dataKey]}%` : stats[config.dataKey]}
-                                icon={config.icon}
-                                colorVariant={config.colorVariant}
-                            />
-                        ))
+                        statisticsConfig.map((config, index) => {
+                            const value = config.dataKey === 'total_leads' ? (totalRecords || 0) : stats[config.dataKey];
+                            return (
+                                <StatisticsCard
+                                    key={index}
+                                    title={config.title}
+                                    count={config.dataKey.includes('rate') ? `${value}%` : value}
+                                    icon={config.icon}
+                                    colorVariant={config.colorVariant}
+                                />
+                            );
+                        })
                     )}
                 </div>
 

@@ -10,7 +10,6 @@ import {
     fetchClientChecklist,
     saveClientChecklist,
     fetchBorrowerProfileStats,
-    fetchBorrowerStats,
     fetchBorrowerTiers,
     fetchBorrowerPlans,
     fetchNonHostBorrowerPlans
@@ -130,12 +129,6 @@ export const useClientProfileStats = (id: string | number, enabled: boolean = tr
     });
 };
 
-export const useClientListStats = (partnerId?: string | number) => {
-    return useQuery({
-        queryKey: clientKeys.listStats(partnerId),
-        queryFn: () => fetchBorrowerStats(partnerId),
-    });
-};
 
 export const usePartners = (enabled: boolean = true) => {
     return useQuery({

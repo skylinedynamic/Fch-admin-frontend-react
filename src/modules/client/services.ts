@@ -59,13 +59,6 @@ export const saveClientChecklist = async (borrowerId: string | number, checkedId
     return data;
 };
 
-// Fetch borrower stats (for list page)
-export const fetchBorrowerStats = async (partnerId?: string | number): Promise<any> => {
-    const payload = partnerId ? { partner_id: partnerId } : {};
-    const { data } = await apiClient.post(`/common/borrowers-stats`, payload);
-    return data;
-};
-
 // Fetch borrower profile stats details (for detail page)
 export const fetchBorrowerProfileStats = async (borrowerId: string | number): Promise<any> => {
     const { data } = await apiClient.post(`/common/borrowers-profile-states-details-count/${borrowerId}`);
