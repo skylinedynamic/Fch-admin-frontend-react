@@ -13,6 +13,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [borrowerPlans, setBorrowerPlans] = useState([]);
     const [fetching, setFetching] = useState(false);
+    
+    // Custom overrides for isHost
+    const [customEnrollmentAmount, setCustomEnrollmentAmount] = useState('');
+    const [customPlatformFee, setCustomPlatformFee] = useState('');
 
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -76,6 +80,10 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                         if (plans.length > 0) {
                             setPlanId(plans[0].id);
                             setEnrollmentType(plans[0].enrollment_type);
+                            if (isHost) {
+                                setCustomEnrollmentAmount(plans[0].payment_amount || '');
+                                setCustomPlatformFee(plans[0].platform_fee || 0);
+                            }
                         }
                     }
                 } catch (err) {
@@ -116,7 +124,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
             const selectedPlan = borrowerPlans.find(plan => plan.id === planId);
             if (selectedPlan) {
-                payload.amount = selectedPlan.payment_amount;
+                payload.amount = isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPlan.payment_amount;
+                payload.enrollment_amount = payload.amount;
+                if (isHost) {
+                    payload.monthly_platform_fee = customPlatformFee !== '' ? customPlatformFee : (selectedPlan.platform_fee || 0);
+                }
             }
         } else if (targetType === 'Partner') {
             payload.partner_type = partnerType;
@@ -130,8 +142,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
             if (selectedPlan) {
                 payload.plan_id = selectedPlan.id;
-                payload.enrollment_amount = selectedPlan.payment_amount;
-                payload.amount = selectedPlan.payment_amount;
+                payload.enrollment_amount = isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPlan.payment_amount;
+                payload.amount = payload.enrollment_amount;
+                if (isHost) {
+                    payload.monthly_platform_fee = customPlatformFee !== '' ? customPlatformFee : (selectedPlan.platform_fee || 0);
+                }
             }
         }
         onConfirm(payload);
@@ -184,6 +199,14 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         setPlanId(e.value);
                                                         const opt = enrollmentOptions.find(o => o.value === e.value);
                                                         setEnrollmentType(opt ? opt.enrollment_type : '');
+                                                        // Sync custom amounts for host
+                                                        if (isHost && opt) {
+                                                            const originalPlan = borrowerPlans.find(plan => plan.id === e.value);
+                                                            if (originalPlan) {
+                                                                setCustomEnrollmentAmount(originalPlan.payment_amount || '');
+                                                                setCustomPlatformFee(originalPlan.platform_fee || 0);
+                                                            }
+                                                        }
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
@@ -197,6 +220,31 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                             null
                                         )}
 
+                                        {isHost && planId && (
+                                            <div className="row g-3 mb-3 animate__animated animate__fadeIn">
+                                                <div className="col-lg-6">
+                                                    <label className="form-label fw-semibold">Enrollment Payment ($)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={customEnrollmentAmount}
+                                                        onChange={(e) => setCustomEnrollmentAmount(e.target.value)}
+                                                        placeholder="Enter amount"
+                                                    />
+                                                </div>
+                                                <div className="col-lg-6">
+                                                    <label className="form-label fw-semibold">Platform Fee Payment ($)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={customPlatformFee}
+                                                        onChange={(e) => setCustomPlatformFee(e.target.value)}
+                                                        placeholder="Enter amount"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {selectedBorrowerPlan && (
                                             <div className="bg-success bg-opacity-10 p-4 rounded-2 d-flex align-items-center animate__animated animate__fadeInUp">
                                                 <div className="flex-shrink-0 me-3">
@@ -207,9 +255,15 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 <div className="flex-grow-1 ps-2">
                                                     <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                                     <p className="mb-0 text-muted fs-15 lh-base">
-                                                        A {selectedBorrowerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(selectedBorrowerPlan.payment_amount).toFixed(2)}</span>
+                                                        A {selectedBorrowerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedBorrowerPlan.payment_amount).toFixed(2)}</span>
                                                         {selectedBorrowerPlan.total_installments_count && (
                                                             <span> for {selectedBorrowerPlan.total_installments_count} installments</span>
+                                                        )}
+                                                        {isHost && (
+                                                            <div className="small mt-1 text-success">
+                                                                <i className="ri-information-line me-1"></i>
+                                                                Platform fee of <strong>${Number(customPlatformFee).toLocaleString()}/mo</strong> starts on the 12th month
+                                                            </div>
                                                         )}
                                                     </p>
                                                 </div>
@@ -255,7 +309,20 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         value: plan.enrollment_type
                                                     }))
                                                 }
-                                                onChange={(e) => setPartnerEnrollmentType(e.value)}
+                                                onChange={(e) => {
+                                                    setPartnerEnrollmentType(e.value);
+                                                    // Sync custom amounts for host
+                                                    if (isHost) {
+                                                        const selectedPlan = partnerPlans.find(plan =>
+                                                            (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
+                                                            plan.enrollment_type === e.value
+                                                        );
+                                                        if (selectedPlan) {
+                                                            setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
+                                                            setCustomPlatformFee(selectedPlan.platform_fee || 0);
+                                                        }
+                                                    }
+                                                }}
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="Select Enrollment Type"
@@ -265,6 +332,31 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 disabled={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType}
                                             />
                                         </div>
+
+                                        {isHost && partnerEnrollmentType && (
+                                            <div className="row g-3 mb-3 animate__animated animate__fadeInUp">
+                                                <div className="col-lg-6">
+                                                    <label className="form-label fw-semibold">Enrollment Payment ($)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={customEnrollmentAmount}
+                                                        onChange={(e) => setCustomEnrollmentAmount(e.target.value)}
+                                                        placeholder="Enter amount"
+                                                    />
+                                                </div>
+                                                <div className="col-lg-6">
+                                                    <label className="form-label fw-semibold">Platform Fee Payment ($)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={customPlatformFee}
+                                                        onChange={(e) => setCustomPlatformFee(e.target.value)}
+                                                        placeholder="Enter amount"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {selectedPartnerPlan && (
                                             <div className="bg-success bg-opacity-10 p-4 rounded-2 d-flex align-items-center animate__animated animate__fadeInUp">
@@ -276,9 +368,15 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 <div className="flex-grow-1 ps-2">
                                                     <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
                                                     <p className="mb-0 text-muted fs-15 lh-base">
-                                                        A {selectedPartnerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(selectedPartnerPlan.payment_amount).toFixed(2)}</span>
+                                                        A {selectedPartnerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toFixed(2)}</span>
                                                         {selectedPartnerPlan.total_installments_count && (
                                                             <span>/month</span>
+                                                        )}
+                                                        {isHost && (
+                                                            <div className="small mt-1 text-success">
+                                                                <i className="ri-information-line me-1"></i>
+                                                                Platform fee of <strong>${Number(customPlatformFee).toLocaleString()}/mo</strong> starts on the 12th month
+                                                            </div>
                                                         )}
                                                     </p>
                                                 </div>

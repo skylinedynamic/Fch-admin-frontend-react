@@ -49,7 +49,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     let enrollment_type = payload.enrollment_type;
 
     if (isHost) {
-        amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
+        amount = payload.enrollment_amount ? parseFloat(payload.enrollment_amount as string) : (payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0);
     } else {
         // Fallback to 800 if nonHostPlan is missing (as per original code)
         amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
@@ -58,10 +58,15 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 
     // Add specific payload fields required by backend
     payload.amount = amount;
+    payload.enrollment_amount = amount;
     payload.enrollment_type = enrollment_type;
     payload.payment_amount = amount;
     payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost;
+
+    if (isHost) {
+        payload.monthly_platform_fee = payload.monthly_platform_fee || 0;
+    }
 
     return payload;
 };
@@ -90,6 +95,11 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
 
     if (!isHost) {
         payload.is_partner_paying = true;
+    } else {
+        if (payload.enrollment_amount) {
+            payload.amount = payload.enrollment_amount;
+            payload.payment_amount = payload.enrollment_amount;
+        }
     }
 
     return payload;
