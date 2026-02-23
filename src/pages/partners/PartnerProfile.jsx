@@ -97,7 +97,8 @@ export default function PartnerProfile() {
         first_reg_amount_2: '',
         first_reg_payment_2: '',
         first_reg_payment: '',
-        recurring_amount: '',
+        recurring_amount: '', // Legacy, keep for mapping
+        monthly_platform_fee: '', // Accurate code: map to backend field
         total_paid_amount: '', // Renamed from total_amount
         subscription_start_date: '',
         subscription_end_date: '',
@@ -370,6 +371,7 @@ export default function PartnerProfile() {
                         first_reg_payment: subscriptionData.first_reg_payment || '',
                         first_reg_payment_2: subscriptionData.first_reg_payment_2 || '',
                         recurring_amount: subscriptionData.monthly_platform_fee || subscriptionData.recurring_amount || '',
+                        monthly_platform_fee: subscriptionData.monthly_platform_fee || '',
                         total_paid_amount: subscriptionData.total_paid_amount || '',
                         subscription_start_date: subscriptionData.subscription_start_date || '',
                         subscription_end_date: subscriptionData.subscription_end_date || '',
@@ -510,15 +512,12 @@ export default function PartnerProfile() {
                 fees.enrollment_amount = selectedPlan.payment_amount.toString();
                 fees.first_reg_amount = selectedPlan.payment_amount.toString();
                 fees.first_reg_payment = selectedPlan.payment_amount.toString();
+                fees.monthly_platform_fee = (selectedPlan.platform_fee || 0).toString();
                 fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
-
-                // Special case for Payment Plan
-                if (currentEnrollmentType.includes('Payment Plan')) {
-                    fees.recurring_amount = selectedPlan.payment_amount.toString();
-                }
             } else {
                 // Fallback for types not in plans (like Referral)
                 fees.enrollment_amount = '0';
+                fees.monthly_platform_fee = '0';
                 fees.recurring_amount = '0';
                 fees.first_reg_amount = '0';
                 fees.first_reg_payment = '0';
@@ -530,6 +529,17 @@ export default function PartnerProfile() {
                 ...fees
             }));
             setErrors(prev => ({ ...prev, [name]: null }));
+        } else if (name === 'enrollment_amount') {
+            setFormData(prev => ({
+                ...prev,
+                enrollment_amount: value,
+                first_reg_amount: value,
+                first_reg_payment: value
+            }));
+            setErrors(prev => ({ ...prev, enrollment_amount: null }));
+        } else if (name === 'monthly_platform_fee' || name === 'recurring_amount') {
+            setFormData(prev => ({ ...prev, monthly_platform_fee: value, recurring_amount: value }));
+            setErrors(prev => ({ ...prev, monthly_platform_fee: null, platform_fee: null }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
             setErrors(prev => ({ ...prev, [name]: null }));
@@ -569,7 +579,7 @@ export default function PartnerProfile() {
                 first_reg_amount: formData.first_reg_amount,
                 first_reg_payment: formData.first_reg_payment,
                 first_reg_payment_2: formData.first_reg_payment_2,
-                monthly_platform_fee: formData.recurring_amount,
+                monthly_platform_fee: formData.monthly_platform_fee || formData.recurring_amount,
                 total_paid_amount: formData.total_paid_amount,
                 subscription_start_date: formData.subscription_start_date,
                 subscription_end_date: formData.subscription_end_date,
@@ -664,8 +674,13 @@ export default function PartnerProfile() {
                                 formDataToSend.append('country_code', value);
                             }
                         } else if (key === 'enrollment_amount') {
-                            // Explicitly ensure enrollment_amount is included and not null
+                            // Accurate code: specifically ensure enrollment payment fields are sent
                             formDataToSend.append('enrollment_amount', value || '');
+                        } else if (key === 'monthly_platform_fee' || key === 'recurring_amount') {
+                            // Accurate code: send platform fee to backend
+                            if (!formDataToSend.has('monthly_platform_fee')) {
+                                formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
+                            }
                         } else if (value !== '' && value !== null) {
                             formDataToSend.append(key, value);
                         }
