@@ -157,6 +157,7 @@ export default function Users() {
       email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       entity_type: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
       role_name: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+      end_date: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
       status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
     }
     setFilters(initial)
@@ -300,6 +301,10 @@ export default function Users() {
       {rowData.name}
     </span>
   )
+
+  const dateBodyTemplate = (rowData, field) => {
+    return rowData[field] || '-';
+  };
 
   const statusBodyTemplate = (rowData) => {
     const active = rowData?.status === 'active';
@@ -570,10 +575,10 @@ export default function Users() {
                               <Dropdown
                                 value={roleFilter || ''}
                                 onChange={(e) => onRoleChange({ target: { value: e.value } })}
-                                options={[{ id: '', name: 'All Role' }, ...roles]}
+                                options={[{ id: '', name: 'All Roles' }, ...roles]}
                                 optionLabel="name"
                                 optionValue="id"
-                                placeholder="All Role"
+                                placeholder="All Roles"
                                 className="w-100 employee-filter-dropdown"
                               />
                             </div>
@@ -602,6 +607,7 @@ export default function Users() {
                             { style: { minWidth: '' } }, // Email
                             { style: { minWidth: '' } }, // Entity Type
                             { style: { minWidth: '' } }, // Role
+                            { style: { minWidth: '' } }, // End Date
                             { style: { minWidth: '' } }, // Status
                             { style: { width: '12rem' } } // Action
                           ]}
@@ -630,8 +636,9 @@ export default function Users() {
                               'name',
                               'phone_number',
                               'email',
-                              'role',
+                              'role_name',
                               'status',
+                              'end_date',
                             ]}
                             selection={selection}
                             onSelectionChange={(e) => setSelection(e.value)}
@@ -647,6 +654,7 @@ export default function Users() {
                             <Column field="phone_number" header="Phone" sortable filter showFilterMatchModes filterPlaceholder="(xxx) xxx-xxxx"></Column>
                             <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search email"></Column>
                             <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
+                            <Column field="end_date" header="Subscription End Date" sortable filter showFilterMatchModes filterPlaceholder="Search End Date" body={(rowData) => dateBodyTemplate(rowData, 'end_date')}></Column>
                             <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
                             {(hasPermission('update users') || hasPermission('delete users')) && (
                               <Column
