@@ -82,10 +82,12 @@ export default function Leads() {
         const initial = {
             global: { value: null, matchMode: FilterMatchMode.CONTAINS },
             opportunity: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            contact_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            contact_person: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
-            lead_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+            lead_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            salesperson_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -275,7 +277,7 @@ export default function Leads() {
 
     const openConvertModal = (rowData) => {
         setTargetLead(rowData);
-        const hasName = rowData.contact_person || rowData.contact_name;
+        const hasName = rowData.contact_person || rowData.contact_person;
         const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
         if (isMissingInfo) {
             setShowMissingInfoModal(true);
@@ -524,12 +526,12 @@ export default function Leads() {
                                         >
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
-                                            <Column field="contact_name" header="Contact" body={(rowData) => nullSafeBodyTemplate(rowData, 'contact_name')} sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
-                                            <Column field="email" header="Email" body={(rowData) => nullSafeBodyTemplate(rowData, 'email')} sortable filter filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
-                                            <Column field="phone_number" header="Phone" body={(rowData) => nullSafeBodyTemplate(rowData, 'phone_number')} sortable filter filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
-                                            <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
-                                            {isHost && <Column field="lead_type" header="Type" body={(rowData) => nullSafeBodyTemplate(rowData, 'lead_type')} sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
-                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
+                                            <Column field="contact_person" header="Contact" body={(rowData) => nullSafeBodyTemplate(rowData, 'contact_person')} sortable filter showFilterMatchModes filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
+                                            <Column field="email" header="Email" body={(rowData) => nullSafeBodyTemplate(rowData, 'email')} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
+                                            <Column field="phone_number" header="Phone" body={(rowData) => nullSafeBodyTemplate(rowData, 'phone_number')} sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
+                                            <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
+                                            {isHost && <Column field="lead_type" header="Type" body={(rowData) => nullSafeBodyTemplate(rowData, 'lead_type')} sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
+                                            <Column field="status" header="Status" body={statusBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
                                             <Column
                                                 header="Action"
                                                 body={(rowData) => {
