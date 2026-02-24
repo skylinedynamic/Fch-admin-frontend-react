@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
@@ -31,14 +32,16 @@ export default function PartnerInformationSection({
             plan.enrollment_type === formData.enrollment_type
     );
 
-    const hasCustomEnrollment = formData.enrollment_amount !== undefined && formData.enrollment_amount !== '';
-    const hasCustomPlatformFee = (formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== '') || (formData.recurring_amount !== undefined && formData.recurring_amount !== '');
+    const hasCustomEnrollment = (formData.enrollment_amount !== undefined && formData.enrollment_amount !== '') || (formData.payable_amount !== undefined && formData.payable_amount !== '');
+    const hasCustomPlatformFee = (formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== '') || (formData.recurring_amount !== undefined && formData.recurring_amount !== '') || (formData.platform_fee !== undefined && formData.platform_fee !== '');
 
-    const currentPaymentAmount = hasCustomEnrollment ? formData.enrollment_amount : (selectedPlan?.payment_amount || formData.first_reg_amount || 0);
-    const currentPlatformFee = hasCustomPlatformFee ? (formData.monthly_platform_fee || formData.recurring_amount) : (selectedPlan?.platform_fee || 0);
-    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR;
+    const currentPaymentAmount = formData.enrollment_amount || formData.payable_amount || (selectedPlan?.payment_amount || formData.first_reg_amount || 0);
+    const currentPlatformFee = formData.monthly_platform_fee || formData.recurring_amount || formData.platform_fee || (selectedPlan?.platform_fee || 0);
+    const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR || formData.enrollment_type?.includes('One Time');
     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
+
+    const totalInvestment = formData.total_subscription_amount || (Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11));
 
     // Auto-scroll to first error field
     useEffect(() => {
@@ -473,33 +476,41 @@ export default function PartnerInformationSection({
             </div>
 
             {/* Custom Enrollment Amount & Platform Fee */}
-            {!partnerId && formData.enrollment_type && (
+            {formData.enrollment_type && (
                 <>
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label className="form-label">Enrollment Payment ($)</label>
-                            <input
+                            <label className="form-label">
+                                Enrollment Payment ($) <span className="text-danger">*</span>
+                            </label>
+                            <InputText
                                 type="number"
-                                className={`form-control ${errors.enrollment_amount ? 'is-invalid' : ''}`}
+                                className={`form-control ${errors.enrollment_amount || errors.payable_amount || errors.amount ? 'is-invalid' : ''}`}
                                 name="enrollment_amount"
                                 placeholder="Enter amount"
-                                value={formData.enrollment_amount || ''}
+                                value={formData.enrollment_amount !== undefined && formData.enrollment_amount !== null && formData.enrollment_amount !== '' ? formData.enrollment_amount : (formData.payable_amount !== undefined && formData.payable_amount !== null && formData.payable_amount !== '' ? formData.payable_amount : (formData.enrollment_amount === 0 || formData.payable_amount === 0 ? 0 : ''))}
                                 onChange={handleInputChange}
+                                disabled={!!partnerId}
                             />
-                            {errors.enrollment_amount && <div className="invalid-feedback">{errors.enrollment_amount}</div>}
+                            {(errors.enrollment_amount || errors.payable_amount || errors.amount) && (
+                                <div className="invalid-feedback">{errors.enrollment_amount || errors.payable_amount || errors.amount}</div>
+                            )}
                         </div>
                     </div>
 
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label className="form-label">Platform Fee Payment ($)</label>
-                            <input
+                            <label className="form-label">
+                                Platform Fee Payment ($) <span className="text-danger">*</span>
+                            </label>
+                            <InputText
                                 type="number"
                                 className={`form-control ${errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount ? 'is-invalid' : ''}`}
                                 name="monthly_platform_fee"
                                 placeholder="Enter amount"
-                                value={formData.monthly_platform_fee || formData.recurring_amount || ''}
+                                value={formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== null && formData.monthly_platform_fee !== '' ? formData.monthly_platform_fee : (formData.recurring_amount !== undefined && formData.recurring_amount !== null && formData.recurring_amount !== '' ? formData.recurring_amount : (formData.platform_fee !== undefined && formData.platform_fee !== null && formData.platform_fee !== '' ? formData.platform_fee : (formData.monthly_platform_fee === 0 || formData.recurring_amount === 0 || formData.platform_fee === 0 ? 0 : '')))}
                                 onChange={handleInputChange}
+                                disabled={!!partnerId}
                             />
                             {(errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount) && (
                                 <div className="invalid-feedback">{errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount}</div>
@@ -517,24 +528,6 @@ export default function PartnerInformationSection({
                         <div className="enrollment-base-alert">
                             <div className="card-body">
                                 {(() => {
-                                    // Try strict match first
-                                    let selectedPlan = partnerPlans.find(
-                                        plan => plan.partner_type === formData.partner_type &&
-                                            plan.enrollment_type === formData.enrollment_type
-                                    );
-
-                                    // If no strict match and we have data in formData, use a fallback
-                                    const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
-                                    const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
-                                    
-                                    // Accurate code: Prioritize formData overrides (including 0) over plan defaults
-                                    const hasCustomEnrollment = formData.enrollment_amount !== undefined && formData.enrollment_amount !== '';
-                                    const hasCustomPlatformFee = formData.recurring_amount !== undefined && formData.recurring_amount !== '';
-                                    
-                                    const paymentAmount = hasCustomEnrollment ? formData.enrollment_amount : (selectedPlan?.payment_amount || formData.first_reg_amount || 0);
-                                    const platformFee = hasCustomPlatformFee ? formData.recurring_amount : (selectedPlan?.platform_fee || 0);
-                                    const isOneTime = enrollmentTypeName?.includes('One Time');
-
                                     if (!enrollmentTypeName) return null;
 
                                     return (
@@ -559,13 +552,13 @@ export default function PartnerInformationSection({
                                                             <i className="ri-hand-coin-line"></i> One-Time Cost:
                                                         </span>
                                                         <span className="amount-value amount-success">
-                                                            ${Number(currentPaymentAmount).toLocaleString()}
+                                                            ${Number(currentPaymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                     <div className="custom-notice">
                                                         <i className="ri-information-line"></i>
                                                         <p className="custom-notice-text">
-                                                            Platform fee of <strong>${Number(currentPlatformFee).toLocaleString()}/month</strong> starts on the 12th month
+                                                            Platform fee of <strong>${Number(currentPlatformFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month</strong> starts on the 12th month
                                                         </p>
                                                     </div>
                                                 </>
@@ -576,7 +569,7 @@ export default function PartnerInformationSection({
                                                             <i className="ri-money-dollar-circle-line"></i> Monthly Payment:
                                                         </span>
                                                         <span className="amount-value text-success">
-                                                            ${Number(currentPaymentAmount).toLocaleString()}
+                                                            ${Number(currentPaymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -587,16 +580,16 @@ export default function PartnerInformationSection({
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="info-label">
-                                                            <i className="ri-calculator-line"></i> Total Investment:
+                                                            <i className="ri-calculator-line"></i> Total Amount:
                                                         </span>
                                                         <span className="info-value text-success">
-                                                            ${(Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            ${Number(totalInvestment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                     <div className="custom-notice">
                                                         <i className="ri-information-line text-success"></i>
                                                         <p className="custom-notice-text">
-                                                            Platform fee of <strong>${Number(currentPlatformFee).toLocaleString()}/month</strong> starts on the 12th month
+                                                            Platform fee of <strong>${Number(currentPlatformFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month</strong> starts on the 12th month
                                                         </p>
                                                     </div>
                                                 </>

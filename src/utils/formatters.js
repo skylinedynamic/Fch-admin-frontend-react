@@ -55,29 +55,27 @@ export const parseDate = (dateStr) => {
 export const normalizeDate = (dateStr) => {
     if (!dateStr) return undefined;
     if (dateStr instanceof Date) {
-        return `${dateStr.getFullYear()}-${String(dateStr.getMonth() + 1).padStart(2, '0')}-${String(dateStr.getDate()).padStart(2, '0')}`;
+        return `${String(dateStr.getMonth() + 1).padStart(2, '0')}-${String(dateStr.getDate()).padStart(2, '0')}-${dateStr.getFullYear()}`;
     }
 
-    // If it's already YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-
-    // Handle MM-DD-YYYY or MM/DD/YYYY
+    // Handle MM-DD-YYYY or MM/DD/YYYY directly
     const cleanDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0];
     const parts = cleanDateStr.includes('-') ? cleanDateStr.split('-') : cleanDateStr.split('/');
     
     if (parts.length === 3) {
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+            // Already MM-DD-YYYY -> return as is (normalized to -)
+            return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
+        }
         if (parts[0].length === 4) {
-            // Already YYYY-MM-DD
-            return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-        } else if (parts[2].length === 4) {
-            // MM-DD-YYYY -> YYYY-MM-DD
-            return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+            // YYYY-MM-DD -> MM-DD-YYYY
+            return `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}-${parts[0]}`;
         }
     }
 
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
     }
 
     return dateStr;

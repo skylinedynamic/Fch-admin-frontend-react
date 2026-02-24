@@ -5,7 +5,7 @@ import { fetchPartnerPlans } from '../../../modules/partner/services';
 import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
 
-export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost }) {
+export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost, backendErrors = {} }) {
     const [planId, setPlanId] = useState(null);
     const [enrollmentType, setEnrollmentType] = useState('');
     const [partnerType, setPartnerType] = useState('');
@@ -17,6 +17,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     // Custom overrides for isHost
     const [customEnrollmentAmount, setCustomEnrollmentAmount] = useState('');
     const [customPlatformFee, setCustomPlatformFee] = useState('');
+
+    // Validation errors
+    const [validationErrors, setValidationErrors] = useState({});
 
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -104,6 +107,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             setEnrollmentType('');
             setPartnerType('');
             setPartnerEnrollmentType('');
+            setValidationErrors({});
         }
     }, [show, isHost, targetType]);
 
@@ -117,6 +121,46 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     }, [borrowerPlans]);
 
     const handleConfirm = () => {
+        // --- Frontend Validation (accurate code) ---
+        const newErrors = {};
+
+        if (targetType === 'Borrower') {
+            if (!planId) {
+                newErrors.plan_id = 'Enrollment type is required.';
+            }
+            if (isHost && planId) {
+                if (customEnrollmentAmount === '' || customEnrollmentAmount === null || customEnrollmentAmount === undefined) {
+                    newErrors.customEnrollmentAmount = 'Enrollment payment is required.';
+                } else if (Number(customEnrollmentAmount) < 0) {
+                    newErrors.customEnrollmentAmount = 'Enrollment payment must be greater than or equal to 0.';
+                }
+            }
+        } else if (targetType === 'Partner') {
+            if (!partnerEnrollmentType) {
+                newErrors.partnerEnrollmentType = 'Enrollment type is required.';
+            }
+            if (isHost && partnerEnrollmentType) {
+                if (customEnrollmentAmount === '' || customEnrollmentAmount === null || customEnrollmentAmount === undefined) {
+                    newErrors.customEnrollmentAmount = 'Enrollment payment is required.';
+                } else if (Number(customEnrollmentAmount) < 0) {
+                    newErrors.customEnrollmentAmount = 'Enrollment payment must be greater than or equal to 0.';
+                }
+                if (customPlatformFee === '' || customPlatformFee === null || customPlatformFee === undefined) {
+                    newErrors.customPlatformFee = 'Platform fee payment is required.';
+                } else if (Number(customPlatformFee) < 0) {
+                    newErrors.customPlatformFee = 'Platform fee must be greater than or equal to 0.';
+                }
+            }
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setValidationErrors(newErrors);
+            return; // Stop submission
+        }
+
+        setValidationErrors({}); // Clear errors on success
+
+        // --- Build Payload ---
         const payload = {};
         if (targetType === 'Borrower') {
             payload.plan_id = planId;
@@ -134,7 +178,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             payload.partner_type = partnerType;
             payload.enrollment_type = partnerEnrollmentType;
 
-            // Derive amount from partner type and enrollment type from dynamic plans
             const selectedPlan = partnerPlans.find(plan =>
                 (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
                 plan.enrollment_type === partnerEnrollmentType
@@ -210,10 +253,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    placeholder="Select Enrollment Type"
-                                                    className="w-100"
-                                                    appendTo="self"
-                                                />
+                                                     placeholder="Select Enrollment Type"
+                                                     className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
+                                                     appendTo="self"
+                                                 />
+                                                 {(validationErrors.plan_id || backendErrors?.plan_id) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id}</div>}
                                             </div>
                                         ) : (
                                             /* Hidden plan selector logic for non-host - happens in useEffect */
@@ -222,25 +266,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
                                         {isHost && planId && (
                                             <div className="row g-3 mb-3 animate__animated animate__fadeIn">
-                                                <div className="col-lg-6">
-                                                    <label className="form-label fw-semibold">Enrollment Payment ($)</label>
+                                                <div className="col-lg-12">
+                                                    <label className="form-label fw-semibold">Enrollment Payment ($) <span className="text-danger">*</span></label>
                                                     <input
                                                         type="number"
-                                                        className="form-control"
+                                                        className={`form-control ${(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) ? 'is-invalid' : ''}`}
                                                         value={customEnrollmentAmount}
-                                                        onChange={(e) => setCustomEnrollmentAmount(e.target.value)}
+                                                        onChange={(e) => {
+                                                            setCustomEnrollmentAmount(e.target.value);
+                                                            setValidationErrors(prev => ({ ...prev, customEnrollmentAmount: '' }));
+                                                        }}
                                                         placeholder="Enter amount"
                                                     />
-                                                </div>
-                                                <div className="col-lg-6">
-                                                    <label className="form-label fw-semibold">Platform Fee Payment ($)</label>
-                                                    <input
-                                                        type="number"
-                                                        className="form-control"
-                                                        value={customPlatformFee}
-                                                        onChange={(e) => setCustomPlatformFee(e.target.value)}
-                                                        placeholder="Enter amount"
-                                                    />
+                                                    {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
+                                                        <div className="invalid-feedback">{validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -326,34 +366,47 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="Select Enrollment Type"
-                                                className="w-100"
+                                                className={`w-100 ${(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
                                                 appendTo="self"
                                                 // Disabled only if we have partner types but haven't selected one yet
                                                 disabled={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType}
                                             />
+                                            {(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type) && <div className="invalid-feedback d-block">{validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type}</div>}
                                         </div>
 
                                         {isHost && partnerEnrollmentType && (
                                             <div className="row g-3 mb-3 animate__animated animate__fadeInUp">
                                                 <div className="col-lg-6">
-                                                    <label className="form-label fw-semibold">Enrollment Payment ($)</label>
+                                                    <label className="form-label fw-semibold">Enrollment Payment ($) <span className="text-danger">*</span></label>
                                                     <input
                                                         type="number"
-                                                        className="form-control"
+                                                        className={`form-control ${(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) ? 'is-invalid' : ''}`}
                                                         value={customEnrollmentAmount}
-                                                        onChange={(e) => setCustomEnrollmentAmount(e.target.value)}
+                                                        onChange={(e) => {
+                                                            setCustomEnrollmentAmount(e.target.value);
+                                                            setValidationErrors(prev => ({ ...prev, customEnrollmentAmount: '' }));
+                                                        }}
                                                         placeholder="Enter amount"
                                                     />
+                                                    {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
+                                                        <div className="invalid-feedback">{validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}</div>
+                                                    )}
                                                 </div>
                                                 <div className="col-lg-6">
-                                                    <label className="form-label fw-semibold">Platform Fee Payment ($)</label>
+                                                    <label className="form-label fw-semibold">Platform Fee Payment ($) <span className="text-danger">*</span></label>
                                                     <input
                                                         type="number"
-                                                        className="form-control"
+                                                        className={`form-control ${(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) ? 'is-invalid' : ''}`}
                                                         value={customPlatformFee}
-                                                        onChange={(e) => setCustomPlatformFee(e.target.value)}
+                                                        onChange={(e) => {
+                                                            setCustomPlatformFee(e.target.value);
+                                                            setValidationErrors(prev => ({ ...prev, customPlatformFee: '' }));
+                                                        }}
                                                         placeholder="Enter amount"
                                                     />
+                                                    {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
+                                                        <div className="invalid-feedback">{validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

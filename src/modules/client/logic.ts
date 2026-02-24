@@ -3,25 +3,26 @@ import type { Client, BorrowerPlan } from './types';
 const normalizeDate = (dateStr: any): string | undefined => {
     if (!dateStr) return undefined;
     if (dateStr instanceof Date) {
-        return `${dateStr.getFullYear()}-${String(dateStr.getMonth() + 1).padStart(2, '0')}-${String(dateStr.getDate()).padStart(2, '0')}`;
+        return `${String(dateStr.getMonth() + 1).padStart(2, '0')}-${String(dateStr.getDate()).padStart(2, '0')}-${dateStr.getFullYear()}`;
     }
 
-    // If it's already YYYY-MM-DD, return it
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-
-    // If it's MM-DD-YYYY or MM/DD/YYYY
+    // Handle MM-DD-YYYY or MM/DD/YYYY directly
     const parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
     if (parts.length === 3) {
-        if (parts[2].length === 4) {
-            // MM-DD-YYYY -> YYYY-MM-DD
-            return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+            // Already MM-DD-YYYY -> return as is (normalized to -)
+            return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
+        }
+        if (parts[0].length === 4) {
+            // YYYY-MM-DD -> MM-DD-YYYY
+            return `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}-${parts[0]}`;
         }
     }
 
     // Fallback attempt to parse with Date object
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
     }
 
     return dateStr;
@@ -49,7 +50,23 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     let enrollment_type = payload.enrollment_type;
 
     if (isHost) {
-        amount = payload.enrollment_amount ? parseFloat(payload.enrollment_amount as string) : (payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0);
+        // Accurate code: Prioritize enrollment_payment. Use nullish coalescing to allow 0.
+        const rawAmount = payload.enrollment_payment ?? 
+                         (payload as any).enrollment_amount ?? 
+                         payload.payment_amount ?? 
+                         payload.amount;
+        
+        // Handle empty string as 0, otherwise parse
+        amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined) 
+                 ? 0 
+                 : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+        
+        if (isNaN(amount)) amount = 0;
+
+        // Ensure enrollment_type is not empty if possible
+        if (!enrollment_type && payload.plan_id) {
+            enrollment_type = 'Default Enrollment'; // Fallback if sync missed it
+        }
     } else {
         // Fallback to 800 if nonHostPlan is missing (as per original code)
         amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
@@ -58,15 +75,14 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 
     // Add specific payload fields required by backend
     payload.amount = amount;
-    payload.enrollment_amount = amount;
+    payload.enrollment_payment = amount;
     payload.enrollment_type = enrollment_type;
     payload.payment_amount = amount;
     payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost;
 
-    if (isHost) {
-        payload.monthly_platform_fee = payload.monthly_platform_fee || 0;
-    }
+    // Remove enrollment_amount to avoid confusion
+    delete (payload as any).enrollment_amount;
 
     return payload;
 };
@@ -86,21 +102,29 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         payload.business_start_date = normalizeDate(payload.business_start_date);
     }
 
-    // Keep enrollment fields for now to address "wrong data update" issue
-    // delete payload.enrollment_type;
-    // delete payload.payment_amount;
-    // delete payload.amount;
-    // delete payload.enrollment_amount;
-    // delete payload.plan_id;
-
     if (!isHost) {
         payload.is_partner_paying = true;
     } else {
-        if (payload.enrollment_amount) {
-            payload.amount = payload.enrollment_amount;
-            payload.payment_amount = payload.enrollment_amount;
+        const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
+        
+        if (rawAmount !== undefined && rawAmount !== null) {
+            // Handle empty string as 0
+            const amount = (rawAmount === '' || rawAmount === null) 
+                           ? 0 
+                           : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+            
+            payload.amount = isNaN(amount) ? 0 : amount;
+            payload.payment_amount = payload.amount;
+            payload.enrollment_payment = payload.amount;
+        } else if (payload.plan_id) {
+            payload.amount = 0;
+            payload.payment_amount = 0;
+            payload.enrollment_payment = 0;
         }
     }
+
+    // Remove enrollment_amount from update payload as well
+    delete (payload as any).enrollment_amount;
 
     return payload;
 };

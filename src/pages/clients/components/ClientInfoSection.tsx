@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
 import Flatpickr from 'react-flatpickr';
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate } from '../../../utils/formatters';
@@ -70,29 +71,32 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const enrollmentOptions = React.useMemo(() => {
         const plans = isHost ? borrowerPlans : nonHostPlans;
         const options = plans.map((plan: BorrowerPlan) => ({
+            ...plan,
             label: `${plan.enrollment_type} - $${plan.payment_amount}`,
             value: plan.id, // Use ID as value
-            price: Number(plan.payment_amount),
-            ...plan
+            price: Number(plan.payment_amount)
         }));
 
         // Ensure current selection is visible even if not in the plans list
-        if (formData.plan_id && !options.find((opt: any) => String(opt.value) === String(formData.plan_id))) {
+        if (formData.plan_id && formData.plan_id !== 'current_selection' && !options.find((opt: any) => String(opt.value) === String(formData.plan_id))) {
             const currentPrice = Number(formData.payment_amount || formData.amount || 0);
             options.unshift({
-                label: formData.enrollment_type ? `${formData.enrollment_type} (Current)` : 'Current Plan',
+                label: formData.enrollment_type || 'Current Plan',
                 value: formData.plan_id,
                 enrollment_type: formData.enrollment_type,
                 payment_amount: currentPrice,
                 price: currentPrice
             });
-        } else if (formData.enrollment_type && !formData.plan_id) {
-            // If we have type but no ID, try to find matching option to get the ID
-            const match = options.find((opt: any) => opt.enrollment_type === formData.enrollment_type);
+        } else if (formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
+            // If we have type but no ID or generic ID, try to find matching option to get the ID
+            const match = options.find((opt: any) => 
+                opt.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
+            );
+            
             if (!match) {
                 const currentPrice = Number(formData.payment_amount || formData.amount || 0);
                 options.unshift({
-                    label: `${formData.enrollment_type} (Current)`,
+                    label: formData.enrollment_type,
                     value: 'current_selection',
                     enrollment_type: formData.enrollment_type,
                     payment_amount: currentPrice,
@@ -139,6 +143,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 city: apiData.city
             });
 
+            // Ensure enrollment_payment is synced from payment_amount for edit mode consistency
+            if (apiData.payment_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
+                apiData.enrollment_payment = apiData.payment_amount;
+            }
+
             setFormData(prev => ({ ...prev, ...apiData }));
 
             hasSyncedData.current = true;
@@ -148,7 +157,22 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             setIsSynced(true);
             hasSyncedData.current = true;
         }
-    }, [fetchedData, borrowerPlans, nonHostPlans, isHost, clientId]);
+    }, [fetchedData, clientId]);
+
+    // Separate effect to handle plan list matching once plans load
+    useEffect(() => {
+        if (isSynced && formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
+            const plans = isHost ? borrowerPlans : nonHostPlans;
+            if (plans.length > 0) {
+                const matchedPlan = plans.find((p: any) => 
+                    p.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
+                );
+                if (matchedPlan) {
+                    setFormData(prev => ({ ...prev, plan_id: matchedPlan.id }));
+                }
+            }
+        }
+    }, [borrowerPlans, nonHostPlans, isHost, isSynced]);
 
     // Fetch Users for Assign to dropdown
     useEffect(() => {
@@ -216,17 +240,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         const name = e.target ? e.target.name : e.name;
         const value = e.target ? e.target.value : e.value;
 
-        if (name === 'enrollment_amount') {
+        if (name === 'enrollment_payment') {
             setFormData(prev => ({
                 ...prev,
-                enrollment_amount: value,
+                enrollment_payment: value,
                 payment_amount: value,
                 amount: value
-            }));
-        } else if (name === 'monthly_platform_fee') {
-            setFormData(prev => ({
-                ...prev,
-                monthly_platform_fee: value
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -322,6 +341,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             </div>
         );
     }
+
+    const selectedOption = enrollmentOptions.find((opt: any) =>
+        String(opt.value) === String(formData.plan_id)
+    ) || enrollmentOptions.find((opt: any) =>
+        opt.enrollment_type === formData.enrollment_type
+    );
 
     // Reuse rendering logic
     return (
@@ -663,7 +688,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             onChange={(dates) => {
                                 const date = dates[0];
                                 const dateString = date
-                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    ? `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${date.getFullYear()}`
                                     : "";
                                 handleInputChange({ target: { name: "business_start_date", value: dateString } });
                             }}
@@ -721,21 +746,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             options={enrollmentOptions}
                             onChange={(e) => {
                                 const selectedVal = e.value;
-                                const selectedOption = enrollmentOptions.find((opt: any) => opt.value === selectedVal);
+                                const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
+
+                                const updates: any = {
+                                    plan_id: selectedVal,
+                                    enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
+                                    enrollment_payment: selectedOption ? selectedOption.payment_amount : '',
+                                    payment_amount: selectedOption ? selectedOption.payment_amount : '',
+                                    amount: selectedOption ? selectedOption.payment_amount : ''
+                                };
 
                                 setFormData(prev => ({
                                     ...prev,
-                                    plan_id: selectedVal,
-                                    enrollment_type: selectedOption ? selectedOption.enrollment_type : '',
-                                    enrollment_amount: selectedOption ? selectedOption.payment_amount : '',
-                                    payment_amount: selectedOption ? selectedOption.payment_amount : '',
-                                    amount: selectedOption ? selectedOption.payment_amount : '',
-                                    monthly_platform_fee: selectedOption ? (selectedOption.platform_fee || 0) : ''
+                                    ...updates
                                 }));
 
-                                // Propagate changes
+                                // Propagate changes to parent
                                 if (handleLocationChange) {
-                                    handleLocationChange('plan_id', selectedVal);
+                                    Object.entries(updates).forEach(([name, value]) => {
+                                        handleLocationChange(name, value);
+                                    });
                                 }
 
                                 // Clear error if present
@@ -757,35 +787,25 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
 
                 {/* Custom Override Inputs for isHost */}
-                {isHost && (formData.plan_id || formData.enrollment_type) && !clientId && (
+                {isHost && (formData.plan_id || formData.enrollment_type) && (
                     <>
                         <div className="col-lg-6">
                             <div className="mb-3">
-                                <label className="form-label">Enrollment Payment ($)</label>
-                                <input
+                                <label className="form-label">
+                                    Enrollment Payment ($) <span className="text-danger">*</span>
+                                </label>
+                                <InputText
                                     type="number"
-                                    className={`form-control ${errors.enrollment_amount ? 'is-invalid' : ''}`}
-                                    name="enrollment_amount"
+                                    className={`form-control ${errors.enrollment_payment || errors.payment_amount || errors.amount ? 'is-invalid' : ''}`}
+                                    name="enrollment_payment"
                                     placeholder="Enter amount"
-                                    value={formData.enrollment_amount || ''}
+                                    value={formData.enrollment_payment !== undefined && formData.enrollment_payment !== null && formData.enrollment_payment !== '' ? formData.enrollment_payment : (formData.enrollment_payment === 0 || formData.enrollment_payment === '0' ? 0 : '')}
                                     onChange={handleInputChange}
+                                    disabled={!!clientId}
                                 />
-                                {errors.enrollment_amount && <div className="invalid-feedback">{errors.enrollment_amount}</div>}
-                            </div>
-                        </div>
-
-                        <div className="col-lg-6">
-                            <div className="mb-3">
-                                <label className="form-label">Platform Fee Payment ($)</label>
-                                <input
-                                    type="number"
-                                    className={`form-control ${errors.monthly_platform_fee ? 'is-invalid' : ''}`}
-                                    name="monthly_platform_fee"
-                                    placeholder="Enter amount"
-                                    value={formData.monthly_platform_fee || ''}
-                                    onChange={handleInputChange}
-                                />
-                                {errors.monthly_platform_fee && <div className="invalid-feedback">{errors.monthly_platform_fee}</div>}
+                                {(errors.enrollment_payment || errors.payment_amount || errors.amount) && (
+                                    <div className="invalid-feedback">{errors.enrollment_payment || errors.payment_amount || errors.amount}</div>
+                                )}
                             </div>
                         </div>
                     </>
@@ -799,12 +819,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="enrollment-base-alert">
                                 <div className="card-body">
                                     {(() => {
-                                        const selectedOption = enrollmentOptions.find((opt: any) =>
-                                            String(opt.value) === String(formData.plan_id)
-                                        ) || enrollmentOptions.find((opt: any) =>
-                                            opt.enrollment_type === formData.enrollment_type
-                                        );
-
                                         if (!selectedOption && !formData.enrollment_type) return null;
 
                                         const { installments, totalAmount, price } = selectedOption
@@ -819,11 +833,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 price: formData.payment_amount || formData.amount || 0
                                             };
 
-                                        const hasCustomEnrollment = formData.enrollment_amount !== undefined && formData.enrollment_amount !== '';
-                                        const hasCustomPlatformFee = formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== '';
+                                        const hasCustomEnrollment = formData.enrollment_payment !== undefined && formData.enrollment_payment !== '';
 
-                                        const currentPaymentAmount = hasCustomEnrollment ? formData.enrollment_amount : price;
-                                        const currentPlatformFee = hasCustomPlatformFee ? formData.monthly_platform_fee : (selectedOption?.platform_fee || 0);
+                                        const currentPaymentAmount = hasCustomEnrollment ? formData.enrollment_payment : price;
 
                                         // Final total calculation
                                         const displayTotal = (installments > 1)
@@ -854,7 +866,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="info-label">
                                                         <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i>
-                                                        {installments > 1 ? ' Monthly Payment:' : ' One-Time Cost:'}
+                                                        {selectedOption?.enrollment_type || formData.enrollment_type}:
                                                     </span>
                                                     <span className="amount-value text-success">
                                                         ${Number(currentPaymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -870,22 +882,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 )}
                                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                                     <span className="info-label">
-                                                        <i className="ri-calculator-line"></i> Total Investment:
+                                                        <i className="ri-calculator-line"></i> Total Amount:
                                                     </span>
                                                     <span className="amount-value text-success">
                                                         ${Number(displayTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 </div>
-
-                                                {/* Platform Fee Notice for isHost */}
-                                                {isHost && (
-                                                    <div className="custom-notice mt-3">
-                                                        <i className="ri-information-line text-success"></i>
-                                                        <p className="custom-notice-text">
-                                                            Platform fee of <strong>${Number(currentPlatformFee).toLocaleString()}/month</strong> starts on the 12th month
-                                                        </p>
-                                                    </div>
-                                                )}
                                             </>
                                         );
                                     })()}

@@ -97,6 +97,7 @@ export default function LeadDetails() {
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
+    const [convertErrors, setConvertErrors] = useState({});
 
     // Location states
     const [countries] = useState(
@@ -321,7 +322,19 @@ export default function LeadDetails() {
             }
         } catch (err) {
             console.error('Conversion error:', err);
-            toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
+            // Extract backend validation errors and show them inline in the modal
+            const backendFieldErrors = err.response?.data?.errors;
+            if (backendFieldErrors && typeof backendFieldErrors === 'object') {
+                // Flatten array values (Laravel returns arrays per field)
+                const flatErrors = {};
+                Object.keys(backendFieldErrors).forEach(key => {
+                    const val = backendFieldErrors[key];
+                    flatErrors[key] = Array.isArray(val) ? val[0] : val;
+                });
+                setConvertErrors(flatErrors);
+            } else {
+                toast.error(err.response?.data?.message || `Failed to convert lead to ${targetType}`);
+            }
         } finally {
             setConversionLoading(false);
         }
@@ -1012,12 +1025,13 @@ export default function LeadDetails() {
             <ActivityCreateModal entityId={id} entityType="Lead" />
             <LeadConvertModal
                 show={showConvertModal}
-                onHide={() => setShowConvertModal(false)}
+                onHide={() => { setShowConvertModal(false); setConvertErrors({}); }}
                 onConfirm={handleConvertConfirm}
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
                 isHost={isHost}
+                backendErrors={convertErrors}
             />
             <LeadMissingInfoModal
                 show={showMissingInfoModal}
