@@ -5,7 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
+import { fetchBorrowerVerificationRequests, bulkUpdateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
 import { toast } from 'react-toastify';
@@ -179,7 +179,7 @@ export default function BorrowerVerificationRequests() {
 
     // Verification/Reject Action Modal State
     const [showActionModal, setShowActionModal] = useState(false);
-    const [actionType, setActionType] = useState('verify'); // 'verify' or 'reject'
+    const [actionType, setActionType] = useState('api_verify'); // 'api_verify', 'manual_verify' or 'reject'
     const [selectedRequest, setSelectedRequest] = useState(null); // Single request (original logic)
     const [isBulkAction, setIsBulkAction] = useState(false); // Flag for bulk
     const [actionLoading, setActionLoading] = useState(false);
@@ -208,44 +208,29 @@ export default function BorrowerVerificationRequests() {
 
         setActionLoading(true);
 
-        // Convert to array of promises
-        const promises = requestsToProcess.map(req => {
-            const payload = {
-                request_id: req.id,
-                status: actionType === 'verify' ? 'verified' : 'rejected',
-                rejection_reason: reason
-            };
-            return updateVerificationStatus(payload);
-        });
-
         try {
-            const results = await Promise.allSettled(promises);
+            const payload = {
+                request_ids: requestsToProcess.map(req => req.id),
+                status: actionType === 'reject' ? 'rejected' : 'verified',
+                note: reason,
+                is_api: actionType === 'api_verify'
+            };
 
-            let successCount = 0;
-            let failCount = 0;
+            const result = await bulkUpdateVerificationStatus(payload);
 
-            results.forEach(result => {
-                if (result.status === 'fulfilled' && result.value.status) {
-                    successCount++;
-                } else {
-                    failCount++;
-                }
-            });
-
-            if (successCount > 0) {
-                toast.success(`${successCount} request(s) ${actionType === 'verify' ? 'verified' : 'rejected'} successfully`);
-            }
-            if (failCount > 0) {
-                toast.error(`Failed to update ${failCount} request(s)`);
+            if (result.status) {
+                toast.success(`${requestsToProcess.length} request(s) ${actionType === 'reject' ? 'rejected' : 'verified'} successfully`);
+            } else {
+                toast.error(result.message || 'Failed to update requests');
             }
 
             setShowActionModal(false);
-            loadRequests(); // Refresh list
-            setSelectedRequests([]); // Clear selection after bulk action
+            loadRequests();
+            setSelectedRequests([]);
 
         } catch (err) {
-            console.error("Bulk action error", err);
-            toast.error("An unexpected error occurred processing requests.");
+            console.error('Action error', err);
+            toast.error('An unexpected error occurred processing requests.');
         } finally {
             setActionLoading(false);
         }
@@ -299,24 +284,48 @@ export default function BorrowerVerificationRequests() {
         );
     };
 
+    const dayCountTemplate = (rowData) => {
+        if (!rowData.request_date) return <span className="text-muted">—</span>;
+        const requestDate = new Date(rowData.request_date);
+        const today = new Date();
+        const diffTime = today - requestDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        let badgeClass = 'bg-success-subtle text-success';
+        if (diffDays > 30) badgeClass = 'bg-danger-subtle text-danger';
+        else if (diffDays > 7) badgeClass = 'bg-warning-subtle text-warning';
+        return (
+            <span className={`badge ${badgeClass} fs-11`}>
+                {diffDays === 0 ? 'Today' : `${diffDays} ${diffDays === 1 ? 'day' : 'days'}`}
+            </span>
+        );
+    };
+
     const actionBodyTemplate = (rowData) => {
         // Show buttons only for processing status, otherwise show status
         if (rowData.status === VERIFICATION_STATUS.PROCESSING) {
             return (
                 <div className="d-flex gap-2 justify-content-center">
                     <button
-                        className="btn btn-sm btn-soft-success"
-                        onClick={() => openActionModal('verify', rowData)}
-                        title="Verify"
+                        className="btn btn-sm btn-soft-primary"
+                        onClick={() => openActionModal('api_verify', rowData)}
+                        title="API Verification"
                     >
-                        <i className="ri-check-line align-bottom"></i>
+                        Api Verification
+                    </button>
+
+                    <button
+                        className="btn btn-sm btn-soft-success"
+                        onClick={() => openActionModal('manual_verify', rowData)}
+                        title="Manual Verification"
+                    >
+                        Manual Verification
                     </button>
                     <button
                         className="btn btn-sm btn-soft-danger"
                         onClick={() => openActionModal('reject', rowData)}
                         title="Reject"
                     >
-                        <i className="ri-close-line align-bottom"></i>
+                        Reject
                     </button>
                 </div>
             );
@@ -377,9 +386,18 @@ export default function BorrowerVerificationRequests() {
                                                 <button
                                                     type="button"
                                                     className="dropdown-item"
-                                                    onClick={() => openActionModal('verify')}
+                                                    onClick={() => openActionModal('api_verify')}
                                                 >
-                                                    <i className="ri-check-double-line me-1 align-bottom"></i> Bulk Verify
+                                                    Api Bulk Verification
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    className="dropdown-item"
+                                                    onClick={() => openActionModal('manual_verify')}
+                                                >
+                                                    Manual Bulk Verification
                                                 </button>
                                             </li>
                                             <li>
@@ -388,7 +406,7 @@ export default function BorrowerVerificationRequests() {
                                                     className="dropdown-item text-danger"
                                                     onClick={() => openActionModal('reject')}
                                                 >
-                                                    <i className="ri-close-circle-line me-1 align-bottom"></i> Bulk Reject
+                                                    Manual Bulk Rejection
                                                 </button>
                                             </li>
                                         </ul>
@@ -553,11 +571,12 @@ export default function BorrowerVerificationRequests() {
                                         rows={8}
                                         columns={[
                                             { style: { width: '3%' } },
-                                            { style: { width: '25%' } },
-                                            { style: { width: '15%' } },
-                                            { style: { width: '17%' } },
-                                            { style: { width: '25%' } },
-                                            { style: { width: '15%' } }
+                                            { style: { width: '28%' } },
+                                            { style: { width: '10%' } },
+                                            { style: { width: '13%' } },
+                                            { style: { width: '12%' } },
+                                            { style: { width: '10%' } },
+                                            { style: { width: '27%' } }
                                         ]}
                                     />
                                 ) : (
@@ -591,7 +610,7 @@ export default function BorrowerVerificationRequests() {
                                             sortable
                                             filter
                                             filterPlaceholder="Search Task"
-                                            style={{ width: '25%' }}
+                                            style={{ width: '28%' }}
                                         />
                                         <Column
                                             field="tier_name"
@@ -601,7 +620,7 @@ export default function BorrowerVerificationRequests() {
                                             filterElement={tierFilterTemplate}
                                             showFilterMatchModes={false}
                                             filterPlaceholder="Search Tier"
-                                            style={{ width: '15%' }}
+                                            style={{ width: '10%' }}
                                             body={(rowData) => <span className="badge bg-info-subtle text-info fs-11">{rowData.tier_name}</span>}
                                         />
                                         <Column
@@ -610,7 +629,7 @@ export default function BorrowerVerificationRequests() {
                                             body={statusTemplate}
                                             sortable
                                             showFilterMatchModes={false}
-                                            style={{ width: '17%' }}
+                                            style={{ width: '13%' }}
                                         />
                                         <Column
                                             field="request_date"
@@ -620,14 +639,22 @@ export default function BorrowerVerificationRequests() {
                                             showFilterMatchModes={false}
                                             filterElement={dateFilterTemplate}
                                             filterPlaceholder="Search Date"
-                                            style={{ width: '25%' }}
+                                            style={{ width: '12%' }}
                                             body={(rowData) => <span className="text-muted">{rowData.request_date}</span>}
                                         />
                                         <Column
+                                            header="Day Count"
+                                            body={dayCountTemplate}
+                                            sortable
+                                            alignHeader={'center'}
+                                            style={{ width: '10%', textAlign: 'center' }}
+                                        />
+                                        <Column
+                                            sortable
                                             header="Action"
                                             body={actionBodyTemplate}
                                             alignHeader={'center'}
-                                            style={{ minWidth: '8rem', textAlign: 'center', width: '15%' }}
+                                            style={{ minWidth: '14rem', textAlign: 'center', width: '27%' }}
                                         />
                                     </DataTable>
                                 )}
@@ -653,6 +680,8 @@ export default function BorrowerVerificationRequests() {
                 actionType={actionType}
                 loading={actionLoading}
                 validationErrors={validationErrors}
+                isBulk={isBulkAction}
+                count={isBulkAction ? selectedRequests.length : 1}
             />
         </div>
     );
