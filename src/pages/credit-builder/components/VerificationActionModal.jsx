@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 
-export default function VerificationActionModal({ show, onHide, onConfirm, actionType, loading, validationErrors }) {
+export default function VerificationActionModal({ show, onHide, onConfirm, actionType, loading, validationErrors, isBulk = false, count = 1 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [reason, setReason] = useState('');
@@ -32,7 +32,6 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
     }, [show]);
 
     const handleConfirm = () => {
-        // Server-side validation only
         onConfirm(reason);
     };
 
@@ -41,10 +40,22 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
     };
 
     const isReject = actionType === 'reject';
-    const title = isReject ? 'Reject Request' : 'Verify Request';
-    const confirmBtnClass = isReject ? 'btn-danger' : 'btn-success';
+    const isApiVerify = actionType === 'api_verify';
+    const isManualVerify = actionType === 'manual_verify';
+
+    const title = isReject ? 'Reject Request' : (isApiVerify ? 'API Verification' : 'Manual Verification');
+    const confirmBtnClass = isReject ? 'btn-danger' : (isApiVerify ? 'btn-primary' : 'btn-success');
     const confirmBtnText = isReject ? 'Reject' : 'Verify';
-    const icon = isReject ? 'ri-close-circle-line text-danger' : 'ri-checkbox-circle-line text-success';
+    const icon = isReject
+        ? 'ri-close-circle-line text-danger'
+        : (isApiVerify ? 'ri-shield-user-line text-primary' : 'ri-checkbox-circle-line text-success');
+
+    const getMessage = () => {
+        const itemLabel = isBulk ? `${count} selected requests` : "this request";
+        if (isReject) return `Are you sure you want to reject ${itemLabel}? This action cannot be undone.`;
+        if (isApiVerify) return `Are you sure you want to perform API verification for ${itemLabel}?`;
+        return `Are you sure you want to manually verify ${itemLabel}?`;
+    };
 
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
@@ -54,33 +65,34 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
                         <i className={`${icon} display-4 mb-3 d-block`}></i>
                         <h4 className="mb-2">{title}</h4>
                         <p className="text-muted mb-4">
-                            {isReject
-                                ? "Are you sure you want to reject this request? This action cannot be undone."
-                                : "Are you sure you want to verify this request?"}
+                            {getMessage()}
                         </p>
 
-                        {isReject && (
-                            <div className="text-start mb-4">
-                                <label className="form-label text-muted fw-medium">Rejection Reason <span className="text-danger">*</span></label>
-                                <textarea
-                                    className={`form-control ${error || (validationErrors?.rejection_reason) ? 'is-invalid' : ''}`}
-                                    rows="3"
-                                    value={reason}
-                                    onChange={(e) => {
-                                        setReason(e.target.value);
-                                        if (error) setError(null);
-                                    }}
-                                    placeholder="Enter reason for rejection..."
-                                ></textarea>
-                                { validationErrors?.rejection_reason && (
-                                    <div className="invalid-feedback d-block text-start">
-                                        {validationErrors.rejection_reason[0]}
-                                    </div>
+                        <div className="text-start mb-4">
+                            <label className="form-label text-muted fw-medium">
+                                {isReject ? (
+                                    <>Rejection Reason <span className="text-danger">*</span></>
+                                ) : (
+                                    <>Verification Note</>
                                 )}
-                                { /* Keep local error for other cases if needed */ }
-                                {error && <div className="invalid-feedback d-block">{error}</div>}
-                            </div>
-                        )}
+                            </label>
+                            <textarea
+                                className={`form-control ${error || validationErrors?.note ? 'is-invalid' : ''}`}
+                                rows="3"
+                                value={reason}
+                                onChange={(e) => {
+                                    setReason(e.target.value);
+                                    if (error) setError(null);
+                                }}
+                                placeholder={isReject ? "Enter reason for rejection..." : "Enter verification note..."}
+                            ></textarea>
+                            {validationErrors?.note && (
+                                <div className="invalid-feedback d-block text-start">
+                                    {validationErrors.note[0]}
+                                </div>
+                            )}
+                            {error && <div className="invalid-feedback d-block">{error}</div>}
+                        </div>
 
                         <div className="hstack gap-2 justify-content-center">
                             <button

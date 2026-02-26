@@ -294,7 +294,7 @@ const TierTaskModal = ({
                                     />
                                 </div>
 
-                                <div className="col-md-6">
+                                {/* <div className="col-md-6">
                                     <div className="mb-3">
                                         <div className="form-check">
                                             <input
@@ -308,7 +308,7 @@ const TierTaskModal = ({
                                             <label className="form-check-label" htmlFor="manualVerificationCheckbox">Manual Verification</label>
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
 
                             <div className="d-flex justify-content-end mt-4 pt-2 border-top">
