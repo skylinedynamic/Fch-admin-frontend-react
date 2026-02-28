@@ -43,7 +43,7 @@ export default function DeleteConfirmationModal({ show, onConfirm, onClose, load
 
   return (
     <div
-      className="modal fade"
+      className="modal fade flip"
       ref={modalRef}
       tabIndex="-1"
       aria-hidden="true"

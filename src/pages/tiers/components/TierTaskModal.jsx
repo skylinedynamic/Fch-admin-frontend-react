@@ -13,7 +13,8 @@ const TierTaskModal = ({
     relatedApis = [],
     vendors = [],
     loadingApis = false,
-    loadingSave
+    loadingSave,
+    serverErrors = {}
 }) => {
     const isEdit = !!task;
     const modalRef = useRef(null);
@@ -107,22 +108,22 @@ const TierTaskModal = ({
         }
     };
 
+    const getError = (name) => {
+        if (errors[name]) return errors[name];
+        if (serverErrors[name]) {
+            return Array.isArray(serverErrors[name]) ? serverErrors[name][0] : serverErrors[name];
+        }
+        return null;
+    };
+
     const validate = () => {
         let tempErrors = {};
         let isValid = true;
-        if (!formData.title) {
-            tempErrors.title = "Title is required";
-            isValid = false;
-        }
+
         if (!formData.manual_verification) {
             if (tier?.code === 'T1') {
                 if (!formData.vendor_id) {
                     tempErrors.vendor_id = "Vendor is required for automated tasks";
-                    isValid = false;
-                }
-            } else {
-                if (!formData.related_api_id) {
-                    tempErrors.related_api_id = "Verification API is required for automated tasks";
                     isValid = false;
                 }
             }
@@ -144,10 +145,10 @@ const TierTaskModal = ({
 
             // Handle conditional IDs
             if (tier?.code === 'T1') {
-                payload.vendor_id = formData.vendor_id;
+                payload.vendor_id = formData.vendor_id || null;
                 payload.related_api_id = null; // Ensure this is null for T1
             } else {
-                payload.related_api_id = formData.related_api_id;
+                payload.related_api_id = formData.related_api_id || null;
                 payload.vendor_id = null; // Ensure this is null for others
             }
 
@@ -176,32 +177,36 @@ const TierTaskModal = ({
                                     <input
                                         type="text"
                                         name="title"
-                                        className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+                                        className={`form-control ${getError('title') ? 'is-invalid' : ''}`}
                                         value={formData.title}
                                         onChange={handleChange}
                                         placeholder="Enter task title"
                                     />
-                                    {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                                    {getError('title') && <div className="invalid-feedback">{getError('title')}</div>}
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label">Subtitle</label>
                                     <input
                                         type="text"
                                         name="subtitle"
-                                        className="form-control"
+                                        className={`form-control ${getError('subtitle') ? 'is-invalid' : ''}`}
                                         value={formData.subtitle}
                                         onChange={handleChange}
                                         placeholder="Enter task subtitle"
                                     />
+                                    {getError('subtitle') && <div className="invalid-feedback">{getError('subtitle')}</div>}
                                 </div>
 
                                 <div className="col-md-12">
                                     <label className="form-label">Description</label>
-                                    <textarea
-                                        ref={descriptionRef}
-                                        name="description"
-                                        className="d-none"
-                                    ></textarea>
+                                    <div className={getError('description') ? 'is-invalid' : ''}>
+                                        <textarea
+                                            ref={descriptionRef}
+                                            name="description"
+                                            className="d-none"
+                                        ></textarea>
+                                    </div>
+                                    {getError('description') && <div className="invalid-feedback">{getError('description')}</div>}
                                 </div>
 
                                 <div className="col-md-6">
@@ -209,64 +214,70 @@ const TierTaskModal = ({
                                     <input
                                         type="text"
                                         name="button_title"
-                                        className="form-control"
+                                        className={`form-control ${getError('button_title') ? 'is-invalid' : ''}`}
                                         value={formData.button_title}
                                         onChange={handleChange}
                                         placeholder="e.g. Apply Now"
                                     />
+                                    {getError('button_title') && <div className="invalid-feedback">{getError('button_title')}</div>}
                                 </div>
 
                                 <div className="col-md-6">
                                     <label className="form-label">{tier?.code === 'T1' ? 'Related Vendor' : 'Verified By Api'}</label>
                                     {tier?.code === 'T1' ? (
-                                        <Dropdown
-                                            value={formData.vendor_id}
-                                            options={vendors || []}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            itemTemplate={(option) => (
-                                                <div>
-                                                    <span className="fw-medium">{option.name}</span>
-                                                    <span className="ms-2 text-muted small">({option.category})</span>
-                                                </div>
-                                            )}
-                                            onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, vendor_id: e.value }));
-                                                if (errors.vendor_id) {
-                                                    setErrors(prev => ({ ...prev, vendor_id: null }));
-                                                }
-                                            }}
-                                            placeholder="Select Vendor"
-                                            className={`w-100 ${errors.vendor_id ? 'p-invalid' : ''}`}
-                                            showClear
-                                            appendTo={document.body}
-                                            filter
-                                        />
+                                        <>
+                                            <Dropdown
+                                                value={formData.vendor_id}
+                                                options={vendors || []}
+                                                optionLabel="name"
+                                                optionValue="id"
+                                                itemTemplate={(option) => (
+                                                    <div>
+                                                        <span className="fw-medium">{option.name}</span>
+                                                        <span className="ms-2 text-muted small">({option.category})</span>
+                                                    </div>
+                                                )}
+                                                onChange={(e) => {
+                                                    setFormData(prev => ({ ...prev, vendor_id: e.value }));
+                                                    if (errors.vendor_id) {
+                                                        setErrors(prev => ({ ...prev, vendor_id: null }));
+                                                    }
+                                                }}
+                                                placeholder="Select Vendor"
+                                                className={`w-100 ${getError('vendor_id') ? 'p-invalid' : ''}`}
+                                                showClear
+                                                appendTo={document.body}
+                                                filter
+                                            />
+                                            {getError('vendor_id') && <div className="text-danger small mt-1">{getError('vendor_id')}</div>}
+                                        </>
                                     ) : (
-                                        <Dropdown
-                                            value={(relatedApis || []).find(api => api.id == formData.related_api_id)?.id}
-                                            options={relatedApis || []}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            itemTemplate={(option) => (
-                                                <div>
-                                                    <span className="fw-medium">{option.name}</span>
-                                                    <span className="ms-2 text-muted small">({option.provider})</span>
-                                                </div>
-                                            )}
-                                            onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, related_api_id: e.value }));
-                                                if (errors.related_api_id) {
-                                                    setErrors(prev => ({ ...prev, related_api_id: null }));
-                                                }
-                                            }}
-                                            placeholder={loadingApis ? "Loading..." : "Select Verification API"}
-                                            className={`w-100 ${errors.related_api_id ? 'p-invalid' : ''}`}
-                                            showClear
-                                            appendTo={document.body}
-                                        />
+                                        <>
+                                            <Dropdown
+                                                value={(relatedApis || []).find(api => api.id == formData.related_api_id)?.id}
+                                                options={relatedApis || []}
+                                                optionLabel="name"
+                                                optionValue="id"
+                                                itemTemplate={(option) => (
+                                                    <div>
+                                                        <span className="fw-medium">{option.name}</span>
+                                                        <span className="ms-2 text-muted small">({option.provider})</span>
+                                                    </div>
+                                                )}
+                                                onChange={(e) => {
+                                                    setFormData(prev => ({ ...prev, related_api_id: e.value }));
+                                                    if (errors.related_api_id) {
+                                                        setErrors(prev => ({ ...prev, related_api_id: null }));
+                                                    }
+                                                }}
+                                                placeholder={loadingApis ? "Loading..." : "Select Verification API"}
+                                                className={`w-100 ${getError('related_api_id') ? 'p-invalid' : ''}`}
+                                                showClear
+                                                appendTo={document.body}
+                                            />
+                                            {getError('related_api_id') && <div className="text-danger small mt-1">{getError('related_api_id')}</div>}
+                                        </>
                                     )}
-                                    {errors.related_api_id && <div className="text-danger small mt-1">{errors.related_api_id}</div>}
                                 </div>
 
                                 <div className="col-md-6">
@@ -274,12 +285,13 @@ const TierTaskModal = ({
                                     <input
                                         type="number"
                                         name="estimated_completion_days"
-                                        className="form-control"
+                                        className={`form-control ${getError('estimated_completion_days') ? 'is-invalid' : ''}`}
                                         value={formData.estimated_completion_days}
                                         onChange={handleChange}
                                         placeholder="Enter days"
                                         min="1"
                                     />
+                                    {getError('estimated_completion_days') && <div className="invalid-feedback">{getError('estimated_completion_days')}</div>}
                                 </div>
 
                                 <div className="col-md-6">
@@ -287,11 +299,12 @@ const TierTaskModal = ({
                                     <input
                                         type="number"
                                         name="order"
-                                        className="form-control"
+                                        className={`form-control ${getError('order') ? 'is-invalid' : ''}`}
                                         value={formData.order}
                                         onChange={handleChange}
                                         placeholder="Enter display order"
                                     />
+                                    {getError('order') && <div className="invalid-feedback">{getError('order')}</div>}
                                 </div>
 
                                 {/* <div className="col-md-6">

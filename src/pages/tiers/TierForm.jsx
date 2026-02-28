@@ -34,8 +34,10 @@ export default function TierForm() {
 
     // Initialize activeTab from navigation state or default to 'tierInfo'
     const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'tierInfo');
+    const [tierCode, setTierCode] = useState('');
 
     const vendorsRef = useRef(null);
+    const tasksRef = useRef(null);
 
     // Use global Summernote hook
     const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
@@ -66,6 +68,7 @@ export default function TierForm() {
                         status: ['active', 'Active'].includes(tierData.status) ? 'Active' : 'Inactive',
                         has_vendor: tierData.has_vendor || 0
                     });
+                    setTierCode(tierData.code || '');
                 } catch (err) {
                     console.error('Failed to load tier:', err);
                     toast.error('Failed to load tier details');
@@ -131,14 +134,19 @@ export default function TierForm() {
         }));
     };
 
-    // Track selected vendors
+    // Track selected count for vendors and tasks
     const [selectedVendorsCount, setSelectedVendorsCount] = useState(0);
+    const [selectedTasksCount, setSelectedTasksCount] = useState(0);
 
     useEffect(() => {
         const interval = setInterval(() => {
             if (vendorsRef.current && activeTab === 'vendorInfo') {
                 const selected = vendorsRef.current.getSelectedVendors();
                 setSelectedVendorsCount(selected?.length || 0);
+            }
+            if (tasksRef.current && activeTab === 'taskInfo') {
+                // If T0, selection is disabled anyway, but let's be safe
+                setSelectedTasksCount(tierCode === 'T1' ? (tasksRef.current.selectedCount || 0) : 0);
             }
         }, 100);
 
@@ -220,6 +228,51 @@ export default function TierForm() {
                                                     </>
                                                 )}
                                             </button>
+                                        )}
+
+                                        {/* Show Add Task or Delete Selected button for Task Information tab */}
+                                        {activeTab === 'taskInfo' && (
+                                            selectedTasksCount > 0 ? (
+                                                tierCode === 'T1' && (
+                                                    <div className="btn-group">
+                                                        <button type="button" className="btn bg-success text-white fw-medium">
+                                                            Actions
+                                                        </button>
+                                                        <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <span className="visually-hidden">Toggle dropdown</span>
+                                                        </button>
+                                                        <ul className="dropdown-menu dropdown-menu-end">
+                                                            <li>
+                                                                <button
+                                                                    type="button"
+                                                                    className="dropdown-item text-danger"
+                                                                    onClick={() => {
+                                                                        if (tasksRef.current) {
+                                                                            tasksRef.current.openDeleteModal();
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                                </button>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                )
+                                            ) : (
+                                                tierCode === 'T1' && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary w-lg waves-effect"
+                                                        onClick={() => {
+                                                            if (tasksRef.current) {
+                                                                tasksRef.current.openAddModal();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Task
+                                                    </button>
+                                                )
+                                            )
                                         )}
 
                                         {/* Show Add Vendor or Delete Selected button for Vendors tab */}
@@ -418,7 +471,7 @@ export default function TierForm() {
                                     </form>
                                 )}
                                 {activeTab === 'taskInfo' && (
-                                    <TierTasks tierId={Number(id)} />
+                                    <TierTasks ref={tasksRef} tierId={Number(id)} />
                                 )}
                                 {activeTab === 'vendorInfo' && (
                                     <TierVendors ref={vendorsRef} tierId={Number(id)} />

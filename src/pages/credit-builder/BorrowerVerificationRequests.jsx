@@ -5,9 +5,10 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchBorrowerVerificationRequests, bulkUpdateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
+import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
+import ResponseDetailModal from './components/ResponseDetailModal'; // Import Result Modal
 import { toast } from 'react-toastify';
 import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
@@ -45,8 +46,8 @@ export default function BorrowerVerificationRequests() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [selectedTier, setSelectedTier] = useState('');
     const [appliedTier, setAppliedTier] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState(VERIFICATION_STATUS.PROCESSING);
-    const [appliedStatus, setAppliedStatus] = useState(VERIFICATION_STATUS.PROCESSING);
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [appliedStatus, setAppliedStatus] = useState('');
     const [tiersList, setTiersList] = useState([]);
 
 
@@ -57,14 +58,6 @@ export default function BorrowerVerificationRequests() {
             const response = await getBorrowerProfile(borrower_id);
             if (response.status && response.data) {
                 setProfileData(response.data);
-                // Set default tier filter based on profile
-                if (response.data.current_tier) {
-                    // Ensure type consistency (e.g. if API returns string "1" and options are number 1)
-                    // We can try to find the matching option in tiersList if available, or just set it. 
-                    // Since tiersList might not be loaded, we trust the ID value.
-                    setSelectedTier(response.data.current_tier);
-                    setAppliedTier(response.data.current_tier);
-                }
             }
         } catch (error) {
             console.error("Failed to fetch profile data", error);
@@ -159,10 +152,10 @@ export default function BorrowerVerificationRequests() {
     const handleClearFilters = () => {
         setSearchText('');
         setAppliedSearchText('');
-        setSelectedTier(profileData?.current_tier_id || ''); // Reset to default if exists, or empty
-        setAppliedTier(profileData?.current_tier_id || '');
-        setSelectedStatus(VERIFICATION_STATUS.PROCESSING);
-        setAppliedStatus(VERIFICATION_STATUS.PROCESSING);
+        setSelectedTier('');
+        setAppliedTier('');
+        setSelectedStatus('');
+        setAppliedStatus('');
         setFilters({
             task_title: { constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             tier_name: { constraints: [{ value: null }] },
@@ -184,6 +177,10 @@ export default function BorrowerVerificationRequests() {
     const [isBulkAction, setIsBulkAction] = useState(false); // Flag for bulk
     const [actionLoading, setActionLoading] = useState(false);
     const [validationErrors, setValidationErrors] = useState(null);
+
+    // Response Detail Modal
+    const [resultModalShow, setResultModalShow] = useState(false);
+    const [verificationResults, setVerificationResults] = useState({ message: '', data: [] });
 
     const openActionModal = (type, rowData = null) => {
         setActionType(type);
@@ -209,28 +206,38 @@ export default function BorrowerVerificationRequests() {
         setActionLoading(true);
 
         try {
+            const isReject = actionType === 'reject';
+            const isApi = actionType === 'api_verify';
+
             const payload = {
                 request_ids: requestsToProcess.map(req => req.id),
-                status: actionType === 'reject' ? 'rejected' : 'verified',
+                status: isReject ? VERIFICATION_STATUS.REJECTED : VERIFICATION_STATUS.COMPLETED,
                 note: reason,
-                is_api: actionType === 'api_verify'
+                is_api: isApi
             };
 
-            const result = await bulkUpdateVerificationStatus(payload);
+            const result = await updateVerificationStatus(payload);
 
             if (result.status) {
-                toast.success(`${requestsToProcess.length} request(s) ${actionType === 'reject' ? 'rejected' : 'verified'} successfully`);
+                setVerificationResults({
+                    message: result.message || 'Action processed successfully',
+                    data: result.data || []
+                });
+                setShowActionModal(false);
+                setResultModalShow(true); // Show the results modal
+                loadRequests();
+                setSelectedRequests([]);
             } else {
                 toast.error(result.message || 'Failed to update requests');
             }
 
-            setShowActionModal(false);
-            loadRequests();
-            setSelectedRequests([]);
-
         } catch (err) {
             console.error('Action error', err);
-            toast.error('An unexpected error occurred processing requests.');
+            if (err.response && err.response.status === 422) {
+                setValidationErrors(err.response.data.errors);
+            } else {
+                toast.error('An unexpected error occurred processing requests.');
+            }
         } finally {
             setActionLoading(false);
         }
@@ -305,13 +312,15 @@ export default function BorrowerVerificationRequests() {
         if (rowData.status === VERIFICATION_STATUS.PROCESSING) {
             return (
                 <div className="d-flex gap-2 justify-content-center">
-                    <button
-                        className="btn btn-sm btn-soft-primary"
-                        onClick={() => openActionModal('api_verify', rowData)}
-                        title="API Verification"
-                    >
-                        Api Verification
-                    </button>
+                    {rowData.tier_code === 'T0' && rowData.has_api && (
+                        <button
+                            className="btn btn-sm btn-soft-primary"
+                            onClick={() => openActionModal('api_verify', rowData)}
+                            title="API Verification"
+                        >
+                            Api Verification
+                        </button>
+                    )}
 
                     <button
                         className="btn btn-sm btn-soft-success"
@@ -352,9 +361,9 @@ export default function BorrowerVerificationRequests() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Borrower Request Task Details</h4>
                                 <nav aria-label="breadcrumb">
@@ -547,7 +556,7 @@ export default function BorrowerVerificationRequests() {
                                             <div className="col-lg-auto mt-3 mt-lg-0 border-start-lg ps-lg-4">
                                                 <div className="d-flex gap-4">
                                                     <div className="text-center">
-                                                        <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Pending Requests</p>
+                                                        <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Requests</p>
                                                         <h6 className="mb-0 fw-bold">{totalRecords}</h6>
                                                     </div>
                                                 </div>
@@ -682,6 +691,14 @@ export default function BorrowerVerificationRequests() {
                 validationErrors={validationErrors}
                 isBulk={isBulkAction}
                 count={isBulkAction ? selectedRequests.length : 1}
+            />
+
+            {/* Response Detail Modal */}
+            <ResponseDetailModal
+                show={resultModalShow}
+                onHide={() => setResultModalShow(false)}
+                message={verificationResults.message}
+                data={verificationResults.data}
             />
         </div>
     );

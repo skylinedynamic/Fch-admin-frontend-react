@@ -369,10 +369,12 @@ const TierVendors = forwardRef(({ tierId }, ref) => {
                     className="p-datatable-sm"
                     tableStyle={{ minWidth: '50rem' }}
                     selection={selectedVendors}
-                    onSelectionChange={(e) => setSelectedVendors(e.value)}
+                    onSelectionChange={(e) => {
+                        if (e.type === 'checkbox' || e.type === 'all' || !e.type) {
+                            setSelectedVendors(e.value);
+                        }
+                    }}
                     dataKey="id"
-                    rowClickSelection={false}
-                    metaKeySelection={false}
                     filters={filters}
                     filterDisplay="menu"
                     onFilter={onFilter}

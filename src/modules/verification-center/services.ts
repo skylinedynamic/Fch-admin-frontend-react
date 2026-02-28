@@ -16,12 +16,7 @@ export const getBorrowerProfile = async (id: string | number) => {
     return data;
 };
 
-export const updateVerificationStatus = async (payload: { request_id: number | string, status: string, note?: string }): Promise<any> => {
+export const updateVerificationStatus = async (payload: { request_ids: (number | string)[], status: string, note?: string, is_api?: boolean }): Promise<any> => {
     const response = await apiClient.post('/common/credit-builder/verification-center-status-update', payload);
-    return response.data;
-};
-
-export const bulkUpdateVerificationStatus = async (payload: { request_ids: (number | string)[], status: string, note?: string, is_api?: boolean }): Promise<any> => {
-    const response = await apiClient.post('/common/credit-builder/verification-center-bulk-status-update', payload);
     return response.data;
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Dropdown } from 'primereact/dropdown';
 import { Column } from 'primereact/column';
@@ -19,9 +19,8 @@ import { useAuthStore } from '../../../store/auth/authStore';
 import { useTierRelatedApis, useTierVendors, useTier } from '../../../modules/tiers/queries';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
-export default function TierTasks({ tierId }) {
+const TierTasks = forwardRef(({ tierId }, ref) => {
     const { user } = useAuthStore();
-    const isDeveloper = user?.role_name === 'Developer';
     const { hasPermission } = usePermissions();
 
     // Fetch Tier Details to get code
@@ -58,6 +57,14 @@ export default function TierTasks({ tierId }) {
     const [showModal, setShowModal] = useState(false);
     const [editTask, setEditTask] = useState(null);
     const [loadingSave, setLoadingSave] = useState(false);
+    const [serverErrors, setServerErrors] = useState({});
+
+    // Expose methods to parent
+    useImperativeHandle(ref, () => ({
+        openAddModal,
+        openDeleteModal,
+        selectedCount: selectedTasks.length
+    }));
 
     // Fetch related APIs once on page load for this tier
     const { data: relatedApis = [], isLoading: loadingApis } = useTierRelatedApis(tierId);
@@ -143,16 +150,19 @@ export default function TierTasks({ tierId }) {
     // Modal Handlers
     const openAddModal = () => {
         setEditTask(null);
+        setServerErrors({});
         setShowModal(true);
     };
 
     const openEditModal = (task) => {
         setEditTask(task);
+        setServerErrors({});
         setShowModal(true);
     };
 
     const handleModalSubmit = async (formData) => {
         setLoadingSave(true);
+        setServerErrors({});
         try {
             if (editTask) {
                 await updateTierTask(editTask.id, formData);
@@ -165,8 +175,12 @@ export default function TierTasks({ tierId }) {
             loadTasks();
         } catch (err) {
             console.error(err);
-            const msg = err.response?.data?.message || 'Failed to save task';
-            toast.error(msg);
+            if (err.response && err.response.status === 422) {
+                setServerErrors(err.response.data.errors);
+            } else {
+                const msg = err.response?.data?.message || 'Failed to save task';
+                toast.error(msg);
+            }
         } finally {
             setLoadingSave(false);
         }
@@ -248,32 +262,18 @@ export default function TierTasks({ tierId }) {
                 <button className="btn btn-sm btn-soft-primary" onClick={() => openEditModal(rowData)}>
                     <i className="ri-pencil-fill align-bottom" />
                 </button>
-                <button className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteClick(rowData)}>
-                    <i className="ri-delete-bin-fill align-bottom" />
-                </button>
+                {tier?.data?.code === 'T1' && (
+                    <button className="btn btn-sm btn-soft-danger" onClick={() => handleDeleteClick(rowData)}>
+                        <i className="ri-delete-bin-fill align-bottom" />
+                    </button>
+                )}
             </div>
         );
     };
 
     return (
         <React.Fragment>
-            <div className="d-flex justify-content-end align-items-center mb-3 gap-2">
-                {isDeveloper && (
-                    selectedTasks.length > 0 ? (
-                        <button
-                            type="button"
-                            className="btn btn-danger"
-                            onClick={openDeleteModal}
-                        >
-                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                        </button>
-                    ) : (
-                        <button className="btn btn-primary" onClick={openAddModal}>
-                            <i className="ri-add-line me-1 align-bottom"></i> Add Task
-                        </button>
-                    )
-                )}
-            </div>
+
 
             <form onSubmit={(e) => {
                 e.preventDefault();
@@ -315,7 +315,6 @@ export default function TierTasks({ tierId }) {
 
             {loading ? (
                 <TableLoader rows={5} columns={[
-                    ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
                     { style: { width: '25%' } },       // Title
                     { style: { width: '35%' } },       // Subtitle
                     { style: { width: '20%' } },       // Estimated Days
@@ -336,8 +335,11 @@ export default function TierTasks({ tierId }) {
                     className="p-datatable-sm"
                     tableStyle={{ minWidth: '50rem' }}
                     selection={selectedTasks}
-                    onSelectionChange={(e) => setSelectedTasks(e.value)}
-                    selectionMode={isDeveloper ? "multiple" : null}
+                    onSelectionChange={(e) => {
+                        if (e.type === 'checkbox' || e.type === 'all' || !e.type) {
+                            setSelectedTasks(e.value);
+                        }
+                    }}
                     dataKey="id"
                     filters={filters}
                     filterDisplay="menu"
@@ -345,19 +347,19 @@ export default function TierTasks({ tierId }) {
                     onRowClick={(e) => {
                         const target = e.originalEvent.target;
                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT' && !target.closest('button')) {
-                            if (hasPermission('update tier')) {
+                            if (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) {
                                 openEditModal(e.data);
                             }
                         }
                     }}
-                    rowClassName={() => hasPermission('update tier') ? 'cursor-pointer' : ''}
+                    rowClassName={() => (hasPermission('update tier') && (tier?.data?.code === 'T0' || tier?.data?.code === 'T1')) ? 'cursor-pointer' : ''}
                 >
-                    {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                    {tier?.data?.code === 'T1' && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                     <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '25%' }} />
                     <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" style={{ width: '35%' }} />
                     <Column field="estimated_completion_days" header="Estimated Days" sortable filter filterPlaceholder="Search Days" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
                     <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '20%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '20%' }} />
-                    {isDeveloper && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
+                    {(tier?.data?.code === 'T0' || tier?.data?.code === 'T1') && <Column header="Actions" body={actionBodyTemplate} style={{ width: '100px' }} />}
                 </DataTable>
             )}
 
@@ -374,6 +376,7 @@ export default function TierTasks({ tierId }) {
                         vendors={vendors}
                         loadingApis={loadingApis}
                         loadingSave={loadingSave}
+                        serverErrors={serverErrors}
                     />
 
                     <DeleteConfirmationModal
@@ -387,4 +390,6 @@ export default function TierTasks({ tierId }) {
             )}
         </React.Fragment>
     );
-}
+});
+
+export default TierTasks;

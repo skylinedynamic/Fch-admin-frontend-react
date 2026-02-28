@@ -88,7 +88,7 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
                             ></textarea>
                             {validationErrors?.note && (
                                 <div className="invalid-feedback d-block text-start">
-                                    {validationErrors.note[0]}
+                                    {Array.isArray(validationErrors.note) ? validationErrors.note[0] : validationErrors.note}
                                 </div>
                             )}
                             {error && <div className="invalid-feedback d-block">{error}</div>}
