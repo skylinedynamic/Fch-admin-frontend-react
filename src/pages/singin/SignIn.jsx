@@ -75,6 +75,9 @@ export default function SignIn() {
               placeholder="Enter email address"
               required
             />
+            {emailError && !['subscription', 'expired', 'payment', 'suspended', 'inactive'].some(k => emailError.toLowerCase().includes(k)) && (
+              <div className="invalid-feedback">{emailError}</div>
+            )}
           </div>
 
           <div className="mb-3">
@@ -122,27 +125,40 @@ export default function SignIn() {
           <div className="mt-4">
             <button className="btn btn-success w-100" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
           </div>
-              {emailError &&
-                (emailError.toLowerCase().includes('subscription') ||
+          {(emailError || formError) && (
+            <div className="mt-4">
+              {emailError && (
+                emailError.toLowerCase().includes('subscription') ||
                 emailError.toLowerCase().includes('expired') ||
-                emailError.toLowerCase().includes('payment')) ? (
-                  
-                  <div className="alert alert-danger mt-2" role="alert">
-                    <strong>Alert:</strong>{" "}
-                    
-                    {emailError.toLowerCase().includes('expired')
-                      ? "Your subscription has expired. Please contact your partner to renew your subscription."
-                      : emailError.toLowerCase().includes('payment')
-                      ? "Your payment was not completed. Please contact your partner for assistance."
-                      : ""}
-                      
+                emailError.toLowerCase().includes('payment') ||
+                emailError.toLowerCase().includes('suspended') ||
+                emailError.toLowerCase().includes('inactive')
+              ) ? (
+                <div className="alert alert-danger" role="alert">
+                  <div className="d-flex">
+                    <div className="flex-shrink-0">
+                      <i className="ri-error-warning-fill fs-16 align-middle me-2"></i>
+                    </div>
+                    <div className="flex-grow-1">
+                      <strong>Alert:</strong>{" "}
+                      {emailError.toLowerCase().includes('expired')
+                        ? "Your subscription has expired. Please contact your partner to renew your subscription."
+                        : emailError.toLowerCase().includes('payment')
+                        ? "Your payment was not completed. Please contact your partner for assistance."
+                        : emailError}
+                    </div>
                   </div>
-
-                ) : (
-                  <div className="invalid-feedback">
-                    {emailError || "Please enter your email address."}
+                </div>
+              ) : (
+                /* Only show formError or generic message if not already handled by a field-specific alert/input feedback */
+                !emailError && !passwordError && formError && (
+                  <div className="alert alert-danger text-center" role="alert">
+                    {formError}
                   </div>
-                )}
+                )
+              )}
+            </div>
+          )}
         </form>
       </div>
     </Auth>

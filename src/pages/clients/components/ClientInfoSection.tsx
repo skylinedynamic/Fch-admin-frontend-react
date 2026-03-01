@@ -20,6 +20,8 @@ import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import { locationData } from '../../../config';
 import { allUsers } from '../../../modules/partner/services';
+import { BORROWER_STATUS } from '../../../config/statusOptions';
+
 
 interface ClientInfoSectionProps {
     clientId?: string | null;
@@ -714,6 +716,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
                     </div>
                 </div>
+
+                {clientId && (
+                    <div className="col-lg-6">
+                        <div className="mb-3">
+                            <label htmlFor="status" className="form-label">Status</label>
+                            <Dropdown
+                                inputId="status"
+                                value={formData.status}
+                                options={BORROWER_STATUS}
+                                onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select Status"
+                                className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
+                                appendTo="self"
+                            />
+                            {errors.status && <small className="p-error">{errors.status}</small>}
+                        </div>
+                    </div>
+                )}
 
                 <div className="col-lg-6">
                     <div className="mb-3">

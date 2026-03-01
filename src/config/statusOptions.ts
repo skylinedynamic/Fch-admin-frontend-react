@@ -6,6 +6,7 @@ export interface StatusOption {
 export const STATUS: StatusOption[] = [
     { label: 'Active', value: 'Active' },
     { label: 'Inactive', value: 'Inactive' },
+    { label: 'Suspended', value: 'Suspended' },
 ];
 
 export const USER_STATUS: StatusOption[] = [
@@ -39,3 +40,18 @@ export const COMMISSION_STATUS_CLASS_MAP: { [key: string]: string } = {
     'Approved': 'bg-success-subtle text-success',
     'Declined': 'bg-danger-subtle text-danger'
 };
+
+export const BORROWER_STATUS_CLASS_MAP: { [key: string]: string } = {
+    'Active': 'bg-success-subtle text-success',
+    'Inactive': 'bg-secondary-subtle text-secondary',
+    'Suspended': 'bg-warning-subtle text-warning',
+    'OnBoarding': 'bg-info-subtle text-info',
+};
+
+
+export const BORROWER_STATUS: StatusOption[] = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' },
+    { label: 'Suspended', value: 'Suspended' },
+    { label: 'OnBoarding', value: 'OnBoarding' },
+];

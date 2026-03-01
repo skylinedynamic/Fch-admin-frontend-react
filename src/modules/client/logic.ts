@@ -80,6 +80,8 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     payload.payment_amount = amount;
     payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost;
+    payload.status = formData.status;
+
 
     // Remove enrollment_amount to avoid confusion
     delete (payload as any).enrollment_amount;
@@ -100,6 +102,10 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
     // Normalize date
     if (payload.business_start_date) {
         payload.business_start_date = normalizeDate(payload.business_start_date);
+    }
+
+    if (formData.status) {
+        payload.status = formData.status;
     }
 
     if (!isHost) {

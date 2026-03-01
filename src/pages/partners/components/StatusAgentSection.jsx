@@ -103,7 +103,7 @@ export default function StatusAgentSection({
                         }
                         optionLabel="label"
                         optionValue="value"
-                        placeholder="Select status..."
+                        placeholder="Select Status..."
                         className={`w-100 ${errors.status ? 'p-invalid' : ''}`}
                     />
                     {errors.status && (

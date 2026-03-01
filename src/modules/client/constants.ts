@@ -37,6 +37,7 @@ export const DEFAULT_CLIENT_STATE: Client = {
     last_4_ssn: '',
     enrollment_type: '',
     plan_id: '',
+    status: 'OnBoarding',
     notes: '',
 };
 
