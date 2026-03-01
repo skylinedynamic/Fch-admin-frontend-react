@@ -28,6 +28,7 @@ export type Client = {
     enrollment_type?: string;
     plan_id?: number | string;
     assign_id?: number | string;
+    status?: string;
     notes?: string;
 
     // Financials

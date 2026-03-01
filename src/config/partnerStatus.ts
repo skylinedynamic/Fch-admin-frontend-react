@@ -8,6 +8,8 @@ export interface PartnerStatusOption {
 }
 
 export const PARTNER_STATUS: PartnerStatusOption[] = [
-    { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' },
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' },
+    { label: 'Suspended', value: 'Suspended' },
+    { label: 'OnBoarding', value: 'OnBoarding' },
 ];

@@ -8,6 +8,8 @@ import { useClients, DEFAULT_CLIENT_FILTERS } from '../../../modules/client';
 import TableLoader from '../../../components/Loader/TableLoader';
 import type { Client, ClientFilterParams, ClientListStatistics } from '../../../modules/client/types';
 import { toast } from 'react-toastify';
+import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/statusOptions';
+
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
 
@@ -187,25 +189,16 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     };
 
     const statusBody = (rowData: Client) => {
-        const statusColors: Record<string, string> = {
-            'OnBoarding': 'info', 'Active': 'success', 'Suspended': 'warning', 'Closed': 'danger'
-        };
-        const status = (rowData as any).status || 'N/A';
-        const color = statusColors[status] || 'secondary';
-        return <span className={`badge bg-${color}-subtle text-${color}`}>{status}</span>;
+        const status = rowData.status || 'N/A';
+        const colorClass = BORROWER_STATUS_CLASS_MAP[status] || 'bg-secondary-subtle text-secondary';
+        return <span className={`badge ${colorClass}`}>{status}</span>;
     };
 
     const statusFilterElement = (options: any) => {
-        const statuses = [
-            { label: 'OnBoarding', value: 'OnBoarding' },
-            { label: 'Active', value: 'Active' },
-            { label: 'Suspended', value: 'Suspended' },
-            { label: 'Closed', value: 'Closed' }
-        ];
         return (
             <Dropdown
                 value={options.value}
-                options={statuses}
+                options={BORROWER_STATUS}
                 onChange={(e) => options.filterApplyCallback(e.value)}
                 optionLabel="label"
                 optionValue="value"

@@ -646,6 +646,7 @@ export default function Users() {
                             responsiveLayout="scroll"
                             className="p-datatable-sm"
                             emptyMessage="No Users found"
+                            isDataSelectable={(e) => e.data.entity_type !== 'Partner'}
                           >
                             {hasPermission('delete users') && (
                               <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false}></Column>
@@ -686,7 +687,7 @@ export default function Users() {
                                         <span className="d-none d-sm-inline ms-1">Edit</span>
                                       </button>
                                     )}
-                                    {hasPermission('delete users') && (
+                                    {hasPermission('delete users') && rowData.entity_type !== 'Partner' && (
                                       <button
                                         className="btn btn-sm btn-danger"
                                         aria-label="Delete user"
