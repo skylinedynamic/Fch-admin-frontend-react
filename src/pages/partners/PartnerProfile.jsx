@@ -316,6 +316,7 @@ export default function PartnerProfile() {
                     city: cityValue, // Set city (either actual city or "Others")
                     other_city: otherCityValue, // Set other_city if applicable
                     agent: data.assigned_user_id || '', // Keep as number/string from DB
+                    status: data.status || '', // Explicitly map status
                     address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                     partner_image: data.partner_image || '', // Map company_logo → partner_image
                     country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
@@ -649,10 +650,14 @@ export default function PartnerProfile() {
                                 formDataToSend.append('partner_image', value);
                             }
                         } else if (key === 'agent') {
-                            // Map 'agent' to 'assign_to' for backend
+                            // Map 'agent' to 'assign_to' and 'assigned_user_id' for backend
                             if (value !== '') {
                                 formDataToSend.append('assign_to', value);
+                                formDataToSend.append('assigned_user_id', value);
                             }
+                        } else if (key === 'status') {
+                            // Ensure status is always sent if present
+                            formDataToSend.append('status', value || '');
                         } else if (key === 'city') {
                             // If city is "Others", save the other_city value to city column
                             if (value === 'Others' && formData.other_city) {

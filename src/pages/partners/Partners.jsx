@@ -12,6 +12,10 @@ import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { BORROWER_STATUS_CLASS_MAP } from '../../config/statusOptions';
+import { PARTNER_STATUS } from '../../config';
+
+
 
 export default function Partners() {
     const navigate = useNavigate();
@@ -36,10 +40,13 @@ export default function Partners() {
     const [searchText, setSearchText] = useState('');
     const [selectedPartner, setSelectedPartner] = useState('');
     const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedPartner, setAppliedPartner] = useState('');
     const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
+    const [appliedStatus, setAppliedStatus] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
+
 
     // Checkbox selection state
     const [selectedPartners, setSelectedPartners] = useState([]);
@@ -52,12 +59,11 @@ export default function Partners() {
 
     // Statistics data
     const [stats, setStats] = useState({
-        active_count: 0,
+        active_partners: 0,
         new_this_month: 0,
         total_partners: 0,
-        inactive_count: 0
+        inactive_partners: 0
     });
-    const [statsLoading, setStatsLoading] = useState(true);
 
     // Initialize filters
     const initFilters = () => {
@@ -69,8 +75,10 @@ export default function Partners() {
             email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             phone_number: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             assigned_user_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            partner_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            partner_type: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
+
         setFilters(initial);
         setAppliedFilters(initial);
     };
@@ -112,35 +120,13 @@ export default function Partners() {
         loadAssignedUsers();
     }, []);
 
-    // Load statistics
-    useEffect(() => {
-        const loadStats = async () => {
-            try {
-                setStatsLoading(true);
-                const result = await fetchPartnerStats();
-                if (result.status && result.data) {
-                    setStats({
-                        active_count: result.data.active_count || 0,
-                        new_this_month: result.data.new_this_month || 0,
-                        total_partners: result.data.total_partners || 0,
-                        inactive_count: result.data.inactive_count || 0
-                    });
-                }
-            } catch (err) {
-                console.error('Failed to load partner statistics:', err);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-        loadStats();
-    }, []);
-
     const statisticsConfig = [
-        { title: "Active Partners", dataKey: "active_count", icon: "ri-ticket-line", colorVariant: "primary" },
+        { title: "Active Partners", dataKey: "active_partners", icon: "ri-ticket-line", colorVariant: "primary" },
         { title: "New This Month", dataKey: "new_this_month", icon: "ri-folder-open-line", colorVariant: "warning" },
         { title: "Total Partners", dataKey: "total_partners", icon: "ri-group-line", colorVariant: "info" },
-        { title: "Inactive", dataKey: "inactive_count", icon: "ri-star-line", colorVariant: "success" }
+        { title: "Inactive", dataKey: "inactive_partners", icon: "ri-star-line", colorVariant: "success" }
     ];
+
 
     // Load partners data with filters
     useEffect(() => {
@@ -153,7 +139,9 @@ export default function Partners() {
                     search: appliedSearchText || '',
                     partner_id: appliedPartner || '',
                     assigned_user_id: appliedAssignedUser || '',
+                    status: appliedStatus || '',
                     filters: appliedFilters,
+
                     page,
                     per_page: perPage,
                     sort_field: sortField,
@@ -166,8 +154,13 @@ export default function Partners() {
                     const meta = result.meta;
                     setPartners(data);
                     setTotalRecords(meta?.total || data.length);
+                    // Update stats from the main API response
+                    if (result.statistics) {
+                        setStats(result.statistics);
+                    }
                     setError(null);
                 } else {
+
                     setError(result.message || 'Failed to fetch partners');
                     toast.error(result.message || 'Failed to fetch partners');
                 }
@@ -191,20 +184,25 @@ export default function Partners() {
         setAppliedSearchText(searchText);
         setAppliedPartner(selectedPartner);
         setAppliedAssignedUser(selectedAssignedUser);
+        setAppliedStatus(selectedStatus);
         setAppliedFilters(filters);
         setPage(1);
     };
+
 
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedPartner('');
         setSelectedAssignedUser('');
+        setSelectedStatus('');
         setAppliedSearchText('');
         setAppliedPartner('');
         setAppliedAssignedUser('');
+        setAppliedStatus('');
         initFilters();
         setPage(1);
     };
+
 
     // Pagination handler
     const onPage = (event) => {
@@ -237,6 +235,13 @@ export default function Partners() {
             </span>
         );
     };
+
+    const statusBody = (rowData) => {
+        const status = rowData.status || 'N/A';
+        const colorClass = BORROWER_STATUS_CLASS_MAP[status] || 'bg-secondary-subtle text-secondary';
+        return <span className={`badge ${colorClass}`}>{status}</span>;
+    };
+
 
     // Delete handlers
     const openDeleteModal = () => {
@@ -313,7 +318,7 @@ export default function Partners() {
 
                 {/* Statistics Cards */}
                 <div className="row">
-                    {statsLoading ? (
+                    {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (
                         statisticsConfig.map((config, index) => (
@@ -433,7 +438,9 @@ export default function Partners() {
                                             <Column field="contact_person" header="Contact Person" sortable filter filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
                                             <Column field="assigned_user_name" header="Assigned User" sortable filter filterPlaceholder="Search by user" style={{ minWidth: '160px' }} />
                                             <Column field="partner_type" header="Partner Type" sortable filter filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />
+                                            <Column field="status" header="Status" body={statusBody} sortable filter filterPlaceholder="Search by status" style={{ minWidth: '120px' }} />
                                         </DataTable>
+
                                     </div>
                                 )}
                             </div>
