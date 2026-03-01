@@ -4,12 +4,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FundingApplicationDetails as FundingApplicationDetailsType } from '../../../modules/application/types';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
+import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
@@ -43,6 +44,8 @@ export default function FundingApplicationDetails() {
     const [status_note, setStatusNote] = useState<string>('');
     const [notesError, setNotesError] = useState<string>('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showFundedModal, setShowFundedModal] = useState(false);
+    const [fundedAmount, setFundedAmount] = useState<string>('');
     const updateMutation = useUpdateFundingApplicationStatus();
 
     // Commission state
@@ -109,8 +112,12 @@ export default function FundingApplicationDetails() {
     }, [error, apiResponse, isLoading, navigate]);
 
     const handleUpdateClick = () => {
-        setNotesError('');
-        setShowConfirmModal(true);
+        if (status === FUNDING_APPLICATION_STATUS.CLOSED) {
+            setFundedAmount(app.total_funded_amount?.toString() || app.requested_amount?.toString() || '');
+            setShowFundedModal(true);
+        } else {
+            setShowConfirmModal(true);
+        }
     };
 
     const handleConfirmUpdate = () => {
@@ -134,6 +141,38 @@ export default function FundingApplicationDetails() {
                             ? backendErrors.status_note[0]
                             : backendErrors.status_note;
                         setNotesError(message);
+                    }
+                } else {
+                    toast.error('Failed to update status. Please try again.');
+                }
+            }
+        });
+    };
+
+    const handleFundedConfirm = (amount: string) => {
+        if (!app.id) return;
+        updateMutation.mutate({
+            funding_application_id: app.id,
+            status: status,
+            status_note: status_note,
+            funded_amount: amount
+        }, {
+            onSuccess: () => {
+                toast.success('Status updated successfully');
+                setShowFundedModal(false);
+                setNotesError('');
+            },
+            onError: (error: any) => {
+                if (error?.response?.data?.errors) {
+                    const backendErrors = error.response.data.errors;
+                    if (backendErrors.status_note) {
+                        const message = Array.isArray(backendErrors.status_note)
+                            ? backendErrors.status_note[0]
+                            : backendErrors.status_note;
+                        setNotesError(message);
+                    }
+                    if (backendErrors.funded_amount) {
+                        toast.error(Array.isArray(backendErrors.funded_amount) ? backendErrors.funded_amount[0] : backendErrors.funded_amount);
                     }
                 } else {
                     toast.error('Failed to update status. Please try again.');
@@ -1044,6 +1083,16 @@ export default function FundingApplicationDetails() {
                 message="Are you sure you want to update the application status?"
                 confirmText="Update"
                 variant="primary"
+            />
+
+            <FundedAmountModal
+                show={showFundedModal}
+                onHide={() => setShowFundedModal(false)}
+                onConfirm={handleFundedConfirm}
+                loading={updateMutation.isPending}
+                initialAmount={fundedAmount}
+                title="Status Update: Closed (Completed)"
+                message="Since the status is Closed (Completed), please specify the final funded amount for this application."
             />
         </>
     );

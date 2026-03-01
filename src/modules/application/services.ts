@@ -34,7 +34,7 @@ export const getFundingApplicationDetails = async (id: string | number): Promise
   return response.data;
 };
 
-export const updateFundingApplicationStatus = async (payload: { funding_application_id: number | string; status: string; status_note?: string }): Promise<SingleApiResponse<any>> => {
+export const updateFundingApplicationStatus = async (payload: { funding_application_id: number | string; status: string; status_note?: string; funded_amount?: string | number }): Promise<SingleApiResponse<any>> => {
   const response = await apiClient.post('/common/request-application/funding-application/status-update', payload);
   return response.data;
 };

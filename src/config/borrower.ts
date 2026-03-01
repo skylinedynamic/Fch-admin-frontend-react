@@ -32,23 +32,42 @@ export const FUNDING_TYPE_OPTIONS = [
 ];
 
 
+export const FUNDING_APPLICATION_STATUS = {
+  PENDING: 'Pending',
+  SUBMITTED: 'Submitted (Received)',
+  UNDERWRITING_REVIEW: 'Underwriting Review',
+  MISSING_DOCUMENTS: 'Missing Documents (Action Required)',
+  IN_VERIFICATION: 'In Verification',
+  APPROVED_CONDITIONAL: 'Approved (Conditional)',
+  APPROVED_FINAL: 'Approved (Final)',
+  MATCHED_TO_LENDER: 'Matched to Lender',
+  SUBMITTED_TO_LENDER: 'Submitted to Lender',
+  LENDER_REVIEWING: 'Lender Reviewing',
+  OFFER_ISSUED: 'Offer Issued',
+  OFFER_ACCEPTED: 'Offer Accepted',
+  CONTRACTING_DOCS_OUT: 'Contracting / Docs Out',
+  CLEARED_TO_FUND: 'Cleared to Fund',
+  FUNDED: 'Funded',
+  CLOSED: 'Closed (Completed)'
+};
+
 export const FUNDING_APPLICATION_STATUS_OPTIONS = [
-  { label: 'Pending', value: 'Pending' },
-  { label: 'Submitted (Received)', value: 'Submitted (Received)' },
-  { label: 'Underwriting Review', value: 'Underwriting Review' },
-  { label: 'Missing Documents (Action Required)', value: 'Missing Documents (Action Required)' },
-  { label: 'In Verification', value: 'In Verification' },
-  { label: 'Approved (Conditional)', value: 'Approved (Conditional)' },
-  { label: 'Approved (Final)', value: 'Approved (Final)' },
-  { label: 'Matched to Lender', value: 'Matched to Lender' },
-  { label: 'Submitted to Lender', value: 'Submitted to Lender' },
-  { label: 'Lender Reviewing', value: 'Lender Reviewing' },
-  { label: 'Offer Issued', value: 'Offer Issued' },
-  { label: 'Offer Accepted', value: 'Offer Accepted' },
-  { label: 'Contracting / Docs Out', value: 'Contracting / Docs Out' },
-  { label: 'Cleared to Fund', value: 'Cleared to Fund' },
-  { label: 'Funded', value: 'Funded' },
-  { label: 'Closed (Completed)', value: 'Closed (Completed)' }
+  { label: 'Pending', value: FUNDING_APPLICATION_STATUS.PENDING },
+  { label: 'Submitted (Received)', value: FUNDING_APPLICATION_STATUS.SUBMITTED },
+  { label: 'Underwriting Review', value: FUNDING_APPLICATION_STATUS.UNDERWRITING_REVIEW },
+  { label: 'Missing Documents (Action Required)', value: FUNDING_APPLICATION_STATUS.MISSING_DOCUMENTS },
+  { label: 'In Verification', value: FUNDING_APPLICATION_STATUS.IN_VERIFICATION },
+  { label: 'Approved (Conditional)', value: FUNDING_APPLICATION_STATUS.APPROVED_CONDITIONAL },
+  { label: 'Approved (Final)', value: FUNDING_APPLICATION_STATUS.APPROVED_FINAL },
+  { label: 'Matched to Lender', value: FUNDING_APPLICATION_STATUS.MATCHED_TO_LENDER },
+  { label: 'Submitted to Lender', value: FUNDING_APPLICATION_STATUS.SUBMITTED_TO_LENDER },
+  { label: 'Lender Reviewing', value: FUNDING_APPLICATION_STATUS.LENDER_REVIEWING },
+  { label: 'Offer Issued', value: FUNDING_APPLICATION_STATUS.OFFER_ISSUED },
+  { label: 'Offer Accepted', value: FUNDING_APPLICATION_STATUS.OFFER_ACCEPTED },
+  { label: 'Contracting / Docs Out', value: FUNDING_APPLICATION_STATUS.CONTRACTING_DOCS_OUT },
+  { label: 'Cleared to Fund', value: FUNDING_APPLICATION_STATUS.CLEARED_TO_FUND },
+  { label: 'Funded', value: FUNDING_APPLICATION_STATUS.FUNDED },
+  { label: 'Closed (Completed)', value: FUNDING_APPLICATION_STATUS.CLOSED }
 ];
 
 export const FUNDING_APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
