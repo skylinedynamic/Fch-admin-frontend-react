@@ -68,6 +68,20 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
                             {getMessage()}
                         </p>
 
+                        {loading && isApiVerify && (
+                            <div className="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center">
+                                <div className="flex-shrink-0">
+                                    <div className="spinner-grow spinner-grow-sm text-info me-2" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                                <div className="flex-grow-1 text-start">
+                                    <p className="mb-0 fs-13 fw-semibold text-info">Please wait...</p>
+                                    <p className="mb-0 fs-12 text-muted-50">API verification is in progress. This may take a few moments. Please do not close the window or refresh the page.</p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="text-start mb-4">
                             <label className="form-label text-muted fw-medium">
                                 {isReject ? (

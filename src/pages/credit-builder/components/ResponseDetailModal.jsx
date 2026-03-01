@@ -27,36 +27,65 @@ const ResponseDetailModal = ({ show, onHide, data = [], message = '' }) => {
     return (
         <div className="modal fade zoomIn" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content border-0">
-                    <div className="modal-header bg-light p-3">
-                        <h5 className="modal-title">Verification Results</h5>
+                <div className="modal-content border-0 shadow">
+                    <div className="modal-header bg-primary-subtle p-3">
+                        <div className="d-flex align-items-center">
+                            <div className="flex-shrink-0">
+                                <div className="avatar-xs">
+                                    <div className="avatar-title bg-primary text-white rounded-circle fs-16">
+                                        <i className="ri-list-check-2"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ms-2">
+                                <h5 className="modal-title mb-0 fs-16 fw-bold text-primary">Verification Results Summary</h5>
+                            </div>
+                        </div>
                         <button type="button" className="btn-close" onClick={onHide}></button>
                     </div>
-                    <div className="modal-body">
+                    <div className="modal-body p-0">
+        
                         <div className="table-responsive">
-                            <table className="table table-nowrap align-middle mb-0">
-                                <thead className="table-light">
+                            <table className="table table-hover align-middle mb-0">
+                                <thead className="bg-light text-muted">
                                     <tr>
-                                        <th scope="col">Task Name</th>
-                                        <th scope="col">Message</th>
+                                        <th scope="col" className="ps-4" style={{ width: '40%' }}>Task Name</th>
+                                        <th scope="col" className="text-end pe-4">Status & Message</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data && data.length > 0 ? (
                                         data.map((item, index) => (
                                             <tr key={index}>
-                                                <td className="fw-medium">{item.task_name}</td>
-                                                <td className="text-wrap">
-                                                    <span className={item.is_verified ? 'text-success' : 'text-danger'}>
-                                                        {item.message || (item.is_verified ? 'Successfully processed' : 'Failed to process')}
-                                                    </span>
+                                                <td className="ps-4">
+                                                    <div className="d-flex align-items-center">
+                                                        <span className="fw-medium text-dark">{item.task_name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="pe-4 text-end">
+                                                    <div className="d-flex align-items-center justify-content-end">
+                                                        <div className={`avatar-xxs flex-shrink-0 me-2`}>
+                                                            <div className={`avatar-title rounded-circle fs-14 ${item.is_verified ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
+                                                                <i className={item.is_verified ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill'}></i>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`fs-13 ${item.is_verified ? 'text-success' : 'text-danger'} text-wrap`}>
+                                                            {item.message || (item.is_verified ? 'Successfully processed' : 'Failed to process')}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="3" className="text-center p-4">
-                                                <div className="text-muted">No details available</div>
+                                            <td colSpan="2" className="text-center py-5">
+                                                <div className="avatar-md mx-auto mb-3">
+                                                    <div className="avatar-title bg-light text-primary rounded-circle fs-24">
+                                                        <i className="ri-inbox-archive-line"></i>
+                                                    </div>
+                                                </div>
+                                                <h5 className="fs-15 fw-semibold">No Results Found</h5>
+                                                <p className="text-muted mb-0">There are no verification details to display at this time.</p>
                                             </td>
                                         </tr>
                                     )}
@@ -64,8 +93,10 @@ const ResponseDetailModal = ({ show, onHide, data = [], message = '' }) => {
                             </table>
                         </div>
                     </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-primary" onClick={onHide}>Close</button>
+                    <div className="modal-footer bg-light p-3">
+                        <button type="button" className="btn btn-primary px-4" onClick={onHide}>
+                            <i className="ri-close-line align-bottom me-1"></i> Close
+                        </button>
                     </div>
                 </div>
             </div>

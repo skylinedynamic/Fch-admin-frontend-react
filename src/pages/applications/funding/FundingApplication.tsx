@@ -324,7 +324,7 @@ export default function FundingApplication() {
                                             <Column field="industry_type" header="Industry Type" sortable filter filterPlaceholder="Search industry" style={{ minWidth: '150px' }} />
                                             <Column field="entity_type" header="Entity Type" sortable filter filterPlaceholder="Search entity" style={{ minWidth: '150px' }} />
                                             <Column field="purpose_of_funds" header="Purpose" sortable filter filterPlaceholder="Search purpose" style={{ minWidth: '160px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: FundingApplicationType) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rowData.requested_amount) || 0)} sortable style={{ minWidth: '160px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: FundingApplicationType) => rowData.requested_amount || 0} sortable style={{ minWidth: '160px' }} />
                                             <Column field="date" header="Date" body={(rowData: FundingApplicationType) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
                                         </DataTable>
