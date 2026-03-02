@@ -129,21 +129,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 }
             }
 
-            // If other_city has a value, set city to 'Others' to show the dropdown correctly
-            if (apiData.other_city && apiData.other_city.trim() !== '') {
-                apiData.city = 'Others';
-            }
+
 
             // Normalize date
             if (apiData.business_start_date) {
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
-            console.log('[ClientInfoSection] Syncing data:', {
-                notes: apiData.notes,
-                other_city: apiData.other_city,
-                city: apiData.city
-            });
 
             // Ensure enrollment_payment is synced from payment_amount for edit mode consistency
             if (apiData.payment_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
@@ -237,6 +229,27 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     }, [formData.country, formData.state]);
 
+    // After localCities load: if the stored city is not in the list and is not already 'Others',
+    // treat it as a custom "other" city → move it to other_city and set city = 'Others'
+    useEffect(() => {
+        if (!isSynced) return; // Wait until data has been synced from API
+        if (!formData.city || formData.city === 'Others') return; // Already handled
+        if (localCities.length === 0) return; // Cities not yet loaded for this state
+
+        const cityExistsInList = localCities.some(
+            (c) => c.value === formData.city || c.label === formData.city
+        );
+
+        if (!cityExistsInList) {
+            // The saved city is not a known dropdown option → it was typed as "other"
+            setFormData(prev => ({
+                ...prev,
+                other_city: prev.city,
+                city: 'Others',
+            }));
+        }
+    }, [localCities, isSynced]);
+
     // 4. Handle Inputs
     const handleInputChange = (e: any) => {
         const name = e.target ? e.target.name : e.name;
@@ -310,16 +323,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     },
                     onError: (error: any) => {
                         console.error("[ClientInfoSection] Save ERROR:", error);
-                        toast.error("Failed to update client details");
-                        if (error.response && error.response.data && error.response.data.errors && setErrors) {
-                            const backendErrors = error.response.data.errors;
+
+                        const responseData = error?.response?.data;
+
+                        // Map field-level validation errors to the form
+                        if (responseData?.errors && setErrors) {
+                            const backendErrors = responseData.errors;
                             const mappedErrors: Record<string, string> = {};
                             Object.keys(backendErrors).forEach(key => {
-                                mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+                                mappedErrors[key] = Array.isArray(backendErrors[key])
+                                    ? backendErrors[key][0]
+                                    : backendErrors[key];
                             });
                             setErrors(mappedErrors);
                             scrollToFirstError(mappedErrors);
+                            // Inline field errors are already visible — no toast needed
+                        } else {
+                            // No field-level errors: show generic or backend message in toast
+                            const toastMessage = responseData?.message || "Failed to update client details";
                         }
+
                         reject(error);
                     }
                 });
