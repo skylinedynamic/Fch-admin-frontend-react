@@ -12,6 +12,7 @@ import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/stat
 
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
+import ClientDetailsModal from './ClientDetailsModal';
 
 interface ClientListTableProps {
     isHost: boolean;
@@ -41,6 +42,31 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     partnerId
 }) => {
     const navigate = useNavigate();
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedClientId, setSelectedClientId] = useState<number | string | null>(null);
+
+    const openModal = (id: number | string) => {
+        setSelectedClientId(id);
+        setIsModalOpen(true);
+    };
+
+    const actionBody = (rowData: Client) => {
+        return (
+            <button
+                type="button"
+                className="btn btn-sm btn-soft-info"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    openModal(rowData.id);
+                }}
+                title="View Details"
+            >
+                <i className="ri-eye-fill"></i>
+            </button>
+        );
+    };
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
@@ -337,9 +363,16 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                         {!partnerId && <Column field="partner_name" header="Partner Name" sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '150px' }} />}
                         <Column field="current_tier_name" header="Current Tier" body={tierBody} sortable filter filterElement={tierFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }} />
                         <Column field="status" header="Status" body={statusBody} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '120px' }} />
+                        {isHost && <Column header="Action" body={actionBody} style={{ minWidth: '100px' }} align="center" />}
                     </DataTable>
                 </div>
             )}
+
+            <ClientDetailsModal
+                isOpen={isModalOpen}
+                toggle={() => setIsModalOpen(!isModalOpen)}
+                clientId={selectedClientId}
+            />
         </>
     );
 };
