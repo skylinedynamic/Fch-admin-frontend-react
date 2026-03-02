@@ -299,12 +299,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         {selectedBorrowerPlan.total_installments_count && (
                                                             <span> for {selectedBorrowerPlan.total_installments_count} installments</span>
                                                         )}
-                                                        {isHost && (
-                                                            <div className="small mt-1 text-success">
-                                                                <i className="ri-information-line me-1"></i>
-                                                                Platform fee of <strong>${Number(customPlatformFee).toLocaleString()}/mo</strong> starts on the 12th month
-                                                            </div>
-                                                        )}
                                                     </p>
                                                 </div>
                                             </div>
