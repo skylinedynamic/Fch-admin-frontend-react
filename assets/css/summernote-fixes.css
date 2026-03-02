@@ -2,8 +2,19 @@
 
 /* Ensure Summernote dialogs (Link, Image, Video) appear above Bootstrap modals */
 .note-modal {
-    z-index: 2051 !important;
+    z-index: 2100 !important;
     overflow-y: auto !important;
+}
+
+/* Backdrop rendered on body when dialogsInBody: true */
+.note-modal-backdrop {
+    z-index: 2099 !important;
+}
+
+/* Summernote uses 'in' class (Bootstrap 3 style) to show modals */
+.note-modal.in,
+.note-modal.show {
+    display: block !important;
 }
 
 .note-modal .modal-dialog {

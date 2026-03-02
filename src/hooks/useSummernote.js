@@ -2,6 +2,29 @@ import { useEffect, useRef, useCallback } from 'react';
 import 'summernote/dist/summernote-lite.js';
 
 /**
+ * Fix: Bootstrap 5 modal has a focus trap that intercepts all `focusin` events
+ * and forces focus back inside the modal element. This prevents typing inside
+ * Summernote dialogs rendered on <body> (via dialogsInBody: true).
+ * We block that interception in capture phase when the focus target is inside
+ * a Summernote dialog.
+ */
+let summernoteDialogFocusTrapFixed = false;
+function applySummernoteFocusTrapFix() {
+    if (summernoteDialogFocusTrapFixed) return;
+    summernoteDialogFocusTrapFixed = true;
+    document.addEventListener('focusin', (e) => {
+        if (
+            e.target.closest('.note-modal') ||
+            e.target.closest('.note-modal-backdrop') ||
+            e.target.closest('.note-editor-dialog')
+        ) {
+            e.stopPropagation();
+        }
+    }, true); // capture phase — runs before Bootstrap's listener
+}
+
+
+/**
  * Custom hook for Summernote editor initialization and management
  * @param {string} fieldName - The name of the field (e.g., 'notes', 'description')
  * @param {string} fieldValue - The current value of the field
@@ -38,8 +61,8 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
             ['color', ['color']],
             ['para', ['ul', 'ol', 'paragraph']],
             ['table', ['table']],
-            ['insert', ['link', 'picture', 'video']],
-            ['view', ['codeview', 'help']]
+            ['insert', ['link', 'picture']],
+            ['view', ['help']]
         ],
         popover: {
             table: [
@@ -59,10 +82,14 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
             const $editor = $j(editorRef.current);
             const initialCode = latestValueRef.current || '';
 
+            // Apply Bootstrap 5 focus trap fix (runs once globally)
+            applySummernoteFocusTrapFix();
+
             console.log('[useSummernote] Initializing editor:', { fieldName });
 
             $editor.summernote({
                 ...config,
+                dialogsInBody: true,  // Always render Insert Image/Video dialogs on <body> so they appear above Bootstrap modals
                 callbacks: {
                     onChange: (contents) => {
                         const normalized = normalize(contents);
