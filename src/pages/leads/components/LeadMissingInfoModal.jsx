@@ -60,12 +60,23 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                 const stateCode = sEntry ? sEntry[0] : null;
 
                 if (stateCode && locationData[countryCode].states[stateCode]) {
-                    const cityList = locationData[countryCode].states[stateCode].cities;
+                    const cityList = locationData[countryCode].states[stateCode].cities || [];
                     const cityOptions = cityList.map((city) => ({ label: city, value: city }));
-                    setCities(cityOptions);
+                    setCities([...cityOptions, { label: 'Others', value: 'Others' }]);
+
+                    // Initialization Check: if current city is not in the list, move it to other_city
+                    if (extraData.city && extraData.city !== 'Others' && !cityList.includes(extraData.city)) {
+                        setExtraData(prev => ({ 
+                            ...prev, 
+                            city: 'Others', 
+                            other_city: extraData.city 
+                        }));
+                    }
                 } else {
-                    setCities([]);
+                    setCities([{ label: 'Others', value: 'Others' }]);
                 }
+            } else {
+                setCities([{ label: 'Others', value: 'Others' }]);
             }
         }
     }, [extraData.state, extraData.country]);
@@ -108,8 +119,12 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
             if (name === 'country') {
                 newData.state = '';
                 newData.city = '';
+                newData.other_city = '';
             } else if (name === 'state') {
                 newData.city = '';
+                newData.other_city = '';
+            } else if (name === 'city' && value !== 'Others') {
+                newData.other_city = '';
             }
             
             return newData;
@@ -136,6 +151,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
         if (!extraData.country) newErrors.country = 'Country is required';
         if (!extraData.state) newErrors.state = 'State is required';
         if (!extraData.city) newErrors.city = 'City is required';
+        if (extraData.city === 'Others' && !extraData.other_city?.trim()) newErrors.other_city = 'Please specify city name';
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -143,7 +159,12 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
 
     const handleConfirm = () => {
         if (validate()) {
-            onConfirm(extraData);
+            const payload = { ...extraData };
+            if (payload.city === 'Others') {
+                payload.city = payload.other_city;
+            }
+            delete payload.other_city;
+            onConfirm(payload);
         }
     };
 
@@ -214,6 +235,8 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     onChange={(e) => handleInputChange('country', e.value)}
                                     placeholder="Select Country"
                                     filter
+                                    optionLabel="label"
+                                    optionValue="value"
                                     className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
                                 />
                                 {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
@@ -226,6 +249,8 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     onChange={(e) => handleInputChange('state', e.value)}
                                     placeholder="Select State"
                                     filter
+                                    optionLabel="label"
+                                    optionValue="value"
                                     className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
                                     disabled={!extraData.country}
                                 />
@@ -239,11 +264,26 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     onChange={(e) => handleInputChange('city', e.value)}
                                     placeholder="Select City"
                                     filter
+                                    optionLabel="label"
+                                    optionValue="value"
                                     className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
                                     disabled={!extraData.state}
                                 />
                                 {errors.city && <div className="invalid-feedback d-block">{errors.city}</div>}
                             </div>
+                            {extraData.city === 'Others' && (
+                                <div className="col-lg-12">
+                                    <label className="form-label">Other City <span className="text-danger">*</span></label>
+                                    <input 
+                                        type="text" 
+                                        className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
+                                        value={extraData.other_city} 
+                                        onChange={(e) => handleInputChange('other_city', e.target.value)}
+                                        placeholder="Enter city name"
+                                    />
+                                    {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="modal-footer">
