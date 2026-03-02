@@ -341,7 +341,31 @@ export default function LeadDetails() {
     };
 
     // Summernote Editors
-    const { editorRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'leadDetails' && !isLoading);
+    const { editorRef: requirementDetailsRef } = useSummernote('requirement_details', formData.requirement_details, handleInputChange, { height: 250 }, activeTab === 'leadDetails' && !isLoading);
+
+    const { editorRef: leadSourceNoteRef } = useSummernote(
+        'lead_source_note',
+        formData.lead_source_note,
+        handleInputChange,
+        { height: 150 },
+        activeTab === 'leadDetails' && formData.lead_source === 'Other' && !isLoading
+    );
+
+    const { editorRef: entityTypeNoteRef } = useSummernote(
+        'entity_type_note',
+        formData.entity_type_note,
+        handleInputChange,
+        { height: 150 },
+        activeTab === 'contactInfo' && formData.entity_type === 'Other / Unknown' && !isLoading
+    );
+
+    const { editorRef: industryTypeNoteRef } = useSummernote(
+        'industry_type_note',
+        formData.industry_type_note,
+        handleInputChange,
+        { height: 150 },
+        activeTab === 'contactInfo' && formData.industry_type === 'Other / Unknown' && !isLoading
+    );
 
     useEffect(() => {
         const fetchData = async () => {
@@ -686,6 +710,7 @@ export default function LeadDetails() {
                                                                         options={LEAD_SOURCE_OPTIONS}
                                                                         onChange={(e) => handleInputChange({ target: { name: 'lead_source', value: e.value } })}
                                                                         placeholder="Select source"
+                                                                        filter
                                                                         className={`w-100 ${errors.lead_source ? 'p-invalid' : ''}`}
                                                                     />
                                                                     {errors.lead_source && <div className="invalid-feedback d-block">{errors.lead_source}</div>}
@@ -693,18 +718,16 @@ export default function LeadDetails() {
                                                             </div>
 
                                                             {formData.lead_source === 'Other' && (
-                                                                <div className="col-lg-6">
+                                                                <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                        <label className="form-label">Note <span className="text-danger">*</span></label>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
-                                                                            name="lead_source_note"
-                                                                            value={formData.lead_source_note}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Please specify lead source"
-                                                                        />
-                                                                        {errors.lead_source_note && <div className="invalid-feedback">{errors.lead_source_note}</div>}
+                                                                         <label className="form-label">Note <span className="text-danger">*</span></label>
+                                                                         <textarea
+                                                                             ref={leadSourceNoteRef}
+                                                                             className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
+                                                                             name="lead_source_note"
+                                                                             placeholder="Please specify lead source"
+                                                                         ></textarea>
+                                                                         {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -712,12 +735,12 @@ export default function LeadDetails() {
                                                             <div className="col-lg-12" key="requirement-details-field">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Requirement Details</label>
-                                                                    <textarea
-                                                                        ref={editorRef}
-                                                                        className="form-control"
-                                                                        name="requirement_details"
-                                                                        placeholder="Enter details"
-                                                                    ></textarea>
+                                                                     <textarea
+                                                                         ref={requirementDetailsRef}
+                                                                         className="form-control"
+                                                                         name="requirement_details"
+                                                                         placeholder="Enter details"
+                                                                     ></textarea>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -914,24 +937,23 @@ export default function LeadDetails() {
                                                                         options={LEAD_ENTITY_TYPE_OPTIONS}
                                                                         onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
                                                                         placeholder="Select entity type"
+                                                                        filter
                                                                         className="w-100"
                                                                     />
                                                                 </div>
                                                             </div>
 
                                                             {formData.entity_type === 'Other / Unknown' && (
-                                                                <div className="col-lg-6">
+                                                                <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                        <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
-                                                                            name="entity_type_note"
-                                                                            value={formData.entity_type_note}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Please specify entity type"
-                                                                        />
-                                                                        {errors.entity_type_note && <div className="invalid-feedback">{errors.entity_type_note}</div>}
+                                                                         <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                                                                         <textarea
+                                                                             ref={entityTypeNoteRef}
+                                                                             className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
+                                                                             name="entity_type_note"
+                                                                             placeholder="Please specify entity type"
+                                                                         ></textarea>
+                                                                         {errors.entity_type_note && <div className="invalid-feedback d-block">{errors.entity_type_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -943,24 +965,23 @@ export default function LeadDetails() {
                                                                         options={LEAD_INDUSTRY_TYPE_OPTIONS}
                                                                         onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
                                                                         placeholder="Select industry type"
+                                                                        filter
                                                                         className="w-100"
                                                                     />
                                                                 </div>
                                                             </div>
 
                                                             {formData.industry_type === 'Other / Unknown' && (
-                                                                <div className="col-lg-6">
+                                                                <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                        <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
-                                                                        <input
-                                                                            type="text"
-                                                                            className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
-                                                                            name="industry_type_note"
-                                                                            value={formData.industry_type_note}
-                                                                            onChange={handleInputChange}
-                                                                            placeholder="Please specify industry type"
-                                                                        />
-                                                                        {errors.industry_type_note && <div className="invalid-feedback">{errors.industry_type_note}</div>}
+                                                                         <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
+                                                                         <textarea
+                                                                             ref={industryTypeNoteRef}
+                                                                             className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
+                                                                             name="industry_type_note"
+                                                                             placeholder="Please specify industry type"
+                                                                         ></textarea>
+                                                                         {errors.industry_type_note && <div className="invalid-feedback d-block">{errors.industry_type_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}

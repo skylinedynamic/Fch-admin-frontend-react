@@ -503,7 +503,7 @@ export default function Leads() {
                                 </form>
 
                                 {loading ? (
-                                    <TableLoader rows={10} columns={new Array(9).fill({ style: { minWidth: '100px' } })} />
+                                    <TableLoader rows={10} columns={new Array(10).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
@@ -540,6 +540,7 @@ export default function Leads() {
                                             {hasPermission('delete leads') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                                             {/* <Column field="opportunity" header="Opportunity" body={opportunityBodyTemplate} sortable filter filterPlaceholder="Search by opportunity" style={{ minWidth: '180px' }} /> */}
                                             <Column field="contact_person" header="Contact" body={(rowData) => nullSafeBodyTemplate(rowData, 'contact_person')} sortable filter showFilterMatchModes filterPlaceholder="Search by contact" style={{ minWidth: '160px' }} />
+                                            <Column field="company_name" header="Company Name" body={(rowData) => nullSafeBodyTemplate(rowData, 'company_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by organization" style={{ minWidth: '180px' }} />
                                             <Column field="email" header="Email" body={(rowData) => nullSafeBodyTemplate(rowData, 'email')} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                                             <Column field="phone_number" header="Phone" body={(rowData) => nullSafeBodyTemplate(rowData, 'phone_number')} sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
                                             <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
