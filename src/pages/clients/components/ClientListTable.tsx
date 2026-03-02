@@ -253,13 +253,21 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     );
 
     // Dynamic loader config for Clients
-    const loaderConfig = [
-        { col: isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12" }, // Search
-        ...(!partnerId && isHost ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
-        { col: isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Sales Person
-        { col: isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Tiers
-        { col: isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12", isButton: true } // Buttons
-    ];
+    const loaderConfig = isHost
+        ? [
+            { col: !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12" }, // Search
+            ...(!partnerId ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
+            { col: !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Sales Person
+            { col: !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Tiers
+            { col: !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12", isButton: true } // Buttons
+        ]
+        : [
+            { col: "col-xxl-4 col-sm-12" }, // Search
+            { col: "col-xxl-2 col-sm-6" }, // Sales Person
+            { col: "col-xxl-2 col-sm-6" }, // Tiers
+            { col: "col-xxl-2 col-sm-6", isButton: true }, // Filter Button
+            { col: "col-xxl-2 col-sm-6", isButton: true } // Clear Button
+        ];
 
     return (
         <>
@@ -298,7 +306,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             </div>
                         )}
 
-                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
+                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-2 col-sm-6"}>
                             <Dropdown
                                 value={selectedAssignedUser}
                                 onChange={(e) => setSelectedAssignedUser(e.value)}
@@ -312,7 +320,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
+                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-2 col-sm-6"}>
                             <Dropdown
                                 value={selectedTier}
                                 onChange={(e) => setSelectedTier(e.value)}
@@ -325,12 +333,23 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className={isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
-                            <div className="d-flex gap-2">
-                                <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                        {!isHost ? (
+                            <>
+                                <div className="col-xxl-2 col-sm-6">
+                                    <button type="submit" className="btn btn-warning w-100"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                </div>
+                                <div className="col-xxl-2 col-sm-6">
+                                    <button type="button" className="btn btn-default w-100" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className={isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
+                                <div className="d-flex gap-2">
+                                    <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </form>
