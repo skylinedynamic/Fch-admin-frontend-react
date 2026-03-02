@@ -316,9 +316,9 @@ export default function BorrowerVerificationRequests() {
                         <button
                             className="btn btn-sm btn-soft-primary"
                             onClick={() => openActionModal('api_verify', rowData)}
-                            title="API Verification"
+                            title="MicroBilt Verification"
                         >
-                            Api Verification
+                            MicroBilt Verification
                         </button>
                     )}
 
@@ -397,7 +397,7 @@ export default function BorrowerVerificationRequests() {
                                                     className="dropdown-item"
                                                     onClick={() => openActionModal('api_verify')}
                                                 >
-                                                    Api Bulk Verification
+                                                    MicroBilt Bulk Verification
                                                 </button>
                                             </li>
                                             <li>

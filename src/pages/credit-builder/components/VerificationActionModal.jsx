@@ -43,7 +43,7 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
     const isApiVerify = actionType === 'api_verify';
     const isManualVerify = actionType === 'manual_verify';
 
-    const title = isReject ? 'Reject Request' : (isApiVerify ? 'API Verification' : 'Manual Verification');
+    const title = isReject ? 'Reject Request' : (isApiVerify ? 'MicroBilt Verification' : 'Manual Verification');
     const confirmBtnClass = isReject ? 'btn-danger' : (isApiVerify ? 'btn-primary' : 'btn-success');
     const confirmBtnText = isReject ? 'Reject' : 'Verify';
     const icon = isReject
@@ -53,7 +53,7 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
     const getMessage = () => {
         const itemLabel = isBulk ? `${count} selected requests` : "this request";
         if (isReject) return `Are you sure you want to reject ${itemLabel}? This action cannot be undone.`;
-        if (isApiVerify) return `Are you sure you want to perform API verification for ${itemLabel}?`;
+        if (isApiVerify) return `Are you sure you want to perform MicroBilt verification for ${itemLabel}?`;
         return `Are you sure you want to manually verify ${itemLabel}?`;
     };
 
@@ -77,7 +77,7 @@ export default function VerificationActionModal({ show, onHide, onConfirm, actio
                                 </div>
                                 <div className="flex-grow-1 text-start">
                                     <p className="mb-0 fs-13 fw-semibold text-info">Please wait...</p>
-                                    <p className="mb-0 fs-12 text-muted-50">API verification is in progress. This may take a few moments. Please do not close the window or refresh the page.</p>
+                                    <p className="mb-0 fs-12 text-muted-50">MicroBilt verification is in progress. This may take a few moments. Please do not close the window or refresh the page.</p>
                                 </div>
                             </div>
                         )}

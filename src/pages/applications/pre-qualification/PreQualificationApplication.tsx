@@ -371,7 +371,7 @@ export default function PreQualificationApplication() {
                                             <Column header="Name" field="full_name" sortable filter filterPlaceholder="Search name" style={{ minWidth: '160px' }} />
                                             <Column field="business_name" header="Business Name" sortable filter filterPlaceholder="Search business" style={{ minWidth: '180px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable filter filterPlaceholder="Search type" style={{ minWidth: '150px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rowData.requested_amount) || 0)} sortable style={{ minWidth: '160px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(rowData: PreQualificationApplicationType) => rowData.requested_amount } sortable style={{ minWidth: '160px' }} />
                                             <Column field="date" header="Date" body={(rowData: PreQualificationApplicationType) => rowData.date || '-'} sortable style={{ minWidth: '120px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterPlaceholder="Search status" style={{ minWidth: '140px' }} />
                                         </DataTable>
