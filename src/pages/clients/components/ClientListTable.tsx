@@ -310,7 +310,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             </form>
 
             {clientsLoading ? (
-                <TableLoader rows={10} columns={[{ style: { width: '3rem' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '220px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '130px' } }, { style: { minWidth: '120px' } }]} />
+                <TableLoader rows={10} columns={[{ style: { width: '3rem' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '220px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '130px' } }, { style: { minWidth: '120px' } }]} />
             ) : (
                 <div className="table-responsive table-card mt-1">
                     <DataTable<Client[]>
@@ -330,6 +330,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                     >
                         {deletePermission && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                         <Column field="full_name" header="Full Name" body={fullNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by name" style={{ minWidth: '180px' }} />
+                        <Column field="business_name" header="Company Name" sortable filter showFilterMatchModes filterPlaceholder="Search by business" style={{ minWidth: '180px' }} />
                         <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                         <Column field="phone_number" header="Phone Number" sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
                         <Column field="assign_name" header="Assigned To" sortable filter showFilterMatchModes filterPlaceholder="Search by assigned" style={{ minWidth: '150px' }} />
