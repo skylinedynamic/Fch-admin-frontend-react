@@ -56,14 +56,15 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
         return (
             <button
                 type="button"
-                className="btn btn-sm btn-soft-info"
+                className="btn btn-sm btn-icon btn-soft-primary waves-effect waves-light"
+                style={{ width: '30px', height: '30px' }}
                 onClick={(e) => {
                     e.stopPropagation();
                     openModal(rowData.id);
                 }}
                 title="View Details"
             >
-                <i className="ri-eye-fill"></i>
+                <i className="ri-eye-line fs-16"></i>
             </button>
         );
     };
@@ -382,7 +383,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                         {!partnerId && <Column field="partner_name" header="Partner Name" sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '150px' }} />}
                         <Column field="current_tier_name" header="Current Tier" body={tierBody} sortable filter filterElement={tierFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }} />
                         <Column field="status" header="Status" body={statusBody} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '120px' }} />
-                        {isHost && <Column header="Action" body={actionBody} style={{ minWidth: '100px' }} align="center" />}
+                        <Column header="Action" body={actionBody} style={{ minWidth: '100px' }} align="center" />
                     </DataTable>
                 </div>
             )}
