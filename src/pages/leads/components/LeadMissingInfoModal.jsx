@@ -91,7 +91,19 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
             });
         }
 
+        // Prevent Bootstrap modal focus trap from stealing focus from PrimeReact overlay panels
+        const handleFocusin = (e) => {
+            const isInPrimeReactOverlay = e.target.closest(
+                '.p-dropdown-panel, .p-overlay-open, .p-connected-overlay-enter-done'
+            );
+            if (isInPrimeReactOverlay) {
+                e.stopImmediatePropagation();
+            }
+        };
+        document.addEventListener('focusin', handleFocusin, true);
+
         return () => {
+            document.removeEventListener('focusin', handleFocusin, true);
             if (modalInstanceRef.current) {
                 modalInstanceRef.current.hide();
                 modalInstanceRef.current.dispose();
@@ -145,8 +157,16 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
 
     const validate = () => {
         const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
         if (!extraData.contact_person?.trim()) newErrors.contact_person = 'Contact Name is required';
-        if (!extraData.email?.trim()) newErrors.email = 'Email Address is required';
+
+        if (!extraData.email?.trim()) {
+            newErrors.email = 'Email Address is required';
+        } else if (!emailRegex.test(extraData.email.trim())) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
         if (!extraData.phone_number?.trim()) newErrors.phone_number = 'Phone Number is required';
         if (!extraData.country) newErrors.country = 'Country is required';
         if (!extraData.state) newErrors.state = 'State is required';
@@ -237,6 +257,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     filter
                                     optionLabel="label"
                                     optionValue="value"
+                                    appendTo={document.body}
                                     className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
                                 />
                                 {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
@@ -251,6 +272,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     filter
                                     optionLabel="label"
                                     optionValue="value"
+                                    appendTo={document.body}
                                     className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
                                     disabled={!extraData.country}
                                 />
@@ -266,6 +288,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                                     filter
                                     optionLabel="label"
                                     optionValue="value"
+                                    appendTo={document.body}
                                     className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
                                     disabled={!extraData.state}
                                 />
