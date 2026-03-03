@@ -116,9 +116,14 @@ export default function Appointments() {
 
     // Update upcoming events list (From Today or recent past)
     useEffect(() => {
-        // Sort by date (descending to show most recent first, or ascending for chronological)
-        const sorted = [...events].sort((a, b) => new Date(b.start) - new Date(a.start));
-        setUpcomingEvents(sorted.slice(0, 15)); // Show most recent 15
+        const now = new Date();
+
+        const sorted = [...events]
+            .filter(evt => new Date(evt.start) >= now)
+            .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        setUpcomingEvents(sorted);
+    // Line 122
     }, [events]);
 
     // Actions
