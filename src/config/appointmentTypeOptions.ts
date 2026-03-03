@@ -57,3 +57,29 @@ export const TIME_SLOTS = [
     { label: "11:00 PM", value: "23:00" },
     { label: "11:30 PM", value: "23:30" },
 ];
+
+export const APPOINTMENT_STATUS_CONFIG = {
+    pending: {
+        label: "Pending",
+        badgeClass: "bg-warning-subtle text-warning",
+    },
+    confirmed: {
+        label: "Confirmed",
+        badgeClass: "bg-info-subtle text-info",
+    },
+    completed: {
+        label: "Completed",
+        badgeClass: "bg-success-subtle text-success",
+        colorClass: "apt-emerald",
+    },
+    cancelled: {
+        label: "Cancelled",
+        badgeClass: "bg-danger-subtle text-danger",
+        colorClass: "apt-rose",
+    },
+    expired: {
+        label: "Expired",
+        badgeClass: "bg-danger-subtle text-danger",
+        colorClass: "apt-rose",
+    },
+};
