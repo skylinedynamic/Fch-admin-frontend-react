@@ -21,6 +21,9 @@ import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 // Custom CSS
 import '../../../assets/css/appointments.css';
 
+// Config
+import { APPOINTMENT_STATUS_CONFIG } from '../../config/appointmentTypeOptions';
+
 export default function Appointments() {
     const calendarRef = useRef(null);
     const appointmentModalRef = useRef(null);
@@ -60,13 +63,11 @@ export default function Appointments() {
                         'apt-teal', 'apt-cyan', 'apt-orange', 'apt-fuchsia'
                     ];
 
-                    let colorClass = PALETTE[0]; // Default
-                    if (apt.status === 'cancelled') {
-                        colorClass = 'apt-rose';
-                    } else if (apt.status === 'completed') {
-                        colorClass = 'apt-emerald';
-                    } else {
-                        // Maximize difference using a prime shift
+                    const statusCfg = APPOINTMENT_STATUS_CONFIG[apt.status];
+                    let colorClass = statusCfg?.colorClass;
+
+                    if (!colorClass) {
+                        // Fallback: Maximize difference using a prime shift
                         const colorIndex = (parseInt(apt.id) * 11) % PALETTE.length;
                         colorClass = PALETTE[colorIndex];
                     }
@@ -116,9 +117,14 @@ export default function Appointments() {
 
     // Update upcoming events list (From Today or recent past)
     useEffect(() => {
-        // Sort by date (descending to show most recent first, or ascending for chronological)
-        const sorted = [...events].sort((a, b) => new Date(b.start) - new Date(a.start));
-        setUpcomingEvents(sorted.slice(0, 15)); // Show most recent 15
+        const now = new Date();
+
+        const sorted = [...events]
+            .filter(evt => new Date(evt.start) >= now)
+            .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        setUpcomingEvents(sorted);
+    // Line 122
     }, [events]);
 
     // Actions
@@ -247,24 +253,18 @@ export default function Appointments() {
 
                                                 const colorClass = evt.extendedProps?.colorClass || 'apt-blue';
 
-                                                // Determine Status Badge
-                                                const status = evt.extendedProps?.status || 'pending';
+                                                // Determine Status and Styles from Config
+                                                const status = evt.extendedProps?.status || '';
                                                 const isPast = new Date() > s;
-                                                let statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
-                                                let statusClass = 'bg-info-subtle text-info';
-
-                                                if (status === 'cancelled') {
-                                                    statusClass = 'bg-danger-subtle text-danger';
-                                                } else if (status === 'completed') {
-                                                    statusClass = 'bg-success-subtle text-success';
-                                                } else if (status === 'pending') {
-                                                    if (isPast) {
-                                                        statusLabel = 'Expired';
-                                                        statusClass = 'bg-danger-subtle text-danger';
-                                                    } else {
-                                                        statusClass = 'bg-warning-subtle text-warning';
-                                                    }
+                                                
+                                                let currentStatus = status;
+                                                if (status === 'pending' && isPast) {
+                                                    currentStatus = 'expired';
                                                 }
+
+                                                const statusCfg = APPOINTMENT_STATUS_CONFIG[currentStatus];
+                                                const statusLabel = statusCfg?.label || status;
+                                                const statusClass = statusCfg?.badgeClass || 'bg-info-subtle text-info';
 
                                                 let badge;
                                                 const startTime = s ? tConvert(s.toTimeString().slice(0, 5)) : '';
@@ -287,9 +287,7 @@ export default function Appointments() {
                                                                 </div>
                                                                 <div className="flex-shrink-0 d-flex gap-1">
                                                                     {badge}
-                                                                    {statusLabel === 'Expired' && (
-                                                                        <span className={`badge ${statusClass}`}>{statusLabel}</span>
-                                                                    )}
+                                                                    <span className={`badge ${statusClass}`}>{statusLabel}</span>
                                                                 </div>
                                                             </div>
                                                             <h6 className="card-title fs-16 apt-card-title">{evt.title}</h6>

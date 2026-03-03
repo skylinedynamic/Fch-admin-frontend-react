@@ -12,6 +12,7 @@ import { BORROWER_STATUS, BORROWER_STATUS_CLASS_MAP } from '../../../config/stat
 
 
 import FilterLoader from '../../../components/Loader/FilterLoader';
+import ClientDetailsModal from './ClientDetailsModal';
 
 interface ClientListTableProps {
     isHost: boolean;
@@ -41,6 +42,32 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     partnerId
 }) => {
     const navigate = useNavigate();
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedClientId, setSelectedClientId] = useState<number | string | null>(null);
+
+    const openModal = (id: number | string) => {
+        setSelectedClientId(id);
+        setIsModalOpen(true);
+    };
+
+    const actionBody = (rowData: Client) => {
+        return (
+            <button
+                type="button"
+                className="btn btn-sm btn-icon btn-soft-primary waves-effect waves-light"
+                style={{ width: '30px', height: '30px' }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    openModal(rowData.id);
+                }}
+                title="View Details"
+            >
+                <i className="ri-eye-line fs-16"></i>
+            </button>
+        );
+    };
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
@@ -227,13 +254,21 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     );
 
     // Dynamic loader config for Clients
-    const loaderConfig = [
-        { col: isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12" }, // Search
-        ...(!partnerId && isHost ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
-        { col: isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Sales Person
-        { col: isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Tiers
-        { col: isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12", isButton: true } // Buttons
-    ];
+    const loaderConfig = isHost
+        ? [
+            { col: !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-4 col-sm-12" }, // Search
+            ...(!partnerId ? [{ col: "col-xxl-2 col-sm-4" }] : []), // Partner filter
+            { col: !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Sales Person
+            { col: !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4" }, // Tiers
+            { col: !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12", isButton: true } // Buttons
+        ]
+        : [
+            { col: "col-xxl-4 col-sm-12" }, // Search
+            { col: "col-xxl-2 col-sm-6" }, // Sales Person
+            { col: "col-xxl-2 col-sm-6" }, // Tiers
+            { col: "col-xxl-2 col-sm-6", isButton: true }, // Filter Button
+            { col: "col-xxl-2 col-sm-6", isButton: true } // Clear Button
+        ];
 
     return (
         <>
@@ -272,7 +307,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             </div>
                         )}
 
-                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
+                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-2 col-sm-6"}>
                             <Dropdown
                                 value={selectedAssignedUser}
                                 onChange={(e) => setSelectedAssignedUser(e.value)}
@@ -286,7 +321,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-3 col-sm-4"}>
+                        <div className={isHost && !partnerId ? "col-xxl-2 col-sm-4" : "col-xxl-2 col-sm-6"}>
                             <Dropdown
                                 value={selectedTier}
                                 onChange={(e) => setSelectedTier(e.value)}
@@ -299,18 +334,29 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                             />
                         </div>
 
-                        <div className={isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
-                            <div className="d-flex gap-2">
-                                <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                        {!isHost ? (
+                            <>
+                                <div className="col-xxl-2 col-sm-6">
+                                    <button type="submit" className="btn btn-warning w-100"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                </div>
+                                <div className="col-xxl-2 col-sm-6">
+                                    <button type="button" className="btn btn-default w-100" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className={isHost && !partnerId ? "col-xxl-3 col-sm-12" : "col-xxl-2 col-sm-12"}>
+                                <div className="d-flex gap-2">
+                                    <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}><i className="ri-close-line me-1 align-bottom"></i> Clear</button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </form>
 
             {clientsLoading ? (
-                <TableLoader rows={10} columns={[{ style: { width: '3rem' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '220px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '130px' } }, { style: { minWidth: '120px' } }]} />
+                <TableLoader rows={10} columns={[{ style: { width: '3rem' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '220px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '130px' } }, { style: { minWidth: '120px' } }]} />
             ) : (
                 <div className="table-responsive table-card mt-1">
                     <DataTable<Client[]>
@@ -330,15 +376,23 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                     >
                         {deletePermission && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                         <Column field="full_name" header="Full Name" body={fullNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by name" style={{ minWidth: '180px' }} />
+                        <Column field="business_name" header="Company Name" sortable filter showFilterMatchModes filterPlaceholder="Search by business" style={{ minWidth: '180px' }} />
                         <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                         <Column field="phone_number" header="Phone Number" sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
                         <Column field="assign_name" header="Assigned To" sortable filter showFilterMatchModes filterPlaceholder="Search by assigned" style={{ minWidth: '150px' }} />
                         {!partnerId && <Column field="partner_name" header="Partner Name" sortable filter showFilterMatchModes filterPlaceholder="Search by partner" style={{ minWidth: '150px' }} />}
                         <Column field="current_tier_name" header="Current Tier" body={tierBody} sortable filter filterElement={tierFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }} />
                         <Column field="status" header="Status" body={statusBody} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '120px' }} />
+                        <Column header="Action" body={actionBody} style={{ minWidth: '100px' }} align="center" />
                     </DataTable>
                 </div>
             )}
+
+            <ClientDetailsModal
+                isOpen={isModalOpen}
+                toggle={() => setIsModalOpen(!isModalOpen)}
+                clientId={selectedClientId}
+            />
         </>
     );
 };

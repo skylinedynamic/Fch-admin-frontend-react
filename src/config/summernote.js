@@ -7,7 +7,6 @@ export const SUMMERNOTE_CONFIG = {
         ['para', ['ul', 'ol', 'paragraph']],
         ['color', ['color']],
         ['table', ['table']],
-        ['insert', ['link', 'picture', 'video']],
-        ['view', ['fullscreen', 'codeview', 'help']]
+        ['insert', ['link', 'picture']],
     ]
 };

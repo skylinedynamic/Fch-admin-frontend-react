@@ -13,6 +13,27 @@ import type { Client } from '../../../modules/client/types';
 
 const defaultFinancialsState = DEFAULT_CLIENT_STATE;
 
+const formatNumber = (val: any) => {
+    if (val === null || val === undefined || val === '') return '';
+    // Remove all non-numeric characters except decimal point
+    const strVal = String(val).replace(/[^0-9.]/g, '');
+    if (strVal === '') return '';
+    
+    const parts = strVal.split('.');
+    // Limit to one decimal point
+    if (parts.length > 2) return val; 
+
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+};
+
+const unformatNumber = (val: any) => {
+    if (!val) return '';
+    return String(val).replace(/,/g, '');
+};
+
+const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'annual_revenue', 'current_business_debt'];
+
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
     initialData?: Client;
@@ -46,14 +67,26 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     useEffect(() => {
         if (fetchedData) {
             // @ts-ignore
-            const dataToSet = fetchedData.data || fetchedData;
+            const dataToSet = { ...(fetchedData.data || fetchedData) };
+            
+            // Format existing values
+            CURRENCY_FIELDS.forEach(field => {
+                if (dataToSet[field]) {
+                    dataToSet[field] = formatNumber(dataToSet[field]);
+                }
+            });
+
             setFormData(prev => ({ ...prev, ...dataToSet }));
         }
     }, [fetchedData]);
 
     const handleInputChange = (e: any) => {
         const name = e.target ? e.target.name : e.name;
-        const value = e.target ? e.target.value : e.value;
+        let value = e.target ? e.target.value : e.value;
+
+        if (CURRENCY_FIELDS.includes(name)) {
+            value = formatNumber(value);
+        }
 
         setFormData(prev => ({ ...prev, [name]: value }));
 
@@ -68,7 +101,16 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     useImperativeHandle(ref, () => ({
         save: async () => {
             console.log('[BusinessFinancialsSection] Starting save...', { clientId, formData });
-            const payload = mapClientUpdatePayload(formData, true); // Financials usually host-agnostic for fields kept
+            
+            // Unformat values before sending to API
+            const apiData = { ...formData };
+            CURRENCY_FIELDS.forEach(field => {
+                if (apiData[field]) {
+                    apiData[field] = unformatNumber(apiData[field]);
+                }
+            });
+
+            const payload = mapClientUpdatePayload(apiData, true); // Financials usually host-agnostic for fields kept
             console.log('[BusinessFinancialsSection] Mapped payload:', payload);
 
             return new Promise((resolve, reject) => {

@@ -593,18 +593,17 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const assignedOptions = selectableUsers.map(u => ({
         label: u.name,
-        value: u.entity_type ? u.entity_id : u.id,
-        user_id: u.id,
-        entity_type: u.entity_type,
-        actual_entity_id: u.entity_id
+        value: u.id, // User ID is unique and should be used as the value for selection
+        entity_id: u.entity_id,
+        entity_type: u.entity_type
     }));
 
     // Debug logging
-    if (assignedOptions.length > 0 && formData.entity_id) {
+    if (assignedOptions.length > 0 && formData.assigned_for) {
         console.log('[AppointmentModal] Dropdown state:', {
-            formData_entity_id: formData.entity_id,
+            formData_assigned_for: formData.assigned_for,
             assignedOptions,
-            match: assignedOptions.find(opt => opt.value === formData.entity_id)
+            match: assignedOptions.find(opt => opt.value === formData.assigned_for)
         });
     }
 
@@ -835,15 +834,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 {loadingAssignedFor ? (
                                                     <Skeleton width="100%" height="38px" className="rounded-2" />
                                                 ) : (
-                                                    <Dropdown value={formData.entity_id} options={assignedOptions}
+                                                    <Dropdown value={formData.assigned_for} options={assignedOptions}
                                                         onChange={(e) => {
                                                             const selected = assignedOptions.find(opt => opt.value === e.value);
                                                             const newType = selected?.entity_type?.toLowerCase() || '';
                                                             setAssignedForType(newType);
                                                             setFormData(p => ({
                                                                 ...p,
-                                                                entity_id: e.value,
-                                                                assigned_for: selected?.user_id || e.value,
+                                                                entity_id: selected?.entity_id || e.value,
+                                                                assigned_for: e.value,
                                                                 entity_type: newType
                                                             }));
                                                         }}

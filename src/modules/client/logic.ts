@@ -35,10 +35,11 @@ const normalizeDate = (dateStr: any): string | undefined => {
 export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?: BorrowerPlan): Client => {
     const payload = { ...formData };
 
-    // Normalize city
+    // Normalize city: if 'Others', resolve to the typed city name, then remove other_city from payload
     if (payload.city === 'Others') {
         payload.city = payload.other_city;
     }
+    delete (payload as any).other_city;
 
     // Normalize date
     if (payload.business_start_date) {
@@ -96,8 +97,12 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Partial<Client> => {
     const payload: any = {
         ...formData,
+        // Resolve city: if 'Others' is selected, use the typed other_city value
         city: formData.city === 'Others' ? formData.other_city : formData.city,
     };
+
+    // Remove other_city — it should never be sent to the API
+    delete payload.other_city;
 
     // Normalize date
     if (payload.business_start_date) {
