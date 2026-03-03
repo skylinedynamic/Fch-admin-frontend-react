@@ -1283,9 +1283,11 @@
 /* Skeleton Loader Styles */
 .skeleton-line {
   background: #f0f2f5;
-  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 37%, #f0f2f5 63%);
-  background-size: 400% 100%;
-  animation: skeleton-loading 1.4s ease infinite;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  display: block;
+  border-radius: 4px;
 }
 
 @keyframes skeleton-loading {

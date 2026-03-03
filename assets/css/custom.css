@@ -682,9 +682,8 @@ File: Custom Css File
   background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 45%, #f0f2f5 65%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  display: inline-block;
+  display: block;
   height: 1em;
-  vertical-align: middle;
   border-radius: 4px;
 }
 
