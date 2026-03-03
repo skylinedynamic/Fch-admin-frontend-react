@@ -117,14 +117,10 @@ export default function Appointments() {
 
     // Update upcoming events list (From Today or recent past)
     useEffect(() => {
-        const now = new Date();
-
         const sorted = [...events]
-            .filter(evt => new Date(evt.start) >= now)
             .sort((a, b) => new Date(a.start) - new Date(b.start));
 
         setUpcomingEvents(sorted);
-    // Line 122
     }, [events]);
 
     // Actions
@@ -256,7 +252,7 @@ export default function Appointments() {
                                                 // Determine Status and Styles from Config
                                                 const status = evt.extendedProps?.status || '';
                                                 const isPast = new Date() > s;
-                                                
+
                                                 let currentStatus = status;
                                                 if (status === 'pending' && isPast) {
                                                     currentStatus = 'expired';

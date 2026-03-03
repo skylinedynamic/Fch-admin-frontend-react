@@ -69,6 +69,14 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
                 ['add', ['addRowDown', 'addRowUp', 'addColLeft', 'addColRight']],
                 ['delete', ['deleteRow', 'deleteCol', 'deleteTable']],
             ],
+            image: [
+                ['image', ['resizeFull', 'resizeHalf', 'resizeQuarter', 'resizeNone']],
+                ['float', ['floatLeft', 'floatRight', 'floatNone']],
+                ['remove', ['removeMedia']]
+            ],
+            link: [
+                ['link', ['linkDialogShow', 'unlink']]
+            ],
         },
     };
 
