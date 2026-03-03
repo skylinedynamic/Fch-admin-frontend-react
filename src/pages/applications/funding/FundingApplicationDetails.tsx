@@ -223,6 +223,15 @@ export default function FundingApplicationDetails() {
         return isNegative ? `-$${absAmount}` : `$${absAmount}`;
     };
 
+    const formatSSN = (ssn: string | null | undefined) => {
+        if (!ssn) return '-';
+        const cleaned = ssn.toString().replace(/\D/g, '');
+        if (cleaned.length === 9) {
+            return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6, 9)}`;
+        }
+        return ssn;
+    };
+
     const handleSaveCommission = () => {
         if (!app.id) return;
 
@@ -303,7 +312,7 @@ export default function FundingApplicationDetails() {
             <DetailRow label="First Name" value={app.first_name} />
             <DetailRow label="Last Name" value={app.last_name} />
             <DetailRow label="Date of Birth" value={app.date_of_birth} />
-            <DetailRow label="Social Security Number (SSN)" value={app.ssn ? app.ssn : '-'} />
+            <DetailRow label="Social Security Number (SSN)" value={formatSSN(app.ssn)} />
             <DetailRow label="Citizenship Status" value={app.citizenship_status} />
             <DetailRow label="Street Address" value={app.street_address} />
             <DetailRow label="State" value={app.state} />
@@ -335,7 +344,7 @@ export default function FundingApplicationDetails() {
                                     <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
                                     <DetailRow label="Home Phone" value={borrower.home_phone} />
                                     <DetailRow label="Date of Birth" value={borrower.date_of_birth ? new Date(borrower.date_of_birth).toLocaleDateString() : '-'} />
-                                    <DetailRow label="SSN" value={borrower.ssn || '-'} />
+                                    <DetailRow label="SSN" value={formatSSN(borrower.ssn)} />
 
                                     <div className="col-12"><hr className="my-2" /></div>
                                     <h6 className="mb-3 fs-13 text-muted text-uppercase fw-semibold">Address</h6>
@@ -379,6 +388,7 @@ export default function FundingApplicationDetails() {
         <div className="row">
             <DetailRow label="Requested Amount" value={app.requested_amount ? `$${parseFloat(app.requested_amount).toLocaleString()}` : '-'} />
             <DetailRow label="Purpose of Funds" value={app.purpose_of_funds} />
+            {app.purpose_note && <DetailRow label="Purpose of Funding Note" value={app.purpose_note} />}
             <DetailRow label="Preferred Funding Type" value={app.preferred_funding_type} />
             <DetailRow label="Timeframe Needed" value={app.timeframe_needed} />
             <div className="col-12 mb-3">

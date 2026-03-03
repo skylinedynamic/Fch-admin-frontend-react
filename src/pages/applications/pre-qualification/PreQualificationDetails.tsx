@@ -136,6 +136,7 @@ export default function PreQualificationDetails() {
             <DetailRow label="Funding Requested Amount" value={app.funding_requested_amount} />
             <DetailRow label="Funding Urgency" value={app.funding_urgency} />
             <DetailRow label="Purpose of Funding" value={app.purpose_of_funding} />
+            {app.purpose_note && <DetailRow label="Purpose of Funding Note" value={app.purpose_note} />}
             <DetailRow label="Personal Credit Score" value={app.personal_credit_score} />
             <DetailRow label="Estimated Business Credit Score" value={app.estimated_business_credit_score} />
             <DetailRow label="Existing Business Debt" value={app.existing_business_debt ? 'Yes' : 'No'} />
