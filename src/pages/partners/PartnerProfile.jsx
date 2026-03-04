@@ -853,7 +853,7 @@ export default function PartnerProfile() {
 
                 {/* Main Content */}
                 <div className="row">
-                    <div className="col-xxl-12">
+                    <div className="col-xxl-8">
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -928,7 +928,7 @@ export default function PartnerProfile() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    {/* <div className="col-xxl-4">
+                    <div className="col-xxl-4">
                         <div className="card">
                             <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">
                                 <h4 style={{ padding: '8px 0px' }} className="card-title mb-0 me-2">
@@ -986,7 +986,7 @@ export default function PartnerProfile() {
                                 </div>
                             </div>
                         </div>
-                    </div> */}
+                    </div>
                 </div>
             </div>
 
