@@ -48,7 +48,8 @@ export const FUNDING_APPLICATION_STATUS = {
   CONTRACTING_DOCS_OUT: 'Contracting / Docs Out',
   CLEARED_TO_FUND: 'Cleared to Fund',
   FUNDED: 'Funded',
-  CLOSED: 'Closed (Completed)'
+  CLOSED: 'Closed (Completed)',
+  DENIED: 'Denied'
 };
 
 export const FUNDING_APPLICATION_STATUS_OPTIONS = [
@@ -67,7 +68,8 @@ export const FUNDING_APPLICATION_STATUS_OPTIONS = [
   { label: 'Contracting / Docs Out', value: FUNDING_APPLICATION_STATUS.CONTRACTING_DOCS_OUT },
   { label: 'Cleared to Fund', value: FUNDING_APPLICATION_STATUS.CLEARED_TO_FUND },
   { label: 'Funded', value: FUNDING_APPLICATION_STATUS.FUNDED },
-  { label: 'Closed (Completed)', value: FUNDING_APPLICATION_STATUS.CLOSED }
+  { label: 'Closed (Completed)', value: FUNDING_APPLICATION_STATUS.CLOSED },
+  { label: 'Denied', value: FUNDING_APPLICATION_STATUS.DENIED }
 ];
 
 export const FUNDING_APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
@@ -87,6 +89,7 @@ export const FUNDING_APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
   [FUNDING_APPLICATION_STATUS_OPTIONS[13].value]: 'bg-success-subtle text-success',
   [FUNDING_APPLICATION_STATUS_OPTIONS[14].value]: 'bg-success text-white',
   [FUNDING_APPLICATION_STATUS_OPTIONS[15].value]: 'bg-secondary-subtle text-secondary',
+  [FUNDING_APPLICATION_STATUS_OPTIONS[16].value]: 'bg-danger-subtle text-danger',
 };
 
 export const entityTypes = [
