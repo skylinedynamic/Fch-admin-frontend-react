@@ -98,6 +98,7 @@ export default function LeadDetails() {
     const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
     const [conversionLoading, setConversionLoading] = useState(false);
     const [convertErrors, setConvertErrors] = useState({});
+    const [missingInfoErrors, setMissingInfoErrors] = useState({});
 
     // Location states
     const [countries] = useState(
@@ -262,10 +263,22 @@ export default function LeadDetails() {
             setConversionLoading(true);
             await updateLeadContactInfo(id, updatedData);
             setFormData(prev => ({ ...prev, ...updatedData }));
+            setMissingInfoErrors({});
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to update lead information');
+            console.error('Update missing info error:', err);
+            const backendFieldErrors = err.response?.data?.errors;
+            if (backendFieldErrors && typeof backendFieldErrors === 'object') {
+                const flatErrors = {};
+                Object.keys(backendFieldErrors).forEach(key => {
+                    const val = backendFieldErrors[key];
+                    flatErrors[key] = Array.isArray(val) ? val[0] : val;
+                });
+                setMissingInfoErrors(flatErrors);
+            } else {
+                toast.error(err.response?.data?.message || 'Failed to update lead information');
+            }
         } finally {
             setConversionLoading(false);
         }
@@ -1036,11 +1049,12 @@ export default function LeadDetails() {
             />
             <LeadMissingInfoModal
                 show={showMissingInfoModal}
-                onHide={() => setShowMissingInfoModal(false)}
+                onHide={() => { setShowMissingInfoModal(false); setMissingInfoErrors({}); }}
                 onConfirm={handleMissingInfoConfirm}
                 lead={formData}
                 targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
                 loading={conversionLoading}
+                backendErrors={missingInfoErrors}
             />
             <LeadPaymentModal
                 show={showPaymentModal}

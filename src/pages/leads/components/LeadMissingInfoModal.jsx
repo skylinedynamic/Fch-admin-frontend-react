@@ -4,7 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { locationData } from '../../../config';
 import { formatPhoneNumber } from '../../../utils/formatters';
 
-export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading }) {
+export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, backendErrors }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [extraData, setExtraData] = useState({});
@@ -30,6 +30,12 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
             setErrors({});
         }
     }, [show, lead]);
+
+    useEffect(() => {
+        if (backendErrors && Object.keys(backendErrors).length > 0) {
+            setErrors(backendErrors);
+        }
+    }, [backendErrors]);
 
     useEffect(() => {
         if (extraData.country) {
@@ -66,10 +72,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
 
                     // Initialization Check: if current city is not in the list, move it to other_city
                     if (extraData.city && extraData.city !== 'Others' && !cityList.includes(extraData.city)) {
-                        setExtraData(prev => ({ 
-                            ...prev, 
-                            city: 'Others', 
-                            other_city: extraData.city 
+                        setExtraData(prev => ({
+                            ...prev,
+                            city: 'Others',
+                            other_city: extraData.city
                         }));
                     }
                 } else {
@@ -126,7 +132,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
     const handleInputChange = (name, value) => {
         setExtraData(prev => {
             const newData = { ...prev, [name]: value };
-            
+
             // Cascading Reset Logic
             if (name === 'country') {
                 newData.state = '';
@@ -138,14 +144,14 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
             } else if (name === 'city' && value !== 'Others') {
                 newData.other_city = '';
             }
-            
+
             return newData;
         });
 
         // Instant Error Clearing
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
-            
+
             // Also clear dependent errors if parent changes
             if (name === 'country') {
                 setErrors(prev => ({ ...prev, state: '', city: '' }));
@@ -156,25 +162,8 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
     };
 
     const validate = () => {
-        const newErrors = {};
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!extraData.contact_person?.trim()) newErrors.contact_person = 'Contact Name is required';
-
-        if (!extraData.email?.trim()) {
-            newErrors.email = 'Email Address is required';
-        } else if (!emailRegex.test(extraData.email.trim())) {
-            newErrors.email = 'Please enter a valid email address';
-        }
-
-        if (!extraData.phone_number?.trim()) newErrors.phone_number = 'Phone Number is required';
-        if (!extraData.country) newErrors.country = 'Country is required';
-        if (!extraData.state) newErrors.state = 'State is required';
-        if (!extraData.city) newErrors.city = 'City is required';
-        if (extraData.city === 'Others' && !extraData.other_city?.trim()) newErrors.other_city = 'Please specify city name';
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        setErrors({});
+        return true;
     };
 
     const handleConfirm = () => {
@@ -212,14 +201,14 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                         <p className="text-muted mb-4">
                             Please provide the missing contact information for <strong>{lead?.company_name || 'this lead'}</strong> before completing the <strong>{targetType}</strong> conversion.
                         </p>
-                        
+
                         <div className="row g-3">
                             <div className="col-lg-6">
                                 <label className="form-label">Contact Person Name <span className="text-danger">*</span></label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`}
-                                    value={extraData.contact_person} 
+                                    value={extraData.contact_person}
                                     onChange={(e) => handleInputChange('contact_person', e.target.value)}
                                     placeholder="Full Name"
                                 />
@@ -227,10 +216,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                             </div>
                             <div className="col-lg-6">
                                 <label className="form-label">Contact Email <span className="text-danger">*</span></label>
-                                <input 
-                                    type="email" 
+                                <input
+                                    type="email"
                                     className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                    value={extraData.email} 
+                                    value={extraData.email}
                                     onChange={(e) => handleInputChange('email', e.target.value)}
                                     placeholder="email@example.com"
                                 />
@@ -238,10 +227,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                             </div>
                             <div className="col-lg-6">
                                 <label className="form-label">Phone Number <span className="text-danger">*</span></label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
-                                    value={extraData.phone_number} 
+                                    value={extraData.phone_number}
                                     onChange={(e) => handleInputChange('phone_number', formatPhoneNumber(e.target.value))}
                                     placeholder="(555) 555-5555"
                                 />
@@ -297,10 +286,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                             {extraData.city === 'Others' && (
                                 <div className="col-lg-12">
                                     <label className="form-label">Other City <span className="text-danger">*</span></label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
-                                        value={extraData.other_city} 
+                                        value={extraData.other_city}
                                         onChange={(e) => handleInputChange('other_city', e.target.value)}
                                         placeholder="Enter city name"
                                     />
