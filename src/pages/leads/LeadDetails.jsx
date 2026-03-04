@@ -891,7 +891,7 @@ export default function LeadDetails() {
                                                                 </div>
                                                             </div>
                                                             {formData.city === 'Others' && (
-                                                                <div className="col-lg-4">
+                                                                <div className="col-lg-6">
                                                                     <div className="mb-3">
                                                                         <label className="form-label">Other City <span className="text-danger">*</span></label>
                                                                         <input type="text" className={`form-control ${errors.other_city ? 'is-invalid' : ''}`} name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
