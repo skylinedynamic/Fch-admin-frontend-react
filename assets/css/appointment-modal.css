@@ -131,7 +131,7 @@
 }
 
 .appointment-modal-theme span.flatpickr-weekday {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: rgba(255, 255, 255) !important;
     font-size: 11px !important;
     font-weight: 700 !important;
     text-transform: uppercase;
@@ -145,7 +145,7 @@
 }
 
 .appointment-modal-theme .flatpickr-day {
-    border-radius: 4px !important;
+    border-radius: 50% !important;
     font-size: 13px !important;
     color: #495057 !important;
     border: none !important;
