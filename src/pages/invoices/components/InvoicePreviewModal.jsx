@@ -119,6 +119,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         try {
             const response = await sendInvoice(displayInvoice.id);
             if (response.status) {
+                toast.success('Invoice sent successfully.');
             } else {
                 toast.error(response.message || 'Failed to send invoice');
             }
