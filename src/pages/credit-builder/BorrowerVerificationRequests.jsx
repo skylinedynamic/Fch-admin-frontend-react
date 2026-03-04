@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { UncontrolledTooltip } from 'reactstrap';
 import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
@@ -308,7 +309,7 @@ export default function BorrowerVerificationRequests() {
     };
 
     const actionBodyTemplate = (rowData) => {
-        // Show buttons only for processing status, otherwise show status
+        // Show buttons only for processing status, otherwise show status with note icon if exists
         if (rowData.status === VERIFICATION_STATUS.PROCESSING) {
             return (
                 <div className="d-flex gap-2 justify-content-center">
@@ -340,22 +341,40 @@ export default function BorrowerVerificationRequests() {
             );
         }
 
-        // For rejected status, show badge with rejection reason tooltip
-        if (rowData.status === VERIFICATION_STATUS.REJECTED && rowData.rejection_reason) {
-            let badgeClass = 'bg-danger-subtle text-danger';
-            return (
-                <span
-                    className={`badge ${badgeClass} fs-12 text-capitalize`}
-                    title={rowData.rejection_reason}
-                    style={{ cursor: 'help' }}
-                >
+        // For other statuses (Complete, Rejected, Pending), show badge with Note icon in Action column
+        let badgeClass = 'bg-info-subtle text-info';
+        if (rowData.status === VERIFICATION_STATUS.PENDING) badgeClass = 'bg-warning-subtle text-warning';
+        if (rowData.status === VERIFICATION_STATUS.COMPLETED) badgeClass = 'bg-success-subtle text-success';
+        if (rowData.status === VERIFICATION_STATUS.REJECTED) badgeClass = 'bg-danger-subtle text-danger';
+
+        const tooltipContent = (rowData.status === VERIFICATION_STATUS.COMPLETED || rowData.status === VERIFICATION_STATUS.REJECTED)
+            ? (rowData.note || rowData.rejection_reason)
+            : null;
+
+        const tooltipId = `action-note-${rowData.id}`;
+
+        return (
+            <div className="d-flex align-items-center justify-content-center gap-2">
+                <span className={`badge ${badgeClass} fs-12 text-capitalize`}>
                     {rowData.status}
                 </span>
-            );
-        }
-
-        // For other statuses, show the status badge
-        return statusTemplate(rowData);
+                {tooltipContent && (
+                    <>
+                        <button
+                            className="btn btn-sm btn-icon btn-soft-info border-0 rounded-circle p-0"
+                            id={tooltipId}
+                            type="button"
+                            style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <i className="ri-sticky-note-line fs-14"></i>
+                        </button>
+                        <UncontrolledTooltip placement="top" target={tooltipId} container="body">
+                            {tooltipContent}
+                        </UncontrolledTooltip>
+                    </>
+                )}
+            </div>
+        );
     };
 
     return (
