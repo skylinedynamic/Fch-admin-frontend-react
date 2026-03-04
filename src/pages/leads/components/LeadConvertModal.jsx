@@ -13,7 +13,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const [partnerPlans, setPartnerPlans] = useState([]);
     const [borrowerPlans, setBorrowerPlans] = useState([]);
     const [fetching, setFetching] = useState(false);
-    
+
     // Custom overrides for isHost
     const [customEnrollmentAmount, setCustomEnrollmentAmount] = useState('');
     const [customPlatformFee, setCustomPlatformFee] = useState('');
@@ -47,6 +47,12 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             document.body.style.overflow = '';
         };
     }, [modalRef]);
+
+    useEffect(() => {
+        if (backendErrors && Object.keys(backendErrors).length > 0) {
+            setValidationErrors(backendErrors);
+        }
+    }, [backendErrors]);
 
     // Show/Hide Logic
     useEffect(() => {
@@ -121,44 +127,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     }, [borrowerPlans]);
 
     const handleConfirm = () => {
-        // --- Frontend Validation (accurate code) ---
-        const newErrors = {};
-
-        if (targetType === 'Borrower') {
-            if (!planId) {
-                newErrors.plan_id = 'Enrollment type is required.';
-            }
-            if (isHost && planId) {
-                if (customEnrollmentAmount === '' || customEnrollmentAmount === null || customEnrollmentAmount === undefined) {
-                    newErrors.customEnrollmentAmount = 'Enrollment payment is required.';
-                } else if (Number(customEnrollmentAmount) < 0) {
-                    newErrors.customEnrollmentAmount = 'Enrollment payment must be greater than or equal to 0.';
-                }
-            }
-        } else if (targetType === 'Partner') {
-            if (!partnerEnrollmentType) {
-                newErrors.partnerEnrollmentType = 'Enrollment type is required.';
-            }
-            if (isHost && partnerEnrollmentType) {
-                if (customEnrollmentAmount === '' || customEnrollmentAmount === null || customEnrollmentAmount === undefined) {
-                    newErrors.customEnrollmentAmount = 'Enrollment payment is required.';
-                } else if (Number(customEnrollmentAmount) < 0) {
-                    newErrors.customEnrollmentAmount = 'Enrollment payment must be greater than or equal to 0.';
-                }
-                if (customPlatformFee === '' || customPlatformFee === null || customPlatformFee === undefined) {
-                    newErrors.customPlatformFee = 'Platform fee payment is required.';
-                } else if (Number(customPlatformFee) < 0) {
-                    newErrors.customPlatformFee = 'Platform fee must be greater than or equal to 0.';
-                }
-            }
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setValidationErrors(newErrors);
-            return; // Stop submission
-        }
-
-        setValidationErrors({}); // Clear errors on success
+        setValidationErrors({}); // Clear errors before submission
 
         // --- Build Payload ---
         const payload = {};
@@ -168,10 +137,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
             const selectedPlan = borrowerPlans.find(plan => plan.id === planId);
             if (selectedPlan) {
-                payload.amount = isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPlan.payment_amount;
-                payload.enrollment_amount = payload.amount;
                 if (isHost) {
-                    payload.monthly_platform_fee = customPlatformFee !== '' ? customPlatformFee : (selectedPlan.platform_fee || 0);
+                    payload.enrollment_amount = customEnrollmentAmount;
+                    payload.amount = customEnrollmentAmount;
+                    payload.monthly_platform_fee = customPlatformFee;
+                } else {
+                    payload.enrollment_amount = selectedPlan.payment_amount;
+                    payload.amount = selectedPlan.payment_amount;
                 }
             }
         } else if (targetType === 'Partner') {
@@ -185,10 +157,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
             if (selectedPlan) {
                 payload.plan_id = selectedPlan.id;
-                payload.enrollment_amount = isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPlan.payment_amount;
-                payload.amount = payload.enrollment_amount;
                 if (isHost) {
-                    payload.monthly_platform_fee = customPlatformFee !== '' ? customPlatformFee : (selectedPlan.platform_fee || 0);
+                    payload.enrollment_amount = customEnrollmentAmount;
+                    payload.amount = customEnrollmentAmount;
+                    payload.monthly_platform_fee = customPlatformFee;
+                } else {
+                    payload.enrollment_amount = (selectedPlan.payment_amount || 0);
+                    payload.amount = payload.enrollment_amount;
                 }
             }
         }
@@ -253,11 +228,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                     placeholder="Select Enrollment Type"
-                                                     className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
-                                                     appendTo="self"
-                                                 />
-                                                 {(validationErrors.plan_id || backendErrors?.plan_id) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id}</div>}
+                                                    placeholder="Select Enrollment Type"
+                                                    className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
+                                                    appendTo="self"
+                                                />
+                                                {(validationErrors.plan_id || backendErrors?.plan_id) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id}</div>}
                                             </div>
                                         ) : (
                                             /* Hidden plan selector logic for non-host - happens in useEffect */
@@ -322,6 +297,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     onChange={(e) => {
                                                         setPartnerType(e.value);
                                                         setPartnerEnrollmentType(''); // Reset enrollment type when partner type changes
+                                                        setCustomEnrollmentAmount(''); // Reset amount for host override
+                                                        setCustomPlatformFee(''); // Reset fee for host override
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
@@ -445,10 +422,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         type="button"
                                         className={`btn ${confirmBtnClass}`}
                                         onClick={handleConfirm}
-                                        disabled={loading || (targetType === 'Borrower' && !planId) || (targetType === 'Partner' && (
-                                            (Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType) ||
-                                            !partnerEnrollmentType
-                                        ))}
+                                        disabled={loading}
                                     >
                                         {loading ? (
                                             <>
