@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getLead, createLead, updateLead, convertLead, fetchGlobalStats } from '../../modules/leads/services';
+import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -154,59 +154,8 @@ export default function LeadDetails() {
     };
 
     const validateForm = () => {
-        const newErrors = {};
-        const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/; // (555) 555-5555
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        // Validation for Contact Info Tab
-        if (activeTab === 'contactInfo') {
-            if (!formData.contact_person?.trim()) newErrors.contact_person = 'Contact person is required';
-
-            if (!formData.phone_number?.trim()) {
-                newErrors.phone_number = 'Phone number is required';
-            } else if (!phoneRegex.test(formData.phone_number)) {
-                newErrors.phone_number = 'Phone number must be 10 digits';
-            }
-
-            if (!formData.email?.trim()) {
-                newErrors.email = 'Email is required';
-            } else if (!emailRegex.test(formData.email)) {
-                newErrors.email = 'Invalid email format';
-            }
-
-            if (!formData.country) newErrors.country = 'Country is required';
-            if (!formData.state) newErrors.state = 'State is required';
-            if (!formData.city) newErrors.city = 'City is required';
-
-            // Business phone is optional now
-            if (formData.business_phone?.trim() && !phoneRegex.test(formData.business_phone)) {
-                newErrors.business_phone = 'Business phone must be 10 digits';
-            }
-        }
-
-        // Validation for Lead Details Tab
-        if (activeTab === 'leadDetails') {
-            if (!formData.company_name?.trim()) newErrors.company_name = 'Organization Name is required';
-            if (!formData.probability) newErrors.probability = 'Probability is required';
-            if (!formData.lead_type) newErrors.lead_type = 'Lead Type is required';
-            if (!formData.status) newErrors.status = 'Status is required';
-            // if (!formData.salesperson_id) newErrors.salesperson_id = 'Salesperson is required';
-
-            if (formData.lead_source === 'Other' && !formData.lead_source_note?.trim()) {
-                newErrors.lead_source_note = 'Please provide details for other lead source';
-            }
-
-            if (formData.entity_type === 'Other / Unknown' && !formData.entity_type_note?.trim()) {
-                newErrors.entity_type_note = 'Please provide details for other entity type';
-            }
-
-            if (formData.industry_type === 'Other / Unknown' && !formData.industry_type_note?.trim()) {
-                newErrors.industry_type_note = 'Please provide details for other industry type';
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        setErrors({});
+        return true;
     };
 
     const handleSave = async (e) => {
@@ -221,25 +170,56 @@ export default function LeadDetails() {
         setIsSaving(true);
 
         try {
-            const payload = { ...formData };
-            if (payload.city === 'Others') {
-                payload.city = payload.other_city || '';
+            let finalPayload = {};
+
+            if (activeTab === 'leadDetails') {
+                finalPayload = {
+                    probability: formData.probability,
+                    lead_type: formData.lead_type,
+                    status: formData.status,
+                    salesperson_id: formData.salesperson_id,
+                    company_name: formData.company_name,
+                    domain: formData.domain,
+                    lead_source: formData.lead_source,
+                    lead_source_note: formData.lead_source_note,
+                    requirement_details: formData.requirement_details
+                };
+            } else {
+                finalPayload = {
+                    contact_person: formData.contact_person,
+                    phone_number: formData.phone_number,
+                    email: formData.email,
+                    legal_business_name: formData.legal_business_name,
+                    business_ein: formData.business_ein,
+                    state_file_number: formData.state_file_number,
+                    duns_number: formData.duns_number,
+                    business_address: formData.business_address,
+                    country: formData.country,
+                    state: formData.state,
+                    city: formData.city === 'Others' ? (formData.other_city || '') : formData.city,
+                    zip_code: formData.zip_code,
+                    business_phone: formData.business_phone,
+                    entity_type: formData.entity_type,
+                    entity_type_note: formData.entity_type_note,
+                    industry_type: formData.industry_type,
+                    industry_type_note: formData.industry_type_note,
+                    business_start_date: formData.business_start_date ? normalizeDate(formData.business_start_date) : '',
+                    ssn_last_4: formData.ssn_last_4,
+                    employees: formData.employees
+                };
             }
-            if (payload.business_start_date) {
-                payload.business_start_date = normalizeDate(payload.business_start_date);
-            }
-            delete payload.other_city;
 
             if (id) {
-                await updateLead(id, payload);
                 if (activeTab === 'leadDetails') {
+                    await updateLeadDetails(id, finalPayload);
                     toast.success('Lead Details updated successfully');
                 } else {
+                    await updateLeadContactInfo(id, finalPayload);
                     toast.success('Lead contact information updated successfully');
                 }
                 // navigate('/leads');
             } else {
-                const response = await createLead(payload);
+                const response = await createLeadDetails(finalPayload);
                 toast.success('Lead Details Completed successfully');
                 if (response.status && response.data?.id) {
                     navigate(`/leads/${response.data.id}?tab=contactInfo`);
@@ -280,7 +260,7 @@ export default function LeadDetails() {
         }
         try {
             setConversionLoading(true);
-            await updateLead(id, updatedData);
+            await updateLeadContactInfo(id, updatedData);
             setFormData(prev => ({ ...prev, ...updatedData }));
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
@@ -720,14 +700,14 @@ export default function LeadDetails() {
                                                             {formData.lead_source === 'Other' && (
                                                                 <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                         <label className="form-label">Note <span className="text-danger">*</span></label>
-                                                                         <textarea
-                                                                             ref={leadSourceNoteRef}
-                                                                             className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
-                                                                             name="lead_source_note"
-                                                                             placeholder="Please specify lead source"
-                                                                         ></textarea>
-                                                                         {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
+                                                                        <label className="form-label">Note <span className="text-danger">*</span></label>
+                                                                        <textarea
+                                                                            ref={leadSourceNoteRef}
+                                                                            className={`form-control ${errors.lead_source_note ? 'is-invalid' : ''}`}
+                                                                            name="lead_source_note"
+                                                                            placeholder="Please specify lead source"
+                                                                        ></textarea>
+                                                                        {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -735,12 +715,12 @@ export default function LeadDetails() {
                                                             <div className="col-lg-12" key="requirement-details-field">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Requirement Details</label>
-                                                                     <textarea
-                                                                         ref={requirementDetailsRef}
-                                                                         className="form-control"
-                                                                         name="requirement_details"
-                                                                         placeholder="Enter details"
-                                                                     ></textarea>
+                                                                    <textarea
+                                                                        ref={requirementDetailsRef}
+                                                                        className="form-control"
+                                                                        name="requirement_details"
+                                                                        placeholder="Enter details"
+                                                                    ></textarea>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -946,14 +926,14 @@ export default function LeadDetails() {
                                                             {formData.entity_type === 'Other / Unknown' && (
                                                                 <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                         <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
-                                                                         <textarea
-                                                                             ref={entityTypeNoteRef}
-                                                                             className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
-                                                                             name="entity_type_note"
-                                                                             placeholder="Please specify entity type"
-                                                                         ></textarea>
-                                                                         {errors.entity_type_note && <div className="invalid-feedback d-block">{errors.entity_type_note}</div>}
+                                                                        <label className="form-label">Entity Type Details <span className="text-danger">*</span></label>
+                                                                        <textarea
+                                                                            ref={entityTypeNoteRef}
+                                                                            className={`form-control ${errors.entity_type_note ? 'is-invalid' : ''}`}
+                                                                            name="entity_type_note"
+                                                                            placeholder="Please specify entity type"
+                                                                        ></textarea>
+                                                                        {errors.entity_type_note && <div className="invalid-feedback d-block">{errors.entity_type_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -974,14 +954,14 @@ export default function LeadDetails() {
                                                             {formData.industry_type === 'Other / Unknown' && (
                                                                 <div className="col-lg-12">
                                                                     <div className="mb-3">
-                                                                         <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
-                                                                         <textarea
-                                                                             ref={industryTypeNoteRef}
-                                                                             className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
-                                                                             name="industry_type_note"
-                                                                             placeholder="Please specify industry type"
-                                                                         ></textarea>
-                                                                         {errors.industry_type_note && <div className="invalid-feedback d-block">{errors.industry_type_note}</div>}
+                                                                        <label className="form-label">Industry Type Details <span className="text-danger">*</span></label>
+                                                                        <textarea
+                                                                            ref={industryTypeNoteRef}
+                                                                            className={`form-control ${errors.industry_type_note ? 'is-invalid' : ''}`}
+                                                                            name="industry_type_note"
+                                                                            placeholder="Please specify industry type"
+                                                                        ></textarea>
+                                                                        {errors.industry_type_note && <div className="invalid-feedback d-block">{errors.industry_type_note}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}

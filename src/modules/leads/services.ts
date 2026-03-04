@@ -11,13 +11,18 @@ export const getLead = async (id: string | number): Promise<any> => {
   return response.data;
 };
 
-export const createLead = async (payload: Partial<Lead>): Promise<any> => {
-  const response = await apiClient.post('/common/leads', payload);
+export const createLeadDetails = async (payload: Partial<Lead>): Promise<any> => {
+  const response = await apiClient.post('/common/leads/details', payload);
   return response.data;
 };
 
-export const updateLead = async (id: string | number, payload: Partial<Lead>): Promise<any> => {
-  const response = await apiClient.put(`/common/leads/${id}`, payload);
+export const updateLeadDetails = async (id: string | number, payload: Partial<Lead>): Promise<any> => {
+  const response = await apiClient.post(`/common/leads/${id}/details`, payload);
+  return response.data;
+};
+
+export const updateLeadContactInfo = async (id: string | number, payload: Partial<Lead>): Promise<any> => {
+  const response = await apiClient.post(`/common/leads/${id}/contact-info`, payload);
   return response.data;
 };
 

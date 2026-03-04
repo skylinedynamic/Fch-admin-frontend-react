@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { fetchLeads, deleteLead, convertLead, updateLead } from '../../modules/leads/services';
+import { fetchLeads, deleteLead, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -145,12 +145,12 @@ export default function Leads() {
                 if (result.status) {
                     setLeads(result.data || []);
                     setTotalRecords(result.meta?.total || (result.data ? result.data.length : 0));
-                    
+
                     // Update statistics from the same response
                     if (result.statistics) {
                         setStats(result.statistics);
                     }
-                    
+
                     setError(null);
                 } else {
                     setError(result.message || 'Failed to fetch leads');
@@ -294,7 +294,7 @@ export default function Leads() {
         }
         try {
             setConversionLoading(true);
-            await updateLead(targetLead.id, updatedData);
+            await updateLeadContactInfo(targetLead.id, updatedData);
             setTargetLead({ ...targetLead, ...updatedData });
             setShowMissingInfoModal(false);
             setShowConvertModal(true);
@@ -559,7 +559,7 @@ export default function Leads() {
                                                                     Converted as a {targetType}
                                                                 </span>
                                                             ) : (
-                                                                 <button
+                                                                <button
                                                                     className={`btn ${targetType === 'Partner' ? 'btn-info' : 'btn-primary'} btn-sm waves-effect waves-light fw-medium border-0 btn-hover-custom`}
                                                                     onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
                                                                 >
