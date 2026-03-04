@@ -321,6 +321,7 @@ export default function Leads() {
     const handleConvertLeadConfirm = async (payload = {}) => {
         if (!targetLead) return;
 
+        setConvertErrors({});
         const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
         try {
             setConversionLoading(true);
@@ -367,6 +368,14 @@ export default function Leads() {
         } finally {
             setConversionLoading(false);
         }
+    };
+
+    const handleFieldChange = (fields) => {
+        setConvertErrors(prev => {
+            const next = { ...prev };
+            fields.forEach(field => delete next[field]);
+            return next;
+        });
     };
 
     return (
@@ -600,6 +609,7 @@ export default function Leads() {
                     loading={conversionLoading}
                     isHost={isHost}
                     backendErrors={convertErrors}
+                    onFieldChange={handleFieldChange}
                 />
 
                 <LeadMissingInfoModal

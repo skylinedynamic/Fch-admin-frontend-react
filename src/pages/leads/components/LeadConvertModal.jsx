@@ -5,7 +5,7 @@ import { fetchPartnerPlans } from '../../../modules/partner/services';
 import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
 
-export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost, backendErrors = {} }) {
+export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost, backendErrors = {}, onFieldChange }) {
     const [planId, setPlanId] = useState(null);
     const [enrollmentType, setEnrollmentType] = useState('');
     const [partnerType, setPartnerType] = useState('');
@@ -216,23 +216,33 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     onChange={(e) => {
                                                         setPlanId(e.value);
                                                         const opt = enrollmentOptions.find(o => o.value === e.value);
-                                                        setEnrollmentType(opt ? opt.enrollment_type : '');
+                                                        const type = opt ? opt.enrollment_type : '';
+                                                        setEnrollmentType(type);
+
+                                                        // Inform parent to clear backend errors for these fields
+                                                        if (onFieldChange) {
+                                                            onFieldChange(['plan_id', 'enrollment_type']);
+                                                        }
+
                                                         // Sync custom amounts for host
                                                         if (isHost && opt) {
                                                             const originalPlan = borrowerPlans.find(plan => plan.id === e.value);
                                                             if (originalPlan) {
                                                                 setCustomEnrollmentAmount(originalPlan.payment_amount || '');
                                                                 setCustomPlatformFee(originalPlan.platform_fee || 0);
+                                                                if (onFieldChange) {
+                                                                    onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
+                                                                }
                                                             }
                                                         }
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     placeholder="Select Enrollment Type"
-                                                    className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
+                                                    className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
                                                     appendTo="self"
                                                 />
-                                                {(validationErrors.plan_id || backendErrors?.plan_id) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id}</div>}
+                                                {(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type}</div>}
                                             </div>
                                         ) : (
                                             /* Hidden plan selector logic for non-host - happens in useEffect */
@@ -299,13 +309,16 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         setPartnerEnrollmentType(''); // Reset enrollment type when partner type changes
                                                         setCustomEnrollmentAmount(''); // Reset amount for host override
                                                         setCustomPlatformFee(''); // Reset fee for host override
+                                                        setValidationErrors(prev => ({ ...prev, partnerType: '' }));
+                                                        if (onFieldChange) onFieldChange(['partner_type']);
                                                     }}
                                                     optionLabel="label"
                                                     optionValue="value"
                                                     placeholder="Select Partner Type"
-                                                    className="w-100"
+                                                    className={`w-100 ${backendErrors?.partner_type ? 'p-invalid' : ''}`}
                                                     appendTo="self"
                                                 />
+                                                {backendErrors?.partner_type && <div className="invalid-feedback d-block">{backendErrors.partner_type}</div>}
                                             </div>
                                         )}
 
@@ -322,6 +335,8 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 }
                                                 onChange={(e) => {
                                                     setPartnerEnrollmentType(e.value);
+                                                    if (onFieldChange) onFieldChange(['enrollment_type', 'plan_id']);
+
                                                     // Sync custom amounts for host
                                                     if (isHost) {
                                                         const selectedPlan = partnerPlans.find(plan =>
@@ -331,18 +346,23 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         if (selectedPlan) {
                                                             setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
                                                             setCustomPlatformFee(selectedPlan.platform_fee || 0);
+                                                            if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
                                                         }
                                                     }
                                                 }}
                                                 optionLabel="label"
                                                 optionValue="value"
                                                 placeholder="Select Enrollment Type"
-                                                className={`w-100 ${(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
+                                                className={`w-100 ${(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
                                                 appendTo="self"
                                                 // Disabled only if we have partner types but haven't selected one yet
                                                 disabled={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType}
                                             />
-                                            {(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type) && <div className="invalid-feedback d-block">{validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type}</div>}
+                                            {(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type || backendErrors?.plan_id) && (
+                                                <div className="invalid-feedback d-block">
+                                                    {validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type || backendErrors?.plan_id}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {isHost && partnerEnrollmentType && (
@@ -372,11 +392,12 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         onChange={(e) => {
                                                             setCustomPlatformFee(e.target.value);
                                                             setValidationErrors(prev => ({ ...prev, customPlatformFee: '' }));
+                                                            if (onFieldChange) onFieldChange(['monthly_platform_fee', 'platform_fee']);
                                                         }}
                                                         placeholder="Enter amount"
                                                     />
                                                     {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
-                                                        <div className="invalid-feedback">{validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}</div>
+                                                        <div className="invalid-feedback d-block">{validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}</div>
                                                     )}
                                                 </div>
                                             </div>

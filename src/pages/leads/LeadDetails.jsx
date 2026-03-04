@@ -135,10 +135,17 @@ export default function LeadDetails() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
+        // Instant Error Clearing
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+
         if (name === 'country') {
             setFormData(prev => ({ ...prev, country: value, state: '', city: '', other_city: '' }));
+            setErrors(prev => ({ ...prev, country: '', state: '', city: '' }));
         } else if (name === 'state') {
             setFormData(prev => ({ ...prev, state: value, city: '', other_city: '' }));
+            setErrors(prev => ({ ...prev, state: '', city: '' }));
         } else if (name === 'city') {
             if (value !== 'Others') {
                 setFormData(prev => ({ ...prev, city: value, other_city: '' }));
@@ -685,14 +692,14 @@ export default function LeadDetails() {
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Organization Name <span className="text-danger">*</span></label>
                                                                     <input type="text" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} name="company_name" value={formData.company_name} onChange={handleInputChange} placeholder="Enter organization name" />
-                                                                    {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
+                                                                    {errors.company_name && <div className="invalid-feedback d-block">{errors.company_name}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Domain</label>
                                                                     <input type="text" className={`form-control ${errors.domain ? 'is-invalid' : ''}`} name="domain" value={formData.domain} onChange={handleInputChange} placeholder="Enter domain" />
-                                                                    {errors.domain && <div className="invalid-feedback">{errors.domain}</div>}
+                                                                    {errors.domain && <div className="invalid-feedback d-block">{errors.domain}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
@@ -730,10 +737,11 @@ export default function LeadDetails() {
                                                                     <label className="form-label">Requirement Details</label>
                                                                     <textarea
                                                                         ref={requirementDetailsRef}
-                                                                        className="form-control"
+                                                                        className={`form-control ${errors.requirement_details ? 'is-invalid' : ''}`}
                                                                         name="requirement_details"
                                                                         placeholder="Enter details"
                                                                     ></textarea>
+                                                                    {errors.requirement_details && <div className="invalid-feedback d-block">{errors.requirement_details}</div>}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -779,14 +787,14 @@ export default function LeadDetails() {
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Lead Contact Email <span className="text-danger">*</span></label>
                                                                     <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} name="email" value={formData.email} onChange={handleInputChange} placeholder="dave@example.com" />
-                                                                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                                                                    {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Legal Business Name</label>
                                                                     <input type="text" className={`form-control ${errors.legal_business_name ? 'is-invalid' : ''}`} name="legal_business_name" value={formData.legal_business_name} onChange={handleInputChange} placeholder="Enter business name" />
-                                                                    {errors.legal_business_name && <div className="invalid-feedback">{errors.legal_business_name}</div>}
+                                                                    {errors.legal_business_name && <div className="invalid-feedback d-block">{errors.legal_business_name}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
@@ -802,14 +810,14 @@ export default function LeadDetails() {
                                                                         onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
                                                                         onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                     />
-                                                                    {errors.business_ein && <div className="invalid-feedback">{errors.business_ein}</div>}
+                                                                    {errors.business_ein && <div className="invalid-feedback d-block">{errors.business_ein}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">State File Number</label>
                                                                     <input type="text" onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} className={`form-control ${errors.state_file_number ? 'is-invalid' : ''}`} name="state_file_number" value={formData.state_file_number} onChange={handleInputChange} placeholder="Enter state file number" />
-                                                                    {errors.state_file_number && <div className="invalid-feedback">{errors.state_file_number}</div>}
+                                                                    {errors.state_file_number && <div className="invalid-feedback d-block">{errors.state_file_number}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
@@ -825,14 +833,14 @@ export default function LeadDetails() {
                                                                         onInput={(e) => { if (e.target.value.length > 9) e.target.value = e.target.value.slice(0, 9); }}
                                                                         onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                     />
-                                                                    {errors.duns_number && <div className="invalid-feedback">{errors.duns_number}</div>}
+                                                                    {errors.duns_number && <div className="invalid-feedback d-block">{errors.duns_number}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Business Address</label>
                                                                     <input type="text" className={`form-control ${errors.business_address ? 'is-invalid' : ''}`} name="business_address" value={formData.business_address} onChange={handleInputChange} placeholder="Enter business address" />
-                                                                    {errors.business_address && <div className="invalid-feedback">{errors.business_address}</div>}
+                                                                    {errors.business_address && <div className="invalid-feedback d-block">{errors.business_address}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-4">
@@ -886,7 +894,8 @@ export default function LeadDetails() {
                                                                 <div className="col-lg-4">
                                                                     <div className="mb-3">
                                                                         <label className="form-label">Other City <span className="text-danger">*</span></label>
-                                                                        <input type="text" className="form-control" name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
+                                                                        <input type="text" className={`form-control ${errors.other_city ? 'is-invalid' : ''}`} name="other_city" value={formData.other_city} onChange={handleInputChange} placeholder="Enter city name" />
+                                                                        {errors.other_city && <div className="invalid-feedback d-block">{errors.other_city}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -919,7 +928,8 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Zip Code</label>
-                                                                    <input type="text" className="form-control" name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                    <input type="text" className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                    {errors.zip_code && <div className="invalid-feedback d-block">{errors.zip_code}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
@@ -931,8 +941,9 @@ export default function LeadDetails() {
                                                                         onChange={(e) => handleInputChange({ target: { name: 'entity_type', value: e.value } })}
                                                                         placeholder="Select entity type"
                                                                         filter
-                                                                        className="w-100"
+                                                                        className={`w-100 ${errors.entity_type ? 'p-invalid' : ''}`}
                                                                     />
+                                                                    {errors.entity_type && <div className="invalid-feedback d-block">{errors.entity_type}</div>}
                                                                 </div>
                                                             </div>
 
@@ -959,8 +970,9 @@ export default function LeadDetails() {
                                                                         onChange={(e) => handleInputChange({ target: { name: 'industry_type', value: e.value } })}
                                                                         placeholder="Select industry type"
                                                                         filter
-                                                                        className="w-100"
+                                                                        className={`w-100 ${errors.industry_type ? 'p-invalid' : ''}`}
                                                                     />
+                                                                    {errors.industry_type && <div className="invalid-feedback d-block">{errors.industry_type}</div>}
                                                                 </div>
                                                             </div>
 
@@ -1006,7 +1018,7 @@ export default function LeadDetails() {
                                                                     <label className="form-label">SSN Last 4</label>
                                                                     <input
                                                                         type="number"
-                                                                        className="form-control"
+                                                                        className={`form-control ${errors.ssn_last_4 ? 'is-invalid' : ''}`}
                                                                         name="ssn_last_4"
                                                                         value={formData.ssn_last_4}
                                                                         onChange={handleInputChange}
@@ -1014,6 +1026,7 @@ export default function LeadDetails() {
                                                                         onInput={(e) => { if (e.target.value.length > 4) e.target.value = e.target.value.slice(0, 4); }}
                                                                         onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
                                                                     />
+                                                                    {errors.ssn_last_4 && <div className="invalid-feedback d-block">{errors.ssn_last_4}</div>}
                                                                 </div>
                                                             </div>
                                                         </div>
