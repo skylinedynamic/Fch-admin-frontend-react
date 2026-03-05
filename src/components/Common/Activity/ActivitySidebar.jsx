@@ -1,14 +1,67 @@
-import React from 'react';
-import avatar2 from '../../../../assets/images/users/avatar-2.jpg';
-import avatar3 from '../../../../assets/images/users/avatar-3.jpg';
-import avatar4 from '../../../../assets/images/users/avatar-4.jpg';
-import avatar5 from '../../../../assets/images/users/avatar-5.jpg';
-import illustrator1 from '../../../../assets/images/user-illustarator-1.png';
-import illustrator2 from '../../../../assets/images/user-illustarator-2.png';
-
+import React, { useState, useEffect } from 'react';
+import { getActivityLogs } from '../../../modules/activity-log/services';
+import avatarDefault from '../../../../assets/images/users/avatar-1.jpg'; // Assuming there's a default
+import '../StatisticsCardSkeleton.css';
 
 export default function ActivitySidebar({ entityId, entityType }) {
-    // TODO: Use entityId and entityType to fetch specific activities
+    const [activities, setActivities] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchActivities = async () => {
+        setLoading(true);
+        try {
+            const params = {
+                limit: 20
+            };
+            if (entityType === 'Borrower') params.borrower_id = entityId;
+            if (entityType === 'Partner') params.partner_id = entityId;
+
+            const response = await getActivityLogs(params);
+            setActivities(response.data || []);
+        } catch (err) {
+            console.error('Failed to fetch activities:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (entityId) {
+            fetchActivities();
+        }
+
+        // Listen for refresh event
+        const handleRefresh = () => fetchActivities();
+        window.addEventListener('refreshActivities', handleRefresh);
+
+        return () => {
+            window.removeEventListener('refreshActivities', handleRefresh);
+        };
+    }, [entityId, entityType]);
+
+    // Format date/time
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
+    const getIcon = (reference) => {
+        switch (reference?.toLowerCase()) {
+            case 'call': return 'ri-phone-line text-primary';
+            case 'meeting': return 'ri-group-line text-success';
+            case 'email': return 'ri-mail-line text-info';
+            case 'event': return 'ri-calendar-event-line text-warning';
+            default: return 'ri-file-list-3-line text-muted';
+        }
+    };
 
     return (
         <div className="card">
@@ -39,260 +92,91 @@ export default function ActivitySidebar({ entityId, entityType }) {
                 <div className="tab-content text-muted">
                     <div className="tab-pane active show" id="today" role="tabpanel">
                         <div className="profile-timeline">
-                            <div className="accordion accordion-flush" id="activityAccordion">
-                                {/* Activity Item 1 */}
-                                <div className="accordion-item border-0">
-                                    <div className="accordion-header" id="headingOne">
-                                        <button
-                                            className="accordion-button p-2 shadow-none"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapseOne"
-                                            aria-expanded="true"
-                                            aria-controls="collapseOne"
-                                        >
-                                            <div className="d-flex">
+                            {loading ? (
+                                <div className="activity-skeletons p-2">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <div key={i} className="accordion-item border-0 mb-3">
+                                            <div className="d-flex align-items-start p-2">
                                                 <div className="flex-shrink-0">
-                                                    <img
-                                                        src={avatar2}
-                                                        alt=""
-                                                        className="avatar-xs rounded-circle material-shadow"
-                                                    />
+                                                    <div className="skeleton-shimmer rounded-circle" style={{ width: '32px', height: '32px' }}></div>
                                                 </div>
                                                 <div className="flex-grow-1 ms-3">
-                                                    <h6 className="fs-14 mb-1">Jacqueline Steve</h6>
-                                                    <small className="text-muted">
-                                                        Lead status updated: moved to "Proposal" — 05:16 PM
-                                                    </small>
+                                                    <div className="skeleton-shimmer rounded mb-2" style={{ width: '80%', height: '14px' }}></div>
+                                                    <div className="skeleton-shimmer rounded" style={{ width: '40%', height: '10px' }}></div>
                                                 </div>
                                             </div>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="collapseOne"
-                                        className="accordion-collapse collapse show"
-                                        aria-labelledby="headingOne"
-                                        data-bs-parent="#activityAccordion"
-                                    >
-                                        <div className="accordion-body ms-2 ps-5">
-                                            <p className="text-muted mb-0">
-                                                Lead update: changed stage from "Qualified" to "Proposal".
-                                                Next: follow-up call scheduled.
-                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : activities.length === 0 ? (
+                                <div className="text-center py-5">
+                                    <div className="avatar-lg bg-light rounded-circle mx-auto mb-3">
+                                        <div className="avatar-title text-primary display-4">
+                                            <i className="ri-history-line"></i>
                                         </div>
                                     </div>
+                                    <h5 className="mt-2">No activity found</h5>
+                                    <p className="text-muted mb-0">No activities have been logged yet for this {entityType}.</p>
                                 </div>
-
-                                {/* Activity Item 2 */}
-                                <div className="accordion-item border-0">
-                                    <div className="accordion-header" id="headingTwo">
-                                        <button
-                                            className="accordion-button p-2 shadow-none collapsed"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapseTwo"
-                                            aria-expanded="false"
-                                            aria-controls="collapseTwo"
-                                        >
-                                            <div className="d-flex">
-                                                <div className="flex-shrink-0 avatar-xs">
-                                                    <div className="avatar-title bg-light text-success rounded-circle material-shadow">
-                                                        M
-                                                    </div>
-                                                </div>
-                                                <div className="flex-grow-1 ms-3">
-                                                    <h6 className="fs-14 mb-1">Megan Elmore</h6>
-                                                    <small className="text-muted">
-                                                        Adding a new event with attachments - 04:45PM
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="collapseTwo"
-                                        className="accordion-collapse collapse"
-                                        aria-labelledby="headingTwo"
-                                        data-bs-parent="#activityAccordion"
-                                    >
-                                        <div className="accordion-body ms-2 ps-5">
-                                            <div className="row g-2">
-                                                <div className="col-auto">
-                                                    <div className="d-flex border border-dashed p-2 rounded position-relative">
+                            ) : (
+                                <div className="accordion accordion-flush" id="activityAccordion">
+                                    {activities.map((activity, index) => (
+                                        <div className="accordion-item border-0" key={activity.id || index}>
+                                            <div className="accordion-header" id={`heading${index}`}>
+                                                <button
+                                                    className={`accordion-button p-2 shadow-none ${index === 0 ? '' : 'collapsed'}`}
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target={`#collapse${index}`}
+                                                    aria-expanded={index === 0 ? "true" : "false"}
+                                                    aria-controls={`collapse${index}`}
+                                                >
+                                                    <div className="d-flex w-100">
                                                         <div className="flex-shrink-0">
-                                                            <i className="ri-image-2-line fs-17 text-danger"></i>
+                                                            <div className="avatar-xs">
+                                                                <div className={`avatar-title bg-light rounded-circle`}>
+                                                                    <i className={getIcon(activity.reference)}></i>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-grow-1 ms-2">
-                                                            <h6>
-                                                                <a href="#" className="stretched-link">
-                                                                    Business Template - UI/UX design
-                                                                </a>
+                                                        <div className="flex-grow-1 ms-3 text-start">
+                                                            <h6 className="fs-14 mb-1">
+                                                                {/* 'subject' for activity, 'subject' for email */}
+                                                                {activity.subject || activity.log_name}
                                                             </h6>
-                                                            <small>685 KB</small>
+                                                            <small className="text-muted">
+                                                                {activity.log_name === 'email' ? 'Email' : activity.reference} • {formatDateTime(activity.activity_date || activity.created_at)}
+                                                            </small>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Item 3 */}
-                                <div className="accordion-item border-0">
-                                    <div className="accordion-header" id="headingThree">
-                                        <button
-                                            className="accordion-button p-2 shadow-none collapsed"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapseThree"
-                                            aria-expanded="false"
-                                            aria-controls="collapseThree"
-                                        >
-                                            <div className="d-flex">
-                                                <div className="flex-shrink-0">
-                                                    <img
-                                                        src={avatar5}
-                                                        alt=""
-                                                        className="avatar-xs rounded-circle material-shadow"
-                                                    />
-                                                </div>
-                                                <div className="flex-grow-1 ms-3">
-                                                    <h6 className="fs-14 mb-1">New ticket received</h6>
-                                                    <small className="text-muted mb-2">
-                                                        User Jeffrey Salazar - 02:19 PM
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="collapseThree"
-                                        className="accordion-collapse collapse"
-                                        aria-labelledby="headingThree"
-                                        data-bs-parent="#activityAccordion"
-                                    >
-                                        <div className="accordion-body ms-2 ps-5">
-                                            <p className="text-muted fst-italic mb-2">
-                                                " We need to update the credit builder tier information for this client. "
-                                            </p>
-                                            <div className="d-inline-flex gap-2">
-                                                <button className="btn btn-sm btn-soft-info">Reply</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Item 4 */}
-                                <div className="accordion-item border-0">
-                                    <div className="accordion-header" id="headingFour">
-                                        <button
-                                            className="accordion-button p-2 shadow-none collapsed"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapseFour"
-                                            aria-expanded="false"
-                                            aria-controls="collapseFour"
-                                        >
-                                            <div className="d-flex">
-                                                <div className="flex-shrink-0 avatar-xs">
-                                                    <div className="avatar-title bg-light text-muted rounded-circle">
-                                                        <i className="ri-user-3-fill"></i>
-                                                    </div>
-                                                </div>
-                                                <div className="flex-grow-1 ms-3">
-                                                    <h6 className="fs-14 mb-1">Nancy Martino</h6>
-                                                    <small className="text-muted">
-                                                        Commented on 12-10-2021 at 09:24 PM
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="collapseFour"
-                                        className="accordion-collapse collapse"
-                                        aria-labelledby="headingFour"
-                                        data-bs-parent="#activityAccordion"
-                                    >
-                                        <div className="accordion-body ms-2 ps-5">
-                                            <p className="text-muted">
-                                                " A wonderful serenity has taken possession of my entire soul,
-                                                like these sweet mornings of spring which I enjoy with my whole heart. "
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Item 5 - New design with image */}
-                                <div className="accordion-item border-0">
-                                    <div className="accordion-header" id="headingFive">
-                                        <button
-                                            className="accordion-button p-2 shadow-none collapsed"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#collapseFive"
-                                            aria-expanded="false"
-                                            aria-controls="collapseFive"
-                                        >
-                                            <div className="d-flex">
-                                                <div className="flex-shrink-0">
-                                                    <img
-                                                        src={avatar4}
-                                                        alt=""
-                                                        className="avatar-xs rounded-circle material-shadow"
-                                                    />
-                                                </div>
-                                                <div className="flex-grow-1 ms-3">
-                                                    <h6 className="fs-14 mb-1">Ariel Mortis</h6>
-                                                    <small className="text-muted">
-                                                        Shared a new design asset — 08:30 AM
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="collapseFive"
-                                        className="accordion-collapse collapse"
-                                        aria-labelledby="headingFive"
-                                        data-bs-parent="#activityAccordion"
-                                    >
-                                        <div className="accordion-body ms-2 ps-5">
-                                            <p className="text-muted mb-3">
-                                                " Here is the updated landing page concept with the new brand colors and typography. "
-                                            </p>
-                                            <div className="activity-img-preview mb-3">
-                                                <div className="row g-2">
-                                                    <div className="col-sm-6">
-                                                        <img
-                                                            src={illustrator1}
-                                                            alt="Design Preview 1"
-                                                            className="img-fluid rounded-3 border material-shadow-sm"
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
-                                                    <div className="col-sm-6">
-                                                        <img
-                                                            src={illustrator2}
-                                                            alt="Design Preview 2"
-                                                            className="img-fluid rounded-3 border material-shadow-sm"
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex gap-2">
-                                                <button className="btn btn-sm btn-soft-primary">
-                                                    <i className="ri-eye-line align-bottom me-1"></i> View
-                                                </button>
-                                                <button className="btn btn-sm btn-soft-success">
-                                                    <i className="ri-download-2-line align-bottom me-1"></i> Download
                                                 </button>
                                             </div>
+                                            <div
+                                                id={`collapse${index}`}
+                                                className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`}
+                                                aria-labelledby={`heading${index}`}
+                                                data-bs-parent="#activityAccordion"
+                                            >
+                                                <div className="accordion-body ms-2 ps-5">
+                                                    {activity.description && (
+                                                        <div
+                                                            className="text-muted mb-2 overflow-hidden"
+                                                            style={{ maxWidth: '100%' }}
+                                                            dangerouslySetInnerHTML={{ __html: activity.description }}
+                                                        />
+                                                    )}
+                                                    {activity.created_by_user && (
+                                                        <small className="d-block text-muted">
+                                                            <i className="ri-user-line me-1"></i>
+                                                            Logged by: {activity.created_by_user.name}
+                                                        </small>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

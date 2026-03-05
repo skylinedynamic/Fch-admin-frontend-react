@@ -1031,7 +1031,7 @@ export default function LeadDetails() {
             </div>
 
             {/* Modals rendered outside main content to prevent z-index issues */}
-            <EmailComposeModal entityId={id} entityType="Lead" />
+            <EmailComposeModal entityId={id} entityType="Lead" lead={formData} />
             <ActivityCreateModal entityId={id} entityType="Lead" />
             <LeadConvertModal
                 show={showConvertModal}

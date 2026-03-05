@@ -1,20 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
+import { createActivity } from '../../../modules/activity-log/services';
 
-export default function ActivityCreateModal({ entityId, entityType }) {
+export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
     const categoryRef = useRef(null);
     const dateInputRef = useRef(null);
+    const textareaRef = useRef(null); // Local ref to capture the DOM node
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
-        reference: 'Event',
-        date: '',
-        category: 'Event',
-        assignedTo: '',
+        reference: 'Call',
+        activity_date: new Date().toISOString().split('T')[0],
+        category: 'Call',
+        assigned_to: '',
         summary: '',
-        message: '',
+        message_body: '',
         attachments: []
     });
 
@@ -41,27 +45,107 @@ export default function ActivityCreateModal({ entityId, entityType }) {
         }));
     };
 
-    const handleCreate = () => {
-        if (!formData.summary || !formData.date) {
-            toast.error('Summary and Date are required');
-            return;
-        }
+    const handleCreate = async () => {
+        setIsSaving(true);
+        setErrors({});
+        try {
+            const data = new FormData();
+            data.append('reference', formData.reference || '');
+            data.append('activity_date', formData.activity_date || '');
+            data.append('category', formData.category || '');
+            data.append('subject', formData.summary || '');         // maps to subject column
+            data.append('description', formData.message_body || ''); // maps to description column
 
-        // TODO: Implement actual create activity logic with API
-        console.log('Creating activity:', { ...formData, entityId, entityType });
-        toast.success(`Activity "${formData.summary}" created successfully`);
+            // Entity IDs (no lead_id)
+            data.append('borrower_id', (entityType === 'Borrower' && entityId) ? entityId : '');
+            data.append('partner_id', (entityType === 'Partner' && entityId) ? entityId : '');
 
-        // Close modal
-        if (window.hideGlobalModal) {
-            window.hideGlobalModal('activityCreateModal');
+            if (formData.attachments && formData.attachments.length > 0) {
+                formData.attachments.forEach((file) => {
+                    data.append('attachments[]', file);
+                });
+            }
+
+            await createActivity(data);
+            toast.success(`Activity "${formData.summary}" created successfully`);
+
+            if (onActivityCreated) {
+                onActivityCreated();
+            }
+
+            // Trigger custom event for refreshing activities if needed
+            window.dispatchEvent(new CustomEvent('refreshActivities'));
+
+            // Reset form
+            setFormData({
+                reference: 'Call',
+                activity_date: new Date().toISOString().split('T')[0],
+                category: 'Call',
+                assigned_to: '',
+                summary: '',
+                message_body: '',
+                attachments: []
+            });
+
+            // Close modal
+            if (window.jQuery && window.jQuery('#activityCreateModal').modal) {
+                window.jQuery('#activityCreateModal').modal('hide');
+            } else if (window.hideGlobalModal) {
+                window.hideGlobalModal('activityCreateModal');
+            }
+        } catch (err) {
+            console.error('Failed to create activity:', err);
+            if (err.response?.status === 422) {
+                const backendErrors = err.response.data.errors || {};
+                const normalizedErrors = {};
+                Object.keys(backendErrors).forEach(key => {
+                    const error = backendErrors[key];
+                    normalizedErrors[key] = Array.isArray(error) ? error : [error];
+                });
+                setErrors(normalizedErrors);
+            } else {
+                toast.error(err.response?.data?.message || 'Failed to create activity');
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
     // Use global Summernote hook
-    const { editorRef } = useSummernote('message', formData.message, handleInputChange, {
+    const { editorRef: summernoteRef } = useSummernote('message_body', formData.message_body, (e) => {
+        setFormData(prev => ({ ...prev, message_body: e.target.value }));
+    }, {
         height: 200,
         placeholder: 'Write your message...'
     });
+
+    // Combine hook ref with local ref
+    const setEditorRef = useCallback((node) => {
+        textareaRef.current = node;
+        summernoteRef(node);
+    }, [summernoteRef]);
+
+    // Apply red border to Summernote .note-editor (it renders as a sibling of the textarea)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (textareaRef.current) {
+                // Find the .note-editor within the same parent container
+                const parent = textareaRef.current.parentElement;
+                const noteEditor = parent?.querySelector('.note-editor');
+
+                if (noteEditor) {
+                    if (errors.description) {
+                        noteEditor.style.setProperty('border-color', '#dc3545', 'important');
+                        noteEditor.style.setProperty('box-shadow', '0 0 0 0.1rem rgba(220,53,69,.25)', 'important');
+                    } else {
+                        noteEditor.style.borderColor = '';
+                        noteEditor.style.boxShadow = '';
+                    }
+                }
+            }
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [errors.description]);
 
     // Initialize Choices.js
     useEffect(() => {
@@ -98,13 +182,41 @@ export default function ActivityCreateModal({ entityId, entityType }) {
             const fp = flatpickr(dateInputRef.current, {
                 enableTime: false,
                 dateFormat: "Y-m-d",
-                defaultDate: formData.date || new Date(),
+                defaultDate: formData.activity_date || new Date(),
                 onChange: (selectedDates, dateStr) => {
-                    setFormData(prev => ({ ...prev, date: dateStr }));
+                    setFormData(prev => ({ ...prev, activity_date: dateStr }));
                 }
             });
             return () => fp.destroy();
         }
+    }, [formData.activity_date]);
+
+    // Reset validation and form on modal close
+    useEffect(() => {
+        const modalEl = document.getElementById('activityCreateModal');
+        const handleHidden = () => {
+            setErrors({});
+            setFormData({
+                reference: 'Call',
+                activity_date: new Date().toISOString().split('T')[0],
+                category: 'Call',
+                assigned_to: '',
+                summary: '',
+                message_body: '',
+                attachments: []
+            });
+            // Select2/Choices.js instances are handled via their own refs if needed,
+            // but many are tied to formData which we just reset.
+        };
+
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', handleHidden);
+        }
+        return () => {
+            if (modalEl) {
+                modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+            }
+        };
     }, []);
 
     return (
@@ -123,7 +235,7 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                                 <div className="col-md-6">
                                     <label className="form-label">Reference <span className="text-danger">*</span></label>
                                     <select
-                                        className="form-select"
+                                        className={`form-select ${errors.reference ? 'is-invalid' : ''}`}
                                         id="activityReference"
                                         name="reference"
                                         ref={referenceRef}
@@ -137,23 +249,25 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                                         <option value="Email">Email</option>
                                         <option value="Other">Other</option>
                                     </select>
+                                    {errors.reference && <div className="invalid-feedback">{errors.reference[0]}</div>}
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className={`form-control ${errors.activity_date ? 'is-invalid' : ''}`}
                                         id="activityDate"
-                                        name="date"
+                                        name="activity_date"
                                         ref={dateInputRef}
                                         placeholder="Select date and time"
                                         required
                                     />
+                                    {errors.activity_date && <div className="invalid-feedback">{errors.activity_date[0]}</div>}
                                 </div>
-                                <div className="col-md-6">
+                                <div className="col-md-12">
                                     <label className="form-label">Category</label>
                                     <select
-                                        className="form-select"
+                                        className={`form-select ${errors.category ? 'is-invalid' : ''}`}
                                         id="activityCategory"
                                         name="category"
                                         ref={categoryRef}
@@ -166,39 +280,32 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                                         <option value="Sent/Received Email">Sent/Received Email</option>
                                         <option value="Other">Other</option>
                                     </select>
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label">Assigned To</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="activityAssignedTo"
-                                        name="assignedTo"
-                                        placeholder="Assignee"
-                                        value={formData.assignedTo}
-                                        onChange={handleInputChange}
-                                    />
+                                    {errors.category && <div className="invalid-feedback">{errors.category[0]}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className="form-label">Summary <span className="text-danger">*</span></label>
+                                    <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
+                                        Summary <span className="text-danger">*</span>
+                                    </label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
                                         id="activitySummary"
                                         name="summary"
                                         value={formData.summary}
                                         onChange={handleInputChange}
                                         required
                                     />
+                                    {errors.subject && <div className="text-danger mt-1 small">{errors.subject[0]}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className="form-label">Message</label>
+                                    <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>
                                     <textarea
                                         id="activityMessageEditor"
-                                        ref={editorRef}
+                                        ref={setEditorRef}
                                         className="d-none"
-                                        name="message"
+                                        name="message_body"
                                     ></textarea>
+                                    {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
                                 </div>
                             </div>
                             <div className="row mt-3">
@@ -244,8 +351,17 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" className="btn btn-primary" onClick={handleCreate}>
-                            <i className="ri-check-line align-middle me-1"></i> Create
+                        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-check-line align-middle me-1"></i> Create
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
