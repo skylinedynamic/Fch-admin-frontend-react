@@ -38,6 +38,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const currentUser = useAuthStore((state) => state.user);
     const { hasPermission } = usePermissions();
     const isHost = currentUser?.is_host === 1;
+    const hostEntityId = currentUser?.entity_id;
 
     const [assignedForType, setAssignedForType] = useState('');
     const [selectableUsers, setSelectableUsers] = useState([]);
@@ -814,20 +815,22 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                                 <label className="form-label mb-0">
                                                     {isHost ? "Appointment With" : "Appointment With"} <span className="text-danger">*</span>
                                                 </label>
-                                                <div className="form-check">
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="checkbox"
-                                                        id="meeting-with-toggle"
-                                                        checked={isMeetingWithChecked}
-                                                        onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
-                                                        name={isHost ? "meeting_with" : "meeting_with_host"}
-                                                        value="1"
-                                                    />
-                                                    <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
-                                                        {isHost ? "Meeting with partner" : "Meeting with host"}
-                                                    </label>
-                                                </div>
+                                                {(!isHost || (isHost && hostEntityId == currentUser?.partner_id)) && (
+                                                    <div className="form-check">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="checkbox"
+                                                            id="meeting-with-toggle"
+                                                            checked={isMeetingWithChecked}
+                                                            onChange={(e) => setIsMeetingWithChecked(e.target.checked)}
+                                                            name={isHost ? "meeting_with" : "meeting_with_host"}
+                                                            value="1"
+                                                        />
+                                                        <label className="form-check-label ms-1" htmlFor="meeting-with-toggle">
+                                                            {isHost ? "Meeting with partner" : "Meeting with host"}
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="position-relative" style={{ minHeight: '38px' }}>

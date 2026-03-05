@@ -1328,3 +1328,522 @@
   height: 16px;
   border-radius: 4px;
 }
+
+/* ============================================================
+   Custom Flatpickr Datepicker Design — Enhanced
+   Dark-navy gradient header + polished calendar
+   ============================================================ */
+
+/* Popup slide-in animation */
+@keyframes fpSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.flatpickr-calendar.open {
+  animation: fpSlideDown 0.18s ease !important;
+}
+
+/* Wrapper / popup container */
+.flatpickr-calendar {
+  border-radius: 12px !important;
+  box-shadow: 0 12px 40px rgba(0, 31, 63, 0.20), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #dde3f0 !important;
+  font-family: inherit !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+/* Header bar (month + year navigation) */
+.flatpickr-months {
+  background: linear-gradient(135deg, #2c3e72 0%, #3a4f8c 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 10px 4px !important;
+  align-items: center !important;
+}
+
+/* Month/year label text */
+.flatpickr-current-month {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  color: #ffffff !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  padding-top: 0 !important;
+}
+
+/* Month name text inside the select */
+.flatpickr-current-month .flatpickr-monthDropdownContainer span,
+.flatpickr-current-month span.cur-month {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+}
+
+/* Year input */
+.flatpickr-current-month .numInputWrapper input.cur-year {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  background: transparent !important;
+}
+
+/* Year up/down arrows */
+.flatpickr-current-month .numInputWrapper .arrowUp,
+.flatpickr-current-month .numInputWrapper .arrowDown {
+  opacity: 1 !important;
+}
+
+.flatpickr-current-month .numInputWrapper .arrowUp::after {
+  border-bottom-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.flatpickr-current-month .numInputWrapper .arrowDown::after {
+  border-top-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.flatpickr-current-month .numInputWrapper .arrowUp:hover::after {
+  border-bottom-color: #ffffff !important;
+}
+
+.flatpickr-current-month .numInputWrapper .arrowDown:hover::after {
+  border-top-color: #ffffff !important;
+}
+
+/* Month dropdown (select element) */
+.flatpickr-months .flatpickr-month {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Prev / next month navigation arrows */
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+  background: transparent !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  padding: 6px 10px !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+  fill: #ffffff !important;
+}
+
+/* Weekday header row */
+.flatpickr-weekdays {
+  background: #f6f8fd !important;
+  border-bottom: 1px solid #eaecf5 !important;
+}
+
+.flatpickr-weekdaycontainer {
+  background: transparent !important;
+  padding: 6px 8px 4px !important;
+}
+
+.flatpickr-weekday {
+  color: #2c3e72 !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Day grid */
+.flatpickr-days {
+  border: none !important;
+  background: #ffffff !important;
+}
+
+.dayContainer {
+  padding: 8px 8px 12px !important;
+}
+
+/* Individual day cells */
+.flatpickr-day {
+  border-radius: 50% !important;
+  font-size: 0.84rem !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  max-width: 34px !important;
+  color: #1a2640 !important;
+  font-weight: 500 !important;
+  border: none !important;
+  transition: background 0.14s ease, color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+  background: #e5eaf8 !important;
+  color: #2c3e72 !important;
+  border: none !important;
+  transform: scale(1.1) !important;
+}
+
+/* Selected day — filled circle with glow */
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: #2c3e72 !important;
+  border-color: #2c3e72 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 14px rgba(44, 62, 114, 0.38) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Today indicator — small dot below the number */
+.flatpickr-day.today {
+  position: relative !important;
+  color: #2c3e72 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.flatpickr-day.today::after {
+  content: "" !important;
+  display: block !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 50% !important;
+  position: absolute !important;
+  bottom: 3px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.flatpickr-day.today:hover {
+  background: #e5eaf8 !important;
+  color: #2c3e72 !important;
+}
+
+.flatpickr-day.today.selected,
+.flatpickr-day.today.selected:hover {
+  background: #2c3e72 !important;
+  color: #ffffff !important;
+}
+
+.flatpickr-day.today.selected::after,
+.flatpickr-day.today.selected:hover::after {
+  background: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Days outside current month */
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: #c0c9dc !important;
+  font-weight: 400 !important;
+  opacity: 0.65 !important;
+}
+
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover {
+  background: #f1f4fa !important;
+  color: #8898aa !important;
+  opacity: 1 !important;
+  transform: scale(1.05) !important;
+}
+
+/* Disabled days */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+  color: #d0d5e0 !important;
+  background: transparent !important;
+  cursor: default !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Month select dropdown arrow tweak */
+.flatpickr-current-month select.flatpickr-monthDropdown-months {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  cursor: pointer !important;
+  padding-right: 14px !important;
+}
+
+/* Input field styling */
+.flatpickr-input.form-control {
+  background-color: #fff !important;
+  cursor: pointer !important;
+}
+
+/* ============================================================
+   PrimeReact Calendar (.p-datepicker) — Same Navy Design
+   Used in: AppointmentModal, PreQualificationApplication
+   ============================================================ */
+
+/* Popup container */
+.p-datepicker {
+  border-radius: 12px !important;
+  box-shadow: 0 12px 40px rgba(0, 31, 63, 0.20), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #dde3f0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  font-family: inherit !important;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.p-datepicker .p-datepicker-header {
+  background: linear-gradient(135deg, #2c3e72 0%, #3a4f8c 100%) !important;
+  border: none !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 10px 12px !important;
+  color: #ffffff !important;
+}
+
+/* Month / Year title */
+.p-datepicker .p-datepicker-header .p-datepicker-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.01em !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 4px !important;
+  cursor: pointer !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-month:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-title .p-datepicker-year:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 4px !important;
+}
+
+/* Prev / Next navigation buttons */
+.p-datepicker .p-datepicker-header .p-datepicker-prev,
+.p-datepicker .p-datepicker-header .p-datepicker-next {
+  color: #ffffff !important;
+  background: transparent !important;
+  border: none !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.15s ease !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-prev:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-next:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-prev .p-icon,
+.p-datepicker .p-datepicker-header .p-datepicker-next .p-icon {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  width: 13px !important;
+  height: 13px !important;
+}
+
+/* ── Weekday header row ──────────────────────────────────── */
+.p-datepicker table thead tr th {
+  background: #f6f8fd !important;
+  border-bottom: 1px solid #eaecf5 !important;
+  padding: 8px 6px !important;
+}
+
+.p-datepicker table thead tr th span {
+  color: #2c3e72 !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ── Day cells ───────────────────────────────────────────── */
+.p-datepicker table {
+  padding: 6px 8px 10px !important;
+}
+
+.p-datepicker table tbody td {
+  padding: 4px !important;
+}
+
+.p-datepicker table tbody td span {
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 0.84rem !important;
+  font-weight: 500 !important;
+  color: #1a2640 !important;
+  transition: background 0.14s ease, color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
+.p-datepicker table tbody td span:not(.p-highlight):not(.p-disabled):hover {
+  background: #e5eaf8 !important;
+  color: #2c3e72 !important;
+  transform: scale(1.1) !important;
+}
+
+/* Selected day — filled navy circle with glow */
+.p-datepicker table tbody td span.p-highlight {
+  background: #2c3e72 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 14px rgba(44, 62, 114, 0.38) !important;
+  transform: scale(1.08) !important;
+}
+
+.p-datepicker table tbody td span.p-highlight:hover {
+  background: #2c3e72 !important;
+  color: #ffffff !important;
+}
+
+/* In-range days (date range selection) */
+.p-datepicker table tbody td.p-datepicker-today span:not(.p-highlight) {
+  position: relative !important;
+  color: #2c3e72 !important;
+  font-weight: 700 !important;
+  background: transparent !important;
+}
+
+/* Today dot indicator */
+.p-datepicker table tbody td.p-datepicker-today span:not(.p-highlight)::after {
+  content: "" !important;
+  display: block !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 50% !important;
+  background: #2c3e72 !important;
+  position: absolute !important;
+  bottom: 3px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Today selected */
+.p-datepicker table tbody td.p-datepicker-today span.p-highlight {
+  background: #2c3e72 !important;
+  color: #ffffff !important;
+}
+
+.p-datepicker table tbody td.p-datepicker-today span.p-highlight::after {
+  background: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Out-of-month days */
+.p-datepicker table tbody td.p-datepicker-other-month span {
+  color: #c0c9dc !important;
+  opacity: 0.6 !important;
+}
+
+/* Disabled days */
+.p-datepicker table tbody td span.p-disabled {
+  color: #d0d5e0 !important;
+  background: transparent !important;
+  cursor: default !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Date Range Selection ─────────────────────────────────
+   td.p-highlight       = in-between days (light strip)
+   td span.p-highlight  = start & end anchor (filled circle)
+   ─────────────────────────────────────────────────────── */
+
+/* In-between range cells — light tint strip, no circle */
+.p-datepicker table tbody td.p-highlight {
+  background: rgba(44, 62, 114, 0.10) !important;
+}
+
+/* Strip is rectangular — remove the cell border-radius */
+.p-datepicker table tbody td.p-highlight span:not(.p-highlight) {
+  background: transparent !important;
+  color: #2c3e72 !important;
+  font-weight: 600 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* First cell of range — round left side of strip */
+.p-datepicker table tbody td.p-datepicker-range-start {
+  border-radius: 50% 0 0 50% !important;
+}
+
+/* Last cell of range — round right side of strip */
+.p-datepicker table tbody td.p-datepicker-range-end {
+  border-radius: 0 50% 50% 0 !important;
+}
+
+/* Month/Year view buttons */
+.p-datepicker .p-monthpicker .p-monthpicker-month,
+.p-datepicker .p-yearpicker .p-yearpicker-year {
+  border-radius: 8px !important;
+  transition: background 0.14s ease, color 0.14s ease !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month:hover,
+.p-datepicker .p-yearpicker .p-yearpicker-year:hover {
+  background: #e5eaf8 !important;
+  color: #2c3e72 !important;
+}
+
+.p-datepicker .p-monthpicker .p-monthpicker-month.p-highlight,
+.p-datepicker .p-yearpicker .p-yearpicker-year.p-highlight {
+  background: #2c3e72 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(44, 62, 114, 0.32) !important;
+}
+
+/* Calendar icon on the input (PrimeReact showIcon) */
+.p-calendar .p-button {
+  background: #f6f8fd !important;
+  color: #2c3e72 !important;
+  transition: background 0.15s ease !important;
+}
+
+.p-calendar .p-button:hover {
+  background: #e5eaf8 !important;
+  border-color: #c5cde8 !important;
+  color: #2c3e72 !important;
+}
+
+.p-calendar .p-button .p-icon {
+  color: #2c3e72 !important;
+}

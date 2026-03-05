@@ -609,6 +609,19 @@ File: Custom Css File
   display: block !important;
 }
 
+/* Summernote & PrimeReact Validation Enhancements */
+.is-invalid + .note-editor.note-frame {
+    border-color: #f1734f !important;
+}
+
+.p-invalid > .p-dropdown {
+    border-color: #f1734f !important;
+}
+
+.note-editor.is-invalid {
+    border-color: #f1734f !important;
+}
+
 .choices.is-invalid::after {
   right: 55px !important;
 }
