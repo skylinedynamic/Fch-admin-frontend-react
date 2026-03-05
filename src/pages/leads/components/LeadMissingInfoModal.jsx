@@ -169,10 +169,9 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
     const handleConfirm = () => {
         if (validate()) {
             const payload = { ...extraData };
-            if (payload.city === 'Others') {
-                payload.city = payload.other_city;
+            if (payload.city !== 'Others') {
+                delete payload.other_city;
             }
-            delete payload.other_city;
             onConfirm(payload);
         }
     };

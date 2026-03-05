@@ -204,7 +204,8 @@ export default function LeadDetails() {
                     business_address: formData.business_address,
                     country: formData.country,
                     state: formData.state,
-                    city: formData.city === 'Others' ? (formData.other_city || '') : formData.city,
+                    city: formData.city,
+                    other_city: formData.city === 'Others' ? formData.other_city : undefined,
                     zip_code: formData.zip_code,
                     business_phone: formData.business_phone,
                     entity_type: formData.entity_type,
@@ -880,6 +881,13 @@ export default function LeadDetails() {
 
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
+                                                                    <label className="form-label">Zip Code</label>
+                                                                    <input type="text" className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
+                                                                    {errors.zip_code && <div className="invalid-feedback d-block">{errors.zip_code}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-lg-6">
+                                                                <div className="mb-3">
                                                                     <label className="form-label">Business Phone</label>
                                                                     <div className="input-group">
                                                                         {(formData.country === 'United States' || formData.country === 'Canada') && (
@@ -901,13 +909,6 @@ export default function LeadDetails() {
                                                                         />
                                                                         {errors.business_phone && <div className="invalid-feedback d-block">{errors.business_phone}</div>}
                                                                     </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-6">
-                                                                <div className="mb-3">
-                                                                    <label className="form-label">Zip Code</label>
-                                                                    <input type="text" className={`form-control ${errors.zip_code ? 'is-invalid' : ''}`} name="zip_code" value={formData.zip_code} onChange={handleInputChange} placeholder="Enter zipcode" />
-                                                                    {errors.zip_code && <div className="invalid-feedback d-block">{errors.zip_code}</div>}
                                                                 </div>
                                                             </div>
                                                             <div className="col-lg-6">
