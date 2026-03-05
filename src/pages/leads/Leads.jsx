@@ -271,7 +271,9 @@ export default function Leads() {
             setSelectedLeads([]);
             setAppliedFilters({ ...appliedFilters });
         } catch (err) {
-            toast.error('Failed to delete leads');
+            console.error('Delete lead error:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to delete leads';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
