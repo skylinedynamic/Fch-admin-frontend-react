@@ -11,12 +11,7 @@ export const getActivityLog = async (id: number | string): Promise<ActivityLog> 
     return response.data;
 };
 
-export const createActivity = async (data: Partial<ActivityLog>) => {
-    const response = await apiClient.post("/common/activity-logs/activity", data);
-    return response.data;
-};
-
-export const createEmailLog = async (data: Partial<ActivityLog>) => {
-    const response = await apiClient.post("/common/activity-logs/email", data);
+export const createActivityLog = async (data: any) => {
+    const response = await apiClient.post("/common/activity-logs", data);
     return response.data;
 };

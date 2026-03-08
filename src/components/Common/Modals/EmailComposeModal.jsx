@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { createEmailLog } from '../../../modules/activity-log/services';
+import { createActivityLog } from '../../../modules/activity-log/services';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -9,6 +9,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
     const textareaRef = useRef(null); // Local ref to capture the DOM node
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
+    const pendingEmailRef = useRef('');
     const [formData, setFormData] = useState({
         to_emails: '',
         subject: '',
@@ -34,55 +35,67 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
     };
 
     const handleSend = async () => {
+        if (isSaving) return;
+
+        console.log('--- Email Send Start ---');
         setIsSaving(true);
         setErrors({});
 
-        // GET EMAILS DIRECTLY AND SYNCHRONOUSLY
-        let finalEmails = "";
-        if (choicesInstanceRef.current) {
-            // 1. Get all confirmed tags
-            const items = choicesInstanceRef.current.getValue();
-            const emailArray = Array.isArray(items) ? items.map(i => i.value) : (items ? [items.value] : []);
-
-            // 2. Capture any text still sitting in the input box (user clicked send before hitting enter)
-            try {
-                const inputEl = choicesInstanceRef.current.input.element;
-                if (inputEl && inputEl.value && inputEl.value.includes('@')) {
-                    const typedValue = inputEl.value.trim();
-                    if (!emailArray.includes(typedValue)) {
-                        emailArray.push(typedValue);
-                        // Visually add it too
-                        choicesInstanceRef.current.setValue([typedValue]);
-                    }
-                    inputEl.value = '';
-                }
-            } catch (e) { }
-
-            // 3. Join into a final comma-separated string
-            finalEmails = emailArray.join(', ');
-        }
-
-        console.log('Final to_emails string:', finalEmails);
-
         try {
+            // --- ULTIMATE AGGRESSIVE STRING CAPTURE ---
+            let uniqueEmails = new Set();
+
+            // 1. Capture from Choices.js tags
+            if (choicesInstanceRef.current) {
+                const tags = choicesInstanceRef.current.getValue(true);
+                const tagList = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+                tagList.forEach(email => {
+                    if (email && email.includes('@')) uniqueEmails.add(email.trim());
+                });
+            }
+
+            // 2. Capture from the real-time Ref
+            if (pendingEmailRef.current && pendingEmailRef.current.includes('@')) {
+                uniqueEmails.add(pendingEmailRef.current.trim());
+            }
+
+            // 3. NUCLEAR SCAN: Search every single input element in the entire modal
+            const modalEl = document.getElementById('emailComposeModal');
+            if (modalEl) {
+                const allInputs = modalEl.querySelectorAll('input');
+                allInputs.forEach(input => {
+                    const val = input.value?.trim();
+                    if (val && val.includes('@')) {
+                        uniqueEmails.add(val);
+                    }
+                });
+            }
+
+            // Join found emails into a comma-separated string
+            const finalEmailsString = Array.from(uniqueEmails).join(', ');
+            console.log('FINAL CAPTURED EMAIL STRING:', finalEmailsString);
+
+            // Removed local validation as per user request to rely on backend
+
+            // Payload Construction
+            const borrowerId = (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') ? entityId : null;
+            const partnerId = (entityType === 'Partner') ? entityId : null;
             const hasAttachments = formData.attachments.length > 0;
             let payload;
 
-            // Map Lead or Borrower to borrower_id
-            const borrowerId = (entityType === 'Borrower' || entityType === 'Lead') ? entityId : null;
-            const partnerId = (entityType === 'Partner') ? entityId : null;
-
             if (hasAttachments) {
                 payload = new FormData();
-                payload.append('to_emails', finalEmails || '');
+                payload.append('log_type', 'email');
+                payload.append('to_emails', finalEmailsString); // String payload
                 payload.append('subject', formData.subject || '');
                 payload.append('description', formData.message_body || '');
-                payload.append('borrower_id', borrowerId || '');
-                payload.append('partner_id', partnerId || '');
+                if (borrowerId) payload.append('borrower_id', borrowerId.toString());
+                if (partnerId) payload.append('partner_id', partnerId.toString());
                 formData.attachments.forEach(file => payload.append('attachments[]', file));
             } else {
                 payload = {
-                    to_emails: finalEmails || '',
+                    log_type: 'email',
+                    to_emails: finalEmailsString, // String payload
                     subject: formData.subject || '',
                     description: formData.message_body || '',
                     borrower_id: borrowerId,
@@ -91,30 +104,52 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 };
             }
 
-            console.log('Final Payload:', payload);
+            console.log('API PAYLOAD:', payload);
 
-            await createEmailLog(payload);
+            await createActivityLog(payload);
             toast.success(`Email sent successfully`);
 
             // Refresh activity list
             window.dispatchEvent(new CustomEvent('refreshActivities'));
 
             // Reset UI and State
+            pendingEmailRef.current = '';
             setFormData({ to_emails: '', subject: '', message_body: '', attachments: [] });
             if (choicesInstanceRef.current) {
                 choicesInstanceRef.current.removeActiveItems();
             }
 
-            // Close Modal
-            if (window.jQuery && window.jQuery('#emailComposeModal').modal) {
-                window.jQuery('#emailComposeModal').modal('hide');
-            } else if (window.hideGlobalModal) {
-                window.hideGlobalModal('emailComposeModal');
-            }
+            // Close Modal — also clean up backdrop to prevent page blur
+            const closeModal = () => {
+                if (window.jQuery && window.jQuery('#emailComposeModal').modal) {
+                    window.jQuery('#emailComposeModal').modal('hide');
+                } else if (window.hideGlobalModal) {
+                    window.hideGlobalModal('emailComposeModal');
+                } else {
+                    // Manually close if jQuery modal not available
+                    const modalEl = document.getElementById('emailComposeModal');
+                    if (modalEl) {
+                        modalEl.classList.remove('show');
+                        modalEl.style.display = 'none';
+                        modalEl.setAttribute('aria-hidden', 'true');
+                        modalEl.removeAttribute('aria-modal');
+                    }
+                }
+
+                // Always clean up leftover backdrop and body classes (fixes blur)
+                setTimeout(() => {
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 300);
+            };
+
+            closeModal();
         } catch (err) {
             console.error('Failed to send email:', err);
-            if (err.response?.status === 422) {
-                const backendErrors = err.response.data.errors || {};
+            const backendErrors = err.response?.data?.errors;
+            if (err.response?.status === 422 && backendErrors) {
                 const normalizedErrors = {};
                 Object.keys(backendErrors).forEach(key => {
                     const error = backendErrors[key];
@@ -122,10 +157,10 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 });
                 setErrors(normalizedErrors);
             } else {
-                toast.error(err.response?.data?.message || 'Failed to send email');
+                toast.error(err.response?.data?.message || 'Failed to send email. Check your connection.');
             }
         } finally {
-            setIsSaving(false);
+            setTimeout(() => setIsSaving(false), 300);
         }
     };
 
@@ -199,11 +234,15 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 }));
             });
 
-            // IMPORTANT: Force input value into an item on blur so if they type but don't hit enter, it's captured
-            const inputElement = choicesRef.current.closest('.choices').querySelector('input.choices__input');
-            if (inputElement) {
-                inputElement.addEventListener('blur', () => {
-                    const typedValue = inputElement.value;
+            // Track any typed text that hasn't been "tagged" yet and force item creation on blur
+            const choicesInput = choicesRef.current.closest('.choices')?.querySelector('input.choices__input');
+            if (choicesInput) {
+                choicesInput.addEventListener('input', (e) => {
+                    pendingEmailRef.current = e.target.value || '';
+                });
+
+                choicesInput.addEventListener('blur', () => {
+                    const typedValue = choicesInput.value;
                     if (typedValue && typedValue.includes('@')) {
                         const trimmed = typedValue.trim();
                         const current = instance.getValue(true);
@@ -212,8 +251,9 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         if (!currentArray.includes(trimmed)) {
                             instance.setValue([...currentArray, trimmed]);
                         }
-                        inputElement.value = '';
+                        choicesInput.value = '';
                     }
+                    setTimeout(() => { pendingEmailRef.current = ''; }, 100);
                 });
             }
         }
@@ -245,6 +285,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         const modalEl = document.getElementById('emailComposeModal');
         const handleHidden = () => {
             setErrors({});
+            pendingEmailRef.current = '';
             setFormData({
                 to_emails: '',
                 subject: '',
@@ -282,6 +323,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
+                        {errors.log_name && <div className="alert alert-danger py-2 mb-3">{errors.log_name[0]}</div>}
                         <form onSubmit={(e) => e.preventDefault()}>
                             <div className="mb-3">
                                 <label className="form-label">To <span className="text-danger">*</span></label>

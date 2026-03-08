@@ -3,7 +3,7 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
-import { createActivity } from '../../../modules/activity-log/services';
+import { createActivityLog } from '../../../modules/activity-log/services';
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
@@ -50,6 +50,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         setErrors({});
         try {
             const data = new FormData();
+            data.append('log_type', 'activity');
             data.append('reference', formData.reference || '');
             data.append('activity_date', formData.activity_date || '');
             data.append('category', formData.category || '');
@@ -57,8 +58,11 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('description', formData.message_body || ''); // maps to description column
 
             // Entity IDs (no lead_id)
-            data.append('borrower_id', (entityType === 'Borrower' && entityId) ? entityId : '');
-            data.append('partner_id', (entityType === 'Partner' && entityId) ? entityId : '');
+            if (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') {
+                data.append('borrower_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Partner') {
+                data.append('partner_id', entityId ? entityId.toString() : '');
+            }
 
             if (formData.attachments && formData.attachments.length > 0) {
                 formData.attachments.forEach((file) => {
@@ -66,8 +70,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 });
             }
 
-            await createActivity(data);
-            toast.success(`Activity "${formData.summary}" created successfully`);
+            await createActivityLog(data);
+            toast.success(`Activity created successfully`);
 
             if (onActivityCreated) {
                 onActivityCreated();
@@ -87,12 +91,33 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 attachments: []
             });
 
-            // Close modal
-            if (window.jQuery && window.jQuery('#activityCreateModal').modal) {
-                window.jQuery('#activityCreateModal').modal('hide');
-            } else if (window.hideGlobalModal) {
-                window.hideGlobalModal('activityCreateModal');
-            }
+            // Close modal — also clean up backdrop to prevent page blur
+            const closeModal = () => {
+                if (window.jQuery && window.jQuery('#activityCreateModal').modal) {
+                    window.jQuery('#activityCreateModal').modal('hide');
+                } else if (window.hideGlobalModal) {
+                    window.hideGlobalModal('activityCreateModal');
+                } else {
+                    // Manually close if jQuery modal not available
+                    const modalEl = document.getElementById('activityCreateModal');
+                    if (modalEl) {
+                        modalEl.classList.remove('show');
+                        modalEl.style.display = 'none';
+                        modalEl.setAttribute('aria-hidden', 'true');
+                        modalEl.removeAttribute('aria-modal');
+                    }
+                }
+
+                // Always clean up leftover backdrop and body classes (fixes blur)
+                setTimeout(() => {
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 300);
+            };
+
+            closeModal();
         } catch (err) {
             console.error('Failed to create activity:', err);
             if (err.response?.status === 422) {
@@ -220,7 +245,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     }, []);
 
     return (
-        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
                 <div className="modal-content border-0">
                     <div className="modal-header p-3 ps-4 bg-primary">
@@ -230,6 +255,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
+                        {errors.log_name && <div className="alert alert-danger py-2 mb-3">{errors.log_name[0]}</div>}
                         <form>
                             <div className="row g-3">
                                 <div className="col-md-6">
