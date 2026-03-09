@@ -5,6 +5,9 @@ import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
 
+const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
+const CATEGORY_OPTIONS = ['Event', 'Meeting', 'Call', 'Sent/Received Email', 'Other'];
+
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
     const categoryRef = useRef(null);
@@ -285,11 +288,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         onChange={handleInputChange}
                                         required
                                     >
-                                        <option value="Event">Event</option>
-                                        <option value="Meeting">Meeting</option>
-                                        <option value="Call">Call</option>
-                                        <option value="Email">Email</option>
-                                        <option value="Other">Other</option>
+                                        {REFERENCE_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
                                     </select>
                                     {errors.reference && <div className="invalid-feedback">{errors.reference[0]}</div>}
                                 </div>
@@ -316,11 +317,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         value={formData.category}
                                         onChange={handleInputChange}
                                     >
-                                        <option value="Event">Event</option>
-                                        <option value="Meeting">Meeting</option>
-                                        <option value="Call">Call</option>
-                                        <option value="Sent/Received Email">Sent/Received Email</option>
-                                        <option value="Other">Other</option>
+                                        {CATEGORY_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
                                     </select>
                                     {errors.category && <div className="invalid-feedback">{errors.category[0]}</div>}
                                 </div>
