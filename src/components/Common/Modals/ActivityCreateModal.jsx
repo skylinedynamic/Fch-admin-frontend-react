@@ -57,20 +57,46 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('subject', formData.summary || '');         // maps to subject column
             data.append('description', formData.message_body || ''); // maps to description column
 
-            // Entity IDs (no lead_id)
-            if (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') {
+            // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
+            data.append('to_emails', formData.to_emails || '');
+            data.append('assigned_to', formData.assigned_to || '');
+
+            // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
+            if (entityType === 'Borrower') {
                 data.append('borrower_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Lead') {
+                data.append('lead_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Client') {
+                data.append('client_id', entityId ? entityId.toString() : '');
             } else if (entityType === 'Partner') {
                 data.append('partner_id', entityId ? entityId.toString() : '');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
+                // Must use attachments[] for Laravel to parse multiple files as an array
                 formData.attachments.forEach((file) => {
                     data.append('attachments[]', file);
                 });
             }
 
-            await createActivityLog(data);
+            const response = await createActivityLog(data);
+
+            // Handle backend returning HTTP 200 with status:false (validation error format)
+            if (response && response.status === false) {
+                const backendErrors = response.errors;
+                if (backendErrors && typeof backendErrors === 'object') {
+                    const normalizedErrors = {};
+                    Object.keys(backendErrors).forEach(key => {
+                        const error = backendErrors[key];
+                        normalizedErrors[key] = Array.isArray(error) ? error : [error];
+                    });
+                    setErrors(normalizedErrors);
+                } else {
+                    toast.error(response.message || 'Validation failed.');
+                }
+                return; // Stop here, do not close modal
+            }
+
             toast.success(`Activity created successfully`);
 
             if (onActivityCreated) {
@@ -80,48 +106,34 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             // Trigger custom event for refreshing activities if needed
             window.dispatchEvent(new CustomEvent('refreshActivities'));
 
-            // Reset form
-            setFormData({
-                reference: 'Call',
-                activity_date: new Date().toISOString().split('T')[0],
-                category: 'Call',
-                assigned_to: '',
-                summary: '',
-                message_body: '',
-                attachments: []
-            });
-
-            // Close modal — also clean up backdrop to prevent page blur
+            // Robust Close Modal
             const closeModal = () => {
-                if (window.jQuery && window.jQuery('#activityCreateModal').modal) {
-                    window.jQuery('#activityCreateModal').modal('hide');
-                } else if (window.hideGlobalModal) {
+                if (window.hideGlobalModal) {
                     window.hideGlobalModal('activityCreateModal');
                 } else {
-                    // Manually close if jQuery modal not available
                     const modalEl = document.getElementById('activityCreateModal');
-                    if (modalEl) {
-                        modalEl.classList.remove('show');
-                        modalEl.style.display = 'none';
-                        modalEl.setAttribute('aria-hidden', 'true');
-                        modalEl.removeAttribute('aria-modal');
+                    if (window.bootstrap && modalEl) {
+                        const modal = window.bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
                     }
+                    // Final fallback
+                    setTimeout(() => {
+                        document.body.classList.remove('modal-open');
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    }, 300);
                 }
-
-                // Always clean up leftover backdrop and body classes (fixes blur)
-                setTimeout(() => {
-                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                    document.body.classList.remove('modal-open');
-                    document.body.style.overflow = '';
-                    document.body.style.paddingRight = '';
-                }, 300);
             };
 
             closeModal();
         } catch (err) {
             console.error('Failed to create activity:', err);
-            if (err.response?.status === 422) {
-                const backendErrors = err.response.data.errors || {};
+
+            // Handle both 422 HTTP status AND 200 with status:false JSON format
+            const responseData = err.response?.data;
+            const backendErrors = responseData?.errors;
+
+            if (backendErrors && typeof backendErrors === 'object') {
+                // Normalize: backend may send strings OR arrays for error values
                 const normalizedErrors = {};
                 Object.keys(backendErrors).forEach(key => {
                     const error = backendErrors[key];
@@ -129,7 +141,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 });
                 setErrors(normalizedErrors);
             } else {
-                toast.error(err.response?.data?.message || 'Failed to create activity');
+                toast.error(responseData?.message || 'Failed to create activity');
             }
         } finally {
             setIsSaving(false);
@@ -255,7 +267,11 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
-                        {errors.log_name && <div className="alert alert-danger py-2 mb-3">{errors.log_name[0]}</div>}
+                        {(errors.log_type || errors.log_name) && (
+                            <div className="alert alert-danger py-2 mb-3">
+                                {errors.log_type ? errors.log_type[0] : errors.log_name[0]}
+                            </div>
+                        )}
                         <form>
                             <div className="row g-3">
                                 <div className="col-md-6">
@@ -355,22 +371,34 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         />
                                     </div>
                                     <div id="activityAttachmentList" className="mt-2">
-                                        {formData.attachments.map((file, index) => (
-                                            <div key={index} className="d-flex align-items-center justify-content-between border rounded p-2 mb-2">
-                                                <span className="text-muted small">
-                                                    <i className="ri-attachment-2 me-1"></i>
-                                                    {file.name}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-ghost-danger"
-                                                    onClick={() => removeAttachment(index)}
-                                                >
-                                                    <i className="ri-close-line"></i>
-                                                </button>
-                                            </div>
-                                        ))}
+                                        {formData.attachments.map((file, index) => {
+                                            const fileError = errors[`attachments.${index}`];
+                                            return (
+                                                <div key={index} className="mb-2">
+                                                    <div className={`d-flex align-items-center justify-content-between border rounded p-2 ${fileError ? 'border-danger' : ''}`}>
+                                                        <span className={`${fileError ? 'text-danger fw-medium' : 'text-muted'} small`}>
+                                                            <i className="ri-attachment-2 me-1"></i>
+                                                            {file.name}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-ghost-danger p-0"
+                                                            onClick={() => removeAttachment(index)}
+                                                        >
+                                                            <i className="ri-close-line fs-16"></i>
+                                                        </button>
+                                                    </div>
+                                                    {fileError && <div className="text-danger mt-1 small ps-1">{fileError[0]}</div>}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                    {/* Show general attachment group errors if any */}
+                                    {errors.attachments && (
+                                        <div className="text-danger mt-1 small">
+                                            {errors.attachments[0]}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </form>

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getActivityLogs } from '../../../modules/activity-log/services';
+import { getActivityLogs, downloadActivityAttachment } from '../../../modules/activity-log/services';
+import { downloadBlob } from '../../../utils/fileDownload';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import '../StatisticsCardSkeleton.css';
+
+import { getFileIconConfig } from '../../../utils/fileIconConfig';
 
 export default function ActivitySidebar({ entityId, entityType, profileImage = null }) {
     const [activities, setActivities] = useState([]);
@@ -10,6 +13,27 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
     const toggleOpen = (id) => {
         setOpenIds(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const handleDownload = async (activityId, file) => {
+        try {
+            const fileName = file.name || file;
+            const filePath = file.path || file;
+
+            if (!filePath) {
+                console.error('No file path available for download');
+                return;
+            }
+
+            const blob = await downloadActivityAttachment({
+                activity_log_id: activityId,
+                path: filePath
+            });
+
+            downloadBlob(blob, fileName);
+        } catch (error) {
+            console.error('Download failed:', error);
+        }
     };
 
     const fetchActivities = async () => {
@@ -256,25 +280,36 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
                                                                     {hasAttachments && (
                                                                         <div className="row g-2 mt-1">
-                                                                            {activity.attachments.map((file, fIdx) => (
-                                                                                <div key={fIdx} className="col-auto">
-                                                                                    <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                                                                        <div className="flex-shrink-0">
-                                                                                            <i className="ri-file-zip-line fs-17 text-info"></i>
-                                                                                        </div>
-                                                                                        <div className="flex-grow-1 ms-2">
-                                                                                            <h6 className="mb-0 fs-12">
-                                                                                                <a href="#" className="stretched-link text-body">
-                                                                                                    {file.name || file}
-                                                                                                </a>
-                                                                                            </h6>
-                                                                                            {file.size && (
-                                                                                                <small className="text-muted">{(file.size / 1024).toFixed(0)} KB</small>
-                                                                                            )}
+                                                                            {activity.attachments.map((file, fIdx) => {
+                                                                                const fileName = file.name || file;
+                                                                                const fileIcon = getFileIconConfig(fileName);
+                                                                                return (
+                                                                                    <div key={fIdx} className="col-auto">
+                                                                                        <div className="d-flex border border-dashed p-2 rounded position-relative">
+                                                                                            <div className="flex-shrink-0">
+                                                                                                <i className={`fs-17 ${fileIcon.icon} ${fileIcon.color}`}></i>
+                                                                                            </div>
+                                                                                            <div className="flex-grow-1 ms-2">
+                                                                                                <h6 className="mb-0 fs-12">
+                                                                                                    <a
+                                                                                                        href="#"
+                                                                                                        className="stretched-link text-body"
+                                                                                                        onClick={(e) => {
+                                                                                                            e.preventDefault();
+                                                                                                            handleDownload(activity.id, file);
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        {file.name || file}
+                                                                                                    </a>
+                                                                                                </h6>
+                                                                                                {file.size && (
+                                                                                                    <small className="text-muted">{(file.size / 1024).toFixed(0)} KB</small>
+                                                                                                )}
+                                                                                            </div>
                                                                                         </div>
                                                                                     </div>
-                                                                                </div>
-                                                                            ))}
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -336,6 +371,6 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                     font-size: 14px;
                 }
             `}} />
-        </div>
+        </div >
     );
 }

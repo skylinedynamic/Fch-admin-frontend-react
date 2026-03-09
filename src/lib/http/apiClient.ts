@@ -5,7 +5,6 @@ import { getToken, clearAuth } from '../auth'
 export const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 })
@@ -15,7 +14,7 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   if (token) {
     config.headers = config.headers || {}
-    ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
+      ; (config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
   return config
 })

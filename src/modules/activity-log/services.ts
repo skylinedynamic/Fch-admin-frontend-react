@@ -15,3 +15,10 @@ export const createActivityLog = async (data: any) => {
     const response = await apiClient.post("/common/activity-logs", data);
     return response.data;
 };
+
+export const downloadActivityAttachment = async (data: { activity_log_id: number | string; path: string }) => {
+    const response = await apiClient.post("/common/activity-logs/attachments/download", data, {
+        responseType: 'blob'
+    });
+    return response.data;
+};

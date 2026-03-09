@@ -78,78 +78,99 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             // Removed local validation as per user request to rely on backend
 
             // Payload Construction
-            const borrowerId = (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') ? entityId : null;
-            const partnerId = (entityType === 'Partner') ? entityId : null;
-            const hasAttachments = formData.attachments.length > 0;
-            let payload;
+            const payload = new FormData();
+            payload.append('log_type', 'email');
 
-            if (hasAttachments) {
-                payload = new FormData();
-                payload.append('log_type', 'email');
-                payload.append('to_emails', finalEmailsString); // String payload
-                payload.append('subject', formData.subject || '');
-                payload.append('description', formData.message_body || '');
-                if (borrowerId) payload.append('borrower_id', borrowerId.toString());
-                if (partnerId) payload.append('partner_id', partnerId.toString());
-                formData.attachments.forEach(file => payload.append('attachments[]', file));
-            } else {
-                payload = {
-                    log_type: 'email',
-                    to_emails: finalEmailsString, // String payload
-                    subject: formData.subject || '',
-                    description: formData.message_body || '',
-                    borrower_id: borrowerId,
-                    partner_id: partnerId,
-                    attachments: []
-                };
+            // Set default empty strings so Laravel receives them as null
+            payload.append('category', 'Sent/Received Email');
+            payload.append('reference', 'Email');
+            payload.append('assigned_to', '');
+
+            // Append emails as a single string to match the input form
+            payload.append('to_emails', finalEmailsString);
+
+            payload.append('subject', formData.subject || '');
+            payload.append('description', formData.message_body || '');
+
+            // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
+            if (entityType === 'Borrower') {
+                payload.append('borrower_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Lead') {
+                payload.append('lead_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Client') {
+                payload.append('client_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Partner') {
+                payload.append('partner_id', entityId ? entityId.toString() : '');
+            }
+
+            if (formData.attachments && formData.attachments.length > 0) {
+                // Must use attachments[] for Laravel to parse multiple files as an array
+                formData.attachments.forEach((file) => {
+                    if (file instanceof File) {
+                        payload.append('attachments[]', file);
+                    }
+                });
+            }
+
+            console.log('Sending FormData payload...');
+            // Log FormData entries for debugging
+            for (let pair of payload.entries()) {
+                console.log(`Payload Entry: ${pair[0]} =`, pair[1]);
             }
 
             console.log('API PAYLOAD:', payload);
 
-            await createActivityLog(payload);
+            const response = await createActivityLog(payload);
+
+            // Handle backend returning HTTP 200 with status:false (validation error format)
+            if (response && response.status === false) {
+                const backendErrors = response.errors;
+                if (backendErrors && typeof backendErrors === 'object') {
+                    const normalizedErrors = {};
+                    Object.keys(backendErrors).forEach(key => {
+                        const error = backendErrors[key];
+                        normalizedErrors[key] = Array.isArray(error) ? error : [error];
+                    });
+                    setErrors(normalizedErrors);
+                } else {
+                    toast.error(response.message || 'Validation failed.');
+                }
+                return; // Stop here, do not close modal
+            }
+
             toast.success(`Email sent successfully`);
 
             // Refresh activity list
             window.dispatchEvent(new CustomEvent('refreshActivities'));
 
-            // Reset UI and State
-            pendingEmailRef.current = '';
-            setFormData({ to_emails: '', subject: '', message_body: '', attachments: [] });
-            if (choicesInstanceRef.current) {
-                choicesInstanceRef.current.removeActiveItems();
-            }
-
-            // Close Modal — also clean up backdrop to prevent page blur
+            // Robust Close Modal
             const closeModal = () => {
-                if (window.jQuery && window.jQuery('#emailComposeModal').modal) {
-                    window.jQuery('#emailComposeModal').modal('hide');
-                } else if (window.hideGlobalModal) {
+                if (window.hideGlobalModal) {
                     window.hideGlobalModal('emailComposeModal');
                 } else {
-                    // Manually close if jQuery modal not available
                     const modalEl = document.getElementById('emailComposeModal');
-                    if (modalEl) {
-                        modalEl.classList.remove('show');
-                        modalEl.style.display = 'none';
-                        modalEl.setAttribute('aria-hidden', 'true');
-                        modalEl.removeAttribute('aria-modal');
+                    if (window.bootstrap && modalEl) {
+                        const modal = window.bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
                     }
+                    // Final fallback
+                    setTimeout(() => {
+                        document.body.classList.remove('modal-open');
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    }, 300);
                 }
-
-                // Always clean up leftover backdrop and body classes (fixes blur)
-                setTimeout(() => {
-                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                    document.body.classList.remove('modal-open');
-                    document.body.style.overflow = '';
-                    document.body.style.paddingRight = '';
-                }, 300);
             };
 
             closeModal();
         } catch (err) {
             console.error('Failed to send email:', err);
-            const backendErrors = err.response?.data?.errors;
-            if (err.response?.status === 422 && backendErrors) {
+
+            // Handle both 422 HTTP status AND 200 with status:false JSON format
+            const responseData = err.response?.data;
+            const backendErrors = responseData?.errors;
+
+            if (backendErrors && typeof backendErrors === 'object') {
+                // Normalize: backend may send strings OR arrays for error values
                 const normalizedErrors = {};
                 Object.keys(backendErrors).forEach(key => {
                     const error = backendErrors[key];
@@ -157,7 +178,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 });
                 setErrors(normalizedErrors);
             } else {
-                toast.error(err.response?.data?.message || 'Failed to send email. Check your connection.');
+                toast.error(responseData?.message || err.response?.data?.message || 'Failed to send email. Check your connection.');
             }
         } finally {
             setTimeout(() => setIsSaving(false), 300);
@@ -323,7 +344,11 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
-                        {errors.log_name && <div className="alert alert-danger py-2 mb-3">{errors.log_name[0]}</div>}
+                        {(errors.log_type || errors.log_name) && (
+                            <div className="alert alert-danger py-2 mb-3">
+                                {errors.log_type ? errors.log_type[0] : errors.log_name[0]}
+                            </div>
+                        )}
                         <form onSubmit={(e) => e.preventDefault()}>
                             <div className="mb-3">
                                 <label className="form-label">To <span className="text-danger">*</span></label>
@@ -366,18 +391,30 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                     <label className="form-label">Attachments</label>
                                     <div className="d-flex align-items-center gap-2">
                                         <button type="button" className="btn btn-light btn-sm" onClick={() => document.getElementById('emailFile').click()}>
-                                            <i className="ri-add-line me-1"></i> Add Attactment
+                                            <i className="ri-add-line me-1"></i> Add Attachment
                                         </button>
                                         <input type="file" id="emailFile" className="d-none" multiple onChange={handleFileChange} />
                                     </div>
                                     <div className="mt-2 d-flex flex-wrap gap-2">
-                                        {formData.attachments.map((file, idx) => (
-                                            <div key={idx} className="badge bg-light text-body border d-flex align-items-center gap-2 p-2">
-                                                <i className="ri-file-line"></i> {file.name}
-                                                <i className="ri-close-line cursor-pointer text-danger" onClick={() => removeAttachment(idx)}></i>
-                                            </div>
-                                        ))}
+                                        {formData.attachments.map((file, idx) => {
+                                            const fileError = errors[`attachments.${idx}`];
+                                            return (
+                                                <div key={idx} className="d-flex flex-column">
+                                                    <div className={`badge text-body border d-flex align-items-center gap-2 p-2 ${fileError ? 'bg-soft-danger border-danger text-danger' : 'bg-light'}`}>
+                                                        <i className="ri-file-line"></i> {file.name}
+                                                        <i className="ri-close-line cursor-pointer text-danger" onClick={() => removeAttachment(idx)}></i>
+                                                    </div>
+                                                    {fileError && <div className="text-danger mt-1 extra-small" style={{ fontSize: '11px' }}>{fileError[0]}</div>}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                    {/* Show general attachment group errors if any */}
+                                    {errors.attachments && (
+                                        <div className="text-danger mt-1 small">
+                                            {errors.attachments[0]}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </form>
