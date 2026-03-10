@@ -204,7 +204,6 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             return `Reference: ${ref} • Category: ${cat} • ${formatRelativeDate(dateToUse)}`;
         }
 
-        // System logs basically move their subject to the title now, so just return the time.
         return formatRelativeDate(activity.created_at);
     };
 
@@ -212,12 +211,8 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         if (activity.log_type === 'email') return 'Email Sent';
         if (activity.log_type === 'activity') return 'Activity Created';
 
-        // Format system logs (e.g. "Borrower Created by Host Admin")
-        if (activity.subject && activity.creator?.name) {
-            return `${activity.subject} by ${activity.creator.name}`;
-        }
-
-        return activity.subject || activity.creator?.name || activity.log_type || 'Activity';
+        // Format system logs (just return the subject like "Borrower Created")
+        return activity.subject || activity.log_type || 'Activity';
     };
 
     const renderAvatar = (activity) => {
@@ -356,10 +351,15 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-14 mb-1 text-dark">
+                                                                    <h6 className="fs-14 mb-0 text-dark fw-semibold">
                                                                         {getTitle(activity)}
                                                                     </h6>
-                                                                    <small className="text-muted">{getSubtitle(activity)}</small>
+                                                                    <div className="fs-12 text-muted mb-1" style={{ fontWeight: '500' }}>
+                                                                        by {activity.creator?.name || 'System'}
+                                                                    </div>
+                                                                    <small className="text-muted d-block" style={{ marginTop: '-2px' }}>
+                                                                        {getSubtitle(activity)}
+                                                                    </small>
                                                                 </div>
 
                                                                 {/* Chevron */}
@@ -393,11 +393,11 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                                                                                 const fileIcon = getFileIconConfig(fileName);
                                                                                 return (
                                                                                     <div key={fIdx} className="col-auto">
-                                                                                        <div className="d-flex border border-dashed p-2 rounded position-relative">
-                                                                                            <div className="flex-shrink-0">
-                                                                                                <i className={`fs-17 ${fileIcon.icon} ${fileIcon.color}`}></i>
+                                                                                        <div className="d-flex align-items-center border border-dashed p-2 rounded position-relative" style={{ minWidth: '150px' }}>
+                                                                                            <div className="flex-shrink-0 me-2">
+                                                                                                <i className={`fs-18 ${fileIcon.icon} ${fileIcon.color}`}></i>
                                                                                             </div>
-                                                                                            <div className="flex-grow-1 ms-2">
+                                                                                            <div className="flex-grow-1">
                                                                                                 <h6 className="mb-0 fs-12">
                                                                                                     <a
                                                                                                         href="#"
@@ -494,6 +494,20 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                     align-items: center;
                     justify-content: center;
                     font-size: 14px;
+                }
+
+                /* Fixed profile-timeline vertical line alignment */
+                .profile-timeline::before {
+                    left: 18px !important;
+                    top: 10px !important;
+                    height: calc(100% - 20px) !important;
+                }
+                .profile-timeline .accordion-item {
+                    position: relative;
+                }
+                .profile-timeline .avatar-xs {
+                    z-index: 2;
+                    background: #fff;
                 }
             `}} />
         </div >
