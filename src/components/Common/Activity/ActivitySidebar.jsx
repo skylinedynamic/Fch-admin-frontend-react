@@ -137,15 +137,20 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             return `Reference: ${ref} • Category: ${cat} • ${formatRelativeDate(dateToUse)}`;
         }
 
-        const subject = activity.subject || '';
-        const time = formatRelativeDate(activity.created_at);
-        return subject ? `${subject} — ${time}` : time;
+        // System logs basically move their subject to the title now, so just return the time.
+        return formatRelativeDate(activity.created_at);
     };
 
     const getTitle = (activity) => {
         if (activity.log_type === 'email') return 'Email Sent';
         if (activity.log_type === 'activity') return 'Activity Created';
-        return activity.creator?.name || activity.subject || activity.log_type || 'Activity';
+
+        // Format system logs (e.g. "Borrower Created by Host Admin")
+        if (activity.subject && activity.creator?.name) {
+            return `${activity.subject} by ${activity.creator.name}`;
+        }
+
+        return activity.subject || activity.creator?.name || activity.log_type || 'Activity';
     };
 
     const renderAvatar = (activity) => {
