@@ -10,6 +10,9 @@ import { getAvatarConfig } from '../../../utils/activityIconConfig';
 export default function ActivitySidebar({ entityId, entityType, profileImage = null }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [openIds, setOpenIds] = useState({});
 
     const toggleOpen = (id) => {
@@ -37,10 +40,15 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         }
     };
 
-    const fetchActivities = async () => {
-        setLoading(true);
+    const fetchActivities = async (currentPage = 1, append = false) => {
+        if (!append) setLoading(true);
+        else setLoadingMore(true);
+
         try {
-            const params = { limit: 50 };
+            const params = {
+                limit: 15, // Load 15 initially
+                page: currentPage
+            };
             if (entityId) {
                 if (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') params.borrower_id = entityId;
                 if (entityType === 'Partner') params.partner_id = entityId;
@@ -49,27 +57,86 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             const response = await getActivityLogs(params);
 
             let activityData = [];
+
+            // Detect standard data array format inside object
             if (response && Array.isArray(response.data)) {
                 activityData = response.data;
-            } else if (Array.isArray(response)) {
+            }
+            // Detect plain flat array
+            else if (Array.isArray(response)) {
                 activityData = response;
             }
 
-            setActivities(activityData);
+            if (append) {
+                setActivities(prev => {
+                    const existingIds = new Set(prev.map(item => item.id));
+                    const newItems = activityData.filter(item => !existingIds.has(item.id));
+
+                    // If the backend ignored pagination and just sent the same exact data,
+                    // forcefully kill the "Load More" button to stop infinite looping.
+                    if (newItems.length === 0 && activityData.length > 0) {
+                        setHasMore(false);
+                    }
+
+                    return [...prev, ...newItems];
+                });
+            } else {
+                setActivities(activityData);
+            }
+
+            // Standard Laravel pagination response structures
+            if (response?.meta?.last_page) {
+                setHasMore(currentPage < response.meta.last_page);
+            } else if (response?.last_page) {
+                setHasMore(currentPage < response.last_page);
+            } else {
+                // If appending and we didn't receive unique items, setHasMore(false) is handled above.
+                // Otherwise detect length constraints:
+                if (activityData.length < params.limit || activityData.length === 0 || activityData.length > params.limit) {
+                    setHasMore(false);
+                } else if (append) {
+                    // Check deduplicated state for flat arrays
+                    setActivities(prev => {
+                        // (Use the current length asynchronously isn't reliable here, rely on array length check above)
+                        return prev;
+                    });
+                    // Keep it true mostly, but rely on newItems check to kill it if it loops!
+                    setHasMore(true);
+                } else {
+                    setHasMore(true);
+                }
+            }
+
         } catch (err) {
             console.error('[Sidebar] Fetch Error:', err);
-            setActivities([]);
+            if (!append) setActivities([]);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    // Load initial page
     useEffect(() => {
-        fetchActivities();
-        const handleRefresh = () => fetchActivities();
+        setPage(1);
+        setHasMore(true);
+        fetchActivities(1, false);
+
+        const handleRefresh = () => {
+            setPage(1);
+            setHasMore(true);
+            fetchActivities(1, false);
+        };
         window.addEventListener('refreshActivities', handleRefresh);
         return () => window.removeEventListener('refreshActivities', handleRefresh);
     }, [entityId, entityType]);
+
+    const handleLoadMore = () => {
+        if (!hasMore || loadingMore) return;
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchActivities(nextPage, true);
+    };
 
     const formatTime = (dateStr) => {
         if (!dateStr) return '';
@@ -360,6 +427,23 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                                                 </div>
                                             );
                                         })}
+
+                                        {/* Load More Button Container */}
+                                        {hasMore && activities.length > 0 && (
+                                            <div className="text-center mt-3 mb-1">
+                                                <button
+                                                    className="btn btn-soft-primary btn-sm rounded-pill px-4"
+                                                    onClick={handleLoadMore}
+                                                    disabled={loadingMore}
+                                                >
+                                                    {loadingMore ? (
+                                                        <><span className="spinner-border spinner-border-sm align-middle me-2"></span>Loading...</>
+                                                    ) : (
+                                                        <><i className="ri-arrow-down-line align-middle me-1"></i> Load More Activity</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
