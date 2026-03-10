@@ -75,8 +75,6 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             const finalEmailsString = Array.from(uniqueEmails).join(', ');
             console.log('FINAL CAPTURED EMAIL STRING:', finalEmailsString);
 
-            // Removed local validation as per user request to rely on backend
-
             // Payload Construction
             const payload = new FormData();
             payload.append('log_type', 'email');

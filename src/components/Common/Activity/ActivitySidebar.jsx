@@ -5,6 +5,7 @@ import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import '../StatisticsCardSkeleton.css';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
+import { getAvatarConfig } from '../../../utils/activityIconConfig';
 
 export default function ActivitySidebar({ entityId, entityType, profileImage = null }) {
     const [activities, setActivities] = useState([]);
@@ -105,6 +106,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
     const getTitle = (activity) => {
         if (activity.log_type === 'email') return 'Email Sent';
+        if (activity.log_type === 'activity') return 'Activity Created';
         return activity.creator?.name || activity.subject || activity.log_type || 'Activity';
     };
 
@@ -113,6 +115,22 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         const initial = creatorName.charAt(0).toUpperCase() || '?';
         const colorClass = getAvatarColor(creatorName);
 
+        // 1. Prioritize displaying the exact Activity or Email icon
+        const logType = activity.log_type || '';
+        const ref = activity.reference || '';
+        const config = getAvatarConfig(logType, ref);
+
+        if (config) {
+            return (
+                <div className="avatar-xs">
+                    <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
+                        <i className={config.icon}></i>
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. Fallback for generic system logs (e.g., Lead Created, Updated)
         // Use any provided dynamic image first (Partner, Borrower, Lead, or fallback to Creator)
         const dynamicImage = activity.partner_image || activity.borrower_image || activity.lead_image || activity.creator?.avatar;
 
@@ -127,29 +145,9 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        if (activity.log_type === 'email') {
-            return (
-                <div className="avatar-xs">
-                    <div className="avatar-title bg-primary-subtle text-primary rounded-circle material-shadow">
-                        <i className="ri-mail-send-line"></i>
-                    </div>
-                </div>
-            );
-        }
-
-        if (activity.log_type === 'activity' && activity.reference === 'event') {
-            return (
-                <div className="avatar-xs">
-                    <div className="avatar-title bg-info-subtle text-info rounded-circle material-shadow">
-                        <i className="ri-calendar-event-line"></i>
-                    </div>
-                </div>
-            );
-        }
-
         return (
             <div className="avatar-xs">
-                <div className={`avatar-title ${colorClass} rounded-circle material-shadow fw-bold`}>
+                <div className={`avatar-title ${colorClass} rounded-circle material-shadow fw-bold fs-14`}>
                     {initial}
                 </div>
             </div>

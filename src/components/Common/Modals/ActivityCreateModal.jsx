@@ -50,7 +50,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
     const handleCreate = async () => {
         setIsSaving(true);
-        setErrors({});
         try {
             const data = new FormData();
             data.append('log_type', 'activity');
