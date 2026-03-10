@@ -77,6 +77,35 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     };
 
+    const formatRelativeDate = (dateStr) => {
+        if (!dateStr) return '';
+        const targetDate = new Date(dateStr);
+        const today = new Date();
+
+        const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        const diffDays = Math.round((targetDateOnly - todayOnly) / (1000 * 60 * 60 * 24));
+        const timeStr = targetDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        const dateString = targetDate.toLocaleDateString('en-US');
+
+        if (diffDays === 0) return `Today at ${timeStr}`;
+        if (diffDays === 1) return `Tomorrow at ${timeStr}`;
+        if (diffDays === -1) return `Yesterday at ${timeStr}`;
+        if (diffDays > 1 && diffDays <= 7) return `This Week (${dateString})`;
+        if (diffDays > 7 && diffDays <= 31) return `This Month (${dateString})`;
+        if (diffDays < -1 && diffDays >= -7) return `Last Week (${dateString})`;
+        if (diffDays < -7 && diffDays >= -31) return `Last Month (${dateString})`;
+
+        const yearDiff = targetDate.getFullYear() - today.getFullYear();
+        if (yearDiff === -1 && diffDays >= -365) return `Last Year (${dateString})`;
+        if (yearDiff === 1 && diffDays <= 365) return `Next Year (${dateString})`;
+
+        // Anything else fallback to strict date format
+        return `${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${timeStr}`;
+    };
+
     // Color palette for creator initials
     const avatarColors = [
         'bg-primary-subtle text-primary',
@@ -97,10 +126,19 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             const emails = Array.isArray(activity.to_emails)
                 ? activity.to_emails.join(', ')
                 : (activity.to_emails || 'N/A');
-            return `To: ${emails} • Subject: ${activity.subject || 'No Subject'} • ${formatTime(activity.created_at)}`;
+            return `To: ${emails} • Subject: ${activity.subject || 'No Subject'} • ${formatRelativeDate(activity.created_at)}`;
         }
+
+        if (activity.log_type === 'activity') {
+            const ref = activity.reference || 'N/A';
+            const cat = activity.category || 'N/A';
+            // Use activity_date (if available from scheduling), else fallback to created_at
+            const dateToUse = activity.activity_date || activity.created_at;
+            return `Reference: ${ref} • Category: ${cat} • ${formatRelativeDate(dateToUse)}`;
+        }
+
         const subject = activity.subject || '';
-        const time = formatTime(activity.created_at);
+        const time = formatRelativeDate(activity.created_at);
         return subject ? `${subject} — ${time}` : time;
     };
 
