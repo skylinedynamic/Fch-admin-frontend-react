@@ -72,7 +72,7 @@ export default function PaymentTable({
                 onFilter={onFilter}
                 filters={filters}
                 filterDisplay="menu"
-                globalFilterFields={['transaction_date', 'from', 'payment_type', 'borrower_name', 'partner_name', 'transaction_id', 'amount', 'status']}
+                globalFilterFields={['transaction_date', 'from', 'payment_type', 'borrower_name', 'partner_name', 'transaction_id', 'invoice_id', 'amount', 'status']}
                 loading={loading}
                 dataKey="id"
                 className="p-datatable-sm"

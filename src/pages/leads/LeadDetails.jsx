@@ -528,7 +528,7 @@ export default function LeadDetails() {
                                     <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
-                                    {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && (
+                                    {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && !formData.convert_to && (
                                         <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={isSaving || isLoading}>
                                             {isSaving ? (
                                                 <>
