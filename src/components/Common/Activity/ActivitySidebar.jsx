@@ -50,7 +50,8 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                 page: currentPage
             };
             if (entityId) {
-                if (entityType === 'Borrower' || entityType === 'Lead' || entityType === 'Client') params.borrower_id = entityId;
+                if (entityType === 'Lead') params.lead_id = entityId;
+                if (entityType === 'Borrower' || entityType === 'Client') params.borrower_id = entityId;
                 if (entityType === 'Partner') params.partner_id = entityId;
             }
 
@@ -198,16 +199,16 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
         if (activity.log_type === 'activity') {
             const ref = activity.reference || 'N/A';
-            const cat = activity.category || 'N/A';
             // Use activity_date (if available from scheduling), else fallback to created_at
             const dateToUse = activity.activity_date || activity.created_at;
-            return `Reference: ${ref} • Category: ${cat} • ${formatRelativeDate(dateToUse)}`;
+            return `Reference: ${ref} • ${formatRelativeDate(dateToUse)}`;
         }
 
         return formatRelativeDate(activity.created_at);
     };
 
     const getTitle = (activity) => {
+        if (activity.event_label) return activity.event_label;
         if (activity.log_type === 'email') return 'Email Sent';
         if (activity.log_type === 'activity') return 'Activity Created';
 
@@ -216,11 +217,23 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
     };
 
     const renderAvatar = (activity) => {
-        const creatorName = activity.creator?.name || '';
+        const creatorName = activity.causer_name || activity.creator?.name || 'System';
         const initial = creatorName.charAt(0).toUpperCase() || '?';
         const colorClass = getAvatarColor(creatorName);
 
-        // 1. Prioritize displaying the exact Activity or Email icon
+        // 1. Prioritize causer image from API
+        if (activity.causer_image) {
+            return (
+                <img
+                    src={activity.causer_image}
+                    alt={creatorName}
+                    className="avatar-xs rounded-circle material-shadow"
+                    style={{ objectFit: 'cover' }}
+                />
+            );
+        }
+
+        // 2. Fallback to Activity or Email icon config
         const logType = activity.log_type || '';
         const ref = activity.reference || '';
         const config = getAvatarConfig(logType, ref);
@@ -235,9 +248,8 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 2. Fallback for generic system logs (e.g., Lead Created, Updated)
-        // Use any provided dynamic image first (Partner, Borrower, Lead, or fallback to Creator)
-        const dynamicImage = activity.partner_image || activity.borrower_image || activity.lead_image || activity.creator?.avatar;
+        // 3. Entity specific images if causer_image is not there
+        const dynamicImage = activity.partner_image || activity.borrower_image || activity.lead_image;
 
         if (dynamicImage) {
             return (
@@ -355,7 +367,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                                                                         {getTitle(activity)}
                                                                     </h6>
                                                                     <div className="fs-12 text-muted mb-1" style={{ fontWeight: '500' }}>
-                                                                        by {activity.creator?.name || 'System'}
+                                                                        by {activity.causer_name || activity.creator?.name || 'System'}
                                                                     </div>
                                                                     <small className="text-muted d-block" style={{ marginTop: '-2px' }}>
                                                                         {getSubtitle(activity)}

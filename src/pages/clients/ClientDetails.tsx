@@ -401,7 +401,7 @@ export default function ClientDetails() {
                 )}
 
                 <div className="row">
-                    <div className="col-xxl-8">
+                    <div className={id ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -475,9 +475,11 @@ export default function ClientDetails() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    <div className="col-xxl-4">
-                        <ActivitySidebar entityId={id} entityType="Client" />
-                    </div>
+                    {id && (
+                        <div className="col-xxl-4">
+                            <ActivitySidebar entityId={id} entityType="Client" />
+                        </div>
+                    )}
                 </div>
             </div>
             <EmailComposeModal entityId={id} entityType="Client" />

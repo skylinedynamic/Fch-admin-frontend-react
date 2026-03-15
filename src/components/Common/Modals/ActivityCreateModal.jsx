@@ -6,11 +6,9 @@ import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
 
 const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
-const CATEGORY_OPTIONS = ['Event', 'Meeting', 'Call', 'Sent/Received Email', 'Other'];
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
-    const categoryRef = useRef(null);
     const dateInputRef = useRef(null);
     const textareaRef = useRef(null); // Local ref to capture the DOM node
     const [isSaving, setIsSaving] = useState(false);
@@ -18,7 +16,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     const [formData, setFormData] = useState({
         reference: 'Call',
         activity_date: new Date().toISOString().split('T')[0],
-        category: 'Call',
         assigned_to: '',
         summary: '',
         message_body: '',
@@ -55,7 +52,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('log_type', 'activity');
             data.append('reference', formData.reference || '');
             data.append('activity_date', formData.activity_date || '');
-            data.append('category', formData.category || '');
             data.append('subject', formData.summary || '');         // maps to subject column
             data.append('description', formData.message_body || ''); // maps to description column
 
@@ -64,12 +60,10 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             data.append('assigned_to', formData.assigned_to || '');
 
             // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
-            if (entityType === 'Borrower') {
-                data.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Lead') {
+            if (entityType === 'Lead') {
                 data.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Client') {
-                data.append('client_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Borrower' || entityType === 'Client') {
+                data.append('borrower_id', entityId ? entityId.toString() : '');
             } else if (entityType === 'Partner') {
                 data.append('partner_id', entityId ? entityId.toString() : '');
             }
@@ -190,7 +184,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     useEffect(() => {
         const instances = [];
         if (window.Choices) {
-            [referenceRef, categoryRef].forEach(ref => {
+            [referenceRef].forEach(ref => {
                 if (ref.current) {
                     try {
                         const instance = new window.Choices(ref.current, {
@@ -238,7 +232,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             setFormData({
                 reference: 'Call',
                 activity_date: new Date().toISOString().split('T')[0],
-                category: 'Call',
                 assigned_to: '',
                 summary: '',
                 message_body: '',
@@ -305,22 +298,6 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                         required
                                     />
                                     {errors.activity_date && <div className="invalid-feedback">{errors.activity_date[0]}</div>}
-                                </div>
-                                <div className="col-md-12">
-                                    <label className="form-label">Category</label>
-                                    <select
-                                        className={`form-select ${errors.category ? 'is-invalid' : ''}`}
-                                        id="activityCategory"
-                                        name="category"
-                                        ref={categoryRef}
-                                        value={formData.category}
-                                        onChange={handleInputChange}
-                                    >
-                                        {CATEGORY_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                    {errors.category && <div className="invalid-feedback">{errors.category[0]}</div>}
                                 </div>
                                 <div className="col-12">
                                     <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>

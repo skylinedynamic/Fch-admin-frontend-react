@@ -91,12 +91,10 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             payload.append('description', formData.message_body || '');
 
             // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
-            if (entityType === 'Borrower') {
-                payload.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Lead') {
+            if (entityType === 'Lead') {
                 payload.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Client') {
-                payload.append('client_id', entityId ? entityId.toString() : '');
+            } else if (entityType === 'Borrower' || entityType === 'Client') {
+                payload.append('borrower_id', entityId ? entityId.toString() : '');
             } else if (entityType === 'Partner') {
                 payload.append('partner_id', entityId ? entityId.toString() : '');
             }

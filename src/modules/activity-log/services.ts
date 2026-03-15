@@ -2,7 +2,7 @@ import { apiClient } from "../../lib/http/apiClient";
 import type { ActivityLog, ActivityParams } from "./types";
 
 export const getActivityLogs = async (params: ActivityParams = {}) => {
-    const response = await apiClient.get("/common/activity-logs", { params });
+    const response = await apiClient.post("/common/activity-logs/fetch-all-activities", params);
     return response.data;
 };
 

@@ -854,7 +854,7 @@ export default function PartnerProfile() {
 
                 {/* Main Content */}
                 <div className="row">
-                    <div className="col-xxl-8">
+                    <div className={id ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -929,9 +929,11 @@ export default function PartnerProfile() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    <div className="col-xxl-4">
-                        <ActivitySidebar entityId={id} entityType="Partner" />
-                    </div>
+                    {id && (
+                        <div className="col-xxl-4">
+                            <ActivitySidebar entityId={id} entityType="Partner" />
+                        </div>
+                    )}
                 </div>
             </div>
 
