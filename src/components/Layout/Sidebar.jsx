@@ -155,7 +155,7 @@ const menuItems = [
     icon: "ri-file-settings-fill",
     label: "Settings",
     permission: "view settings",
-    isHostOnly: true,
+    isHostOnly: false,
   },
 ];
 
