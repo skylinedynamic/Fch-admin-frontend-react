@@ -697,6 +697,7 @@ export default function PartnerProfile() {
                 if (id) {
                     await updatePartner(id, formDataToSend);
                     toast.success('Partner updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
 
                     // Redirect to next tab after update
                     // Attach any selected documents (selected in DocumentsSection)
@@ -731,6 +732,7 @@ export default function PartnerProfile() {
                 } else {
                     const response = await createPartner(formDataToSend);
                     toast.success('Partner created successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
 
                     // Get the newly created partner ID from response
                     const newPartnerId = response?.data?.id || response?.id;
@@ -918,7 +920,7 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
-                                    loading={isPartnerLoading}
+                                    loading={isPartnerLoading || isSaving}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
@@ -931,7 +933,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading || isSaving} />
                         </div>
                     )}
                 </div>

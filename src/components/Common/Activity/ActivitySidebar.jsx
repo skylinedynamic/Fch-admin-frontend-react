@@ -7,7 +7,7 @@ import '../StatisticsCardSkeleton.css';
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 
-export default function ActivitySidebar({ entityId, entityType, profileImage = null }) {
+export default function ActivitySidebar({ entityId, entityType, profileImage = null, loading: externalLoading = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -313,7 +313,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                         <div className="tab-pane active show" role="tabpanel">
                             <div className="profile-timeline">
 
-                                {loading ? (
+                                {loading || externalLoading ? (
                                     <div className="accordion accordion-flush">
                                         {[1, 2, 3].map((i) => (
                                             <div key={i} className="accordion-item border-0 mb-3">

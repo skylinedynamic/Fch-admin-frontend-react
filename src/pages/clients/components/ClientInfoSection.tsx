@@ -37,6 +37,7 @@ interface ClientInfoSectionProps {
     settings?: any;
     nonHostPlan?: any;
     onSaveSuccess?: () => void;
+    isLoading?: boolean;
 }
 
 export interface ClientInfoSectionRef {
@@ -55,7 +56,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     isHost = false,
     settings = null,
     nonHostPlan = null,
-    onSaveSuccess
+    onSaveSuccess,
+    isLoading: parentLoading = false
 }, ref) => {
     // 1. Data Fetching (only if clientId exists)
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
@@ -352,7 +354,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
 
 
-    if ((isFetching && clientId) || (clientId && !isSynced)) {
+    if ((isFetching && clientId) || (clientId && !isSynced) || parentLoading) {
         return (
             <div className="row">
                 {[1, 2, 3, 4, 5, 6].map(i => (

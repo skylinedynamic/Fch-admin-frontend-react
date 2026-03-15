@@ -222,14 +222,17 @@ export default function LeadDetails() {
                 if (activeTab === 'leadDetails') {
                     await updateLeadDetails(id, finalPayload);
                     toast.success('Lead Details updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
                 } else {
                     await updateLeadContactInfo(id, finalPayload);
                     toast.success('Lead contact information updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
                 }
                 // navigate('/leads');
             } else {
                 const response = await createLeadDetails(finalPayload);
                 toast.success('Lead Details Completed successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
                 if (response.status && response.data?.id) {
                     navigate(`/leads/${response.data.id}?tab=contactInfo`);
                 } else {
@@ -601,7 +604,7 @@ export default function LeadDetails() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="tab-content">
-                                        {isLoading ? (
+                                    {isLoading || isSaving ? (
                                             <FormLoader count={12} />
                                         ) : (
                                             <>
@@ -1025,7 +1028,7 @@ export default function LeadDetails() {
                         {/* Activity Sidebar */}
                         {id && (
                             <div className="col-xxl-4">
-                                <ActivitySidebar entityId={id} entityType="Lead" />
+                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} />
                             </div>
                         )}
                     </div>

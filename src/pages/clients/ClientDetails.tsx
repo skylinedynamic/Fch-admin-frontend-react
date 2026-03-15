@@ -238,10 +238,11 @@ export default function ClientDetails() {
 
                 toast.success("Client created successfully");
 
-                // Redirect to edit page and switch to business financials tab
                 if (clientData && clientData.id) {
+                    window.dispatchEvent(new Event('refreshActivities'));
                     navigate(`/clients/${clientData.id}`, { state: { activeTab: 'businessFinancials' } });
                 } else {
+                    window.dispatchEvent(new Event('refreshActivities'));
                     navigate('/clients');
                 }
             } else {
@@ -249,16 +250,20 @@ export default function ClientDetails() {
 
                 if (activeTab === ENROLLMENT_TABS.PERSONAL && clientInfoRef.current) {
                     await clientInfoRef.current.save();
+                    window.dispatchEvent(new Event('refreshActivities'));
                 } else if (activeTab === ENROLLMENT_TABS.FINANCIALS && financialsRef.current) {
                     await financialsRef.current.save();
+                    window.dispatchEvent(new Event('refreshActivities'));
                 } else if (activeTab === ENROLLMENT_TABS.CHECKLIST && checklistRef.current) {
                     await checklistRef.current.save();
                     toast.success("Document checklist saved successfully");
+                    window.dispatchEvent(new Event('refreshActivities'));
                 } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else {
                     // Fallback
                     toast.warn("No handler for this tab.");
+                    window.dispatchEvent(new Event('refreshActivities'));
                 }
             }
         } catch (error: any) {
@@ -464,7 +469,7 @@ export default function ClientDetails() {
                                     countries={countries}
                                     states={states}
                                     cities={cities}
-                                    isLoading={isLoading}
+                                    isLoading={isLoading || isSaving}
                                     isHost={isHost}
                                     // @ts-ignore
                                     settings={settings}
@@ -477,7 +482,7 @@ export default function ClientDetails() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Client" />
+                            <ActivitySidebar entityId={id} entityType="Client" loading={isLoading || isSaving} />
                         </div>
                     )}
                 </div>

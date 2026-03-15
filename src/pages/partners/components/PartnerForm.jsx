@@ -76,21 +76,33 @@ export default function PartnerForm({
             {/* Documents Tab */}
             {activeTab === 'documents' && (
                 <div className="tab-pane active show">
-                    <DocumentsSection partnerId={partnerId} onSelectedFilesChange={onSelectedFilesChange} reloadKey={documentsReloadKey} clearKey={documentsClearKey} />
+                    {loading ? (
+                        <FormLoader count={6} />
+                    ) : (
+                        <DocumentsSection partnerId={partnerId} onSelectedFilesChange={onSelectedFilesChange} reloadKey={documentsReloadKey} clearKey={documentsClearKey} />
+                    )}
                 </div>
             )}
 
             {/* Client List Tab */}
             {activeTab === 'clientList' && (
                 <div className="tab-pane active show">
-                    <ClientListSection />
+                    {loading ? (
+                        <FormLoader count={8} />
+                    ) : (
+                        <ClientListSection />
+                    )}
                 </div>
             )}
 
             {/* Subscription List Tab */}
             {activeTab === 'subscription' && (
                 <div className="tab-pane active show">
-                    <SubscriptionListSection partnerId={partnerId} />
+                    {loading ? (
+                        <FormLoader count={8} />
+                    ) : (
+                        <SubscriptionListSection partnerId={partnerId} />
+                    )}
                 </div>
             )}
         </div>

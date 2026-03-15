@@ -35,7 +35,11 @@ interface DocumentType {
     sort_order: number;
 }
 
-export default function ClientDocumentsSection() {
+interface ClientDocumentsSectionProps {
+    isLoading?: boolean;
+}
+
+export default function ClientDocumentsSection({ isLoading: parentLoading = false }: ClientDocumentsSectionProps) {
     const { id } = useParams();
     const [documents, setDocuments] = useState<Document[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,8 +62,6 @@ export default function ClientDocumentsSection() {
     const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
     const [selectedTypeId, setSelectedTypeId] = useState<number | string>('');
     const [showTypeSelectionModal, setShowTypeSelectionModal] = useState(false);
-
-
 
     // Status Update State
     const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
@@ -117,7 +119,7 @@ export default function ClientDocumentsSection() {
 
     const handleFileSelection = async (selectedFiles: any[]) => {
         if (!selectedFiles || selectedFiles.length === 0 || !id) return;
-
+        setLoading(true);
         try {
             const filePaths = selectedFiles.map(file => file.path);
             const fileNames = selectedFiles.map(file => file.name);
@@ -132,11 +134,14 @@ export default function ClientDocumentsSection() {
             });
 
             toast.success("Documents uploaded successfully");
+            window.dispatchEvent(new Event('refreshActivities'));
             setShowFileManager(false);
             loadDocuments();
         } catch (error: any) {
             console.error("Failed to attach documents", error);
             toast.error(error?.response?.data?.message || "Failed to attach documents");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -189,6 +194,7 @@ export default function ClientDocumentsSection() {
             setLoading(true);
             await deleteBorrowerDocument(deletingDocId);
             toast.success("Document deleted successfully");
+            window.dispatchEvent(new Event('refreshActivities'));
             setShowDeleteModal(false);
             setDeletingDocId(null);
             loadDocuments();
@@ -272,7 +278,7 @@ export default function ClientDocumentsSection() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading && documents.length === 0 ? (
+                            {loading || parentLoading ? (
                                 Array.from({ length: 5 }).map((_, index) => (
                                     <tr key={index}>
                                         <td><Skeleton width="100%" height="1.5rem" /></td>
@@ -439,8 +445,6 @@ export default function ClientDocumentsSection() {
                 onConfirm={handleDelete}
                 loading={loading}
             />
-
-
 
             {/* Status Update Modal (For Rejection Note) */}
             <Modal isOpen={showStatusUpdateModal} toggle={() => setShowStatusUpdateModal(false)} centered>
