@@ -30,7 +30,10 @@ import {
     LOG_TYPE_LEAD_UPDATE,
     LOG_TYPE_LEAD_DETAILS_UPDATE,
     LOG_TYPE_LEAD_CONTACT_UPDATE,
-    LOG_TYPE_BATCH_PROCESS
+    LOG_TYPE_BATCH_PROCESS,
+    LOG_TYPE_APPOINTMENT_CREATE,
+    LOG_TYPE_APPOINTMENT_UPDATE,
+    LOG_TYPE_APPOINTMENT_DELETE
 } from '../config/appConfig';
 
 export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): AvatarConfig | null => {
@@ -52,6 +55,10 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
 
     if (logTypeRaw === LOG_TYPE_INVOICE_CREATE) {
         return { icon: 'ri-file-list-3-line', bgClass: 'bg-secondary-subtle text-secondary' };
+    }
+
+    if (logTypeRaw === LOG_TYPE_APPOINTMENT_CREATE || logTypeRaw === LOG_TYPE_APPOINTMENT_UPDATE || logTypeRaw === LOG_TYPE_APPOINTMENT_DELETE) {
+        return { icon: 'ri-calendar-event-line', bgClass: 'bg-purple-subtle text-purple' };
     }
 
     if (logTypeRaw === LOG_TYPE_DOCUMENT_UPLOAD || logTypeRaw === LOG_TYPE_CHECKLIST_UPDATE) {
