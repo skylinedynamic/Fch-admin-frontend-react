@@ -230,7 +230,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         const partnerImg = activity.partner_image;
         const borrowerImg = activity.borrower_image;
 
-        // 1. LEAD EXCEPTION: Always show Note icon for Leads
+        // 1. LEAD EXCEPTION: Always show Lead-specific action icons
         const isLeadLog = [
             LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE
         ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_LEAD;
@@ -245,10 +245,17 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 2. ICON PRIORITY: Specific action icons (Email, Activity/Phone/Meeting)
-        // We preserve these so the user can easily distinguish communication types
-        const iconPriorityTypes = [TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_SENT, LOG_TYPE_ACTIVITY];
-        if (iconPriorityTypes.includes(logTypeRaw) && config) {
+        // 2. COMMUNICATION & ACTION ICON PRIORITY: These log types ALWAYS show their dedicated icon
+        // regardless of whether a partner/borrower image is available.
+        const commIconTypes = [
+            TYPE_EMAIL, TYPE_ACTIVITY,
+            LOG_TYPE_EMAIL_SENT, LOG_TYPE_EMAIL_UPDATE,
+            LOG_TYPE_ACTIVITY,
+            LOG_TYPE_INVOICE_CREATE,
+            LOG_TYPE_DOCUMENT_UPLOAD,
+            LOG_TYPE_CHECKLIST_UPDATE,
+        ];
+        if (commIconTypes.includes(logTypeRaw) && config) {
             return (
                 <div className="avatar-xs">
                     <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
@@ -258,8 +265,8 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 3. ENTITY IMAGE PRIORITY: If a Partner or Borrower image exists, use it for all other logs (Appointments, Invoices, Updates)
-        // This fixes the "difference" by ensuring the profile owner's image shows on their timeline
+        // 3. ENTITY AVATAR PRIORITY: Show the Partner or Borrower's image/avatar for everything else (Appointments, Invoices, Updates, etc.)
+        // This ensures consistent branding on the timeline.
         if (partnerImg) {
             return <img src={partnerImg} alt="Partner" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
         }
@@ -267,7 +274,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             return <img src={borrowerImg} alt="Client" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
         }
 
-        // 4. FALLBACK ACTION ICONS: For other types that might not have a partner image yet
+        // 4. FALLBACK: Specific Action Icons if no entity image available
         if (config) {
             return (
                 <div className="avatar-xs">
