@@ -225,19 +225,15 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
     };
 
     const renderAvatar = (activity) => {
-        const creatorName = activity.causer_name || activity.creator?.name || 'System';
-        const initial = creatorName.charAt(0).toUpperCase() || '?';
-        const colorClass = getAvatarColor(creatorName);
-
         const logTypeRaw = activity.log_type_raw || activity.log_type || '';
-        const ref = activity.reference || '';
+        const config = getAvatarConfig(logTypeRaw, activity.reference || '');
+        const partnerImg = activity.partner_image;
+        const borrowerImg = activity.borrower_image;
 
-        // 1. LEAD EXCEPTION: Always show Note icon for Leads (per user request)
+        // 1. LEAD EXCEPTION: Always show Note icon for Leads
         const isLeadLog = [
             LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE
         ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_LEAD;
-
-        const config = getAvatarConfig(logTypeRaw, ref);
 
         if (isLeadLog && config) {
             return (
@@ -249,31 +245,10 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 2. BORROWER/PARTNER: Use dynamic images if available (Priority for images)
-        const isPartnerLog = [
-            LOG_TYPE_PARTNER_CREATE, LOG_TYPE_PARTNER_UPDATE, LOG_TYPE_PARTNER_CONTACT_UPDATE,
-            LOG_TYPE_PARTNER_DELETE, LOG_TYPE_PARTNER_PAYMENT
-        ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_PARTNER;
-
-        const isBorrowerLog = [
-            LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE,
-            LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE
-        ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_BORROWER;
-
-        if (isPartnerLog && activity.partner_image) {
-            return <img src={activity.partner_image} alt="Partner" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
-        }
-        if (isBorrowerLog && activity.borrower_image) {
-            return <img src={activity.borrower_image} alt="Client" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
-        }
-
-        // 3. ACTION ICONS: Emails, Events, Invoices (if no entity image was found above)
-        const isKnownActionIcon = [
-            TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_UPDATE, LOG_TYPE_EMAIL_SENT,
-            LOG_TYPE_ACTIVITY, LOG_TYPE_INVOICE_CREATE, LOG_TYPE_DOCUMENT_UPLOAD, LOG_TYPE_CHECKLIST_UPDATE
-        ].includes(logTypeRaw);
-
-        if (isKnownActionIcon && config) {
+        // 2. ICON PRIORITY: Specific action icons (Email, Activity/Phone/Meeting)
+        // We preserve these so the user can easily distinguish communication types
+        const iconPriorityTypes = [TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_SENT, LOG_TYPE_ACTIVITY];
+        if (iconPriorityTypes.includes(logTypeRaw) && config) {
             return (
                 <div className="avatar-xs">
                     <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
@@ -283,23 +258,44 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 4. Default to causer_image (The person doing the action)
+        // 3. ENTITY IMAGE PRIORITY: If a Partner or Borrower image exists, use it for all other logs (Appointments, Invoices, Updates)
+        // This fixes the "difference" by ensuring the profile owner's image shows on their timeline
+        if (partnerImg) {
+            return <img src={partnerImg} alt="Partner" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
+        }
+        if (borrowerImg) {
+            return <img src={borrowerImg} alt="Client" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
+        }
+
+        // 4. FALLBACK ACTION ICONS: For other types that might not have a partner image yet
+        if (config) {
+            return (
+                <div className="avatar-xs">
+                    <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
+                        <i className={config.icon}></i>
+                    </div>
+                </div>
+            );
+        }
+
+        // 5. CAUSER FALLBACK: The person/admin who did the action
         if (activity.causer_image) {
             return (
                 <img
                     src={activity.causer_image}
-                    alt={creatorName}
+                    alt={activity.causer_name || 'User'}
                     className="avatar-xs rounded-circle material-shadow"
                     style={{ objectFit: 'cover' }}
                 />
             );
         }
 
-        // 5. Initials Fallback
+        // 6. INITIALS FALLBACK
+        const creatorName = activity.causer_name || activity.creator?.name || 'System';
         return (
             <div className="avatar-xs">
-                <div className={`avatar-title ${colorClass} rounded-circle material-shadow fw-bold fs-14`}>
-                    {initial}
+                <div className={`avatar-title ${getAvatarColor(creatorName)} rounded-circle material-shadow fw-bold fs-14`}>
+                    {creatorName.charAt(0).toUpperCase()}
                 </div>
             </div>
         );
