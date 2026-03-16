@@ -336,7 +336,7 @@ export default function PartnerProfile() {
         };
 
         fetchPartnerData();
-    }, [id, activeTab]);
+    }, [id]); // Only re-fetch when the partner ID changes, NOT on tab switch
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
