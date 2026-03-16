@@ -247,23 +247,44 @@ export default function ClientDetails() {
                 }
             } else {
                 // UPDATE EXISTING CLIENT (Use Refs)
+                let updateSuccess = false;
 
                 if (activeTab === ENROLLMENT_TABS.PERSONAL && clientInfoRef.current) {
                     await clientInfoRef.current.save();
                     window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.FINANCIALS && financialsRef.current) {
                     await financialsRef.current.save();
                     window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.CHECKLIST && checklistRef.current) {
                     await checklistRef.current.save();
                     toast.success("Document checklist saved successfully");
                     window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else {
                     // Fallback
                     toast.warn("No handler for this tab.");
                     window.dispatchEvent(new Event('refreshActivities'));
+                }
+
+                if (updateSuccess) {
+                    const tabOrder = [
+                        ENROLLMENT_TABS.PERSONAL, 
+                        ENROLLMENT_TABS.FINANCIALS, 
+                        ENROLLMENT_TABS.CHECKLIST, 
+                        ENROLLMENT_TABS.DOCUMENTS
+                    ];
+                    const currentIndex = tabOrder.indexOf(activeTab);
+                    const nextTab = tabOrder[currentIndex + 1];
+
+                    if (nextTab) {
+                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: nextTab } }), 800);
+                    } else {
+                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: activeTab } }), 800);
+                    }
                 }
             }
         } catch (error: any) {
@@ -469,7 +490,7 @@ export default function ClientDetails() {
                                     countries={countries}
                                     states={states}
                                     cities={cities}
-                                    isLoading={isLoading || isSaving}
+                                    isLoading={isLoading}
                                     isHost={isHost}
                                     // @ts-ignore
                                     settings={settings}

@@ -42,7 +42,7 @@ const DocumentChecklistSection = forwardRef<DocumentChecklistSectionRef, Documen
         ));
     };
 
-    if (isLoading || parentLoading) {
+    if (isLoading) {
         return (
             <div className="card shadow-none border">
                 <div className="card-body">

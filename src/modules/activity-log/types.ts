@@ -1,7 +1,6 @@
 export interface ActivityLog {
     id: number;
     log_type: string;
-    log_name?: string;
     lead_id?: number | string;
     borrower_id?: number | string;
     partner_id?: number | string;
@@ -16,8 +15,7 @@ export interface ActivityLog {
     to_emails?: string | string[];
     attachments?: any[];
     status?: string;
-    created_by: number;
-    creator?: {
+    causer?: {
         id: number;
         name: string;
     };

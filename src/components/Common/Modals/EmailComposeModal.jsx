@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -42,7 +43,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         setErrors({});
 
         try {
-            // --- ULTIMATE AGGRESSIVE STRING CAPTURE ---
+            // Capture emails from Choices.js tags
             let uniqueEmails = new Set();
 
             // 1. Capture from Choices.js tags
@@ -54,12 +55,12 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 });
             }
 
-            // 2. Capture from the real-time Ref
+            // 2. Capture any typed-but-not-tagged email from the pending ref
             if (pendingEmailRef.current && pendingEmailRef.current.includes('@')) {
                 uniqueEmails.add(pendingEmailRef.current.trim());
             }
 
-            // 3. NUCLEAR SCAN: Search every single input element in the entire modal
+            // 3. Scan inputs inside the modal as a final safety net
             const modalEl = document.getElementById('emailComposeModal');
             if (modalEl) {
                 const allInputs = modalEl.querySelectorAll('input');
@@ -71,31 +72,27 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 });
             }
 
-            // Join found emails into a comma-separated string
             const finalEmailsString = Array.from(uniqueEmails).join(', ');
-            console.log('FINAL CAPTURED EMAIL STRING:', finalEmailsString);
 
             // Payload Construction
             const payload = new FormData();
             payload.append('log_type', 'email');
 
             // Set default empty strings so Laravel receives them as null
-            payload.append('category', 'Sent/Received Email');
             payload.append('reference', 'Email');
             payload.append('assigned_to', '');
 
             // Append emails as a single string to match the input form
             payload.append('to_emails', finalEmailsString);
-
             payload.append('subject', formData.subject || '');
             payload.append('description', formData.message_body || '');
 
-            // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
-            if (entityType === 'Lead') {
+            // Entity IDs - separate Lead, Client, Borrower, and Partner
+            if (entityType === ENTITY_TYPE_LEAD) {
                 payload.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Borrower' || entityType === 'Client') {
+            } else if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') {
                 payload.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Partner') {
+            } else if (entityType === ENTITY_TYPE_PARTNER) {
                 payload.append('partner_id', entityId ? entityId.toString() : '');
             }
 
@@ -107,14 +104,6 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                     }
                 });
             }
-
-            console.log('Sending FormData payload...');
-            // Log FormData entries for debugging
-            for (let pair of payload.entries()) {
-                console.log(`Payload Entry: ${pair[0]} =`, pair[1]);
-            }
-
-            console.log('API PAYLOAD:', payload);
 
             const response = await createActivityLog(payload);
 
@@ -340,9 +329,9 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
-                        {(errors.log_type || errors.log_name) && (
+                        {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
-                                {errors.log_type ? errors.log_type[0] : errors.log_name[0]}
+                                {errors.log_type[0]}
                             </div>
                         )}
                         <form onSubmit={(e) => e.preventDefault()}>

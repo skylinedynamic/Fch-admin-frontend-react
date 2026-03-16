@@ -4,6 +4,7 @@ import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
 
@@ -57,14 +58,13 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
             // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
             data.append('to_emails', formData.to_emails || '');
-            data.append('assigned_to', formData.assigned_to || '');
 
-            // Entity IDs - Accurately separate Lead, Client, Borrower, and Partner
-            if (entityType === 'Lead') {
+            // Entity IDs - separate Lead, Client, Borrower, and Partner
+            if (entityType === ENTITY_TYPE_LEAD) {
                 data.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Borrower' || entityType === 'Client') {
+            } else if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') {
                 data.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === 'Partner') {
+            } else if (entityType === ENTITY_TYPE_PARTNER) {
                 data.append('partner_id', entityId ? entityId.toString() : '');
             }
 
@@ -262,9 +262,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
-                        {(errors.log_type || errors.log_name) && (
+                        {errors.log_type && (
                             <div className="alert alert-danger py-2 mb-3">
-                                {errors.log_type ? errors.log_type[0] : errors.log_name[0]}
+                                {errors.log_type[0]}
                             </div>
                         )}
                         <form>

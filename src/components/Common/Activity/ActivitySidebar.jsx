@@ -3,6 +3,14 @@ import { getActivityLogs, downloadActivityAttachment } from '../../../modules/ac
 import { downloadBlob } from '../../../utils/fileDownload';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import '../StatisticsCardSkeleton.css';
+import {
+    ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER,
+    TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_UPDATE, LOG_TYPE_EMAIL_SENT,
+    LOG_TYPE_ACTIVITY, LOG_TYPE_INVOICE_CREATE, LOG_TYPE_DOCUMENT_UPLOAD, LOG_TYPE_CHECKLIST_UPDATE,
+    LOG_TYPE_PARTNER_CREATE, LOG_TYPE_PARTNER_UPDATE, LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_PARTNER_DELETE, LOG_TYPE_PARTNER_PAYMENT,
+    LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE, LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE,
+    LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE
+} from '../../../config/appConfig';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
@@ -50,9 +58,9 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                 page: currentPage
             };
             if (entityId) {
-                if (entityType === 'Lead') params.lead_id = entityId;
-                if (entityType === 'Borrower' || entityType === 'Client') params.borrower_id = entityId;
-                if (entityType === 'Partner') params.partner_id = entityId;
+                if (entityType === ENTITY_TYPE_LEAD) params.lead_id = entityId;
+                if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') params.borrower_id = entityId;
+                if (entityType === ENTITY_TYPE_PARTNER) params.partner_id = entityId;
             }
 
             const response = await getActivityLogs(params);
@@ -221,7 +229,61 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         const initial = creatorName.charAt(0).toUpperCase() || '?';
         const colorClass = getAvatarColor(creatorName);
 
-        // 1. Prioritize causer image from API
+        const logTypeRaw = activity.log_type_raw || activity.log_type || '';
+        const ref = activity.reference || '';
+
+        // 1. LEAD EXCEPTION: Always show Note icon for Leads (per user request)
+        const isLeadLog = [
+            LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE
+        ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_LEAD;
+
+        const config = getAvatarConfig(logTypeRaw, ref);
+
+        if (isLeadLog && config) {
+            return (
+                <div className="avatar-xs">
+                    <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
+                        <i className={config.icon}></i>
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. BORROWER/PARTNER: Use dynamic images if available (Priority for images)
+        const isPartnerLog = [
+            LOG_TYPE_PARTNER_CREATE, LOG_TYPE_PARTNER_UPDATE, LOG_TYPE_PARTNER_CONTACT_UPDATE,
+            LOG_TYPE_PARTNER_DELETE, LOG_TYPE_PARTNER_PAYMENT
+        ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_PARTNER;
+
+        const isBorrowerLog = [
+            LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE,
+            LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE
+        ].includes(logTypeRaw) || activity.entity_type === ENTITY_TYPE_BORROWER;
+
+        if (isPartnerLog && activity.partner_image) {
+            return <img src={activity.partner_image} alt="Partner" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
+        }
+        if (isBorrowerLog && activity.borrower_image) {
+            return <img src={activity.borrower_image} alt="Client" className="avatar-xs rounded-circle material-shadow" style={{ objectFit: 'cover' }} />;
+        }
+
+        // 3. ACTION ICONS: Emails, Events, Invoices (if no entity image was found above)
+        const isKnownActionIcon = [
+            TYPE_EMAIL, TYPE_ACTIVITY, LOG_TYPE_EMAIL_UPDATE, LOG_TYPE_EMAIL_SENT,
+            LOG_TYPE_ACTIVITY, LOG_TYPE_INVOICE_CREATE, LOG_TYPE_DOCUMENT_UPLOAD, LOG_TYPE_CHECKLIST_UPDATE
+        ].includes(logTypeRaw);
+
+        if (isKnownActionIcon && config) {
+            return (
+                <div className="avatar-xs">
+                    <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
+                        <i className={config.icon}></i>
+                    </div>
+                </div>
+            );
+        }
+
+        // 4. Default to causer_image (The person doing the action)
         if (activity.causer_image) {
             return (
                 <img
@@ -233,35 +295,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             );
         }
 
-        // 2. Fallback to Activity or Email icon config
-        const logType = activity.log_type || '';
-        const ref = activity.reference || '';
-        const config = getAvatarConfig(logType, ref);
-
-        if (config) {
-            return (
-                <div className="avatar-xs">
-                    <div className={`avatar-title ${config.bgClass} rounded-circle material-shadow fs-16`}>
-                        <i className={config.icon}></i>
-                    </div>
-                </div>
-            );
-        }
-
-        // 3. Entity specific images if causer_image is not there
-        const dynamicImage = activity.partner_image || activity.borrower_image || activity.lead_image;
-
-        if (dynamicImage) {
-            return (
-                <img
-                    src={dynamicImage}
-                    alt={creatorName}
-                    className="avatar-xs rounded-circle material-shadow"
-                    style={{ objectFit: 'cover' }}
-                />
-            );
-        }
-
+        // 5. Initials Fallback
         return (
             <div className="avatar-xs">
                 <div className={`avatar-title ${colorClass} rounded-circle material-shadow fw-bold fs-14`}>
@@ -363,15 +397,15 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-14 mb-0 text-dark fw-semibold">
+                                                                    <h6 className="fs-14 mb-0 text-dark">
                                                                         {getTitle(activity)}
                                                                     </h6>
-                                                                    <div className="fs-12 text-muted mb-1" style={{ fontWeight: '500' }}>
+                                                                    <div className="fs-12 text-muted" style={{ fontWeight: '500' }}>
                                                                         by {activity.causer_name || activity.creator?.name || 'System'}
-                                                                    </div>
-                                                                    <small className="text-muted d-block" style={{ marginTop: '-2px' }}>
+                                                                        <span className="mx-1"> • </span>
+                                                                        <i className="ri-time-line align-middle me-1"></i>
                                                                         {getSubtitle(activity)}
-                                                                    </small>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Chevron */}

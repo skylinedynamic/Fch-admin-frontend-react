@@ -354,7 +354,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
 
 
-    if ((isFetching && clientId) || (clientId && !isSynced) || parentLoading) {
+    if ((isFetching && clientId) || (clientId && !isSynced)) {
         return (
             <div className="row">
                 {[1, 2, 3, 4, 5, 6].map(i => (
