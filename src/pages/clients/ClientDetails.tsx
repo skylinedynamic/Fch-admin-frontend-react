@@ -503,7 +503,7 @@ export default function ClientDetails() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Client" loading={isLoading || isSaving} />
+                            <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} />
                         </div>
                     )}
                 </div>
