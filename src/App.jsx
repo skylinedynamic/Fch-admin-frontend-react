@@ -139,7 +139,7 @@ export default function App() {
 
 
             {/* Settings Route */}
-            <Route element={<HostRoute />}>
+            <Route element={<PermissionRoute permission="view settings" />}>
               <Route path="admin/settings" element={<Settings />} />
             </Route>
 

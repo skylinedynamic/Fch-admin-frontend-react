@@ -13,3 +13,13 @@ export const updateSettings = async (payload: UpdateSettingsPayload): Promise<Se
     const { data } = await apiClient.post(BASE_PATH, payload);
     return data;
 };
+
+export const fetchAppConfig = async (key: string): Promise<any> => {
+    const { data } = await apiClient.post('/common/app-config/show', { key });
+    return data;
+};
+
+export const saveAppConfig = async (key: string, value: any): Promise<any> => {
+    const { data } = await apiClient.post('/common/app-config/save', { key, value });
+    return data;
+};
