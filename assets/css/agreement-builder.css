@@ -2513,19 +2513,22 @@
 /* ─── Agreement Section (Partner Profile) ─────────────────────────────────── */
 
 .as-icon-wrapper {
-  background-color: #fcebeb; /* Light red background */
+  background-color: #fcebeb;
+  /* Light red background */
   width: 90px;
   height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem; /* rounded-3 */
+  border-radius: 0.5rem;
+  /* rounded-3 */
   border: 1px solid #f9d7d7;
 }
 
 .as-icon {
   font-size: 45px;
-  color: #ef4444; /* PDF Red */
+  color: #ef4444;
+  /* PDF Red */
 }
 
 .as-title {
@@ -2533,14 +2536,16 @@
 }
 
 .as-btn {
-  background-color: #405189 !important; /* Original Theme Color */
+  background-color: #405189 !important;
+  /* Original Theme Color */
   color: white !important;
   border-radius: 6px !important;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* shadow-sm */
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  /* shadow-sm */
   padding: 0.5rem 1.5rem;
   border: none;
   transition: opacity 0.2s;
