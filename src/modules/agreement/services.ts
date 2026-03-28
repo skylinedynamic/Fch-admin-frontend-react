@@ -82,7 +82,28 @@ export async function checkAgreementSign(): Promise<ApiResponse<AgreementSignChe
  */
 export async function submitAgreementSign(payload: {
   agreement_template_id: number
+  content_html?: string | null
 }): Promise<ApiResponse<null>> {
   const res = await apiClient.post('/common/agreement-sign/submit', payload)
+  return res.data
+}
+
+/**
+ * Download signed agreement as PDF.
+ */
+export async function downloadAgreementSign(userId?: number | string) {
+  const url = userId ? `/common/agreement-sign/download/${userId}` : '/common/agreement-sign/download'
+  const response = await apiClient.get(url, {
+    responseType: 'blob'
+  })
+  return response
+}
+
+/**
+ * Fetch the signed agreement HTML snapshot for preview.
+ */
+export async function fetchSignedAgreementHtml(userId?: number | string): Promise<ApiResponse<{ content_html: string }>> {
+  const url = userId ? `/common/agreement-sign/html/${userId}` : '/common/agreement-sign/html'
+  const res = await apiClient.get(url)
   return res.data
 }

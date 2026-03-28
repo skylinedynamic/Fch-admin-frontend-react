@@ -2005,11 +2005,6 @@
   transition: all 0.2s;
 }
 
-.p-input:focus {
-  border-color: #6366f1;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
 
 .p-textarea {
   width: 100%;
@@ -2051,10 +2046,11 @@
   align-items: center;
 }
 
+.form-control:focus {
+  box-shadow: none !important;
+}
+
 .p-checkbox {
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #cbd5e1;
   border-radius: 4px;
   accent-color: #3b518d;
   cursor: pointer;
@@ -2106,63 +2102,450 @@
   letter-spacing: 1px;
 }
 
-.p-sig-meta-date {
-  color: #94a3b8;
+/* ─── Agreement Signature Modal (asm) - Light Theme & Full Width  */
+
+.asm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 7, 7, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10000;
+  animation: asm-fade-in 0.4s ease-out;
 }
 
-.p-sig-input {
-  width: 100% !important;
-  border: none !important;
-  background: transparent !important;
-  text-align: center !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: #334155 !important;
-  padding: 0 !important;
-  outline: none !important;
-  box-shadow: none !important;
-  height: auto !important;
+.asm-main-wrapper {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 10px;
 }
 
-.p-logo-wrapper {
-  margin-bottom: 20px;
+.asm-modal-card {
+  width: 95%;
+  max-width: 1100px;
+  height: 92vh;
+  background: #ffffff;
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.3);
+  animation: asm-pop-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.p-logo-img {
-  max-width: 100%;
-  height: auto;
-  max-height: 80px;
-  object-fit: contain;
+@keyframes asm-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
-.p-logo-ph {
-  border: 2px dashed #e2e8f0;
+@keyframes asm-pop-up {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.asm-side-info {
+  width: 262px;
+  background: #f4f6fd;
+  padding: 40px 20px;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.asm-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 50px;
+}
+
+.asm-brand-icon {
+  width: 44px;
+  height: 44px;
+  background: #405189;
   border-radius: 12px;
-  padding: 20px;
-  display: inline-flex;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #ffffff;
+}
+
+.asm-brand-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.asm-step-box {
+  margin-bottom: auto;
+}
+
+.asm-step-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: #405189;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+.asm-step-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #2d3748 !important;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+.asm-step-desc {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #718096;
+}
+
+.asm-legal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.asm-legal-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.asm-legal-icon {
+  font-size: 20px;
+  color: #405189;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+.asm-legal-text-term {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2d3748 !important;
+  margin-bottom: 2px;
+}
+
+.asm-legal-text-desc {
+  font-size: 12px;
+  color: #a0aec0 !important;
+  line-height: 1.5;
+}
+
+.asm-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fdfdfd;
+}
+
+.asm-content-header {
+  padding: 24px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asm-content-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.asm-header-meta {
+  font-size: 10px;
+  font-weight: 800;
+  color: #e53e3e;
+  background: #fff5f5;
+  padding: 4px 12px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.asm-document-frame {
+  flex: 1;
+  overflow: hidden;
+  background: #f7fafc;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.asm-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+.asm-action-footer {
+  background: #ffffff;
+  border-top: 1px solid #edf2f7;
+  padding: 16px 40px;
+}
+
+.asm-action-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asm-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.asm-hidden-checkbox {
+  display: none;
+}
+
+.asm-custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.asm-checkbox-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.asm-btn-submit {
+  padding: 10px 24px;
+  background: #405189;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.asm-btn-submit:hover:not(:disabled) {
+  background: #2d335c;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(64, 81, 137, 0.2);
+}
+
+.asm-btn-disabled {
+  background: #cbd5e0 !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.asm-success-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0ab39c;
+  font-weight: 700;
+}
+
+.asm-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: asm-spin 1s linear infinite;
+}
+
+@keyframes asm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1200px) {
+  .asm-side-info {
+    width: 262px;
+    padding: 40px 20px;
+  }
+
+  .asm-step-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 992px) {
+  .asm-side-info {
+    display: none;
+  }
+
+  .asm-modal-card {
+    max-width: 95%;
+  }
+}
+
+/* ─── Download Agreement Preview Page ──────────────────────────────────────── */
+
+.da-page {
+  background: #525659;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.da-loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f5f9;
+}
+
+/* Sticky toolbar */
+.da-toolbar {
+  background: #202124;
+  padding: 12px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.da-toolbar-brand {
+  color: white;
+  font-weight: 700;
+  display: flex;
   align-items: center;
   gap: 10px;
-  color: #94a3b8;
-  font-size: 13px;
-  background: #f8fafc;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.p-logo-ph:hover {
-  border-color: #6366f1;
-  background: #f0f4ff;
-  color: #6366f1;
+.da-toolbar-brand i {
+  color: #0ab39c;
+  font-size: 22px;
 }
 
-.p-divider {
+.da-toolbar-brand span {
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.da-print-btn {
+  background: #0ab39c;
+  color: white;
   border: none;
-  border-top: 1.5px solid #e2e8f0;
-  margin: 25px 0;
+  padding: 10px 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(10, 179, 156, 0.35);
+  transition: opacity 0.2s;
 }
 
-.p-spacer {
-  opacity: 0.3;
-  border-radius: 4px;
-  margin: 15px 0;
+.da-print-btn:hover {
+  opacity: 0.88;
+}
+
+/* Document area */
+.da-body {
+  padding: 40px 0 60px;
+  display: flex;
+  justify-content: center;
+  flex: 1;
+}
+
+.da-sheet {
+  width: 794px;
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+  background: white;
+}
+
+.da-iframe {
+  width: 100%;
+  border: none;
+  display: block;
+  min-height: 200px;
+}
+
+/* ─── Agreement Section (Partner Profile) ─────────────────────────────────── */
+
+.as-icon-wrapper {
+  background-color: #fcebeb; /* Light red background */
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem; /* rounded-3 */
+  border: 1px solid #f9d7d7;
+}
+
+.as-icon {
+  font-size: 45px;
+  color: #ef4444; /* PDF Red */
+}
+
+.as-title {
+  color: #405189;
+}
+
+.as-btn {
+  background-color: #405189 !important; /* Original Theme Color */
+  color: white !important;
+  border-radius: 6px !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* shadow-sm */
+  padding: 0.5rem 1.5rem;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.as-btn:hover {
+  opacity: 0.9;
 }

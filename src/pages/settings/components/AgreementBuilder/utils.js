@@ -1,11 +1,10 @@
-/* ── Preview Mode Constants ─────────────────────────────────────────────── */
 export const PREVIEW_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700;800&family=Roboto:wght@400;700&display=swap');
-  body{margin:0;padding:14px 0;background:#e8edf5;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;color:#334155;gap:0}
-  .page-sep{width:794px;height:32px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
-  .page-sep::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:#b0b8c8}
-  .page-sep::after{content:'Page Break';font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:#e8edf5;padding:0 12px;position:relative;z-index:1}
-  .doc{width:794px;min-height:1123px;background:var(--doc-bg);padding:var(--doc-pad);box-shadow:0 10px 40px rgba(0,0,0,0.1);box-sizing:border-box;border-radius:2px}
+  body{margin:0;padding:0;background:#e8edf5;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;color:#334155;gap:0}
+  .page-sep{width:210mm;height:40px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;background:#525659;margin:20px 0}
+  .page-sep::before{content:''}
+  .page-sep::after{content:'';}
+  .doc{width:210mm;min-height:297mm;background:var(--doc-bg);padding:var(--doc-pad);box-sizing:border-box;border-radius:0}
   .p-text          { white-space: pre-wrap; margin-bottom: 10px; font-size: var(--fs); font-weight: var(--fw); text-align: var(--ta); text-decoration: var(--td); font-style: var(--fst); color: var(--color); font-family: var(--ff); line-height: var(--lh); letter-spacing: var(--ls); background: var(--bg); border-radius: var(--radius); padding: var(--pad); opacity: var(--opacity); }
   .p-field         { margin-bottom: 22px; display: flex; flex-direction: column; gap: 4px; }
   .p-input-wrap    { position: relative; width: 100%; display: flex; align-items: flex-end; gap: 8px; }
@@ -21,7 +20,7 @@ export const PREVIEW_CSS = `
   @keyframes asm-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
   .is-invalid ~ .p-error { display: block !important; }
   .p-input         { flex: 1; border: none !important; border-bottom: 1px solid #64748b !important; padding: 4px 8px !important; font-size: var(--fs, 15px) !important; font-weight: 400 !important; background: transparent !important; box-sizing: border-box; color: #0f172a !important; border-radius: 0 !important; height: auto !important; transition: background 0.2s; min-width: 100px; font-family: var(--ff, inherit); }
-  .p-input:focus   { background: #f8fafc !important; outline: none; border-bottom-color: #3b82f6 !important; }
+  .p-input:focus   { outline: none; box-shadow: none; }
   .p-textarea      { width: 100%; border: none; border-bottom: 1px solid #64748b; padding: 8px; font-size: 15px; background: #f5f8ff; box-sizing: border-box; color: #0f172a; resize: vertical; min-height: 40px; border-radius: 0; margin-top: 5px; }
   .p-date-wrapper  { position: relative; flex: 1; display: flex; align-items: flex-end; gap: 8px; }
   .p-date-icon     { display: none; }
@@ -67,11 +66,11 @@ export const PREVIEW_CSS = `
     .page-sep { display: none !important; }
     .doc { 
       box-shadow: none !important; 
-      width: 794px !important; 
+      width: 210mm !important; 
       margin: 0 auto !important;
       padding: var(--doc-pad) !important; 
       border-radius: 0 !important; 
-      min-height: 1123px !important; 
+      min-height: 297mm !important; 
       page-break-after: always !important; 
       break-after: page !important; 
       box-sizing: border-box !important;
@@ -94,11 +93,19 @@ export const PREVIEW_CSS = `
   .is-invalid ~ .p-error { display: block; }
 
   .is-invalid {
+    box-shadow: none !important;
     border-color: #F06548 !important;
     background-color: #FFF0EE !important;
-    box-shadow: 0 0 0 2px rgba(240, 101, 72, 0.2) !important;
     animation: asm-shake 0.3s ease-in-out;
   }
+  .p-sig-grid .p-field.is-invalid {
+     border-radius: 12px;
+     background-color: #FFF5F5 !important;
+     padding: 10px;
+  }
+  .p-sig-grid .p-field.is-invalid .p-sig-box { border: none !important; background: transparent !important; }
+  .p-error { display: none !important; }
+
   @keyframes asm-shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-3px); }
@@ -107,7 +114,7 @@ export const PREVIEW_CSS = `
 `;
 
 export const PREVIEW_JS = `
-  var PAGE_H = 1123;
+  var PAGE_H = 1122.5; // Approx 297mm at 96dpi minus a tiny margin for safety
 
   window.validateDoc = function() {
     var form = document.querySelector('form') || document.getElementById('agreement-form');
@@ -133,15 +140,23 @@ export const PREVIEW_JS = `
         valid = false;
         field.classList.add('is-invalid');
         
-        // Handle Flatpickr hidden inputs: highlight the visible one
-        if (field.classList.contains('flatpickr-input') && field.nextSibling && field.nextSibling.classList && field.nextSibling.classList.contains('form-control')) {
+        // Handle visible sibling (Flatpickr)
+        if (field.classList.contains('flatpickr-input') && field.nextSibling && field.nextSibling.classList) {
            field.nextSibling.classList.add('is-invalid');
         }
+
+        // Apply error to parent field container for full-block design
+        var pField = field.closest('.p-field');
+        if (pField) pField.classList.add('is-invalid');
 
         if (!firstInvalid) firstInvalid = field;
       } else {
         field.classList.remove('is-invalid');
-        if (field.nextSibling && field.nextSibling.classList) field.nextSibling.classList.remove('is-invalid');
+        var pField = field.closest('.p-field');
+        if (pField) pField.classList.remove('is-invalid');
+        if (field.nextSibling && field.nextSibling.classList) {
+           field.nextSibling.classList.remove('is-invalid');
+        }
       }
     }
 
@@ -290,27 +305,24 @@ export const gen = (b) => {
     const vars = `--fs:${b.fontSize || 15}px;--fw:${b.fontWeight || 400};--ta:${b.textAlign || 'left'};--color:${b.color || '#0f172a'};--ff:${b.fontFamily || "'Lora', serif"}`;
 
     const req = b.fieldRequired ? 'required' : '';
-    const errorMsg = b.fieldRequired ? `<div class="p-error">${b.fieldLabel} is required</div>` : '';
 
-    if (b.type === 'input') return `<div class="p-field" style="${vars}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" placeholder="${b.fieldPlaceholder || ''}" class="p-input" ${req}/></div>${errorMsg}</div>`;
-    if (b.type === 'textarea') return `<div class="p-field" style="${vars}"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><textarea rows="1" class="p-textarea" placeholder="${b.fieldPlaceholder || ''}" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);" ${req}></textarea>${errorMsg}</div>`;
-    if (b.type === 'date') return `<div class="p-field" style="${vars}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" class="form-control flatpickr p-input p-date-input" placeholder="Select Date" ${req}/></div>${errorMsg}</div>`;
-    if (b.type === 'checkbox') return `<div class="p-field"><div class="p-cb-group" style="${vars};justify-content:${b.textAlign === 'center' ? 'center' : b.textAlign === 'right' ? 'flex-end' : 'flex-start'}"><input type="checkbox" class="p-checkbox" ${req}/><label class="p-cb-label" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}</label></div>${errorMsg}</div>`;
+    if (b.type === 'input') return `<div class="p-field" style="${vars}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" placeholder="${b.fieldPlaceholder || ''}" class="p-input" ${req}/></div></div>`;
+    if (b.type === 'textarea') return `<div class="p-field" style="${vars}"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><textarea rows="1" class="p-textarea" placeholder="${b.fieldPlaceholder || ''}" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);" ${req}></textarea></div>`;
+    if (b.type === 'date') return `<div class="p-field" style="${vars}"><div class="p-input-wrap"><label class="p-label">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}:</label><input type="text" class="form-control flatpickr p-input p-date-input" placeholder="Select Date" ${req}/></div></div>`;
+    if (b.type === 'checkbox') return `<div class="p-field"><div class="p-cb-group" style="${vars};justify-content:${b.textAlign === 'center' ? 'center' : b.textAlign === 'right' ? 'flex-end' : 'flex-start'}"><input type="checkbox" class="p-checkbox" ${req}/><label class="p-cb-label" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);">${b.fieldLabel}${b.fieldRequired ? ' *' : ''}</label></div></div>`;
     if (b.type === 'signature') return `<div class="p-sig-grid" style="${vars}">
       <div class="p-field">
         <div class="p-sig-box p-sig-drop preview-dropzone">
           ${b.logoSrc ? `<img src="${b.logoSrc}" style="max-height:45px;">` : `<i class="ri-quill-pen-line p-sig-icon"></i>`}
           <div class="p-sig-meta" style="font-size:calc(var(--fs) * 0.7);font-family:var(--ff);">${b.fieldLabel || 'SIGNATURE'}${b.fieldRequired ? ' *' : ''}</div>
-          <input type="hidden" class="p-input" ${req} value="${b.logoSrc || ''}" style="display:none"/>
+          <input type="text" class="p-input" ${req} value="${b.logoSrc || ''}" style="position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;"/>
         </div>
-        ${errorMsg}
       </div>
       <div class="p-field">
         <div class="p-sig-box">
            <input type="text" class="form-control flatpickr p-sig-input" placeholder="SELECT DATE" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
            <div class="p-sig-meta p-sig-meta-date">DATE SIGNED</div>
         </div>
-        ${errorMsg}
       </div>
     </div>`;
   }

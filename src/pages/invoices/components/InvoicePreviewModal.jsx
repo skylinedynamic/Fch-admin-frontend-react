@@ -288,7 +288,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                         )}
                                                         Download
                                                     </button>
-                                                    {((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
+                                                    {((user?.is_host == 0) || user?.is_host == 1) && (
                                                         <button
                                                             className="btn btn-danger shadow-sm"
                                                             onClick={handleSend}
