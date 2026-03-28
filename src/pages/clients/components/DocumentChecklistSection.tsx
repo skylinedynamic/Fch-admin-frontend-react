@@ -8,9 +8,10 @@ export interface DocumentChecklistSectionRef {
 
 interface DocumentChecklistSectionProps {
     clientId: string | number;
+    isLoading?: boolean;
 }
 
-const DocumentChecklistSection = forwardRef<DocumentChecklistSectionRef, DocumentChecklistSectionProps>(({ clientId }, ref) => {
+const DocumentChecklistSection = forwardRef<DocumentChecklistSectionRef, DocumentChecklistSectionProps>(({ clientId, isLoading: parentLoading = false }, ref) => {
     
     // Internal state for the checklist
     const [localChecklist, setLocalChecklist] = useState<ChecklistItem[]>([]);
@@ -28,7 +29,6 @@ const DocumentChecklistSection = forwardRef<DocumentChecklistSectionRef, Documen
         }
     }, [fetchedChecklist]);
 
-    // Expose save method
     useImperativeHandle(ref, () => ({
         save: async () => {
             const checkedIds = localChecklist.filter(item => item.current_status).map(item => item.id);

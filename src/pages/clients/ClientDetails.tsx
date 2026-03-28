@@ -238,27 +238,53 @@ export default function ClientDetails() {
 
                 toast.success("Client created successfully");
 
-                // Redirect to edit page and switch to business financials tab
                 if (clientData && clientData.id) {
+                    window.dispatchEvent(new Event('refreshActivities'));
                     navigate(`/clients/${clientData.id}`, { state: { activeTab: 'businessFinancials' } });
                 } else {
+                    window.dispatchEvent(new Event('refreshActivities'));
                     navigate('/clients');
                 }
             } else {
                 // UPDATE EXISTING CLIENT (Use Refs)
+                let updateSuccess = false;
 
                 if (activeTab === ENROLLMENT_TABS.PERSONAL && clientInfoRef.current) {
                     await clientInfoRef.current.save();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.FINANCIALS && financialsRef.current) {
                     await financialsRef.current.save();
+                    window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.CHECKLIST && checklistRef.current) {
                     await checklistRef.current.save();
                     toast.success("Document checklist saved successfully");
+                    window.dispatchEvent(new Event('refreshActivities'));
+                    updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
                 } else {
                     // Fallback
                     toast.warn("No handler for this tab.");
+                    window.dispatchEvent(new Event('refreshActivities'));
+                }
+
+                if (updateSuccess) {
+                    const tabOrder = [
+                        ENROLLMENT_TABS.PERSONAL, 
+                        ENROLLMENT_TABS.FINANCIALS, 
+                        ENROLLMENT_TABS.CHECKLIST, 
+                        ENROLLMENT_TABS.DOCUMENTS
+                    ];
+                    const currentIndex = tabOrder.indexOf(activeTab);
+                    const nextTab = tabOrder[currentIndex + 1];
+
+                    if (nextTab) {
+                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: nextTab } }), 800);
+                    } else {
+                        setTimeout(() => navigate(`/clients/${id}`, { state: { activeTab: activeTab } }), 800);
+                    }
                 }
             }
         } catch (error: any) {
@@ -401,7 +427,7 @@ export default function ClientDetails() {
                 )}
 
                 <div className="row">
-                    <div className="col-xxl-12">
+                    <div className={id ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -475,9 +501,11 @@ export default function ClientDetails() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    {/* <div className="col-xxl-4">
-                        <ActivitySidebar entityId={id} entityType="Client" />
-                    </div> */}
+                    {id && (
+                        <div className="col-xxl-4">
+                            <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} />
+                        </div>
+                    )}
                 </div>
             </div>
             <EmailComposeModal entityId={id} entityType="Client" />

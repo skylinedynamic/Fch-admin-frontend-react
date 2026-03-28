@@ -11,6 +11,7 @@ import PartnerForm from './components/PartnerForm';
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
+import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -335,7 +336,7 @@ export default function PartnerProfile() {
         };
 
         fetchPartnerData();
-    }, [id, activeTab]);
+    }, [id]); // Only re-fetch when the partner ID changes, NOT on tab switch
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -696,6 +697,7 @@ export default function PartnerProfile() {
                 if (id) {
                     await updatePartner(id, formDataToSend);
                     toast.success('Partner updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
 
                     // Redirect to next tab after update
                     // Attach any selected documents (selected in DocumentsSection)
@@ -730,6 +732,7 @@ export default function PartnerProfile() {
                 } else {
                     const response = await createPartner(formDataToSend);
                     toast.success('Partner created successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
 
                     // Get the newly created partner ID from response
                     const newPartnerId = response?.data?.id || response?.id;
@@ -853,7 +856,7 @@ export default function PartnerProfile() {
 
                 {/* Main Content */}
                 <div className="row">
-                    <div className="col-xxl-12">
+                    <div className={id ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -917,7 +920,7 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
-                                    loading={isPartnerLoading}
+                                    loading={isPartnerLoading || isSaving}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
@@ -928,71 +931,17 @@ export default function PartnerProfile() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    {/* <div className="col-xxl-4">
-                        <div className="card">
-                            <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">
-                                <h4 style={{ padding: '8px 0px' }} className="card-title mb-0 me-2">
-                                    <i className="ri-history-line align-middle me-2"></i>Activity
-                                </h4>
-                                <div className="d-flex flex-wrap gap-2 chip-actions">
-                                    <button
-                                        type="button"
-                                        className="btn btn-light btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#emailComposeModal"
-                                    >
-                                        <i className="ri-mail-line align-middle me-1"></i>New Email
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="btn btn-light btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#activityCreateModal"
-                                    >
-                                        <i className="ri-calendar-line align-middle me-1"></i>New Event
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-body">
-                                <div className="tab-content text-muted">
-                                    <div className="tab-pane active show" id="today" role="tabpanel">
-                                        <div className="profile-timeline">
-                                            <div className="accordion accordion-flush" id="todayExample">
-                                                <div className="accordion-item border-0">
-                                                    <div className="accordion-header" id="headingOne">
-                                                        <a className="accordion-button p-2 shadow-none" data-bs-toggle="collapse" href="#collapseOne" aria-expanded="true">
-                                                            <div className="d-flex">
-                                                                <div className="flex-shrink-0">
-                                                                    <img src="/assets/images/users/avatar-2.jpg" alt="" className="avatar-xs rounded-circle material-shadow" />
-                                                                </div>
-                                                                <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-14 mb-1">
-                                                                        Jacqueline Steve
-                                                                    </h6>
-                                                                    <small className="text-muted">Lead status updated: moved to "Proposal" — 05:16 PM</small>
-                                                                </div>
-                                                            </div>
-                                                        </a>
-                                                    </div>
-                                                    <div id="collapseOne" className="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                                                        <div className="accordion-body ms-2 ps-5">
-                                                            <p className="text-muted mb-0">Lead update: changed stage from "Qualified" to "Proposal". Next: follow-up call scheduled.</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    {id && (
+                        <div className="col-xxl-4">
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading || isSaving} />
                         </div>
-                    </div> */}
+                    )}
                 </div>
             </div>
 
             {/* Modals */}
-            <EmailComposeModal />
-            <ActivityCreateModal />
+            <EmailComposeModal entityId={id} entityType="Partner" />
+            <ActivityCreateModal entityId={id} entityType="Partner" />
         </div >
     );
 }

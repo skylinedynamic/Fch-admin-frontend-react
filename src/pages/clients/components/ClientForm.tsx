@@ -64,7 +64,7 @@ export default function ClientForm({
                         Actually ClientInfoSection handles its own fetching loader. 
                         Parent isLoading might be for "Create" submission or initial mount. 
                     */}
-                    {isLoading && !clientId ? (
+                    {isLoading ? (
                         <FormLoader count={12} />
                     ) : (
                         <ClientInfoSection
@@ -82,6 +82,7 @@ export default function ClientForm({
                             isHost={isHost}
                             settings={settings}
                             nonHostPlan={nonHostPlan}
+                            isLoading={isLoading}
                         />
                     )}
                 </div>
@@ -90,7 +91,7 @@ export default function ClientForm({
             {/* Business Financials Tab */}
             {activeTab === ENROLLMENT_TABS.FINANCIALS && (
                 <div className="tab-pane active show" role="tabpanel">
-                    {isLoading && !clientId ? (
+                    {isLoading ? (
                         <FormLoader count={12} />
                     ) : (
                         <BusinessFinancialsSection
@@ -99,7 +100,7 @@ export default function ClientForm({
                             initialData={initialData || formData}
                             errors={errors}
                             setErrors={setErrors}
-                            isLoading={isLoading && !clientId}
+                            isLoading={isLoading}
                         />
                     )}
                 </div>
@@ -108,13 +109,14 @@ export default function ClientForm({
             {/* Document Checklist Tab */}
             {activeTab === ENROLLMENT_TABS.CHECKLIST && (
                 <div className="tab-pane active show" role="tabpanel">
-                    {isLoading && !clientId ? (
+                    {isLoading ? (
                         <FormLoader count={8} />
                     ) : (
                         clientId ? (
                             <DocumentChecklistSection
                                 ref={checklistRef}
                                 clientId={clientId}
+                                isLoading={isLoading}
                             />
                         ) : (
                             <div>Please create the client first to view checklist.</div>
@@ -126,7 +128,7 @@ export default function ClientForm({
             {/* Documents Tab */}
             {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <ClientDocumentsSection />
+                    <ClientDocumentsSection isLoading={isLoading} />
                 </div>
             )}
         </div>

@@ -1,20 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
+import { createActivityLog } from '../../../modules/activity-log/services';
+import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
-export default function ActivityCreateModal({ entityId, entityType }) {
+const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
+
+export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
-    const categoryRef = useRef(null);
     const dateInputRef = useRef(null);
+    const textareaRef = useRef(null); // Local ref to capture the DOM node
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
-        reference: 'Event',
-        date: '',
-        category: 'Event',
-        assignedTo: '',
+        reference: 'Call',
+        activity_date: new Date().toISOString().split('T')[0],
+        assigned_to: '',
         summary: '',
-        message: '',
+        message_body: '',
         attachments: []
     });
 
@@ -41,33 +46,145 @@ export default function ActivityCreateModal({ entityId, entityType }) {
         }));
     };
 
-    const handleCreate = () => {
-        if (!formData.summary || !formData.date) {
-            toast.error('Summary and Date are required');
-            return;
-        }
+    const handleCreate = async () => {
+        setIsSaving(true);
+        try {
+            const data = new FormData();
+            data.append('log_type', 'activity');
+            data.append('reference', formData.reference || '');
+            data.append('activity_date', formData.activity_date || '');
+            data.append('subject', formData.summary || '');         // maps to subject column
+            data.append('description', formData.message_body || ''); // maps to description column
 
-        // TODO: Implement actual create activity logic with API
-        console.log('Creating activity:', { ...formData, entityId, entityType });
-        toast.success(`Activity "${formData.summary}" created successfully`);
+            // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
+            data.append('to_emails', formData.to_emails || '');
 
-        // Close modal
-        if (window.hideGlobalModal) {
-            window.hideGlobalModal('activityCreateModal');
+            // Entity IDs - separate Lead, Client, Borrower, and Partner
+            if (entityType === ENTITY_TYPE_LEAD) {
+                data.append('lead_id', entityId ? entityId.toString() : '');
+            } else if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') {
+                data.append('borrower_id', entityId ? entityId.toString() : '');
+            } else if (entityType === ENTITY_TYPE_PARTNER) {
+                data.append('partner_id', entityId ? entityId.toString() : '');
+            }
+
+            if (formData.attachments && formData.attachments.length > 0) {
+                // Must use attachments[] for Laravel to parse multiple files as an array
+                formData.attachments.forEach((file) => {
+                    data.append('attachments[]', file);
+                });
+            }
+
+            const response = await createActivityLog(data);
+
+            // Handle backend returning HTTP 200 with status:false (validation error format)
+            if (response && response.status === false) {
+                const backendErrors = response.errors;
+                if (backendErrors && typeof backendErrors === 'object') {
+                    const normalizedErrors = {};
+                    Object.keys(backendErrors).forEach(key => {
+                        const error = backendErrors[key];
+                        normalizedErrors[key] = Array.isArray(error) ? error : [error];
+                    });
+                    setErrors(normalizedErrors);
+                } else {
+                    toast.error(response.message || 'Validation failed.');
+                }
+                return; // Stop here, do not close modal
+            }
+
+            toast.success(`Activity created successfully`);
+
+            if (onActivityCreated) {
+                onActivityCreated();
+            }
+
+            // Trigger custom event for refreshing activities if needed
+            window.dispatchEvent(new CustomEvent('refreshActivities'));
+
+            // Robust Close Modal
+            const closeModal = () => {
+                if (window.hideGlobalModal) {
+                    window.hideGlobalModal('activityCreateModal');
+                } else {
+                    const modalEl = document.getElementById('activityCreateModal');
+                    if (window.bootstrap && modalEl) {
+                        const modal = window.bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }
+                    // Final fallback
+                    setTimeout(() => {
+                        document.body.classList.remove('modal-open');
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    }, 300);
+                }
+            };
+
+            closeModal();
+        } catch (err) {
+            console.error('Failed to create activity:', err);
+
+            // Handle both 422 HTTP status AND 200 with status:false JSON format
+            const responseData = err.response?.data;
+            const backendErrors = responseData?.errors;
+
+            if (backendErrors && typeof backendErrors === 'object') {
+                // Normalize: backend may send strings OR arrays for error values
+                const normalizedErrors = {};
+                Object.keys(backendErrors).forEach(key => {
+                    const error = backendErrors[key];
+                    normalizedErrors[key] = Array.isArray(error) ? error : [error];
+                });
+                setErrors(normalizedErrors);
+            } else {
+                toast.error(responseData?.message || 'Failed to create activity');
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
     // Use global Summernote hook
-    const { editorRef } = useSummernote('message', formData.message, handleInputChange, {
+    const { editorRef: summernoteRef } = useSummernote('message_body', formData.message_body, (e) => {
+        setFormData(prev => ({ ...prev, message_body: e.target.value }));
+    }, {
         height: 200,
         placeholder: 'Write your message...'
     });
+
+    // Combine hook ref with local ref
+    const setEditorRef = useCallback((node) => {
+        textareaRef.current = node;
+        summernoteRef(node);
+    }, [summernoteRef]);
+
+    // Apply red border to Summernote .note-editor (it renders as a sibling of the textarea)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (textareaRef.current) {
+                // Find the .note-editor within the same parent container
+                const parent = textareaRef.current.parentElement;
+                const noteEditor = parent?.querySelector('.note-editor');
+
+                if (noteEditor) {
+                    if (errors.description) {
+                        noteEditor.style.setProperty('border-color', '#dc3545', 'important');
+                        noteEditor.style.setProperty('box-shadow', '0 0 0 0.1rem rgba(220,53,69,.25)', 'important');
+                    } else {
+                        noteEditor.style.borderColor = '';
+                        noteEditor.style.boxShadow = '';
+                    }
+                }
+            }
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [errors.description]);
 
     // Initialize Choices.js
     useEffect(() => {
         const instances = [];
         if (window.Choices) {
-            [referenceRef, categoryRef].forEach(ref => {
+            [referenceRef].forEach(ref => {
                 if (ref.current) {
                     try {
                         const instance = new window.Choices(ref.current, {
@@ -98,17 +215,44 @@ export default function ActivityCreateModal({ entityId, entityType }) {
             const fp = flatpickr(dateInputRef.current, {
                 enableTime: false,
                 dateFormat: "Y-m-d",
-                defaultDate: formData.date || new Date(),
+                defaultDate: formData.activity_date || new Date(),
                 onChange: (selectedDates, dateStr) => {
-                    setFormData(prev => ({ ...prev, date: dateStr }));
+                    setFormData(prev => ({ ...prev, activity_date: dateStr }));
                 }
             });
             return () => fp.destroy();
         }
+    }, [formData.activity_date]);
+
+    // Reset validation and form on modal close
+    useEffect(() => {
+        const modalEl = document.getElementById('activityCreateModal');
+        const handleHidden = () => {
+            setErrors({});
+            setFormData({
+                reference: 'Call',
+                activity_date: new Date().toISOString().split('T')[0],
+                assigned_to: '',
+                summary: '',
+                message_body: '',
+                attachments: []
+            });
+            // Select2/Choices.js instances are handled via their own refs if needed,
+            // but many are tied to formData which we just reset.
+        };
+
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', handleHidden);
+        }
+        return () => {
+            if (modalEl) {
+                modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+            }
+        };
     }, []);
 
     return (
-        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
                 <div className="modal-content border-0">
                     <div className="modal-header p-3 ps-4 bg-primary">
@@ -118,12 +262,17 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                         <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div className="modal-body p-4">
+                        {errors.log_type && (
+                            <div className="alert alert-danger py-2 mb-3">
+                                {errors.log_type[0]}
+                            </div>
+                        )}
                         <form>
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label className="form-label">Reference <span className="text-danger">*</span></label>
                                     <select
-                                        className="form-select"
+                                        className={`form-select ${errors.reference ? 'is-invalid' : ''}`}
                                         id="activityReference"
                                         name="reference"
                                         ref={referenceRef}
@@ -131,74 +280,49 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                                         onChange={handleInputChange}
                                         required
                                     >
-                                        <option value="Event">Event</option>
-                                        <option value="Meeting">Meeting</option>
-                                        <option value="Call">Call</option>
-                                        <option value="Email">Email</option>
-                                        <option value="Other">Other</option>
+                                        {REFERENCE_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
                                     </select>
+                                    {errors.reference && <div className="invalid-feedback">{errors.reference[0]}</div>}
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className={`form-control ${errors.activity_date ? 'is-invalid' : ''}`}
                                         id="activityDate"
-                                        name="date"
+                                        name="activity_date"
                                         ref={dateInputRef}
                                         placeholder="Select date and time"
                                         required
                                     />
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label">Category</label>
-                                    <select
-                                        className="form-select"
-                                        id="activityCategory"
-                                        name="category"
-                                        ref={categoryRef}
-                                        value={formData.category}
-                                        onChange={handleInputChange}
-                                    >
-                                        <option value="Event">Event</option>
-                                        <option value="Meeting">Meeting</option>
-                                        <option value="Call">Call</option>
-                                        <option value="Sent/Received Email">Sent/Received Email</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label">Assigned To</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="activityAssignedTo"
-                                        name="assignedTo"
-                                        placeholder="Assignee"
-                                        value={formData.assignedTo}
-                                        onChange={handleInputChange}
-                                    />
+                                    {errors.activity_date && <div className="invalid-feedback">{errors.activity_date[0]}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className="form-label">Summary <span className="text-danger">*</span></label>
+                                    <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>
+                                        Summary <span className="text-danger">*</span>
+                                    </label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className={`form-control ${errors.subject ? 'is-invalid' : ''}`}
                                         id="activitySummary"
                                         name="summary"
                                         value={formData.summary}
                                         onChange={handleInputChange}
                                         required
                                     />
+                                    {errors.subject && <div className="text-danger mt-1 small">{errors.subject[0]}</div>}
                                 </div>
                                 <div className="col-12">
-                                    <label className="form-label">Message</label>
+                                    <label className={`form-label ${errors.description ? 'text-danger' : ''}`}>Message</label>
                                     <textarea
                                         id="activityMessageEditor"
-                                        ref={editorRef}
+                                        ref={setEditorRef}
                                         className="d-none"
-                                        name="message"
+                                        name="message_body"
                                     ></textarea>
+                                    {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
                                 </div>
                             </div>
                             <div className="row mt-3">
@@ -222,30 +346,51 @@ export default function ActivityCreateModal({ entityId, entityType }) {
                                         />
                                     </div>
                                     <div id="activityAttachmentList" className="mt-2">
-                                        {formData.attachments.map((file, index) => (
-                                            <div key={index} className="d-flex align-items-center justify-content-between border rounded p-2 mb-2">
-                                                <span className="text-muted small">
-                                                    <i className="ri-attachment-2 me-1"></i>
-                                                    {file.name}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-ghost-danger"
-                                                    onClick={() => removeAttachment(index)}
-                                                >
-                                                    <i className="ri-close-line"></i>
-                                                </button>
-                                            </div>
-                                        ))}
+                                        {formData.attachments.map((file, index) => {
+                                            const fileError = errors[`attachments.${index}`];
+                                            return (
+                                                <div key={index} className="mb-2">
+                                                    <div className={`d-flex align-items-center justify-content-between border rounded p-2 ${fileError ? 'border-danger' : ''}`}>
+                                                        <span className={`${fileError ? 'text-danger fw-medium' : 'text-muted'} small`}>
+                                                            <i className="ri-attachment-2 me-1"></i>
+                                                            {file.name}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-ghost-danger p-0"
+                                                            onClick={() => removeAttachment(index)}
+                                                        >
+                                                            <i className="ri-close-line fs-16"></i>
+                                                        </button>
+                                                    </div>
+                                                    {fileError && <div className="text-danger mt-1 small ps-1">{fileError[0]}</div>}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                    {/* Show general attachment group errors if any */}
+                                    {errors.attachments && (
+                                        <div className="text-danger mt-1 small">
+                                            {errors.attachments[0]}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </form>
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" className="btn btn-primary" onClick={handleCreate}>
-                            <i className="ri-check-line align-middle me-1"></i> Create
+                        <button type="button" className="btn btn-primary" onClick={handleCreate} disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="ri-check-line align-middle me-1"></i> Create
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

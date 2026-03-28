@@ -37,6 +37,7 @@ interface ClientInfoSectionProps {
     settings?: any;
     nonHostPlan?: any;
     onSaveSuccess?: () => void;
+    isLoading?: boolean;
 }
 
 export interface ClientInfoSectionRef {
@@ -55,7 +56,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     isHost = false,
     settings = null,
     nonHostPlan = null,
-    onSaveSuccess
+    onSaveSuccess,
+    isLoading: parentLoading = false
 }, ref) => {
     // 1. Data Fetching (only if clientId exists)
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
@@ -91,10 +93,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             });
         } else if (formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
             // If we have type but no ID or generic ID, try to find matching option to get the ID
-            const match = options.find((opt: any) => 
+            const match = options.find((opt: any) =>
                 opt.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
             );
-            
+
             if (!match) {
                 const currentPrice = Number(formData.payment_amount || formData.amount || 0);
                 options.unshift({
@@ -158,7 +160,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         if (isSynced && formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
             const plans = isHost ? borrowerPlans : nonHostPlans;
             if (plans.length > 0) {
-                const matchedPlan = plans.find((p: any) => 
+                const matchedPlan = plans.find((p: any) =>
                     p.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
                 );
                 if (matchedPlan) {

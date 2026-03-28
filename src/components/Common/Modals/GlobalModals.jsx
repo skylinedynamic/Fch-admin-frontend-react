@@ -29,10 +29,36 @@ export default function GlobalModals() {
 
         window.hideGlobalModal = (modalId) => {
             const modalElement = document.getElementById(modalId);
-            if (modalElement && window.bootstrap) {
-                const modal = window.bootstrap.Modal.getInstance(modalElement);
-                if (modal) modal.hide();
+            if (!modalElement) return;
+
+            // The absolute safest way to close a Bootstrap modal in React without breaking
+            // the backdrop loop is to simulate exactly what the user does: clicking the close button.
+            // This forces Bootstrap's internal event loop to fire smoothly.
+            const closeBtn = modalElement.querySelector('[data-bs-dismiss="modal"]');
+            if (closeBtn) {
+                closeBtn.click();
+            } else if (window.bootstrap) {
+                // Fallback if no button exists
+                const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.hide();
+            } else if (window.jQuery && window.jQuery(`#${modalId}`).modal) {
+                window.jQuery(`#${modalId}`).modal('hide');
             }
+
+            // Still clean up summernote backdrops which are tricky
+            setTimeout(() => {
+                document.querySelectorAll('.note-modal-backdrop').forEach(el => el.remove());
+                document.querySelectorAll('.note-modal').forEach(el => el.remove());
+                document.body.classList.remove('note-modal-open');
+
+                // Final safety net for stuck backdrops only if NO modals are still open
+                if (!document.querySelector('.modal.show')) {
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 400);
         };
 
         return () => {
@@ -41,6 +67,8 @@ export default function GlobalModals() {
         };
     }, []);
 
+    // Render directly in the DOM where Layout placed it.
+    // Relies on Bootstrap's native stacking (z-index: 1055+) which naturally overrides theme sidebars
     return (
         <>
             <EmailComposeModal />

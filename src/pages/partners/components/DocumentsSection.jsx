@@ -54,6 +54,7 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
         if (!selectedFiles || selectedFiles.length === 0) return;
 
         try {
+            setLoading(true);
             // We can optionally show a loading indicator here or toast
             const filePaths = selectedFiles.map(file => file.path);
 
@@ -64,11 +65,14 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
             });
 
             toast.success("Documents uploaded successfully");
+            window.dispatchEvent(new Event('refreshActivities'));
             setShowFileManager(false);
             loadDocuments();
         } catch (error) {
             console.error("Failed to attach documents", error);
             toast.error(error?.response?.data?.message || "Failed to attach documents");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -79,6 +83,7 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
             setLoading(true);
             await deletePartnerDocument(deletingDocId);
             toast.success("Document deleted successfully");
+            window.dispatchEvent(new Event('refreshActivities'));
             setShowDeleteModal(false);
             setDeletingDocId(null);
             loadDocuments();

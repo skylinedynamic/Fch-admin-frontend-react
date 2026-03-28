@@ -222,14 +222,17 @@ export default function LeadDetails() {
                 if (activeTab === 'leadDetails') {
                     await updateLeadDetails(id, finalPayload);
                     toast.success('Lead Details updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
                 } else {
                     await updateLeadContactInfo(id, finalPayload);
                     toast.success('Lead contact information updated successfully');
+                    window.dispatchEvent(new Event('refreshActivities'));
                 }
                 // navigate('/leads');
             } else {
                 const response = await createLeadDetails(finalPayload);
                 toast.success('Lead Details Completed successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
                 if (response.status && response.data?.id) {
                     navigate(`/leads/${response.data.id}?tab=contactInfo`);
                 } else {
@@ -571,7 +574,7 @@ export default function LeadDetails() {
 
                     <div className="row">
                         {/* Main Content */}
-                        <div className="col-xxl-12">
+                        <div className={id ? "col-xxl-8" : "col-12"}>
                             <div className="card">
                                 <div className="card-header">
                                     <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -601,7 +604,7 @@ export default function LeadDetails() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="tab-content">
-                                        {isLoading ? (
+                                    {isLoading || isSaving ? (
                                             <FormLoader count={12} />
                                         ) : (
                                             <>
@@ -1023,15 +1026,17 @@ export default function LeadDetails() {
                         </div>
 
                         {/* Activity Sidebar */}
-                        {/* <div className="col-xxl-4">
-                        <ActivitySidebar entityId={id} entityType="Lead" />
-                    </div> */}
+                        {id && (
+                            <div className="col-xxl-4">
+                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Modals rendered outside main content to prevent z-index issues */}
-            <EmailComposeModal entityId={id} entityType="Lead" />
+            <EmailComposeModal entityId={id} entityType="Lead" lead={formData} />
             <ActivityCreateModal entityId={id} entityType="Lead" />
             <LeadConvertModal
                 show={showConvertModal}

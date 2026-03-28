@@ -141,7 +141,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
         }
     }));
 
-    if ((isFetching && clientId) || parentLoading) {
+    if (isFetching && clientId) {
         return (
             <div className="row g-3">
                 {[1, 2, 3, 4, 5, 6].map(i => (
