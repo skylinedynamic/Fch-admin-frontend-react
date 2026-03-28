@@ -21,19 +21,6 @@ export default function ContactDetails() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
 
-    // Permission checks
-    const canCreate = hasPermission('create contacts');
-    const canUpdate = hasPermission('update contacts');
-
-    // Access control: redirect to access-denied if lacks required permission
-    if (id && !canUpdate) {
-        return <Navigate to="/access-denied" replace />;
-    }
-
-    if (!id && !canCreate) {
-        return <Navigate to="/access-denied" replace />;
-    }
-
     // State
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -260,9 +247,9 @@ export default function ContactDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Contact Details</h4>
                                 <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -277,18 +264,20 @@ export default function ContactDetails() {
                                 <Link to="/contacts" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary w-lg waves-effect">
-                                    {saving ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-3-line align-middle me-1"></i> Save
-                                        </>
-                                    )}
-                                </button>
+                                {((id && hasPermission('update contacts')) || (!id && hasPermission('create contacts'))) && (
+                                    <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary w-lg waves-effect">
+                                        {saving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -3,8 +3,9 @@ import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 import { locationData } from '../../../config';
 import { formatPhoneNumber } from '../../../utils/formatters';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
 
-export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, backendErrors }) {
+export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, backendErrors }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [extraData, setExtraData] = useState({});
@@ -180,10 +181,10 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
         if (!loading && onHide) onHide();
     };
 
-    const headerClass = targetType === 'Partner' ? 'bg-soft-success' : 'bg-soft-primary';
+    const headerClass = targetType == ENTITY_TYPE_PARTNER ? 'bg-soft-success' : 'bg-soft-primary';
     const title = `${targetType} Conversion: Missing Info`;
-    const icon = targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-received-2-line';
-    const textColor = targetType === 'Partner' ? 'text-success' : 'text-primary';
+    const icon = targetType == ENTITY_TYPE_PARTNER ? 'ri-shake-hands-line' : 'ri-user-received-2-line';
+    const textColor = targetType == ENTITY_TYPE_PARTNER ? 'text-success' : 'text-primary';
 
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
@@ -299,7 +300,7 @@ export default function LeadMissingInfoModal({ show, onHide, onConfirm, lead, ta
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" onClick={handleClose} disabled={loading}>Cancel</button>
-                        <button type="button" className={`btn ${targetType === 'Partner' ? 'btn-success' : 'btn-primary'}`} onClick={handleConfirm} disabled={loading}>
+                        <button type="button" className={`btn ${targetType == ENTITY_TYPE_PARTNER ? 'btn-success' : 'btn-primary'}`} onClick={handleConfirm} disabled={loading}>
                             {loading ? <span className="spinner-border spinner-border-sm me-1"></span> : 'Save & Continue'}
                         </button>
                     </div>

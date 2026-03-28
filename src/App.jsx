@@ -164,7 +164,11 @@ export default function App() {
             {/* Contacts Routes - requires 'view contacts' permission */}
             <Route element={<PermissionRoute permission="view contacts" />}>
               <Route path="contacts" element={<Contacts />} />
-              <Route path="contacts/create" element={<ContactDetails />} />
+
+              <Route element={<PermissionRoute permission="create contacts" />}>
+                <Route path="contacts/create" element={<ContactDetails />} />
+              </Route>
+
               <Route path="contacts/:id" element={<ContactDetails />} />
             </Route>
 

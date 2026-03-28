@@ -1,6 +1,8 @@
+import { ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from './appConfig';
+ 
 export const LEAD_TYPES = {
-    BORROWER: 'Borrower',
-    PARTNER: 'Partner',
+    BORROWER: ENTITY_TYPE_BORROWER,
+    PARTNER: ENTITY_TYPE_PARTNER,
 };
 
 export const LEAD_STATUS_TYPES = {

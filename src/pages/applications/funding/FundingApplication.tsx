@@ -22,7 +22,7 @@ export default function FundingApplication() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state: any) => state.user)
-    const isHost = currentUser?.is_host === 1;
+    const isHost = currentUser?.is_host == 1;
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
