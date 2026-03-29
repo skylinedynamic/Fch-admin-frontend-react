@@ -4,6 +4,7 @@ import { downloadInvoice, sendInvoice, fetchInvoiceDetails } from '../../../modu
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
 import { APP_CONFIG } from '../../../config';
+import { STATUS_PAID } from '../../../config/invoiceConfig';
 import invoiceLogo from '../../../../assets/images/logo-mail.png';
 
 // Helper to format currency
@@ -203,7 +204,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 </div>
                                                 <div className="col-lg-3 col-6">
                                                     <p className="text-muted mb-2 text-uppercase fw-semibold">Payment Status</p>
-                                                    <span className={`badge bg-${displayInvoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'}-subtle text-${displayInvoice.status?.toLowerCase() === 'paid' ? 'success' : 'warning'} fs-11 text-uppercase`} id="payment-status">
+                                                    <span className={`badge bg-${displayInvoice.status?.toLowerCase() === STATUS_PAID.toLowerCase() ? 'success' : 'warning'}-subtle text-${displayInvoice.status?.toLowerCase() === STATUS_PAID.toLowerCase() ? 'success' : 'warning'} fs-11 text-uppercase`} id="payment-status">
                                                         {displayInvoice.status || 'Pending'}
                                                     </span>
                                                 </div>
@@ -288,7 +289,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                         )}
                                                         Download
                                                     </button>
-                                                    {((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && (
+                                                    {(((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && displayInvoice.status?.toLowerCase() !== STATUS_PAID.toLowerCase()) && (
                                                         <button
                                                             className="btn btn-danger shadow-sm"
                                                             onClick={handleSend}
@@ -299,7 +300,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                             ) : (
                                                                 <i className="ri-send-plane-fill align-bottom me-1"></i>
                                                             )}
-                                                            Mail Invoice
+                                                            E-Mail Invoice
                                                         </button>
                                                     )}
                                                 </div>

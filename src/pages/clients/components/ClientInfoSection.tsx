@@ -40,6 +40,14 @@ interface ClientInfoSectionProps {
     isLoading?: boolean;
 }
 
+const toLocalDateString = (date: Date | undefined | null) => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export interface ClientInfoSectionRef {
     save: () => Promise<void>;
 }
@@ -186,8 +194,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     }, []);
 
     // Local Location Options Logic
-    const [localStates, setLocalStates] = useState<{ label: string; value: string }[]>([]);
-    const [localCities, setLocalCities] = useState<{ label: string; value: string }[]>([]);
+    const [businessStates, setBusinessStates] = useState<{ label: string; value: string }[]>([]);
+    const [businessCities, setBusinessCities] = useState<{ label: string; value: string }[]>([]);
+    const [homeStates, setHomeStates] = useState<{ label: string; value: string }[]>([]);
+    const [homeCities, setHomeCities] = useState<{ label: string; value: string }[]>([]);
 
     // Countries is static from locationData
     const localCountries = React.useMemo(() => Object.keys(locationData).map(key => ({
@@ -196,61 +206,104 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     })), []);
 
     useEffect(() => {
-        // Compute States based on Country
-        const countryName = formData.country;
+        // Business Address Cascading Logic
+        const countryName = formData.business_country;
         const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === countryName);
-        const countryCode = countryEntry ? countryEntry[0] : (countryName === 'USA' ? 'USA' : 'USA'); // Default fallback
+        const countryCode = countryEntry ? countryEntry[0] : (countryName === 'USA' ? 'USA' : null);
 
         if (countryCode && locationData[countryCode]) {
             const stateOpts = Object.keys(locationData[countryCode].states).map((key) => ({
                 label: locationData[countryCode].states[key].name,
                 value: locationData[countryCode].states[key].name
             }));
-            setLocalStates(stateOpts);
+            setBusinessStates(stateOpts);
         } else {
-            setLocalStates([]);
+            setBusinessStates([]);
         }
 
-        // Compute Cities based on State
-        if (countryCode && formData.state && locationData[countryCode]) {
-            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
-            const stateCode = stateEntry ? stateEntry[0] : null; // or match by name if stored by name
-
-            // If stored by name, we need to find the key. 
-            // locationData structure: { USA: { name: 'USA', states: { AL: { name: 'Alabama', cities: [...] } } } }
+        if (countryCode && formData.business_state && locationData[countryCode]) {
+            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.business_state);
+            const stateCode = stateEntry ? stateEntry[0] : null;
 
             if (stateCode) {
                 const cityList = locationData[countryCode].states[stateCode].cities;
-                setLocalCities(cityList.map((city: string) => ({ label: city, value: city })));
+                setBusinessCities(cityList.map((city: string) => ({ label: city, value: city })));
             } else {
-                setLocalCities([]);
+                setBusinessCities([]);
             }
         } else {
-            setLocalCities([]);
+            setBusinessCities([]);
+        }
+    }, [formData.business_country, formData.business_state]);
+
+    useEffect(() => {
+        // Home Address Cascading Logic
+        const countryName = formData.country;
+        const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === countryName);
+        const countryCode = countryEntry ? countryEntry[0] : (countryName === 'USA' ? 'USA' : null);
+
+        if (countryCode && locationData[countryCode]) {
+            const stateOpts = Object.keys(locationData[countryCode].states).map((key) => ({
+                label: locationData[countryCode].states[key].name,
+                value: locationData[countryCode].states[key].name
+            }));
+            setHomeStates(stateOpts);
+        } else {
+            setHomeStates([]);
         }
 
+        if (countryCode && formData.state && locationData[countryCode]) {
+            const stateEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === formData.state);
+            const stateCode = stateEntry ? stateEntry[0] : null;
+
+            if (stateCode) {
+                const cityList = locationData[countryCode].states[stateCode].cities;
+                setHomeCities(cityList.map((city: string) => ({ label: city, value: city })));
+            } else {
+                setHomeCities([]);
+            }
+        } else {
+            setHomeCities([]);
+        }
     }, [formData.country, formData.state]);
 
     // After localCities load: if the stored city is not in the list and is not already 'Others',
     // treat it as a custom "other" city → move it to other_city and set city = 'Others'
     useEffect(() => {
-        if (!isSynced) return; // Wait until data has been synced from API
-        if (!formData.city || formData.city === 'Others') return; // Already handled
-        if (localCities.length === 0) return; // Cities not yet loaded for this state
+        if (!isSynced) return;
+        if (!formData.business_city || formData.business_city === 'Others') return;
+        if (businessCities.length === 0) return;
 
-        const cityExistsInList = localCities.some(
+        const cityExistsInList = businessCities.some(
+            (c) => c.value === formData.business_city || c.label === formData.business_city
+        );
+
+        if (!cityExistsInList) {
+            setFormData(prev => ({
+                ...prev,
+                business_other_city: prev.business_city,
+                business_city: 'Others',
+            }));
+        }
+    }, [businessCities, isSynced]);
+
+    useEffect(() => {
+        if (!isSynced) return;
+        if (!formData.city || formData.city === 'Others') return;
+        if (homeCities.length === 0) return;
+
+        const cityExistsInList = homeCities.some(
             (c) => c.value === formData.city || c.label === formData.city
         );
 
         if (!cityExistsInList) {
-            // The saved city is not a known dropdown option → it was typed as "other"
             setFormData(prev => ({
                 ...prev,
                 other_city: prev.city,
                 city: 'Others',
             }));
         }
-    }, [localCities, isSynced]);
+    }, [homeCities, isSynced]);
 
     // 4. Handle Inputs
     const handleInputChange = (e: any) => {
@@ -265,7 +318,28 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 amount: value
             }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => {
+                const newData = { ...prev, [name]: value };
+
+                // Cascade clears for local state
+                if (name === 'country') {
+                    newData.state = '';
+                    newData.city = '';
+                } else if (name === 'state') {
+                    newData.city = '';
+                } else if (name === 'city' && value !== 'Others') {
+                    newData.other_city = '';
+                } else if (name === 'business_country') {
+                    newData.business_state = '';
+                    newData.business_city = '';
+                } else if (name === 'business_state') {
+                    newData.business_city = '';
+                } else if (name === 'business_city' && value !== 'Others') {
+                    newData.business_other_city = '';
+                }
+
+                return newData;
+            });
         }
 
         // Notify parent of ALL changes (important for Create Mode and Location Logic)
@@ -379,6 +453,10 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     return (
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
+                <div className="col-12 mt-4 mb-2">
+                    <h5 className="text-primary fs-16 mb-1">Personal Information</h5>
+                    <hr className="mt-1" />
+                </div>
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="first_name" className="form-label">First Name <span className="text-danger">*</span></label>
@@ -412,11 +490,35 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
+                        <label htmlFor="date_of_birth" className="form-label">Date of Birth</label>
+                        <Flatpickr
+                            id="date_of_birth"
+                            name="date_of_birth"
+                            options={{
+                                dateFormat: "Y-m-d",
+                                altInput: true,
+                                altFormat: "d M, Y",
+                                maxDate: "today"
+                            }}
+                            value={parseDate(formData.date_of_birth)}
+                            onChange={(dates) => {
+                                const dateString = toLocalDateString(dates[0]);
+                                handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
+                            }}
+                            placeholder="Select date of birth"
+                            className={`form-control ${errors.date_of_birth ? 'is-invalid' : ''}`}
+                        />
+                        {errors.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
+                    </div>
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
                         <label htmlFor="phone_number" className="form-label">Phone Number <span className="text-danger">*</span></label>
                         <div className="input-group">
-                            {(formData.country === 'USA' || formData.country === 'Canada') && (
+                            {(formData.country === 'USA' || formData.country === 'Canada' || formData.country === 'United States') && (
                                 <span className="input-group-text bg-light border">
-                                    <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
+                                    <span className="me-1">{(formData.country === 'USA' || formData.country === 'United States') ? 'USA' : 'CAN'}</span>
                                     <span className="text-muted">+1</span>
                                 </span>
                             )}
@@ -454,6 +556,120 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
+                        <label htmlFor="home_address" className="form-label">Home Address
+                        </label>
+                        <input
+                            type="text"
+                            className={`form-control ${errors.home_address ? 'is-invalid' : ''}`}
+                            id="home_address"
+                            name="home_address"
+                            placeholder="Enter address"
+                            value={formData.home_address || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.home_address && <div className="invalid-feedback">{errors.home_address}</div>}
+                    </div>
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Country <span className="text-danger">*</span></label>
+                        <Dropdown
+                            inputId="country"
+                            value={formData.country}
+                            options={localCountries}
+                            onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Select Country"
+                            className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
+                            appendTo="self"
+                        />
+                        {errors.country && <small className="p-error">{errors.country}</small>}
+                    </div>
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <Dropdown
+                            inputId="state"
+                            value={formData.state}
+                            options={homeStates}
+                            onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Select State"
+                            filter
+                            className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
+                            disabled={!formData.country}
+                            appendTo="self"
+                        />
+                        {errors.state && <small className="p-error">{errors.state}</small>}
+                    </div>
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <Dropdown
+                            inputId="city"
+                            value={formData.city}
+                            options={[...homeCities, { label: 'Others', value: 'Others' }]}
+                            onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Select City"
+                            filter
+                            className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
+                            disabled={!formData.state}
+                            appendTo="self"
+                        />
+                        {errors.city && <small className="p-error">{errors.city}</small>}
+                    </div>
+                </div>
+
+                {formData.city === 'Others' && (
+                    <div className="col-lg-6">
+                        <div className="mb-3">
+                            <label htmlFor="other_city" className="form-label">Other City <span className="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
+                                id="other_city"
+                                name="other_city"
+                                placeholder="Enter city name"
+                                value={formData.other_city || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
+                        </div>
+                    </div>
+                )}
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="postal_code" className="form-label">Zip Code</label>
+                        <input
+                            type="text"
+                            className={`form-control ${errors.postal_code ? 'is-invalid' : ''}`}
+                            id="postal_code"
+                            name="postal_code"
+                            placeholder="Enter zip code"
+                            value={formData.postal_code || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.postal_code && <div className="invalid-feedback">{errors.postal_code}</div>}
+                    </div>
+                </div>
+
+                <div className="col-12 mt-4 mb-2">
+                    <h5 className="text-primary fs-16 mb-1">Business Information</h5>
+                    <hr className="mt-1" />
+                </div>
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
                         <label htmlFor="business_website" className="form-label">Website</label>
                         <input
                             type="text"
@@ -468,7 +684,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {/* Business Information */}
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_name" className="form-label">Legal Business Name</label>
@@ -551,17 +766,17 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">Country <span className="text-danger">*</span></label>
                         <Dropdown
-                            inputId="country"
-                            value={formData.country}
+                            inputId="business_country"
+                            value={formData.business_country}
                             options={localCountries}
-                            onChange={(e) => handleInputChange({ target: { name: 'country', value: e.value } })}
+                            onChange={(e) => handleInputChange({ target: { name: 'business_country', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Select Country"
-                            className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
+                            className={`w-100 ${errors.business_country ? 'p-invalid' : ''}`}
                             appendTo="self"
                         />
-                        {errors.country && <small className="p-error">{errors.country}</small>}
+                        {errors.business_country && <small className="p-error">{errors.business_country}</small>}
                     </div>
                 </div>
 
@@ -569,19 +784,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">State <span className="text-danger">*</span></label>
                         <Dropdown
-                            inputId="state"
-                            value={formData.state}
-                            options={localStates}
-                            onChange={(e) => handleInputChange({ target: { name: 'state', value: e.value } })}
+                            inputId="business_state"
+                            value={formData.business_state}
+                            options={businessStates}
+                            onChange={(e) => handleInputChange({ target: { name: 'business_state', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Select State"
                             filter
-                            className={`w-100 ${errors.state ? 'p-invalid' : ''}`}
-                            disabled={!formData.country}
+                            className={`w-100 ${errors.business_state ? 'p-invalid' : ''}`}
+                            disabled={!formData.business_country}
                             appendTo="self"
                         />
-                        {errors.state && <small className="p-error">{errors.state}</small>}
+                        {errors.business_state && <small className="p-error">{errors.business_state}</small>}
                     </div>
                 </div>
 
@@ -589,36 +804,36 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label className="form-label">City <span className="text-danger">*</span></label>
                         <Dropdown
-                            inputId="city"
-                            value={formData.city}
-                            options={[...localCities, { label: 'Others', value: 'Others' }]}
-                            onChange={(e) => handleInputChange({ target: { name: 'city', value: e.value } })}
+                            inputId="business_city"
+                            value={formData.business_city}
+                            options={[...businessCities, { label: 'Others', value: 'Others' }]}
+                            onChange={(e) => handleInputChange({ target: { name: 'business_city', value: e.value } })}
                             optionLabel="label"
                             optionValue="value"
                             placeholder="Select City"
                             filter
-                            className={`w-100 ${errors.city ? 'p-invalid' : ''}`}
-                            disabled={!formData.state}
+                            className={`w-100 ${errors.business_city ? 'p-invalid' : ''}`}
+                            disabled={!formData.business_state}
                             appendTo="self"
                         />
-                        {errors.city && <small className="p-error">{errors.city}</small>}
+                        {errors.business_city && <small className="p-error">{errors.business_city}</small>}
                     </div>
                 </div>
 
-                {formData.city === 'Others' && (
+                {formData.business_city === 'Others' && (
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label htmlFor="other_city" className="form-label">Other City <span className="text-danger">*</span></label>
+                            <label htmlFor="business_other_city" className="form-label">Other City <span className="text-danger">*</span></label>
                             <input
                                 type="text"
-                                className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
-                                id="other_city"
-                                name="other_city"
+                                className={`form-control ${errors.business_other_city ? 'is-invalid' : ''}`}
+                                id="business_other_city"
+                                name="business_other_city"
                                 placeholder="Enter city name"
-                                value={formData.other_city || ''}
+                                value={formData.business_other_city || ''}
                                 onChange={handleInputChange}
                             />
-                            {errors.other_city && <div className="invalid-feedback">{errors.other_city}</div>}
+                            {errors.business_other_city && <div className="invalid-feedback">{errors.business_other_city}</div>}
                         </div>
                     </div>
                 )}
@@ -643,9 +858,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_phone" className="form-label">Business Phone </label>
                         <div className="input-group">
-                            {(formData.country === 'USA' || formData.country === 'Canada') && (
+                            {(formData.business_country === 'USA' || formData.business_country === 'Canada' || formData.business_country === 'United States' || !formData.business_country) && (
                                 <span className="input-group-text bg-light border">
-                                    <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
+                                    <span className="me-1">{(formData.business_country === 'Canada') ? 'CAN' : 'USA'}</span>
                                     <span className="text-muted">+1</span>
                                 </span>
                             )}
@@ -713,17 +928,19 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             }}
                             value={parseDate(formData.business_start_date)}
                             onChange={(dates) => {
-                                const date = dates[0];
-                                const dateString = date
-                                    ? `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${date.getFullYear()}`
-                                    : "";
-                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                                const dateString = toLocalDateString(dates[0]);
+                                handleInputChange({ target: { name: 'business_start_date', value: dateString } });
                             }}
                             className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
                             placeholder="Select date"
                         />
                         {errors.business_start_date && <div className="invalid-feedback">{errors.business_start_date}</div>}
                     </div>
+                </div>
+
+                <div className="col-12 mt-4 mb-2">
+                    <h5 className="text-primary fs-16 mb-1">Additional Information</h5>
+                    <hr className="mt-1" />
                 </div>
                 <div className="col-lg-6">
                     <div className="mb-3">

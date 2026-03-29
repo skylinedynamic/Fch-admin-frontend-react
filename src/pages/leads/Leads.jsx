@@ -231,7 +231,8 @@ export default function Leads() {
             'lead completed': 'bg-success-subtle text-success',
             'lead declined': 'bg-danger-subtle text-danger',
             'qualified': 'bg-success-subtle text-success',
-            'declined': 'bg-danger-subtle text-danger'
+            'declined': 'bg-danger-subtle text-danger',
+            'procrastination': 'bg-danger-subtle text-danger'
         };
         const className = statusMap[rowData.status?.toLowerCase()] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;

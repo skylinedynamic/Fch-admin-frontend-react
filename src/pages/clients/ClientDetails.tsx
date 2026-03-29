@@ -186,6 +186,13 @@ export default function ClientDetails() {
                 newData.city = '';
             } else if (name === 'city' && value !== 'Others') {
                 newData.other_city = '';
+            } else if (name === 'business_country') {
+                newData.business_state = '';
+                newData.business_city = '';
+            } else if (name === 'business_state') {
+                newData.business_city = '';
+            } else if (name === 'business_city' && value !== 'Others') {
+                newData.business_other_city = '';
             }
 
             return newData;

@@ -1,4 +1,5 @@
 import type { Client, BorrowerPlan } from './types';
+import { locationData } from '../../config';
 
 const normalizeDate = (dateStr: any): string | undefined => {
     if (!dateStr) return undefined;
@@ -30,20 +31,31 @@ const normalizeDate = (dateStr: any): string | undefined => {
 
 /**
  * Maps the form data to the backend payload for client creation.
- * Implements the "accurate lead pattern" for both host and non-host clients.
  */
 export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?: BorrowerPlan): Client => {
     const payload = { ...formData };
 
-    // Normalize city: if 'Others', resolve to the typed city name, then remove other_city from payload
+    // Correctly resolve city choices for initial creation. If 'Others' but no input, keep 'Others'.
     if (payload.city === 'Others') {
-        payload.city = payload.other_city;
+        payload.city = payload.other_city?.trim() || 'Others';
     }
-    delete (payload as any).other_city;
+    
+    if (payload.business_city === 'Others') {
+        payload.business_city = payload.business_other_city?.trim() || 'Others';
+    }
 
-    // Normalize date
+    // Resolve business country code
+    const busCountryEntry = Object.entries(locationData).find(([key, val]) => (val as any).name === payload.business_country);
+    if (busCountryEntry) {
+        payload.business_country_code = busCountryEntry[0];
+    }
+
+    // Normalize dates
     if (payload.business_start_date) {
         payload.business_start_date = normalizeDate(payload.business_start_date);
+    }
+    if (payload.date_of_birth) {
+        payload.date_of_birth = normalizeDate(payload.date_of_birth);
     }
 
     // Calculate Enrollment Type and Amount
@@ -51,30 +63,25 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     let enrollment_type = payload.enrollment_type;
 
     if (isHost) {
-        // Accurate code: Prioritize enrollment_payment. Use nullish coalescing to allow 0.
         const rawAmount = payload.enrollment_payment ?? 
                          (payload as any).enrollment_amount ?? 
                          payload.payment_amount ?? 
                          payload.amount;
         
-        // Handle empty string as 0, otherwise parse
         amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined) 
                  ? 0 
                  : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
         
         if (isNaN(amount)) amount = 0;
 
-        // Ensure enrollment_type is not empty if possible
         if (!enrollment_type && payload.plan_id) {
-            enrollment_type = 'Default Enrollment'; // Fallback if sync missed it
+            enrollment_type = 'Default Enrollment';
         }
     } else {
-        // Fallback to 800 if nonHostPlan is missing (as per original code)
         amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
         enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
     }
 
-    // Add specific payload fields required by backend
     payload.amount = amount;
     payload.enrollment_payment = amount;
     payload.enrollment_type = enrollment_type;
@@ -83,8 +90,6 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     payload.is_partner_paying = !isHost;
     payload.status = formData.status;
 
-
-    // Remove enrollment_amount to avoid confusion
     delete (payload as any).enrollment_amount;
 
     return payload;
@@ -92,21 +97,28 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
 
 /**
  * Maps the form data for client update.
- * Removes certain fields that shouldn't be updated via profile edit.
  */
 export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Partial<Client> => {
     const payload: any = {
         ...formData,
-        // Resolve city: if 'Others' is selected, use the typed other_city value
-        city: formData.city === 'Others' ? formData.other_city : formData.city,
+        // Resolve city pairs without deleting them. If 'Others' is selected but empty, keep 'Others'.
+        city: formData.city === 'Others' ? (formData.other_city?.trim() || 'Others') : (formData.city || ''),
+        business_city: formData.business_city === 'Others' ? (formData.business_other_city?.trim() || 'Others') : (formData.business_city || ''),
+        other_city: formData.other_city || '',
+        business_other_city: formData.business_other_city || '',
     };
 
-    // Remove other_city — it should never be sent to the API
-    delete payload.other_city;
+    // Resolve business country code
+    const busCountryEntry = Object.entries(locationData).find(([key, val]) => (val as any).name === formData.business_country);
+    if (busCountryEntry) {
+        payload.business_country_code = busCountryEntry[0];
+    }
 
-    // Normalize date
     if (payload.business_start_date) {
         payload.business_start_date = normalizeDate(payload.business_start_date);
+    }
+    if (payload.date_of_birth) {
+        payload.date_of_birth = normalizeDate(payload.date_of_birth);
     }
 
     if (formData.status) {
@@ -119,7 +131,6 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
         
         if (rawAmount !== undefined && rawAmount !== null) {
-            // Handle empty string as 0
             const amount = (rawAmount === '' || rawAmount === null) 
                            ? 0 
                            : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
@@ -134,7 +145,6 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         }
     }
 
-    // Remove enrollment_amount from update payload as well
     delete (payload as any).enrollment_amount;
 
     return payload;

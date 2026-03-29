@@ -3,6 +3,7 @@ export type Client = {
     // Personal Details
     first_name: string;
     last_name: string;
+    date_of_birth?: string;
     phone_number: string;
     country_code?: string;
     email: string;
@@ -12,19 +13,30 @@ export type Client = {
     // Business Info
     business_name?: string;
     business_ein?: string;
-    state_file_number?: string;
-    duns_number?: string;
+    business_state_file_number?: string;
+    business_duns_number?: string;
     business_address?: string;
-    country?: string;
-    city?: string;
-    other_city?: string;
-    state?: string;
+    business_country?: string;
+    business_country_code?: string;
+    business_state?: string;
+    business_city?: string;
+    business_other_city?: string;
     business_postal_code?: string;
     business_phone?: string;
     business_entity_type?: string;
     business_industry_type?: string;
     business_start_date?: string;
-    last_4_ssn?: string;
+    business_last_4_ssn?: string;
+
+    // Home Address (Primary Address in Backend)
+    home_address?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+    other_city?: string;
+    postal_code?: string;
+
+    // Enrollment / Logic
     enrollment_type?: string;
     plan_id?: number | string;
     assign_id?: number | string;
@@ -110,4 +122,3 @@ export type ClientListStatistics = {
     inactive_borrowers: number;
     new_this_month: number;
 };
-
