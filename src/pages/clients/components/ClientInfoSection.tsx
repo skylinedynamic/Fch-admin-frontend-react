@@ -490,30 +490,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label htmlFor="date_of_birth" className="form-label">Date of Birth</label>
-                        <Flatpickr
-                            id="date_of_birth"
-                            name="date_of_birth"
-                            options={{
-                                dateFormat: "Y-m-d",
-                                altInput: true,
-                                altFormat: "d M, Y",
-                                maxDate: "today"
-                            }}
-                            value={parseDate(formData.date_of_birth)}
-                            onChange={(dates) => {
-                                const dateString = toLocalDateString(dates[0]);
-                                handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
-                            }}
-                            placeholder="Select date of birth"
-                            className={`form-control ${errors.date_of_birth ? 'is-invalid' : ''}`}
-                        />
-                        {errors.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
-                    </div>
-                </div>
-
-                <div className="col-lg-6">
-                    <div className="mb-3">
                         <label htmlFor="phone_number" className="form-label">Phone Number <span className="text-danger">*</span></label>
                         <div className="input-group">
                             {(formData.country === 'USA' || formData.country === 'Canada' || formData.country === 'United States') && (
@@ -660,6 +636,45 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             onChange={handleInputChange}
                         />
                         {errors.postal_code && <div className="invalid-feedback">{errors.postal_code}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="date_of_birth" className="form-label">Date of Birth</label>
+                        <Flatpickr
+                            id="date_of_birth"
+                            name="date_of_birth"
+                            options={{
+                                dateFormat: "Y-m-d",
+                                altInput: true,
+                                altFormat: "d M, Y",
+                                maxDate: "today"
+                            }}
+                            value={parseDate(formData.date_of_birth)}
+                            onChange={(dates) => {
+                                const dateString = toLocalDateString(dates[0]);
+                                handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
+                            }}
+                            placeholder="Select date of birth"
+                            className={`form-control ${errors.date_of_birth ? 'is-invalid' : ''}`}
+                        />
+                        {errors.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="last_4_ssn" className="form-label">SSN Last 4</label>
+                        <input
+                            type="text"
+                            className={`form-control ${errors.last_4_ssn ? 'is-invalid' : ''}`}
+                            id="last_4_ssn"
+                            name="last_4_ssn"
+                            placeholder="Enter last 4 digits of SSN"
+                            maxLength={4}
+                            value={formData.last_4_ssn || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
                     </div>
                 </div>
 
@@ -941,22 +956,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-12 mt-4 mb-2">
                     <h5 className="text-primary fs-16 mb-1">Additional Information</h5>
                     <hr className="mt-1" />
-                </div>
-                <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="last_4_ssn" className="form-label">SSN Last 4</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.last_4_ssn ? 'is-invalid' : ''}`}
-                            id="last_4_ssn"
-                            name="last_4_ssn"
-                            placeholder="Enter last 4 digits of SSN"
-                            maxLength={4}
-                            value={formData.last_4_ssn || ''}
-                            onChange={handleInputChange}
-                        />
-                        {errors.last_4_ssn && <div className="invalid-feedback">{errors.last_4_ssn}</div>}
-                    </div>
                 </div>
 
                 {clientId && (
