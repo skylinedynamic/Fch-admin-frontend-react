@@ -109,7 +109,10 @@ export default function App() {
             {/* Employees Routes - requires 'view employees' permission */}
             <Route element={<PermissionRoute permission="view employees" />}>
               <Route path="employees" element={<Employees />} />
-              <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+              <Route element={<PermissionRoute permission="create employees" />}>
+                <Route path="employees/create" element={<EmployeeDetails />} />
+              </Route>
+              <Route path="employee-details/:id" element={<EmployeeDetails />} />
             </Route>
 
             {/* Clients Routes - requires 'view clients' permission */}
