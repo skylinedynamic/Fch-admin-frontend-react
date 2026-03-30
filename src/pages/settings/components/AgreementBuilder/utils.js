@@ -1,7 +1,7 @@
 export const PREVIEW_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700;800&family=Roboto:wght@400;700&display=swap');
   body{margin:0;padding:0;background:#e8edf5;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;color:#334155;gap:0}
-  .page-sep{width:210mm;height:15px;background: #525659;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+  .page-sep{width:210mm;height:15px;background: #e8edf5;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
   .page-sep::before{content:''}
   .page-sep::after{content:'';}
   .doc{width:210mm;min-height:297mm;background:var(--doc-bg);padding:var(--doc-pad);box-sizing:border-box;border-radius:0}
@@ -320,8 +320,8 @@ export const gen = (b) => {
       </div>
       <div class="p-field">
         <div class="p-sig-box">
-           <input type="text" class="form-control flatpickr p-sig-input" placeholder="SELECT DATE" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
-           <div class="p-sig-meta p-sig-meta-date">DATE SIGNED</div>
+           <input type="text" class="form-control flatpickr p-sig-input" placeholder="Click here" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
+           <div class="p-sig-meta p-sig-meta-date">Signature Date</div>
         </div>
       </div>
     </div>`;

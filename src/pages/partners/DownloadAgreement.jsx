@@ -12,17 +12,17 @@ const DownloadAgreement = () => {
     const iframeRef = useRef(null);
 
     useEffect(() => {
-        if (!userId) { 
+        if (!userId) {
             navigate('/not-found');
-            return; 
+            return;
         }
 
         fetchSignedAgreementHtml(userId)
             .then(res => {
                 let html = res?.data?.content_html;
-                if (!html) { 
+                if (!html) {
                     navigate('/not-found');
-                    return; 
+                    return;
                 }
 
                 // NUCLEAR FIXES: This handles everything by injecting at the very end of the document
@@ -37,17 +37,60 @@ const DownloadAgreement = () => {
                     .ab4-sig-col--drop img { width: 150px !important; mix-blend-mode: multiply !important; max-height: none !important; }
                     .ab4-sig-meta { border-top: 1px solid #333 !important; }
                     
-                    /* Typography: Reduce label to 12px, Value to 13px */
-                    .ab4-field-lbl, .ab4-val-text { 
-                        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
-                    }
-                    .ab4-field-lbl { font-size: 12px !important; font-weight: 500 !important; color: #64748b !important; }
+                    /* Typography: Label and Value to 12px, light border bottom */
+                    .ab4-field-lbl, .p-label { font-size: 12px !important; font-weight: 400 !important; color: #000000ff !important; }
+                    
+                    /* Target all input/textarea field types directly */
+                    .ab4-finp, .ab4-fta, .ab4-sig-input,
                     .ab4-val-text { 
                         font-size: 12px !important; 
-                        font-weight: 600 !important; 
+                        font-weight: 400 !important; 
                         color: #000 !important; 
-                        border: none !important; /* REMOVE UNDERLINE */
+                        border-bottom: 1px solid #e2e8f0 !important;
+                        border-top: none !important;
+                        border-left: none !important;
+                        border-right: none !important;
                         display: inline-block !important;
+                        width: 50% !important;
+                    }
+                    /* Also target bold/strong inside field value area */
+                    .ab4-field strong, .ab4-field b,
+                    .ab4-field-val, .ab4-field-val strong, .ab4-field-val b {
+                        font-size: 13px !important;
+                        font-weight: 400 !important;
+                        color: #000 !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
+                        display: inline-block !important;
+                        width: 50% !important;
+                    }
+                    /* p-input-wrap span styling */
+                    .p-input-wrap span {
+                        font-size: 13px !important;
+                        font-weight: 600 !important;
+                        border-bottom: 1px solid #ddd !important;
+                        min-width: 50% !important;
+                        display: inline-block !important;
+                    }
+                        .p-input-wrap{
+                            margin-bottom:5px !important;
+                        }
+                    .p-sig-box{
+                        border: none!important;
+                    }
+                    .p-sig-meta{
+                        margin-top: 5px!important;
+                    }    
+                    .p-sig-meta{
+                        color: #333435ff !important;
+                    }  
+                        
+                    .p-sig-box span{
+                        font-size: 13px !important;
+                        font-weight: 500 !important;
+                        border-bottom: 1px solid #ddd !important;
+                        min-width: 50% !important;
+                        display: inline-block !important;
+                        text-align: center !important;
                     }
                     
                     /* Reset .p-field margins and configure field flex layout */
@@ -70,10 +113,11 @@ const DownloadAgreement = () => {
                             el.textContent = el.textContent.replace('*', '').trim();
                         });
 
-                        // 2. Transform inputs to bold text spans
+                        // 2. Transform inputs to bold text spans (strip is-invalid)
                         document.querySelectorAll('input, textarea, select').forEach(el => {
                             const span = document.createElement('span');
-                            span.className = (el.className || '') + ' ab4-val-text';
+                            const cleanClass = (el.className || '').replace(/\bis-invalid\b/g, '').trim();
+                            span.className = cleanClass + ' ab4-val-text';
                             span.textContent = el.value || el.getAttribute('value') || '';
                             el.parentNode.replaceChild(span, el);
                         });
@@ -83,6 +127,11 @@ const DownloadAgreement = () => {
                             el.style.setProperty('border', 'none', 'important');
                             el.style.setProperty('background', 'transparent', 'important');
                             el.style.setProperty('box-shadow', 'none', 'important');
+                        });
+
+                        // 4. Remove any remaining is-invalid classes
+                        document.querySelectorAll('.is-invalid').forEach(el => {
+                            el.classList.remove('is-invalid');
                         });
                     })();
                 </script>
@@ -110,7 +159,7 @@ const DownloadAgreement = () => {
                     }, ms)
                 );
             })
-            .catch(e => { 
+            .catch(e => {
                 navigate('/not-found');
             })
             .finally(() => setLoading(false));

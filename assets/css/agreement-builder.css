@@ -2223,7 +2223,7 @@
 .asm-step-desc {
   font-size: 13.5px;
   line-height: 1.7;
-  color: #718096;
+  color: #414954;
 }
 
 .asm-legal-list {
@@ -2255,7 +2255,7 @@
 
 .asm-legal-text-desc {
   font-size: 12px;
-  color: #a0aec0 !important;
+  color: #414954 !important;
   line-height: 1.5;
 }
 
@@ -2395,7 +2395,9 @@
 }
 
 @keyframes asm-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Success Screen ── */
@@ -2503,14 +2505,34 @@
 }
 
 @keyframes asm-bounce-in {
-  0% { opacity: 0; transform: scale(0.3); }
-  50% { opacity: 0.9; transform: scale(1.1); }
-  80% { opacity: 1; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+
+  80% {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes asm-ping {
-  75%, 100% { transform: scale(2); opacity: 0; }
+
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 @media (max-width: 1200px) {
