@@ -574,23 +574,44 @@ export default function Leads() {
                                                 header="Action"
                                                 body={(rowData) => {
                                                     const isConverted = !!rowData.convert_to;
+                                                    const emailAlreadyConvertedTo = rowData.convert_email_already;
                                                     const targetType = rowData.convert_to || (rowData.lead_type === 'Partner' ? 'Partner' : 'Borrower');
-                                                    return (
-                                                        <div className="d-flex">
-                                                            {isConverted ? (
-                                                                <span className="badge bg-success-subtle text-success fs-12 p-2">
+
+                                                    // This lead itself is converted
+                                                    if (isConverted) {
+                                                        return (
+                                                            <div className="d-flex">
+                                                                <span className="badge bg-success-subtle text-success fs-12 p-2" style={{ whiteSpace: 'nowrap' }}>
                                                                     <i className="ri-checkbox-circle-line align-middle me-1"></i>
                                                                     Converted as a {targetType}
                                                                 </span>
-                                                            ) : (
-                                                                <button
-                                                                    className={`btn ${targetType === 'Partner' ? 'btn-info' : 'btn-primary'} btn-sm waves-effect waves-light fw-medium border-0 btn-hover-custom`}
-                                                                    onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
-                                                                >
-                                                                    <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
-                                                                    Convert to {targetType}
-                                                                </button>
-                                                            )}
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Another instance of this email was converted
+                                                    if (emailAlreadyConvertedTo) {
+                                                        return (
+                                                            <div className="d-flex">
+                                                                <span className="badge bg-success-subtle text-success fs-12 p-2" style={{ whiteSpace: 'nowrap' }}>
+                                                                    <i className="ri-checkbox-circle-line align-middle me-1"></i>
+                                                                    Already a {emailAlreadyConvertedTo}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Otherwise show the convert button
+                                                    return (
+                                                        <div className="d-flex">
+                                                            <button
+                                                                className={`btn ${targetType === 'Partner' ? 'btn-info' : 'btn-primary'} btn-sm waves-effect waves-light fw-medium border-0 btn-hover-custom`}
+                                                                onClick={(e) => { e.stopPropagation(); openConvertModal(rowData); }}
+                                                                style={{ whiteSpace: 'nowrap' }}
+                                                            >
+                                                                <i className={`${targetType === 'Partner' ? 'ri-shake-hands-line' : 'ri-user-add-line'} align-middle me-1`}></i>
+                                                                Convert to {targetType}
+                                                            </button>
                                                         </div>
                                                     );
                                                 }}
