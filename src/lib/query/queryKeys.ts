@@ -39,4 +39,8 @@ export const queryKeys = {
     detail: (id: string | number) => [...queryKeys.application.all, 'detail', id] as const,
     summary: ['summary'] as const,
   },
+  agreement: {
+    all: ['agreement'] as const,
+    detail: (slug: string) => [...queryKeys.agreement.all, 'detail', slug] as const,
+  },
 } as const

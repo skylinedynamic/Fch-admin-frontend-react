@@ -5,6 +5,7 @@ import DocumentsSection from './DocumentsSection';
 import ClientListSection from './ClientListSection';
 import SubscriptionSection from './SubscriptionSection';
 import SubscriptionListSection from './SubscriptionListSection';
+import AgreementSection from './AgreementSection';
 import FormLoader from '../../../components/Loader/FormLoader';
 
 export default function PartnerForm({
@@ -103,6 +104,13 @@ export default function PartnerForm({
                     ) : (
                         <SubscriptionListSection partnerId={partnerId} />
                     )}
+                </div>
+            )}
+
+            {/* Agreement Tab */}
+            {activeTab === 'agreement' && (
+                <div className="tab-pane active show">
+                    <AgreementSection partnerId={partnerId} formData={formData} />
                 </div>
             )}
         </div>

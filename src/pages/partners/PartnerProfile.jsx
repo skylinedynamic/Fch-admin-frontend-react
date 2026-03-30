@@ -905,6 +905,18 @@ export default function PartnerProfile() {
                                             <i className="far fa-list-alt"></i> Subscription
                                         </a>
                                     </li>
+                                    {formData.has_sign && Number(formData.is_host) === 0 && (
+                                        <li className="nav-item">
+                                            <a
+                                                className={`nav-link ${activeTab === 'agreement' ? 'active' : ''}`}
+                                                onClick={() => setActiveTab('agreement')}
+                                                role="tab"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Agreement
+                                            </a>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                             <div className="card-body p-4">

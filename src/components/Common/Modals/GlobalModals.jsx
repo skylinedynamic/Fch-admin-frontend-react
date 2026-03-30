@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import EmailComposeModal from './EmailComposeModal';
 import ActivityCreateModal from './ActivityCreateModal';
+import AgreementSignModal from './AgreementSignModal';
+import { useAuthStore } from '../../../store/auth/authStore';
 
 /**
  * GlobalModals - Container for all global modals used across the application
@@ -8,6 +10,7 @@ import ActivityCreateModal from './ActivityCreateModal';
  * or via the global window.showGlobalModal function
  */
 export default function GlobalModals() {
+    const { user } = useAuthStore();
     useEffect(() => {
         // Expose global helper to open modals programmatically if needed
         window.showGlobalModal = (modalId) => {
@@ -71,8 +74,11 @@ export default function GlobalModals() {
     // Relies on Bootstrap's native stacking (z-index: 1055+) which naturally overrides theme sidebars
     return (
         <>
+            {/* Spinner keyframe for AgreementSignModal */}
+            <style>{`@keyframes asm-spin { to { transform: rotate(360deg); } }`}</style>
             <EmailComposeModal />
             <ActivityCreateModal />
+            {Number(user?.is_host) == 0 && <AgreementSignModal />}
         </>
     );
 }

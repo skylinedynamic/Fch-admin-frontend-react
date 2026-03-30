@@ -190,8 +190,14 @@ export default function Header() {
                 <a className="dropdown-item" href="#"><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a> */}
                 {hasPermission('view contacts') && (
                   <Link className="dropdown-item" to="/contacts">
-                    <i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i> 
+                    <i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i>
                     <span className="align-middle">Contacts</span>
+                  </Link>
+                )}
+                {user?.is_agreement_signed && user?.entity_type == 'Partner' && Number(user?.is_host) == 0 && (
+                  <Link className="dropdown-item" to={`/partners/download-agreement/${user.id}`} target="_blank">
+                    <i className="mdi mdi-file-document-outline text-muted fs-16 align-middle me-1"></i>
+                    <span className="align-middle">My Agreement</span>
                   </Link>
                 )}
                 <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>

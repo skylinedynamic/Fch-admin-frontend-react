@@ -41,6 +41,7 @@ import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
 import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
+import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -85,6 +86,8 @@ export default function App() {
           <Route path="reset-password" element={<ResetPassword />} />
         </Route>
         <Route element={<ProtectedRoute />}>
+          <Route path="partners/download-agreement/:userId" element={<DownloadAgreement />} />
+          <Route path="borrowers/download-agreement/:userId" element={<DownloadAgreement />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
 
@@ -139,7 +142,7 @@ export default function App() {
 
 
             {/* Settings Route */}
-            <Route element={<HostRoute />}>
+            <Route element={<PermissionRoute permission="view settings" />}>
               <Route path="admin/settings" element={<Settings />} />
             </Route>
 

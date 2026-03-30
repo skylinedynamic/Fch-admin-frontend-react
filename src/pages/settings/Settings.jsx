@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchSettings, updateSettings } from '../../modules/settings/services';
 import SettingsForm from './components/SettingsForm';
 import { toast } from 'react-toastify';
+import '../../../assets/css/settings-redesign.css';
 
 export default function Settings() {
     const [loading, setLoading] = useState(false);
@@ -117,16 +118,27 @@ export default function Settings() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                {/* Header Section */}
-                <div className="row page-subheader-sticky bg-body border-bottom border-light shadow-sm-bottom">
+                {/* Header */}
+                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                        <div className="d-flex align-items-center justify-content-between flex-row">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">System Administration</h4>
-                                <nav aria-label="breadcrumb">
+                                <h4 className="fs-20 mb-1">Settings</h4>
+                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active text-primary" aria-current="page">Settings</li>
+                                        <li className="breadcrumb-item">
+                                            <span
+                                                className="text-muted"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => setActiveSection('payment')}
+                                            >
+                                                Settings
+                                            </span>
+                                        </li>
+                                        <li className="breadcrumb-item active" aria-current="page">
+                                            {activeSection === 'payment' ? 'Payment Method' : 'Agreement Management'}
+                                        </li>
                                     </ol>
                                 </nav>
                             </div>
@@ -134,7 +146,7 @@ export default function Settings() {
                     </div>
                 </div>
 
-                <div className="row">
+                <div className="row mt-3">
                     <div className="col-12">
                         <SettingsForm
                             formData={formData}

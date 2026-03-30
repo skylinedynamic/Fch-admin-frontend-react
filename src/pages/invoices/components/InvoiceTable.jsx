@@ -8,14 +8,14 @@ import InvoicePaymentModal from './InvoicePaymentModal';
 import InvoicePreviewModal from './InvoicePreviewModal';
 import { useAuthStore } from '../../../store/auth';
 
-export default function InvoiceTable({ 
-    data, 
-    loading, 
-    totalRecords, 
-    page, 
-    perPage, 
-    onPage, 
-    onSort, 
+export default function InvoiceTable({
+    data,
+    loading,
+    totalRecords,
+    page,
+    perPage,
+    onPage,
+    onSort,
     onFilter,
     filters,
     sortField,
@@ -62,7 +62,7 @@ export default function InvoiceTable({
 
     const statusBodyTemplate = (rowData) => {
         const severity = INVOICE_STATUS_COLORS[rowData.status] || 'primary';
-        
+
         return (
             <span className={`badge bg-${severity}-subtle text-${severity} px-3 py-1 rounded-pill fw-medium`}>
                 {rowData.status}
@@ -71,22 +71,22 @@ export default function InvoiceTable({
     };
 
     const amountBodyTemplate = (rowData) => {
-        const amount = typeof rowData.payment_amount === 'string' 
-            ? parseFloat(rowData.payment_amount) 
+        const amount = typeof rowData.payment_amount === 'string'
+            ? parseFloat(rowData.payment_amount)
             : rowData.payment_amount;
         return <span>${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>;
     };
 
     const actionBodyTemplate = (rowData) => {
-        const isNotPaid = rowData.status !== STATUS_PAID;
-        const isNotHost = user?.is_host === 0;
+        const isNotPaid = rowData.status != STATUS_PAID;
+        const isNotHost = user?.is_host == 0;
         return (
             <div className="d-flex align-items-center gap-2">
-                <button 
+                <button
                     className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center"
                     style={{ width: '28px', height: '28px' }}
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
+                    onClick={(e) => {
+                        e.stopPropagation();
                         handlePreviewClick(rowData);
                     }}
                     title="View Details"
@@ -94,10 +94,10 @@ export default function InvoiceTable({
                     <i className="ri-file-pdf-line fs-14"></i>
                 </button>
                 {isNotPaid && isNotHost && (
-                   <button 
+                    <button
                         className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
+                        onClick={(e) => {
+                            e.stopPropagation();
                             handlePayClick(rowData);
                         }}
                     >
@@ -111,14 +111,14 @@ export default function InvoiceTable({
 
     return (
         <div className="table-responsive table-card mt-1">
-            <DataTable 
-                value={data} 
+            <DataTable
+                value={data}
                 loading={loading}
-                paginator 
+                paginator
                 lazy
                 totalRecords={totalRecords}
                 first={(page - 1) * perPage}
-                rows={perPage} 
+                rows={perPage}
                 rowsPerPageOptions={[10, 25, 50, 100]}
                 onPage={onPage}
                 onSort={onSort}
@@ -130,7 +130,7 @@ export default function InvoiceTable({
                 dataKey="id"
                 scrollable
                 scrollHeight="510px"
-                className="p-datatable-sm fs-13" 
+                className="p-datatable-sm fs-13"
                 responsiveLayout="scroll"
                 emptyMessage="No invoices found."
             >
@@ -142,15 +142,15 @@ export default function InvoiceTable({
                 <Column field="status" header="Status" body={statusBodyTemplate} style={{ minWidth: '150px' }} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false}></Column>
                 <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '120px' }}></Column>
             </DataTable>
-            
-            <InvoicePaymentModal 
+
+            <InvoicePaymentModal
                 show={showPaymentModal}
                 onHide={() => setShowPaymentModal(false)}
                 onSuccess={handlePaymentSuccess}
                 invoice={selectedInvoice}
             />
 
-            <InvoicePreviewModal 
+            <InvoicePreviewModal
                 show={showPreviewModal}
                 onHide={() => setShowPreviewModal(false)}
                 invoice={selectedInvoice}
