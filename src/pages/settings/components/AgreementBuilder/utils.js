@@ -320,8 +320,8 @@ export const gen = (b) => {
       </div>
       <div class="p-field">
         <div class="p-sig-box">
-           <input type="text" class="form-control flatpickr p-sig-input" placeholder="SELECT DATE" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
-           <div class="p-sig-meta p-sig-meta-date">DATE SIGNED</div>
+           <input type="text" class="form-control flatpickr p-sig-input" placeholder="Click here" style="font-size:var(--fs);font-weight:var(--fw);color:var(--color);font-family:var(--ff);text-align:center;border-bottom:1px solid #64748b; background:transparent;" ${req}/>
+           <div class="p-sig-meta p-sig-meta-date">Signature Date</div>
         </div>
       </div>
     </div>`;
