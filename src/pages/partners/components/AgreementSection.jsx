@@ -3,10 +3,11 @@ import { toast } from 'react-toastify';
 import { downloadAgreementSign } from '../../../modules/agreement/services';
 import '../../../../assets/css/agreement-builder.css';
 
-const AgreementSection = ({ partnerId, formData }) => {
+const AgreementSection = ({ partnerId, clientId, formData }) => {
     const handleDownload = async () => {
         const userId = formData.user_id || formData.id;
-        window.open(`/partners/download-agreement/${userId}`, '_blank');
+        const prefix = clientId ? 'borrowers' : 'partners';
+        window.open(`/${prefix}/download-agreement/${userId}`, '_blank');
     };
 
     return (

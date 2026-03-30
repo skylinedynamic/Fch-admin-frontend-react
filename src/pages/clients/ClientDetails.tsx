@@ -14,6 +14,7 @@ import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateMo
 // @ts-ignore
 import {
     useClientProfileStats,
+    useClient,
     createClient,
     updateClient,
     DEFAULT_CLIENT_STATE,
@@ -104,6 +105,16 @@ export default function ClientDetails() {
 
     // Profile Stats Query
     const { data: statsData, isLoading: statsLoading } = useClientProfileStats(id as string, !!id);
+    const { data: clientFullData } = useClient(id as string, !!id);
+
+    // Effect to update form data when full data arrives
+    useEffect(() => {
+        if (clientFullData) {
+            // @ts-ignore
+            const apiData = clientFullData.data || clientFullData;
+            setFormData(prev => ({ ...prev, ...apiData }));
+        }
+    }, [clientFullData]);
 
     // Effect to update stats state when data arrives
     useEffect(() => {
@@ -448,8 +459,20 @@ export default function ClientDetails() {
                                             <i className="far fa-envelope"></i> Documents
                                         </button>
                                     </li>
+                                    {formData.has_sign && (
+                                        <li className="nav-item">
+                                            <button
+                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.AGREEMENT ? 'active' : ''}`}
+                                                onClick={() => handleTabChange(ENROLLMENT_TABS.AGREEMENT)}
+                                                type="button"
+                                                role="tab"
+                                            >
+                                                Agreement
+                                            </button>
+                                        </li>
+                                    )}
                                 </ul>
-
+                                
                             </div>
                             <div className="card-body p-4">
                                 <ClientForm

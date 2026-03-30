@@ -742,6 +742,63 @@ File: Custom Css File
   border-radius: 4px;
 }
 
+/* Agreement Loader Utility Classes */
+.sk-rounded-circle { border-radius: 50% !important; }
+.sk-h-2    { height: 2px !important; }
+.sk-h-10   { height: 10px !important; }
+.sk-h-12   { height: 12px !important; }
+.sk-h-14   { height: 14px !important; }
+.sk-h-16   { height: 16px !important; }
+.sk-h-18   { height: 18px !important; }
+.sk-h-20   { height: 20px !important; }
+.sk-h-22   { height: 22px !important; }
+.sk-h-24   { height: 24px !important; }
+.sk-h-28   { height: 28px !important; }
+.sk-h-32   { height: 32px !important; }
+.sk-h-34   { height: 34px !important; }
+.sk-h-36   { height: 36px !important; }
+.sk-h-38   { height: 38px !important; }
+.sk-h-40   { height: 40px !important; }
+.sk-h-42   { height: 42px !important; }
+.sk-h-45   { height: 45px !important; }
+.sk-h-50   { height: 50px !important; }
+.sk-h-80   { height: 80px !important; }
+.sk-h-100  { height: 100px !important; }
+.sk-h-120  { height: 120px !important; }
+.sk-h-140  { height: 140px !important; }
+
+.sk-w-20   { width: 20px !important; }
+.sk-w-28   { width: 28px !important; }
+.sk-w-32   { width: 32px !important; }
+.sk-w-36   { width: 36px !important; }
+.sk-w-40   { width: 40px !important; }
+.sk-w-45   { width: 45px !important; }
+.sk-w-55   { width: 55px !important; }
+.sk-w-60   { width: 60px !important; }
+.sk-w-80   { width: 80px !important; }
+.sk-w-90   { width: 90px !important; }
+.sk-w-100  { width: 100px !important; }
+.sk-w-110  { width: 110px !important; }
+.sk-w-120  { width: 120px !important; }
+.sk-w-140  { width: 140px !important; }
+.sk-w-150  { width: 150px !important; }
+.sk-w-160  { width: 160px !important; }
+.sk-w-180  { width: 180px !important; }
+.sk-w-200  { width: 200px !important; }
+.sk-w-240  { width: 240px !important; }
+.sk-w-250  { width: 250px !important; }
+.sk-w-794  { width: 794px !important; }
+
+.sk-w-30p  { width: 30% !important; }
+.sk-w-40p  { width: 40% !important; }
+.sk-w-45p  { width: 45% !important; }
+.sk-w-50p  { width: 50% !important; }
+.sk-w-60p  { width: 60% !important; }
+.sk-w-70p  { width: 70% !important; }
+.sk-w-80p  { width: 80% !important; }
+.sk-w-90p  { width: 90% !important; }
+
+
 .btn-hover-custom {
   transition: all 0.3s ease;
 }

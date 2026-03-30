@@ -197,7 +197,7 @@ export default function Header() {
                 {user?.is_agreement_signed && user?.entity_type == 'Partner' && Number(user?.is_host) == 0 && (
                   <Link className="dropdown-item" to={`/partners/download-agreement/${user.id}`} target="_blank">
                     <i className="mdi mdi-file-document-outline text-muted fs-16 align-middle me-1"></i>
-                    <span className="align-middle">Agreement</span>
+                    <span className="align-middle">My Agreement</span>
                   </Link>
                 )}
                 <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>

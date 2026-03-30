@@ -12,6 +12,7 @@ import '../../../../../assets/css/agreement-builder.css';
 import { AgreementDashboard } from './AgreementDashboard';
 import { BlockList, InsertZone } from './BlockComponents';
 import { PropertyPanel } from './PropertyPanel';
+import { AgreementBuilderLoader } from '../../../../components/Loader/AgreementLoader.jsx';
 
 export default function AgreementBuilder() {
   const [screen, setScreen] = useState('dashboard');
@@ -33,7 +34,7 @@ export default function AgreementBuilder() {
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
 
-  const { data: savedAgreement } = useAgreement(editingType, !!editingType);
+  const { data: savedAgreement, isLoading: loadingAgreement } = useAgreement(editingType, !!editingType);
   const saveMutation = useSaveAgreement();
 
   // Update blocks when saved version is loaded via React Query
@@ -43,16 +44,28 @@ export default function AgreementBuilder() {
       setAgreementId(data.id);
       if (data.template_json) {
         try {
-          const savedBlocks = JSON.parse(data.template_json);
-          setBlocks(savedBlocks);
+          const parsed = JSON.parse(data.template_json);
+          // Handle both legacy (array) and new (object) structures
+          if (Array.isArray(parsed)) {
+            setBlocks(parsed);
+            setPagePad(80); // Reset to default for old formats
+            setDocBg('#ffffff');
+          } else {
+            setBlocks(parsed.blocks || []);
+            setPagePad(parsed.pagePad ?? 80);
+            setDocBg(parsed.docBg ?? '#ffffff');
+          }
         } catch (e) {
           console.error("Failed to parse saved blocks JSON", e);
+          setBlocks(getDemoTemplate());
         }
       }
     } else if (editingType) {
       setAgreementId(null);
       // Fallback to demo template if no saved version
       setBlocks(getDemoTemplate());
+      setPagePad(80);
+      setDocBg('#ffffff');
     }
   }, [savedAgreement, editingType]);
 
@@ -113,7 +126,7 @@ export default function AgreementBuilder() {
         id: agreementId,
         slug: editingType,
         template_html: html,
-        template_json: JSON.stringify(blocks)
+        template_json: JSON.stringify({ blocks, pagePad, docBg })
       });
 
       if (res.status) {
@@ -134,8 +147,12 @@ export default function AgreementBuilder() {
     return <AgreementDashboard onEdit={handleEdit} />;
   }
 
+  if (loadingAgreement) {
+    return <AgreementBuilderLoader />;
+  }
+
   return (
-    <div className="ab4-root">
+    <div className="ab4-root fade-panel">
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFileChange} />
       <div className="ab4-toolbar">
         <div className="d-flex align-items-center gap-3">

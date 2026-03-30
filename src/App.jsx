@@ -87,6 +87,7 @@ export default function App() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="partners/download-agreement/:userId" element={<DownloadAgreement />} />
+          <Route path="borrowers/download-agreement/:userId" element={<DownloadAgreement />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
 

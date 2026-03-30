@@ -8,20 +8,25 @@ import {
   useSaveAppConfig
 } from '../../../../modules/agreement';
 import { Switch } from './CommonUI';
+import { AgreementDashboardLoader } from '../../../../components/Loader/AgreementLoader.jsx';
 
 export const AgreementDashboard = ({ onEdit }) => {
   const user = getUser();
   const isHost = user?.is_host == 1;
-  const { data: listRes } = useAgreements();
+  const { data: listRes, isLoading: loadingList } = useAgreements();
   const list = listRes?.data || [];
 
   const getStatus = (slug) => list.find(a => a.slug === slug)?.is_active ?? false;
 
   const toggleMutation = useToggleAgreementStatus();
 
-  const { data: configRes } = useAppConfig('agreement_signing_enabled');
+  const { data: configRes, isLoading: loadingConfig } = useAppConfig('agreement_signing_enabled');
   const saveConfigMutation = useSaveAppConfig();
   const isSigningEnabled = configRes?.data?.value === '1';
+
+  if (loadingList || loadingConfig) {
+    return <AgreementDashboardLoader />;
+  }
 
   const handleGlobalToggle = async (val) => {
     try {
@@ -51,7 +56,7 @@ export const AgreementDashboard = ({ onEdit }) => {
     }
   };
 
-  const AgreementRow = ({ type, label, filename }) => {
+  const AgreementRow = ({ type, label, subtext }) => {
     const agreement = list.find(a => a.slug === type);
     const isActive = agreement?.is_active ?? false;
     const isPending = toggleMutation.isPending && toggleMutation.variables?.id === agreement?.id;
@@ -64,9 +69,19 @@ export const AgreementDashboard = ({ onEdit }) => {
             <i className="ri-file-pdf-2-line"></i>
           </div>
         </div>
-        <div className="flex-grow-1">
+        <div 
+          className="flex-grow-1" 
+          style={{ cursor: 'pointer' }} 
+          onClick={() => onEdit(type)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
           <div className="fw-semibold fs-14 text-dark">{label}</div>
-          <div className="text-muted fs-13">{isActive ? filename : 'No active template'}</div>
+          <div className="text-muted fs-13">{isActive ? subtext : 'No active template'}</div>
         </div>
         <div className="d-flex align-items-center gap-3 flex-shrink-0">
           <div className="d-flex align-items-center gap-2">
@@ -84,7 +99,7 @@ export const AgreementDashboard = ({ onEdit }) => {
             onClick={() => onEdit(type)}
           >
             <i className="ri-edit-line fs-14"></i>
-            <span>Edit Paper</span>
+            <span>Edit Agreement</span>
           </button>
         </div>
       </div>
@@ -136,13 +151,13 @@ export const AgreementDashboard = ({ onEdit }) => {
           <AgreementRow
             type="partner"
             label="Partner Agreement Paper"
-            filename="partner-agreement.pdf"
+            subtext="Manage default digital agreement for partner onboarding"
           />
         )}
         <AgreementRow
           type="borrower"
           label="Borrower Agreement Paper"
-          filename="borrower-agreement.pdf"
+          subtext="Manage default digital agreement for borrower signatures"
         />
       </div>
     </div>

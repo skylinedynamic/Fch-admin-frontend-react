@@ -3,6 +3,8 @@ import ClientInfoSection, { ClientInfoSectionRef } from './ClientInfoSection';
 import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './BusinessFinancialsSection';
 import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
+// @ts-ignore
+import AgreementSection from '../../partners/components/AgreementSection';
 import { ENROLLMENT_TABS } from '../../../modules/client';
 import type { Client } from '../../../modules/client/types';
 // @ts-ignore
@@ -127,6 +129,13 @@ export default function ClientForm({
             {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
                 <div className="tab-pane active show" role="tabpanel">
                     <ClientDocumentsSection />
+                </div>
+            )}
+
+            {/* Agreement Tab */}
+            {activeTab === ENROLLMENT_TABS.AGREEMENT && (
+                <div className="tab-pane active show" role="tabpanel">
+                    <AgreementSection clientId={clientId} formData={formData} />
                 </div>
             )}
         </div>

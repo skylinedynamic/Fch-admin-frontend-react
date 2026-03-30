@@ -50,7 +50,8 @@ export const ENROLLMENT_TABS: Record<string, string> = {
     PERSONAL: 'personalDetails',
     FINANCIALS: 'businessFinancials',
     CHECKLIST: 'documentChecklist',
-    DOCUMENTS: 'documents'
+    DOCUMENTS: 'documents',
+    AGREEMENT: 'agreement'
 };
 
 // Re-exporting from config for easier module-level access if needed
