@@ -165,9 +165,9 @@ export function BlockList({ blocks, onUpdate, onDelete, onMove, onInsert, select
                       <Flatpickr
                         className="form-control ab4-sig-input"
                         options={{ dateFormat: "d M, Y" }}
-                        placeholder="DATE SIGNED"
+                        placeholder="Click here"
                       />
-                      <div className="ab4-sig-meta ab4-sig-meta--date">DATE SIGNED</div>
+                      <div className="ab4-sig-meta ab4-sig-meta--date">Signature Date</div>
                     </div>
                   </div>
                 )}
