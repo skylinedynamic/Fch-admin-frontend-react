@@ -48,7 +48,11 @@ export default function GlobalModals() {
             // Still clean up summernote backdrops which are tricky
             setTimeout(() => {
                 document.querySelectorAll('.note-modal-backdrop').forEach(el => el.remove());
-                document.querySelectorAll('.note-modal').forEach(el => el.remove());
+                // DO NOT remove .note-modal because Summernote needs to reuse them! Just hide them.
+                document.querySelectorAll('.note-modal').forEach(el => {
+                    el.style.display = 'none';
+                    el.classList.remove('show', 'in');
+                });
                 document.body.classList.remove('note-modal-open');
 
                 // Final safety net for stuck backdrops only if NO modals are still open

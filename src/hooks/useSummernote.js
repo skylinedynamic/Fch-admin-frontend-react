@@ -12,6 +12,15 @@ let summernoteDialogFocusTrapFixed = false;
 function applySummernoteFocusTrapFix() {
     if (summernoteDialogFocusTrapFixed) return;
     summernoteDialogFocusTrapFixed = true;
+
+    // Force Summernote dialogs to be above Bootstrap modals (z-index 1055)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .note-modal { z-index: 1060 !important; }
+        .note-modal-backdrop { z-index: 1059 !important; }
+    `;
+    document.head.appendChild(style);
+
     document.addEventListener('focusin', (e) => {
         if (
             e.target.closest('.note-modal') ||
@@ -61,7 +70,7 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
             ['color', ['color']],
             ['para', ['ul', 'ol', 'paragraph']],
             ['table', ['table']],
-            ['insert', ['link', 'picture']],
+            ['insert', ['link']],
             ['view', ['help']]
         ],
         popover: {
@@ -105,19 +114,6 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
                         lastContentRef.current = normalized;
                         onChange({ target: { name: fieldName, value: normalized } });
                         setTimeout(() => { isInternalChange.current = false; }, 150);
-                    },
-                    onPaste: function (e) {
-                        const bufferText = ((e.originalEvent || e).clipboardData || window.clipboardData).getData('Text');
-                        e.preventDefault();
-
-                        // Trim to remove any accidental leading/trailing spaces or empty lines from the source
-                        const cleanText = (bufferText || '').trim();
-
-                        if (cleanText) {
-                            setTimeout(() => {
-                                $editor.summernote('insertText', cleanText);
-                            }, 10);
-                        }
                     },
                     onInit: function () {
                         console.log('[useSummernote] Editor initialized for:', fieldName);

@@ -286,10 +286,13 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         }
     }, [lead?.email]);
 
-    // Reset validation and form on modal close
+    // Reset validation and form on modal close/open
     useEffect(() => {
         const modalEl = document.getElementById('emailComposeModal');
-        const handleHidden = () => {
+        const resetForm = (e) => {
+            // Prevent nested elements from triggering the reset
+            if (e && e.target !== modalEl) return;
+
             setErrors({});
             pendingEmailRef.current = '';
             setFormData({
@@ -304,22 +307,31 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                     choicesInstanceRef.current.setValue([lead.email]);
                 }
             }
-            // Clear summernote if needed (though the hook handles it usually, 
-            // explicit reset of formData above triggers the hook's sync)
+            
+            // Force Summernote HTML clear via jQuery, as a safety fallback
+            const $ = window.jQuery || window.$;
+            if ($) {
+                const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
+                if (note && $(note).summernote) {
+                    try { $(note).summernote('code', ''); } catch(err) {}
+                }
+            }
         };
 
         if (modalEl) {
-            modalEl.addEventListener('hidden.bs.modal', handleHidden);
+            modalEl.addEventListener('hide.bs.modal', resetForm);
+            modalEl.addEventListener('show.bs.modal', resetForm);
         }
         return () => {
             if (modalEl) {
-                modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+                modalEl.removeEventListener('hide.bs.modal', resetForm);
+                modalEl.removeEventListener('show.bs.modal', resetForm);
             }
         };
     }, [lead?.email]);
 
     return (
-        <div className="modal fade" id="emailComposeModal" tabIndex="-1" aria-labelledby="emailComposeLabel" aria-hidden="true">
+        <div className="modal fade" id="emailComposeModal" tabIndex="-1" aria-labelledby="emailComposeLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
                 <div className="modal-content border-0">
                     <div className="modal-header bg-primary">

@@ -99,8 +99,19 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 onActivityCreated();
             }
 
-            // Trigger custom event for refreshing activities if needed
+            // Custom event first
             window.dispatchEvent(new CustomEvent('refreshActivities'));
+
+            // Reset form explicitly right away to clear Summernote
+            setErrors({});
+            setFormData({
+                reference: 'Call',
+                activity_date: new Date().toISOString().split('T')[0],
+                assigned_to: '',
+                summary: '',
+                message_body: '',
+                attachments: []
+            });
 
             // Robust Close Modal
             const closeModal = () => {
@@ -224,10 +235,14 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         }
     }, [formData.activity_date]);
 
-    // Reset validation and form on modal close
+    // Reset validation and form on modal close/open
     useEffect(() => {
         const modalEl = document.getElementById('activityCreateModal');
-        const handleHidden = () => {
+        
+        const resetForm = (e) => {
+            // Prevent nested elements (like Summernote dialogs if appended inside) from triggering the reset
+            if (e && e.target !== modalEl) return;
+
             setErrors({});
             setFormData({
                 reference: 'Call',
@@ -237,22 +252,28 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 message_body: '',
                 attachments: []
             });
-            // Select2/Choices.js instances are handled via their own refs if needed,
-            // but many are tied to formData which we just reset.
+            
+            // Force Summernote HTML clear via jQuery, as a safety fallback
+            const $ = window.jQuery || window.$;
+            if ($ && $('#activityMessageEditor').summernote) {
+                try { $('#activityMessageEditor').summernote('code', ''); } catch(err) {}
+            }
         };
 
         if (modalEl) {
-            modalEl.addEventListener('hidden.bs.modal', handleHidden);
+            modalEl.addEventListener('hide.bs.modal', resetForm);
+            modalEl.addEventListener('show.bs.modal', resetForm);
         }
         return () => {
             if (modalEl) {
-                modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+                modalEl.removeEventListener('hide.bs.modal', resetForm);
+                modalEl.removeEventListener('show.bs.modal', resetForm);
             }
         };
     }, []);
 
     return (
-        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true">
+        <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
                 <div className="modal-content border-0">
                     <div className="modal-header p-3 ps-4 bg-primary">
