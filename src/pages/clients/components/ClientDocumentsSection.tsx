@@ -438,6 +438,7 @@ export default function ClientDocumentsSection({ isLoading: parentLoading = fals
 
             <DeleteConfirmationModal
                 show={showDeleteModal}
+                text="Deleting this document will permanently remove all its information."
                 onClose={() => {
                     setShowDeleteModal(false);
                     setDeletingDocId(null);

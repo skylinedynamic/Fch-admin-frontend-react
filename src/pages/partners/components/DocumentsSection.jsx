@@ -228,6 +228,7 @@ export default function DocumentsSection({ partnerId: propPartnerId }) {
 
             <DeleteConfirmationModal
                 show={showDeleteModal}
+                text="Deleting this document will permanently remove all its information."
                 onClose={() => {
                     setShowDeleteModal(false);
                     setDeletingDocId(null);
