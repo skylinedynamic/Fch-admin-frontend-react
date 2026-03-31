@@ -1,13 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { downloadAgreementSign } from '../../../modules/agreement/services';
+import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
+import { downloadAgreementSign, cancelAgreementSign } from '../../../modules/agreement/services';
 import '../../../../assets/css/agreement-builder.css';
 
-const AgreementSection = ({ partnerId, clientId, formData }) => {
+const AgreementSection = ({ partnerId, clientId, formData, onRefresh }) => {
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const handleDownload = async () => {
         const userId = formData.user_id || formData.id;
         const prefix = clientId ? 'borrowers' : 'partners';
         window.open(`/${prefix}/download-agreement/${userId}`, '_blank');
+    };
+
+    const handleCancel = async () => {
+        setCancelling(true);
+        try {
+            const userId = formData.user_id || formData.id;
+            await cancelAgreementSign(userId);
+            toast.success('Agreement cancelled successfully');
+            setShowCancelModal(false);
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (err) {
+            toast.error('Failed to cancel agreement');
+        } finally {
+            setCancelling(false);
+        }
     };
 
     return (
@@ -34,6 +54,13 @@ const AgreementSection = ({ partnerId, clientId, formData }) => {
                                 <span className="badge rounded-pill bg-info-subtle text-info border border-info px-3 py-2 fs-12">
                                     <i className="ri-checkbox-circle-line me-1"></i> Signed Online
                                 </span>
+
+                                <button
+                                    className="btn badge rounded-pill bg-danger-subtle text-danger border border-danger px-3 py-2 fs-12 ms-2"
+                                    onClick={() => setShowCancelModal(true)}
+                                >
+                                    <i className="ri-delete-bin-line me-1"></i> Cancel Agreement
+                                </button>
                             </div>
                         </div>
 
@@ -56,6 +83,17 @@ const AgreementSection = ({ partnerId, clientId, formData }) => {
                     </p>
                 </div>
             </div>
+
+            <ConfirmationModal
+                show={showCancelModal}
+                onHide={() => setShowCancelModal(false)}
+                onConfirm={handleCancel}
+                loading={cancelling}
+                title="Cancel Signed Agreement"
+                message="Are you sure you want to cancel this signed agreement? This action will revoke the signature status for this user and cannot be undone."
+                confirmText="Yes, Cancel It"
+                variant="danger"
+            />
         </div>
     );
 };

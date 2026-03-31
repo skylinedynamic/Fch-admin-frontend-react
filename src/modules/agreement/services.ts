@@ -107,3 +107,12 @@ export async function fetchSignedAgreementHtml(userId?: number | string): Promis
   const res = await apiClient.get(url)
   return res.data
 }
+
+/**
+ * Cancel / Revoke a signed agreement for a specific user.
+ */
+export async function cancelAgreementSign(userId?: number | string): Promise<ApiResponse<null>> {
+  const url = userId ? `/common/agreement-sign/cancel/${userId}` : '/common/agreement-sign/cancel'
+  const res = await apiClient.post(url)
+  return res.data
+}

@@ -104,8 +104,13 @@ export default function ClientDetails() {
     }, [location.state]);
 
     // Profile Stats Query
-    const { data: statsData, isLoading: statsLoading } = useClientProfileStats(id as string, !!id);
-    const { data: clientFullData } = useClient(id as string, !!id);
+    const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useClientProfileStats(id as string, !!id);
+    const { data: clientFullData, refetch: refetchClient } = useClient(id as string, !!id);
+
+    const handleRefresh = () => {
+        refetchStats();
+        refetchClient();
+    };
 
     // Effect to update form data when full data arrives
     useEffect(() => {
@@ -525,6 +530,7 @@ export default function ClientDetails() {
                                     // @ts-ignore
                                     settings={settings}
                                     nonHostPlan={nonHostPlan}
+                                    onRefresh={handleRefresh}
                                 />
                             </div>
                         </div>

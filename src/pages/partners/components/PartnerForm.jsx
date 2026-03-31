@@ -25,6 +25,7 @@ export default function PartnerForm({
     , documentsReloadKey
     , documentsClearKey
     , partnerPlans
+    , onRefresh
 }) {
     return (
         <div className="tab-content">
@@ -110,7 +111,7 @@ export default function PartnerForm({
             {/* Agreement Tab */}
             {activeTab === 'agreement' && (
                 <div className="tab-pane active show">
-                    <AgreementSection partnerId={partnerId} formData={formData} />
+                    <AgreementSection partnerId={partnerId} formData={formData} onRefresh={onRefresh} />
                 </div>
             )}
         </div>

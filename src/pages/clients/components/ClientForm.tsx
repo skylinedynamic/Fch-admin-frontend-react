@@ -36,6 +36,7 @@ interface ClientFormProps {
     isHost?: boolean;
     settings?: any;
     nonHostPlan?: any;
+    onRefresh?: () => void;
 }
 
 export default function ClientForm({
@@ -55,7 +56,8 @@ export default function ClientForm({
     isLoading,
     isHost,
     settings,
-    nonHostPlan
+    nonHostPlan,
+    onRefresh
 }: ClientFormProps) {
     return (
         <div className="tab-content">
@@ -137,7 +139,7 @@ export default function ClientForm({
             {/* Agreement Tab */}
             {activeTab === ENROLLMENT_TABS.AGREEMENT && (
                 <div className="tab-pane active show" role="tabpanel">
-                    <AgreementSection clientId={clientId} formData={formData} />
+                    <AgreementSection clientId={clientId} formData={formData} onRefresh={onRefresh} />
                 </div>
             )}
         </div>

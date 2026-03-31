@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import '../../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
@@ -109,19 +109,20 @@ export default function PartnerProfile() {
     });
 
     // Fetch Partner Plans on mount
-    useEffect(() => {
-        const loadPlans = async () => {
-            try {
-                const response = await fetchPartnerPlans();
-                if (response.status) {
-                    setPartnerPlans(response.data || []);
-                }
-            } catch (err) {
-                toast.error('Failed to load partner plans');
+    const loadPlans = useCallback(async () => {
+        try {
+            const response = await fetchPartnerPlans();
+            if (response.status) {
+                setPartnerPlans(response.data || []);
             }
-        };
-        loadPlans();
+        } catch (err) {
+            toast.error('Failed to load partner plans');
+        }
     }, []);
+
+    useEffect(() => {
+        loadPlans();
+    }, [loadPlans]);
 
     // Fetch users on mount
     useEffect(() => {
@@ -225,118 +226,123 @@ export default function PartnerProfile() {
     ];
 
     // Fetch Profile Statistics
-    useEffect(() => {
-        const loadProfileStats = async () => {
-            if (!id) {
-                setProfileStatsLoading(false);
-                return;
-            }
+    const loadProfileStats = useCallback(async () => {
+        if (!id) {
+            setProfileStatsLoading(false);
+            return;
+        }
 
-            try {
-                setProfileStatsLoading(true);
-                const result = await fetchPartnerProfileStats(id);
-                if (result.status && result.data) {
-                    setProfileStats(result.data);
-                }
-            } catch (error) {
-            } finally {
-                setProfileStatsLoading(false);
+        try {
+            setProfileStatsLoading(true);
+            const result = await fetchPartnerProfileStats(id);
+            if (result.status && result.data) {
+                setProfileStats(result.data);
             }
-        };
-
-        loadProfileStats();
+        } catch (error) {
+        } finally {
+            setProfileStatsLoading(false);
+        }
     }, [id]);
+
+    useEffect(() => {
+        loadProfileStats();
+    }, [loadProfileStats]);
 
     const [profileImage, setProfileImage] = useState(avatarDefault);
 
     // Fetch partner data if ID exists
-    useEffect(() => {
-        const fetchPartnerData = async () => {
-            if (!id) return;
-            setIsPartnerLoading(true);
-            try {
-                const response = await getPartner(id);
-                const data = response.data || response; // Handle both response.data and direct data
+    const fetchPartnerData = useCallback(async () => {
+        if (!id) return;
+        setIsPartnerLoading(true);
+        try {
+            const response = await getPartner(id);
+            const data = response.data || response; // Handle both response.data and direct data
 
-                // Normalize Country: Ensure it's a key (USA/Canada)
-                let finalCountry = data.country;
-                const countryEntry = Object.entries(locationData).find(([key, val]) => key === finalCountry || val.name === finalCountry);
-                const countryCode = countryEntry ? countryEntry[0] : null;
-                if (countryCode) {
-                    finalCountry = countryCode;
-                }
-
-                // Normalize State
-                let finalState = data.state;
-                if (countryCode && locationData[countryCode]) {
-                    const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => key === finalState || val.name === finalState);
-                    if (sEntry) {
-                        finalState = sEntry[1].name;
-                    }
-                }
-
-                // Handle location cascading
-                let cityOptions = [];
-                if (countryCode && locationData[countryCode]) {
-                    const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
-                        label: locationData[countryCode].states[key].name,
-                        value: locationData[countryCode].states[key].name
-                    }));
-                    setStates(stateOptions);
-
-                    // Find State Code
-                    const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === finalState);
-                    const stateCode = sEntry ? sEntry[0] : null;
-
-                    if (stateCode && locationData[countryCode].states[stateCode]) {
-                        const cityList = locationData[countryCode].states[stateCode].cities;
-                        cityOptions = cityList.map((city) => ({ label: city, value: city }));
-                        setCities(cityOptions);
-                    }
-                }
-
-                // Check if the city exists in the dropdown
-                const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
-
-                // If city doesn't exist in dropdown and city has a value, it's a custom city
-                let cityValue = data.city || '';
-                let otherCityValue = '';
-
-                if (data.city && !cityExists) {
-                    // City is not in dropdown, set to "Others" and populate other_city
-                    otherCityValue = data.city;
-                    cityValue = 'Others';
-                }
-
-                // Update form data - spread all backend data first, then override with mapped fields
-                setFormData(prev => ({
-                    ...prev,
-                    ...data, // Keep all existing backend fields
-                    country: finalCountry,
-                    state: finalState,
-                    city: cityValue, // Set city (either actual city or "Others")
-                    other_city: otherCityValue, // Set other_city if applicable
-                    agent: data.assigned_user_id || '', // Keep as number/string from DB
-                    status: data.status || '', // Explicitly map status
-                    address_line_1: data.address_line_1 || '', // Map address_line_1 → address
-                    partner_image: data.partner_image || '', // Map company_logo → partner_image
-                    country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
-                }));
-
-                // Set profile image from company_logo field
-                if (data.partner_image) {
-                    setProfileImage(data.partner_image);
-                }
-
-            } catch (error) {
-                toast.error("Failed to load partner data");
-            } finally {
-                setIsPartnerLoading(false);
+            // Normalize Country: Ensure it's a key (USA/Canada)
+            let finalCountry = data.country;
+            const countryEntry = Object.entries(locationData).find(([key, val]) => key === finalCountry || val.name === finalCountry);
+            const countryCode = countryEntry ? countryEntry[0] : null;
+            if (countryCode) {
+                finalCountry = countryCode;
             }
-        };
 
+            // Normalize State
+            let finalState = data.state;
+            if (countryCode && locationData[countryCode]) {
+                const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => key === finalState || val.name === finalState);
+                if (sEntry) {
+                    finalState = sEntry[1].name;
+                }
+            }
+
+            // Handle location cascading
+            let cityOptions = [];
+            if (countryCode && locationData[countryCode]) {
+                const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
+                    label: locationData[countryCode].states[key].name,
+                    value: locationData[countryCode].states[key].name
+                }));
+                setStates(stateOptions);
+
+                // Find State Code
+                const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === finalState);
+                const stateCode = sEntry ? sEntry[0] : null;
+
+                if (stateCode && locationData[countryCode].states[stateCode]) {
+                    const cityList = locationData[countryCode].states[stateCode].cities;
+                    cityOptions = cityList.map((city) => ({ label: city, value: city }));
+                    setCities(cityOptions);
+                }
+            }
+
+            // Check if the city exists in the dropdown
+            const cityExists = cityOptions.some(cityOption => cityOption.value === data.city);
+
+            // If city doesn't exist in dropdown and city has a value, it's a custom city
+            let cityValue = data.city || '';
+            let otherCityValue = '';
+
+            if (data.city && !cityExists) {
+                // City is not in dropdown, set to "Others" and populate other_city
+                otherCityValue = data.city;
+                cityValue = 'Others';
+            }
+
+            // Update form data - spread all backend data first, then override with mapped fields
+            setFormData(prev => ({
+                ...prev,
+                ...data, // Keep all existing backend fields
+                country: finalCountry,
+                state: finalState,
+                city: cityValue, // Set city (either actual city or "Others")
+                other_city: otherCityValue, // Set other_city if applicable
+                agent: data.assigned_user_id || '', // Keep as number/string from DB
+                status: data.status || '', // Explicitly map status
+                address_line_1: data.address_line_1 || '', // Map address_line_1 → address
+                partner_image: data.partner_image || '', // Map company_logo → partner_image
+                country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
+            }));
+
+            // Set profile image from company_logo field
+            if (data.partner_image) {
+                setProfileImage(data.partner_image);
+            }
+
+        } catch (error) {
+            toast.error("Failed to load partner data");
+        } finally {
+            setIsPartnerLoading(false);
+        }
+    }, [id]);
+
+    useEffect(() => {
         fetchPartnerData();
-    }, [id]); // Only re-fetch when the partner ID changes, NOT on tab switch
+    }, [fetchPartnerData]);
+
+    const handleRefresh = useCallback(() => {
+        fetchPartnerData();
+        loadProfileStats();
+    }, [fetchPartnerData, loadProfileStats]);
 
     // Update Agent Email/Phone when Agent or Users change
     useEffect(() => {
@@ -937,6 +943,7 @@ export default function PartnerProfile() {
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
                                     partnerPlans={partnerPlans}
+                                    onRefresh={handleRefresh}
                                 />
                             </div>
                         </div>
