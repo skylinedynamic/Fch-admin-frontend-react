@@ -51,7 +51,7 @@ export default function ClientDocumentsSection({ isLoading: parentLoading = fals
 
     // Permissions check
     const hasPermission = (permission: string) => {
-        return user?.permissions?.includes(permission) || user?.role_name === 'Developer' || user?.is_host === 1;
+        return user?.permissions?.includes(permission) || user?.role_name == 'Developer' || user?.is_host == 1;
     };
 
     const canView = hasPermission('view borrower documents');

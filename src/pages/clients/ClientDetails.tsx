@@ -40,7 +40,7 @@ export default function ClientDetails() {
     const location = useLocation();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
-    const isHost = currentUser?.is_host === 1;
+    const isHost = Number(currentUser?.is_host) == 1;
     const canCreate = hasPermission('create clients');
     const canUpdate = hasPermission('update clients');
 

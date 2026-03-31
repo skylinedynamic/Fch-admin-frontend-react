@@ -11,7 +11,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { isRestricted } = usePermissions();
   const currentUser = useAuthStore((state) => state.user);
-  const isHost = currentUser?.is_host === 1;
+  const isHost = currentUser?.is_host == 1;
 
   const { data: dashboardResponse, isLoading } = useDashboardData();
   const dashboardData = dashboardResponse?.data;

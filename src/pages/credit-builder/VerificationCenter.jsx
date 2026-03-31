@@ -13,8 +13,8 @@ import { fetchPartners } from '../../modules/partner/services';
 
 export default function VerificationCenter() {
     const { user } = useAuthStore();
-    const isDeveloper = user?.role_name === 'Developer';
-    const isHost = user?.is_host === 1;
+    const isDeveloper = user?.role_name == 'Developer';
+    const isHost = user?.is_host == 1;
 
     const [verifications, setVerifications] = useState([]);
     const [loading, setLoading] = useState(true);

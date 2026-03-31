@@ -23,7 +23,7 @@ export default function Leads() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
-    const isHost = currentUser?.is_host === 1;
+    const isHost = currentUser?.is_host == 1;
 
     // State for leads
     const [leads, setLeads] = useState([]);

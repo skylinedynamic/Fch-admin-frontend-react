@@ -57,7 +57,7 @@ export default function Users() {
 
   const handleAddUserClick = async () => {
     // Check if current user is host from store (no API call needed)
-    if (user?.is_host === 1) {
+    if (user?.is_host == 1) {
       setShowAddUser(true);
       setEditingUserId(null);
       setIsPurchaseFlow(false);

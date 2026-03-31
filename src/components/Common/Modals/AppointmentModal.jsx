@@ -37,7 +37,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
 
     const currentUser = useAuthStore((state) => state.user);
     const { hasPermission } = usePermissions();
-    const isHost = currentUser?.is_host === 1;
+    const isHost = currentUser?.is_host == 1;
     const hostEntityId = currentUser?.entity_id;
 
     const [assignedForType, setAssignedForType] = useState('');

@@ -29,7 +29,7 @@ export default function Clients() {
     useEffect(() => {
         const user = getUser();
         setCurrentUser(user);
-        setIsHost(user?.is_host === 1);
+        setIsHost(user?.is_host == 1);
     }, []);
 
     // Global data needed for filters

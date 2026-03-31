@@ -36,7 +36,7 @@ export default function LeadDetails() {
     const [searchParams] = useSearchParams();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
-    const isHost = currentUser?.is_host === 1;
+    const isHost = currentUser?.is_host == 1;
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leadDetails');
     const [isLoading, setIsLoading] = useState(!!id);
