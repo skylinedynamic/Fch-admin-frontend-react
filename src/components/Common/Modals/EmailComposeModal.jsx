@@ -313,7 +313,23 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             if ($) {
                 const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
                 if (note && $(note).summernote) {
-                    try { $(note).summernote('code', ''); } catch(err) {}
+                    try { 
+                        $(note).summernote('code', ''); 
+                        
+                        const $noteEditor = $(note).next('.note-editor');
+                        if ($noteEditor.length) {
+                            $noteEditor.find('.note-editable').html('<p><br></p>');
+                            $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
+                            $noteEditor.children('a, p, span').remove();
+                        }
+                        
+                        $('.note-popover').hide();
+                        $('.note-modal .note-link-text').val('');
+                        $('.note-modal .note-link-url').val('http://');
+                        $('.note-modal .note-image-url').val('');
+                    } catch(err) {
+                        console.error('Summernote email reset error:', err);
+                    }
                 }
             }
         };

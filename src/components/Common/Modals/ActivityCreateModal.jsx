@@ -256,7 +256,29 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             // Force Summernote HTML clear via jQuery, as a safety fallback
             const $ = window.jQuery || window.$;
             if ($ && $('#activityMessageEditor').summernote) {
-                try { $('#activityMessageEditor').summernote('code', ''); } catch(err) {}
+                try { 
+                    $('#activityMessageEditor').summernote('code', ''); 
+                    
+                    const $noteEditor = $('#activityMessageEditor').next('.note-editor');
+                    if ($noteEditor.length) {
+                        // Force clear DOM directly just in case API fails
+                        $noteEditor.find('.note-editable').html('<p><br></p>');
+                        
+                        // Remove any orphaned tags (like links) inserted outside the editable area due to Summernote bug
+                        $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
+                        $noteEditor.children('a, p, span').remove();
+                    }
+                    
+                    // Hide any floating popovers (like the link popover) that might be stuck open
+                    $('.note-popover').hide();
+                    
+                    // Clear retained link/dialog values in Summernote
+                    $('.note-modal .note-link-text').val('');
+                    $('.note-modal .note-link-url').val('http://');
+                    $('.note-modal .note-image-url').val('');
+                } catch(err) {
+                    console.error('Summernote reset error:', err);
+                }
             }
         };
 
