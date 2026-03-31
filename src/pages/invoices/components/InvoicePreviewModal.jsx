@@ -289,7 +289,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                         )}
                                                         Download
                                                     </button>
-                                                    {(((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) && displayInvoice.status?.toLowerCase() !== STATUS_PAID.toLowerCase()) && (
+                                                    {(((displayInvoice?.borrower_id && user?.is_host === 0) || user?.is_host === 1) || displayInvoice.status?.toLowerCase() !== STATUS_PAID.toLowerCase()) && (
                                                         <button
                                                             className="btn btn-danger shadow-sm"
                                                             onClick={handleSend}
