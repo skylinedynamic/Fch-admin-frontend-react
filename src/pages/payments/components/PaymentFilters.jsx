@@ -7,7 +7,6 @@ import FilterLoader from '../../../components/Loader/FilterLoader';
 export default function PaymentFilters({
     searchText, setSearchText,
     selectedStatus, setSelectedStatus,
-    selectedEnvironment, setSelectedEnvironment,
     selectedPayee, setSelectedPayee,
     selectedCycle, setSelectedCycle,
     dateRange, setDateRange,
@@ -17,10 +16,9 @@ export default function PaymentFilters({
 }) {
     // Dynamic loader config for Payments
     const loaderConfig = [
-        { col: 'col-xxl-3 col-sm-6' }, // Search
-        { col: 'col-xxl-3 col-sm-6' }, // Date Range
+        { col: 'col-xxl-4 col-sm-6' }, // Search
+        { col: 'col-xxl-4 col-sm-6' }, // Date Range
         { col: 'col-xxl-2 col-sm-6' }, // Status
-        { col: 'col-xxl-2 col-sm-6' }, // Environment
         { col: 'col-xxl-2 col-sm-12', isButton: true } // Buttons
     ];
 
@@ -33,7 +31,7 @@ export default function PaymentFilters({
                 <FilterLoader config={loaderConfig} />
             ) : (
                 <div className="row g-3 mb-3">
-                    <div className="col-xxl-3 col-sm-6">
+                    <div className="col-xxl-4 col-sm-6">
                         <div className="search-box">
                             <input
                                 type="text"
@@ -53,7 +51,7 @@ export default function PaymentFilters({
                         </div>
                     </div>
 
-                    <div className="col-xxl-3 col-sm-6">
+                    <div className="col-xxl-4 col-sm-6">
                         <div className="search-box">
                             <Calendar
                                 value={dateRange}
@@ -74,16 +72,6 @@ export default function PaymentFilters({
                             options={PAYMENT_STATUS_OPTIONS}
                             onChange={(e) => setSelectedStatus(e.value)}
                             placeholder="All Status"
-                            className="w-100 bg-light border-light"
-                        />
-                    </div>
-
-                    <div className="col-xxl-2 col-sm-6">
-                        <Dropdown
-                            value={selectedEnvironment}
-                            options={PAYMENT_ENVIRONMENT_OPTIONS}
-                            onChange={(e) => setSelectedEnvironment(e.value)}
-                            placeholder="Environment"
                             className="w-100 bg-light border-light"
                         />
                     </div>
