@@ -358,7 +358,7 @@ export default function ClientDetails() {
                                 <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {(id ? canUpdate : canCreate) && (
+                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS].includes(activeTab as any) && (
                                     <button
                                         type="button"
                                         className="btn btn-primary w-lg waves-effect"

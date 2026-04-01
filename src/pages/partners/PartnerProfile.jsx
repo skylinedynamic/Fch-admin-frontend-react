@@ -809,12 +809,12 @@ export default function PartnerProfile() {
                                     </ol>
                                 </nav>
                             </div>
-                            {!['documents', 'clientList', 'subscription'].includes(activeTab) && (
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                    {((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
+                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
+                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                </Link>
+                                {!['documents', 'clientList', 'subscription', 'agreement'].includes(activeTab) && (
+                                    ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                                         <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                             {isSaving ? (
                                                 <>
@@ -827,9 +827,9 @@ export default function PartnerProfile() {
                                                 </>
                                             )}
                                         </button>
-                                    )}
-                                </div>
-                            )}
+                                    )
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
