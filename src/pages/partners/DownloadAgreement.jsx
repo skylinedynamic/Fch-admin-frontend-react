@@ -102,6 +102,12 @@ const DownloadAgreement = () => {
                         margin-bottom: 8px !important;
                     }
                     
+                    /* Height and Min-Height adjustments as requested */
+                    .ab4-doc, .ab4-root, html, body { 
+                        height: 100% !important; 
+                        min-height: 0 !important; 
+                    }
+
                     /* General page breaks and layout spacing */
                     .page-break, .page-sep { display: block; height: 15px; background: #35434d; }
                     @media print { .page-break { display: none; page-break-before: always; } }
@@ -113,8 +119,8 @@ const DownloadAgreement = () => {
                             el.textContent = el.textContent.replace('*', '').trim();
                         });
 
-                        // 2. Transform inputs to bold text spans (strip is-invalid)
-                        document.querySelectorAll('input, textarea, select').forEach(el => {
+                        // 2. Transform inputs to bold text spans (excluding file inputs for fakepath issue)
+                        document.querySelectorAll('input:not([type="file"]):not([type="hidden"]):not([type="submit"]), textarea, select').forEach(el => {
                             const span = document.createElement('span');
                             const cleanClass = (el.className || '').replace(/\bis-invalid\b/g, '').trim();
                             span.className = cleanClass + ' ab4-val-text';
@@ -122,14 +128,19 @@ const DownloadAgreement = () => {
                             el.parentNode.replaceChild(span, el);
                         });
 
-                        // 3. Clear styling for sig/date boxes
+                        // 3. Hide file inputs and buttons for static view
+                        document.querySelectorAll('input[type="file"], input[type="submit"], input[type="button"], button:not(.da-print-btn)').forEach(el => {
+                            el.style.display = 'none';
+                        });
+
+                        // 4. Clear styling for sig/date boxes
                         document.querySelectorAll('.ab4-sig-col, .ab4-sig-col--date').forEach(el => {
                             el.style.setProperty('border', 'none', 'important');
                             el.style.setProperty('background', 'transparent', 'important');
                             el.style.setProperty('box-shadow', 'none', 'important');
                         });
 
-                        // 4. Remove any remaining is-invalid classes
+                        // 5. Remove any remaining is-invalid classes
                         document.querySelectorAll('.is-invalid').forEach(el => {
                             el.classList.remove('is-invalid');
                         });
@@ -169,16 +180,46 @@ const DownloadAgreement = () => {
         iframeRef.current?.contentWindow?.print();
     };
 
-    if (loading) return (
-        <div className="da-loading">
-            <div className="spinner-border text-primary" role="status" />
-        </div>
-    );
-
     return (
         <div className="da-page">
+            <style>{`
+                .da-loading {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(255, 255, 255, 0.9);
+                    backdrop-filter: blur(5px);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                }
+                .da-loading-spinner {
+                    width: 3rem;
+                    height: 3rem;
+                    border-width: 0.25em;
+                }
+                .da-loading-text {
+                    margin-top: 20px;
+                    font-weight: 600;
+                    color: #4f46e5;
+                    font-size: 14px;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
+                }
+            `}</style>
 
-            <div className="da-toolbar">
+            {loading && (
+                <div className="da-loading">
+                    <div className="spinner-border text-primary da-loading-spinner" role="status" />
+                    <div className="da-loading-text">Preparing Agreement...</div>
+                </div>
+            )}
+
+            <div className="da-toolbar" style={loading ? { visibility: 'hidden' } : {}}>
                 <div className="da-toolbar-brand">
                     <i className="ri-shield-check-fill" />
                     <span>VERIFIED AGREEMENT</span>
