@@ -22,3 +22,19 @@ export const PAYMENT_STATUS_COLORS = {
     'disputed': 'info',
     'refunded': 'secondary'
 };
+
+export const PAYMENT_ENVIRONMENT_OPTIONS = [
+    { label: 'All Environment', value: null },
+    { label: 'Production', value: 1 },
+    { label: 'Sandbox', value: 0 }
+];
+
+export const PAYMENT_ENVIRONMENT_COLORS = {
+    [1]: 'success', // Production
+    [0]: 'info'     // Sandbox
+};
+
+export const PAYMENT_ENVIRONMENT_LABELS = {
+    [1]: 'Production',
+    [0]: 'Sandbox'
+};

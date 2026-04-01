@@ -27,6 +27,7 @@ export default function Payments() {
     const [filters, setFilters] = useState({});
     const [searchText, setSearchText] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedEnvironment, setSelectedEnvironment] = useState(null);
     const [selectedPayee, setSelectedPayee] = useState(null);
     const [selectedCycle, setSelectedCycle] = useState(null);
     const [dateRange, setDateRange] = useState([]);
@@ -34,6 +35,7 @@ export default function Payments() {
     // Applied filter states (to trigger fetch)
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedStatus, setAppliedStatus] = useState(null);
+    const [appliedEnvironment, setAppliedEnvironment] = useState(null);
     const [appliedPayee, setAppliedPayee] = useState(null);
     const [appliedCycle, setAppliedCycle] = useState(null);
     const [appliedDateRange, setAppliedDateRange] = useState(null);
@@ -52,7 +54,8 @@ export default function Payments() {
             borrower_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             partner_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             invoice_id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            is_environment: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -98,6 +101,7 @@ export default function Payments() {
                 search: appliedSearchText,
                 status: appliedStatus,
                 payee_id: appliedPayee,
+                is_environment: appliedEnvironment,
                 cycle: appliedCycle,
                 date_from: dateFrom,
                 date_to: dateTo,
@@ -139,6 +143,7 @@ export default function Payments() {
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
         setAppliedStatus(selectedStatus);
+        setAppliedEnvironment(selectedEnvironment);
         setAppliedPayee(selectedPayee);
         setAppliedCycle(selectedCycle);
         setAppliedDateRange(dateRange);
@@ -149,11 +154,13 @@ export default function Payments() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus(null);
+        setSelectedEnvironment(null);
         setSelectedPayee(null);
         setSelectedCycle(null);
         setDateRange([]);
         setAppliedSearchText('');
         setAppliedStatus(null);
+        setAppliedEnvironment(null);
         setAppliedPayee(null);
         setAppliedCycle(null);
         setAppliedDateRange(null);
@@ -210,6 +217,7 @@ export default function Payments() {
                                 <PaymentFilters
                                     searchText={searchText} setSearchText={setSearchText}
                                     selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                    selectedEnvironment={selectedEnvironment} setSelectedEnvironment={setSelectedEnvironment}
                                     selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
                                     selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
                                     dateRange={dateRange} setDateRange={setDateRange}

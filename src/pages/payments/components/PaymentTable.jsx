@@ -3,7 +3,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import TableLoader from '../../../components/Loader/TableLoader';
-import { PAYMENT_STATUS_OPTIONS, PAYMENT_STATUS_COLORS } from '../../../config/paymentConfig';
+import { PAYMENT_STATUS_OPTIONS, PAYMENT_STATUS_COLORS, PAYMENT_ENVIRONMENT_COLORS, PAYMENT_ENVIRONMENT_LABELS, PAYMENT_ENVIRONMENT_OPTIONS } from '../../../config/paymentConfig';
 
 export default function PaymentTable({
     data,
@@ -24,6 +24,17 @@ export default function PaymentTable({
         return (
             <span className={`badge bg-${color} text-uppercase`}>
                 {rowData.status}
+            </span>
+        );
+    };
+
+    const environmentBodyTemplate = (rowData) => {
+        const envVal = rowData.is_environment ? 1 : 0;
+        const color = PAYMENT_ENVIRONMENT_COLORS[envVal] || 'info';
+        const label = PAYMENT_ENVIRONMENT_LABELS[envVal] || 'Sandbox';
+        return (
+            <span className={`badge bg-${color} text-uppercase`}>
+                {label}
             </span>
         );
     };
@@ -52,6 +63,22 @@ export default function PaymentTable({
         );
     };
 
+    const environmentFilterElement = (options) => {
+        return (
+            <Dropdown
+                value={options.value}
+                options={PAYMENT_ENVIRONMENT_OPTIONS}
+                onChange={(e) => options.filterApplyCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Environment"
+                className="p-column-filter"
+                showClear
+                style={{ minWidth: '10rem' }}
+            />
+        );
+    };
+
     if (loading && (!data || data.length === 0)) {
         return <TableLoader rows={10} columns={Array(8).fill({})} />;
     }
@@ -72,7 +99,7 @@ export default function PaymentTable({
                 onFilter={onFilter}
                 filters={filters}
                 filterDisplay="menu"
-                globalFilterFields={['transaction_date', 'from', 'payment_type', 'borrower_name', 'partner_name', 'transaction_id', 'invoice_id', 'amount', 'status']}
+                globalFilterFields={['transaction_date', 'from', 'payment_type', 'borrower_name', 'partner_name', 'transaction_id', 'invoice_id', 'amount', 'status', 'is_environment']}
                 loading={loading}
                 dataKey="id"
                 className="p-datatable-sm"
@@ -82,10 +109,10 @@ export default function PaymentTable({
                 <Column field="transaction_date" header="Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
                 <Column field="invoice_id" header="Invoice ID" sortable filter showFilterMatchModes filterPlaceholder="Search by invoice ID" style={{ minWidth: '100px' }}></Column>
                 <Column field="from" header="Payment Method" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
-               
-                <Column 
-                    field="payment_type" 
-                    header="Payment Type" 
+
+                <Column
+                    field="payment_type"
+                    header="Payment Type"
                     body={(rowData) => {
                         // const type = rowData.partner_name ? 'Partner' : 'Borrower';
                         return (
@@ -97,19 +124,20 @@ export default function PaymentTable({
                     }}
                     sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '120px' }}
                 ></Column>
-                <Column 
-                    header="Name" 
-                    body={nameBodyTemplate} 
-                    sortable 
-                    filter 
+                <Column
+                    header="Name"
+                    body={nameBodyTemplate}
+                    sortable
+                    filter
                     filterField="borrower_name" // Default to one field for Primereact filtering, global search handles both
-                    showFilterMatchModes 
-                    filterPlaceholder="Search name" 
+                    showFilterMatchModes
+                    filterPlaceholder="Search name"
                     style={{ minWidth: '150px' }}
                 ></Column>
                 <Column field="transaction_id" header="Transaction ID" sortable filter showFilterMatchModes filterPlaceholder="Search by ID" style={{ minWidth: '130px' }}></Column>
                 <Column field="amount" header="Amount" body={amountBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by amount" style={{ minWidth: '100px' }}></Column>
                 <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterElement} showFilterMatchModes={false} style={{ minWidth: '100px' }}></Column>
+                <Column field="is_environment" header="Environment" body={environmentBodyTemplate} sortable filter filterElement={environmentFilterElement} showFilterMatchModes={false} style={{ minWidth: '130px' }}></Column>
             </DataTable>
         </div>
     );
