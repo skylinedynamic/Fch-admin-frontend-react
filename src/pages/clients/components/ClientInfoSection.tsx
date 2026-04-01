@@ -18,7 +18,7 @@ import type { Client, BorrowerPlan } from '../../../modules/client/types';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { industryTypes, entityTypes } from '../../../config/borrower';
 import { scrollToFirstError } from '../../../utils/formUtils';
-import { locationData } from '../../../config';
+import { locationData, getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 
@@ -146,6 +146,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
 
+
+            // Ensure country uses full name for mapping to dropdown value
+            if (apiData.country) {
+                const entry = Object.entries(locationData).find(([key, val]) => key === apiData.country || val.name === apiData.country);
+                if (entry) {
+                    apiData.country = entry[1].name;
+                }
+            }
 
             // Ensure enrollment_payment is synced from payment_amount for edit mode consistency
             if (apiData.payment_amount && (!apiData.enrollment_payment || apiData.enrollment_payment === '')) {
@@ -492,12 +500,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="phone_number" className="form-label">Phone Number <span className="text-danger">*</span></label>
                         <div className="input-group">
-                            {(formData.country === 'USA' || formData.country === 'Canada' || formData.country === 'United States') && (
-                                <span className="input-group-text bg-light border">
-                                    <span className="me-1">{(formData.country === 'USA' || formData.country === 'United States') ? 'USA' : 'CAN'}</span>
-                                    <span className="text-muted">+1</span>
-                                </span>
-                            )}
+                            {(() => {
+                                const info = getCountryPhoneInfo(formData.country);
+                                if (!info) return null;
+                                return (
+                                    <span className="input-group-text bg-light border">
+                                        <span className="me-1">{info.label}</span>
+                                        <span className="text-muted">{info.prefix}</span>
+                                    </span>
+                                );
+                            })()}
                             <input
                                 type="text"
                                 className={`form-control ${errors.phone_number ? 'is-invalid' : ''}`}
@@ -873,12 +885,16 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     <div className="mb-3">
                         <label htmlFor="business_phone" className="form-label">Business Phone </label>
                         <div className="input-group">
-                            {(formData.business_country === 'USA' || formData.business_country === 'Canada' || formData.business_country === 'United States' || !formData.business_country) && (
-                                <span className="input-group-text bg-light border">
-                                    <span className="me-1">{(formData.business_country === 'Canada') ? 'CAN' : 'USA'}</span>
-                                    <span className="text-muted">+1</span>
-                                </span>
-                            )}
+                            {(() => {
+                                const info = getCountryPhoneInfo(formData.business_country);
+                                if (!info) return null;
+                                return (
+                                    <span className="input-group-text bg-light border">
+                                        <span className="me-1">{info.label}</span>
+                                        <span className="text-muted">{info.prefix}</span>
+                                    </span>
+                                );
+                            })()}
                             <input
                                 type="text"
                                 className={`form-control ${errors.business_phone ? 'is-invalid' : ''}`}

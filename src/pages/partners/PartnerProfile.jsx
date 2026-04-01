@@ -4,7 +4,7 @@ import '../../../assets/css/dropdown-validation.css';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans } from '../../modules/partner/services';
-import { locationData } from '../../config';
+import { locationData, getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
@@ -53,7 +53,7 @@ export default function PartnerProfile() {
     const [countries] = useState(
         Object.keys(locationData).map((key) => ({
             label: locationData[key].name,
-            value: key
+            value: locationData[key].name
         }))
     );
     const [states, setStates] = useState([]);
@@ -77,8 +77,8 @@ export default function PartnerProfile() {
         state: '',
         city: '',
         other_city: '',
-        country: 'USA', // Default to key
-        country_code: '+1', // Default to +1 for USA
+        country: 'United States', // Default to full name
+        country_code: getCountryPhoneInfo('USA')?.prefix || '+1',
         postal_code: '',
         address_line_1: '',
         tax_id: '',
@@ -167,10 +167,12 @@ export default function PartnerProfile() {
 
     // Initialize states for default country (United States) on new partner creation
     useEffect(() => {
-        if (!id && formData.country === 'USA') {
-            const countryCode = 'USA';
+        if (!id && formData.country) {
+            // Find key from name
+            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country || key === formData.country);
+            const countryCode = countryEntry ? countryEntry[0] : null;
 
-            if (locationData[countryCode]) {
+            if (countryCode && locationData[countryCode]) {
                 const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
                     label: locationData[countryCode].states[key].name,
                     value: locationData[countryCode].states[key].name
@@ -258,12 +260,12 @@ export default function PartnerProfile() {
             const response = await getPartner(id);
             const data = response.data || response; // Handle both response.data and direct data
 
-            // Normalize Country: Ensure it's a key (USA/Canada)
+            // Normalize Country: Ensure it's the full name (United States/Canada) to match dropdown values
             let finalCountry = data.country;
             const countryEntry = Object.entries(locationData).find(([key, val]) => key === finalCountry || val.name === finalCountry);
             const countryCode = countryEntry ? countryEntry[0] : null;
-            if (countryCode) {
-                finalCountry = countryCode;
+            if (countryEntry) {
+                finalCountry = countryEntry[1].name;
             }
 
             // Normalize State
@@ -455,14 +457,13 @@ export default function PartnerProfile() {
 
         // Handle country/state/city cascading
         if (name === 'country') {
-            let countryCodePrefix = '';
-            if (value === 'USA' || value === 'Canada') {
-                countryCodePrefix = '+1';
-            }
+            const countryInfo = getCountryPhoneInfo(value);
+            const countryCodePrefix = countryInfo ? countryInfo.prefix : '';
             setFormData(prev => ({ ...prev, country: value, country_code: countryCodePrefix, state: '', city: '', other_city: '' }));
             setErrors(prev => ({ ...prev, country: null }));
 
-            const code = value; // Value is now the code "USA" or "Canada"
+            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === value || key === value);
+            const code = countryEntry ? countryEntry[0] : null;
 
             if (code && locationData[code]) {
                 const stateOptions = Object.keys(locationData[code].states).map((key) => ({
@@ -479,7 +480,8 @@ export default function PartnerProfile() {
             setFormData(prev => ({ ...prev, state: value, city: '', other_city: '' }));
             setErrors(prev => ({ ...prev, state: null }));
 
-            const countryCode = formData.country; // Already the code
+            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === formData.country || key === formData.country);
+            const countryCode = countryEntry ? countryEntry[0] : null;
 
             if (countryCode && locationData[countryCode]) {
                 const sEntry = Object.entries(locationData[countryCode].states).find(([key, val]) => val.name === value);

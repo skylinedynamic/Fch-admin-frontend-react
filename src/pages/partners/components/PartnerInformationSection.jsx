@@ -9,6 +9,7 @@ import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
+import { getCountryPhoneInfo } from '../../../config/locations';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
@@ -226,10 +227,10 @@ export default function PartnerInformationSection({
                     <label className="form-label">Phone Number <span className="text-danger">*</span></label>
                     <div className="input-group">
                         {/* Country Code Display */}
-                        {(formData.country === 'USA' || formData.country === 'Canada') && (
+                        {getCountryPhoneInfo(formData.country) && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
-                                <span className="text-muted">+1</span>
+                                <span className="me-1">{getCountryPhoneInfo(formData.country).label}</span>
+                                <span className="text-muted">{getCountryPhoneInfo(formData.country).prefix}</span>
                             </span>
                         )}
                         <input
@@ -620,10 +621,10 @@ export default function PartnerInformationSection({
                     <label className="form-label">Phone</label>
                     <div className="input-group">
                         {/* Country Code Display */}
-                        {(formData.country === 'USA' || formData.country === 'Canada') && (
+                        {getCountryPhoneInfo(formData.country) && (
                             <span className="input-group-text bg-light border">
-                                <span className="me-1">{formData.country === 'USA' ? 'USA' : 'CAN'}</span>
-                                <span className="text-muted">+1</span>
+                                <span className="me-1">{getCountryPhoneInfo(formData.country).label}</span>
+                                <span className="text-muted">{getCountryPhoneInfo(formData.country).prefix}</span>
                             </span>
                         )}
                         <input

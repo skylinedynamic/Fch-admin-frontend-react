@@ -1,5 +1,5 @@
 import type { Client, BorrowerPlan } from './types';
-import { locationData } from '../../config';
+import { locationData, getCountryPhoneInfo } from '../../config/locations';
 
 const normalizeDate = (dateStr: any): string | undefined => {
     if (!dateStr) return undefined;
@@ -39,15 +39,15 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     if (payload.city === 'Others') {
         payload.city = payload.other_city?.trim() || 'Others';
     }
-    
+
     if (payload.business_city === 'Others') {
         payload.business_city = payload.business_other_city?.trim() || 'Others';
     }
 
-    // Resolve business country code
-    const busCountryEntry = Object.entries(locationData).find(([key, val]) => (val as any).name === payload.business_country);
-    if (busCountryEntry) {
-        payload.business_country_code = busCountryEntry[0];
+    // Resolve business country code to phone prefix
+    const businessPhoneInfo = getCountryPhoneInfo(payload.business_country);
+    if (businessPhoneInfo) {
+        payload.business_country_code = businessPhoneInfo.prefix;
     }
 
     // Normalize dates
@@ -63,15 +63,15 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     let enrollment_type = payload.enrollment_type;
 
     if (isHost) {
-        const rawAmount = payload.enrollment_payment ?? 
-                         (payload as any).enrollment_amount ?? 
-                         payload.payment_amount ?? 
-                         payload.amount;
-        
-        amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined) 
-                 ? 0 
-                 : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
-        
+        const rawAmount = payload.enrollment_payment ??
+            (payload as any).enrollment_amount ??
+            payload.payment_amount ??
+            payload.amount;
+
+        amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined)
+            ? 0
+            : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
         if (isNaN(amount)) amount = 0;
 
         if (!enrollment_type && payload.plan_id) {
@@ -89,6 +89,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost;
     payload.status = formData.status;
+    payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
     delete (payload as any).enrollment_amount;
 
@@ -108,10 +109,10 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         business_other_city: formData.business_other_city || '',
     };
 
-    // Resolve business country code
-    const busCountryEntry = Object.entries(locationData).find(([key, val]) => (val as any).name === formData.business_country);
-    if (busCountryEntry) {
-        payload.business_country_code = busCountryEntry[0];
+    // Resolve business country code to phone prefix
+    const businessPhoneInfo = getCountryPhoneInfo(formData.business_country);
+    if (businessPhoneInfo) {
+        payload.business_country_code = businessPhoneInfo.prefix;
     }
 
     if (payload.business_start_date) {
@@ -129,12 +130,12 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
         payload.is_partner_paying = true;
     } else {
         const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
-        
+
         if (rawAmount !== undefined && rawAmount !== null) {
-            const amount = (rawAmount === '' || rawAmount === null) 
-                           ? 0 
-                           : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
-            
+            const amount = (rawAmount === '' || rawAmount === null)
+                ? 0
+                : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
             payload.amount = isNaN(amount) ? 0 : amount;
             payload.payment_amount = payload.amount;
             payload.enrollment_payment = payload.amount;
@@ -144,6 +145,8 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
             payload.enrollment_payment = 0;
         }
     }
+
+    payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
     delete (payload as any).enrollment_amount;
 
