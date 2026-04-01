@@ -4,9 +4,9 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 export default function EmployeeListHeader({ selection, onDeleteSelected }) {
     const { hasPermission } = usePermissions();
     return (
-        <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+        <div className="row page-subheader-sticky bg-body">
             <div className="col-12">
-                <div className="d-flex align-items-center justify-content-between flex-row">
+                <div className="d-flex align-items-center justify-content-between flex-row py-2">
                     <div className="flex-grow-1">
                         <h4 className="fs-20 mb-1">Employees</h4>
                         <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -42,7 +42,7 @@ export default function EmployeeListHeader({ selection, onDeleteSelected }) {
                                                 </ul>
                                             </>
                                         ) : hasPermission('create employees') ? (
-                                            <Link to="/employee-details" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
+                                            <Link to="/employees/create" id="primaryActionBtn" className="btn btn-primary fw-medium waves-effect waves-light">
                                                 <i className="ri-add-fill me-1 align-bottom"></i> Add Employee
                                             </Link>
                                         ) : null}

@@ -40,7 +40,7 @@ export default function ClientDetails() {
     const location = useLocation();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
-    const isHost = Number(currentUser?.is_host) == 1;
+    const isHost = currentUser?.is_host == 1;
     const canCreate = hasPermission('create clients');
     const canUpdate = hasPermission('update clients');
 
@@ -295,9 +295,9 @@ export default function ClientDetails() {
 
                 if (updateSuccess) {
                     const tabOrder = [
-                        ENROLLMENT_TABS.PERSONAL, 
-                        ENROLLMENT_TABS.FINANCIALS, 
-                        ENROLLMENT_TABS.CHECKLIST, 
+                        ENROLLMENT_TABS.PERSONAL,
+                        ENROLLMENT_TABS.FINANCIALS,
+                        ENROLLMENT_TABS.CHECKLIST,
                         ENROLLMENT_TABS.DOCUMENTS
                     ];
                     const currentIndex = tabOrder.indexOf(activeTab);

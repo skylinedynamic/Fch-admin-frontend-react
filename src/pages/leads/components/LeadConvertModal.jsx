@@ -3,9 +3,10 @@ import Modal from 'bootstrap/js/dist/modal';
 import { Dropdown } from 'primereact/dropdown';
 import { fetchPartnerPlans } from '../../../modules/partner/services';
 import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
 
-export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = 'Borrower', loading, isHost, backendErrors = {}, onFieldChange }) {
+export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, isHost, backendErrors = {}, onFieldChange }) {
     const [planId, setPlanId] = useState(null);
     const [enrollmentType, setEnrollmentType] = useState('');
     const [partnerType, setPartnerType] = useState('');
@@ -66,7 +67,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 try {
                     const promises = [fetchPartnerPlans()];
 
-                    if (targetType === 'Borrower') {
+                    if (targetType == ENTITY_TYPE_BORROWER) {
                         if (isHost) {
                             promises.push(fetchBorrowerPlans());
                         } else {
@@ -131,7 +132,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
         // --- Build Payload ---
         const payload = {};
-        if (targetType === 'Borrower') {
+        if (targetType == ENTITY_TYPE_BORROWER) {
             payload.plan_id = planId;
             payload.enrollment_type = enrollmentType;
 
@@ -146,7 +147,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                     payload.amount = selectedPlan.payment_amount;
                 }
             }
-        } else if (targetType === 'Partner') {
+        } else if (targetType == ENTITY_TYPE_PARTNER) {
             payload.partner_type = partnerType;
             payload.enrollment_type = partnerEnrollmentType;
 
@@ -175,13 +176,13 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     };
 
     const title = `Convert Lead to ${targetType}`;
-    const confirmBtnClass = targetType === 'Partner' ? 'btn-success' : 'btn-primary';
+    const confirmBtnClass = targetType == ENTITY_TYPE_PARTNER ? 'btn-success' : 'btn-primary';
     const confirmBtnText = `Convert to ${targetType}`;
-    const icon = targetType === 'Partner' ? 'ri-shake-hands-line text-success' : 'ri-user-received-2-line text-primary';
+    const icon = targetType == ENTITY_TYPE_PARTNER ? 'ri-shake-hands-line text-success' : 'ri-user-received-2-line text-primary';
 
     const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
     const selectedPartnerPlan = useMemo(() => {
-        if (targetType !== 'Partner') return null;
+        if (targetType != ENTITY_TYPE_PARTNER) return null;
         return partnerPlans.find(plan =>
             (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
             plan.enrollment_type === partnerEnrollmentType
@@ -205,7 +206,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 </p>
 
                                 {/* Borrower Conversion Fees - Dynamic */}
-                                {targetType === 'Borrower' && (
+                                {targetType == ENTITY_TYPE_BORROWER && (
                                     <div className="mb-4 text-start">
                                         {isHost ? (
                                             <div className="mb-3">
@@ -292,7 +293,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                 )}
 
                                 {/* Partner Conversion Fields */}
-                                {targetType === 'Partner' && (
+                                {targetType == ENTITY_TYPE_PARTNER && (
                                     <div className="mb-4 text-start">
                                         {/* Only show Partner Type dropdown if there are distinct non-null partner types */}
                                         {Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && (

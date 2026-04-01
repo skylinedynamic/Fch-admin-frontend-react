@@ -15,6 +15,7 @@ import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
 import { toast } from 'react-toastify';
 import { LEAD_TYPE_OPTIONS, LEAD_STATUS_OPTIONS } from '../../config/leadOptions';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
@@ -325,7 +326,7 @@ export default function Leads() {
         if (!targetLead) return;
 
         setConvertErrors({});
-        const targetType = targetLead.lead_type === 'Partner' ? 'Partner' : 'Borrower';
+        const targetType = targetLead.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER;
         try {
             setConversionLoading(true);
             const response = await convertLead(targetLead.id, payload);
@@ -335,7 +336,7 @@ export default function Leads() {
                 const invId = response.data?.invoice?.id || null;
 
                 // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
-                if (!isHost && targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
+                if (!isHost && targetType == ENTITY_TYPE_BORROWER && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
                     setPaymentInvoiceId(invId);
@@ -385,7 +386,7 @@ export default function Leads() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header Section mirrored from Clients.jsx */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -629,7 +630,7 @@ export default function Leads() {
                     onHide={() => { setShowConvertModal(false); setConvertErrors({}); }}
                     onConfirm={handleConvertLeadConfirm}
                     lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                    targetType={targetLead?.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER}
                     loading={conversionLoading}
                     isHost={isHost}
                     backendErrors={convertErrors}
@@ -641,7 +642,7 @@ export default function Leads() {
                     onHide={() => { setShowMissingInfoModal(false); setMissingInfoErrors({}); }}
                     onConfirm={handleMissingInfoConfirm}
                     lead={targetLead}
-                    targetType={targetLead?.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                    targetType={targetLead?.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER}
                     loading={conversionLoading}
                     backendErrors={missingInfoErrors}
                 />

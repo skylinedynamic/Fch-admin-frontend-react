@@ -26,6 +26,7 @@ import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
 import Flatpickr from 'react-flatpickr';
 import { parseDate as parseDateHelper, normalizeDate } from '../../utils/formatters';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
@@ -128,7 +129,7 @@ export default function LeadDetails() {
     // Force Lead Type to Borrower if not host
     useEffect(() => {
         if (!isHost) {
-            setFormData(prev => ({ ...prev, lead_type: 'Borrower' }));
+            setFormData(prev => ({ ...prev, lead_type: ENTITY_TYPE_BORROWER }));
         }
     }, [isHost]);
 
@@ -296,7 +297,7 @@ export default function LeadDetails() {
     };
 
     const handleConvertConfirm = async (payload = {}) => {
-        const targetType = formData.lead_type === 'Partner' ? 'Partner' : 'Borrower';
+        const targetType = formData.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER;
         try {
             setConversionLoading(true);
             const response = await convertLead(id, payload);
@@ -306,7 +307,7 @@ export default function LeadDetails() {
                 const invId = response.data?.invoice?.id || null;
 
                 // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
-                if (!isHost && targetType === 'Borrower' && payload?.amount > 0 && !payload?.payment_intent_id) {
+                if (!isHost && targetType == ENTITY_TYPE_BORROWER && payload?.amount > 0 && !payload?.payment_intent_id) {
                     setNewBorrowerId(bId);
                     setPaymentAmount(payload.amount);
                     setPaymentInvoiceId(invId);
@@ -514,7 +515,7 @@ export default function LeadDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Page Title */}
-                    <div className="row pb-1 page-subheader-sticky bg-body">
+                    <div className="row page-subheader-sticky bg-body">
                         <div className="col-12">
                             <div className="d-flex align-items-center justify-content-between flex-row py-2">
                                 <div className="flex-grow-1">
@@ -604,7 +605,7 @@ export default function LeadDetails() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="tab-content">
-                                    {isLoading || isSaving ? (
+                                        {isLoading || isSaving ? (
                                             <FormLoader count={12} />
                                         ) : (
                                             <>
@@ -1043,7 +1044,7 @@ export default function LeadDetails() {
                 onHide={() => { setShowConvertModal(false); setConvertErrors({}); }}
                 onConfirm={handleConvertConfirm}
                 lead={formData}
-                targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                targetType={formData.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER}
                 loading={conversionLoading}
                 isHost={isHost}
                 backendErrors={convertErrors}
@@ -1053,7 +1054,7 @@ export default function LeadDetails() {
                 onHide={() => { setShowMissingInfoModal(false); setMissingInfoErrors({}); }}
                 onConfirm={handleMissingInfoConfirm}
                 lead={formData}
-                targetType={formData.lead_type === 'Partner' ? 'Partner' : 'Borrower'}
+                targetType={formData.lead_type == ENTITY_TYPE_PARTNER ? ENTITY_TYPE_PARTNER : ENTITY_TYPE_BORROWER}
                 loading={conversionLoading}
                 backendErrors={missingInfoErrors}
             />
