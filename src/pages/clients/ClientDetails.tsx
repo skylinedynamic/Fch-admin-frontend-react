@@ -40,7 +40,7 @@ export default function ClientDetails() {
     const location = useLocation();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
-    const isHost = Number(currentUser?.is_host) == 1;
+    const isHost = currentUser?.is_host == 1;
     const canCreate = hasPermission('create clients');
     const canUpdate = hasPermission('update clients');
 
@@ -295,9 +295,9 @@ export default function ClientDetails() {
 
                 if (updateSuccess) {
                     const tabOrder = [
-                        ENROLLMENT_TABS.PERSONAL, 
-                        ENROLLMENT_TABS.FINANCIALS, 
-                        ENROLLMENT_TABS.CHECKLIST, 
+                        ENROLLMENT_TABS.PERSONAL,
+                        ENROLLMENT_TABS.FINANCIALS,
+                        ENROLLMENT_TABS.CHECKLIST,
                         ENROLLMENT_TABS.DOCUMENTS
                     ];
                     const currentIndex = tabOrder.indexOf(activeTab);
@@ -358,7 +358,7 @@ export default function ClientDetails() {
                                 <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {(id ? canUpdate : canCreate) && (
+                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS].includes(activeTab as any) && (
                                     <button
                                         type="button"
                                         className="btn btn-primary w-lg waves-effect"

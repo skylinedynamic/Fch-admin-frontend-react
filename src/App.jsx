@@ -112,7 +112,10 @@ export default function App() {
             {/* Employees Routes - requires 'view employees' permission */}
             <Route element={<PermissionRoute permission="view employees" />}>
               <Route path="employees" element={<Employees />} />
-              <Route path="employee-details/:id?" element={<EmployeeDetails />} />
+              <Route element={<PermissionRoute permission="create employees" />}>
+                <Route path="employees/create" element={<EmployeeDetails />} />
+              </Route>
+              <Route path="employee-details/:id" element={<EmployeeDetails />} />
             </Route>
 
             {/* Clients Routes - requires 'view clients' permission */}
@@ -167,7 +170,11 @@ export default function App() {
             {/* Contacts Routes - requires 'view contacts' permission */}
             <Route element={<PermissionRoute permission="view contacts" />}>
               <Route path="contacts" element={<Contacts />} />
-              <Route path="contacts/create" element={<ContactDetails />} />
+
+              <Route element={<PermissionRoute permission="create contacts" />}>
+                <Route path="contacts/create" element={<ContactDetails />} />
+              </Route>
+
               <Route path="contacts/:id" element={<ContactDetails />} />
             </Route>
 
