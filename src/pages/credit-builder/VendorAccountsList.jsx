@@ -19,7 +19,7 @@ export default function VendorAccountsList() {
 
     // Sorting state
     const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortOrder, setSortOrder] = useState('asc');
 
     // Filter states
     const [searchText, setSearchText] = useState('');
