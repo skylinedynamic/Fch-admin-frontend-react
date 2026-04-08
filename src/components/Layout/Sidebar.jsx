@@ -80,6 +80,12 @@ const menuItems = [
         permission: "view verification request", // Reuse permission or add new one
         isHostOnly: true,
       },
+      {
+        to: "/vendor-accounts",
+        label: "Vendor Accounts",
+        permission: "view tier", // Temporary permission or add new one
+        isHostOnly: true,
+      },
     ],
   },
   {
