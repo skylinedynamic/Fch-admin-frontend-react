@@ -14,7 +14,7 @@ export default function VendorAccountsList() {
     const [accounts, setAccounts] = useState([]);
     const [selectedAccounts, setSelectedAccounts] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    
+
     // Pagination state
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -35,7 +35,10 @@ export default function VendorAccountsList() {
         const initial = {
             card_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             issuer: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+            credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            typical_personal_fico_min: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            typical_personal_fico_ideal: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            time_in_business_min_months: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -103,11 +106,11 @@ export default function VendorAccountsList() {
 
     const imageBodyTemplate = (rowData) => {
         return (
-            <div className="d-flex align-items-center">
+            <div className="d-flex ">
                 {rowData.full_image_url ? (
-                    <img src={rowData.full_image_url} alt={rowData.card_name} className="rounded" style={{ width: '40px', height: 'auto', objectFit: 'contain' }} />
+                    <img src={rowData.full_image_url} alt={rowData.card_name} className="rounded" style={{ width: '80px', height: 'auto', objectFit: 'contain' }} />
                 ) : (
-                    <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                    <div className="bg-light rounded  justify-content-center" style={{ width: '80px', height: '80px' }}>
                         <i className="ri-image-line text-muted fs-20"></i>
                     </div>
                 )}
@@ -125,7 +128,7 @@ export default function VendorAccountsList() {
 
     const actionBodyTemplate = (rowData) => {
         return (
-            <div className="d-flex gap-2 justify-content-end">
+            <div className="d-flex">
                 <button className="btn btn-soft-primary btn-sm" onClick={() => navigate(`/vendor-accounts/${rowData.id}`)}>
                     <i className="ri-edit-line"></i>
                 </button>
@@ -263,13 +266,13 @@ export default function VendorAccountsList() {
                                         responsiveLayout="scroll"
                                     >
                                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-                                        <Column header="Image" body={imageBodyTemplate} style={{ width: '80px' }} />
-                                        <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by name" style={{ width: '20%' }} />
-                                        <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search by issuer" style={{ width: '15%' }} />
-                                        <Column field="typical_personal_fico_min" header="FICO Min" sortable style={{ width: '10%' }} />
-                                        <Column field="typical_personal_fico_ideal" header="FICO Ideal" sortable style={{ width: '10%' }} />
-                                        <Column field="time_in_business_min_months" header="Biz Months" sortable style={{ width: '10%' }} />
-                                        <Column header="Action" body={actionBodyTemplate} style={{ width: '120px', textAlign: 'right' }} />
+                                        <Column header="Image" body={imageBodyTemplate} style={{ width: '100px' }} />
+                                        <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search" style={{ width: '180px' }} />
+                                        <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
+                                        <Column field="typical_personal_fico_min" header="FICO Min" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
+                                        <Column field="typical_personal_fico_ideal" header="FICO Ideal" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
+                                        <Column field="time_in_business_min_months" header="Minimum Months" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
+                                        <Column header="Action" body={actionBodyTemplate} style={{ width: '60px' }} />
                                     </DataTable>
                                 )}
                             </div>
