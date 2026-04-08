@@ -5,34 +5,61 @@ import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import { fetchVendorAccounts, deleteVendorAccount } from '../../modules/vendor-accounts/services';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
 
 export default function VendorAccountsList() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState([]);
+    
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [lazyParams, setLazyParams] = useState({
-        first: 0,
-        rows: 10,
-        page: 1,
-        sortField: 'id',
-        sortOrder: 'desc',
-        filters: {}
-    });
+
+    // Sorting state
+    const [sortField, setSortField] = useState('id');
+    const [sortOrder, setSortOrder] = useState('desc');
+
+    // Filter states
+    const [searchText, setSearchText] = useState('');
+    const [appliedSearchText, setAppliedSearchText] = useState('');
+    const [filters, setFilters] = useState({});
+    const [appliedFilters, setAppliedFilters] = useState({});
+
+    // Initialize filters
+    const initFilters = () => {
+        const initial = {
+            card_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            issuer: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
+        };
+        setFilters(initial);
+        setAppliedFilters(initial);
+    };
+
+    useEffect(() => {
+        initFilters();
+    }, []);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const payload = {
-                page: lazyParams.page,
-                per_page: lazyParams.rows,
-                sort_field: lazyParams.sortField,
-                sort_order: lazyParams.sortOrder,
-                filters: lazyParams.filters
+                page: page,
+                per_page: perPage,
+                sort_field: sortField,
+                sort_order: sortOrder,
+                search: appliedSearchText,
+                filters: appliedFilters
             };
             const response = await fetchVendorAccounts(payload);
-            setAccounts(response.data || []);
-            setTotalRecords(response.meta?.total || response.total || 0);
+            if (response.status !== false) {
+                setAccounts(response.data || []);
+                setTotalRecords(response.meta?.total || response.total || 0);
+            } else {
+                toast.error(response.message || 'Failed to fetch vendor accounts');
+            }
         } catch (err) {
             console.error(err);
             toast.error('Failed to fetch vendor accounts');
@@ -43,10 +70,32 @@ export default function VendorAccountsList() {
 
     useEffect(() => {
         loadData();
-    }, [lazyParams]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters]);
 
     const onPage = (event) => {
-        setLazyParams(prev => ({ ...prev, first: event.first, rows: event.rows, page: event.page + 1 }));
+        const nextPerPage = event.rows;
+        const nextPage = Math.floor(event.first / event.rows) + 1;
+        setPerPage(nextPerPage);
+        setPage(nextPage);
+    };
+
+    const onSort = (event) => {
+        setSortField(event.sortField);
+        setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
+        setPage(1);
+    };
+
+    const handleApplyFilters = () => {
+        setAppliedSearchText(searchText);
+        setAppliedFilters(filters);
+        setPage(1);
+    };
+
+    const handleClearFilters = () => {
+        setSearchText('');
+        setAppliedSearchText('');
+        initFilters();
+        setPage(1);
     };
 
     const imageBodyTemplate = (rowData) => {
@@ -69,14 +118,6 @@ export default function VendorAccountsList() {
                 {rowData.card_name}
             </Link>
         );
-    };
-
-    const referenceBodyTemplate = (rowData) => {
-        return rowData.reference_url ? (
-            <a href={rowData.reference_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-soft-info py-1 px-2 border-0">
-                <i className="ri-external-link-line me-1"></i> Link
-            </a>
-        ) : '-';
     };
 
     const actionBodyTemplate = (rowData) => {
@@ -131,30 +172,65 @@ export default function VendorAccountsList() {
                 <div className="row">
                     <div className="col-12">
                         <div className="card shadow-none border">
-                            <div className="card-body p-0">
-                                {loading ? (
-                                    <div className="p-4">
-                                        <TableLoader rows={5} columns={[{ style: { width: '8%' } }, { style: { width: '25%' } }, { style: { width: '15%' } }, { style: { width: '10%' } }, { style: { width: '10%' } }, { style: { width: '12%' } }, { style: { width: '10%' } }, { style: { width: '10%' } }]} />
+                            <div className="card-body">
+                                <div className="row g-3 mb-3">
+                                    <div className="col-xxl-9 col-sm-12">
+                                        <div className="search-box">
+                                            <input
+                                                type="text"
+                                                className="form-control search bg-light border-light"
+                                                placeholder="Search by card name, issuer..."
+                                                value={searchText}
+                                                onChange={(e) => setSearchText(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                            />
+                                            <i className="ri-search-line search-icon"></i>
+                                        </div>
                                     </div>
+                                    <div className="col-xxl-3 col-sm-12">
+                                        <div className="d-flex gap-2">
+                                            <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                            </button>
+                                            <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {loading ? (
+                                    <TableLoader rows={10} columns={new Array(7).fill({ style: { minWidth: '120px' } })} />
                                 ) : (
                                     <DataTable
                                         value={accounts}
                                         paginator
-                                        rows={lazyParams.rows}
-                                        totalRecords={totalRecords}
                                         lazy
+                                        rows={perPage}
+                                        first={(page - 1) * perPage}
+                                        totalRecords={totalRecords}
                                         onPage={onPage}
+                                        onSort={onSort}
+                                        sortField={sortField}
+                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                        onFilter={(e) => {
+                                            setFilters(e.filters);
+                                            setAppliedFilters(e.filters);
+                                            setPage(1);
+                                        }}
+                                        filters={filters}
+                                        filterDisplay="menu"
                                         className="p-datatable-sm custom-datatable"
                                         tableStyle={{ minWidth: '80rem' }}
                                         dataKey="id"
                                         responsiveLayout="scroll"
                                     >
                                         <Column header="Image" body={imageBodyTemplate} style={{ width: '80px' }} />
-                                        <Column field="card_name" header="Name" body={nameBodyTemplate} sortable style={{ width: '20%' }} />
-                                        <Column field="issuer" header="Issuer" sortable style={{ width: '15%' }} />
-                                        <Column field="typical_personal_fico_min" header="Personal_FICO_Min" sortable style={{ width: '12%' }} />
-                                        <Column field="typical_personal_fico_ideal" header="Personal_FICO_Ideal" sortable style={{ width: '12%' }} />
-                                        <Column field="time_in_business_min_months" header="Business_Min_Months" sortable style={{ width: '15%' }} />
+                                        <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search by name" style={{ width: '20%' }} />
+                                        <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search by issuer" style={{ width: '15%' }} />
+                                        <Column field="typical_personal_fico_min" header="FICO Min" sortable style={{ width: '10%' }} />
+                                        <Column field="typical_personal_fico_ideal" header="FICO Ideal" sortable style={{ width: '10%' }} />
+                                        <Column field="time_in_business_min_months" header="Biz Months" sortable style={{ width: '10%' }} />
                                         <Column header="Action" body={actionBodyTemplate} style={{ width: '120px', textAlign: 'right' }} />
                                     </DataTable>
                                 )}
