@@ -4,16 +4,17 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
-import { fetchVendorAccounts, deleteVendorAccount } from '../../modules/vendor-accounts/services';
+import { fetchCreditAccounts } from '../../modules/credit-accounts/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { usePermissions } from '../../lib/auth/usePermissions';
 
-export default function VendorAccountsList() {
+export default function CreditAccountsList() {
+    const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState([]);
-    const [selectedAccounts, setSelectedAccounts] = useState([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -59,16 +60,16 @@ export default function VendorAccountsList() {
                 search: appliedSearchText,
                 filters: appliedFilters
             };
-            const response = await fetchVendorAccounts(payload);
+            const response = await fetchCreditAccounts(payload);
             if (response.status !== false) {
                 setAccounts(response.data || []);
                 setTotalRecords(response.meta?.total || response.total || 0);
             } else {
-                toast.error(response.message || 'Failed to fetch vendor accounts');
+                toast.error(response.message || 'Failed to fetch credit accounts');
             }
         } catch (err) {
             console.error(err);
-            toast.error('Failed to fetch vendor accounts');
+            toast.error('Failed to fetch credit accounts');
         } finally {
             setLoading(false);
         }
@@ -120,7 +121,7 @@ export default function VendorAccountsList() {
 
     const nameBodyTemplate = (rowData) => {
         return (
-            <Link to={`/vendor-accounts/${rowData.id}`} className="fw-medium link-primary">
+            <Link to={`/credit-accounts/${rowData.id}`} className="fw-medium link-primary">
                 {rowData.card_name}
             </Link>
         );
@@ -129,34 +130,21 @@ export default function VendorAccountsList() {
     const actionBodyTemplate = (rowData) => {
         return (
             <div className="d-flex">
-                <button className="btn btn-soft-primary btn-sm" onClick={() => navigate(`/vendor-accounts/${rowData.id}`)}>
-                    <i className="ri-edit-line"></i>
-                </button>
+                {hasPermission('update credit accounts') && (
+                    <button className="btn btn-soft-primary btn-sm me-2" onClick={() => navigate(`/credit-accounts/${rowData.id}`)}>
+                        <i className="ri-edit-line"></i>
+                    </button>
+                )}
             </div>
         );
     };
 
-    const handleBulkDelete = async () => {
-        setLoading(true);
-        try {
-            for (const account of selectedAccounts) {
-                await deleteVendorAccount(account.id);
-            }
-            toast.success('Selected accounts deleted successfully');
-            setSelectedAccounts([]);
-            setShowDeleteModal(false);
-            loadData();
-        } catch (err) {
-            toast.error('Failed to delete some accounts');
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this account?')) return;
         try {
-            await deleteVendorAccount(id);
+            await deleteCreditAccount(id);
             toast.success('Account deleted successfully');
             loadData();
         } catch (err) {
@@ -171,33 +159,19 @@ export default function VendorAccountsList() {
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Vendor Accounts</h4>
+                                <h4 className="fs-20 mb-1">Credit Accounts</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item">Credit Builder</li>
-                                        <li className="breadcrumb-item active">Vendor Accounts</li>
+                                        <li className="breadcrumb-item active">Credit Accounts</li>
                                     </ol>
                                 </nav>
                             </div>
                             <div className="mt-0">
                                 <div className="btn-group">
-                                    {selectedAccounts && selectedAccounts.length > 0 ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle Dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={() => setShowDeleteModal(true)}>
-                                                        <i className="ri-delete-bin-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : (
-                                        <Link to="/vendor-accounts/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                    {hasPermission('create credit accounts') && (
+                                        <Link to="/credit-accounts/create" className="btn btn-primary fw-medium waves-effect waves-light">
                                             <i className="ri-add-fill me-1 align-bottom"></i> Add Account
                                         </Link>
                                     )}
@@ -251,8 +225,6 @@ export default function VendorAccountsList() {
                                         onSort={onSort}
                                         sortField={sortField}
                                         sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                        selection={selectedAccounts}
-                                        onSelectionChange={(e) => setSelectedAccounts(e.value)}
                                         onFilter={(e) => {
                                             setFilters(e.filters);
                                             setAppliedFilters(e.filters);
@@ -265,7 +237,7 @@ export default function VendorAccountsList() {
                                         dataKey="id"
                                         responsiveLayout="scroll"
                                     >
-                                        <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
+
                                         <Column header="Image" body={imageBodyTemplate} style={{ width: '100px' }} />
                                         <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search" style={{ width: '180px' }} />
                                         <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
@@ -280,13 +252,7 @@ export default function VendorAccountsList() {
                     </div>
                 </div>
             </div>
-            <DeleteConfirmationModal
-                show={showDeleteModal}
-                onConfirm={handleBulkDelete}
-                onClose={() => setShowDeleteModal(false)}
-                loading={loading}
-                text={`The selected ${selectedAccounts.length} accounts and all associated data will be deleted.`}
-            />
+
         </div>
     );
 }

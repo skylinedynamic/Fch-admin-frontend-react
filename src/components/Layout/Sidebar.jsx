@@ -81,9 +81,9 @@ const menuItems = [
         isHostOnly: true,
       },
       {
-        to: "/vendor-accounts",
-        label: "Vendor Accounts",
-        permission: "view tier", // Temporary permission or add new one
+        to: "/credit-accounts",
+        label: "Credit Accounts",
+        permission: "view credit accounts", // Temporary permission or add new one
         isHostOnly: true,
       },
     ],

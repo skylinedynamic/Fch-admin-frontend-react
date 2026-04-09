@@ -1,6 +1,6 @@
 import { apiClient } from '../../lib/http/apiClient';
 
-export interface VendorAccount {
+export interface CreditAccount {
     id?: number;
     card_name: string;
     issuer: string;
@@ -27,27 +27,27 @@ export interface VendorAccount {
     status: string;
 }
 
-export const fetchVendorAccounts = async (payload: any = {}) => {
-    const response = await apiClient.post('/admin/credit-builder/vendor-accounts/fetch-accounts', payload);
+export const fetchCreditAccounts = async (payload: any = {}) => {
+    const response = await apiClient.post('/admin/credit-builder/credit-accounts/fetch-accounts', payload);
     return response.data;
 };
 
-export const getVendorAccount = async (id: number | string) => {
-    const { data } = await apiClient.get(`/admin/credit-builder/vendor-accounts/${id}`);
+export const getCreditAccount = async (id: number | string) => {
+    const { data } = await apiClient.get(`/admin/credit-builder/credit-accounts/${id}`);
     return data;
 };
 
-export const createVendorAccount = async (payload: VendorAccount) => {
-    const { data } = await apiClient.post('/admin/credit-builder/vendor-accounts', payload);
+export const createCreditAccount = async (payload: CreditAccount) => {
+    const { data } = await apiClient.post('/admin/credit-builder/credit-accounts', payload);
     return data;
 };
 
-export const updateVendorAccount = async (id: number | string, payload: VendorAccount) => {
-    const { data } = await apiClient.put(`/admin/credit-builder/vendor-accounts/${id}`, payload);
+export const updateCreditAccount = async (id: number | string, payload: CreditAccount) => {
+    const { data } = await apiClient.put(`/admin/credit-builder/credit-accounts/${id}`, payload);
     return data;
 };
 
-export const deleteVendorAccount = async (id: number | string) => {
-    const { data } = await apiClient.delete(`/admin/credit-builder/vendor-accounts/${id}`);
+export const deleteCreditAccount = async (id: number | string) => {
+    const { data } = await apiClient.delete(`/admin/credit-builder/credit-accounts/${id}`);
     return data;
 };

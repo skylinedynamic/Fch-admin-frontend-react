@@ -22,8 +22,8 @@ import Clients from './pages/clients/Clients';
 import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
-import VendorAccountsList from './pages/credit-builder/VendorAccountsList.jsx';
-import VendorAccountForm from './pages/credit-builder/VendorAccountForm.jsx';
+import CreditAccountsList from './pages/credit-builder/CreditAccountsList.jsx';
+import CreditAccountForm from './pages/credit-builder/CreditAccountForm.jsx';
 import VerificationCenter from './pages/credit-builder/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -159,9 +159,9 @@ export default function App() {
               <Route path="tiers" element={<TiersList />} />
               <Route path="tiers/create" element={<TierForm />} />
               <Route path="tiers/:id" element={<TierForm />} />
-              <Route path="vendor-accounts" element={<VendorAccountsList />} />
-              <Route path="vendor-accounts/create" element={<VendorAccountForm />} />
-              <Route path="vendor-accounts/:id" element={<VendorAccountForm />} />
+              <Route path="credit-accounts" element={<CreditAccountsList />} />
+              <Route path="credit-accounts/create" element={<CreditAccountForm />} />
+              <Route path="credit-accounts/:id" element={<CreditAccountForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />

@@ -2,15 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import FormLoader from '../../components/Loader/FormLoader';
-import { createVendorAccount, updateVendorAccount, getVendorAccount } from '../../modules/vendor-accounts/services';
+import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../../modules/credit-accounts/services';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 
-export default function VendorAccountForm() {
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
+
+export default function CreditAccountForm() {
+    const { hasPermission } = usePermissions();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
+    const [showFileManager, setShowFileManager] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState(null);
+
     const [formData, setFormData] = useState({
         card_name: '',
         issuer: '',
@@ -28,7 +36,6 @@ export default function VendorAccountForm() {
         cash_based: '',
         velocity_sensitive: '',
         relationship_required: 'No',
-        internal_notes: '',
         portal_tier_unlock: '',
         borrower_exposure: '',
         sequencing_priority: '',
@@ -41,7 +48,7 @@ export default function VendorAccountForm() {
         if (isEditMode) {
             const loadAccount = async () => {
                 try {
-                    const response = await getVendorAccount(id);
+                    const response = await getCreditAccount(id);
                     const data = response.data || response;
                     setFormData({
                         ...data,
@@ -53,7 +60,7 @@ export default function VendorAccountForm() {
                     });
                 } catch (err) {
                     toast.error('Failed to load account details');
-                    navigate('/vendor-accounts');
+                    navigate('/credit-accounts');
                 } finally {
                     setInitialLoading(false);
                 }
@@ -61,6 +68,52 @@ export default function VendorAccountForm() {
             loadAccount();
         }
     }, [id, isEditMode, navigate]);
+
+    const handleFileSelection = (selectedFiles) => {
+        if (!selectedFiles || selectedFiles.length === 0) return;
+
+        const file = selectedFiles[0];
+        const extension = file.path.split('.').pop()?.toLowerCase();
+        const allowed = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+
+        if (!extension || !allowed.includes(extension)) {
+            toast.error(`File type ".${extension}" not allowed. Please select an image file.`);
+            return;
+        }
+
+        setPreviewUrl(file.url);
+        setFormData(prev => ({
+            ...prev,
+            image_url: file.path
+        }));
+        setShowFileManager(false);
+    };
+
+    const getImageSrc = () => {
+        const buildUrl = (path) => {
+            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
+                return path;
+            }
+            const baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
+            let cleanPath = path.trim().replace(/^\/+/, '');
+            const fullUrl = `${baseUrl}/${cleanPath}`;
+            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+        };
+
+        if (previewUrl && formData.image_url && !formData.image_url.startsWith('http')) {
+            return buildUrl(previewUrl);
+        }
+
+        if (formData.full_image_url) {
+            return formData.full_image_url;
+        }
+
+        if (formData.image_url && typeof formData.image_url === 'string') {
+            return buildUrl(formData.image_url);
+        }
+
+        return null;
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -72,13 +125,13 @@ export default function VendorAccountForm() {
         setLoading(true);
         try {
             if (isEditMode) {
-                await updateVendorAccount(id, formData);
+                await updateCreditAccount(id, formData);
                 toast.success('Account updated successfully');
             } else {
-                await createVendorAccount(formData);
+                await createCreditAccount(formData);
                 toast.success('Account created successfully');
             }
-            navigate('/vendor-accounts');
+            navigate('/credit-accounts');
         } catch (err) {
             console.error(err);
             const errorMsg = err.response?.data?.message || 'Failed to save account';
@@ -105,7 +158,7 @@ export default function VendorAccountForm() {
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{isEditMode ? 'Edit Vendor Account' : 'Add Vendor Account'}</h4>
+                                <h4 className="fs-20 mb-1">{isEditMode ? 'Edit Credit Account' : 'Add Credit Account'}</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
@@ -115,13 +168,15 @@ export default function VendorAccountForm() {
                                 </nav>
                             </div>
                             <div className="mt-3 mt-lg-0">
-                                <Link to="/vendor-accounts" className="btn btn-outline-secondary w-lg waves-effect me-2">
+                                <Link to="/credit-accounts" className="btn btn-outline-secondary w-lg waves-effect me-2">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button type="submit" form="vendor-account-form" className="btn btn-primary w-lg waves-effect" disabled={loading}>
-                                    {loading ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ri-save-3-line align-middle me-1"></i>}
-                                    {isEditMode ? 'Update' : 'Save'}
-                                </button>
+                                {((isEditMode && hasPermission('update credit accounts')) || (!isEditMode && hasPermission('create credit accounts'))) && (
+                                    <button type="submit" form="credit-account-form" className="btn btn-primary w-lg waves-effect" disabled={loading}>
+                                        {loading ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ri-save-3-line align-middle me-1"></i>}
+                                        {isEditMode ? 'Update' : 'Save'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -131,25 +186,47 @@ export default function VendorAccountForm() {
                     <div className="col-12">
                         <div className="card border">
                             <div className="card-body p-4">
-                                <form id="vendor-account-form" onSubmit={handleSubmit}>
+                                <form id="credit-account-form" onSubmit={handleSubmit}>
                                     <div className="row g-3">
                                         {/* Row 1: Logo and Card Info */}
                                         <div className="col-md-6 text-center border-end pe-4 d-flex flex-column align-items-center justify-content-center">
-                                            <div className="mb-3">
+                                            <div className="mb-2">
                                                 <label className="form-label d-block text-start w-100">Card Image URL</label>
-                                                <input type="text" name="image_url" className="form-control" value={formData.image_url} onChange={handleChange} placeholder="e.g. vendor-applications/filename.png" />
                                             </div>
-                                            <div className="p-3 bg-light rounded" style={{ minWidth: '200px', minHeight: '120px' }}>
-                                                {formData.full_image_url || formData.image_url ? (
-                                                    <img 
-                                                        src={formData.full_image_url || (formData.image_url.startsWith('http') ? formData.image_url : `/storage/${formData.image_url.replace(/ /g, '%20')}`)} 
-                                                        alt="Preview" 
-                                                        style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }} 
-                                                    />
-                                                ) : (
-                                                    <div className="text-muted small py-4">Image Preview Will Appear Here</div>
-                                                )}
+                                            <div className="position-relative">
+                                                <div className="p-3 bg-light rounded" style={{ minWidth: '220px', minHeight: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    {getImageSrc() ? (
+                                                        <img
+                                                            src={getImageSrc()}
+                                                            alt="Preview"
+                                                            style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }}
+                                                        />
+                                                    ) : (
+                                                        <div className="text-muted small py-4">Image Preview Will Appear Here</div>
+                                                    )}
+                                                </div>
+                                                <div className="avatar-xs p-0 rounded-circle profile-photo-edit" style={{ position: 'absolute', bottom: '-10px', right: '-10px', zIndex: 1 }}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
+                                                        onClick={() => setShowFileManager(true)}
+                                                        title="Upload card image"
+                                                    >
+                                                        <span className="avatar-title rounded-circle bg-light text-body shadow">
+                                                            <i className="ri-camera-fill"></i>
+                                                        </span>
+                                                    </button>
+                                                </div>
                                             </div>
+
+                                            <FileManagerModal
+                                                isOpen={showFileManager}
+                                                toggle={() => setShowFileManager(!showFileManager)}
+                                                selectionMode={true}
+                                                onSelectFiles={handleFileSelection}
+                                                entityType="credit-accounts"
+                                                entityId={id || formData?.id}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 ps-4">
@@ -224,10 +301,7 @@ export default function VendorAccountForm() {
                                             </select>
                                         </div>
 
-                                        <div className="col-12">
-                                            <label className="form-label">Internal Notes</label>
-                                            <textarea name="internal_notes" className="form-control" rows="3" value={formData.internal_notes} onChange={handleChange}></textarea>
-                                        </div>
+
                                     </div>
                                 </form>
                             </div>
