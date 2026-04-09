@@ -44,3 +44,13 @@ export const VENDOR_STATUS_OPTIONS = {
     ACTIVE: 'Active',
     INACTIVE: 'Inactive'
 };
+
+export const YES_NO_OPTIONS: ConfigOption[] = [
+    { label: 'Yes', value: 'Yes' },
+    { label: 'No', value: 'No' }
+];
+
+export const STATUS_CLASS_MAP: { [key: string]: string } = {
+    'Active': 'bg-success-subtle text-success',
+    'Inactive': 'bg-danger-subtle text-danger'
+};

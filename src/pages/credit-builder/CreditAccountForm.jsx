@@ -5,6 +5,7 @@ import FormLoader from '../../components/Loader/FormLoader';
 import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../../modules/credit-accounts/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { STATUS_OPTIONS, YES_NO_OPTIONS, CATEGORY_OPTIONS } from '../../config/creditBuilder';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
@@ -18,6 +19,7 @@ export default function CreditAccountForm() {
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [errors, setErrors] = useState({});
 
     const [formData, setFormData] = useState({
         card_name: '',
@@ -74,7 +76,7 @@ export default function CreditAccountForm() {
 
         const file = selectedFiles[0];
         const extension = file.path.split('.').pop()?.toLowerCase();
-        const allowed = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+        const allowed = ['jpg', 'jpeg', 'png', 'svg', 'webp', 'avif'];
 
         if (!extension || !allowed.includes(extension)) {
             toast.error(`File type ".${extension}" not allowed. Please select an image file.`);
@@ -82,9 +84,14 @@ export default function CreditAccountForm() {
         }
 
         setPreviewUrl(file.url);
+
+        // Ensure accurate path is set (prepended with entity directory)
+        const cleanPath = file.path.trim().replace(/^\/+/, '');
+        const fullPath = `credit-accounts/${cleanPath}`;
+
         setFormData(prev => ({
             ...prev,
-            image_url: file.path
+            image_url: fullPath
         }));
         setShowFileManager(false);
     };
@@ -96,8 +103,9 @@ export default function CreditAccountForm() {
             }
             const baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
             let cleanPath = path.trim().replace(/^\/+/, '');
-            const fullUrl = `${baseUrl}/${cleanPath}`;
-            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+            // Consolidate the URL and encode spaces/special characters
+            const fullUrl = `${baseUrl}/${cleanPath}`.replace(/([^:]\/)\/+/g, "$1");
+            return encodeURI(fullUrl);
         };
 
         if (previewUrl && formData.image_url && !formData.image_url.startsWith('http')) {
@@ -118,6 +126,14 @@ export default function CreditAccountForm() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear error when field changes
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -134,8 +150,12 @@ export default function CreditAccountForm() {
             navigate('/credit-accounts');
         } catch (err) {
             console.error(err);
-            const errorMsg = err.response?.data?.message || 'Failed to save account';
-            toast.error(errorMsg);
+            if (err.response?.status === 422) {
+                setErrors(err.response.data.errors || {});
+            } else {
+                const errorMsg = err.response?.data?.message || 'Failed to save account';
+                toast.error(errorMsg);
+            }
         } finally {
             setLoading(false);
         }
@@ -145,7 +165,15 @@ export default function CreditAccountForm() {
         return (
             <div className="page-content">
                 <div className="container-fluid">
-                    <FormLoader count={6} />
+                    <div className="row pb-3">
+                        <div className="col-12">
+                            <div className="card shadow-none border">
+                                <div className="card-body p-4">
+                                    <FormLoader count={8} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -191,10 +219,10 @@ export default function CreditAccountForm() {
                                         {/* Row 1: Logo and Card Info */}
                                         <div className="col-md-6 text-center border-end pe-4 d-flex flex-column align-items-center justify-content-center">
                                             <div className="mb-2">
-                                                <label className="form-label d-block text-start w-100">Card Image URL</label>
+                                                <label className="form-label d-block text-start w-100">Card Image</label>
                                             </div>
                                             <div className="position-relative">
-                                                <div className="p-3 bg-light rounded" style={{ minWidth: '220px', minHeight: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div className={`p-3 bg-light rounded ${errors.image_url ? 'border border-danger' : ''}`} style={{ minWidth: '220px', minHeight: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                     {getImageSrc() ? (
                                                         <img
                                                             src={getImageSrc()}
@@ -205,7 +233,8 @@ export default function CreditAccountForm() {
                                                         <div className="text-muted small py-4">Image Preview Will Appear Here</div>
                                                     )}
                                                 </div>
-                                                <div className="avatar-xs p-0 rounded-circle profile-photo-edit" style={{ position: 'absolute', bottom: '-10px', right: '-10px', zIndex: 1 }}>
+                                                {errors.image_url && <div className="text-danger small mt-1">{errors.image_url}</div>}
+                                                <div className="avatar-xs p-0 rounded-circle profile-photo-edit" style={{ position: 'absolute', bottom: errors.image_url ? '12px' : '-10px', right: '-10px', zIndex: 1 }}>
                                                     <button
                                                         type="button"
                                                         className="btn p-0 border-0 rounded-circle profile-photo-edit avatar-xs"
@@ -225,7 +254,7 @@ export default function CreditAccountForm() {
                                                 selectionMode={true}
                                                 onSelectFiles={handleFileSelection}
                                                 entityType="credit-accounts"
-                                                entityId={id || formData?.id}
+                                                entityId={id || formData?.id || 0}
                                             />
                                         </div>
 
@@ -233,11 +262,13 @@ export default function CreditAccountForm() {
                                             <div className="row g-3">
                                                 <div className="col-12">
                                                     <label className="form-label">Card Name <span className="text-danger">*</span></label>
-                                                    <input type="text" name="card_name" className="form-control" value={formData.card_name} onChange={handleChange} required />
+                                                    <input type="text" name="card_name" className={`form-control ${errors.card_name ? 'is-invalid' : ''}`} value={formData.card_name} onChange={handleChange} />
+                                                    {errors.card_name && <div className="invalid-feedback">{errors.card_name}</div>}
                                                 </div>
                                                 <div className="col-12">
                                                     <label className="form-label">Issuer <span className="text-danger">*</span></label>
-                                                    <input type="text" name="issuer" className="form-control" value={formData.issuer} onChange={handleChange} required />
+                                                    <input type="text" name="issuer" className={`form-control ${errors.issuer ? 'is-invalid' : ''}`} value={formData.issuer} onChange={handleChange} />
+                                                    {errors.issuer && <div className="invalid-feedback">{errors.issuer}</div>}
                                                 </div>
                                                 <div className="col-12">
                                                     <label className="form-label">Reference URL (Link)</label>
@@ -250,16 +281,19 @@ export default function CreditAccountForm() {
 
                                         {/* Details Grid */}
                                         <div className="col-md-3">
-                                            <label className="form-label">FICO Min</label>
-                                            <input type="number" name="typical_personal_fico_min" className="form-control" value={formData.typical_personal_fico_min} onChange={handleChange} />
+                                            <label className="form-label">FICO Min <span className="text-danger">*</span></label>
+                                            <input type="number" name="typical_personal_fico_min" className={`form-control ${errors.typical_personal_fico_min ? 'is-invalid' : ''}`} value={formData.typical_personal_fico_min} onChange={handleChange} />
+                                            {errors.typical_personal_fico_min && <div className="invalid-feedback">{errors.typical_personal_fico_min}</div>}
                                         </div>
                                         <div className="col-md-3">
-                                            <label className="form-label">FICO Ideal</label>
-                                            <input type="number" name="typical_personal_fico_ideal" className="form-control" value={formData.typical_personal_fico_ideal} onChange={handleChange} />
+                                            <label className="form-label">FICO Ideal <span className="text-danger">*</span></label>
+                                            <input type="number" name="typical_personal_fico_ideal" className={`form-control ${errors.typical_personal_fico_ideal ? 'is-invalid' : ''}`} value={formData.typical_personal_fico_ideal} onChange={handleChange} />
+                                            {errors.typical_personal_fico_ideal && <div className="invalid-feedback">{errors.typical_personal_fico_ideal}</div>}
                                         </div>
                                         <div className="col-md-3">
-                                            <label className="form-label">Biz Min Months</label>
-                                            <input type="number" name="time_in_business_min_months" className="form-control" value={formData.time_in_business_min_months} onChange={handleChange} />
+                                            <label className="form-label">Biz Min Months <span className="text-danger">*</span></label>
+                                            <input type="number" name="time_in_business_min_months" className={`form-control ${errors.time_in_business_min_months ? 'is-invalid' : ''}`} value={formData.time_in_business_min_months} onChange={handleChange} />
+                                            {errors.time_in_business_min_months && <div className="invalid-feedback">{errors.time_in_business_min_months}</div>}
                                         </div>
                                         <div className="col-md-3">
                                             <label className="form-label">Approval Level</label>
@@ -276,29 +310,68 @@ export default function CreditAccountForm() {
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label">Credit Category</label>
-                                            <input type="text" name="credit_category" className="form-control" value={formData.credit_category} onChange={handleChange} />
+                                            <select name="credit_category" className="form-select" value={formData.credit_category} onChange={handleChange}>
+                                                <option value="">Select Category</option>
+                                                {CATEGORY_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
 
-                                        <div className="col-md-4">
+                                        <div className="col-md-3">
                                             <label className="form-label">Business Credit Req</label>
                                             <select name="business_credit_required" className="form-select" value={formData.business_credit_required} onChange={handleChange}>
-                                                <option value="Yes">Yes</option>
-                                                <option value="No">No</option>
+                                                {YES_NO_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
-                                        <div className="col-md-4">
+                                        <div className="col-md-3">
+                                            <label className="form-label">Cash Based</label>
+                                            <select name="cash_based" className="form-select" value={formData.cash_based} onChange={handleChange}>
+                                                <option value="">Select</option>
+                                                {YES_NO_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label">Velocity Sensitive</label>
+                                            <select name="velocity_sensitive" className="form-select" value={formData.velocity_sensitive} onChange={handleChange}>
+                                                <option value="">Select</option>
+                                                {YES_NO_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-md-3">
                                             <label className="form-label">PG Required</label>
                                             <select name="pg_required" className="form-select" value={formData.pg_required} onChange={handleChange}>
-                                                <option value="Yes">Yes</option>
-                                                <option value="No">No</option>
+                                                {YES_NO_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
-                                        <div className="col-md-4">
+                                        <div className="col-md-3">
                                             <label className="form-label">Status</label>
-                                            <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
-                                                <option value="Active">Active</option>
-                                                <option value="Inactive">Inactive</option>
+                                            <select name="status" className={`form-select ${errors.status ? 'is-invalid' : ''}`} value={formData.status} onChange={handleChange}>
+                                                {STATUS_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
                                             </select>
+                                            {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                                         </div>
 
 

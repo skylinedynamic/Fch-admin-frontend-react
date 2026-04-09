@@ -8,6 +8,7 @@ import { fetchCreditAccounts } from '../../modules/credit-accounts/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { usePermissions } from '../../lib/auth/usePermissions';
+import { STATUS_OPTIONS, STATUS_CLASS_MAP, CATEGORY_OPTIONS } from '../../config/creditBuilder';
 
 export default function CreditAccountsList() {
     const { hasPermission } = usePermissions();
@@ -39,7 +40,8 @@ export default function CreditAccountsList() {
             credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
             typical_personal_fico_min: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             typical_personal_fico_ideal: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            time_in_business_min_months: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] }
+            time_in_business_min_months: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -127,6 +129,54 @@ export default function CreditAccountsList() {
         );
     };
 
+    const statusBodyTemplate = (rowData) => {
+        const status = rowData.status || 'Active';
+        const badgeClass = STATUS_CLASS_MAP[status] || 'bg-light text-muted';
+        return (
+            <span className={`badge ${badgeClass} fs-12`}>
+                {status}
+            </span>
+        );
+    };
+
+    const statusFilterTemplate = (options) => {
+        return (
+            <div className="flex align-items-center gap-2">
+                <select
+                    value={options.value || ''}
+                    onChange={(e) => options.filterCallback(e.target.value)}
+                    className="form-select form-select-sm"
+                >
+                    <option value="">All Status</option>
+                    {STATUS_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        );
+    };
+
+    const categoryFilterTemplate = (options) => {
+        return (
+            <div className="flex align-items-center gap-2">
+                <select
+                    value={options.value || ''}
+                    onChange={(e) => options.filterCallback(e.target.value)}
+                    className="form-select form-select-sm"
+                >
+                    <option value="">All Categories</option>
+                    {CATEGORY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        );
+    };
+
     const actionBodyTemplate = (rowData) => {
         return (
             <div className="d-flex">
@@ -186,7 +236,7 @@ export default function CreditAccountsList() {
                         <div className="card shadow-none border">
                             <div className="card-body">
                                 <div className="row g-3 mb-3">
-                                    <div className="col-xxl-9 col-sm-12">
+                                    <div className="col-xxl-7 col-sm-12">
                                         <div className="search-box">
                                             <input
                                                 type="text"
@@ -198,6 +248,24 @@ export default function CreditAccountsList() {
                                             />
                                             <i className="ri-search-line search-icon"></i>
                                         </div>
+                                    </div>
+                                    <div className="col-xxl-2 col-sm-12">
+                                        <select
+                                            className="form-select bg-light border-light"
+                                            value={filters.status?.constraints[0]?.value || ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setFilters(prev => ({
+                                                    ...prev,
+                                                    status: { ...prev.status, constraints: [{ ...prev.status.constraints[0], value: val }] }
+                                                }));
+                                            }}
+                                        >
+                                            <option value="">All Status</option>
+                                            {STATUS_OPTIONS.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div className="col-xxl-3 col-sm-12">
                                         <div className="d-flex gap-2">
@@ -241,9 +309,11 @@ export default function CreditAccountsList() {
                                         <Column header="Image" body={imageBodyTemplate} style={{ width: '100px' }} />
                                         <Column field="card_name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search" style={{ width: '180px' }} />
                                         <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
+                                        <Column field="credit_category" header="Category" sortable filter filterElement={categoryFilterTemplate} showFilterMenu={false} filterPlaceholder="Search" style={{ width: '180px' }} />
                                         <Column field="typical_personal_fico_min" header="FICO Min" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
                                         <Column field="typical_personal_fico_ideal" header="FICO Ideal" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
                                         <Column field="time_in_business_min_months" header="Minimum Months" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
+                                        <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterTemplate} showFilterMenu={false} filterPlaceholder="Search" style={{ width: '120px' }} />
                                         <Column header="Action" body={actionBodyTemplate} style={{ width: '60px' }} />
                                     </DataTable>
                                 )}
