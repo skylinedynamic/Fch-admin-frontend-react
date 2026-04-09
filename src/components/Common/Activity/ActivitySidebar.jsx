@@ -338,7 +338,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             </div>
 
             {/* Card Body with Scrollbar */}
-            <div className="card-body p-0">
+            <div className="card-body p-0 pb-4">
                 <div
                     className="activity-scroll-container"
                     style={{
