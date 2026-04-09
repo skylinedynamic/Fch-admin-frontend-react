@@ -4,7 +4,7 @@ import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
-import { fetchCreditAccounts } from '../../modules/credit-accounts/services';
+import { fetchCreditAccounts, deleteCreditAccount, updateCreditAccountStatus } from '../../modules/credit-accounts/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -132,8 +132,14 @@ export default function CreditAccountsList() {
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status || 'Active';
         const badgeClass = STATUS_CLASS_MAP[status] || 'bg-light text-muted';
+        const canUpdate = hasPermission('update credit accounts');
         return (
-            <span className={`badge ${badgeClass} fs-12`}>
+            <span 
+                className={`badge ${badgeClass} fs-12 ${canUpdate ? 'cursor-pointer' : ''}`}
+                onClick={() => canUpdate && handleStatusChange(rowData.id, status)}
+                style={{ cursor: canUpdate ? 'pointer' : 'default' }}
+                title={canUpdate ? 'Click to change status' : ''}
+            >
                 {status}
             </span>
         );
@@ -190,6 +196,18 @@ export default function CreditAccountsList() {
     };
 
 
+
+    const handleStatusChange = async (id, currentStatus) => {
+        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+        try {
+            await updateCreditAccountStatus(id, newStatus);
+            toast.success(`Status updated to ${newStatus}`);
+            loadData();
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update status');
+        }
+    };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this account?')) return;

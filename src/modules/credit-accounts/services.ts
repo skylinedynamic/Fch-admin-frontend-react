@@ -51,3 +51,8 @@ export const deleteCreditAccount = async (id: number | string) => {
     const { data } = await apiClient.delete(`/admin/credit-builder/credit-accounts/${id}`);
     return data;
 };
+
+export const updateCreditAccountStatus = async (id: number | string, status: string) => {
+    const { data } = await apiClient.patch(`/admin/credit-builder/credit-accounts/${id}/status`, { status });
+    return data;
+};

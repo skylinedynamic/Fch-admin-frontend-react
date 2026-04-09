@@ -142,7 +142,7 @@ export default function CreditAccountForm() {
         try {
             if (isEditMode) {
                 await updateCreditAccount(id, formData);
-                toast.success('Account updated successfully');
+                toast.success('Credit Account updated successfully');
             } else {
                 await createCreditAccount(formData);
                 toast.success('Account created successfully');
