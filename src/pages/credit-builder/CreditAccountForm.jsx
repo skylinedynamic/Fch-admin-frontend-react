@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import FormLoader from '../../components/Loader/FormLoader';
 import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../../modules/credit-accounts/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
-import { STATUS_OPTIONS, YES_NO_OPTIONS, CATEGORY_OPTIONS } from '../../config/creditBuilder';
+import { STATUS_OPTIONS, CREDIT_CATEGORY_OPTIONS } from '../../config/creditBuilder';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
@@ -25,22 +26,8 @@ export default function CreditAccountForm() {
         card_name: '',
         issuer: '',
         credit_category: '',
-        difficulty_rank: '',
-        difficulty_tier: '',
-        engine_eligibility_band: '',
-        approval_level: '',
         typical_personal_fico_min: '',
-        typical_personal_fico_ideal: '',
         time_in_business_min_months: '',
-        revenue_expectation: '',
-        business_credit_required: 'No',
-        pg_required: 'No',
-        cash_based: '',
-        velocity_sensitive: '',
-        relationship_required: 'No',
-        portal_tier_unlock: '',
-        borrower_exposure: '',
-        sequencing_priority: '',
         image_url: '',
         reference_url: '',
         status: 'Active'
@@ -54,9 +41,7 @@ export default function CreditAccountForm() {
                     const data = response.data || response;
                     setFormData({
                         ...data,
-                        difficulty_rank: data.difficulty_rank || '',
                         typical_personal_fico_min: data.typical_personal_fico_min || '',
-                        typical_personal_fico_ideal: data.typical_personal_fico_ideal || '',
                         time_in_business_min_months: data.time_in_business_min_months || '',
                         status: data.status || 'Active'
                     });
@@ -126,14 +111,11 @@ export default function CreditAccountForm() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        // Clear error when field changes
-        if (errors[name]) {
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[name];
-                return newErrors;
-            });
-        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -279,99 +261,32 @@ export default function CreditAccountForm() {
 
                                         <hr className="my-4" />
 
-                                        {/* Details Grid */}
-                                        <div className="col-md-3">
+                                        {/* Details Row */}
+                                        <div className="col-md-4">
                                             <label className="form-label">FICO Min <span className="text-danger">*</span></label>
                                             <input type="number" name="typical_personal_fico_min" className={`form-control ${errors.typical_personal_fico_min ? 'is-invalid' : ''}`} value={formData.typical_personal_fico_min} onChange={handleChange} />
                                             {errors.typical_personal_fico_min && <div className="invalid-feedback">{errors.typical_personal_fico_min}</div>}
                                         </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">FICO Ideal <span className="text-danger">*</span></label>
-                                            <input type="number" name="typical_personal_fico_ideal" className={`form-control ${errors.typical_personal_fico_ideal ? 'is-invalid' : ''}`} value={formData.typical_personal_fico_ideal} onChange={handleChange} />
-                                            {errors.typical_personal_fico_ideal && <div className="invalid-feedback">{errors.typical_personal_fico_ideal}</div>}
-                                        </div>
-                                        <div className="col-md-3">
+
+                                        <div className="col-md-4">
                                             <label className="form-label">Biz Min Months <span className="text-danger">*</span></label>
                                             <input type="number" name="time_in_business_min_months" className={`form-control ${errors.time_in_business_min_months ? 'is-invalid' : ''}`} value={formData.time_in_business_min_months} onChange={handleChange} />
                                             {errors.time_in_business_min_months && <div className="invalid-feedback">{errors.time_in_business_min_months}</div>}
                                         </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">Approval Level</label>
-                                            <input type="text" name="approval_level" className="form-control" value={formData.approval_level} onChange={handleChange} />
-                                        </div>
 
-                                        <div className="col-md-3">
-                                            <label className="form-label">Difficulty Rank</label>
-                                            <input type="number" name="difficulty_rank" className="form-control" value={formData.difficulty_rank} onChange={handleChange} />
-                                        </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">Difficulty Tier</label>
-                                            <input type="text" name="difficulty_tier" className="form-control" value={formData.difficulty_tier} onChange={handleChange} />
-                                        </div>
-                                        <div className="col-md-6">
+                                        <div className="col-md-4">
                                             <label className="form-label">Credit Category</label>
-                                            <select name="credit_category" className="form-select" value={formData.credit_category} onChange={handleChange}>
-                                                <option value="">Select Category</option>
-                                                {CATEGORY_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="col-md-3">
-                                            <label className="form-label">Business Credit Req</label>
-                                            <select name="business_credit_required" className="form-select" value={formData.business_credit_required} onChange={handleChange}>
-                                                {YES_NO_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">Cash Based</label>
-                                            <select name="cash_based" className="form-select" value={formData.cash_based} onChange={handleChange}>
-                                                <option value="">Select</option>
-                                                {YES_NO_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">Velocity Sensitive</label>
-                                            <select name="velocity_sensitive" className="form-select" value={formData.velocity_sensitive} onChange={handleChange}>
-                                                <option value="">Select</option>
-                                                {YES_NO_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">PG Required</label>
-                                            <select name="pg_required" className="form-select" value={formData.pg_required} onChange={handleChange}>
-                                                {YES_NO_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="col-md-3">
-                                            <label className="form-label">Status</label>
-                                            <select name="status" className={`form-select ${errors.status ? 'is-invalid' : ''}`} value={formData.status} onChange={handleChange}>
-                                                {STATUS_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {errors.status && <div className="invalid-feedback">{errors.status}</div>}
+                                            <Dropdown
+                                                value={formData.credit_category}
+                                                options={CREDIT_CATEGORY_OPTIONS}
+                                                onChange={(e) => handleInputChange({ target: { name: 'credit_category', value: e.value } })}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="Select Category"
+                                                className={`w-100 ${errors.credit_category ? 'p-invalid' : ''}`}
+                                                appendTo="self"
+                                            />
+                                            {errors.credit_category && <small className="p-error">{errors.credit_category}</small>}
                                         </div>
 
 

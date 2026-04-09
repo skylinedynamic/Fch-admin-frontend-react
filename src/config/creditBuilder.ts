@@ -14,6 +14,12 @@ export const CATEGORY_OPTIONS: ConfigOption[] = [
     { label: 'Other', value: 'Other' }
 ];
 
+export const CREDIT_CATEGORY_OPTIONS: ConfigOption[] = [
+    { label: 'Revolving', value: 'Revolving' },
+    { label: 'Corporate', value: 'Corporate' },
+    { label: 'Charge', value: 'Charge' }
+];
+
 export const STATUS_OPTIONS: ConfigOption[] = [
     { label: 'Active', value: 'Active' },
     { label: 'Inactive', value: 'Inactive' }

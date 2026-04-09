@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
+import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import { fetchCreditAccounts, deleteCreditAccount, updateCreditAccountStatus } from '../../modules/credit-accounts/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { usePermissions } from '../../lib/auth/usePermissions';
-import { STATUS_OPTIONS, STATUS_CLASS_MAP, CATEGORY_OPTIONS } from '../../config/creditBuilder';
+import { STATUS_OPTIONS, STATUS_CLASS_MAP, CREDIT_CATEGORY_OPTIONS } from '../../config/creditBuilder';
 
 export default function CreditAccountsList() {
     const { hasPermission } = usePermissions();
@@ -31,17 +32,18 @@ export default function CreditAccountsList() {
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [filters, setFilters] = useState({});
     const [appliedFilters, setAppliedFilters] = useState({});
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     // Initialize filters
     const initFilters = () => {
         const initial = {
             card_name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             issuer: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            credit_category: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             typical_personal_fico_min: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            typical_personal_fico_ideal: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
             time_in_business_min_months: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+            status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
         };
         setFilters(initial);
         setAppliedFilters(initial);
@@ -60,7 +62,9 @@ export default function CreditAccountsList() {
                 sort_field: sortField,
                 sort_order: sortOrder,
                 search: appliedSearchText,
-                filters: appliedFilters
+                filters: appliedFilters,
+                status: selectedStatus || undefined,
+                credit_category: selectedCategory || undefined,
             };
             const response = await fetchCreditAccounts(payload);
             if (response.status !== false) {
@@ -79,7 +83,7 @@ export default function CreditAccountsList() {
 
     useEffect(() => {
         loadData();
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, selectedStatus, selectedCategory]);
 
     const onPage = (event) => {
         const nextPerPage = event.rows;
@@ -103,6 +107,8 @@ export default function CreditAccountsList() {
     const handleClearFilters = () => {
         setSearchText('');
         setAppliedSearchText('');
+        setSelectedStatus(null);
+        setSelectedCategory(null);
         initFilters();
         setPage(1);
     };
@@ -147,39 +153,31 @@ export default function CreditAccountsList() {
 
     const statusFilterTemplate = (options) => {
         return (
-            <div className="flex align-items-center gap-2">
-                <select
-                    value={options.value || ''}
-                    onChange={(e) => options.filterCallback(e.target.value)}
-                    className="form-select form-select-sm"
-                >
-                    <option value="">All Status</option>
-                    {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <Dropdown
+                value={options.value || null}
+                options={[{ label: 'All Status', value: null }, ...STATUS_OPTIONS]}
+                onChange={(e) => options.filterCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="All Status"
+                className="w-100"
+                appendTo="self"
+            />
         );
     };
 
     const categoryFilterTemplate = (options) => {
         return (
-            <div className="flex align-items-center gap-2">
-                <select
-                    value={options.value || ''}
-                    onChange={(e) => options.filterCallback(e.target.value)}
-                    className="form-select form-select-sm"
-                >
-                    <option value="">All Categories</option>
-                    {CATEGORY_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <Dropdown
+                value={options.value || null}
+                options={[{ label: 'All Categories', value: null }, ...CREDIT_CATEGORY_OPTIONS]}
+                onChange={(e) => options.filterCallback(e.value)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="All Categories"
+                className="w-100"
+                appendTo="self"
+            />
         );
     };
 
@@ -223,7 +221,10 @@ export default function CreditAccountsList() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row bg-body">
+                    <div className="col">
+                        <div className="h-100">
+                            <div className="row pb-1 page-subheader-sticky bg-body" style={{ zIndex: 1001 }}>
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -254,7 +255,7 @@ export default function CreditAccountsList() {
                         <div className="card shadow-none border">
                             <div className="card-body">
                                 <div className="row g-3 mb-3">
-                                    <div className="col-xxl-7 col-sm-12">
+                                    <div className="col-xxl-5 col-sm-12">
                                         <div className="search-box">
                                             <input
                                                 type="text"
@@ -268,22 +269,28 @@ export default function CreditAccountsList() {
                                         </div>
                                     </div>
                                     <div className="col-xxl-2 col-sm-12">
-                                        <select
-                                            className="form-select bg-light border-light"
-                                            value={filters.status?.constraints[0]?.value || ''}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setFilters(prev => ({
-                                                    ...prev,
-                                                    status: { ...prev.status, constraints: [{ ...prev.status.constraints[0], value: val }] }
-                                                }));
-                                            }}
-                                        >
-                                            <option value="">All Status</option>
-                                            {STATUS_OPTIONS.map(opt => (
-                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                            ))}
-                                        </select>
+                                        <Dropdown
+                                            value={selectedStatus}
+                                            options={[{ label: 'All Status', value: null }, ...STATUS_OPTIONS]}
+                                            onChange={(e) => setSelectedStatus(e.value)}
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            placeholder="All Status"
+                                            className="w-100"
+                                            appendTo="self"
+                                        />
+                                    </div>
+                                    <div className="col-xxl-2 col-sm-12">
+                                        <Dropdown
+                                            value={selectedCategory}
+                                            options={[{ label: 'All Categories', value: null }, ...CREDIT_CATEGORY_OPTIONS]}
+                                            onChange={(e) => setSelectedCategory(e.value)}
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            placeholder="All Categories"
+                                            className="w-100"
+                                            appendTo="self"
+                                        />
                                     </div>
                                     <div className="col-xxl-3 col-sm-12">
                                         <div className="d-flex gap-2">
@@ -329,7 +336,7 @@ export default function CreditAccountsList() {
                                         <Column field="issuer" header="Issuer" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
                                         <Column field="credit_category" header="Category" sortable filter filterElement={categoryFilterTemplate} showFilterMenu={false} filterPlaceholder="Search" style={{ width: '180px' }} />
                                         <Column field="typical_personal_fico_min" header="FICO Min" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
-                                        <Column field="typical_personal_fico_ideal" header="FICO Ideal" sortable filter filterPlaceholder="Search" style={{ width: '120px' }} />
+
                                         <Column field="time_in_business_min_months" header="Minimum Months" sortable filter filterPlaceholder="Search" style={{ width: '150px' }} />
                                         <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterTemplate} showFilterMenu={false} filterPlaceholder="Search" style={{ width: '120px' }} />
                                         <Column header="Action" body={actionBodyTemplate} style={{ width: '60px' }} />
@@ -340,7 +347,9 @@ export default function CreditAccountsList() {
                     </div>
                 </div>
             </div>
-
         </div>
-    );
+    </div>
+</div>
+</div>
+);
 }
