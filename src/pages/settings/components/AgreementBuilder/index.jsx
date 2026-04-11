@@ -193,18 +193,27 @@ export default function AgreementBuilder() {
 
             <div className="ab4-center" onClick={() => setSelectedId(null)}>
               <div className="ab4-scroll">
-                <div className="ab4-doc" style={{ '--page-padding': `${pagePad}px`, background: docBg }}>
+                <div className="ab4-pages-container">
                   {blocks.length === 0 ? (
-                    <div className="ab4-empty">
-                      <i className="ri-drag-drop-line" />
-                      <strong>Empty Agreement</strong><p>Choose a block from the left or click <strong>+</strong> below</p>
-                      <InsertZone onInsert={t => onInsert(0, t)} />
+                    <div className="ab4-doc" style={{
+                        background: docBg,
+                        '--doc-pad-sides': `${pagePad}px`,
+                        '--doc-pad-top': `${Math.round(pagePad * 0.9)}px`,
+                        '--doc-pad-bot': `${pagePad}px`,
+                      }}>
+                      <div className="ab4-empty">
+                        <i className="ri-drag-drop-line" />
+                        <strong>Empty Agreement</strong><p>Choose a block from the left or click <strong>+</strong> below</p>
+                        <InsertZone onInsert={t => onInsert(0, t)} />
+                      </div>
                     </div>
                   ) : (
                     <BlockList blocks={blocks}
                       onUpdate={onUpdate} onDelete={id => setBlocks(prev => prev.filter(b => b.id !== id))}
                       onMove={onMove} onInsert={onInsert}
-                      selectedId={selectedId} onSelect={setSelectedId} onFocused={setFocusedId} onBlurred={() => setFocusedId(null)} fileInputRef={fileInputRef} />
+                      selectedId={selectedId} onSelect={setSelectedId} onFocused={setFocusedId} onBlurred={() => setFocusedId(null)}
+                      fileInputRef={fileInputRef}
+                      pagePad={pagePad} docBg={docBg} />
                   )}
                 </div>
               </div>
