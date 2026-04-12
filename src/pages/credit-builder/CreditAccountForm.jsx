@@ -127,7 +127,7 @@ export default function CreditAccountForm() {
                 toast.success('Credit Account updated successfully');
             } else {
                 await createCreditAccount(formData);
-                toast.success('Account created successfully');
+                toast.success('Credit Account created successfully');
             }
             navigate('/credit-accounts');
         } catch (err) {
@@ -265,6 +265,7 @@ export default function CreditAccountForm() {
                                                     <div className="input-group">
                                                         <span className="input-group-text bg-light border-end-0 text-muted"><i className="ri-link"></i></span>
                                                         <input type="text" name="reference_url" className={`form-control border-start-0 ps-0 ${errors.reference_url ? 'is-invalid' : ''}`} value={formData.reference_url} onChange={handleChange} placeholder="https://..." />
+                                                        {errors.reference_url && <div className="invalid-feedback">{errors.reference_url}</div>}
                                                     </div>
                                                 </div>
                                             </div>
