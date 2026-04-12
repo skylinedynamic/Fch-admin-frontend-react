@@ -205,8 +205,8 @@ export default function CreditAccountForm() {
                                         {/* Row 1: Logo and Card Info */}
                                         <div className="col-md-5 text-center d-flex flex-column align-items-center justify-content-center pe-lg-4 border-end-xl">
                                             <div className="position-relative w-100 px-lg-4">
-                                                <div 
-                                                    className={`p-3 bg-light rounded-3 border-dashed border-2 d-flex align-items-center justify-content-center w-100 ${errors.image_url ? 'border-danger' : 'border-secondary'}`} 
+                                                <div
+                                                    className={`p-3 bg-light rounded-3 border-dashed border-2 d-flex align-items-center justify-content-center w-100 ${errors.image_url ? 'border-danger' : 'border-secondary'}`}
                                                     style={{ minHeight: '180px', transition: 'all 0.3s ease' }}
                                                 >
                                                     {getImageSrc() ? (
@@ -252,12 +252,12 @@ export default function CreditAccountForm() {
                                             <div className="row g-4">
                                                 <div className="col-12">
                                                     <label className="form-label fw-medium">Card Name <span className="text-danger">*</span></label>
-                                                    <input type="text" name="card_name" className={`form-control ${errors.card_name ? 'is-invalid' : ''}`} value={formData.card_name} onChange={handleChange} placeholder="e.g. Chase Sapphire Reserve"/>
+                                                    <input type="text" name="card_name" className={`form-control ${errors.card_name ? 'is-invalid' : ''}`} value={formData.card_name} onChange={handleChange} placeholder="e.g. Chase Sapphire Reserve" />
                                                     {errors.card_name && <div className="invalid-feedback">{errors.card_name}</div>}
                                                 </div>
                                                 <div className="col-12">
                                                     <label className="form-label fw-medium">Issuer <span className="text-danger">*</span></label>
-                                                    <input type="text" name="issuer" className={`form-control ${errors.issuer ? 'is-invalid' : ''}`} value={formData.issuer} onChange={handleChange} placeholder="e.g. Chase"/>
+                                                    <input type="text" name="issuer" className={`form-control ${errors.issuer ? 'is-invalid' : ''}`} value={formData.issuer} onChange={handleChange} placeholder="e.g. Chase" />
                                                     {errors.issuer && <div className="invalid-feedback">{errors.issuer}</div>}
                                                 </div>
                                                 <div className="col-12">
@@ -285,7 +285,7 @@ export default function CreditAccountForm() {
                                         </div>
 
                                         <div className="col-md-4">
-                                            <label className="form-label fw-medium">Biz Min Months <span className="text-danger">*</span></label>
+                                            <label className="form-label fw-medium">Min Months <span className="text-danger">*</span></label>
                                             <div className="input-group">
                                                 <span className="input-group-text bg-light text-muted"><i className="ri-calendar-event-line"></i></span>
                                                 <input type="number" name="time_in_business_min_months" className={`form-control ${errors.time_in_business_min_months ? 'is-invalid' : ''}`} value={formData.time_in_business_min_months} onChange={handleChange} placeholder="Months" />
@@ -296,7 +296,7 @@ export default function CreditAccountForm() {
                                         <div className="col-md-4">
                                             <label className="form-label fw-medium">Credit Category</label>
                                             <div className="p-inputgroup flex-1">
-                                                <span className="p-inputgroup-addon bg-light text-muted border border-end-0" style={{borderRight: 'none'}}><i className="ri-shape-2-line"></i></span>
+                                                <span className="p-inputgroup-addon bg-light text-muted border border-end-0" style={{ borderRight: 'none' }}><i className="ri-shape-2-line"></i></span>
                                                 <Dropdown
                                                     value={formData.credit_category}
                                                     options={CREDIT_CATEGORY_OPTIONS}
@@ -306,7 +306,7 @@ export default function CreditAccountForm() {
                                                     placeholder="Select Category"
                                                     className={`w-100 border-start-0 shadow-none ${errors.credit_category ? 'p-invalid' : ''}`}
                                                     appendTo="self"
-                                                    style={{borderTopLeftRadius: 0, borderBottomLeftRadius: 0}}
+                                                    style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
                                                 />
                                             </div>
                                             {errors.credit_category && <small className="p-error">{errors.credit_category}</small>}
