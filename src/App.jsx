@@ -42,6 +42,7 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
+import ChangeRequests from './pages/applications/change-requests/ChangeRequests';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -197,6 +198,10 @@ export default function App() {
               <Route element={<PermissionRoute permission="view funding application" />}>
                 <Route path="funding-review" element={<FundingApplication />} />
                 <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
+              </Route>
+
+              <Route>
+                <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 
             </Route>

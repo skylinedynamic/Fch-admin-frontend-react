@@ -54,6 +54,10 @@ const menuItems = [
         to: '/intake-review/funding-review',
         label: 'Funding Review',
         permission: 'view funding application',
+      },
+      {
+        to: '/intake-review/change-requests',
+        label: 'Change Requests',
       }
     ]
   },
