@@ -4,9 +4,10 @@ import { HomeIcon, ChevronRightIcon } from './Icons'
 interface BreadcrumbProps {
   currentPath: string
   onNavigate: (path: string) => void
+  rootLabel?: string
 }
 
-export const Breadcrumb: React.FC<BreadcrumbProps> = ({ currentPath, onNavigate }) => {
+export const Breadcrumb: React.FC<BreadcrumbProps> = ({ currentPath, onNavigate, rootLabel = 'Home' }) => {
   const pathParts = currentPath.split('/').filter(Boolean)
 
   const handleHomeClick = () => {
@@ -29,7 +30,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ currentPath, onNavigate 
         onClick={handleHomeClick}
       >
         <HomeIcon />
-        <span>Home</span>
+        <span>{rootLabel}</span>
       </div>
 
       {pathParts.map((part, index) => (

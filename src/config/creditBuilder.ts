@@ -14,6 +14,12 @@ export const CATEGORY_OPTIONS: ConfigOption[] = [
     { label: 'Other', value: 'Other' }
 ];
 
+export const CREDIT_CATEGORY_OPTIONS: ConfigOption[] = [
+    { label: 'Revolving', value: 'Revolving' },
+    { label: 'Corporate', value: 'Corporate' },
+    { label: 'Charge', value: 'Charge' }
+];
+
 export const STATUS_OPTIONS: ConfigOption[] = [
     { label: 'Active', value: 'Active' },
     { label: 'Inactive', value: 'Inactive' }
@@ -43,4 +49,14 @@ export const TIER_STATUS_OPTIONS = [
 export const VENDOR_STATUS_OPTIONS = {
     ACTIVE: 'Active',
     INACTIVE: 'Inactive'
+};
+
+export const YES_NO_OPTIONS: ConfigOption[] = [
+    { label: 'Yes', value: 'Yes' },
+    { label: 'No', value: 'No' }
+];
+
+export const STATUS_CLASS_MAP: { [key: string]: string } = {
+    'Active': 'bg-success-subtle text-success',
+    'Inactive': 'bg-danger-subtle text-danger'
 };
