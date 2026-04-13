@@ -381,12 +381,12 @@ export default function ChangeRequests() {
                                             className="p-datatable-sm"
                                             emptyMessage="No change requests found."
                                         >
-                                            <Column header="Borrower" field="borrower_business_name" body={borrowerBody} sortable filter filterPlaceholder="Search borrower" style={{ minWidth: '180px' }} />
-                                            <Column header="Field" field="field_name" body={fieldBody} sortable filter filterPlaceholder="Search field" style={{ minWidth: '160px' }} />
-                                            <Column header="Old Value" field="old_value" body={oldValueBody} sortable filter filterPlaceholder="Search old value" style={{ minWidth: '150px' }} />
-                                            <Column header="New Value" field="new_value" body={newValueBody} sortable filter filterPlaceholder="Search new value" style={{ minWidth: '150px' }} />
-                                            <Column header="Status" field="status" body={statusBody} sortable filter filterPlaceholder="Search status" style={{ minWidth: '110px' }} />
-                                            <Column header="Note" field="note" body={noteBody} sortable filter filterPlaceholder="Search note" style={{ minWidth: '180px' }} />
+                                            <Column header="Borrower" field="borrower_business_name" body={borrowerBody} sortable style={{ minWidth: '180px' }} />
+                                            <Column header="Field" field="field_name" body={fieldBody} sortable style={{ minWidth: '160px' }} />
+                                            <Column header="Old Value" field="old_value" body={oldValueBody} sortable style={{ minWidth: '150px' }} />
+                                            <Column header="New Value" field="new_value" body={newValueBody} sortable style={{ minWidth: '150px' }} />
+                                            <Column header="Status" field="status" body={statusBody} sortable style={{ minWidth: '110px' }} />
+                                            <Column header="Note" field="note" body={noteBody} sortable style={{ minWidth: '180px' }} />
                                             <Column header="Date" field="created_at" body={dateBody} sortable style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>
