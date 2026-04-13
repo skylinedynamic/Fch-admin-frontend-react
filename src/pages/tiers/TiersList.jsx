@@ -90,6 +90,15 @@ export default function TiersList() {
         loadTiers();
     }, [page, perPage, sortField, sortOrder, appliedSearchText, filters]);
 
+    useEffect(() => {
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
+    }, []);
+
     const onPage = (event) => {
         setPage(event.first / event.rows + 1); // Corrected page calculation
         setPerPage(event.rows);
@@ -191,9 +200,9 @@ export default function TiersList() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -246,7 +255,7 @@ export default function TiersList() {
                     </div>
                 </div>
 
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-12">
                         <div className="card">
                             <div className="card-body">
@@ -289,7 +298,7 @@ export default function TiersList() {
                                 </form>
                                 {loading ? (
                                     <TableLoader
-                                        rows={5}
+                                        rows={12}
                                         columns={[
                                             ...(isDeveloper ? [{ style: { width: '3rem' } }] : []),
                                             { style: { width: '25%' } },       // Name
@@ -299,40 +308,44 @@ export default function TiersList() {
                                         ]}
                                     />
                                 ) : (
-                                    <DataTable
-                                        value={tiers || []}
-                                        paginator
-                                        rows={perPage}
-                                        totalRecords={totalRecords}
-                                        lazy
-                                        first={(page - 1) * perPage}
-                                        onPage={onPage}
-                                        onSort={onSort}
-                                        sortField={sortField}
-                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                        filters={filters}
-                                        filterDisplay="menu"
-                                        onFilter={onFilter}
-                                        className="p-datatable-sm"
-                                        tableStyle={{ minWidth: '50rem' }}
-                                        rowClassName={() => 'cursor-pointer'}
-                                        selection={selectedTiers}
-                                        onSelectionChange={(e) => setSelectedTiers(e.value)}
-                                        selectionMode={isDeveloper ? "multiple" : null}
-                                        dataKey="id"
-                                        onRowClick={(e) => {
-                                            const target = e.originalEvent.target;
-                                            if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
-                                                navigate(`/tiers/${e.data.id}`);
-                                            }
-                                        }}
-                                    >
-                                        {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
-                                        <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '25%' }} />
-                                        <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '30%' }} />
-                                        <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
-                                        <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '15%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '15%' }} />
-                                    </DataTable>
+                                    <div className="table-responsive table-card mt-1">
+                                        <DataTable
+                                            scrollable
+                                            scrollHeight="flex"
+                                            value={tiers || []}
+                                            paginator
+                                            rows={perPage}
+                                            totalRecords={totalRecords}
+                                            lazy
+                                            first={(page - 1) * perPage}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                            filters={filters}
+                                            filterDisplay="menu"
+                                            onFilter={onFilter}
+                                            className="p-datatable-sm"
+                                            tableStyle={{ minWidth: '50rem' }}
+                                            rowClassName={() => 'cursor-pointer'}
+                                            selection={selectedTiers}
+                                            onSelectionChange={(e) => setSelectedTiers(e.value)}
+                                            selectionMode={isDeveloper ? "multiple" : null}
+                                            dataKey="id"
+                                            onRowClick={(e) => {
+                                                const target = e.originalEvent.target;
+                                                if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
+                                                    navigate(`/tiers/${e.data.id}`);
+                                                }
+                                            }}
+                                        >
+                                            {isDeveloper && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                                            <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search Name" style={{ width: '25%' }} />
+                                            <Column field="title" header="Title" body={titleBodyTemplate} sortable filter filterPlaceholder="Search Title" style={{ width: '30%' }} />
+                                            <Column field="subtitle" header="Subtitle" sortable filter filterPlaceholder="Search Subtitle" className="text-truncate" style={{ width: '30%', maxWidth: '300px' }} />
+                                            <Column field="order" header="Order" sortable filter filterPlaceholder="Search Order" headerStyle={{ width: '15%', textAlign: 'center' }} bodyClassName="text-center" style={{ width: '15%' }} />
+                                        </DataTable>
+                                    </div>
                                 )}
                             </div>
                         </div>

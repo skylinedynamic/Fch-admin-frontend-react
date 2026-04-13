@@ -6,6 +6,7 @@ import EmployeeListHeader from './components/EmployeeListHeader';
 import EmployeeFilters from './components/EmployeeFilters';
 import EmployeeTable from './components/EmployeeTable';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
+import { useEffect } from 'react';
 
 export default function Employees() {
   const {
@@ -39,6 +40,15 @@ export default function Employees() {
     handleDeleteConfirm,
     handleColumnFilter
   } = useEmployeeList();
+
+  useEffect(() => {
+    // Add class to body to prevent global scroll
+    document.body.classList.add('table-page-fit-active');
+
+    return () => {
+      document.body.classList.remove('table-page-fit-active');
+    };
+  }, []);
 
   // Event handlers
   const onGlobalFilterChange = (e) => {
@@ -74,63 +84,57 @@ export default function Employees() {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content page-content-fit">
       <div className="container-fluid">
-        <div className="row mb-0 pb-0 bg-body">
-          <div className="col">
-            <div className="h-100">
-              <EmployeeListHeader
-                selection={selection}
-                onDeleteSelected={openDeleteModal}
-              />
+        <EmployeeListHeader
+          selection={selection}
+          onDeleteSelected={openDeleteModal}
+        />
 
-              <div className="row">
-                <div className="col-lg-12">
-                  <div className="card">
-                    <div className="card-body list-fluid-card">
-                      <EmployeeFilters
-                        globalFilterValue={globalFilterValue}
-                        onGlobalFilterChange={onGlobalFilterChange}
-                        statusFilter={statusFilter}
-                        onStatusChange={onJobStatusChange}
-                        deptFilter={deptFilter}
-                        onDeptChange={onDeptChange}
-                        departments={departments}
-                        onApplyFilters={onApplyFilters}
-                        onClearFilters={onClearFilters}
-                        loading={loading}
-                      />
+        <div className="row row-table-fit">
+          <div className="col-lg-12">
+            <div className="card">
+              <div className="card-body list-fluid-card">
+                <EmployeeFilters
+                  globalFilterValue={globalFilterValue}
+                  onGlobalFilterChange={onGlobalFilterChange}
+                  statusFilter={statusFilter}
+                  onStatusChange={onJobStatusChange}
+                  deptFilter={deptFilter}
+                  onDeptChange={onDeptChange}
+                  departments={departments}
+                  onApplyFilters={onApplyFilters}
+                  onClearFilters={onClearFilters}
+                  loading={loading}
+                />
 
-                      <EmployeeTable
-                        rows={rows}
-                        loading={loading}
-                        totalRecords={totalRecords}
-                        page={page}
-                        perPage={perPage}
-                        sortField={sortField}
-                        sortOrder={sortOrder}
-                        filters={filters}
-                        selection={selection}
-                        onSelectionChange={(e) => setSelection(e.value)}
-                        onFilter={handleColumnFilter}
-                        onPage={onPage}
-                        onSort={onSort}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <EmployeeTable
+                  rows={rows}
+                  loading={loading}
+                  totalRecords={totalRecords}
+                  page={page}
+                  perPage={perPage}
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  filters={filters}
+                  selection={selection}
+                  onSelectionChange={(e) => setSelection(e.value)}
+                  onFilter={handleColumnFilter}
+                  onPage={onPage}
+                  onSort={onSort}
+                />
               </div>
-
-              <DeleteConfirmationModal
-                show={showDeleteModal}
-                onConfirm={handleDeleteConfirm}
-                onClose={closeDeleteModal}
-                loading={loading}
-              />
             </div>
           </div>
         </div>
+
+        <DeleteConfirmationModal
+          show={showDeleteModal}
+          onConfirm={handleDeleteConfirm}
+          onClose={closeDeleteModal}
+          loading={loading}
+        />
       </div>
     </div>
   );
-}
+}

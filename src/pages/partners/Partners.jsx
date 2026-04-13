@@ -87,6 +87,9 @@ export default function Partners() {
     useEffect(() => {
         initFilters();
 
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
         // Load partners for dropdown
         const loadPartnersList = async () => {
             try {
@@ -118,6 +121,10 @@ export default function Partners() {
             }
         };
         loadAssignedUsers();
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, []);
 
     const statisticsConfig = [
@@ -270,10 +277,10 @@ export default function Partners() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header mirrored from Clients.jsx */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -334,7 +341,7 @@ export default function Partners() {
                 </div>
 
                 {/* Filters and Table mirrored from Clients.jsx */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
@@ -402,7 +409,7 @@ export default function Partners() {
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
-                                            scrollHeight="510px"
+                                            scrollHeight="flex"
                                             value={partners}
                                             paginator
                                             lazy

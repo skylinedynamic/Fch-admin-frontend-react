@@ -22,6 +22,14 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ChangeRequests() {
+    useEffect(() => {
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
+    }, []);
     // ── Filter state ─────────────────────────────────────────────────
     const [search, setSearch] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -229,11 +237,11 @@ export default function ChangeRequests() {
 
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
 
                 {/* Page Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between py-2">
                             <div>
@@ -273,7 +281,7 @@ export default function ChangeRequests() {
                 </div>
 
                 {/* Table Card */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-12">
                         <div className="card shadow-sm">
                             <div className="card-body">
@@ -358,7 +366,7 @@ export default function ChangeRequests() {
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
-                                            scrollHeight="520px"
+                                            scrollHeight="flex"
                                             value={records}
                                             paginator
                                             lazy

@@ -73,6 +73,8 @@ export default function SubscriptionTable({
                 onSort={onSort}
                 onFilter={onFilter}
                 dataKey="id"
+                scrollable
+                scrollHeight="flex"
                 responsiveLayout="scroll"
                 className="p-datatable-sm"
                 emptyMessage="No subscriptions found"
