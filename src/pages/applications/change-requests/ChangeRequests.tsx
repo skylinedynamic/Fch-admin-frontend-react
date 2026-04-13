@@ -225,12 +225,12 @@ export default function ChangeRequests() {
 
     const noteBody = (row: ChangeRequest) => (
         row.note
-            ? <span className="text-muted small" title={row.note}>{row.note.length > 40 ? row.note.slice(0, 40) + '…' : row.note}</span>
-            : <span className="text-muted fst-italic small">—</span>
+            ? <span className="text-muted" title={row.note}>{row.note.length > 40 ? row.note.slice(0, 40) + '…' : row.note}</span>
+            : <span className="text-muted fst-italic">—</span>
     );
 
     const dateBody = (row: ChangeRequest) => (
-        <span className="text-muted small">
+        <span className="text-muted">
             {new Date(row.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
         </span>
     );

@@ -2092,6 +2092,163 @@
   overflow: hidden !important;
 }
 
+/* ==========================================================================
+   ELEGANT TABLE DESIGN SYSTEM
+   ========================================================================== */
+
+/* Root DataTable Overrides */
+.p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.025em !important;
+    padding: 0.85rem 1rem !important;
+    border-bottom: 2px solid #eff2f7 !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Row-wise Coloring (Zebra Striping) */
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+    background-color: #fafbfc !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+    background-color: #ffffff !important;
+    transition: background-color 0.15s ease;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #eff2f7 !important;
+    font-size: 0.875rem !important;
+    color: #495057 !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+    background-color: rgba(64, 81, 137, 0.05) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(even):hover {
+    background-color: rgba(64, 81, 137, 0.05) !important;
+}
+
+/* Checkbox & Selection */
+.p-checkbox .p-checkbox-box {
+    border: 2px solid #ced4da !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.p-checkbox .p-checkbox-box.p-highlight {
+    background: #405189 !important;
+    border-color: #405189 !important;
+}
+
+/* Pagination Styling */
+.p-paginator {
+    background: #ffffff !important;
+    border: none !important;
+    border-top: 1px solid #eff2f7 !important;
+    padding: 0.75rem 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page {
+    min-width: 32px !important;
+    height: 32px !important;
+    border-radius: 6px !important;
+    margin: 0 3px !important;
+    color: #495057 !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid transparent !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page:hover:not(.p-highlight) {
+    background: #f3f6f9 !important;
+    border-color: #cbd5e0 !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+    background: #405189 !important;
+    color: #fff !important;
+    border-color: #405189 !important;
+    box-shadow: 0 4px 6px -1px rgba(64, 81, 137, 0.2) !important;
+}
+
+.p-paginator .p-link {
+    width: 32px !important;
+    height: 32px !important;
+    color: #405189 !important; /* Darker blue for visibility */
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.p-paginator .p-link:hover:not(.p-disabled) {
+    background: rgba(64, 81, 137, 0.1) !important;
+}
+
+.p-paginator .p-link.p-disabled {
+    color: #adb5bd !important;
+    opacity: 0.5 !important;
+}
+
+.p-paginator .p-dropdown {
+    height: 36px !important;
+    border-radius: 6px !important;
+    margin-left: 1.5rem !important;
+    border: 1px solid #ced4da !important;
+    background: #fff !important;
+}
+
+.p-paginator .p-dropdown .p-dropdown-label {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* Badge Styling Enforcement */
+.badge {
+    padding: 0.45em 0.7em !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    border-radius: 0.35rem !important;
+}
+
+.badge-soft-success {
+    background-color: rgba(10, 179, 156, 0.1) !important;
+    color: #0ab39c !important;
+}
+
+.badge-soft-danger {
+    background-color: rgba(240, 101, 72, 0.1) !important;
+    color: #f06548 !important;
+}
+
+/* Filter Icon & Menu */
+.p-column-filter-menu-button {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 4px !important;
+    color: #adb5bd !important;
+}
+
+.p-column-filter-menu-button:hover,
+.p-column-filter-menu-button.p-column-filter-menu-button-active {
+    background: rgba(64, 81, 137, 0.1) !important;
+    color: #405189 !important;
+}
+
+/* Fix for responsive card alignment */
+.table-card {
+    border: none !important;
+    box-shadow: none !important;
+}
+
 .table-page-fit-active .footer {
   display: block !important;
   height: 60px !important;

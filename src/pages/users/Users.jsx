@@ -660,7 +660,7 @@ export default function Users() {
                       <Column field="role_name" header="Role" sortable filter showFilterMatchModes filterPlaceholder="Search Role"></Column>
                       <Column field="end_date" header="Subscription End Date" sortable filter showFilterMatchModes filterPlaceholder="Search End Date" body={(rowData) => dateBodyTemplate(rowData, 'end_date')}></Column>
                       <Column field="status" header="Status" sortable filter showFilterMatchModes filterPlaceholder="Search Status" body={statusBodyTemplate}></Column>
-                      {/* {(hasPermission('update users') || hasPermission('delete users')) && (
+                      {(hasPermission('update users') || hasPermission('delete users')) && (
                         <Column
                           header="Action"
                           body={(rowData) => (
@@ -707,7 +707,7 @@ export default function Users() {
                           )}
                           style={{ textAlign: 'center', width: '12rem' }}
                         />
-                      )} */}
+                      )}
 
                     </DataTable>
                   </div>

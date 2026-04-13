@@ -269,6 +269,7 @@ export default function VerificationCenter() {
                                             value={verifications || []}
                                             paginator
                                             rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
                                             totalRecords={totalRecords}
                                             lazy
                                             first={(page - 1) * perPage}

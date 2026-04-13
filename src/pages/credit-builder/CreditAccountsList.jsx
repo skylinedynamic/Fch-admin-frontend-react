@@ -330,6 +330,7 @@ export default function CreditAccountsList() {
                                             paginator
                                             lazy
                                             rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
                                             first={(page - 1) * perPage}
                                             totalRecords={totalRecords}
                                             onPage={onPage}
