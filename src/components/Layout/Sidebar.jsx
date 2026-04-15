@@ -125,12 +125,12 @@ const menuItems = [
   //   label: 'Support Tickets',
   //   permission: 'view support tickets',
   // },
-  // {
-  //   to: '/under-construction/resources',
-  //   icon: 'ri-folder-fill',
-  //   label: 'Resources',
-  //   permission: 'view resources',
-  // },
+  {
+    to: '/resources',
+    icon: 'ri-folder-fill',
+    label: 'Resources',
+    permission: '',
+  },
   {
     to: "/employees",
     icon: "ri-user-2-fill",

@@ -42,6 +42,7 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
+import Resource from './pages/resources/Resource.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -221,6 +222,9 @@ export default function App() {
                 <Route path="subscriptions" element={<Subscriptions />} />
               </Route>
             </Route>
+
+            {/* Resources Modules */}
+            <Route path="resources" element={<Resource />} />
 
             {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />
