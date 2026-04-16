@@ -144,7 +144,7 @@ export default function CreditAccountForm() {
     };
 
     return (
-        <div className="page-content page-content-fit">
+        <div className="page-content min-vh-100">
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
@@ -316,7 +316,6 @@ export default function CreditAccountForm() {
                                                             optionValue="value"
                                                             placeholder="Select Category"
                                                             className={`w-100 border-start-0 shadow-none ${errors.credit_category ? 'p-invalid' : ''}`}
-                                                            appendTo="self"
                                                             style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
                                                         />
                                                     </div>

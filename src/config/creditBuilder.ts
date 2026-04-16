@@ -17,7 +17,11 @@ export const CATEGORY_OPTIONS: ConfigOption[] = [
 export const CREDIT_CATEGORY_OPTIONS: ConfigOption[] = [
     { label: 'Revolving', value: 'Revolving' },
     { label: 'Corporate', value: 'Corporate' },
-    { label: 'Charge', value: 'Charge' }
+    { label: 'Charge', value: 'Charge' },
+    { label: 'Vendor / Net Accounts', value: 'Vendor / Net Accounts' },
+    { label: 'Fleet / Fuel', value: 'Fleet / Fuel' },
+    { label: 'Retail / Store Credit', value: 'Retail / Store Credit' },
+    { label: 'Auto / Tire', value: 'Auto / Tire' }
 ];
 
 export const STATUS_OPTIONS: ConfigOption[] = [
