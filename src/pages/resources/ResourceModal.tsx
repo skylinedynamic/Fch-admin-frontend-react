@@ -206,7 +206,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                         <div className="modal-header bg-light p-3">
                             <h5 className="modal-title fs-16 fw-bold text-dark d-flex align-items-center gap-2">
                                 {isEdit ? <i className="ri-edit-2-line text-primary fs-18"></i> : <i className="ri-file-add-line text-primary fs-18"></i>}
-                                {isEdit ? 'Update Resource Details' : 'Add New Resource'}
+                                {isEdit ? 'Update Resource' : 'Add New Resource'}
                             </h5>
                             <button type="button" className="btn-close shadow-none focus-ring-none" onClick={onHide} aria-label="Close"></button>
                         </div>
@@ -214,7 +214,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                             <div className="modal-body p-4 bg-white">
                                 <div className="row g-4">
                                     <div className="col-12 col-md-8">
-                                        <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Type <span className="text-danger">*</span></label>
+                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Type <span className="text-danger">*</span></label>
                                         <div className="position-relative">
                                             <select
                                                 className={`form-select border-light bg-light py-2 shadow-none ${validationErrors.resource_type ? 'is-invalid' : ''}`}
@@ -232,7 +232,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                     </div>
 
                                     <div className="col-12 col-md-4">
-                                        <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Status</label>
+                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Status</label>
                                         <div className="form-check form-switch form-switch-md mt-1 d-flex align-items-center">
                                             <input
                                                 className="form-check-input mt-0 cursor-pointer shadow-none focus-ring-none"
@@ -251,7 +251,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                     </div>
 
                                     <div className="col-12">
-                                        <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Title <span className="text-danger">*</span></label>
+                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Title <span className="text-danger">*</span></label>
                                         <div className="form-icon">
                                             <input
                                                 type="text"
@@ -259,15 +259,15 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 name="title"
                                                 value={formData.title}
                                                 onChange={handleInputChange}
-                                                placeholder="E.g., Business Formation Checklist"
+                                                placeholder="Resource Title"
                                             />
                                             <i className="ri-heading text-muted"></i>
                                         </div>
                                         {validationErrors.title && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.title[0]}</div>}
                                     </div>
 
-                                    <div className="col-12">
-                                        <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Subtitle <span className="text-danger">*</span></label>
+                                    <div className="col-6">
+                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Subtitle </label>
                                         <div className="form-icon">
                                             <input
                                                 type="text"
@@ -275,15 +275,15 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 name="subtitle"
                                                 value={formData.subtitle}
                                                 onChange={handleInputChange}
-                                                placeholder="E.g., Comprehensive 10-page guide"
+                                                placeholder="Resource Subtitle"
                                             />
                                             <i className="ri-text text-muted"></i>
                                         </div>
                                         {validationErrors.subtitle && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.subtitle[0]}</div>}
                                     </div>
 
-                                    <div className="col-12 col-md-6">
-                                        <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Icon Class</label>
+                                    <div className="col-6">
+                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Icon Class</label>
                                         <div className="form-icon">
                                             <input
                                                 type="text"
@@ -291,7 +291,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 name="icon"
                                                 value={formData.icon}
                                                 onChange={handleInputChange}
-                                                placeholder="E.g., ri-article-line"
+                                                placeholder="Icon Class"
                                             />
                                             <i className="ri-remixicon-line text-muted"></i>
                                         </div>
@@ -300,7 +300,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
 
                                     {isLinkRequired && (
                                         <div className="col-12 col-md-6">
-                                            <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">Target Link / URL <span className="text-danger">*</span></label>
+                                            <label className="form-label fs-13 fw-semibold text-dark tracking-wider"> URL <span className="text-danger">*</span></label>
                                             <div className="form-icon">
                                                 <input
                                                     type="url"
@@ -318,7 +318,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
 
                                     {isFileRequired && (
                                         <div className="col-12">
-                                            <label className="form-label fs-13 fw-semibold text-dark text-uppercase tracking-wider">File Upload {(!isEdit) && <span className="text-danger">*</span>}</label>
+                                            <label className="form-label fs-13 fw-semibold text-dark tracking-wider">File Upload {(!isEdit) && <span className="text-danger">*</span>}</label>
                                             <div className="input-group">
                                                 <span className={`input-group-text bg-light ${validationErrors.file ? 'border-danger text-danger' : 'border-light text-primary'}`} id="fileUploadAddon">
                                                     <i className="ri-folder-open-line fs-16"></i>
@@ -364,7 +364,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                     {(createMutation.isPending || updateMutation.isPending) ? (
                                         <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Saving</>
                                     ) : (
-                                        isEdit ? <><i className="ri-save-line fs-16"></i> Update Action</> : <><i className="ri-check-line fs-16"></i> Save Action</>
+                                        isEdit ? <><i className="ri-save-line fs-16"></i> Update </> : <><i className="ri-check-line fs-16"></i> Save Action</>
                                     )}
                                 </button>
                             </div>
