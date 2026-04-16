@@ -12,6 +12,12 @@ import { toast } from 'react-toastify';
 
 const Resource: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Visibility states for pagination
+  const [showAllLegal, setShowAllLegal] = useState(false);
+  const [showAllBusiness, setShowAllBusiness] = useState(false);
+  const [showAllAssets, setShowAllAssets] = useState(false);
+  const [showAllEducation, setShowAllEducation] = useState(false);
   const [showAllVideos, setShowAllVideos] = useState(false);
 
   // Data fetching and mutation
@@ -126,20 +132,19 @@ const Resource: React.FC = () => {
     original: item
   }));
 
-  const visibleVideos = showAllVideos ? trainingVideos : trainingVideos.slice(0, 6);
-
   const filteredDocs = documentItems.filter(doc =>
     doc.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (isLoading) return <div className="page-content" style={{ backgroundColor: '#f4f6f9' }}></div>;
+  const vidFiltered = trainingVideos.filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const visibleVideos = showAllVideos ? vidFiltered : vidFiltered.slice(0, 4);
 
   return (
     <div className="page-content" style={{ backgroundColor: '#f4f6f9' }}>
       <div className="container-fluid">
 
-        {/* Standard Sticky Subheader */}
-        <div className="row page-subheader-sticky bg-body">
+        {/* Standard Sticky Subheader - Always Shown */}
+        <div className="row page-subheader-sticky bg-body mb-4">
           <div className="col-12">
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
@@ -155,8 +160,95 @@ const Resource: React.FC = () => {
           </div>
         </div>
 
-        {/* Metric Header */}
-        <div className="row g-3">
+        {isLoading ? (
+          <>
+            {/* Metric Skeletons */}
+            <div className="row g-3 mb-4">
+              {[1, 2, 3, 4].map(i => (
+                <div className="col-md-3" key={i}>
+                  <div className="card shadow-sm border-0 rounded-2 bg-white h-100">
+                    <div className="card-body py-3 px-4 d-flex align-items-center">
+                      <div className="skeleton-line rounded me-3" style={{ width: '48px', height: '48px' }}></div>
+                      <div className="flex-grow-1">
+                        <div className="skeleton-line mb-2" style={{ width: '60%', height: '12px' }}></div>
+                        <div className="skeleton-line" style={{ width: '40%', height: '22px' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="row g-4">
+              <div className="col-lg-8">
+                <div className="row g-4">
+                  {[1, 2].map(i => (
+                    <div className="col-md-6" key={i}>
+                      <div className="card shadow-sm border-0 rounded-2 h-100 bg-white">
+                        <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between">
+                          <div className="skeleton-line" style={{ width: '120px', height: '18px' }}></div>
+                          <div className="skeleton-line" style={{ width: '80px', height: '28px', borderRadius: '4px' }}></div>
+                        </div>
+                        <div className="card-body p-4 pt-2">
+                          <div className="d-flex flex-column gap-3">
+                            {[1, 2, 3, 4].map(j => (
+                              <div className="p-3 rounded-2 border d-flex align-items-center" key={j}>
+                                <div className="skeleton-line rounded me-3" style={{ width: '32px', height: '32px' }}></div>
+                                <div className="flex-grow-1">
+                                  <div className="skeleton-line mb-1" style={{ width: '70%', height: '14px' }}></div>
+                                  <div className="skeleton-line" style={{ width: '50%', height: '10px' }}></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="col-12">
+                    <div className="card shadow-sm border-0 rounded-2 bg-white">
+                      <div className="card-header border-0 bg-navy p-4">
+                        <div className="skeleton-line bg-white bg-opacity-25 mb-1" style={{ width: '200px', height: '24px' }}></div>
+                        <div className="skeleton-line bg-white bg-opacity-10" style={{ width: '300px', height: '14px' }}></div>
+                      </div>
+                      <div className="card-body p-4">
+                        <div className="row g-4">
+                          {[1, 2, 3, 4].map(i => (
+                            <div className="col-md-3" key={i}>
+                              <div className="p-4 rounded-3 border text-center h-100">
+                                <div className="skeleton-line mx-auto mb-3" style={{ width: '40px', height: '40px' }}></div>
+                                <div className="skeleton-line mx-auto mb-2" style={{ width: '80%', height: '14px' }}></div>
+                                <div className="skeleton-line mx-auto" style={{ width: '60%', height: '10px' }}></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-lg-4">
+                <div className="card shadow-sm border-0 rounded-2 bg-white mb-4">
+                  <div className="card-header border-bottom p-3">
+                    <div className="skeleton-line" style={{ width: '150px', height: '18px' }}></div>
+                  </div>
+                  <div className="card-body p-0">
+                    {[1, 2, 3, 4].map(i => (
+                      <div className="p-3 border-bottom d-flex align-items-center" key={i}>
+                        <div className="skeleton-line me-3" style={{ width: '24px', height: '24px' }}></div>
+                        <div className="skeleton-line" style={{ width: '70%', height: '14px' }}></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Metric Header */}
+            <div className="row g-3">
           {[
             { label: 'Total Resources', value: filteredEdu.length + documentItems.length + trainingVideos.length, icon: 'ri-grid-fill', color: 'primary' },
             { label: 'Service Providers', value: (resources.business_services || []).length, icon: 'ri-briefcase-fill', color: 'primary' },
@@ -193,8 +285,8 @@ const Resource: React.FC = () => {
                     </button>
                   </div>
                   <div className="card-body p-4 pt-2">
-                    <div className="d-flex flex-column gap-3">
-                      {(resources.legal_registration || []).map((item, i) => (
+                    <div className={`d-flex flex-column gap-3 ${showAllLegal && (resources.legal_registration || []).length > 4 ? 'scrollable-container' : ''}`}>
+                      {(showAllLegal ? (resources.legal_registration || []) : (resources.legal_registration || []).slice(0, 4)).map((item, i) => (
                         <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item transition-all" key={item.id} onClick={() => handleEdit(item, "legal_registration")}>
                           <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                             <i className={`${item.icon || 'ri-article-line'} text-indigo fs-16`}></i>
@@ -207,6 +299,13 @@ const Resource: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    {!showAllLegal && (resources.legal_registration || []).length > 4 && (
+                      <div className="text-center mt-3 pt-2 border-top border-light-subtle">
+                        <button className="btn btn-link btn-sm text-primary fw-bold text-decoration-none p-0" onClick={() => setShowAllLegal(true)}>
+                          View More <i className="ri-arrow-down-s-line align-middle"></i>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -220,8 +319,8 @@ const Resource: React.FC = () => {
                     </button>
                   </div>
                   <div className="card-body p-4 pt-2">
-                    <div className="d-flex flex-column gap-3">
-                      {(resources.business_services || []).map((item, i) => (
+                    <div className={`d-flex flex-column gap-3 ${showAllBusiness && (resources.business_services || []).length > 4 ? 'scrollable-container' : ''}`}>
+                      {(showAllBusiness ? (resources.business_services || []) : (resources.business_services || []).slice(0, 4)).map((item, i) => (
                         <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item-success transition-all" key={item.id} onClick={() => handleEdit(item, 'business_services')}>
                           <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                             <i className={`${item.icon || 'ri-phone-circle-line'} text-success fs-16`}></i>
@@ -234,6 +333,13 @@ const Resource: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    {!showAllBusiness && (resources.business_services || []).length > 4 && (
+                      <div className="text-center mt-3 pt-2 border-top border-light-subtle">
+                        <button className="btn btn-link btn-sm text-success fw-bold text-decoration-none p-0" onClick={() => setShowAllBusiness(true)}>
+                          View More <i className="ri-arrow-down-s-line align-middle"></i>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -267,7 +373,7 @@ const Resource: React.FC = () => {
                   </div>
                   <div className="card-body p-4">
                     <div className="row g-4">
-                      {filteredEdu.map((edu, i) => (
+                      {(showAllEducation ? filteredEdu : filteredEdu.slice(0, 12)).map((edu, i) => (
                         <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
                           <div className="p-4 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleEdit(edu.original, "education_help")}>
                             <div className="position-absolute top-0 end-0 p-2">
@@ -282,6 +388,13 @@ const Resource: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                    {!showAllEducation && filteredEdu.length > 12 && (
+                      <div className="text-center mt-4 pt-3 border-top border-light-subtle">
+                         <button className="btn btn-soft-primary px-4 py-2 fs-12 fw-bold" onClick={() => setShowAllEducation(true)}>
+                           Show More Articles <i className="ri-arrow-down-s-line ms-1"></i>
+                         </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -300,8 +413,8 @@ const Resource: React.FC = () => {
                   </button>
                 </div>
                 <div className="card-body p-0">
-                  <div className="list-group list-group-flush">
-                    {filteredDocs.map((doc, i) => (
+                  <div className={`list-group list-group-flush ${showAllAssets && filteredDocs.length > 4 ? 'scrollable-container-assets' : ''}`}>
+                    {(showAllAssets ? filteredDocs : filteredDocs.slice(0, 4)).map((doc, i) => (
                       <div className="list-group-item list-group-item-action border-0 p-3 transition-all d-flex align-items-center justify-content-between cursor-pointer" key={doc.id} onClick={() => handleEdit(doc.original, "download_assets")}>
                         <div className="d-flex align-items-center flex-grow-1 pe-2">
                           <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
@@ -314,6 +427,13 @@ const Resource: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                  {!showAllAssets && filteredDocs.length > 4 && (
+                    <div className="p-3 text-center border-top border-light-subtle">
+                      <button className="btn btn-link btn-sm text-danger fw-bold text-decoration-none p-0" onClick={() => setShowAllAssets(true)}>
+                        View More Assets <i className="ri-arrow-down-s-line align-middle"></i>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -329,7 +449,7 @@ const Resource: React.FC = () => {
                   </div>
                 </div>
                 <div className="card-body p-4 pt-3">
-                  <div className="d-flex flex-column gap-4">
+                  <div className={`d-flex flex-column gap-4 ${showAllVideos && trainingVideos.length > 4 ? 'scrollable-container' : ''}`}>
                     {visibleVideos.map((video, i) => (
                       <div className="video-item d-flex align-items-center gap-3 cursor-pointer group" key={video.id} onClick={() => handleEdit(video.original, "training_academy")}>
                         <div className="video-thumb position-relative rounded-2 flex-shrink-0 overflow-hidden shadow-sm" style={{ width: '110px', height: '64px' }}>
@@ -357,7 +477,7 @@ const Resource: React.FC = () => {
                     ))}
                   </div>
 
-                  {!showAllVideos && trainingVideos.length > 6 && (
+                  {!showAllVideos && trainingVideos.length > 4 && (
                     <div className="mt-4 pt-2 border-top border-light text-center">
                       <button
                         className="btn btn-link btn-sm text-secondary p-0 fw-bold text-decoration-none hover-indigo"
@@ -373,11 +493,11 @@ const Resource: React.FC = () => {
                   </button>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
-      </div>
+      </>
+    )}
 
       <ResourceModal
         key={editingResource?.id || 'new'}
@@ -392,7 +512,7 @@ const Resource: React.FC = () => {
         onConfirm={confirmDelete}
         onClose={() => setShowDeleteModal(false)}
         loading={deleteMutation.isPending}
-        text={`Are you sure you want to delete "${resourceToDelete?.title}"?`}
+        text="Are you sure you want to delete this resource?"
       />
 
       <style>{`
@@ -434,8 +554,29 @@ const Resource: React.FC = () => {
         .transition-all { transition: all 0.25s ease; }
         .tracking-widest { letter-spacing: 0.1em; }
         .card-animate:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+
+        .scrollable-container { max-height: 380px; overflow-y: auto; padding-right: 8px; }
+        .scrollable-container-assets { max-height: 280px; overflow-y: auto; }
+        
+        .scrollable-container::-webkit-scrollbar, .scrollable-container-assets::-webkit-scrollbar { width: 4px; }
+        .scrollable-container::-webkit-scrollbar-track, .scrollable-container-assets::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scrollable-container::-webkit-scrollbar-thumb, .scrollable-container-assets::-webkit-scrollbar-thumb { background: #e2e5ec; border-radius: 10px; }
+        .scrollable-container::-webkit-scrollbar-thumb:hover, .scrollable-container-assets::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+        .skeleton-line {
+          background: #eef0f3;
+          background: linear-gradient(90deg, #eef0f3 25%, #e2e5e9 37%, #eef0f3 63%);
+          background-size: 400% 100%;
+          animation: skeleton-loading 1.4s ease infinite;
+        }
+
+        @keyframes skeleton-loading {
+          0% { background-position: 100% 50%; }
+          100% { background-position: 0 50%; }
+        }
       `}</style>
     </div>
+  </div>
   );
 };
 

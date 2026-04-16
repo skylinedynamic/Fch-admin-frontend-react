@@ -220,7 +220,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                 ))}
                                             </select>
-                                            {validationErrors.resource_type && <div className="invalid-feedback d-block">{validationErrors.resource_type[0]}</div>}
+                                            {validationErrors.resource_type && <div className="invalid-feedback d-block">{validationErrors.resource_type}</div>}
                                         </div>
                                     </div>
 
@@ -240,7 +240,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 {formData.status ? <span className="text-success">Active</span> : <span className="text-muted">Inactive</span>}
                                             </label>
                                         </div>
-                                        {validationErrors.status && <div className="invalid-feedback d-block">{validationErrors.status[0]}</div>}
+                                        {validationErrors.status && <div className="invalid-feedback d-block">{validationErrors.status}</div>}
                                     </div>
 
                                     <div className="col-12">
@@ -256,7 +256,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                             />
                                             <i className="ri-heading text-muted"></i>
                                         </div>
-                                        {validationErrors.title && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.title[0]}</div>}
+                                        {validationErrors.title && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.title}</div>}
                                     </div>
 
                                     <div className="col-6">
@@ -272,7 +272,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                             />
                                             <i className="ri-text text-muted"></i>
                                         </div>
-                                        {validationErrors.subtitle && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.subtitle[0]}</div>}
+                                        {validationErrors.subtitle && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.subtitle}</div>}
                                     </div>
 
                                     <div className="col-6">
@@ -288,7 +288,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                             />
                                             <i className="ri-remixicon-line text-muted"></i>
                                         </div>
-                                        {validationErrors.icon && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.icon[0]}</div>}
+                                        {validationErrors.icon && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.icon}</div>}
                                     </div>
 
                                     {isLinkRequired && (
@@ -328,7 +328,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                     Browse
                                                 </button>
                                             </div>
-                                            {validationErrors.file && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.file[0]}</div>}
+                                            {validationErrors.file && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.file}</div>}
                                             {isEdit && resource?.file_url && (
                                                 <div className="mt-3 p-2 bg-light rounded-2 border border-dashed border-light d-flex align-items-center justify-content-between">
                                                     <div className="d-flex align-items-center">
