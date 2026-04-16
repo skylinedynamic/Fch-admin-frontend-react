@@ -86,25 +86,33 @@ const Resource: React.FC = () => {
   );
 
   // Data Logic
-  const educationItems = (resources.education_help || []).map((item, i) => ({
+  const getColorByIcon = (icon: string) => {
+    if (icon.includes('lightbulb') || icon.includes('warning') || icon.includes('flash')) return 'warning';
+    if (icon.includes('government') || icon.includes('folder') || icon.includes('question') || icon.includes('faqs')) return 'primary';
+    if (icon.includes('honour') || icon.includes('bank') || icon.includes('book') || icon.includes('glossary')) return 'indigo';
+    if (icon.includes('building') || icon.includes('wallet') || icon.includes('cash')) return 'info';
+    if (icon.includes('delete') || icon.includes('danger') || icon.includes('denial')) return 'danger';
+    if (icon.includes('list') || icon.includes('checklist')) return 'success';
+    return 'primary';
+  };
+
+  const filteredEdu = (resources.education_help || []).filter(item =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.subtitle && item.subtitle.toLowerCase().includes(searchTerm.toLowerCase()))
+  ).map(item => ({
     id: item.id,
     title: item.title,
     sub: item.subtitle,
-    icon: item.icon || "ri-lightbulb-flash-line",
-    color: i % 4 === 0 ? 'warning' : i % 4 === 1 ? 'primary' : i % 4 === 2 ? 'indigo' : 'info',
+    icon: item.icon || 'ri-book-line',
+    color: getColorByIcon(item.icon || ''),
     original: item
   }));
-
-  const filteredEdu = educationItems.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.sub && item.sub.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
 
   const documentItems = (resources.download_assets || []).map(item => ({
     id: item.id,
     title: item.title,
     type: "PDF",
-    color: "danger",
+    color: getColorByIcon(item.icon || 'ri-file-list-3-line'),
     icon: item.icon || "ri-file-list-3-line",
     original: item
   }));
@@ -150,7 +158,7 @@ const Resource: React.FC = () => {
         {/* Metric Header */}
         <div className="row g-3">
           {[
-            { label: 'Total Resources', value: educationItems.length + documentItems.length + trainingVideos.length, icon: 'ri-grid-fill', color: 'primary' },
+            { label: 'Total Resources', value: filteredEdu.length + documentItems.length + trainingVideos.length, icon: 'ri-grid-fill', color: 'primary' },
             { label: 'Service Providers', value: (resources.business_services || []).length, icon: 'ri-briefcase-fill', color: 'primary' },
             { label: 'Categories Covered', value: '6', icon: 'ri-stack-fill', color: 'warning' },
             { label: 'Quick Tools', value: documentItems.length, icon: 'ri-rocket-2-fill', color: 'primary' }
