@@ -4,6 +4,7 @@ import { useCreateResource, useUpdateResource } from '../../modules/resource/que
 import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK } from '../../utils/resourceConfig';
 
 interface ResourceModalProps {
     show: boolean;
@@ -11,14 +12,6 @@ interface ResourceModalProps {
     resource?: ResourceItem | null;
     type?: string;
 }
-
-const TYPE_OPTIONS = [
-    { value: 'legal_registration', label: 'Legal & Registration' },
-    { value: 'business_services', label: 'Business Services' },
-    { value: 'download_assets', label: 'Download Assets' },
-    { value: 'education_help', label: 'Education & Help' },
-    { value: 'training_academy', label: 'Training Academy' },
-];
 
 export default function ResourceModal({ show, onHide, resource, type }: ResourceModalProps) {
     const isEdit = !!resource;
@@ -124,8 +117,8 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
         }
     }, [show, isEdit, resource, type]);
 
-    const isFileRequired = ['legal_registration', 'download_assets', 'education_help'].includes(formData.resource_type);
-    const isLinkRequired = ['business_services', 'training_academy'].includes(formData.resource_type);
+    const isFileRequired = TYPES_REQUIRING_FILE.includes(formData.resource_type);
+    const isLinkRequired = TYPES_REQUIRING_LINK.includes(formData.resource_type);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type, checked } = e.target as HTMLInputElement;
@@ -223,7 +216,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 onChange={handleInputChange}
                                                 disabled
                                             >
-                                                {TYPE_OPTIONS.map(opt => (
+                                                {RESOURCE_TYPE_OPTIONS.map(opt => (
                                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                 ))}
                                             </select>
