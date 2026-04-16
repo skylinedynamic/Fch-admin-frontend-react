@@ -71,7 +71,7 @@ const Resource: React.FC = () => {
           className="btn btn-sm btn-icon btn-light bg-transparent border-0 shadow-none p-0 m-0 text-dark transition-all"
           onClick={e => e.stopPropagation()}
         >
-          <i className={`${iconClass} fs-18`}></i>
+          <i className={`${iconClass} fs-18 text-muted opacity-50`}></i>
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end shadow border-light bg-white py-2" style={{ minWidth: '140px', zIndex: 1050 }}>
           <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
@@ -242,16 +242,16 @@ const Resource: React.FC = () => {
               <div className="col-12">
                 <div className="card shadow-sm border-0 rounded-2 bg-white">
                   <div className="card-header border-0 bg-navy p-4">
-                    <div className="d-flex align-items-start justify-content-between gap-3">
+                    <div className="d-flex align-items-center justify-content-between gap-3">
                       <div className="flex-grow-1">
-                        <h5 className="fw-bold text-white mb-2">Education & Help</h5>
+                        <h5 className="fw-bold text-white mb-1">Education & Help</h5>
                         <p className="text-white opacity-50 mb-0 fs-13">Detailed library of borrower education guides, credit building tips, and FAQs.</p>
                       </div>
-                      <div className="d-flex flex-column align-items-end gap-2">
-                        {/* <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('education_help')}>
+                      <div className="d-flex align-items-center gap-3">
+                        <button className="btn btn-sm btn-soft-danger px-4 py-2 fs-12 fw-bold border-0 rounded-2" onClick={() => handleAddNew('education_help')}>
                           <i className="ri-add-line me-1"></i> Add New
-                        </button> */}
-                        <div className="search-box-premium position-relative" style={{ width: '280px' }}>
+                        </button>
+                        <div className="search-box-premium position-relative" style={{ width: '300px' }}>
                           <i className="ri-search-2-line text-white opacity-50 fs-16 position-absolute top-50 start-0 translate-middle-y ms-3"></i>
                           <input
                             type="text"
@@ -265,18 +265,18 @@ const Resource: React.FC = () => {
                     </div>
                   </div>
                   <div className="card-body p-4">
-                    <div className="row g-3">
+                    <div className="row g-4">
                       {filteredEdu.map((edu, i) => (
-                        <div className="col-6 col-md-4 col-xl-3" key={edu.id}>
-                          <div className="p-3 rounded-2 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative" onClick={() => handleEdit(edu.original, "education_help")}>
-                            <div className="position-absolute top-0 end-0 p-1 text-muted">
-                              <ActionMenu item={edu.original} type="education_help" />
+                        <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
+                          <div className="p-4 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleEdit(edu.original, "education_help")}>
+                            <div className="position-absolute top-0 end-0 p-2">
+                              <ActionMenu item={edu.original || edu} type="education_help" />
                             </div>
-                            <div className={`avatar-sm bg-${edu.color}-subtle rounded d-flex align-items-center justify-content-center mx-auto mb-2`}>
+                            <div className={`avatar-sm bg-${edu.color}-subtle rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3`}>
                               <i className={`${edu.icon} text-${edu.color} fs-20`}></i>
                             </div>
-                            <h6 className="mb-1 fw-bold fs-13 text-dark">{edu.title}</h6>
-                            <p className="text-muted fs-10 mb-0">{edu.sub}</p>
+                            <h6 className="mb-2 fw-bold fs-14 text-dark">{edu.title}</h6>
+                            <p className="text-muted fs-11 mb-0 fw-medium opacity-75">{edu.sub}</p>
                           </div>
                         </div>
                       ))}
@@ -319,13 +319,13 @@ const Resource: React.FC = () => {
               {/* Training Academy */}
               <div className="card shadow-sm border-0 rounded-2 bg-white animate-fade-in-right">
                 <div className="card-header border-bottom border-light p-4 d-flex align-items-center justify-content-between">
+                  <h6 className="fw-bold text-dark mb-0 fs-15"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
                   <div className="d-flex align-items-center gap-2">
-                    <h6 className="fw-bold text-dark mb-0 fs-15"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
-                    <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0 ms-2" onClick={() => handleAddNew('training_academy')}>
+                    <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('training_academy')}>
                       <i className="ri-add-line me-1"></i> Add New
                     </button>
+                    <span className="badge bg-danger-subtle text-danger fs-10">{trainingVideos.length} Videos</span>
                   </div>
-                  <span className="badge bg-danger-subtle text-danger fs-10">{trainingVideos.length} Videos</span>
                 </div>
                 <div className="card-body p-4 pt-3">
                   <div className="d-flex flex-column gap-4">
