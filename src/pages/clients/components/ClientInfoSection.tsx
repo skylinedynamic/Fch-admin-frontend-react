@@ -881,6 +881,38 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="fico_score" className="form-label">Personal Credit Scores</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.fico_score ? 'is-invalid' : ''}`}
+                            id="fico_score"
+                            name="fico_score"
+                            placeholder="0"
+                            value={formData.fico_score || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.fico_score && <div className="invalid-feedback">{errors.fico_score}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="paydex_score" className="form-label">Business Credit Scores</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.paydex_score ? 'is-invalid' : ''}`}
+                            id="paydex_score"
+                            name="paydex_score"
+                            placeholder="0"
+                            value={formData.paydex_score || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.paydex_score && <div className="invalid-feedback">{errors.paydex_score}</div>}
+                    </div>
+                </div>
+
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_phone" className="form-label">Business Phone </label>

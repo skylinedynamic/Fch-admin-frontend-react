@@ -144,7 +144,7 @@ export default function CreditAccountForm() {
     };
 
     return (
-        <div className="page-content min-vh-100">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
