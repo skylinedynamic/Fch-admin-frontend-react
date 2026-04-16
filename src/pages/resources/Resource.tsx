@@ -248,9 +248,7 @@ const Resource: React.FC = () => {
                         <p className="text-white opacity-50 mb-0 fs-13">Detailed library of borrower education guides, credit building tips, and FAQs.</p>
                       </div>
                       <div className="d-flex align-items-center gap-3">
-                        <button className="btn btn-sm btn-soft-danger px-4 py-2 fs-12 fw-bold border-0 rounded-2" onClick={() => handleAddNew('education_help')}>
-                          <i className="ri-add-line me-1"></i> Add New
-                        </button>
+
                         <div className="search-box-premium position-relative" style={{ width: '300px' }}>
                           <i className="ri-search-2-line text-white opacity-50 fs-16 position-absolute top-50 start-0 translate-middle-y ms-3"></i>
                           <input
@@ -261,6 +259,9 @@ const Resource: React.FC = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                           />
                         </div>
+                        <button className="btn btn-sm btn-soft-success px-3 py-2 fs-12 fw-bold border-0 rounded-2 text-nowrap" onClick={() => handleAddNew('education_help')}>
+                          <i className="ri-add-line me-1"></i> Add New
+                        </button>
                       </div>
                     </div>
                   </div>
