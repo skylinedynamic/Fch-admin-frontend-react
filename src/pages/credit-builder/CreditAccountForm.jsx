@@ -250,6 +250,7 @@ export default function CreditAccountForm() {
                                                     onSelectFiles={handleFileSelection}
                                                     entityType="credit-accounts"
                                                     entityId={id || formData?.id || 0}
+                                                    getAll={true}
                                                 />
                                             </div>
 

@@ -13,6 +13,7 @@ interface FileManagerModalProps {
   onSelectFiles?: (files: FileSystemItem[]) => void
   entityType?: string
   entityId?: number | string
+  getAll?: boolean
   onChanged?: () => void
 }
 
@@ -25,12 +26,14 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   onSelectFiles,
   onChanged,
   entityType,
-  entityId
+  entityId,
+  getAll = false
 }) => {
   const context = useMemo(() => ({
     entity_type: entityType,
-    entity_id: entityId
-  }), [entityType, entityId])
+    entity_id: entityId,
+    get_all: getAll
+  }), [entityType, entityId, getAll])
 
   const {
     files,
