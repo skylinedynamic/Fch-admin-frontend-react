@@ -4,7 +4,7 @@ import { useCreateResource, useUpdateResource } from '../../modules/resource/que
 import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
-import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK } from '../../utils/resourceConfig';
+import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK, RESOURCE_ICONS } from '../../utils/resourceConfig';
 
 interface ResourceModalProps {
     show: boolean;
@@ -30,6 +30,9 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
 
     const [fileOptions, setFileOptions] = useState<File | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+    const [showIconDropdown, setShowIconDropdown] = useState(false);
+    const [iconSearch, setIconSearch] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const createMutation = useCreateResource();
     const updateMutation = useUpdateResource();
@@ -87,6 +90,17 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
             const backdrops = document.querySelectorAll('.modal-backdrop');
             backdrops.forEach(b => b.remove());
         };
+    }, []);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowIconDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -277,16 +291,101 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
 
                                     <div className="col-6">
                                         <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Icon Class</label>
-                                        <div className="form-icon">
-                                            <input
-                                                type="text"
-                                                className={`form-control form-control-icon border-light bg-light py-2 shadow-none ${validationErrors.icon ? 'is-invalid border-danger' : ''}`}
-                                                name="icon"
-                                                value={formData.icon}
-                                                onChange={handleInputChange}
-                                                placeholder="Icon Class"
-                                            />
-                                            <i className="ri-remixicon-line text-muted"></i>
+                                        <div className="position-relative" ref={dropdownRef}>
+                                            {/* Combobox Trigger */}
+                                            <button
+                                                type="button"
+                                                className={`form-control border-light bg-light py-2 shadow-none d-flex align-items-center gap-2 text-start ${validationErrors.icon ? 'is-invalid border-danger' : ''}`}
+                                                onClick={() => { setShowIconDropdown(prev => !prev); setIconSearch(''); }}
+                                                style={{ height: '42px' }}
+                                            >
+                                                {formData.icon ? (
+                                                    <>
+                                                        <i className={`${formData.icon} fs-16 text-primary flex-shrink-0`}></i>
+                                                        <span className="fs-13 text-dark flex-grow-1 text-truncate">{RESOURCE_ICONS.find(i => i.value === formData.icon)?.label || formData.icon}</span>
+                                                        <i
+                                                            className="ri-close-line text-muted fs-16 flex-shrink-0"
+                                                            onClick={(e) => { e.stopPropagation(); setFormData(prev => ({ ...prev, icon: '' })); setShowIconDropdown(false); }}
+                                                        ></i>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-remixicon-line text-muted fs-16 flex-shrink-0"></i>
+                                                        <span className="fs-13 text-muted">Select icon...</span>
+                                                        <i className="ri-arrow-down-s-line text-muted ms-auto flex-shrink-0"></i>
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Dropdown Panel */}
+                                            {showIconDropdown && (
+                                                <div
+                                                    className="position-absolute w-100 bg-white border border-light rounded-2 shadow-lg mt-1"
+                                                    style={{ zIndex: 1055, top: '100%' }}
+                                                >
+                                                    {/* Search Input inside dropdown */}
+                                                    <div className="p-2 border-bottom border-light">
+                                                        <div className="input-group input-group-sm">
+                                                            <span className="input-group-text bg-light border-light"><i className="ri-search-2-line text-muted"></i></span>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control bg-light border-light shadow-none fs-13"
+                                                                placeholder="Search icons..."
+                                                                value={iconSearch}
+                                                                onChange={(e) => setIconSearch(e.target.value)}
+                                                                autoFocus
+                                                                autoComplete="off"
+                                                            />
+                                                            {iconSearch && (
+                                                                <button type="button" className="btn btn-light border-light px-2" onClick={() => setIconSearch('')}>
+                                                                    <i className="ri-close-line text-muted"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Icon List */}
+                                                    <div className="overflow-auto" style={{ maxHeight: '220px' }}>
+                                                        {RESOURCE_ICONS.filter(ico =>
+                                                            !iconSearch ||
+                                                            ico.label.toLowerCase().includes(iconSearch.toLowerCase()) ||
+                                                            ico.value.toLowerCase().includes(iconSearch.toLowerCase())
+                                                        ).length > 0 ? (
+                                                            RESOURCE_ICONS.filter(ico =>
+                                                                !iconSearch ||
+                                                                ico.label.toLowerCase().includes(iconSearch.toLowerCase()) ||
+                                                                ico.value.toLowerCase().includes(iconSearch.toLowerCase())
+                                                            ).map((ico) => (
+                                                                <button
+                                                                    key={ico.value}
+                                                                    type="button"
+                                                                    className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 ${formData.icon === ico.value ? 'bg-primary bg-opacity-10' : ''}`}
+                                                                    onClick={() => {
+                                                                        setFormData(prev => ({ ...prev, icon: ico.value }));
+                                                                        setIconSearch('');
+                                                                        setShowIconDropdown(false);
+                                                                        if (validationErrors.icon) setValidationErrors(prev => ({ ...prev, icon: [] }));
+                                                                    }}
+                                                                >
+                                                                    <div className="bg-light rounded p-1 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
+                                                                        <i className={`${ico.value} fs-18 ${formData.icon === ico.value ? 'text-primary' : 'text-secondary'}`}></i>
+                                                                    </div>
+                                                                    <div className="min-width-0">
+                                                                        <div className="fw-semibold fs-13 text-dark">{ico.label}</div>
+                                                                        <div className="text-muted fs-11 text-truncate">{ico.value}</div>
+                                                                    </div>
+                                                                    {formData.icon === ico.value && <i className="ri-check-line text-primary ms-auto flex-shrink-0"></i>}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="text-center py-4 text-muted fs-13">
+                                                                <i className="ri-search-line d-block fs-22 mb-1"></i>
+                                                                No icons found for "{iconSearch}"
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         {validationErrors.icon && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.icon}</div>}
                                     </div>
