@@ -305,7 +305,11 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                 />
                                                 <i className="ri-link text-muted"></i>
                                             </div>
-                                            {validationErrors.link && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.link[0]}</div>}
+                                            {validationErrors.link && (
+                                                <div className="invalid-feedback d-block fw-medium mt-1">
+                                                    {Array.isArray(validationErrors.link) ? validationErrors.link[0] : validationErrors.link}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -357,7 +361,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                     {(createMutation.isPending || updateMutation.isPending) ? (
                                         <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Saving</>
                                     ) : (
-                                        isEdit ? <><i className="ri-save-line fs-16"></i> Update </> : <><i className="ri-check-line fs-16"></i> Save Action</>
+                                        isEdit ? <><i className="ri-save-line fs-16"></i> Update </> : <><i className="ri-check-line fs-16"></i> Save</>
                                     )}
                                 </button>
                             </div>
