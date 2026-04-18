@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 import { useCreateResource, useUpdateResource } from '../../modules/resource/queries';
+import { getResourceNextId } from '../../modules/resource/services';
 import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
@@ -17,6 +18,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
     const isEdit = !!resource;
 
     const [showFileManager, setShowFileManager] = useState(false);
+    const [nextId, setNextId] = useState<number | string>('0');
 
     // Local form state
     const [formData, setFormData] = useState<ResourceFormData>({
@@ -39,6 +41,20 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
 
     const modalRef = useRef<HTMLDivElement>(null);
     const modalInstanceRef = useRef<any>(null);
+
+    // Fetch next ID for new resources to ensure accurate folder creation
+    useEffect(() => {
+        if (show && !isEdit) {
+            getResourceNextId().then(res => {
+                if (res?.next_id) {
+                    setNextId(res.next_id);
+                }
+            }).catch(err => {
+                console.error('Failed to fetch next resource ID', err);
+                setNextId('0');
+            });
+        }
+    }, [show, isEdit]);
 
     // Initialize Bootstrap Modal instance once
     useEffect(() => {
@@ -474,7 +490,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                 toggle={() => setShowFileManager(!showFileManager)}
                 selectionMode={true}
                 entityType="resources"
-                entityId={resource?.id || '0'}
+                entityId={resource?.id || nextId || '0'}
                 initialPath={formData.file && typeof formData.file === 'string' ? formData.file.split('/').slice(0, -1).join('/') || '/' : '/'}
                 onSelectFiles={(files) => {
                     if (files && files.length > 0) {

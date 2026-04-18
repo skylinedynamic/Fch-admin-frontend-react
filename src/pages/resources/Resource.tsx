@@ -9,6 +9,8 @@ import { ResourceItem } from '../../modules/resource/types';
 import ResourceModal from './ResourceModal';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
+import { handleFileDownload } from '../../utils/fileDownload';
+import { downloadResource } from '../../modules/resource/services';
 
 const Resource: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,9 +66,37 @@ const Resource: React.FC = () => {
     }
   };
 
-  const handleItemClick = (item: ResourceItem) => {
-    if (item.file_url) window.open(item.file_url, '_blank');
-    else if (item.link) window.open(item.link, '_blank');
+  const handleDownload = (url: string, filename?: string) => {
+    if (!url) return;
+    const link = document.createElement('a');
+    link.href = url;
+    // Extract filename from URL if not provided
+    const name = filename || url.split('/').pop() || 'document.pdf';
+    link.setAttribute('download', name);
+    link.setAttribute('target', '_blank'); // Fallback for cross-origin
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleItemClick = (item: ResourceItem, forceDownload = false) => {
+    console.log('Resource Clicked:', { id: item.id, title: item.title, forceDownload });
+    
+    if (forceDownload && item.id) {
+      handleFileDownload(
+        () => downloadResource(item.id),
+        item.title || 'document.pdf',
+        item.file_url || undefined
+      );
+      return;
+    }
+
+    const url = item.file_url || item.link;
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      toast.info("No file or link available for this item");
+    }
   };
 
   const ActionMenu = ({ item, type, iconClass = "ri-more-2-fill" }: { item: ResourceItem, type: string, iconClass?: string }) => (
@@ -83,6 +113,11 @@ const Resource: React.FC = () => {
           <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
             <i className="ri-pencil-line me-2 align-bottom text-primary fs-15"></i> Edit
           </DropdownItem>
+          {(item.file_url || item.link) && (
+            <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
+              <i className="ri-download-2-line me-2 align-bottom text-success fs-15"></i> Download
+            </DropdownItem>
+          )}
           <DropdownItem className="fw-bold fs-13 text-danger py-2" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
             <i className="ri-delete-bin-line me-2 align-bottom text-danger fs-15"></i> Delete
           </DropdownItem>
@@ -102,10 +137,16 @@ const Resource: React.FC = () => {
     return 'primary';
   };
 
-  const filteredEdu = (resources.education_help || []).filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.subtitle && item.subtitle.toLowerCase().includes(searchTerm.toLowerCase()))
-  ).map(item => ({
+  const filterItems = (items: ResourceItem[] | undefined) => {
+    if (!items) return [];
+    if (!searchTerm) return items;
+    return items.filter(item =>
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.subtitle && item.subtitle.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  };
+
+  const filteredEdu = filterItems(resources.education_help).map(item => ({
     id: item.id,
     title: item.title,
     sub: item.subtitle,
@@ -114,16 +155,20 @@ const Resource: React.FC = () => {
     original: item
   }));
 
-  const documentItems = (resources.download_assets || []).map(item => ({
+  const filteredLegal = filterItems(resources.legal_registration);
+  const filteredBus = filterItems(resources.business_services);
+
+  const documentItems = filterItems(resources.download_assets).map(item => ({
     id: item.id,
     title: item.title,
+    sub: item.subtitle,
     type: "PDF",
     color: getColorByIcon(item.icon || 'ri-file-list-3-line'),
     icon: item.icon || "ri-file-list-3-line",
     original: item
   }));
 
-  const trainingVideos = (resources.training_academy || []).map((item, i) => ({
+  const trainingVideos = filterItems(resources.training_academy).map((item, i) => ({
     id: item.id,
     title: item.title,
     duration: "10:00",
@@ -132,12 +177,7 @@ const Resource: React.FC = () => {
     original: item
   }));
 
-  const filteredDocs = documentItems.filter(doc =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const vidFiltered = trainingVideos.filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const visibleVideos = showAllVideos ? vidFiltered : vidFiltered.slice(0, 4);
+  const visibleVideos = showAllVideos ? trainingVideos : trainingVideos.slice(0, 4);
 
   return (
     <div className="page-content" style={{ backgroundColor: '#f4f6f9' }}>
@@ -293,8 +333,8 @@ const Resource: React.FC = () => {
                         </button>
                       </div>
                       <div className="card-body p-4 pt-2">
-                        <div className={`d-flex flex-column gap-3 ${showAllLegal && (resources.legal_registration || []).length > 4 ? 'scrollable-container' : ''}`}>
-                          {(showAllLegal ? (resources.legal_registration || []) : (resources.legal_registration || []).slice(0, 4)).map((item, i) => (
+                        <div className={`d-flex flex-column gap-3 ${showAllLegal && filteredLegal.length > 4 ? 'scrollable-container' : ''}`}>
+                          {(showAllLegal ? filteredLegal : filteredLegal.slice(0, 4)).map((item, i) => (
                             <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item transition-all" key={item.id} onClick={() => handleEdit(item, "legal_registration")}>
                               <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                                 <i className={`${item.icon || 'ri-article-line'} text-indigo fs-16`}></i>
@@ -327,8 +367,8 @@ const Resource: React.FC = () => {
                         </button>
                       </div>
                       <div className="card-body p-4 pt-2">
-                        <div className={`d-flex flex-column gap-3 ${showAllBusiness && (resources.business_services || []).length > 4 ? 'scrollable-container' : ''}`}>
-                          {(showAllBusiness ? (resources.business_services || []) : (resources.business_services || []).slice(0, 4)).map((item, i) => (
+                        <div className={`d-flex flex-column gap-3 ${showAllBusiness && filteredBus.length > 4 ? 'scrollable-container' : ''}`}>
+                          {(showAllBusiness ? filteredBus : filteredBus.slice(0, 4)).map((item, i) => (
                             <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item-success transition-all" key={item.id} onClick={() => handleEdit(item, 'business_services')}>
                               <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                                 <i className={`${item.icon || 'ri-phone-circle-line'} text-success fs-16`}></i>
@@ -386,25 +426,27 @@ const Resource: React.FC = () => {
                         </div>
                       </div>
                       <div className="card-body p-4">
-                        <div className="row g-4">
-                          {(showAllEducation ? filteredEdu : filteredEdu.slice(0, 12)).map((edu, i) => (
-                            <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
-                              <div className="p-4 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleEdit(edu.original, "education_help")}>
-                                <div className="position-absolute top-0 end-0 p-2">
-                                  <ActionMenu item={edu.original || edu} type="education_help" />
+                        <div className={`${showAllEducation && filteredEdu.length > 12 ? 'scrollable-container-edu' : ''}`}>
+                          <div className="row g-4 mb-2">
+                            {(showAllEducation ? filteredEdu : filteredEdu.slice(0, 12)).map((edu, i) => (
+                              <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
+                                <div className="p-4 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleEdit(edu.original, "education_help")}>
+                                  <div className="position-absolute top-0 end-0 p-2">
+                                    <ActionMenu item={edu.original || edu} type="education_help" />
+                                  </div>
+                                  <div className={`avatar-sm bg-${edu.color}-subtle rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3`}>
+                                    <i className={`${edu.icon} text-${edu.color} fs-20`}></i>
+                                  </div>
+                                  <h6 className="mb-2 fw-bold fs-14 text-dark">{edu.title}</h6>
+                                  <p className="text-muted fs-11 mb-0 fw-medium opacity-75">{edu.sub}</p>
                                 </div>
-                                <div className={`avatar-sm bg-${edu.color}-subtle rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3`}>
-                                  <i className={`${edu.icon} text-${edu.color} fs-20`}></i>
-                                </div>
-                                <h6 className="mb-2 fw-bold fs-14 text-dark">{edu.title}</h6>
-                                <p className="text-muted fs-11 mb-0 fw-medium opacity-75">{edu.sub}</p>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                         {!showAllEducation && filteredEdu.length > 12 && (
-                          <div className="text-center mt-4 pt-3 border-top border-light-subtle">
-                            <button className="btn btn-soft-primary px-4 py-2 fs-12 fw-bold" onClick={() => setShowAllEducation(true)}>
+                          <div className="text-center mt-4 pt-4 border-top border-light-subtle">
+                            <button className="btn btn-soft-primary px-4 py-2 fs-12 fw-bold rounded-pill" onClick={() => setShowAllEducation(true)}>
                               Show More Articles <i className="ri-arrow-down-s-line ms-1"></i>
                             </button>
                           </div>
@@ -427,21 +469,25 @@ const Resource: React.FC = () => {
                       </button>
                     </div>
                     <div className="card-body p-0">
-                      <div className={`list-group list-group-flush ${showAllAssets && filteredDocs.length > 4 ? 'scrollable-container-assets' : ''}`}>
-                        {(showAllAssets ? filteredDocs : filteredDocs.slice(0, 4)).map((doc, i) => (
+                      <div className={`list-group list-group-flush ${showAllAssets && documentItems.length > 4 ? 'scrollable-container-assets' : ''}`}>
+                        {(showAllAssets ? documentItems : documentItems.slice(0, 4)).map((doc, i) => (
                           <div className="list-group-item list-group-item-action border-0 p-3 transition-all d-flex align-items-center justify-content-between cursor-pointer" key={doc.id} onClick={() => handleEdit(doc.original, "download_assets")}>
                             <div className="d-flex align-items-center flex-grow-1 pe-2">
                               <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
                               <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                              <i className="ri-download-2-line text-muted fs-14"></i>
+                              <i 
+                                className="ri-download-2-line text-muted fs-18 cursor-pointer hover-primary p-2" 
+                                onClick={(e) => { e.stopPropagation(); handleItemClick(doc.original, true); }}
+                                title="Download"
+                              ></i>
                               <ActionMenu item={doc.original} type="download_assets" />
                             </div>
                           </div>
                         ))}
                       </div>
-                      {!showAllAssets && filteredDocs.length > 4 && (
+                      {!showAllAssets && documentItems.length > 4 && (
                         <div className="p-3 text-center border-top border-light-subtle">
                           <button className="btn btn-link btn-sm text-danger fw-bold text-decoration-none p-0" onClick={() => setShowAllAssets(true)}>
                             View More Assets <i className="ri-arrow-down-s-line align-middle"></i>
@@ -453,13 +499,13 @@ const Resource: React.FC = () => {
 
                   {/* Training Academy */}
                   <div className="card shadow-sm border-0 rounded-2 bg-white animate-fade-in-right">
-                    <div className="card-header border-bottom border-light p-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                      <h6 className="fw-bold text-dark mb-0 fs-15"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
+                    <div className="card-header border-bottom border-light p-4 d-flex align-items-center justify-content-between gap-2">
+                      <h6 className="fw-bold text-dark mb-0 fs-15 text-nowrap"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
                       <div className="d-flex align-items-center gap-2">
-                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('training_academy')}>
+                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0 text-nowrap" onClick={() => handleAddNew('training_academy')}>
                           <i className="ri-add-line me-1"></i> Add New
                         </button>
-                        <span className="badge bg-danger-subtle text-danger fs-10">{trainingVideos.length} Videos</span>
+                        <span className="badge bg-danger-subtle text-danger fs-10 text-nowrap">{trainingVideos.length} Videos</span>
                       </div>
                     </div>
                     <div className="card-body p-4 pt-3">
@@ -502,9 +548,9 @@ const Resource: React.FC = () => {
                         </div>
                       )}
 
-                      <button className="btn btn-outline-danger btn-sm w-100 rounded-2 mt-4 fw-bold border-dashed shadow-sm">
+                      {/* <button className="btn btn-outline-danger btn-sm w-100 rounded-2 mt-4 fw-bold border-dashed shadow-sm">
                         <i className="ri-notification-3-line me-1"></i> Subscribe to Channel
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>
@@ -586,11 +632,23 @@ const Resource: React.FC = () => {
 
         .scrollable-container { max-height: 380px; overflow-y: auto; padding-right: 8px; }
         .scrollable-container-assets { max-height: 280px; overflow-y: auto; }
+        .scrollable-container-edu { max-height: 450px; overflow-y: auto; padding: 4px; overflow-x: hidden; }
         
-        .scrollable-container::-webkit-scrollbar, .scrollable-container-assets::-webkit-scrollbar { width: 4px; }
-        .scrollable-container::-webkit-scrollbar-track, .scrollable-container-assets::-webkit-scrollbar-track { background: #f1f1f1; }
-        .scrollable-container::-webkit-scrollbar-thumb, .scrollable-container-assets::-webkit-scrollbar-thumb { background: #e2e5ec; border-radius: 10px; }
-        .scrollable-container::-webkit-scrollbar-thumb:hover, .scrollable-container-assets::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+        .scrollable-container::-webkit-scrollbar, 
+        .scrollable-container-assets::-webkit-scrollbar,
+        .scrollable-container-edu::-webkit-scrollbar { width: 4px; }
+
+        .scrollable-container::-webkit-scrollbar-track, 
+        .scrollable-container-assets::-webkit-scrollbar-track,
+        .scrollable-container-edu::-webkit-scrollbar-track { background: #f1f1f1; }
+
+        .scrollable-container::-webkit-scrollbar-thumb, 
+        .scrollable-container-assets::-webkit-scrollbar-thumb,
+        .scrollable-container-edu::-webkit-scrollbar-thumb { background: #e2e5ec; border-radius: 10px; }
+
+        .scrollable-container::-webkit-scrollbar-thumb:hover, 
+        .scrollable-container-assets::-webkit-scrollbar-thumb:hover,
+        .scrollable-container-edu::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
         .skeleton-line {
           background: #eef0f3;

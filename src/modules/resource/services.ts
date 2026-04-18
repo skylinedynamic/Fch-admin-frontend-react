@@ -58,3 +58,16 @@ export const updateResource = async (id: number | string, data: ResourceFormData
 export const deleteResource = async (id: number | string): Promise<void> => {
     await apiClient.delete(`/admin/resources/${id}`);
 };
+
+// Download a resource accurately
+export const downloadResource = async (id: number | string): Promise<any> => {
+    return await apiClient.get(`/admin/resources/download/${id}`, {
+        responseType: 'blob'
+    });
+};
+
+// Get the next available ID for folder prediction
+export const getResourceNextId = async (): Promise<{ next_id: number }> => {
+    const response = await apiClient.get('/admin/resources/next-id');
+    return response.data;
+};
