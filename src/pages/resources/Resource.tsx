@@ -113,7 +113,7 @@ const Resource: React.FC = () => {
           <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
             <i className="ri-pencil-line me-2 align-bottom text-primary fs-15"></i> Edit
           </DropdownItem>
-          {(item.file_url || item.link) && (
+          {(item.file_url) && (
             <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
               <i className="ri-download-2-line me-2 align-bottom text-success fs-15"></i> Download
             </DropdownItem>
@@ -477,8 +477,8 @@ const Resource: React.FC = () => {
                               <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                              <i 
-                                className="ri-download-2-line text-muted fs-18 cursor-pointer hover-primary p-2" 
+                              <i
+                                className="ri-download-2-line text-muted fs-18 cursor-pointer hover-primary p-2"
                                 onClick={(e) => { e.stopPropagation(); handleItemClick(doc.original, true); }}
                                 title="Download"
                               ></i>
