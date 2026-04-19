@@ -19,6 +19,7 @@ export default function CreditAccountForm() {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [showFileManager, setShowFileManager] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [errors, setErrors] = useState({});
 
@@ -217,8 +218,16 @@ export default function CreditAccountForm() {
                                             <div className="col-md-5 text-center d-flex flex-column align-items-center justify-content-center pe-lg-4 border-end-xl">
                                                 <div className="position-relative w-100 px-lg-4">
                                                     <div
-                                                        className={`p-3 bg-light rounded-3 border-dashed border-2 d-flex align-items-center justify-content-center w-100 ${errors.image_url ? 'border-danger' : 'border-secondary'}`}
-                                                        style={{ minHeight: '180px', transition: 'all 0.3s ease' }}
+                                                        className={`p-3 rounded-3 border-dashed border-2 d-flex align-items-center justify-content-center w-100 cursor-pointer ${errors.image_url ? 'border-danger' : (isHovered ? 'border-primary' : 'border-secondary')} ${isHovered ? 'bg-light' : 'bg-white'}`}
+                                                        style={{
+                                                            minHeight: '180px',
+                                                            transition: 'all 0.3s ease',
+                                                            backgroundColor: isHovered ? '#f8f9fa' : '#ffffff',
+                                                            borderColor: isHovered ? '#0d6efd' : '#ced4da'
+                                                        }}
+                                                        onClick={() => setShowFileManager(true)}
+                                                        onMouseEnter={() => setIsHovered(true)}
+                                                        onMouseLeave={() => setIsHovered(false)}
                                                     >
                                                         {getImageSrc() ? (
                                                             <img
@@ -229,8 +238,13 @@ export default function CreditAccountForm() {
                                                             />
                                                         ) : (
                                                             <div className="text-muted text-center py-4">
-                                                                <i className="ri-image-add-line fs-32 d-block mb-2 text-primary opacity-75"></i>
-                                                                <span className="small fw-medium">Upload Card Image Preview</span>
+                                                                <div className="position-relative d-inline-block mb-3">
+                                                                    <i className="ri-bank-card-2-line display-4 text-primary opacity-75"></i>
+                                                                    <span className="position-absolute bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-2 border-white shadow-sm" style={{ width: '22px', height: '22px', top: '-5px', right: '-12px' }}>
+                                                                        <i className="ri-add-line fs-14"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <span className="small fw-medium d-block">Please Upload Card Image</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -275,8 +289,8 @@ export default function CreditAccountForm() {
                                                     <div className="col-12">
                                                         <label className="form-label">Reference URL <span className="text-muted small">(Optional)</span></label>
                                                         <div className="input-group">
-                                                            <span className="input-group-text bg-light border-end-0 text-muted"><i className="ri-link"></i></span>
-                                                            <input type="text" name="reference_url" className={`form-control border-start-0 ps-0 ${errors.reference_url ? 'is-invalid' : ''}`} value={formData.reference_url} onChange={handleChange} placeholder="https://..." />
+                                                            <span className="input-group-text bg-light text-muted"><i className="ri-link"></i></span>
+                                                            <input type="text" name="reference_url" className={`form-control ${errors.reference_url ? 'is-invalid' : ''}`} value={formData.reference_url} onChange={handleChange} placeholder="https://..." />
                                                             {errors.reference_url && <div className="invalid-feedback">{errors.reference_url}</div>}
                                                         </div>
                                                     </div>
