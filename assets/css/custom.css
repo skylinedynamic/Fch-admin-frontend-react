@@ -602,7 +602,7 @@ File: Custom Css File
 
 .invalid-feedback.d-block {
   color: #f1734f !important;
-  font-size: 13px !important;
+  font-size: .875em !important;
   margin-top: 8px !important;
   margin-bottom: 0 !important;
   font-weight: 400 !important;
@@ -961,4 +961,25 @@ File: Custom Css File
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   opacity: 0.9;
+}
+
+/* Credit Account Form Image Dropzone */
+.credit-artwork-dropzone {
+  width: 100%;
+}
+
+.credit-artwork-dropzone-inner {
+  width: 100%;
+  min-height: 220px;
+  border: 1px dashed #ced4da;
+  transition: 0.2s all ease-in-out;
+}
+
+.credit-artwork-dropzone-inner:hover {
+  border-color: #0ab39c;
+}
+
+.credit-artwork-preview {
+  object-fit: contain;
+  max-height: 180px;
 }

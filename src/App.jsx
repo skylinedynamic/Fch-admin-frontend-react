@@ -23,7 +23,7 @@ import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
 import CreditAccountsList from './pages/credit-builder/CreditAccountsList.jsx';
-import CreditAccountForm from './pages/credit-builder/CreditAccountForm.jsx';
+import CreditAccountForm from './pages/credit-builder/components/CreditAccountForm.jsx';
 import VerificationCenter from './pages/credit-builder/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -205,7 +205,7 @@ export default function App() {
                 <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
               </Route>
 
-              <Route>
+              <Route element={<HostRoute />}>
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 

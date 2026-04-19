@@ -2352,3 +2352,29 @@
   z-index: 2 !important;
   background: #fff !important;
 }
+
+/* Credit Account Form Image Dropzone */
+.credit-artwork-dropzone {
+  width: 100%;
+}
+
+.credit-artwork-dropzone-inner {
+  width: 100%;
+  min-height: 220px;
+  border: 1px dashed #ced4da;
+  transition: 0.2s all ease-in-out;
+}
+
+.credit-artwork-dropzone-inner:hover {
+  border-color: #0ab39c;
+}
+
+.credit-artwork-preview {
+  object-fit: contain;
+  max-height: 180px;
+}
+
+
+#credit-account-form .mt-3rem {
+  margin-top: 3rem !important;
+}

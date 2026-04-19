@@ -181,18 +181,6 @@ export default function CreditAccountsList() {
         );
     };
 
-    const actionBodyTemplate = (rowData) => {
-        return (
-            <div className="d-flex">
-                {hasPermission('update credit accounts') && (
-                    <button className="btn btn-soft-primary btn-sm me-2" onClick={() => navigate(`/credit-accounts/${rowData.id}`)}>
-                        <i className="ri-edit-line"></i>
-                    </button>
-                )}
-            </div>
-        );
-    };
-
 
 
     const handleStatusChange = async (id, currentStatus) => {
@@ -359,7 +347,6 @@ export default function CreditAccountsList() {
 
                                             <Column field="time_in_business_min_months" header="Minimum Months" sortable filter filterPlaceholder="Search" style={{ minWidth: '150px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter filterElement={statusFilterTemplate} showFilterMenu={false} filterPlaceholder="Search" style={{ minWidth: '120px' }} />
-                                            <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '100px' }} />
                                         </DataTable>
                                     </div>
                                 )}
