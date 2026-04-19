@@ -341,7 +341,6 @@ export default function CreditAccountForm() {
                                                             className={`form-control ${errors.personal_guarantee ? 'is-invalid' : ''}`}
                                                             value={formData.personal_guarantee}
                                                             onChange={handleChange}
-                                                            placeholder="e.g. Yes/No/Optional"
                                                         />
                                                         {errors.personal_guarantee && <div className="invalid-feedback">{errors.personal_guarantee}</div>}
                                                     </div>
@@ -359,7 +358,6 @@ export default function CreditAccountForm() {
                                                             className={`form-control ${errors.business_credit_profile ? 'is-invalid' : ''}`}
                                                             value={formData.business_credit_profile}
                                                             onChange={handleChange}
-                                                            placeholder="e.g. Yes/No"
                                                         />
                                                         {errors.business_credit_profile && <div className="invalid-feedback">{errors.business_credit_profile}</div>}
                                                     </div>
@@ -377,7 +375,6 @@ export default function CreditAccountForm() {
                                                             className={`form-control ${errors.final_approval ? 'is-invalid' : ''}`}
                                                             value={formData.final_approval}
                                                             onChange={handleChange}
-                                                            placeholder="e.g. Manual/Automatic"
                                                         />
                                                         {errors.final_approval && <div className="invalid-feedback">{errors.final_approval}</div>}
                                                     </div>
