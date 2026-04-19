@@ -81,7 +81,7 @@ const Resource: React.FC = () => {
 
   const handleItemClick = (item: ResourceItem, forceDownload = false) => {
     console.log('Resource Clicked:', { id: item.id, title: item.title, forceDownload });
-    
+
     if (forceDownload && item.id) {
       handleFileDownload(
         () => downloadResource(item.id),
@@ -184,7 +184,7 @@ const Resource: React.FC = () => {
       <div className="container-fluid">
 
         {/* Standard Sticky Subheader - Always Shown */}
-        <div className="row page-subheader-sticky bg-body mb-4">
+        <div className="row page-subheader-sticky bg-body">
           <div className="col-12">
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
