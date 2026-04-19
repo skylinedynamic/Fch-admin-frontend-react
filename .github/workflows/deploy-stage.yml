@@ -1,0 +1,91 @@
+name: Deploy to Stage
+
+on:
+  push:
+    branches:
+      - stage
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Create Environment Variables
+        run: |
+          # Use STAGE_ADMIN_API_URL if defined, otherwise fallback to default
+          # You can update this secret in GitHub repository settings
+          API_URL="${{ 'https://api.skylinedynamic.dev/api/v1' }}"
+          echo "VITE_API_BASE_URL=$API_URL" > .env.production
+          echo "Environment variable set: VITE_API_BASE_URL=$API_URL"
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Deploy to EC2 & Restart Nginx
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGE_EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.STAGE_EC2_HOST }}
+          REMOTE_USER: ${{ secrets.STAGE_EC2_USER }}
+          SOURCE: "dist/"
+          TARGET: "/var/www/html/admin-portal-react"
+          SSH_CMD_ARGS: "-o StrictHostKeyChecking=no" 
+          SCRIPT_BEFORE: |
+            echo "Creating target directory if it doesn't exist..."
+            sudo mkdir -p /var/www/html/admin-portal-react
+            echo "Temporarily giving SSH user permission to write to directory..."
+            sudo chown -R $(whoami):$(whoami) /var/www/html/admin-portal-react
+          SCRIPT_AFTER: |
+            echo "Setting correct directory permissions for Nginx..."
+            sudo chown -R www-data:www-data /var/www/html/admin-portal-react || echo "Warning: chown failed, ignoring..."
+            
+            echo "Restarting Nginx..."
+            sudo systemctl restart nginx
+            echo "Nginx restarted successfully."
+
+      - name: Post-Deployment Smoke Test
+        run: |
+          echo "Waiting for server to stabilize..."
+          sleep 5
+          
+          WEB_URL="${{ secrets.STAGE_WEB_URL }}"
+          API_URL="https://admin.skylinedynamic.dev"
+
+          echo "--- Testing Frontend Connection ---"
+          if [ -z "$WEB_URL" ]; then
+            echo "⚠️  Skipping Web URL test: STAGE_WEB_URL secret is not defined."
+          else
+            echo "Testing Web URL: $WEB_URL"
+            # -L follows redirects, -I gets headers
+            HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$WEB_URL")
+            if [[ "$HTTP_STATUS" =~ ^(200|301|302)$ ]]; then
+               echo "✅ Frontend is UP (HTTP $HTTP_STATUS)"
+            else
+               echo "❌ Frontend check failed (HTTP $HTTP_STATUS)"
+               exit 1
+            fi
+          fi
+
+          echo "--- Testing Backend API Connection ---"
+          echo "Testing API URL: $API_URL"
+          API_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$API_URL")
+          if [[ "$API_STATUS" =~ ^(200|401)$ ]]; then
+             echo "✅ API is RESPONDING (HTTP $API_STATUS)"
+          else
+             echo "❌ API check failed (HTTP $API_STATUS)"
+             exit 1
+          fi
+
+          echo "🚀 All systems operational!"
