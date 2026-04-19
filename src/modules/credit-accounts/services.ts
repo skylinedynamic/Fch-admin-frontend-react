@@ -25,6 +25,9 @@ export interface CreditAccount {
     image_url?: string;
     reference_url?: string;
     status: string;
+    personal_guarantee?: string;
+    business_credit_profile?: string;
+    final_approval?: string;
 }
 
 export const fetchCreditAccounts = async (payload: any = {}) => {

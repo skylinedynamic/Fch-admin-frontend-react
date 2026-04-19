@@ -30,7 +30,10 @@ export default function CreditAccountForm() {
         time_in_business_min_months: '',
         image_url: '',
         reference_url: '',
-        status: 'Active'
+        status: 'Active',
+        personal_guarantee: '',
+        business_credit_profile: '',
+        final_approval: ''
     });
 
     useEffect(() => {
@@ -43,7 +46,10 @@ export default function CreditAccountForm() {
                         ...data,
                         typical_personal_fico_min: data.typical_personal_fico_min || '',
                         time_in_business_min_months: data.time_in_business_min_months || '',
-                        status: data.status || 'Active'
+                        status: data.status || 'Active',
+                        personal_guarantee: data.personal_guarantee || '',
+                        business_credit_profile: data.business_credit_profile || '',
+                        final_approval: data.final_approval || ''
                     });
                 } catch (err) {
                     toast.error('Failed to load account details');
@@ -321,6 +327,60 @@ export default function CreditAccountForm() {
                                                         />
                                                     </div>
                                                     {errors.credit_category && <small className="p-error">{errors.credit_category}</small>}
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-4">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Personal Guarantee</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light text-muted"><i className="ri-shield-user-line"></i></span>
+                                                        <input
+                                                            type="text"
+                                                            name="personal_guarantee"
+                                                            className={`form-control ${errors.personal_guarantee ? 'is-invalid' : ''}`}
+                                                            value={formData.personal_guarantee}
+                                                            onChange={handleChange}
+                                                            placeholder="e.g. Yes/No/Optional"
+                                                        />
+                                                        {errors.personal_guarantee && <div className="invalid-feedback">{errors.personal_guarantee}</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-4">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Business Credit Profile</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light text-muted"><i className="ri-briefcase-line"></i></span>
+                                                        <input
+                                                            type="text"
+                                                            name="business_credit_profile"
+                                                            className={`form-control ${errors.business_credit_profile ? 'is-invalid' : ''}`}
+                                                            value={formData.business_credit_profile}
+                                                            onChange={handleChange}
+                                                            placeholder="e.g. Yes/No"
+                                                        />
+                                                        {errors.business_credit_profile && <div className="invalid-feedback">{errors.business_credit_profile}</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-4">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Final Approval</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light text-muted"><i className="ri-checkbox-circle-line"></i></span>
+                                                        <input
+                                                            type="text"
+                                                            name="final_approval"
+                                                            className={`form-control ${errors.final_approval ? 'is-invalid' : ''}`}
+                                                            value={formData.final_approval}
+                                                            onChange={handleChange}
+                                                            placeholder="e.g. Manual/Automatic"
+                                                        />
+                                                        {errors.final_approval && <div className="invalid-feedback">{errors.final_approval}</div>}
+                                                    </div>
                                                 </div>
                                             </div>
 
