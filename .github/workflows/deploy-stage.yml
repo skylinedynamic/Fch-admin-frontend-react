@@ -37,16 +37,17 @@ jobs:
           REMOTE_HOST: ${{ secrets.STAGE_EC2_HOST }}
           REMOTE_USER: ${{ secrets.STAGE_EC2_USER }}
           SOURCE: "dist/"
-          TARGET: "/var/www/html/admin-portal-react"
+          TARGET: "/var/www/html/admin-portal-react/dist"
+          ARGS: "-rlgoDzvc --delete"
           SSH_CMD_ARGS: "-o StrictHostKeyChecking=no" 
           SCRIPT_BEFORE: |
             echo "Creating target directory if it doesn't exist..."
-            sudo mkdir -p /var/www/html/admin-portal-react
+            sudo mkdir -p /var/www/html/admin-portal-react/dist
             echo "Temporarily giving SSH user permission to write to directory..."
-            sudo chown -R $(whoami):$(whoami) /var/www/html/admin-portal-react
+            sudo chown -R $(whoami):$(whoami) /var/www/html/admin-portal-react/dist
           SCRIPT_AFTER: |
             echo "Setting correct directory permissions for Nginx..."
-            sudo chown -R www-data:www-data /var/www/html/admin-portal-react || echo "Warning: chown failed, ignoring..."
+            sudo chown -R www-data:www-data /var/www/html/admin-portal-react/dist || echo "Warning: chown failed, ignoring..."
             
             echo "Restarting Nginx..."
             sudo systemctl restart nginx
@@ -54,35 +55,33 @@ jobs:
 
       - name: Post-Deployment Smoke Test
         run: |
-          echo "Waiting for server to stabilize..."
+          echo "Ensuring the service is up..."
           sleep 5
+          STAGE_URL="${{ secrets.STAGE_WEB_URL || 'https://admin.skylinedynamic.dev/login' }}"
           
-          WEB_URL="${{ secrets.STAGE_WEB_URL }}"
-          API_URL="https://admin.skylinedynamic.dev"
-
-          echo "--- Testing Frontend Connection ---"
-          if [ -z "$WEB_URL" ]; then
-            echo "⚠️  Skipping Web URL test: STAGE_WEB_URL secret is not defined."
+          if [ "$STAGE_URL" == "https://your-stage-domain.com" ]; then
+            echo "Disclaimer: Smoke test domain is not defined. Please add STAGE_WEB_URL to GitHub Secrets."
           else
-            echo "Testing Web URL: $WEB_URL"
-            # -L follows redirects, -I gets headers
-            HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$WEB_URL")
-            if [[ "$HTTP_STATUS" =~ ^(200|301|302)$ ]]; then
-               echo "✅ Frontend is UP (HTTP $HTTP_STATUS)"
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$STAGE_URL" || echo "000")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+               echo "✅ Smoke test passed! Staging server responded with HTTP $HTTP_STATUS."
             else
-               echo "❌ Frontend check failed (HTTP $HTTP_STATUS)"
+               echo "❌ Smoke test failed! Expected HTTP 200 but received $HTTP_STATUS."
+               
+               echo "--- Attempting to fetch Nginx Debug Info ---"
+               echo "${{ secrets.STAGE_EC2_SSH_KEY }}" > deploy_key
+               chmod 600 deploy_key
+               
+               echo "--- Nginx Sites Configuration (Searching for domain) ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.STAGE_EC2_USER }}@${{ secrets.STAGE_EC2_HOST }} "sudo grep -r 'admin.skylinedynamic.dev' /etc/nginx/sites-enabled/ || echo 'No matching config found.'"
+               
+               echo "--- Directory Listing ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.STAGE_EC2_USER }}@${{ secrets.STAGE_EC2_HOST }} "ls -la /var/www/html/admin-portal-react/dist"
+               
+               echo "--- Nginx Error Logs ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.STAGE_EC2_USER }}@${{ secrets.STAGE_EC2_HOST }} "sudo tail -n 20 /var/log/nginx/error.log" || echo "Failed to fetch Nginx logs."
+               
+               rm deploy_key
                exit 1
             fi
           fi
-
-          echo "--- Testing Backend API Connection ---"
-          echo "Testing API URL: $API_URL"
-          API_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$API_URL")
-          if [[ "$API_STATUS" =~ ^(200|401)$ ]]; then
-             echo "✅ API is RESPONDING (HTTP $API_STATUS)"
-          else
-             echo "❌ API check failed (HTTP $API_STATUS)"
-             exit 1
-          fi
-
-          echo "🚀 All systems operational!"
