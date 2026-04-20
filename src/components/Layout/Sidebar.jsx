@@ -151,10 +151,10 @@ const menuItems = [
     isHostOnly: false,
   },
   {
-    to: "/admin/settings",
+    to: "/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
-    permission: "view settings",
+    permission: ["Update Payment Settings", "Update Partner Agreement Settings", "Update Borrower Agreement Settings"],
     isHostOnly: false,
   },
 ];
@@ -165,7 +165,7 @@ export default function Sidebar() {
   );
   const [open, setOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
-  const { hasPermission, isRestricted } = usePermissions();
+  const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
   const location = useLocation();
 
   // Auto-expand menu on route change
@@ -233,7 +233,11 @@ export default function Sidebar() {
   const visibleMenuItems = useMemo(() => {
     const checkVisibility = (item) => {
       // 1. Basic permission check
-      if (item.permission && !hasPermission(item.permission)) {
+      if (Array.isArray(item.permission)) {
+        if (!hasAnyPermission(item.permission)) {
+          return false;
+        }
+      } else if (item.permission && !hasPermission(item.permission)) {
         return false;
       }
 

@@ -163,7 +163,7 @@ export default function BorrowerProfileModal({ show, onHide, borrowerId, profile
                                                     <div className="row g-2">
                                                         {renderField("City", profile.business_city, false, "col-6")}
                                                         {renderField("State", profile.business_state, false, "col-6")}
-                                                        {renderField("Zip Code", profile.business_zip_code, false, "col-6")}
+                                                        {renderField("Zip Code", profile.business_postal_code, false, "col-6")}
                                                         {renderField("DUNS Number", profile.duns_number, false, "col-6")}
                                                     </div>
                                                     <div className="row g-2">

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import FormLoader from '../../../components/Loader/FormLoader';
 import AgreementBuilder from './AgreementBuilder';
+import { usePermissions } from '../../../lib/auth/usePermissions';
 
 export default function SettingsForm({
     formData,
@@ -45,10 +46,29 @@ export default function SettingsForm({
         </div>
     );
 
-    const sections = [
-        { id: 'payment', label: 'Payment Integration', icon: 'ri-bank-card-2-line' },
-        { id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' },
-    ];
+    const { hasPermission } = usePermissions();
+
+    const sections = [];
+    if (hasPermission('Update Payment Settings')) {
+        sections.push({ id: 'payment', label: 'Payment Integration', icon: 'ri-bank-card-2-line' });
+    }
+    
+    // We only show Agreement Builder if they have partner OR borrower permissions
+    const canSeePartnerAgreement = hasPermission('Update Partner Agreement Settings');
+    const canSeeBorrowerAgreement = hasPermission('Update Borrower Agreement Settings');
+    if (canSeePartnerAgreement || canSeeBorrowerAgreement) {
+        sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
+    }
+
+    // Auto-select first available section if the active one isn't available
+    useEffect(() => {
+        if (!fetching && sections.length > 0) {
+            const currentSectionAvailable = sections.find(s => s.id === activeSection);
+            if (!currentSectionAvailable) {
+                setActiveSection(sections[0].id);
+            }
+        }
+    }, [fetching, activeSection, sections.length]);
 
     const renderPaymentSettings = () => {
         const mode = formData.payment_mode || 'sandbox';
