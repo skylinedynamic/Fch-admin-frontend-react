@@ -129,7 +129,7 @@ export default function InvoiceTable({
                 globalFilterFields={['invoice_id', 'customer_name', 'email', 'country', 'payment_date', 'payment_amount', 'status']}
                 dataKey="id"
                 scrollable
-                scrollHeight="510px"
+                scrollHeight="flex"
                 className="p-datatable-sm fs-13"
                 responsiveLayout="scroll"
                 emptyMessage="No invoices found."

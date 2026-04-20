@@ -58,6 +58,13 @@ export default function Invoices() {
 
     useEffect(() => {
         initFilters();
+
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, []);
 
     const loadStats = async (params = {}) => {
@@ -170,10 +177,10 @@ export default function Invoices() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -195,7 +202,7 @@ export default function Invoices() {
                 <InvoiceStats stats={stats} loading={statsLoading} />
 
                 {/* Filters and Table Section */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body list-fluid-card">

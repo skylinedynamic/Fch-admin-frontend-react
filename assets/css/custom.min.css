@@ -1330,61 +1330,217 @@
 }
 
 /* Agreement Loader Utility Classes */
-.sk-rounded-circle { border-radius: 50% !important; }
-.sk-h-2    { height: 2px !important; }
-.sk-h-10   { height: 10px !important; }
-.sk-h-12   { height: 12px !important; }
-.sk-h-14   { height: 14px !important; }
-.sk-h-16   { height: 16px !important; }
-.sk-h-18   { height: 18px !important; }
-.sk-h-20   { height: 20px !important; }
-.sk-h-22   { height: 22px !important; }
-.sk-h-24   { height: 24px !important; }
-.sk-h-28   { height: 28px !important; }
-.sk-h-32   { height: 32px !important; }
-.sk-h-34   { height: 34px !important; }
-.sk-h-36   { height: 36px !important; }
-.sk-h-38   { height: 38px !important; }
-.sk-h-40   { height: 40px !important; }
-.sk-h-42   { height: 42px !important; }
-.sk-h-45   { height: 45px !important; }
-.sk-h-50   { height: 50px !important; }
-.sk-h-80   { height: 80px !important; }
-.sk-h-100  { height: 100px !important; }
-.sk-h-120  { height: 120px !important; }
-.sk-h-140  { height: 140px !important; }
+.sk-rounded-circle {
+  border-radius: 50% !important;
+}
 
-.sk-w-20   { width: 20px !important; }
-.sk-w-28   { width: 28px !important; }
-.sk-w-32   { width: 32px !important; }
-.sk-w-36   { width: 36px !important; }
-.sk-w-40   { width: 40px !important; }
-.sk-w-45   { width: 45px !important; }
-.sk-w-55   { width: 55px !important; }
-.sk-w-60   { width: 60px !important; }
-.sk-w-80   { width: 80px !important; }
-.sk-w-90   { width: 90px !important; }
-.sk-w-100  { width: 100px !important; }
-.sk-w-110  { width: 110px !important; }
-.sk-w-120  { width: 120px !important; }
-.sk-w-140  { width: 140px !important; }
-.sk-w-150  { width: 150px !important; }
-.sk-w-160  { width: 160px !important; }
-.sk-w-180  { width: 180px !important; }
-.sk-w-200  { width: 200px !important; }
-.sk-w-240  { width: 240px !important; }
-.sk-w-250  { width: 250px !important; }
-.sk-w-794  { width: 794px !important; }
+.sk-h-2 {
+  height: 2px !important;
+}
 
-.sk-w-30p  { width: 30% !important; }
-.sk-w-40p  { width: 40% !important; }
-.sk-w-45p  { width: 45% !important; }
-.sk-w-50p  { width: 50% !important; }
-.sk-w-60p  { width: 60% !important; }
-.sk-w-70p  { width: 70% !important; }
-.sk-w-80p  { width: 80% !important; }
-.sk-w-90p  { width: 90% !important; }
-.sk-min-h-1000 { min-height: 1000px !important; }
+.sk-h-10 {
+  height: 10px !important;
+}
+
+.sk-h-12 {
+  height: 12px !important;
+}
+
+.sk-h-14 {
+  height: 14px !important;
+}
+
+.sk-h-16 {
+  height: 16px !important;
+}
+
+.sk-h-18 {
+  height: 18px !important;
+}
+
+.sk-h-20 {
+  height: 20px !important;
+}
+
+.sk-h-22 {
+  height: 22px !important;
+}
+
+.sk-h-24 {
+  height: 24px !important;
+}
+
+.sk-h-28 {
+  height: 28px !important;
+}
+
+.sk-h-32 {
+  height: 32px !important;
+}
+
+.sk-h-34 {
+  height: 34px !important;
+}
+
+.sk-h-36 {
+  height: 36px !important;
+}
+
+.sk-h-38 {
+  height: 38px !important;
+}
+
+.sk-h-40 {
+  height: 40px !important;
+}
+
+.sk-h-42 {
+  height: 42px !important;
+}
+
+.sk-h-45 {
+  height: 45px !important;
+}
+
+.sk-h-50 {
+  height: 50px !important;
+}
+
+.sk-h-80 {
+  height: 80px !important;
+}
+
+.sk-h-100 {
+  height: 100px !important;
+}
+
+.sk-h-120 {
+  height: 120px !important;
+}
+
+.sk-h-140 {
+  height: 140px !important;
+}
+
+.sk-w-20 {
+  width: 20px !important;
+}
+
+.sk-w-28 {
+  width: 28px !important;
+}
+
+.sk-w-32 {
+  width: 32px !important;
+}
+
+.sk-w-36 {
+  width: 36px !important;
+}
+
+.sk-w-40 {
+  width: 40px !important;
+}
+
+.sk-w-45 {
+  width: 45px !important;
+}
+
+.sk-w-55 {
+  width: 55px !important;
+}
+
+.sk-w-60 {
+  width: 60px !important;
+}
+
+.sk-w-80 {
+  width: 80px !important;
+}
+
+.sk-w-90 {
+  width: 90px !important;
+}
+
+.sk-w-100 {
+  width: 100px !important;
+}
+
+.sk-w-110 {
+  width: 110px !important;
+}
+
+.sk-w-120 {
+  width: 120px !important;
+}
+
+.sk-w-140 {
+  width: 140px !important;
+}
+
+.sk-w-150 {
+  width: 150px !important;
+}
+
+.sk-w-160 {
+  width: 160px !important;
+}
+
+.sk-w-180 {
+  width: 180px !important;
+}
+
+.sk-w-200 {
+  width: 200px !important;
+}
+
+.sk-w-240 {
+  width: 240px !important;
+}
+
+.sk-w-250 {
+  width: 250px !important;
+}
+
+.sk-w-794 {
+  width: 794px !important;
+}
+
+.sk-w-30p {
+  width: 30% !important;
+}
+
+.sk-w-40p {
+  width: 40% !important;
+}
+
+.sk-w-45p {
+  width: 45% !important;
+}
+
+.sk-w-50p {
+  width: 50% !important;
+}
+
+.sk-w-60p {
+  width: 60% !important;
+}
+
+.sk-w-70p {
+  width: 70% !important;
+}
+
+.sk-w-80p {
+  width: 80% !important;
+}
+
+.sk-w-90p {
+  width: 90% !important;
+}
+
+.sk-min-h-1000 {
+  min-height: 1000px !important;
+}
 
 
 
@@ -1905,4 +2061,320 @@
 
 .p-calendar .p-button .p-icon {
   color: #2c3e72 !important;
+}
+
+/* ============================================================
+   Robust Table Fit-to-Screen Layout
+   ============================================================ */
+
+/* Utility to hide body scroll when active */
+.table-page-fit-active {
+  overflow: hidden !important;
+}
+
+.page-content-fit {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  /* Removed margin-top to fix flex height calculation */
+}
+
+/* Ensure Layout structure moves with the fix */
+.table-page-fit-active .main-content {
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding-top: 70px !important;
+  /* Move header space here */
+  overflow: hidden !important;
+}
+
+/* ==========================================================================
+   ELEGANT TABLE DESIGN SYSTEM
+   ========================================================================== */
+
+/* Root DataTable Overrides */
+.p-datatable.p-datatable-sm .p-datatable-thead>tr>th {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+  padding: 0.85rem 1rem !important;
+  border-bottom: 2px solid #eff2f7 !important;
+  transition: background-color 0.2s ease;
+}
+
+/* Row-wise Coloring (Zebra Striping) */
+.p-datatable .p-datatable-tbody>tr:nth-child(even) {
+  background-color: #fafbfc !important;
+}
+
+.p-datatable .p-datatable-tbody>tr {
+  background-color: #ffffff !important;
+  transition: background-color 0.15s ease;
+}
+
+.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid #eff2f7 !important;
+  font-size: 0.875rem !important;
+  color: #495057 !important;
+}
+
+.p-datatable .p-datatable-tbody>tr:hover {
+  background-color: rgba(64, 81, 137, 0.05) !important;
+}
+
+.p-datatable .p-datatable-tbody>tr:nth-child(even):hover {
+  background-color: rgba(64, 81, 137, 0.05) !important;
+}
+
+/* Checkbox & Selection */
+.p-checkbox .p-checkbox-box {
+  border: 2px solid #ced4da !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-checkbox .p-checkbox-box.p-highlight {
+  background: #405189 !important;
+  border-color: #405189 !important;
+}
+
+/* Pagination Styling */
+.p-paginator {
+  background: #ffffff !important;
+  border: none !important;
+  border-top: 1px solid #eff2f7 !important;
+  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page {
+  min-width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  margin: 0 3px !important;
+  color: #495057 !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page:hover:not(.p-highlight) {
+  background: #f3f6f9 !important;
+  border-color: #cbd5e0 !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background: #405189 !important;
+  color: #fff !important;
+  border-color: #405189 !important;
+  box-shadow: 0 4px 6px -1px rgba(64, 81, 137, 0.2) !important;
+}
+
+.p-paginator .p-link {
+  width: 32px !important;
+  height: 32px !important;
+  color: #405189 !important;
+  /* Darker blue for visibility */
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.p-paginator .p-link:hover:not(.p-disabled) {
+  background: rgba(64, 81, 137, 0.1) !important;
+}
+
+.p-paginator .p-link.p-disabled {
+  color: #adb5bd !important;
+  opacity: 0.5 !important;
+}
+
+.p-paginator .p-dropdown {
+  height: 36px !important;
+  border-radius: 6px !important;
+  margin-left: 1.5rem !important;
+  border: 1px solid #ced4da !important;
+  background: #fff !important;
+}
+
+.p-paginator .p-dropdown .p-dropdown-label {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Badge Styling Enforcement */
+.badge {
+  padding: 0.45em 0.7em !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  border-radius: 0.35rem !important;
+}
+
+.badge-soft-success {
+  background-color: rgba(10, 179, 156, 0.1) !important;
+  color: #0ab39c !important;
+}
+
+.badge-soft-danger {
+  background-color: rgba(240, 101, 72, 0.1) !important;
+  color: #f06548 !important;
+}
+
+/* Filter Icon & Menu */
+.p-column-filter-menu-button {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  color: #adb5bd !important;
+}
+
+.p-column-filter-menu-button:hover,
+.p-column-filter-menu-button.p-column-filter-menu-button-active {
+  background: rgba(64, 81, 137, 0.1) !important;
+  color: #405189 !important;
+}
+
+/* Fix for responsive card alignment */
+.table-card {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.table-page-fit-active .footer {
+  display: block !important;
+  height: 60px !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  /* Force to relative to take space in flex flow */
+  left: 0 !important;
+  /* Reset left as it is now relative to main-content */
+  z-index: 10 !important;
+  background: #fff !important;
+  border-top: 1px solid #e9ebec !important;
+  padding: 20px !important;
+  /* Restore padding if needed */
+}
+
+.page-content-fit>.container-fluid {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  padding: 15px !important;
+  padding-top: 0 !important;
+  /* Restore inner padding */
+}
+
+/* Fixed rows (Header, Stats, etc.) should not shrink */
+.page-content-fit .row:not(.row-table-fit) {
+  flex-shrink: 0 !important;
+}
+
+/* Main table row should expand */
+.page-content-fit .row-table-fit {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.page-content-fit .row-table-fit>div {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+/* Card and body must grow and contain overflow */
+.page-content-fit .card {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  margin-bottom: 15px !important;
+}
+
+.row-table-fit .card {
+  margin-bottom: 0 !important;
+}
+
+.page-content-fit .card-body {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+}
+
+/* Table container */
+.page-content-fit .table-responsive {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+}
+
+/* PrimeReact specific overrides for flex scroll */
+.page-content-fit .p-datatable {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.page-content-fit .p-datatable-wrapper {
+  flex: 1 !important;
+  overflow: auto !important;
+  max-height: none !important;
+}
+
+.page-content-fit .p-datatable-table {
+  border-collapse: separate !important;
+}
+
+/* Sticky header fix for PrimeReact in flex layout */
+.page-content-fit .p-datatable-thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: #fff !important;
+}
+
+/* Credit Account Form Image Dropzone */
+.credit-artwork-dropzone {
+  width: 100%;
+}
+
+.credit-artwork-dropzone-inner {
+  width: 100%;
+  min-height: 220px;
+  border: 1px dashed #ced4da;
+  transition: 0.2s all ease-in-out;
+}
+
+.credit-artwork-dropzone-inner:hover {
+  border-color: #0ab39c;
+}
+
+.credit-artwork-preview {
+  object-fit: contain;
+  max-height: 180px;
+}
+
+
+#credit-account-form .mt-3rem {
+  margin-top: 3rem !important;
 }

@@ -27,5 +27,11 @@ export const DataTable = (props) => {
     )
   }
 
-  return <PrimeDataTable {...props} />
+  const defaultProps = {
+    scrollable: true,
+    scrollHeight: "calc(100vh - 420px)",
+    ...props
+  }
+
+  return <PrimeDataTable {...defaultProps} />
 }

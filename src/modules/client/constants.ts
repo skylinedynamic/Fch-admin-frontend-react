@@ -53,6 +53,8 @@ export const DEFAULT_CLIENT_STATE: Client = {
     plan_id: '',
     status: 'OnBoarding',
     notes: '',
+    fico_score: '',
+    paydex_score: '',
 };
 
 export const DATE_PICKER_OPTIONS = {

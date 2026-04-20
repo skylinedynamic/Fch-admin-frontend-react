@@ -3,7 +3,7 @@ export const FILE_MANAGER_CONFIG = {
   MAX_NAME_LENGTH: 20,
   ALLOWED_EXTENSIONS: [
     // Images
-    'jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'bmp',
+    'jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'bmp', 'avif',
     // Documents
     'doc', 'docx', 'pdf', 'txt',
     // Data

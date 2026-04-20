@@ -62,6 +62,13 @@ export default function VerificationCenter() {
             };
             loadPartners();
         }
+
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, [isHost]);
 
     const loadVerifications = useCallback(async () => {
@@ -161,11 +168,11 @@ export default function VerificationCenter() {
 
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Verification Center</h4>
                                 <nav aria-label="breadcrumb">
@@ -180,9 +187,9 @@ export default function VerificationCenter() {
                     </div>
                 </div>
 
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-12">
-                        <div className="card border-0 shadow-sm">
+                        <div className="card">
                             <div className="card-body">
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
@@ -245,7 +252,7 @@ export default function VerificationCenter() {
 
                                 {loading ? (
                                     <TableLoader
-                                        rows={10}
+                                        rows={12}
                                         columns={[
                                             { style: { width: '25%' } },
                                             { style: { width: '20%' } },
@@ -255,71 +262,76 @@ export default function VerificationCenter() {
                                         ]}
                                     />
                                 ) : (
-                                    <DataTable
-                                        value={verifications || []}
-                                        paginator
-                                        rows={perPage}
-                                        totalRecords={totalRecords}
-                                        lazy
-                                        first={(page - 1) * perPage}
-                                        onPage={onPage}
-                                        onSort={onSort}
-                                        sortField={sortField}
-                                        sortOrder={sortOrder === 'asc' ? 1 : -1}
-                                        filters={filters}
-                                        filterDisplay="menu"
-                                        onFilter={onFilter}
-                                        className="p-datatable-sm custom-table"
-                                        tableStyle={{ minWidth: '60rem' }}
-                                        dataKey="id"
-                                        responsiveLayout="scroll"
-                                    >
-                                        <Column
-                                            field="borrower_name"
-                                            header="Borrower Name"
-                                            body={borrowerNameTemplate}
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Name"
-                                            style={{ width: '25%' }}
-                                        />
-                                        <Column
-                                            field="partner_name"
-                                            header="Partner Name"
-                                            sortable
-                                            filterPlaceholder="Search Partner"
-                                            style={{ width: '20%' }}
-                                            body={(rowData) => <span className="text-muted fw-medium">{rowData.partner_name}</span>}
-                                        />
-                                        <Column
-                                            field="tier_name"
-                                            header="Current Tier"
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Tier"
-                                            style={{ width: '15%' }}
-                                            body={(rowData) => <span className="badge bg-info-subtle text-info fs-11">{rowData.tier_name}</span>}
-                                        />
-                                        <Column
-                                            field="pending_count"
-                                            header="Pending Requests"
-                                            body={pendingCountTemplate}
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Count"
-                                            style={{ width: '15%' }}
-                                        />
-                                        <Column
-                                            field="request_date"
-                                            header="Request Date"
-                                            body={dateBodyTemplate}
-                                            sortable
-                                            filter
-                                            filterPlaceholder="Search Date"
-                                            style={{ width: '25%' }}
-                                        />
+                                    <div className="table-responsive table-card mt-1">
+                                        <DataTable
+                                            scrollable
+                                            scrollHeight="flex"
+                                            value={verifications || []}
+                                            paginator
+                                            rows={perPage}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
+                                            totalRecords={totalRecords}
+                                            lazy
+                                            first={(page - 1) * perPage}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder === 'asc' ? 1 : -1}
+                                            filters={filters}
+                                            filterDisplay="menu"
+                                            onFilter={onFilter}
+                                            className="p-datatable-sm custom-table"
+                                            tableStyle={{ minWidth: '60rem' }}
+                                            dataKey="id"
+                                            responsiveLayout="scroll"
+                                        >
+                                            <Column
+                                                field="borrower_name"
+                                                header="Borrower Name"
+                                                body={borrowerNameTemplate}
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search Name"
+                                                style={{ width: '25%' }}
+                                            />
+                                            <Column
+                                                field="partner_name"
+                                                header="Partner Name"
+                                                sortable
+                                                filterPlaceholder="Search Partner"
+                                                style={{ width: '20%' }}
+                                                body={(rowData) => <span className="text-muted fw-medium">{rowData.partner_name}</span>}
+                                            />
+                                            <Column
+                                                field="tier_name"
+                                                header="Current Tier"
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search Tier"
+                                                style={{ width: '15%' }}
+                                                body={(rowData) => <span className="badge bg-info-subtle text-info fs-11">{rowData.tier_name}</span>}
+                                            />
+                                            <Column
+                                                field="pending_count"
+                                                header="Pending Requests"
+                                                body={pendingCountTemplate}
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search Count"
+                                                style={{ width: '15%' }}
+                                            />
+                                            <Column
+                                                field="request_date"
+                                                header="Request Date"
+                                                body={dateBodyTemplate}
+                                                sortable
+                                                filter
+                                                filterPlaceholder="Search Date"
+                                                style={{ width: '25%' }}
+                                            />
 
-                                    </DataTable>
+                                        </DataTable>
+                                    </div>
                                 )}
                             </div>
                         </div>

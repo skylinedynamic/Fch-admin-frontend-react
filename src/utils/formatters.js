@@ -19,7 +19,9 @@ export const parseDate = (dateStr) => {
     if (dateStr instanceof Date) return dateStr;
 
     // Remove time part if present
-    const cleanDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0];
+    const cleanDateStr = typeof dateStr === 'string' 
+        ? (dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0])
+        : String(dateStr);
     
     // Split by hyphens or slashes
     const parts = cleanDateStr.includes('-') ? cleanDateStr.split('-') : cleanDateStr.split('/');
@@ -38,9 +40,6 @@ export const parseDate = (dateStr) => {
             const p0 = parseInt(parts[0]);
             const p1 = parseInt(parts[1]);
             
-            // If p0 > 12, it must be DD-MM-YYYY
-            // If p1 > 12, it must be MM-DD-YYYY
-            // If both <= 12, default to MM-DD-YYYY (US standard)
             if (p0 > 12) {
                 return new Date(year, p1 - 1, p0);
             } else {
@@ -52,6 +51,7 @@ export const parseDate = (dateStr) => {
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? null : d;
 };
+
 export const normalizeDate = (dateStr) => {
     if (!dateStr) return undefined;
     if (dateStr instanceof Date) {
@@ -59,7 +59,10 @@ export const normalizeDate = (dateStr) => {
     }
 
     // Handle MM-DD-YYYY or MM/DD/YYYY directly
-    const cleanDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0];
+    const cleanDateStr = typeof dateStr === 'string' 
+        ? (dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0])
+        : String(dateStr);
+
     const parts = cleanDateStr.includes('-') ? cleanDateStr.split('-') : cleanDateStr.split('/');
     
     if (parts.length === 3) {
@@ -79,4 +82,27 @@ export const normalizeDate = (dateStr) => {
     }
 
     return dateStr;
+};
+
+export const formatZipCode = (value) => {
+    if (!value) return value;
+    const numericValue = value.replace(/\D/g, '');
+    return numericValue.slice(0, 5);
+};
+
+export const formatDUNS = (value) => {
+    if (!value) return value;
+    const numericValue = value.replace(/\D/g, '');
+    return numericValue.slice(0, 9);
+};
+
+export const formatBusinessEIN = (value) => {
+    if (!value) return value;
+    const numericValue = value.replace(/\D/g, '');
+    const cleanValue = numericValue.slice(0, 9);
+    
+    if (cleanValue.length <= 2) {
+        return cleanValue;
+    }
+    return `${cleanValue.slice(0, 2)}-${cleanValue.slice(2)}`;
 };

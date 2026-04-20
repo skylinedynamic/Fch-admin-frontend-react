@@ -54,6 +54,10 @@ const menuItems = [
         to: '/intake-review/funding-review',
         label: 'Funding Review',
         permission: 'view funding application',
+      },
+      {
+        to: '/intake-review/change-requests',
+        label: 'Change Requests',
       }
     ]
   },
@@ -78,6 +82,12 @@ const menuItems = [
         to: "/verification-center",
         label: "Verification Center",
         permission: "view verification request", // Reuse permission or add new one
+        isHostOnly: true,
+      },
+      {
+        to: "/credit-accounts",
+        label: "Credit Accounts",
+        permission: "view credit accounts", // Temporary permission or add new one
         isHostOnly: true,
       },
     ],

@@ -40,7 +40,7 @@ export default function EmployeeTable({
 
     if (loading) {
         return <TableLoader
-            rows={10}
+            rows={12}
             columns={[
                 { style: { width: '3rem' } }, // Selection
                 { style: { minWidth: '' } }, // Name
@@ -58,7 +58,7 @@ export default function EmployeeTable({
         <div className="table-responsive table-card mt-1">
             <DataTable
                 scrollable
-                scrollHeight="510px"
+                scrollHeight="flex"
                 value={rows}
                 paginator
                 lazy

@@ -100,6 +100,9 @@ export default function Leads() {
     useEffect(() => {
         initFilters();
 
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
         // Load salespersons
         const loadSalespersons = async () => {
             try {
@@ -115,6 +118,10 @@ export default function Leads() {
             }
         };
         loadSalespersons();
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, []);
 
     const statisticsConfig = [
@@ -383,10 +390,10 @@ export default function Leads() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section mirrored from Clients.jsx */}
-                <div className="row page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -452,7 +459,7 @@ export default function Leads() {
                 </div>
 
                 {/* Filters and Table mirrored from Clients.jsx */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
@@ -533,7 +540,7 @@ export default function Leads() {
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
-                                            scrollHeight="510px"
+                                            scrollHeight="flex"
                                             value={leads}
                                             paginator
                                             lazy

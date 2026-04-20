@@ -22,6 +22,8 @@ import Clients from './pages/clients/Clients';
 import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
+import CreditAccountsList from './pages/credit-builder/CreditAccountsList.jsx';
+import CreditAccountForm from './pages/credit-builder/components/CreditAccountForm.jsx';
 import VerificationCenter from './pages/credit-builder/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -42,6 +44,7 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
+import ChangeRequests from './pages/applications/change-requests/ChangeRequests';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -157,6 +160,9 @@ export default function App() {
               <Route path="tiers" element={<TiersList />} />
               <Route path="tiers/create" element={<TierForm />} />
               <Route path="tiers/:id" element={<TierForm />} />
+              <Route path="credit-accounts" element={<CreditAccountsList />} />
+              <Route path="credit-accounts/create" element={<CreditAccountForm />} />
+              <Route path="credit-accounts/:id" element={<CreditAccountForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
@@ -197,6 +203,10 @@ export default function App() {
               <Route element={<PermissionRoute permission="view funding application" />}>
                 <Route path="funding-review" element={<FundingApplication />} />
                 <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
+              </Route>
+
+              <Route element={<HostRoute />}>
+                <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 
             </Route>
