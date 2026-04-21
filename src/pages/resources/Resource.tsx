@@ -15,12 +15,7 @@ import { downloadResource } from '../../modules/resource/services';
 const Resource: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Visibility states for pagination
-  const [showAllLegal, setShowAllLegal] = useState(false);
-  const [showAllBusiness, setShowAllBusiness] = useState(false);
-  const [showAllAssets, setShowAllAssets] = useState(false);
-  const [showAllEducation, setShowAllEducation] = useState(false);
-  const [showAllVideos, setShowAllVideos] = useState(false);
+  // Visibility states - Removed per request for scrolling instead of view more
 
   // Data fetching and mutation
   const { data: groupedData, isLoading } = useGroupedResources();
@@ -177,14 +172,14 @@ const Resource: React.FC = () => {
     original: item
   }));
 
-  const visibleVideos = showAllVideos ? trainingVideos : trainingVideos.slice(0, 4);
+  const visibleVideos = trainingVideos;
 
   return (
     <div className="page-content" style={{ backgroundColor: '#f4f6f9' }}>
       <div className="container-fluid">
 
         {/* Standard Sticky Subheader - Always Shown */}
-        <div className="row page-subheader-sticky bg-body mb-4">
+        <div className="row page-subheader-sticky bg-body">
           <div className="col-12">
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
@@ -325,7 +320,7 @@ const Resource: React.FC = () => {
 
                   {/* Category Sections */}
                   <div className="col-md-6">
-                    <div className="card shadow-sm border-0 rounded-2 h-100 bg-white">
+                    <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-bold text-dark mb-0 fs-15">Legal & Registration</h6>
                         <button className="btn btn-sm btn-soft-primary px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('legal_registration')}>
@@ -333,8 +328,8 @@ const Resource: React.FC = () => {
                         </button>
                       </div>
                       <div className="card-body p-4 pt-2">
-                        <div className={`d-flex flex-column gap-3 ${showAllLegal && filteredLegal.length > 4 ? 'scrollable-container' : ''}`}>
-                          {(showAllLegal ? filteredLegal : filteredLegal.slice(0, 4)).map((item, i) => (
+                        <div className={`d-flex flex-column gap-3 scrollable-container`}>
+                          {filteredLegal.map((item, i) => (
                             <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item transition-all" key={item.id} onClick={() => handleEdit(item, "legal_registration")}>
                               <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                                 <i className={`${item.icon || 'ri-article-line'} text-indigo fs-16`}></i>
@@ -347,19 +342,12 @@ const Resource: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                        {!showAllLegal && (resources.legal_registration || []).length > 4 && (
-                          <div className="text-center mt-3 pt-2 border-top border-light-subtle">
-                            <button className="btn btn-link btn-sm text-primary fw-bold text-decoration-none p-0" onClick={() => setShowAllLegal(true)}>
-                              View More <i className="ri-arrow-down-s-line align-middle"></i>
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="col-md-6">
-                    <div className="card shadow-sm border-0 rounded-2 h-100 bg-white">
+                    <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-bold text-dark mb-0 fs-15">Business Services</h6>
                         <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('business_services')}>
@@ -367,8 +355,8 @@ const Resource: React.FC = () => {
                         </button>
                       </div>
                       <div className="card-body p-4 pt-2">
-                        <div className={`d-flex flex-column gap-3 ${showAllBusiness && filteredBus.length > 4 ? 'scrollable-container' : ''}`}>
-                          {(showAllBusiness ? filteredBus : filteredBus.slice(0, 4)).map((item, i) => (
+                        <div className={`d-flex flex-column gap-3 scrollable-container`}>
+                          {filteredBus.map((item, i) => (
                             <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item-success transition-all" key={item.id} onClick={() => handleEdit(item, 'business_services')}>
                               <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
                                 <i className={`${item.icon || 'ri-phone-circle-line'} text-success fs-16`}></i>
@@ -381,13 +369,6 @@ const Resource: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                        {!showAllBusiness && (resources.business_services || []).length > 4 && (
-                          <div className="text-center mt-3 pt-2 border-top border-light-subtle">
-                            <button className="btn btn-link btn-sm text-success fw-bold text-decoration-none p-0" onClick={() => setShowAllBusiness(true)}>
-                              View More <i className="ri-arrow-down-s-line align-middle"></i>
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -426,9 +407,9 @@ const Resource: React.FC = () => {
                         </div>
                       </div>
                       <div className="card-body p-4">
-                        <div className={`${showAllEducation && filteredEdu.length > 12 ? 'scrollable-container-edu' : ''}`}>
+                        <div className={`scrollable-container-edu`}>
                           <div className="row g-4 mb-2">
-                            {(showAllEducation ? filteredEdu : filteredEdu.slice(0, 12)).map((edu, i) => (
+                            {filteredEdu.map((edu, i) => (
                               <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
                                 <div className="p-4 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleEdit(edu.original, "education_help")}>
                                   <div className="position-absolute top-0 end-0 p-2">
@@ -444,13 +425,6 @@ const Resource: React.FC = () => {
                             ))}
                           </div>
                         </div>
-                        {!showAllEducation && filteredEdu.length > 12 && (
-                          <div className="text-center mt-4 pt-4 border-top border-light-subtle">
-                            <button className="btn btn-soft-primary px-4 py-2 fs-12 fw-bold rounded-pill" onClick={() => setShowAllEducation(true)}>
-                              Show More Articles <i className="ri-arrow-down-s-line ms-1"></i>
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -469,8 +443,8 @@ const Resource: React.FC = () => {
                       </button>
                     </div>
                     <div className="card-body p-0">
-                      <div className={`list-group list-group-flush ${showAllAssets && documentItems.length > 4 ? 'scrollable-container-assets' : ''}`}>
-                        {(showAllAssets ? documentItems : documentItems.slice(0, 4)).map((doc, i) => (
+                      <div className={`list-group list-group-flush scrollable-container-assets`}>
+                        {documentItems.map((doc, i) => (
                           <div className="list-group-item list-group-item-action border-0 p-3 transition-all d-flex align-items-center justify-content-between cursor-pointer" key={doc.id} onClick={() => handleEdit(doc.original, "download_assets")}>
                             <div className="d-flex align-items-center flex-grow-1 pe-2">
                               <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
@@ -487,18 +461,11 @@ const Resource: React.FC = () => {
                           </div>
                         ))}
                       </div>
-                      {!showAllAssets && documentItems.length > 4 && (
-                        <div className="p-3 text-center border-top border-light-subtle">
-                          <button className="btn btn-link btn-sm text-danger fw-bold text-decoration-none p-0" onClick={() => setShowAllAssets(true)}>
-                            View More Assets <i className="ri-arrow-down-s-line align-middle"></i>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   {/* Training Academy */}
-                  <div className="card shadow-sm border-0 rounded-2 bg-white animate-fade-in-right">
+                  <div className="card shadow-sm border-0 rounded-2 bg-white animate-fade-in-right mb-0">
                     <div className="card-header border-bottom border-light p-4 d-flex align-items-center justify-content-between gap-2">
                       <h6 className="fw-bold text-dark mb-0 fs-15 text-nowrap"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
                       <div className="d-flex align-items-center gap-2">
@@ -509,9 +476,10 @@ const Resource: React.FC = () => {
                       </div>
                     </div>
                     <div className="card-body p-4 pt-3">
-                      <div className={`d-flex flex-column gap-4 ${showAllVideos && trainingVideos.length > 4 ? 'scrollable-container' : ''}`}>
+                      <div className={`d-flex flex-column gap-4 scrollable-container`}>
                         {visibleVideos.map((video, i) => (
                           <div className="video-item d-flex align-items-center gap-3 cursor-pointer group" key={video.id} onClick={() => handleEdit(video.original, "training_academy")}>
+                            {/* Video item content... */}
                             <div className="video-thumb position-relative rounded-2 flex-shrink-0 overflow-hidden shadow-sm" style={{ width: '110px', height: '64px' }}>
                               <img
                                 src={video.original.file_url || `https://placehold.co/220x128/${video.color.replace('#', '')}/white?text=Tutorial+${i + 1}`}
@@ -537,16 +505,6 @@ const Resource: React.FC = () => {
                         ))}
                       </div>
 
-                      {!showAllVideos && trainingVideos.length > 4 && (
-                        <div className="mt-4 pt-2 border-top border-light text-center">
-                          <button
-                            className="btn btn-link btn-sm text-secondary p-0 fw-bold text-decoration-none hover-indigo"
-                            onClick={() => setShowAllVideos(true)}
-                          >
-                            Load More Videos <i className="ri-arrow-down-s-line align-middle"></i>
-                          </button>
-                        </div>
-                      )}
 
                       {/* <button className="btn btn-outline-danger btn-sm w-100 rounded-2 mt-4 fw-bold border-dashed shadow-sm">
                         <i className="ri-notification-3-line me-1"></i> Subscribe to Channel
@@ -630,9 +588,9 @@ const Resource: React.FC = () => {
         .tracking-widest { letter-spacing: 0.1em; }
         .card-animate:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
 
-        .scrollable-container { max-height: 380px; overflow-y: auto; padding-right: 8px; }
-        .scrollable-container-assets { max-height: 280px; overflow-y: auto; }
-        .scrollable-container-edu { max-height: 450px; overflow-y: auto; padding: 4px; overflow-x: hidden; }
+        .scrollable-container { max-height: 333px; overflow-y: auto; padding-right: 8px; }
+        .scrollable-container-assets { max-height: 260px; overflow-y: auto; }
+        .scrollable-container-edu { max-height: 660px; overflow-y: auto; padding: 4px; overflow-x: hidden; }
         
         .scrollable-container::-webkit-scrollbar, 
         .scrollable-container-assets::-webkit-scrollbar,
