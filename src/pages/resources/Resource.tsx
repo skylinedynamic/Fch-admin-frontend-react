@@ -81,7 +81,7 @@ const Resource: React.FC = () => {
 
   const handleItemClick = (item: ResourceItem, forceDownload = false) => {
     console.log('Resource Clicked:', { id: item.id, title: item.title, forceDownload });
-    
+
     if (forceDownload && item.id) {
       handleFileDownload(
         () => downloadResource(item.id),
