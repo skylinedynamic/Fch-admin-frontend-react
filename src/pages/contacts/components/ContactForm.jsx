@@ -16,6 +16,38 @@ export default function ContactForm({
     return (
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
+                {/* Referral Partner Checkbox */}
+                <div className="col-12">
+                    <div className="card border-dashed mb-4" style={{ backgroundColor: contact.is_referral_partner ? 'rgba(52, 195, 143, 0.05)' : 'transparent' }}>
+                        <div className="card-body p-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="avatar-xs">
+                                        <div className={`avatar-title rounded-circle fs-20 ${contact.is_referral_partner ? 'bg-success text-white' : 'bg-light text-muted'}`}>
+                                            <i className="ri-shake-hands-line"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 className="fs-14 mb-0">Referral Relationship</h5>
+                                        <p className="text-muted mb-0 fs-12">Mark this contact as a verified referral partner</p>
+                                    </div>
+                                </div>
+                                <div className="form-check form-switch form-switch-lg form-switch-success">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="is_referral_partner"
+                                        name="is_referral_partner"
+                                        checked={contact.is_referral_partner}
+                                        onChange={(e) => onChange({ target: { name: 'is_referral_partner', value: e.target.checked } })}
+                                    />
+                                    <label className="form-check-label" htmlFor="is_referral_partner"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Full Name */}
                 <div className="col-lg-6">
                     <div className="mb-3">

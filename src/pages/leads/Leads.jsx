@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { fetchLeads, deleteLead, convertLead, updateLeadContactInfo } from '../../modules/leads/services';
+import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -59,6 +60,7 @@ export default function Leads() {
 
     // Dropdown data
     const [salespersonsList, setSalespersonsList] = useState([]);
+    const [referralPartners, setReferralPartners] = useState([]);
 
     // Conversion Modal state
     const [showConvertModal, setShowConvertModal] = useState(false);
@@ -100,21 +102,25 @@ export default function Leads() {
     useEffect(() => {
         initFilters();
 
-        // Load salespersons
-        const loadSalespersons = async () => {
+        // Load salespersons and referral partners
+        const loadInitialData = async () => {
             try {
-                const result = await allUsers();
-                if (result.status) {
-                    setSalespersonsList(result.data.map(user => ({
+                const [usersRes, referralRes] = await Promise.all([
+                    allUsers(),
+                    fetchReferralPartners()
+                ]);
+                if (usersRes.status) {
+                    setSalespersonsList(usersRes.data.map(user => ({
                         label: user.name,
                         value: user.id
                     })));
                 }
+                setReferralPartners(referralRes || []);
             } catch (err) {
-                console.error('Failed to load salespersons:', err);
+                console.error('Failed to load initial data:', err);
             }
         };
-        loadSalespersons();
+        loadInitialData();
     }, []);
 
     const statisticsConfig = [
@@ -568,6 +574,23 @@ export default function Leads() {
                                             <Column field="company_name" header="Company Name" body={(rowData) => nullSafeBodyTemplate(rowData, 'company_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by organization" style={{ minWidth: '180px' }} />
                                             <Column field="email" header="Email" body={(rowData) => nullSafeBodyTemplate(rowData, 'email')} sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                                             <Column field="phone_number" header="Phone" body={(rowData) => nullSafeBodyTemplate(rowData, 'phone_number')} sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
+                                            <Column
+                                                header="Source"
+                                                body={(rowData) => (
+                                                    <div className="d-flex flex-column">
+                                                        <span>{rowData.lead_source}</span>
+                                                        {rowData.referral_partner_id != null && rowData.referral_partner_id !== '' && (
+                                                            <div className="mt-1 d-flex align-items-center">
+                                                                <span className="badge bg-light text-success border border-success-subtle fw-medium py-1 px-2 fs-11">
+                                                                    <i className="ri-user-follow-line me-1"></i>
+                                                                    {referralPartners.find(p => p.id === rowData.referral_partner_id)?.full_name || ''}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                style={{ minWidth: '160px' }}
+                                            />
                                             <Column field="salesperson_name" header="SalesPerson" body={(rowData) => nullSafeBodyTemplate(rowData, 'salesperson_name')} sortable filter showFilterMatchModes filterPlaceholder="Search by salesperson" style={{ minWidth: '160px' }} />
                                             {isHost && <Column field="lead_type" header="Type" body={(rowData) => nullSafeBodyTemplate(rowData, 'lead_type')} sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '130px' }} />}
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable filter showFilterMatchModes filterPlaceholder="Search by status" style={{ minWidth: '140px' }} />
