@@ -12,6 +12,16 @@ import { toast } from 'react-toastify';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { downloadResource } from '../../modules/resource/services';
 
+const getYoutubeThumbnail = (url: string) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://img.youtube.com/vi/${match[2]}/mqdefault.jpg`;
+  }
+  return null;
+};
+
 const Resource: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -105,15 +115,15 @@ const Resource: React.FC = () => {
           <i className={`${iconClass} fs-18 text-muted opacity-50`}></i>
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end shadow border-light bg-white py-2" style={{ minWidth: '140px', zIndex: 1050 }}>
-          <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
+          <DropdownItem className="fw-normal fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
             <i className="ri-pencil-line me-2 align-bottom text-primary fs-15"></i> Edit
           </DropdownItem>
           {(item.file_url) && (
-            <DropdownItem className="fw-bold fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
+            <DropdownItem className="fw-normal fs-13 py-2 text-dark" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
               <i className="ri-download-2-line me-2 align-bottom text-success fs-15"></i> Download
             </DropdownItem>
           )}
-          <DropdownItem className="fw-bold fs-13 text-danger py-2" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
+          <DropdownItem className="fw-normal fs-13 text-danger py-2" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
             <i className="ri-delete-bin-line me-2 align-bottom text-danger fs-15"></i> Delete
           </DropdownItem>
         </DropdownMenu>
@@ -166,9 +176,10 @@ const Resource: React.FC = () => {
   const trainingVideos = filterItems(resources.training_academy).map((item, i) => ({
     id: item.id,
     title: item.title,
-    duration: "10:00",
-    views: "1k",
+    duration: "Tutorial",
+    views: "Resource",
     color: i % 2 === 0 ? "#4b38b3" : "#0ab39c",
+    thumbnail: getYoutubeThumbnail(item.link) || item.file_url || `https://placehold.co/220x128/${(i % 2 === 0 ? "4b38b3" : "0ab39c")}/white?text=Training`,
     original: item
   }));
 
@@ -295,7 +306,7 @@ const Resource: React.FC = () => {
               {[
                 { label: 'Total Resources', value: filteredEdu.length + documentItems.length + trainingVideos.length, icon: 'ri-grid-fill', color: 'primary' },
                 { label: 'Service Providers', value: (resources.business_services || []).length, icon: 'ri-briefcase-fill', color: 'primary' },
-                { label: 'Categories Covered', value: '6', icon: 'ri-stack-fill', color: 'warning' },
+                { label: 'Categories Covered', value: '5', icon: 'ri-stack-fill', color: 'warning' },
                 { label: 'Quick Tools', value: documentItems.length, icon: 'ri-rocket-2-fill', color: 'primary' }
               ].map((stat, i) => (
                 <div className="col-md-3" key={i}>
@@ -305,8 +316,8 @@ const Resource: React.FC = () => {
                         <i className={`${stat.icon} text-${stat.color} resource-card-icon`}></i>
                       </div>
                       <div>
-                        <p className="text-muted mb-0 fs-13 fw-medium text-uppercase tracking-tight">{stat.label}</p>
-                        <h4 className="mb-0 fw-bold text-dark fs-22 lh-1">{stat.value}</h4>
+                        <p className="text-muted mb-0 fs-13 fw-semibold text-uppercase tracking-tight">{stat.label}</p>
+                        <h4 className="mb-0 fw-semibold text-dark fs-22 lh-1">{stat.value}</h4>
                       </div>
                     </div>
                   </div>
@@ -322,8 +333,8 @@ const Resource: React.FC = () => {
                   <div className="col-md-6">
                     <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <h6 className="fw-bold text-dark mb-0 fs-15">Legal & Registration</h6>
-                        <button className="btn btn-sm btn-soft-primary px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('legal_registration')}>
+                        <h6 className="fw-semibold text-dark mb-0 fs-15">Legal & Registration</h6>
+                        <button className="btn btn-sm btn-soft-primary px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('legal_registration')}>
                           <i className="ri-add-line me-1"></i> Add New
                         </button>
                       </div>
@@ -335,7 +346,7 @@ const Resource: React.FC = () => {
                                 <i className={`${item.icon || 'ri-article-line'} text-indigo fs-16`}></i>
                               </div>
                               <div className="flex-grow-1 overflow-hidden pe-2">
-                                <h6 className="mb-1 fw-bold fs-14 text-dark text-truncate">{item.title}</h6>
+                                <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
                                 <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
                               </div>
                               <ActionMenu item={item} type="legal_registration" iconClass="ri-more-2-fill" />
@@ -349,8 +360,8 @@ const Resource: React.FC = () => {
                   <div className="col-md-6">
                     <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <h6 className="fw-bold text-dark mb-0 fs-15">Business Services</h6>
-                        <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('business_services')}>
+                        <h6 className="fw-semibold text-dark mb-0 fs-15">Business Services</h6>
+                        <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('business_services')}>
                           <i className="ri-add-line me-1"></i> Add New
                         </button>
                       </div>
@@ -362,7 +373,7 @@ const Resource: React.FC = () => {
                                 <i className={`${item.icon || 'ri-phone-circle-line'} text-success fs-16`}></i>
                               </div>
                               <div className="flex-grow-1 overflow-hidden pe-2">
-                                <h6 className="mb-1 fw-bold fs-14 text-dark text-truncate">{item.title}</h6>
+                                <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
                                 <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
                               </div>
                               <ActionMenu item={item} type="business_services" iconClass="ri-more-2-fill" />
@@ -379,7 +390,7 @@ const Resource: React.FC = () => {
                       <div className="card-header border-0 bg-navy p-4">
                         <div className="d-flex flex-column flex-lg-row align-items-center justify-content-between gap-4">
                           <div className="flex-grow-1 header-text-group">
-                            <h5 className="fw-bold text-white mb-1 fs-18">Education & Help</h5>
+                            <h5 className="fw-semibold text-white mb-1 fs-18">Education & Help</h5>
                             <p className="text-white opacity-75 mb-0 fs-13 description-text">
                               Detailed library of borrower education guides, credit building tips, and FAQs.
                             </p>
@@ -397,7 +408,7 @@ const Resource: React.FC = () => {
                               />
                             </div>
                             <button
-                              className="btn btn-soft-success px-3 py-0 fs-12 fw-bold border-0 rounded-pill text-nowrap d-flex align-items-center justify-content-center shadow-sm"
+                              className="btn btn-soft-success px-3 py-0 fs-12 fw-semibold border-0 rounded-pill text-nowrap d-flex align-items-center justify-content-center shadow-sm"
                               style={{ height: '40px' }}
                               onClick={() => handleAddNew('education_help')}
                             >
@@ -418,8 +429,8 @@ const Resource: React.FC = () => {
                                   <div className={`avatar-sm bg-${edu.color}-subtle rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3`}>
                                     <i className={`${edu.icon} text-${edu.color} fs-20`}></i>
                                   </div>
-                                  <h6 className="mb-2 fw-bold fs-14 text-dark">{edu.title}</h6>
-                                  <p className="text-muted fs-11 mb-0 fw-medium opacity-75">{edu.sub}</p>
+                                  <h6 className="mb-2 fw-semibold fs-14 text-dark text-truncate px-2">{edu.title}</h6>
+                                  <p className="text-muted fs-11 mb-0 fw-medium opacity-75 text-truncate px-2">{edu.sub}</p>
                                 </div>
                               </div>
                             ))}
@@ -437,8 +448,8 @@ const Resource: React.FC = () => {
                   {/* Asset Sidebar */}
                   <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                     <div className="card-header border-bottom border-light p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                      <h6 className="fw-bold text-dark mb-0 fs-14 text-uppercase tracking-wider">Download Assets</h6>
-                      <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0" onClick={() => handleAddNew('download_assets')}>
+                      <h6 className="fw-semibold text-dark mb-0 fs-14 text-uppercase tracking-wider">Download Assets</h6>
+                      <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('download_assets')}>
                         <i className="ri-add-line me-1"></i> Add New
                       </button>
                     </div>
@@ -467,9 +478,9 @@ const Resource: React.FC = () => {
                   {/* Training Academy */}
                   <div className="card shadow-sm border-0 rounded-2 bg-white animate-fade-in-right mb-0">
                     <div className="card-header border-bottom border-light p-4 d-flex align-items-center justify-content-between gap-2">
-                      <h6 className="fw-bold text-dark mb-0 fs-15 text-nowrap"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
+                      <h6 className="fw-semibold text-dark mb-0 fs-15 text-nowrap"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
                       <div className="d-flex align-items-center gap-2">
-                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-bold border-0 text-nowrap" onClick={() => handleAddNew('training_academy')}>
+                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0 text-nowrap" onClick={() => handleAddNew('training_academy')}>
                           <i className="ri-add-line me-1"></i> Add New
                         </button>
                         <span className="badge bg-danger-subtle text-danger fs-10 text-nowrap">{trainingVideos.length} Videos</span>
@@ -482,7 +493,7 @@ const Resource: React.FC = () => {
                             {/* Video item content... */}
                             <div className="video-thumb position-relative rounded-2 flex-shrink-0 overflow-hidden shadow-sm" style={{ width: '110px', height: '64px' }}>
                               <img
-                                src={video.original.file_url || `https://placehold.co/220x128/${video.color.replace('#', '')}/white?text=Tutorial+${i + 1}`}
+                                src={video.thumbnail}
                                 alt={video.title}
                                 className="w-100 h-100 object-cover"
                               />
@@ -490,15 +501,15 @@ const Resource: React.FC = () => {
                               <i className="ri-play-circle-fill text-white fs-28 position-absolute top-50 start-50 translate-middle z-1 mb-0 transition-all play-icon"></i>
                               <span className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white fs-9 px-1 rounded-1 m-1 fw-semibold">{video.duration}</span>
                             </div>
-                            <div className="flex-grow-1 pe-1">
+                            <div className="flex-grow-1 pe-1 overflow-hidden">
                               <div className="d-flex justify-content-between align-items-start">
-                                <h6 className="mb-1 fs-13 fw-bold text-dark lh-base transition-all video-title multi-line-truncate">{video.title}</h6>
+                                <h6 className="mb-1 fs-13 fw-semibold text-dark lh-base transition-all video-title text-truncate">{video.title}</h6>
                                 <ActionMenu item={video.original} type="training_academy" />
                               </div>
                               <div className="d-flex align-items-center gap-1 opacity-75">
-                                <span className="fs-10 text-muted">{video.views} views</span>
+                                <span className="fs-10 text-muted">{video.views}</span>
                                 <span className="fs-10 text-muted">•</span>
-                                <span className="fs-10 text-muted">Tutorial</span>
+                                <span className="fs-10 text-muted">{video.duration}</span>
                               </div>
                             </div>
                           </div>

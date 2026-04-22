@@ -384,7 +384,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                     <i className="ri-file-upload-line text-primary fs-18"></i>
                                                 </div>
                                                 <div className="flex-grow-1 overflow-hidden">
-                                                    <p className="mb-0 fw-bold fs-13 text-dark text-truncate">
+                                                    <p className="mb-0  fs-13 text-dark text-truncate">
                                                         {typeof formData.file === 'string' && formData.file ? formData.file.split('/').pop() : (formData.resource_type === 'download_asset' ? 'Choose Asset (PDF/DOCS)...' : 'Choose Document (PDF)...')}
                                                     </p>
                                                     <p className="mb-0 text-muted fs-11">
