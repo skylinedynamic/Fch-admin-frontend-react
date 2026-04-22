@@ -192,10 +192,14 @@ export default function FundingApplicationDetails() {
 
     // Hierarchical Calculation Logic
 
+    const baseCommissionAmount = (app.total_funded_amount && parseFloat(app.total_funded_amount.toString()) > 0)
+        ? parseFloat(app.total_funded_amount.toString())
+        : requestedAmount;
+
     // 1. Total Commission Amount
-    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.total_commission_amount)
+    const totalCommissionAmount = (successFee === (app.total_commission?.toString() || '') && requestedAmountInput === (app.requested_amount?.toString() || '') && app.total_commission_amount && (!app.total_funded_amount || parseFloat(app.total_funded_amount.toString()) === 0))
         ? parseCurrency(app.total_commission_amount)
-        : requestedAmount * (parseFloat(successFee || '0') / 100);
+        : baseCommissionAmount * (parseFloat(successFee || '0') / 100);
 
     // Shares (Input as 0-100)
     // If no partner is shown, Admin takes 100% of the Success Fee

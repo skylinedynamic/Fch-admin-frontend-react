@@ -203,7 +203,7 @@ export const getFileIcon = (filename: string, mimeType?: string) => {
   const ext = filename.split('.').pop()?.toLowerCase()
   
   // Images
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext || '')) {
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif', 'avif'].includes(ext || '')) {
     return 'image'
   }
   
