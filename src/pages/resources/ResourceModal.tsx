@@ -259,7 +259,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                         <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Publish Status</label>
                                         <div className="form-control d-flex align-items-center justify-content-between p-2 shadow-none custom-height" style={{ height: '37.5px' }}>
                                             <label className="form-check-label ms-1 fw-bold fs-12 mb-0 cursor-pointer" htmlFor="resourceStatus">
-                                                {formData.status ? <span className="text-success">Published</span> : <span className="text-muted">Draft</span>}
+                                                {formData.status ? <span className="text-success">Published</span> : <span className="text-muted">Inactive</span>}
                                             </label>
                                             <div className="form-check form-switch form-switch-md mb-0 d-flex align-items-center" style={{ height: '20px' }}>
                                                 <input
@@ -406,9 +406,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                                             <p className="mb-0 fs-12 fw-bold text-dark text-truncate">{resource.file_url.split('/').pop()}</p>
                                                         </div>
                                                     </div>
-                                                    <a href={resource.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-soft-primary px-3 rounded-pill ms-2 flex-shrink-0" style={{ fontSize: '11px' }}>
-                                                        Preview
-                                                    </a>
+
                                                 </div>
                                             )}
                                         </div>
