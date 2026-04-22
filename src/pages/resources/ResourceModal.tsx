@@ -4,7 +4,11 @@ import { useCreateResource, useUpdateResource } from '../../modules/resource/que
 import { getResourceNextId } from '../../modules/resource/services';
 import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
+import { useFileManagerStore } from '../../../store/fileManager/fileManagerStore';
+import { Dropdown } from 'primereact/dropdown';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import 'primereact/resources/themes/lara-light-indigo/theme.css';
+import 'primereact/resources/primereact.min.css';
 import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK, RESOURCE_ICONS } from '../../utils/resourceConfig';
 
 interface ResourceModalProps {
@@ -224,245 +228,186 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                 aria-hidden="true"
                 style={{ zIndex: showFileManager ? 1045 : undefined }}
             >
-                <div className="modal-dialog modal-lg modal-dialog-centered">
-                    <div className="modal-content border-0 shadow-lg border-top border-3 border-primary overflow-hidden">
-                        <div className="modal-header bg-light p-3">
-                            <h5 className="modal-title fs-16 fw-bold text-dark d-flex align-items-center gap-2">
-                                {isEdit ? <i className="ri-edit-2-line text-primary fs-18"></i> : <i className="ri-file-add-line text-primary fs-18"></i>}
+                <div className="modal-dialog modal-lg modal-dialog-centered resource-modal">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header px-4 py-3 bg-white border-bottom border-light">
+                            <h5 className="modal-title fs-15 fw-bold text-dark d-flex align-items-center gap-2">
+                                <span className={`avatar-xs d-flex align-items-center justify-content-center rounded-circle ${isEdit ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
+                                    <i className={isEdit ? 'ri-edit-2-fill' : 'ri-add-line'}></i>
+                                </span>
                                 {isEdit ? 'Update Resource' : 'Add New Resource'}
                             </h5>
-                            <button type="button" className="btn-close shadow-none focus-ring-none" onClick={onHide} aria-label="Close"></button>
+                            <button type="button" className="btn-close shadow-none" onClick={onHide} aria-label="Close"></button>
                         </div>
                         <form onSubmit={onSubmit} noValidate>
-                            <div className="modal-body p-4 bg-white">
-                                <div className="row g-4">
+                            <div className="modal-body p-4">
+                                <div className="row g-3">
                                     <div className="col-12 col-md-8">
-                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Type <span className="text-danger">*</span></label>
-                                        <div className="position-relative">
-                                            <select
-                                                className={`form-select border-light bg-light py-2 shadow-none ${validationErrors.resource_type ? 'is-invalid' : ''}`}
-                                                name="resource_type"
-                                                value={formData.resource_type}
-                                                onChange={handleInputChange}
-                                                disabled
-                                            >
-                                                {RESOURCE_TYPE_OPTIONS.map(opt => (
-                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                ))}
-                                            </select>
-                                            {validationErrors.resource_type && <div className="invalid-feedback d-block">{validationErrors.resource_type}</div>}
-                                        </div>
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Resource Type <span className="text-danger">*</span></label>
+                                        <Dropdown
+                                            value={formData.resource_type}
+                                            options={RESOURCE_TYPE_OPTIONS}
+                                            onChange={(e) => setFormData(p => ({ ...p, resource_type: e.value }))}
+                                            placeholder="Select Resource Type"
+                                            className={`w-100 shadow-none ${validationErrors.resource_type ? 'p-invalid' : ''}`}
+                                            id="resource_type_dropdown"
+                                        />
+                                        {validationErrors.resource_type && <div className="invalid-feedback d-block mt-1">{validationErrors.resource_type}</div>}
                                     </div>
 
                                     <div className="col-12 col-md-4">
-                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Status</label>
-                                        <div className="form-check form-switch form-switch-md mt-1 d-flex align-items-center">
-                                            <input
-                                                className="form-check-input mt-0 cursor-pointer shadow-none focus-ring-none"
-                                                type="checkbox"
-                                                role="switch"
-                                                id="resourceStatus"
-                                                name="status"
-                                                checked={formData.status}
-                                                onChange={handleInputChange}
-                                            />
-                                            <label className="form-check-label ms-2 fw-medium mb-0" htmlFor="resourceStatus">
-                                                {formData.status ? <span className="text-success">Active</span> : <span className="text-muted">Inactive</span>}
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Publish Status</label>
+                                        <div className="form-control d-flex align-items-center justify-content-between p-2 shadow-none custom-height" style={{ height: '37.5px' }}>
+                                            <label className="form-check-label ms-1 fw-bold fs-12 mb-0 cursor-pointer" htmlFor="resourceStatus">
+                                                {formData.status ? <span className="text-success">Published</span> : <span className="text-muted">Draft</span>}
                                             </label>
+                                            <div className="form-check form-switch form-switch-md mb-0 d-flex align-items-center" style={{ height: '20px' }}>
+                                                <input
+                                                    className="form-check-input cursor-pointer shadow-none mt-0"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="resourceStatus"
+                                                    name="status"
+                                                    checked={formData.status}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
                                         </div>
-                                        {validationErrors.status && <div className="invalid-feedback d-block">{validationErrors.status}</div>}
+                                        {validationErrors.status && <div className="invalid-feedback d-block mt-1">{validationErrors.status}</div>}
                                     </div>
 
                                     <div className="col-12">
-                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Title <span className="text-danger">*</span></label>
-                                        <div className="form-icon">
-                                            <input
-                                                type="text"
-                                                className={`form-control form-control-icon border-light bg-light py-2 shadow-none ${validationErrors.title ? 'is-invalid border-danger' : ''}`}
-                                                name="title"
-                                                value={formData.title}
-                                                onChange={handleInputChange}
-                                                placeholder="Resource Title"
-                                            />
-                                            <i className="ri-heading text-muted"></i>
-                                        </div>
-                                        {validationErrors.title && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.title}</div>}
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Title <span className="text-danger">*</span></label>
+                                        <input
+                                            type="text"
+                                            className={`form-control shadow-none custom-height ${validationErrors.title ? 'is-invalid border-danger' : ''}`}
+                                            name="title"
+                                            value={formData.title}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter resource title"
+                                        />
+                                        {validationErrors.title && <div className="invalid-feedback d-block mt-1">{validationErrors.title}</div>}
                                     </div>
 
-                                    <div className="col-6">
-                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Subtitle </label>
-                                        <div className="form-icon">
-                                            <input
-                                                type="text"
-                                                className={`form-control form-control-icon border-light bg-light py-2 shadow-none ${validationErrors.subtitle ? 'is-invalid border-danger' : ''}`}
-                                                name="subtitle"
-                                                value={formData.subtitle}
-                                                onChange={handleInputChange}
-                                                placeholder="Resource Subtitle"
-                                            />
-                                            <i className="ri-text text-muted"></i>
-                                        </div>
-                                        {validationErrors.subtitle && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.subtitle}</div>}
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Subtitle</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control shadow-none custom-height ${validationErrors.subtitle ? 'is-invalid border-danger' : ''}`}
+                                            name="subtitle"
+                                            value={formData.subtitle}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter subtitle (optional)"
+                                        />
+                                        {validationErrors.subtitle && <div className="invalid-feedback d-block mt-1">{validationErrors.subtitle}</div>}
                                     </div>
 
-                                    <div className="col-6">
-                                        <label className="form-label fs-13 fw-semibold text-dark tracking-wider">Icon Class</label>
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Icon</label>
                                         <div className="position-relative" ref={dropdownRef}>
-                                            {/* Combobox Trigger */}
                                             <button
                                                 type="button"
-                                                className={`form-control border-light bg-light py-2 shadow-none d-flex align-items-center gap-2 text-start ${validationErrors.icon ? 'is-invalid border-danger' : ''}`}
+                                                className={`form-control shadow-none d-flex align-items-center gap-2 text-start custom-height ${validationErrors.icon ? 'is-invalid border-danger' : ''}`}
                                                 onClick={() => { setShowIconDropdown(prev => !prev); setIconSearch(''); }}
-                                                style={{ height: '42px' }}
                                             >
                                                 {formData.icon ? (
-                                                    <>
-                                                        <i className={`${formData.icon} fs-16 text-primary flex-shrink-0`}></i>
+                                                    <><i className={`${formData.icon} fs-16 text-primary`}></i>
                                                         <span className="fs-13 text-dark flex-grow-1 text-truncate">{RESOURCE_ICONS.find(i => i.value === formData.icon)?.label || formData.icon}</span>
-                                                        <i
-                                                            className="ri-close-line text-muted fs-16 flex-shrink-0"
-                                                            onClick={(e) => { e.stopPropagation(); setFormData(prev => ({ ...prev, icon: '' })); setShowIconDropdown(false); }}
-                                                        ></i>
                                                     </>
                                                 ) : (
-                                                    <>
-                                                        <i className="ri-remixicon-line text-muted fs-16 flex-shrink-0"></i>
-                                                        <span className="fs-13 text-muted">Select icon...</span>
-                                                        <i className="ri-arrow-down-s-line text-muted ms-auto flex-shrink-0"></i>
-                                                    </>
+                                                    <span className="fs-13 text-muted">Select an icon...</span>
                                                 )}
+                                                <i className="ri-arrow-down-s-line text-muted ms-auto"></i>
                                             </button>
 
-                                            {/* Dropdown Panel */}
                                             {showIconDropdown && (
-                                                <div
-                                                    className="position-absolute w-100 bg-white border border-light rounded-2 shadow-lg mt-1"
-                                                    style={{ zIndex: 1055, top: '100%' }}
-                                                >
-                                                    {/* Search Input inside dropdown */}
-                                                    <div className="p-2 border-bottom border-light">
-                                                        <div className="input-group input-group-sm">
-                                                            <span className="input-group-text bg-light border-light"><i className="ri-search-2-line text-muted"></i></span>
-                                                            <input
-                                                                type="text"
-                                                                className="form-control bg-light border-light shadow-none fs-13"
-                                                                placeholder="Search icons..."
-                                                                value={iconSearch}
-                                                                onChange={(e) => setIconSearch(e.target.value)}
-                                                                autoFocus
-                                                                autoComplete="off"
-                                                            />
-                                                            {iconSearch && (
-                                                                <button type="button" className="btn btn-light border-light px-2" onClick={() => setIconSearch('')}>
-                                                                    <i className="ri-close-line text-muted"></i>
-                                                                </button>
-                                                            )}
-                                                        </div>
+                                                <div className="position-absolute w-100 bg-white border border-light-subtle rounded-3 shadow-lg mt-1 overflow-hidden" style={{ zIndex: 1055, top: '100%' }}>
+                                                    <div className="p-2 bg-light border-bottom border-light-subtle">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control shadow-none fs-12 custom-height"
+                                                            placeholder="Search icons..."
+                                                            value={iconSearch}
+                                                            onChange={(e) => setIconSearch(e.target.value)}
+                                                            autoFocus
+                                                        />
                                                     </div>
-
-                                                    {/* Icon List */}
-                                                    <div className="overflow-auto" style={{ maxHeight: '220px' }}>
-                                                        {RESOURCE_ICONS.filter(ico =>
-                                                            !iconSearch ||
-                                                            ico.label.toLowerCase().includes(iconSearch.toLowerCase()) ||
-                                                            ico.value.toLowerCase().includes(iconSearch.toLowerCase())
-                                                        ).length > 0 ? (
-                                                            RESOURCE_ICONS.filter(ico =>
-                                                                !iconSearch ||
-                                                                ico.label.toLowerCase().includes(iconSearch.toLowerCase()) ||
-                                                                ico.value.toLowerCase().includes(iconSearch.toLowerCase())
-                                                            ).map((ico) => (
+                                                    <div className="overflow-auto custom-scrollbar" style={{ maxHeight: '200px' }}>
+                                                        {RESOURCE_ICONS.filter(ico => !iconSearch || ico.label.toLowerCase().includes(iconSearch.toLowerCase())).length > 0 ? (
+                                                            RESOURCE_ICONS.filter(ico => !iconSearch || ico.label.toLowerCase().includes(iconSearch.toLowerCase())).map((ico) => (
                                                                 <button
                                                                     key={ico.value}
                                                                     type="button"
-                                                                    className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 ${formData.icon === ico.value ? 'bg-primary bg-opacity-10' : ''}`}
-                                                                    onClick={() => {
-                                                                        setFormData(prev => ({ ...prev, icon: ico.value }));
-                                                                        setIconSearch('');
-                                                                        setShowIconDropdown(false);
-                                                                        if (validationErrors.icon) setValidationErrors(prev => ({ ...prev, icon: [] }));
-                                                                    }}
+                                                                    className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-bottom border-light-subtle border-opacity-50 ${formData.icon === ico.value ? 'bg-primary-subtle' : ''}`}
+                                                                    onClick={() => { setFormData(prev => ({ ...prev, icon: ico.value })); setShowIconDropdown(false); }}
                                                                 >
-                                                                    <div className="bg-light rounded p-1 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
-                                                                        <i className={`${ico.value} fs-18 ${formData.icon === ico.value ? 'text-primary' : 'text-secondary'}`}></i>
-                                                                    </div>
-                                                                    <div className="min-width-0">
-                                                                        <div className="fw-semibold fs-13 text-dark">{ico.label}</div>
-                                                                        <div className="text-muted fs-11 text-truncate">{ico.value}</div>
-                                                                    </div>
-                                                                    {formData.icon === ico.value && <i className="ri-check-line text-primary ms-auto flex-shrink-0"></i>}
+                                                                    <i className={`${ico.value} fs-18 ${formData.icon === ico.value ? 'text-primary' : 'text-muted'}`} style={{ width: '20px' }}></i>
+                                                                    <span className={`fs-13 ${formData.icon === ico.value ? 'text-primary fw-medium' : 'text-dark'}`}>{ico.label}</span>
+                                                                    {formData.icon === ico.value && <i className="ri-check-line ms-auto text-primary"></i>}
                                                                 </button>
                                                             ))
                                                         ) : (
-                                                            <div className="text-center py-4 text-muted fs-13">
-                                                                <i className="ri-search-line d-block fs-22 mb-1"></i>
-                                                                No icons found for "{iconSearch}"
-                                                            </div>
+                                                            <div className="text-center py-3 text-muted fs-12">No icons found</div>
                                                         )}
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
-                                        {validationErrors.icon && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.icon}</div>}
+                                        {validationErrors.icon && <div className="invalid-feedback d-block">{validationErrors.icon}</div>}
                                     </div>
 
                                     {isLinkRequired && (
-                                        <div className="col-12 col-md-6">
-                                            <label className="form-label fs-13 fw-semibold text-dark tracking-wider"> URL <span className="text-danger">*</span></label>
-                                            <div className="form-icon">
-                                                <input
-                                                    type="url"
-                                                    className={`form-control form-control-icon border-light bg-light py-2 shadow-none ${validationErrors.link ? 'is-invalid border-danger' : ''}`}
-                                                    name="link"
-                                                    value={formData.link}
-                                                    onChange={handleInputChange}
-                                                    placeholder="https://example.com/..."
-                                                />
-                                                <i className="ri-link text-muted"></i>
-                                            </div>
-                                            {validationErrors.link && (
-                                                <div className="invalid-feedback d-block fw-medium mt-1">
-                                                    {Array.isArray(validationErrors.link) ? validationErrors.link[0] : validationErrors.link}
-                                                </div>
-                                            )}
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Link URL <span className="text-danger">*</span></label>
+                                            <input
+                                                type="url"
+                                                className={`form-control shadow-none custom-height ${validationErrors.link ? 'is-invalid border-danger' : ''}`}
+                                                name="link"
+                                                value={formData.link}
+                                                onChange={handleInputChange}
+                                                placeholder="https://..."
+                                            />
+                                            {validationErrors.link && <div className="invalid-feedback d-block mt-1">{validationErrors.link}</div>}
                                         </div>
                                     )}
 
                                     {isFileRequired && (
                                         <div className="col-12">
-                                            <label className="form-label fs-13 fw-semibold text-dark tracking-wider">File Upload {(!isEdit) && <span className="text-danger">*</span>}</label>
-                                            <div className="input-group">
-                                                <span className={`input-group-text bg-light ${validationErrors.file ? 'border-danger text-danger' : 'border-light text-primary'}`} id="fileUploadAddon">
-                                                    <i className="ri-folder-open-line fs-16"></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    className={`form-control bg-light cursor-pointer shadow-none py-2 ${validationErrors.file ? 'is-invalid border-danger' : 'border-light'}`}
-                                                    readOnly
-                                                    placeholder="Click to browse file manager..."
-                                                    value={typeof formData.file === 'string' ? formData.file : (fileOptions ? fileOptions.name : '')}
-                                                    onClick={() => setShowFileManager(true)}
-                                                />
-                                                <button className="btn btn-primary fw-medium px-4" type="button" onClick={() => setShowFileManager(true)}>
-                                                    Browse
+                                            <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Resource Document {(!isEdit) && <span className="text-danger">*</span>}</label>
+
+                                            <div
+                                                className={`file-dropzone d-flex align-items-center p-2 px-3 border rounded-2 cursor-pointer transition-all ${validationErrors.file ? 'border-danger' : 'border-light-subtle'}`}
+                                                onClick={() => setShowFileManager(true)}
+                                                style={{ minHeight: '52px' }}
+                                            >
+                                                <div className="avatar-xs bg-primary-subtle bg-opacity-25 rounded d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px' }}>
+                                                    <i className="ri-file-upload-line text-primary fs-18"></i>
+                                                </div>
+                                                <div className="flex-grow-1 overflow-hidden">
+                                                    <p className="mb-0  fs-13 text-dark text-truncate">
+                                                        {typeof formData.file === 'string' && formData.file ? formData.file.split('/').pop() : (formData.resource_type === 'download_asset' ? 'Choose Asset (PDF/DOCS)...' : 'Choose Document (PDF)...')}
+                                                    </p>
+                                                    <p className="mb-0 text-muted fs-11">
+                                                        {formData.resource_type === 'download_asset' ? 'Click to select asset files' : 'Click to select PDF document'}
+                                                    </p>
+                                                </div>
+                                                <button type="button" className="btn btn-sm btn-link text-primary text-decoration-none fw-medium fs-12 p-0 ms-2">
+                                                    {formData.file ? 'Change' : 'Browse'}
                                                 </button>
                                             </div>
-                                            {validationErrors.file && <div className="invalid-feedback d-block fw-medium mt-1">{validationErrors.file}</div>}
+
+                                            {validationErrors.file && <div className="invalid-feedback d-block mt-1">{validationErrors.file}</div>}
+
                                             {isEdit && resource?.file_url && (
-                                                <div className="mt-3 p-2 bg-light rounded-2 border border-dashed border-light d-flex align-items-center justify-content-between">
-                                                    <div className="d-flex align-items-center">
-                                                        <div className="avatar-sm bg-white rounded shadow-sm d-flex align-items-center justify-content-center me-3 border border-light">
-                                                            <i className="ri-file-pdf-fill text-danger fs-22"></i>
-                                                        </div>
-                                                        <div>
-                                                            <p className="mb-0 fs-12 fw-bold text-dark lh-1">Existing File</p>
-                                                            <span className="text-muted fs-11 text-truncate d-inline-block" style={{ maxWidth: '150px' }}>
-                                                                {typeof formData.file === 'string' ? formData.file.split('/').pop() : 'Resource Document'}
-                                                            </span>
+                                                <div className="mt-2 p-2 px-3 bg-light rounded d-flex align-items-center justify-content-between border border-light-subtle">
+                                                    <div className="d-flex align-items-center gap-2 overflow-hidden">
+                                                        <i className="ri-file-pdf-fill text-danger fs-18"></i>
+                                                        <div className="text-truncate">
+                                                            <p className="mb-0 fs-12 fw-bold text-dark text-truncate">{resource.file_url.split('/').pop()}</p>
                                                         </div>
                                                     </div>
-                                                    <a href={resource.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-soft-primary px-3 fs-11 d-flex align-items-center">
-                                                        <i className="ri-external-link-line me-1"></i> View
+                                                    <a href={resource.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-soft-primary px-3 rounded-pill ms-2 flex-shrink-0" style={{ fontSize: '11px' }}>
+                                                        Preview
                                                     </a>
                                                 </div>
                                             )}
@@ -470,16 +415,17 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                     )}
                                 </div>
                             </div>
-                            <div className="modal-footer p-3 bg-light border-top border-light d-flex justify-content-end gap-2">
-                                <button type="button" className="btn btn-soft-danger fw-medium px-4 lift" onClick={onHide}>Cancel</button>
-                                <button type="submit" className="btn btn-primary fw-medium px-4 shadow-sm d-inline-flex align-items-center gap-2 lift" disabled={createMutation.isPending || updateMutation.isPending}>
+                            <div className="modal-footer p-3 bg-light border-top d-flex justify-content-end gap-2">
+                                <button type="button" className="btn btn-soft-secondary px-4" onClick={onHide}>Cancel</button>
+                                <button type="submit" className="btn btn-primary px-4 shadow-sm d-inline-flex align-items-center gap-2" disabled={createMutation.isPending || updateMutation.isPending}>
                                     {(createMutation.isPending || updateMutation.isPending) ? (
                                         <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Saving</>
                                     ) : (
-                                        isEdit ? <><i className="ri-save-line fs-16"></i> Update </> : <><i className="ri-check-line fs-16"></i> Save</>
+                                        isEdit ? <><i className="ri-save-fill fs-16"></i> Save Changes</> : <><i className="ri-check-line fs-16"></i> Create Resource</>
                                     )}
                                 </button>
                             </div>
+
                         </form>
                     </div>
                 </div>
@@ -502,6 +448,7 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                     }
                 }}
                 section="Resources"
+                getAll={true}
             />
         </>
     );

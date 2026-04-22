@@ -13,6 +13,8 @@ interface FileManagerModalProps {
   onSelectFiles?: (files: FileSystemItem[]) => void
   entityType?: string
   entityId?: number | string
+  getAll?: boolean
+  onChanged?: () => void
 }
 
 export const FileManagerModal: React.FC<FileManagerModalProps> = ({
@@ -24,12 +26,14 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   onSelectFiles,
   onChanged,
   entityType,
-  entityId
+  entityId,
+  getAll = false
 }) => {
   const context = useMemo(() => ({
     entity_type: entityType,
-    entity_id: entityId
-  }), [entityType, entityId])
+    entity_id: entityId,
+    get_all: getAll
+  }), [entityType, entityId, getAll])
 
   const {
     files,
@@ -52,6 +56,14 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
     }
     toggle()
   }
+
+  const rootLabel = useMemo(() => {
+    if (!entityType) return 'Home';
+    // Convert kebab-case or underscore_case to Title Case
+    return entityType
+      .replace(/[-_]/g, ' ')
+      .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  }, [entityType]);
 
   return (
     <Modal isOpen={isOpen} toggle={toggle} size="xl" centered>
@@ -76,8 +88,9 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
           onSelectFiles={handleSelectFiles}
           onCancelSelection={toggle}
           onChanged={onChanged}
+          rootLabel={rootLabel}
         />
       </ModalBody>
     </Modal>
-  )
+  );
 }
