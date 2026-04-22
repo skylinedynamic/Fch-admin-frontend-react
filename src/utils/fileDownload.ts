@@ -83,7 +83,6 @@ export const downloadFromUrl = (fileUrl: string, fileName: string): void => {
     const link = document.createElement('a');
     link.href = fileUrl;
     link.download = fileName;
-    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
 

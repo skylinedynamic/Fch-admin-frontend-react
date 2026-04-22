@@ -32,6 +32,7 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
   if (context?.entity_type) formData.append('entity_type', context.entity_type)
   if (context?.entity_id) formData.append('entity_id', String(context.entity_id))
   if (context?.get_all) formData.append('get_all', String(context.get_all))
+  if (context?.get_all !== undefined) formData.append('get_all', String(context.get_all))
 
   const { data } = await apiClient.post<UploadFileResponse>(`${BASE_URL}/upload`, formData, {
     headers: {

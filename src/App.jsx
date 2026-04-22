@@ -44,6 +44,8 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
+import Resource from './pages/resources/Resource.tsx';
+import ManageResources from './pages/resources/ManageResources.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests';
 
 
@@ -230,6 +232,12 @@ export default function App() {
               <Route element={<PermissionRoute permission="view subscriptions" />}>
                 <Route path="subscriptions" element={<Subscriptions />} />
               </Route>
+            </Route>
+
+            {/* Resources Modules */}
+            <Route path="resources" element={<Resource />} />
+            <Route element={<PermissionRoute permission="view settings" />}>
+              <Route path="manage-resources" element={<ManageResources />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
