@@ -12,6 +12,8 @@ import { toast } from 'react-toastify';
 import { handleFileDownload } from '../../utils/fileDownload';
 import { downloadResource } from '../../modules/resource/services';
 import ResourceLoader from '../../components/Loader/ResourceLoader';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { useAuthStore } from '../../store/auth/authStore';
 
 const getYoutubeThumbnail = (url: string) => {
   if (!url) return null;
@@ -38,7 +40,16 @@ const StatusBadge: React.FC<{ status?: boolean | number }> = ({ status }) => (
   </span>
 );
 
+const AudienceTags: React.FC<{ item: ResourceItem }> = ({ item }) => (
+  <div className="d-flex gap-1">
+    {item.is_partner && <span className="badge bg-primary-subtle text-primary fs-9 px-1.5 py-0.5 rounded-1">Partner</span>}
+    {item.is_borrower && <span className="badge bg-success-subtle text-success fs-9 px-1.5 py-0.5 rounded-1">Borrower</span>}
+  </div>
+);
+
 const Resource: React.FC = () => {
+  const { hasPermission } = usePermissions();
+  const user = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Visibility states - Removed per request for scrolling instead of view more
@@ -143,33 +154,43 @@ const Resource: React.FC = () => {
     }
   };
 
-  const ActionMenu = ({ item, type, iconClass = "ri-more-2-fill" }: { item: ResourceItem, type: string, iconClass?: string }) => (
-    <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-      <UncontrolledDropdown onClick={e => e.stopPropagation()}>
-        <DropdownToggle
-          tag="button"
-          className="btn btn-sm btn-icon btn-light bg-transparent border-0 shado w-none p-0 m-0 text-dark transition-all hover-scale"
-          onClick={e => e.stopPropagation()}
-        >
-          <i className={`${iconClass} fs-20 text-muted opacity-100`}></i>
-        </DropdownToggle>
-        <DropdownMenu className="shadow-lg border-0 bg-white py-2" container="body" style={{ minWidth: '160px', zIndex: 10000, borderRadius: '8px' }}>
-          <DropdownItem className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
-            <i className="ri-pencil-line me-2 text-primary fs-16"></i> Edit
-          </DropdownItem>
-          {item.file_url && (
-            <DropdownItem className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
-              <i className="ri-download-2-line me-2 text-success fs-16"></i> Download
-            </DropdownItem>
-          )}
-          <div className="dropdown-divider border-top border-light my-1 mx-2"></div>
-          <DropdownItem className="fw-medium fs-13 text-danger py-2 d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
-            <i className="ri-delete-bin-line me-2 text-danger fs-16"></i> Delete
-          </DropdownItem>
-        </DropdownMenu>
-      </UncontrolledDropdown>
-    </div>
-  );
+  const ActionMenu = ({ item, type, iconClass = "ri-more-2-fill" }: { item: ResourceItem, type: string, iconClass?: string }) => {
+    if (!user?.is_host) return null;
+
+    return (
+      <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <UncontrolledDropdown onClick={e => e.stopPropagation()}>
+          <DropdownToggle
+            tag="button"
+            className="btn btn-sm btn-icon btn-light bg-transparent border-0 shado w-none p-0 m-0 text-dark transition-all hover-scale"
+            onClick={e => e.stopPropagation()}
+          >
+            <i className={`${iconClass} fs-20 text-muted opacity-100`}></i>
+          </DropdownToggle>
+          <DropdownMenu className="shadow-lg border-0 bg-white py-2" container="body" style={{ minWidth: '160px', zIndex: 10000, borderRadius: '8px' }}>
+            {hasPermission('update resources') && (
+              <DropdownItem className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
+                <i className="ri-pencil-line me-2 text-primary fs-16"></i> Edit
+              </DropdownItem>
+            )}
+            {item.file_url && (
+              <DropdownItem className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleItemClick(item, true); }}>
+                <i className="ri-download-2-line me-2 text-success fs-16"></i> Download
+              </DropdownItem>
+            )}
+            {hasPermission('delete resources') && (
+              <>
+                <div className="dropdown-divider border-top border-light my-1 mx-2"></div>
+                <DropdownItem className="fw-medium fs-13 text-danger py-2 d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
+                  <i className="ri-delete-bin-line me-2 text-danger fs-16"></i> Delete
+                </DropdownItem>
+              </>
+            )}
+          </DropdownMenu>
+        </UncontrolledDropdown>
+      </div>
+    );
+  };
 
   // Data Logic
   const getColorByIcon = (icon: string) => {
@@ -229,6 +250,16 @@ const Resource: React.FC = () => {
 
   const visibleVideos = trainingVideos;
 
+  if (!hasPermission('view resources')) {
+    return (
+      <div className="page-content">
+        <div className="container-fluid">
+          <div className="alert alert-danger">You do not have permission to view this page.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-content resource-page-content">
       <div className="container-fluid">
@@ -287,9 +318,11 @@ const Resource: React.FC = () => {
                     <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-semibold text-dark mb-0 fs-15">Legal & Registration</h6>
-                        <button className="btn btn-sm btn-soft-primary px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('legal_registration')}>
-                          <i className="ri-add-line me-1"></i> Add New
-                        </button>
+                        {hasPermission('create resources') && (
+                          <button className="btn btn-sm btn-soft-primary px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('legal_registration')}>
+                            <i className="ri-add-line me-1"></i> Add New
+                          </button>
+                        )}
                       </div>
                       <div className="card-body p-3 pt-2">
                         <div className={`d-flex flex-column gap-3 scrollable-container`}>
@@ -302,11 +335,16 @@ const Resource: React.FC = () => {
                               <div className="flex-grow-1 overflow-hidden pe-2 d-flex align-items-center justify-content-between">
                                 <div className="overflow-hidden">
                                   <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
-                                  <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
+                                  <div className="d-flex align-items-center gap-2">
+                                    <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
+                                    {user?.is_host == 1 && <AudienceTags item={item} />}
+                                  </div>
                                 </div>
-                                <div className="ms-2 flex-shrink-0">
-                                  <StatusBadge status={item.status} />
-                                </div>
+                                {user?.is_host == 1 && (
+                                  <div className="ms-2 flex-shrink-0">
+                                    <StatusBadge status={item.status} />
+                                  </div>
+                                )}
                               </div>
                               <ActionMenu item={item} type="legal_registration" iconClass="ri-more-2-fill" />
                             </div>
@@ -320,9 +358,11 @@ const Resource: React.FC = () => {
                     <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-semibold text-dark mb-0 fs-15">Business Services</h6>
-                        <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('business_services')}>
-                          <i className="ri-add-line me-1"></i> Add New
-                        </button>
+                        {hasPermission('create resources') && (
+                          <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('business_services')}>
+                            <i className="ri-add-line me-1"></i> Add New
+                          </button>
+                        )}
                       </div>
                       <div className="card-body p-3 pt-2">
                         <div className={`d-flex flex-column gap-3 scrollable-container`}>
@@ -335,11 +375,16 @@ const Resource: React.FC = () => {
                               <div className="flex-grow-1 overflow-hidden pe-2 d-flex align-items-center justify-content-between">
                                 <div className="overflow-hidden">
                                   <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
-                                  <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
+                                  <div className="d-flex align-items-center gap-2">
+                                    <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
+                                    {user?.is_host == 1 && <AudienceTags item={item} />}
+                                  </div>
                                 </div>
-                                <div className="ms-2 flex-shrink-0">
-                                  <StatusBadge status={item.status} />
-                                </div>
+                                {user?.is_host == 1 && (
+                                  <div className="ms-2 flex-shrink-0">
+                                    <StatusBadge status={item.status} />
+                                  </div>
+                                )}
                               </div>
                               <ActionMenu item={item} type="business_services" iconClass="ri-more-2-fill" />
                             </div>
@@ -371,12 +416,14 @@ const Resource: React.FC = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                               />
                             </div>
-                            <button
-                              className="btn btn-soft-success px-3 py-0 fs-12 fw-semibold border-0 rounded-pill text-nowrap d-flex align-items-center justify-content-center shadow-sm h-40px"
-                              onClick={() => handleAddNew('education_help')}
-                            >
-                              <i className="ri-add-line me-1 fs-14"></i> Add New
-                            </button>
+                            {hasPermission('create resources') && (
+                              <button
+                                className="btn btn-soft-success px-3 py-0 fs-12 fw-semibold border-0 rounded-pill text-nowrap d-flex align-items-center justify-content-center shadow-sm h-40px"
+                                onClick={() => handleAddNew('education_help')}
+                              >
+                                <i className="ri-add-line me-1 fs-14"></i> Add New
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -386,9 +433,11 @@ const Resource: React.FC = () => {
                             {filteredEdu.map((edu, i) => (
                               <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
                                 <div className="p-3 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleItemClick(edu.original)}>
-                                  <div className="position-absolute top-0 start-0 p-2">
-                                    <StatusBadge status={edu.original.status} />
-                                  </div>
+                                  {user?.is_host == 1 && (
+                                    <div className="position-absolute top-0 start-0 p-2">
+                                      <StatusBadge status={edu.original.status} />
+                                    </div>
+                                  )}
                                   <div className="position-absolute top-0 end-0 p-2">
                                     <ActionMenu item={edu.original || edu} type="education_help" />
                                   </div>
@@ -396,7 +445,12 @@ const Resource: React.FC = () => {
                                     <i className={`${edu.icon} text-${edu.color} fs-20`}></i>
                                   </div>
                                   <h6 className="mb-2 fw-semibold fs-14 text-dark text-truncate px-2">{edu.title}</h6>
-                                  <p className="text-muted fs-11 mb-0 fw-medium opacity-75 text-truncate px-2">{edu.sub}</p>
+                                  <p className="text-muted fs-11 mb-2 fw-medium opacity-75 text-truncate px-2">{edu.sub}</p>
+                                  {user?.is_host == 1 && (
+                                    <div className="d-flex justify-content-center">
+                                      <AudienceTags item={edu.original} />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -415,9 +469,11 @@ const Resource: React.FC = () => {
                   <div className="card shadow-sm border-0 rounded-2 bg-white mb-0">
                     <div className="card-header border-bottom border-light p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
                       <h6 className="fw-semibold text-dark mb-0 fs-14 text-uppercase tracking-wider">Download Assets</h6>
-                      <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('download_assets')}>
-                        <i className="ri-add-line me-1"></i> Add New
-                      </button>
+                      {hasPermission('create resources') && (
+                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('download_assets')}>
+                          <i className="ri-add-line me-1"></i> Add New
+                        </button>
+                      )}
                     </div>
                     <div className="card-body p-0">
                       <div className={`list-group list-group-flush scrollable-container-assets`}>
@@ -426,10 +482,15 @@ const Resource: React.FC = () => {
                             <div className="d-flex align-items-center flex-grow-1 pe-2">
                               <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
                               <div className="flex-grow-1 overflow-hidden d-flex align-items-center justify-content-between">
-                                <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
-                                <div className="ms-2">
-                                  <StatusBadge status={doc.original.status} />
+                                <div>
+                                  <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
+                                  {user?.is_host == 1 && <AudienceTags item={doc.original} />}
                                 </div>
+                                {user?.is_host == 1 && (
+                                  <div className="ms-2">
+                                    <StatusBadge status={doc.original.status} />
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="d-flex align-items-center gap-2">
@@ -453,9 +514,11 @@ const Resource: React.FC = () => {
                     <div className="card-header border-bottom border-light p-3 d-flex align-items-center justify-content-between gap-2">
                       <h6 className="fw-semibold text-dark mb-0 fs-15 text-nowrap"><i className="ri-youtube-fill text-danger me-2"></i> Training Academy</h6>
                       <div className="d-flex align-items-center gap-2">
-                        <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0 text-nowrap" onClick={() => handleAddNew('training_academy')}>
-                          <i className="ri-add-line me-1"></i> Add New
-                        </button>
+                        {hasPermission('create resources') && (
+                          <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0 text-nowrap" onClick={() => handleAddNew('training_academy')}>
+                            <i className="ri-add-line me-1"></i> Add New
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="card-body p-3 pt-3">
@@ -481,12 +544,15 @@ const Resource: React.FC = () => {
                                 <ActionMenu item={video.original} type="training_academy" />
                               </div>
                               {video.subtitle && (
-                                <p className="text-muted fs-11 mb-1 text-truncate">
-                                  {video.subtitle.length > 40 ? `${video.subtitle.substring(0, 40)}...` : video.subtitle}
-                                </p>
+                                <div className="d-flex align-items-center gap-2 overflow-hidden mb-1">
+                                  <p className="text-muted fs-11 mb-0 text-truncate">
+                                    {video.subtitle.length > 30 ? `${video.subtitle.substring(0, 30)}...` : video.subtitle}
+                                  </p>
+                                  {user?.is_host == 1 && <AudienceTags item={video.original} />}
+                                </div>
                               )}
                               <div className="d-flex align-items-center gap-2 opacity-75">
-                                <StatusBadge status={video.original.status} />
+                                {user?.is_host == 1 && <StatusBadge status={video.original.status} />}
                                 <span className="fs-10 text-muted">• {video.createdAt}</span>
                               </div>
                             </div>

@@ -2,8 +2,9 @@ import { apiClient } from '../../lib/http/apiClient';
 import type { ResourceItem, GroupedResources, ResourceFormData } from './types';
 
 // Fetch all resources grouped by type
+// Uses /common/resources so partners can also access this endpoint
 export const fetchGroupedResources = async (): Promise<{ data: GroupedResources }> => {
-    const response = await apiClient.get('/admin/resources');
+    const response = await apiClient.get('/common/resources');
     return response.data; // Assumes ApiResponse format
 };
 
@@ -18,7 +19,7 @@ export const createResource = async (data: ResourceFormData): Promise<{ data: Re
     const formData = new FormData();
     Object.keys(data).forEach(key => {
         const val = data[key as keyof ResourceFormData];
-        if (key === 'status') {
+        if (key === 'status' || key === 'is_partner' || key === 'is_borrower') {
             formData.append(key, val ? '1' : '0');
         } else if (val !== undefined && val !== null) {
             formData.append(key, val as File | string);
@@ -36,7 +37,7 @@ export const updateResource = async (id: number | string, data: ResourceFormData
     const formData = new FormData();
     Object.keys(data).forEach(key => {
         const val = data[key as keyof ResourceFormData];
-        if (key === 'status') {
+        if (key === 'status' || key === 'is_partner' || key === 'is_borrower') {
             formData.append(key, val ? '1' : '0');
         } else if (val !== undefined && val !== null) {
             formData.append(key, val as File | string);
@@ -60,8 +61,9 @@ export const deleteResource = async (id: number | string): Promise<void> => {
 };
 
 // Download a resource accurately
+// Uses /common/resources/download so partners can also download resources
 export const downloadResource = async (id: number | string): Promise<any> => {
-    return await apiClient.get(`/admin/resources/download/${id}`, {
+    return await apiClient.get(`/common/resources/download/${id}`, {
         responseType: 'blob'
     });
 };

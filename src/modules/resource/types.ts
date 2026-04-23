@@ -8,6 +8,8 @@ export interface ResourceItem {
     file_url?: string | null;
     link?: string | null;
     icon?: string | null;
+    is_partner: boolean;
+    is_borrower: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -18,6 +20,8 @@ export interface ResourceFormData {
     subtitle?: string;
     status: boolean;
     icon?: string;
+    is_partner?: boolean;
+    is_borrower?: boolean;
     link?: string;
     file?: string | File | null;
 }

@@ -225,10 +225,12 @@ export default function App() {
             </Route>
 
             {/* Resources Modules */}
-            <Route path="resources" element={<Resource />} />
-            <Route element={<PermissionRoute permission="view settings" />}>
+            <Route element={<PermissionRoute permission="view resources" />}>
+              <Route path="resources" element={<Resource />} />
               <Route path="manage-resources" element={<ManageResources />} />
             </Route>
+
+
 
             {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />

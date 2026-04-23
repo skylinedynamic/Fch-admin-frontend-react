@@ -30,6 +30,8 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
         title: '',
         subtitle: '',
         icon: '',
+        is_partner: false,
+        is_borrower: false,
         link: '',
         status: true,
     });
@@ -131,6 +133,8 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                     title: resource.title,
                     subtitle: resource.subtitle || '',
                     icon: resource.icon || '',
+                    is_partner: resource.is_partner,
+                    is_borrower: resource.is_borrower,
                     link: resource.link || '',
                     status: resource.status,
                     file: (resource as any).file || '',
@@ -142,6 +146,8 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                     title: '',
                     subtitle: '',
                     icon: '',
+                    is_partner: false,
+                    is_borrower: false,
                     link: '',
                     status: true,
                     file: '',
@@ -354,6 +360,48 @@ export default function ResourceModal({ show, onHide, resource, type }: Resource
                                             )}
                                         </div>
                                         {validationErrors.icon && <div className="invalid-feedback d-block">{validationErrors.icon}</div>}
+                                    </div>
+
+                                    <div className="col-12">
+                                        <label className="form-label fw-bold text-muted fs-12 uppercase-label mb-2">Available For <span className="text-muted fw-normal">(Select Audience)</span></label>
+                                        <div className="row g-3">
+                                            <div className="col-6">
+                                                <div 
+                                                    className={`selection-card p-3 border rounded-3 cursor-pointer transition-all d-flex align-items-center gap-3 ${formData.is_partner ? 'border-primary bg-primary-subtle bg-opacity-10 active-selection' : 'border-light-subtle bg-white'}`}
+                                                    onClick={() => handleInputChange({ target: { name: 'is_partner', checked: !formData.is_partner, type: 'checkbox' } } as any)}
+                                                >
+                                                    <div className={`avatar-xs rounded d-flex align-items-center justify-content-center ${formData.is_partner ? 'bg-primary text-white' : 'bg-light text-muted'}`}>
+                                                        <i className="ri-user-settings-line fs-16"></i>
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <h6 className={`mb-0 fs-13 fw-bold ${formData.is_partner ? 'text-primary' : 'text-dark'}`}>Partner</h6>
+                                                        <p className="mb-0 text-muted fs-11">Visible to Partner Portal</p>
+                                                    </div>
+                                                    <div className={`selection-indicator ms-auto ${formData.is_partner ? 'text-primary' : 'text-light'}`}>
+                                                        <i className={formData.is_partner ? "ri-checkbox-circle-fill fs-20" : "ri-checkbox-blank-circle-line fs-20"}></i>
+                                                    </div>
+                                                </div>
+                                                {validationErrors.is_partner && <div className="invalid-feedback d-block mt-1 fs-11">{validationErrors.is_partner}</div>}
+                                            </div>
+                                            <div className="col-6">
+                                                <div 
+                                                    className={`selection-card p-3 border rounded-3 cursor-pointer transition-all d-flex align-items-center gap-3 ${formData.is_borrower ? 'border-success bg-success-subtle bg-opacity-10 active-selection' : 'border-light-subtle bg-white'}`}
+                                                    onClick={() => handleInputChange({ target: { name: 'is_borrower', checked: !formData.is_borrower, type: 'checkbox' } } as any)}
+                                                >
+                                                    <div className={`avatar-xs rounded d-flex align-items-center justify-content-center ${formData.is_borrower ? 'bg-success text-white' : 'bg-light text-muted'}`}>
+                                                        <i className="ri-user-received-2-line fs-16"></i>
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <h6 className={`mb-0 fs-13 fw-bold ${formData.is_borrower ? 'text-success' : 'text-dark'}`}>Borrower</h6>
+                                                        <p className="mb-0 text-muted fs-11">Visible to Borrower App</p>
+                                                    </div>
+                                                    <div className={`selection-indicator ms-auto ${formData.is_borrower ? 'text-success' : 'text-light'}`}>
+                                                        <i className={formData.is_borrower ? "ri-checkbox-circle-fill fs-20" : "ri-checkbox-blank-circle-line fs-20"}></i>
+                                                    </div>
+                                                </div>
+                                                {validationErrors.is_borrower && <div className="invalid-feedback d-block mt-1 fs-11">{validationErrors.is_borrower}</div>}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {isLinkRequired && (

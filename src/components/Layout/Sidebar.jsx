@@ -129,7 +129,7 @@ const menuItems = [
     to: '/resources',
     icon: 'ri-folder-fill',
     label: 'Resources',
-    permission: '',
+    permission: 'view resources',
   },
   {
     to: "/employees",
