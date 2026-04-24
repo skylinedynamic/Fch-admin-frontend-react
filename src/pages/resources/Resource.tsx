@@ -42,8 +42,24 @@ const StatusBadge: React.FC<{ status?: boolean | number }> = ({ status }) => (
 
 const AudienceTags: React.FC<{ item: ResourceItem }> = ({ item }) => (
   <div className="d-flex gap-1">
-    {item.is_partner && <span className="badge bg-primary-subtle text-primary fs-9 px-1.5 py-0.5 rounded-1">Partner</span>}
-    {item.is_borrower && <span className="badge bg-success-subtle text-success fs-9 px-1.5 py-0.5 rounded-1">Borrower</span>}
+    {item.is_partner && (
+      <span 
+        className="badge bg-primary-subtle text-primary fs-9 p-0 rounded-circle d-flex align-items-center justify-content-center" 
+        style={{ width: '16px', height: '16px' }} 
+        title="Partner"
+      >
+        P
+      </span>
+    )}
+    {item.is_borrower && (
+      <span 
+        className="badge bg-success-subtle text-success fs-9 p-0 rounded-circle d-flex align-items-center justify-content-center" 
+        style={{ width: '16px', height: '16px' }} 
+        title="Borrower"
+      >
+        B
+      </span>
+    )}
   </div>
 );
 
@@ -335,13 +351,11 @@ const Resource: React.FC = () => {
                               <div className="flex-grow-1 overflow-hidden pe-2 d-flex align-items-center justify-content-between">
                                 <div className="overflow-hidden">
                                   <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
-                                  <div className="d-flex align-items-center gap-2">
-                                    <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
-                                    {user?.is_host == 1 && <AudienceTags item={item} />}
-                                  </div>
+                                  <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
                                 </div>
                                 {user?.is_host == 1 && (
-                                  <div className="ms-2 flex-shrink-0">
+                                  <div className="ms-2 flex-shrink-0 d-flex align-items-center gap-2">
+                                    <AudienceTags item={item} />
                                     <StatusBadge status={item.status} />
                                   </div>
                                 )}
@@ -375,13 +389,11 @@ const Resource: React.FC = () => {
                               <div className="flex-grow-1 overflow-hidden pe-2 d-flex align-items-center justify-content-between">
                                 <div className="overflow-hidden">
                                   <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
-                                  <div className="d-flex align-items-center gap-2">
-                                    <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
-                                    {user?.is_host == 1 && <AudienceTags item={item} />}
-                                  </div>
+                                  <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
                                 </div>
                                 {user?.is_host == 1 && (
-                                  <div className="ms-2 flex-shrink-0">
+                                  <div className="ms-2 flex-shrink-0 d-flex align-items-center gap-2">
+                                    <AudienceTags item={item} />
                                     <StatusBadge status={item.status} />
                                   </div>
                                 )}
@@ -432,9 +444,10 @@ const Resource: React.FC = () => {
                           <div className="row g-3 mb-2">
                             {filteredEdu.map((edu, i) => (
                               <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>
-                                <div className="p-3 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleItemClick(edu.original)}>
+                                 <div className="p-3 rounded-3 text-center edu-box-premium transition-all cursor-pointer h-100 border border-light-subtle position-relative bg-white shadow-sm" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => handleItemClick(edu.original)}>
                                   {user?.is_host == 1 && (
-                                    <div className="position-absolute top-0 start-0 p-2">
+                                    <div className="position-absolute top-0 start-0 p-2 d-flex align-items-center gap-1">
+                                      <AudienceTags item={edu.original} />
                                       <StatusBadge status={edu.original.status} />
                                     </div>
                                   )}
@@ -446,11 +459,6 @@ const Resource: React.FC = () => {
                                   </div>
                                   <h6 className="mb-2 fw-semibold fs-14 text-dark text-truncate px-2">{edu.title}</h6>
                                   <p className="text-muted fs-11 mb-2 fw-medium opacity-75 text-truncate px-2">{edu.sub}</p>
-                                  {user?.is_host == 1 && (
-                                    <div className="d-flex justify-content-center">
-                                      <AudienceTags item={edu.original} />
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             ))}
@@ -482,12 +490,10 @@ const Resource: React.FC = () => {
                             <div className="d-flex align-items-center flex-grow-1 pe-2">
                               <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
                               <div className="flex-grow-1 overflow-hidden d-flex align-items-center justify-content-between">
-                                <div>
-                                  <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
-                                  {user?.is_host == 1 && <AudienceTags item={doc.original} />}
-                                </div>
+                                <h6 className="mb-0 fs-13 fw-semibold text-dark text-truncate">{doc.title}</h6>
                                 {user?.is_host == 1 && (
-                                  <div className="ms-2">
+                                  <div className="ms-2 d-flex align-items-center gap-2">
+                                    <AudienceTags item={doc.original} />
                                     <StatusBadge status={doc.original.status} />
                                   </div>
                                 )}
@@ -536,26 +542,28 @@ const Resource: React.FC = () => {
                               <div className="bg-overlay-dark position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-25"></div>
                               <i className="ri-play-circle-fill text-white position-absolute top-50 start-50 translate-middle z-1 mb-0 transition-all play-icon play-icon-size"></i>
                             </div>
-                            <div className="flex-grow-1 pe-3 overflow-hidden">
-                              <div className="d-flex justify-content-between align-items-start">
-                                <h6 className="mb-1 fs-13 fw-semibold text-dark lh-base transition-all video-title text-truncate">
-                                  {video.title.length > 30 ? `${video.title.substring(0, 30)}...` : video.title}
-                                </h6>
-                                <ActionMenu item={video.original} type="training_academy" />
-                              </div>
-                              {video.subtitle && (
-                                <div className="d-flex align-items-center gap-2 overflow-hidden mb-1">
-                                  <p className="text-muted fs-11 mb-0 text-truncate">
+                              <div className="flex-grow-1 pe-3 overflow-hidden">
+                                <div className="d-flex justify-content-between align-items-start mb-1">
+                                  <h6 className="mb-0 fs-13 fw-semibold text-dark lh-base transition-all video-title text-truncate">
+                                    {video.title.length > 30 ? `${video.title.substring(0, 30)}...` : video.title}
+                                  </h6>
+                                  <ActionMenu item={video.original} type="training_academy" />
+                                </div>
+                                {video.subtitle && (
+                                  <p className="text-muted fs-11 mb-1 text-truncate opacity-75">
                                     {video.subtitle.length > 30 ? `${video.subtitle.substring(0, 30)}...` : video.subtitle}
                                   </p>
-                                  {user?.is_host == 1 && <AudienceTags item={video.original} />}
+                                )}
+                                <div className="d-flex align-items-center gap-2 opacity-75">
+                                  {user?.is_host == 1 && (
+                                    <div className="d-flex align-items-center gap-1">
+                                      <AudienceTags item={video.original} />
+                                      <StatusBadge status={video.original.status} />
+                                    </div>
+                                  )}
+                                  <span className="fs-10 text-muted">• {video.createdAt}</span>
                                 </div>
-                              )}
-                              <div className="d-flex align-items-center gap-2 opacity-75">
-                                {user?.is_host == 1 && <StatusBadge status={video.original.status} />}
-                                <span className="fs-10 text-muted">• {video.createdAt}</span>
                               </div>
-                            </div>
                           </div>
                         ))}
                       </div>
