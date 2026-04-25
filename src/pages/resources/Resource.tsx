@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import {
   useGroupedResources,
   useDeleteResource
 } from '../../modules/resource/queries';
 import { ResourceItem } from '../../modules/resource/types';
-import ResourceModal from './ResourceModal';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
 import { handleFileDownload } from '../../utils/fileDownload';
@@ -65,6 +64,7 @@ const AudienceTags: React.FC<{ item: ResourceItem }> = ({ item }) => (
 
 const Resource: React.FC = () => {
   const { hasPermission } = usePermissions();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -76,9 +76,7 @@ const Resource: React.FC = () => {
 
   const resources = groupedData?.data || {};
 
-  // Modals state
-  const [showFormModal, setShowFormModal] = useState(false);
-  const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
+  // Navigation handlers
   const [activeType, setActiveType] = useState<string>('legal_registration');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -88,17 +86,150 @@ const Resource: React.FC = () => {
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [activePreviewResource, setActivePreviewResource] = useState<ResourceItem | null>(null);
 
+  // Fundability System State
+  const [activeFundabilityStep, setActiveFundabilityStep] = useState<any | null>(null);
+  const [showFundabilityModal, setShowFundabilityModal] = useState(false);
+
+  const getFundabilityData = (item: ResourceItem) => {
+    // 1. If item has dynamic fundability data from DB, use it
+    if ((item.overview && item.overview.length > 0) || 
+        (item.impact && item.impact.length > 0) || 
+        (item.providers && item.providers.length > 0)) {
+      return {
+        title: item.title,
+        icon: item.icon || 'ri-briefcase-line',
+        color: 'primary',
+        overview: item.overview || [],
+        impact: item.impact || [],
+        providers: item.providers || []
+      };
+    }
+
+    // 2. Fallback to hardcoded mapping based on title keywords
+    const title = item.title.toLowerCase();
+    
+    if (title.includes('address')) {
+      return {
+        title: 'Professional Business Address',
+        icon: 'ri-building-2-line',
+        color: 'primary',
+        overview: [
+          'A physical office address is required for lender credibility.',
+          'Must be a commercial location, not a residential address.',
+          'P.O. Boxes or UPS Store addresses are typically rejected.'
+        ],
+        impact: [
+          'Lenders cross-reference Secretary of State records with Google Maps.',
+          'Home addresses flag the business as "high-risk" or "hobbyist".',
+          'Inconsistent addresses lead to automatic identity verification failure.'
+        ],
+        providers: [
+          { name: 'Regus', desc: 'Global leader in professional workspace and virtual offices.', is_recommended: true, btn_label: 'Get Started', link: 'https://www.regus.com' },
+          { name: 'Opus Virtual Offices', desc: 'Specialized business address services with live receptionists.', is_recommended: false, btn_label: 'View Website', link: 'https://www.opusvirtualoffices.com' },
+          { name: 'Davinci', desc: 'Premium virtual office addresses in high-end locations.', is_recommended: false, btn_label: 'View Website', link: 'https://www.davincivirtual.com' }
+        ]
+      };
+    }
+    
+    if (title.includes('directory') || title.includes('411')) {
+      return {
+        title: '411 / Directory Listing',
+        icon: 'ri-global-line',
+        color: 'success',
+        overview: [
+          'National 411 directory listing verifies business existence.',
+          'Essential for building trust with major credit bureaus.',
+          'Helps automate the verification process for business credit.'
+        ],
+        impact: [
+          'Lenders check national directories to confirm business legitimacy.',
+          'Missing listings can result in lower credit scores.',
+          'Consistency across directories builds lender confidence.'
+        ],
+        providers: [
+          { name: 'ListYourself.net', desc: 'Free and paid directory listing services.', is_recommended: false, btn_label: 'Get Listed', link: 'https://listyourself.net' },
+          { name: 'Yext', desc: 'Automated directory management and consistency platform.', is_recommended: true, btn_label: 'Get Started', link: 'https://www.yext.com' },
+          { name: 'Neustar Localeze', desc: 'Premier business listing directory and identity data provider.', is_recommended: false, btn_label: 'View Website', link: 'https://www.neustarlocaleze.biz' }
+        ]
+      };
+    }
+
+    if (title.includes('phone')) {
+      return {
+        title: 'Business Phone Setup',
+        icon: 'ri-customer-service-2-line',
+        color: 'info',
+        overview: [
+          'Dedicated business phone line separate from personal mobile.',
+          'Toll-free or local business numbers are expected by lenders.',
+          'Must have a professional business voicemail greeting.'
+        ],
+        impact: [
+          'Personal cell phones look unprofessional and lead to declines.',
+          'Unverified phone numbers prevent successful fraud checks.',
+          'A professional line demonstrates business stability and scale.'
+        ],
+        providers: [
+          { name: 'RingCentral', desc: 'Comprehensive cloud-based business phone system.', is_recommended: true, btn_label: 'Get Started', link: 'https://www.ringcentral.com' },
+          { name: 'Grasshopper', desc: 'Easy-to-use business phone app for entrepreneurs.', is_recommended: false, btn_label: 'View Website', link: 'https://www.grasshopper.com' },
+          { name: 'Phone.com', desc: 'Scalable business phone services with modern features.', is_recommended: false, btn_label: 'View Website', link: 'https://www.phone.com' }
+        ]
+      };
+    }
+
+    if (title.includes('presence') || title.includes('email') || title.includes('communication')) {
+      return {
+        title: 'Communications & Presence',
+        icon: 'ri-mail-send-line',
+        color: 'warning',
+        overview: [
+          'Professional email address (e.g., info@yourbusiness.com).',
+          'Functional business website reflecting core services.',
+          'Professional online footprint across social platforms.'
+        ],
+        impact: [
+          'Generic email addresses (Gmail/Yahoo) look temporary.',
+          'Lenders search for a website to confirm business activity.',
+          'Lack of presence suggests a lack of operational maturity.'
+        ],
+        providers: [
+          { name: 'Google Workspace', desc: 'Professional email, storage, and collaboration tools.', is_recommended: true, btn_label: 'Get Started', link: 'https://workspace.google.com' },
+          { name: 'Microsoft 365', desc: 'Industry-standard business productivity and email suit.', is_recommended: false, btn_label: 'View Website', link: 'https://www.microsoft.com/365' },
+          { name: 'Wix / Squarespace', desc: 'Fast and professional business website builders.', is_recommended: false, btn_label: 'View Website', link: 'https://www.wix.com' }
+        ]
+      };
+    }
+
+    return {
+      title: item.title,
+      icon: item.icon || 'ri-briefcase-line',
+      color: 'primary',
+      overview: [item.subtitle || 'General business service requirement.'],
+      impact: ['Compliance with this step ensures business fundability and stability.'],
+      providers: []
+    };
+  };
+
+  const handleFundabilityClick = (step: any) => {
+    setActiveFundabilityStep(step);
+    setShowFundabilityModal(true);
+  };
+
   // Handlers
   const handleEdit = (resource: ResourceItem, type: string) => {
-    setEditingResource(resource);
-    setActiveType(type);
-    setShowFormModal(true);
+    if (type === 'business_services') {
+      navigate(`/business-services/edit/${resource.id}`);
+    } else {
+      navigate(`/resources/edit/${resource.id}`);
+    }
   };
 
   const handleAddNew = (type: string) => {
-    setEditingResource(null);
-    setActiveType(type);
-    setShowFormModal(true);
+    if (type === 'business_services') {
+      navigate('/business-services/create', { state: { type } });
+    } else {
+      navigate('/resources/create', { state: { type } });
+    }
   };
 
   const handleDeleteClick = (resource: ResourceItem) => {
@@ -184,7 +315,12 @@ const Resource: React.FC = () => {
             <i className={`${iconClass} fs-20 text-muted opacity-100`}></i>
           </DropdownToggle>
           <DropdownMenu className="shadow-lg border-0 bg-white py-2" container="body" style={{ minWidth: '160px', zIndex: 10000, borderRadius: '8px' }}>
-            {hasPermission('update resources') && (
+            {type === 'business_services' && hasPermission('update resources') && (
+              <DropdownItem tag={Link} to={`/business-services/edit/${item.id}`} className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => e.stopPropagation()}>
+                <i className="ri-pencil-line me-2 text-primary fs-16"></i> Edit
+              </DropdownItem>
+            )}
+            {type !== 'business_services' && hasPermission('update resources') && (
               <DropdownItem className="fw-medium fs-13 py-2 text-dark d-flex align-items-center" onClick={(e) => { e.stopPropagation(); handleEdit(item, type); }}>
                 <i className="ri-pencil-line me-2 text-primary fs-16"></i> Edit
               </DropdownItem>
@@ -304,23 +440,37 @@ const Resource: React.FC = () => {
             {/* Metric Header */}
             <div className="row g-3">
               {[
-                { label: 'Total Resources', value: (resources.legal_registration?.length || 0) + (resources.business_services?.length || 0) + (resources.education_help?.length || 0) + (resources.download_assets?.length || 0) + (resources.training_academy?.length || 0), icon: 'ri-stack-fill', color: 'primary' },
+                { label: 'Total Resources', value: (resources.legal_registration?.length || 0) + (resources.education_help?.length || 0) + (resources.download_assets?.length || 0) + (resources.training_academy?.length || 0), icon: 'ri-stack-fill', color: 'primary' },
                 { label: 'Education & Help', value: resources.education_help?.length || 0, icon: 'ri-book-open-fill', color: 'primary' },
                 { label: 'Training Academy', value: resources.training_academy?.length || 0, icon: 'ri-video-fill', color: 'primary' },
-                { label: 'Service Category', value: resources.business_services?.length || 0, icon: 'ri-briefcase-fill', color: 'primary' }
+                { label: 'Business Services', value: resources.business_services?.length || 0, icon: 'ri-briefcase-fill', color: 'primary', link: '/business-services' }
               ].map((stat, i) => (
                 <div className="col-md-3" key={i}>
-                  <div className="card shadow-sm border-0 rounded-2 bg-white card-animate">
-                    <div className="card-body py-3 px-4 d-flex align-items-center animate-blur-in" style={{ animationDelay: `${i * 0.1}s` }}>
-                      <div className={`avatar-md rounded d-flex align-items-center justify-content-center me-3 shadow-none`}>
-                        <i className={`${stat.icon} text-${stat.color} resource-card-icon`}></i>
+                  {stat.link ? (
+                    <Link to={stat.link} className="card shadow-sm border-0 rounded-2 bg-white card-animate d-block text-decoration-none">
+                      <div className="card-body py-3 px-4 d-flex align-items-center animate-blur-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                        <div className={`avatar-md rounded d-flex align-items-center justify-content-center me-3 shadow-none`}>
+                          <i className={`${stat.icon} text-${stat.color} resource-card-icon`}></i>
+                        </div>
+                        <div>
+                          <p className="text-muted mb-0 fs-13 fw-semibold text-uppercase tracking-tight">{stat.label}</p>
+                          <h4 className="mb-0 fw-semibold text-dark fs-22 lh-1">{stat.value}</h4>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-muted mb-0 fs-13 fw-semibold text-uppercase tracking-tight">{stat.label}</p>
-                        <h4 className="mb-0 fw-semibold text-dark fs-22 lh-1">{stat.value}</h4>
+                    </Link>
+                  ) : (
+                    <div className="card shadow-sm border-0 rounded-2 bg-white card-animate">
+                      <div className="card-body py-3 px-4 d-flex align-items-center animate-blur-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                        <div className={`avatar-md rounded d-flex align-items-center justify-content-center me-3 shadow-none`}>
+                          <i className={`${stat.icon} text-${stat.color} resource-card-icon`}></i>
+                        </div>
+                        <div>
+                          <p className="text-muted mb-0 fs-13 fw-semibold text-uppercase tracking-tight">{stat.label}</p>
+                          <h4 className="mb-0 fw-semibold text-dark fs-22 lh-1">{stat.value}</h4>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -373,34 +523,33 @@ const Resource: React.FC = () => {
                       <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
                         <h6 className="fw-semibold text-dark mb-0 fs-15">Business Services</h6>
                         {hasPermission('create resources') && (
-                          <button className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('business_services')}>
+                          <Link to="/business-services/create" className="btn btn-sm btn-soft-success px-3 py-1.5 fs-11 fw-semibold border-0 text-decoration-none">
                             <i className="ri-add-line me-1"></i> Add New
-                          </button>
+                          </Link>
                         )}
                       </div>
                       <div className="card-body p-3 pt-2">
-                        <div className={`d-flex flex-column gap-3 scrollable-container`}>
-                          {filteredBus.map((item, i) => (
-                            <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item-success transition-all cursor-pointer" key={item.id} onClick={() => handleItemClick(item)}>
-                              <div className="flex-shrink-0 avatar-xs bg-light rounded d-flex align-items-center justify-content-center me-3 luxe-icon">
-
-                                <i className={`${item.icon || 'ri-phone-circle-line'} text-success fs-16`}></i>
-                              </div>
-                              <div className="flex-grow-1 overflow-hidden pe-2 d-flex align-items-center justify-content-between">
-                                <div className="overflow-hidden">
-                                  <h6 className="mb-1 fw-semibold fs-14 text-dark text-truncate">{item.title}</h6>
-                                  <span className="text-muted fs-11 text-truncate d-block">{item.subtitle}</span>
-                                </div>
-                                {user?.is_host == 1 && (
-                                  <div className="ms-2 flex-shrink-0 d-flex align-items-center gap-2">
-                                    <AudienceTags item={item} />
-                                    <StatusBadge status={item.status} />
+                        <div className="row g-2">
+                          {filteredBus.map((item, i) => {
+                            const stepData = getFundabilityData(item);
+                            return (
+                              <div className="col-6" key={item.id || i}>
+                                <div 
+                                  className={`p-3 rounded-3 border border-light-subtle h-100 transition-all cursor-pointer fundability-card bg-${stepData.color}-subtle bg-opacity-10 hover-lift position-relative`}
+                                  onClick={() => handleFundabilityClick(stepData)}
+                                >
+                                  <div className="position-absolute top-0 end-0 p-2 d-flex align-items-center gap-1">
+                                    <ActionMenu item={item} type="business_services" />
                                   </div>
-                                )}
+                                  <div className={`avatar-xs bg-${stepData.color} rounded-2 d-flex align-items-center justify-content-center mb-2 shadow-sm`}>
+                                    <i className={`${item.icon || stepData.icon} text-white fs-16`}></i>
+                                  </div>
+                                  <h6 className="mb-1 fw-bold fs-12 text-dark text-truncate pe-4">{item.title}</h6>
+                                  <p className="text-muted fs-10 mb-0 opacity-75">{item.subtitle || 'Click to view'}</p>
+                                </div>
                               </div>
-                              <ActionMenu item={item} type="business_services" iconClass="ri-more-2-fill" />
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -580,14 +729,6 @@ const Resource: React.FC = () => {
           </>
         )}
 
-        <ResourceModal
-          key={editingResource?.id || 'new'}
-          show={showFormModal}
-          onHide={() => setShowFormModal(false)}
-          resource={editingResource}
-          type={activeType}
-        />
-
         <DeleteConfirmationModal
           show={showDeleteModal}
           onConfirm={confirmDelete}
@@ -645,6 +786,101 @@ const Resource: React.FC = () => {
               </div>
             )}
           </ModalBody>
+        </Modal>
+
+        {/* Fundability System Modal */}
+        <Modal isOpen={showFundabilityModal} toggle={() => setShowFundabilityModal(false)} size="lg" centered className="fundability-modal">
+          {activeFundabilityStep && (
+            <>
+              <ModalHeader className="bg-white border-bottom py-3 px-4" toggle={() => setShowFundabilityModal(false)}>
+                <div className="d-flex align-items-center">
+                  <div className={`avatar-sm bg-${activeFundabilityStep.color}-subtle rounded-3 me-3 d-flex align-items-center justify-content-center`}>
+                    <i className={`${activeFundabilityStep.icon} text-${activeFundabilityStep.color} fs-24`}></i>
+                  </div>
+                  <div>
+                    <h5 className="mb-0 fs-18 fw-bold text-dark">{activeFundabilityStep.title}</h5>
+                    <p className="text-muted fs-12 mb-0">Fundability Requirement</p>
+                  </div>
+                </div>
+              </ModalHeader>
+              <ModalBody className="p-4 bg-light bg-opacity-50">
+                <div className="row g-4">
+                  <div className="col-md-7">
+                    <div className="mb-4">
+                      <h6 className="fw-bold text-dark mb-3 d-flex align-items-center">
+                        <i className="ri-information-fill text-primary me-2 fs-18"></i> Overview
+                      </h6>
+                      <ul className="list-unstyled mb-0">
+                        {activeFundabilityStep.overview.map((text: string, i: number) => (
+                          <li key={i} className="d-flex align-items-start mb-2 fs-14 text-muted">
+                            <i className="ri-checkbox-circle-fill text-success me-2 mt-1"></i>
+                            {text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-3 bg-danger-subtle bg-opacity-10 rounded-3 border border-danger border-opacity-10">
+                      <h6 className="fw-bold text-danger mb-2 d-flex align-items-center">
+                        <i className="ri-error-warning-fill me-2"></i> Why It Matters
+                      </h6>
+                      <ul className="list-unstyled mb-0">
+                        {activeFundabilityStep.impact.map((text: string, i: number) => (
+                          <li key={i} className="d-flex align-items-start mb-2 fs-13 text-dark opacity-75">
+                            <i className="ri-arrow-right-s-line text-danger me-1"></i>
+                            {text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="col-md-5">
+                    {activeFundabilityStep.providers.length > 0 ? (
+                      <>
+                        <h6 className="fw-bold text-dark mb-3 d-flex align-items-center">
+                          <i className="ri-shield-user-fill text-success me-2 fs-18"></i> Recommended Providers
+                        </h6>
+                        <div className="d-flex flex-column gap-3">
+                          {activeFundabilityStep.providers.map((provider: any, i: number) => (
+                            <div key={i} className="p-3 bg-white rounded-3 border border-light-subtle shadow-sm transition-all hover-shadow">
+                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                <h6 className="mb-0 fw-bold fs-14 text-dark">{provider.name}</h6>
+                                {provider.is_recommended && (
+                                  <span className="badge bg-primary-subtle text-primary border border-primary-subtle fs-10 px-2 py-1 rounded-pill">
+                                    <i className="ri-star-fill me-1"></i> Recommended
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-muted fs-12 mb-3 lh-base">{provider.desc}</p>
+                              <a 
+                                href={provider.link} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className={`btn btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-2 rounded-2 transition-all ${provider.is_recommended ? 'btn-primary shadow-sm' : 'btn-soft-secondary'}`}
+                              >
+                                {provider.btn_label || 'Get Started'}
+                                <i className="ri-external-link-line fs-14"></i>
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-4 text-center bg-white rounded-3 border border-light-subtle h-100 d-flex flex-column align-items-center justify-content-center">
+                        <i className="ri-search-eye-line fs-40 text-muted mb-3"></i>
+                        <h6 className="fw-bold text-dark mb-1">More Resources</h6>
+                        <p className="text-muted fs-12 mb-0">Check the main library for additional tools.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter className="bg-white border-top py-3 px-4">
+                <button className="btn btn-light fw-bold px-4" onClick={() => setShowFundabilityModal(false)}>Close</button>
+              </ModalFooter>
+            </>
+          )}
         </Modal>
 
       </div>

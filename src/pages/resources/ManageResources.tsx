@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGroupedResources, useDeleteResource } from '../../modules/resource/queries';
 import { ResourceItem } from '../../modules/resource/types';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
-import ResourceModal from './ResourceModal';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../../lib/auth/usePermissions';
 
@@ -19,12 +18,10 @@ const TAB_OPTIONS = [
 
 export default function ManageResources() {
     const { hasPermission } = usePermissions();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('legal_registration');
     
     // Modals state
-    const [showFormModal, setShowFormModal] = useState(false);
-    const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
-    
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [resourceToDelete, setResourceToDelete] = useState<ResourceItem | null>(null);
 
@@ -33,8 +30,11 @@ export default function ManageResources() {
     const deleteMutation = useDeleteResource();
 
     const handleEdit = (resource: ResourceItem) => {
-        setEditingResource(resource);
-        setShowFormModal(true);
+        if (resource.resource_type === 'business_services') {
+            navigate(`/business-services/edit/${resource.id}`);
+        } else {
+            navigate(`/resources/edit/${resource.id}`);
+        }
     };
 
     const handleDeleteClick = (resource: ResourceItem) => {
@@ -112,8 +112,11 @@ export default function ManageResources() {
                             </div>
                             <div className="mt-0">
                                 <button className="btn btn-primary fw-medium" onClick={() => {
-                                    setEditingResource(null);
-                                    setShowFormModal(true);
+                                    if (activeTab === 'business_services') {
+                                        navigate('/business-services/create', { state: { type: activeTab } });
+                                    } else {
+                                        navigate('/resources/create', { state: { type: activeTab } });
+                                    }
                                 }}>
                                     <i className="ri-add-line me-1 align-bottom"></i> Add Resource
                                 </button>
@@ -160,13 +163,6 @@ export default function ManageResources() {
                 </div>
 
                 {/* Modals */}
-                <ResourceModal 
-                    show={showFormModal} 
-                    onHide={() => setShowFormModal(false)}
-                    resource={editingResource}
-                    type={activeTab}
-                />
-                
                 <DeleteConfirmationModal
                     show={showDeleteModal}
                     onConfirm={confirmDelete}
