@@ -230,8 +230,6 @@ export default function App() {
               <Route path="resources" element={<Resource />} />
               <Route path="resources/create" element={<ResourceForm />} />
               <Route path="resources/edit/:id" element={<ResourceForm />} />
-              <Route path="business-services/create" element={<ResourceForm />} />
-              <Route path="business-services/edit/:id" element={<ResourceForm />} />
               <Route path="manage-resources" element={<ManageResources />} />
             </Route>
 

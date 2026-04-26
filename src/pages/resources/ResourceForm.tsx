@@ -16,7 +16,6 @@ const ResourceForm: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const isEdit = !!id;
-    const isBusinessRoute = location.pathname.includes('business-services');
 
     const { data: groupedData } = useGroupedResources();
     const createMutation = useCreateResource();
@@ -32,7 +31,7 @@ const ResourceForm: React.FC = () => {
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState<ResourceFormData>({
-        resource_type: location.state?.type || (isBusinessRoute ? 'business_services' : 'legal_registration'),
+        resource_type: location.state?.type || 'legal_registration',
         title: '',
         subtitle: '',
         icon: '',

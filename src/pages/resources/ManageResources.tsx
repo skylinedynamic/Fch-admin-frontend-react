@@ -30,11 +30,7 @@ export default function ManageResources() {
     const deleteMutation = useDeleteResource();
 
     const handleEdit = (resource: ResourceItem) => {
-        if (resource.resource_type === 'business_services') {
-            navigate(`/business-services/edit/${resource.id}`);
-        } else {
-            navigate(`/resources/edit/${resource.id}`);
-        }
+        navigate(`/resources/edit/${resource.id}`);
     };
 
     const handleDeleteClick = (resource: ResourceItem) => {
@@ -112,11 +108,7 @@ export default function ManageResources() {
                             </div>
                             <div className="mt-0">
                                 <button className="btn btn-primary fw-medium" onClick={() => {
-                                    if (activeTab === 'business_services') {
-                                        navigate('/business-services/create', { state: { type: activeTab } });
-                                    } else {
-                                        navigate('/resources/create', { state: { type: activeTab } });
-                                    }
+                                    navigate('/resources/create', { state: { type: activeTab } });
                                 }}>
                                     <i className="ri-add-line me-1 align-bottom"></i> Add Resource
                                 </button>
