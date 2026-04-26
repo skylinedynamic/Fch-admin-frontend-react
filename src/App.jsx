@@ -46,7 +46,7 @@ import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
-import ChangeRequests from './pages/applications/change-requests/ChangeRequests';
+import ResourceForm from './pages/resources/ResourceForm.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -235,10 +235,14 @@ export default function App() {
             </Route>
 
             {/* Resources Modules */}
-            <Route path="resources" element={<Resource />} />
-            <Route element={<PermissionRoute permission="view settings" />}>
+            <Route element={<PermissionRoute permission="view resources" />}>
+              <Route path="resources" element={<Resource />} />
+              <Route path="resources/create" element={<ResourceForm />} />
+              <Route path="resources/edit/:id" element={<ResourceForm />} />
               <Route path="manage-resources" element={<ManageResources />} />
             </Route>
+
+
 
             {/* Under Construction - accessible to all authenticated users */}
             <Route path="under-construction/:feature" element={<UnderConstruction />} />
