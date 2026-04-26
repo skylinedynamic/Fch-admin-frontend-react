@@ -267,7 +267,7 @@ const ResourceForm: React.FC = () => {
                                         </div>
 
                                         <div className="col-lg-12">
-                                            <label htmlFor="subtitle" className="form-label">{isBusinessService ? 'Executive Summary' : 'Subtitle'}</label>
+                                            <label htmlFor="subtitle" className="form-label">{isBusinessService ? 'Short Description' : 'Subtitle'}</label>
                                             <textarea className={`form-control ${validationErrors.subtitle ? 'is-invalid' : ''}`} id="subtitle" name="subtitle" rows={2} placeholder="Enter a brief description" value={formData.subtitle} onChange={handleInputChange}></textarea>
                                             {validationErrors.subtitle && <div className="invalid-feedback">{validationErrors.subtitle}</div>}
                                         </div>
@@ -360,7 +360,7 @@ const ResourceForm: React.FC = () => {
                                                             Why It Matters
                                                         </label>
                                                         <button type="button" className="btn btn-sm btn-link text-warning text-decoration-underline p-0" onClick={() => addArrayItem('impact')}>
-                                                            + Add Impact
+                                                            + Add Point
                                                         </button>
                                                     </div>
                                                     {(formData.impact || []).length === 0 && (
@@ -394,7 +394,7 @@ const ResourceForm: React.FC = () => {
 
                                             {/* Provider Network */}
                                             <div className="col-12 mt-4 mb-2">
-                                                <h5 className="text-primary fs-16 mb-1">Provider Network</h5>
+                                                <h5 className="text-primary fs-16 mb-1">Add Provider</h5>
                                                 <hr className="mt-1" />
                                             </div>
                                             <div className="d-flex justify-content-end mb-3">
@@ -437,7 +437,7 @@ const ResourceForm: React.FC = () => {
                                                                     </div>
 
                                                                     <div className="col-12">
-                                                                        <label className="form-label">Description</label>
+                                                                        <label className="form-label">Short Description</label>
                                                                         <textarea className="form-control" rows={2} value={p.desc} onChange={(e) => handleProviderChange(idx, 'desc', e.target.value)} placeholder="Brief description of services offered..."></textarea>
                                                                     </div>
                                                                     <div className="col-12">
