@@ -2237,10 +2237,15 @@
 }
 
 .list-group-item-action:hover {
-  background: #fff !important;
+  background: #405189 !important;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
   z-index: 5;
+  color: #fff !important;
+}
+
+.list-group-item-action:hover i {
+  color: #fff !important;
 }
 
 .video-item {
@@ -2605,7 +2610,7 @@
 }
 
 .list-group-item-action:hover {
-  background-color: #f8f9fa !important;
+  background-color: #405189 !important;
   transform: translateX(4px);
 }
 
