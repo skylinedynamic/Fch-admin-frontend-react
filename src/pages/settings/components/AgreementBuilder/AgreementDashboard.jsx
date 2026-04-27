@@ -71,9 +71,9 @@ export const AgreementDashboard = ({ onEdit }) => {
             <i className="ri-file-pdf-2-line"></i>
           </div>
         </div>
-        <div 
-          className="flex-grow-1" 
-          style={{ cursor: 'pointer' }} 
+        <div
+          className="flex-grow-1"
+          style={{ cursor: 'pointer' }}
           onClick={() => onEdit(type)}
           onMouseEnter={(e) => {
             e.currentTarget.style.opacity = '0.7';
@@ -151,15 +151,15 @@ export const AgreementDashboard = ({ onEdit }) => {
           </div>
         )}
 
-        {hasPermission('Update Partner Agreement Settings') && (
+        {hasPermission('update partner agreement settings') && (
           <AgreementRow
             type="partner"
             label="Partner Agreement Paper"
             subtext="Manage default digital agreement for partner onboarding"
           />
         )}
-        
-        {hasPermission('Update Borrower Agreement Settings') && (
+
+        {hasPermission('update borrower agreement settings') && (
           <AgreementRow
             type="borrower"
             label="Borrower Agreement Paper"

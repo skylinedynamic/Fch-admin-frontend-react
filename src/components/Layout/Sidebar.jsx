@@ -164,7 +164,7 @@ const menuItems = [
     to: "/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
-    permission: ["Update Payment Settings", "Update Partner Agreement Settings", "Update Borrower Agreement Settings"],
+    permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings"],
     isHostOnly: false,
   },
 ];

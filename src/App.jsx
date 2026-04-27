@@ -151,7 +151,7 @@ export default function App() {
 
 
             {/* Settings Route */}
-            <Route element={<PermissionRoute permission={["Update Payment Settings", "Update Partner Agreement Settings", "Update Borrower Agreement Settings"]} />}>
+            <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings"]} />}>
               <Route path="settings" element={<Settings />} />
             </Route>
 

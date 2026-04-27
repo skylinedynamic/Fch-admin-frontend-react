@@ -49,13 +49,13 @@ export default function SettingsForm({
     const { hasPermission } = usePermissions();
 
     const sections = [];
-    if (hasPermission('Update Payment Settings')) {
+    if (hasPermission('update payment settings')) {
         sections.push({ id: 'payment', label: 'Payment Integration', icon: 'ri-bank-card-2-line' });
     }
-    
+
     // We only show Agreement Builder if they have partner OR borrower permissions
-    const canSeePartnerAgreement = hasPermission('Update Partner Agreement Settings');
-    const canSeeBorrowerAgreement = hasPermission('Update Borrower Agreement Settings');
+    const canSeePartnerAgreement = hasPermission('update partner agreement settings');
+    const canSeeBorrowerAgreement = hasPermission('update borrower agreement settings');
     if (canSeePartnerAgreement || canSeeBorrowerAgreement) {
         sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
     }
