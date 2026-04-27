@@ -59,7 +59,15 @@ export default function PersonalInfoSection({
         }
 
         const buildUrl = (path) => {
-            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
+            if (!path || typeof path !== 'string') return avatarDefault;
+            
+            // If it's already a full URL or blob, return it as is
+            if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
+                return path;
+            }
+
+            // If it's the default avatar or a local asset, return it as is
+            if (path === avatarDefault || path.startsWith('/assets/')) {
                 return path;
             }
 
@@ -98,7 +106,7 @@ export default function PersonalInfoSection({
             return buildUrl(employee.image);
         }
 
-        // 4. Fallback to profileImage prop if it's not a full URL
+        // 5. Fallback to profileImage prop if it's not a full URL
         if (typeof profileImage === 'string' && profileImage.trim() !== '') {
             return buildUrl(profileImage);
         }

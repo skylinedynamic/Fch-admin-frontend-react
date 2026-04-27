@@ -17,8 +17,8 @@ export const FileIcon: React.FC<{ className?: string }> = ({ className }) => (
 // PDF Icon (Red)
 export const PdfIcon: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <svg className={className} style={style} fill="none" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#DC3545"/>
-    <path d="M14 2v6h6" stroke="#DC3545" strokeWidth="2" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#DC3545" />
+    <path d="M14 2v6h6" stroke="#DC3545" strokeWidth="2" fill="none" />
     <text x="7" y="17" fill="white" fontSize="6" fontWeight="bold">PDF</text>
   </svg>
 )
@@ -33,8 +33,8 @@ export const ImageIcon: React.FC<{ className?: string; style?: React.CSSProperti
 // Word Document Icon (Blue)
 export const WordIcon: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <svg className={className} style={style} fill="none" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#2B579A"/>
-    <path d="M14 2v6h6" stroke="#2B579A" strokeWidth="2" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#2B579A" />
+    <path d="M14 2v6h6" stroke="#2B579A" strokeWidth="2" fill="none" />
     <text x="7" y="17" fill="white" fontSize="5" fontWeight="bold">DOC</text>
   </svg>
 )
@@ -42,8 +42,8 @@ export const WordIcon: React.FC<{ className?: string; style?: React.CSSPropertie
 // Excel Icon (Green)
 export const ExcelIcon: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <svg className={className} style={style} fill="none" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#217346"/>
-    <path d="M14 2v6h6" stroke="#217346" strokeWidth="2" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#217346" />
+    <path d="M14 2v6h6" stroke="#217346" strokeWidth="2" fill="none" />
     <text x="7.5" y="17" fill="white" fontSize="5" fontWeight="bold">XLS</text>
   </svg>
 )
@@ -51,8 +51,8 @@ export const ExcelIcon: React.FC<{ className?: string; style?: React.CSSProperti
 // PowerPoint Icon (Orange)
 export const PowerPointIcon: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
   <svg className={className} style={style} fill="none" viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#D24726"/>
-    <path d="M14 2v6h6" stroke="#D24726" strokeWidth="2" fill="none"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#D24726" />
+    <path d="M14 2v6h6" stroke="#D24726" strokeWidth="2" fill="none" />
     <text x="7.5" y="17" fill="white" fontSize="5" fontWeight="bold">PPT</text>
   </svg>
 )
@@ -201,56 +201,56 @@ export const CloseIcon: React.FC = () => (
 // Helper function to get icon based on file type
 export const getFileIcon = (filename: string, mimeType?: string) => {
   const ext = filename.split('.').pop()?.toLowerCase()
-  
+
   // Images
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'avif'].includes(ext || '')) {
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif', 'avif'].includes(ext || '')) {
     return 'image'
   }
-  
+
   // PDF
   if (ext === 'pdf') {
     return 'pdf'
   }
-  
+
   // Word
   if (['doc', 'docx'].includes(ext || '')) {
     return 'word'
   }
-  
+
   // Excel
   if (['xls', 'xlsx', 'csv'].includes(ext || '')) {
     return 'excel'
   }
-  
+
   // PowerPoint
   if (['ppt', 'pptx'].includes(ext || '')) {
     return 'powerpoint'
   }
-  
+
   // Video
   if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'].includes(ext || '')) {
     return 'video'
   }
-  
+
   // Audio
   if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext || '')) {
     return 'audio'
   }
-  
+
   // Archive
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) {
     return 'archive'
   }
-  
+
   // Code
   if (['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'php', 'py', 'java', 'cpp', 'c', 'json', 'xml'].includes(ext || '')) {
     return 'code'
   }
-  
+
   // Text
   if (['txt', 'md', 'log'].includes(ext || '')) {
     return 'text'
   }
-  
+
   return 'file'
 }

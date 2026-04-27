@@ -15,6 +15,7 @@ import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { refreshUserData } from '../../lib/auth/auth';
 
 export default function PartnerProfile() {
     const { id } = useParams();
@@ -253,8 +254,15 @@ export default function PartnerProfile() {
     const [profileImage, setProfileImage] = useState(avatarDefault);
 
     // Fetch partner data if ID exists
-    const fetchPartnerData = useCallback(async () => {
+    const fetchPartnerData = useCallback(async (force = false) => {
         if (!id) return;
+
+        // Skip if data is already loaded for this ID to prevent redundant calls on tab switch
+        // But allow 'force' to bypass this (e.g., after saving)
+        if (!force && formData && String(formData.id || formData.entity_id) === String(id) && formData.full_name) {
+            return;
+        }
+
         setIsPartnerLoading(true);
         try {
             const response = await getPartner(id);
@@ -704,6 +712,10 @@ export default function PartnerProfile() {
 
                 if (id) {
                     await updatePartner(id, formDataToSend);
+                    // Force refresh both local form data and global user session
+                    await fetchPartnerData(true);
+                    await refreshUserData();
+                    
                     toast.success('Partner updated successfully');
                     window.dispatchEvent(new Event('refreshActivities'));
 

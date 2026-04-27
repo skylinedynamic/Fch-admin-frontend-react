@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../src/components/Layout/Layout.jsx';
 import Dashboard from '../src/pages/dashboard/Dashboard.jsx';
 import Employees from '../src/pages/employees/Employees.jsx';
@@ -151,8 +151,8 @@ export default function App() {
 
 
             {/* Settings Route */}
-            <Route element={<PermissionRoute permission="view settings" />}>
-              <Route path="admin/settings" element={<Settings />} />
+            <Route element={<PermissionRoute permission={["Update Payment Settings", "Update Partner Agreement Settings", "Update Borrower Agreement Settings"]} />}>
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             <Route path="change-password" element={<ChangePassword />} />

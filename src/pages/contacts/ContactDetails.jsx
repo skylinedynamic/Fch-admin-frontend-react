@@ -51,7 +51,8 @@ export default function ContactDetails() {
         zip_code: '',
         website: '',
         notes: '',
-        image: null
+        image: null,
+        is_referral_partner: false
     });
 
     // Initialize states for default country (United States) on new contact creation

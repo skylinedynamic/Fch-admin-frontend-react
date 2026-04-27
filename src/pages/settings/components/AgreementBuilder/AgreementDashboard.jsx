@@ -9,8 +9,10 @@ import {
 } from '../../../../modules/agreement';
 import { Switch } from './CommonUI';
 import { AgreementDashboardLoader } from '../../../../components/Loader/AgreementLoader.jsx';
+import { usePermissions } from '../../../../lib/auth/usePermissions';
 
 export const AgreementDashboard = ({ onEdit }) => {
+  const { hasPermission } = usePermissions();
   const user = getUser();
   const isHost = user?.is_host == 1;
   const { data: listRes, isLoading: loadingList } = useAgreements();
@@ -121,44 +123,49 @@ export const AgreementDashboard = ({ onEdit }) => {
       </div>
       <div className="card-body p-4">
         {/* Global Feature Toggle */}
-        <div className="p-3 bg-primary-subtle rounded-3 mb-4 d-flex align-items-center justify-content-between border border-primary-subtle">
-          <div className="d-flex align-items-center gap-3">
-            <div className="avatar-xs flex-shrink-0">
-              <div className="avatar-title bg-primary text-white rounded-circle fs-14">
-                <i className="ri-shield-check-line"></i>
+        {isHost && (
+          <div className="p-3 bg-primary-subtle rounded-3 mb-4 d-flex align-items-center justify-content-between border border-primary-subtle">
+            <div className="d-flex align-items-center gap-3">
+              <div className="avatar-xs flex-shrink-0">
+                <div className="avatar-title bg-primary text-white rounded-circle fs-14">
+                  <i className="ri-shield-check-line"></i>
+                </div>
+              </div>
+              <div>
+                <h6 className="mb-0 fs-14 fw-semibold">Agreement Signing Feature</h6>
+                <p className="text-muted mb-0 fs-12">Enable or disable digital signing workflow globally</p>
               </div>
             </div>
-            <div>
-              <h6 className="mb-0 fs-14 fw-semibold">Agreement Signing Feature</h6>
-              <p className="text-muted mb-0 fs-12">Enable or disable digital signing workflow globally</p>
+            <div className="d-flex align-items-center gap-2">
+              <span className={`fs-12 fw-medium ${isSigningEnabled ? 'text-primary' : 'text-muted'}`}>
+                {isSigningEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+              <div style={{ transform: 'scale(1.1)', transformOrigin: 'right' }}>
+                <Switch
+                  checked={isSigningEnabled}
+                  onChange={handleGlobalToggle}
+                  disabled={saveConfigMutation.isPending}
+                />
+              </div>
             </div>
           </div>
-          <div className="d-flex align-items-center gap-2">
-            <span className={`fs-12 fw-medium ${isSigningEnabled ? 'text-primary' : 'text-muted'}`}>
-              {isSigningEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-            <div style={{ transform: 'scale(1.1)', transformOrigin: 'right' }}>
-              <Switch
-                checked={isSigningEnabled}
-                onChange={handleGlobalToggle}
-                disabled={saveConfigMutation.isPending}
-              />
-            </div>
-          </div>
-        </div>
+        )}
 
-        {isHost && (
+        {hasPermission('Update Partner Agreement Settings') && (
           <AgreementRow
             type="partner"
             label="Partner Agreement Paper"
             subtext="Manage default digital agreement for partner onboarding"
           />
         )}
-        <AgreementRow
-          type="borrower"
-          label="Borrower Agreement Paper"
-          subtext="Manage default digital agreement for borrower signatures"
-        />
+        
+        {hasPermission('Update Borrower Agreement Settings') && (
+          <AgreementRow
+            type="borrower"
+            label="Borrower Agreement Paper"
+            subtext="Manage default digital agreement for borrower signatures"
+          />
+        )}
       </div>
     </div>
   );

@@ -36,3 +36,14 @@ export const deleteContacts = async (ids: (string | number)[]): Promise<{ status
     const { data } = await apiClient.post(`/common/contacts/multiple-delete`, { ids });
     return data;
 };
+
+// Fetch Referral Partners (Specific filter)
+export const fetchReferralPartners = async (): Promise<Contact[]> => {
+    const { data } = await apiClient.post(`/common/contacts/fetch-contacts`, {
+        per_page: 1000, // Get all
+        filters: {
+            is_referral_partner: { value: 1, matchMode: 'equals' }
+        }
+    });
+    return data.data || [];
+};

@@ -200,9 +200,16 @@ export default function Contacts() {
     // Column body templates
     const fullNameBody = (rowData) => {
         return (
-            <span className="fw-medium">
-                {rowData.full_name}
-            </span>
+            <div className="d-flex align-items-center">
+                <span className="fw-medium">
+                    {rowData.full_name}
+                </span>
+                {rowData.is_referral_partner && (
+                    <span className="badge bg-success-subtle text-success ms-2 px-2 py-1 fs-11 border border-success-subtle rounded-pill">
+                        <i className="ri-shake-hands-line me-1 align-bottom"></i> Referral Partner
+                    </span>
+                )}
+            </div>
         );
     };
 
