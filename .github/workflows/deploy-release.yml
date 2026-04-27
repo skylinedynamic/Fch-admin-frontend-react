@@ -1,0 +1,87 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - release
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Create Environment Variables
+        run: |
+          # Production API URL
+          echo "VITE_API_BASE_URL=https://api.fourcornerfunding.com/api/v1" > .env.production
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Deploy to EC2 & Restart Nginx
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.PROD_EC2_HOST }}
+          REMOTE_USER: ${{ secrets.PROD_EC2_USER }}
+          SOURCE: "dist/"
+          TARGET: "/var/www/html/partner-portal/dist"
+          ARGS: "-rlgoDzvc --delete"
+          SSH_CMD_ARGS: "-o StrictHostKeyChecking=no" 
+          SCRIPT_BEFORE: |
+            echo "Creating target directory if it doesn't exist..."
+            sudo mkdir -p /var/www/html/partner-portal/dist
+            echo "Temporarily giving SSH user permission to write to directory..."
+            sudo chown -R $(whoami):$(whoami) /var/www/html/partner-portal/dist
+          SCRIPT_AFTER: |
+            echo "Setting correct directory permissions for Nginx..."
+            sudo chown -R www-data:www-data /var/www/html/partner-portal || echo "Warning: chown failed, ignoring..."
+            
+            echo "Restarting Nginx..."
+            sudo systemctl restart nginx
+            echo "Nginx restarted successfully."
+
+      - name: Post-Deployment Smoke Test
+        run: |
+          echo "Ensuring the service is up..."
+          sleep 5
+          PROD_URL="${{ secrets.PROD_WEB_URL || 'https://partner.fourcornerfunding.com/login' }}"
+          
+          if [ "$PROD_URL" == "https://partner.fourcornerfunding.com/login" ]; then
+            echo "Disclaimer: Smoke test domain is not defined. Please add PROD_WEB_URL to GitHub Secrets."
+          else
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$PROD_URL" || echo "000")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+               echo "✅ Smoke test passed! Production server responded with HTTP $HTTP_STATUS."
+            else
+               echo "❌ Smoke test failed! Expected HTTP 200 but received $HTTP_STATUS."
+               
+               echo "--- Attempting to fetch Nginx Debug Info ---"
+               echo "${{ secrets.PROD_EC2_SSH_KEY }}" > deploy_key
+               chmod 600 deploy_key
+               
+               echo "--- Nginx Sites Configuration (Searching for domain) ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.PROD_EC2_USER }}@${{ secrets.PROD_EC2_HOST }} "sudo grep -r 'partner.fourcornerfunding.com' /etc/nginx/sites-enabled/ || echo 'No matching config found.'"
+               
+               echo "--- Directory Listing ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.PROD_EC2_USER }}@${{ secrets.PROD_EC2_HOST }} "ls -la /var/www/html/partner-portal/dist"
+               
+               echo "--- Nginx Error Logs ---"
+               ssh -i deploy_key -o StrictHostKeyChecking=no ${{ secrets.PROD_EC2_USER }}@${{ secrets.PROD_EC2_HOST }} "sudo tail -n 20 /var/log/nginx/error.log" || echo "Failed to fetch Nginx logs."
+               
+               rm deploy_key
+               exit 1
+            fi
+          fi
