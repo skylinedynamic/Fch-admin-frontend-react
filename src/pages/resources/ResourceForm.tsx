@@ -135,7 +135,6 @@ const ResourceForm: React.FC = () => {
         } catch (err: any) {
             if (err.response?.status === 422 && err.response?.data?.errors) {
                 setValidationErrors(err.response.data.errors);
-                toast.error('Please check the form for errors');
             } else {
                 toast.error(err.response?.data?.message || 'Action failed');
             }
