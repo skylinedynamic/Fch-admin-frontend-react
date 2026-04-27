@@ -716,7 +716,7 @@ const Resource: React.FC = () => {
                               <div className="d-flex justify-content-between align-items-start mb-2">
                                 <h6 className="mb-0 fw-semibold fs-15 text-dark">{provider.name}</h6>
                                 {provider.is_recommended && (
-                                  <span className="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 fs-10">
+                                  <span className="badge bg-warning-subtle text-warning border-warning-subtle rounded-pill px-2 py-1 fs-10">
                                     <i className="ri-star-fill align-middle"></i>
                                   </span>
                                 )}
