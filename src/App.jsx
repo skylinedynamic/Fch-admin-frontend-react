@@ -208,7 +208,7 @@ export default function App() {
                 <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
               </Route>
 
-              <Route element={<HostRoute />}>
+              <Route element={<PermissionRoute permission="view change requests" />}>
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
 

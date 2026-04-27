@@ -58,6 +58,7 @@ const menuItems = [
       {
         to: '/intake-review/change-requests',
         label: 'Change Requests',
+        permission: 'view change requests',
       }
     ]
   },

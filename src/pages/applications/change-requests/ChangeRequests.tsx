@@ -15,6 +15,8 @@ import {
 } from '../../../config/borrower';
 import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useAuthStore } from '../../../store/auth/authStore';
 
 const STATUS_OPTIONS = [
     { label: 'All Status', value: '' },
@@ -22,6 +24,10 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ChangeRequests() {
+    const { hasPermission } = usePermissions();
+    const user = useAuthStore((state: any) => state.user);
+    const canUpdate = user?.is_host == 1 && hasPermission('update change requests');
+
     useEffect(() => {
         // Add class to body to prevent global scroll
         document.body.classList.add('table-page-fit-active');
@@ -472,46 +478,66 @@ export default function ChangeRequests() {
                                     </div>
 
                                     {/* Decision */}
-                                    <div className="mb-3">
-                                        <label className="form-label fw-medium">Decision <span className="text-danger">*</span></label>
-                                        <div className="d-flex gap-2">
-                                            {([CHANGE_REQUEST_STATUS.APPROVED, CHANGE_REQUEST_STATUS.REJECTED] as ChangeRequestStatus[]).map(s => (
-                                                <button
-                                                    key={s}
-                                                    type="button"
-                                                    disabled={selectedRow.status !== CHANGE_REQUEST_STATUS.PENDING}
-                                                    className={`btn flex-grow-1 ${reviewStatus === s
-                                                        ? s === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'
-                                                        : 'btn-light'
-                                                        }`}
-                                                    onClick={() => setReviewStatus(s)}
-                                                >
-                                                    <i className={`${s === CHANGE_REQUEST_STATUS.APPROVED ? 'ri-checkbox-circle-line' : 'ri-close-circle-line'} me-1`}></i>
-                                                    {s}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    {selectedRow.status == CHANGE_REQUEST_STATUS.PENDING ? (
+                                        canUpdate ? (
+                                            <>
+                                                <div className="mb-3">
+                                                    <label className="form-label fw-medium">Decision <span className="text-danger">*</span></label>
+                                                    <div className="d-flex gap-2">
+                                                        {([CHANGE_REQUEST_STATUS.APPROVED, CHANGE_REQUEST_STATUS.REJECTED] as ChangeRequestStatus[]).map(s => (
+                                                            <button
+                                                                key={s}
+                                                                type="button"
+                                                                className={`btn flex-grow-1 ${reviewStatus === s
+                                                                    ? s === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'
+                                                                    : 'btn-light'
+                                                                    }`}
+                                                                onClick={() => setReviewStatus(s)}
+                                                            >
+                                                                <i className={`${s === CHANGE_REQUEST_STATUS.APPROVED ? 'ri-checkbox-circle-line' : 'ri-close-circle-line'} me-1`}></i>
+                                                                {s}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
 
-                                    {/* Note */}
-                                    <div className="mb-1">
-                                        <label className="form-label fw-medium">
-                                            Note {reviewStatus === CHANGE_REQUEST_STATUS.REJECTED && <span className="text-danger">*</span>}
-                                        </label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={3}
-                                            placeholder={reviewStatus === CHANGE_REQUEST_STATUS.REJECTED
-                                                ? 'Please provide a reason for rejection…'
-                                                : 'Optional note…'}
-                                            value={reviewNote || (selectedRow.status !== CHANGE_REQUEST_STATUS.PENDING ? (selectedRow.note || '') : '')}
-                                            onChange={e => setReviewNote(e.target.value)}
-                                            autoFocus={selectedRow.status === CHANGE_REQUEST_STATUS.PENDING}
-                                            disabled={selectedRow.status !== CHANGE_REQUEST_STATUS.PENDING}
-                                        />
-                                    </div>
-                                    {reviewStatus === CHANGE_REQUEST_STATUS.REJECTED && !reviewNote.trim() && selectedRow.status === CHANGE_REQUEST_STATUS.PENDING && (
-                                        <small className="text-danger">A note is required when rejecting.</small>
+                                                {/* Note */}
+                                                <div className="mb-1">
+                                                    <label className="form-label fw-medium">
+                                                        Note {reviewStatus === CHANGE_REQUEST_STATUS.REJECTED && <span className="text-danger">*</span>}
+                                                    </label>
+                                                    <textarea
+                                                        className="form-control"
+                                                        rows={3}
+                                                        placeholder={reviewStatus === CHANGE_REQUEST_STATUS.REJECTED
+                                                            ? 'Please provide a reason for rejection…'
+                                                            : 'Optional note…'}
+                                                        value={reviewNote}
+                                                        onChange={e => setReviewNote(e.target.value)}
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                                {reviewStatus == CHANGE_REQUEST_STATUS.REJECTED && !reviewNote.trim() && (
+                                                    <small className="text-danger">A note is required when rejecting.</small>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="alert alert-warning mb-3 border-0 fs-13">
+                                                <i className="ri-information-line me-1"></i> You do not have permission to approve or reject this request.
+                                            </div>
+                                        )
+                                    ) : (
+                                        selectedRow.note && (
+                                            <div className="mb-1">
+                                                <label className="form-label fw-medium">Note</label>
+                                                <textarea
+                                                    className="form-control bg-light"
+                                                    rows={3}
+                                                    value={selectedRow.note}
+                                                    disabled
+                                                />
+                                            </div>
+                                        )
                                     )}
                                 </div>
 
@@ -519,7 +545,7 @@ export default function ChangeRequests() {
                                     <button type="button" className="btn btn-light" onClick={handleCloseModal}>
                                         {selectedRow.status !== CHANGE_REQUEST_STATUS.PENDING ? 'Close' : 'Cancel'}
                                     </button>
-                                    {selectedRow.status === CHANGE_REQUEST_STATUS.PENDING && (
+                                    {selectedRow.status == CHANGE_REQUEST_STATUS.PENDING && canUpdate && (
                                         <button
                                             type="button"
                                             className={`btn px-4 ${reviewStatus === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'}`}
