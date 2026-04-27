@@ -662,7 +662,7 @@ const Resource: React.FC = () => {
                     <i className={`${activeFundabilityStep.icon} text-${activeFundabilityStep.color} fs-24`}></i>
                   </div>
                   <div>
-                    <h5 className="mb-0 fs-18 fw-bold text-dark">{activeFundabilityStep.title}</h5>
+                    <h5 className="mb-0 fs-18 fw-semibold text-dark">{activeFundabilityStep.title}</h5>
                   </div>
                 </div>
               </ModalHeader>
@@ -670,7 +670,7 @@ const Resource: React.FC = () => {
                 <div className="row g-4 mb-4">
                   <div className="col-lg-7">
                     <div className="mb-4 mb-lg-0">
-                      <h5 className="fw-bold text-dark mb-3 d-flex align-items-center">
+                      <h5 className="fw-semibold text-dark mb-3 d-flex align-items-center">
                         <i className="ri-article-line text-primary me-2 fs-18"></i> Overview
                       </h5>
                       <ul className="list-unstyled mb-0">
@@ -686,7 +686,7 @@ const Resource: React.FC = () => {
 
                   <div className="col-lg-5">
                     <div className="p-3 bg-primary-subtle bg-opacity-30 rounded-3 border border-primary border-opacity-10 h-100">
-                      <h5 className="fw-bold text-primary mb-2 d-flex align-items-center">
+                      <h5 className="fw-semibold text-primary mb-2 d-flex align-items-center">
                         <i className="ri-flashlight-line me-2"></i> Why It Matters
                       </h5>
                       <ul className="list-unstyled mb-0">
@@ -705,28 +705,28 @@ const Resource: React.FC = () => {
 
                 {activeFundabilityStep.providers.length > 0 ? (
                   <div className="recommended-providers-section">
-                    <h5 className="fw-bold text-dark mb-4 d-flex align-items-center">
-                      <i className="ri-shield-user-fill text-success me-2 fs-18"></i> Provider List
+                    <h5 className="fw-semibold text-dark mb-4 d-flex align-items-center">
+                      <i className="ri-shield-check-fill text-success me-2 fs-18"></i> Recommended Providers
                     </h5>
                     <div className="rh-scroll rh-scroll-modal-list">
-                      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mx-n2">
+                      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mx-n2 pb-2">
                         {activeFundabilityStep.providers.map((provider: any, i: number) => (
                           <div className="col px-2" key={i}>
-                            <div className="p-3 bg-white rounded-2 border-light-subtle shadow-sm h-100 d-flex flex-column transition-all hover-shadow">
-                              <div className="d-flex align-items-center justify-content-between mb-2">
-                                <h5 className="mb-0 fw-bold fs-14 text-dark">{provider.name}</h5>
+                            <div className="p-3 bg-white rounded-3 shadow-sm h-100 d-flex flex-column transition-all hover-shadow" style={{ border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                <h6 className="mb-0 fw-semibold fs-15 text-dark">{provider.name}</h6>
                                 {provider.is_recommended && (
-                                  <span className="badge bg-warning-subtle text-warning border-warning-subtle fs-10 rounded-pill">
-                                    <i className="ri-star-fill"></i>
+                                  <span className="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 fs-10">
+                                    <i className="ri-star-fill align-middle"></i>
                                   </span>
                                 )}
                               </div>
-                              <p className="text-muted fs-12 mb-3 lh-base flex-grow-1">{provider.desc}</p>
+                              <p className="text-muted fs-13 mb-3 lh-base flex-grow-1">{provider.desc}</p>
                               <a
                                 href={provider.link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="btn btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-2 rounded-2 transition-all mt-auto btn-primary shadow-sm"
+                                className="btn btn-primary btn-sm w-100 py-2 rounded-2 shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all mt-auto"
                               >
                                 {provider.btn_label || 'Get Started'}
                                 <i className="ri-external-link-line fs-14"></i>
@@ -740,13 +740,13 @@ const Resource: React.FC = () => {
                 ) : (
                   <div className="p-4 text-center bg-white rounded-3 border border-light-subtle border-dashed">
                     <i className="ri-search-eye-line fs-40 text-muted mb-2"></i>
-                    <h6 className="fw-bold text-dark mb-1">More Resources Needed?</h6>
+                    <h6 className="fw-semibold text-dark mb-1">More Resources Needed?</h6>
                     <p className="text-muted fs-12 mb-0">Check the main library for additional tools and partners.</p>
                   </div>
                 )}
               </ModalBody>
               <ModalFooter className="bg-white border-top py-3 px-4">
-                <button className="btn btn-light fw-bold px-4" onClick={() => setShowFundabilityModal(false)}>Close</button>
+                <button className="btn btn-light fw-semibold px-4" onClick={() => setShowFundabilityModal(false)}>Close</button>
               </ModalFooter>
             </>
           )}
