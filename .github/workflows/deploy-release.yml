@@ -62,7 +62,7 @@ jobs:
           if [ "$PROD_URL" == "https://partner.fourcornerfunding.com/login" ]; then
             echo "Disclaimer: Smoke test domain is not defined. Please add PROD_WEB_URL to GitHub Secrets."
           else
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$PROD_URL" || echo "000")
+            HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 10 "$PROD_URL" || echo "000")
             if [ "$HTTP_STATUS" -eq 200 ]; then
                echo "✅ Smoke test passed! Production server responded with HTTP $HTTP_STATUS."
             else
