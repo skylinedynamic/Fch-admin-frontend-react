@@ -4,11 +4,25 @@ import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
+import { useSiteSettings } from '../../modules/cms/queries'
 
 export default function Header() {
   const navigate = useNavigate()
   const { hasPermission } = usePermissions()
+  const { data: settingsData } = useSiteSettings()
+  const settings = settingsData?.data
+  const BASE_URL = import.meta.env.VITE_BASE_URL || ''
   const [user, setUser] = useState(null)
+
+  const getLogoUrl = (path, fallback) => {
+    if (!path) return fallback;
+    if (path.startsWith('http')) return path;
+    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
+  };
+
+  const dynamicLogo = getLogoUrl(settings?.partner_logo, "/assets/images/fch-logo-wide.png");
+  const dynamicFavicon = getLogoUrl(settings?.favicon, "/assets/images/Favicon.png");
+  const siteName = settings?.site_name || "Four Corner Funding";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof document !== 'undefined') {
       return (document.documentElement.getAttribute('data-sidebar-size') || 'lg') === 'sm'
@@ -78,10 +92,10 @@ export default function Header() {
             <div className="navbar-brand-box horizontal-logo">
               <a href="/" className="logo logo-dark">
                 <span className="logo-sm">
-                  <img src="/assets/images/Favicon.png" alt="" height="22" />
+                  <img src={dynamicFavicon} alt={siteName} height="22" />
                 </span>
                 <span className="logo-lg">
-                  <img src="/assets/images/fch-logo-wide.png" alt="" height="17" />
+                  <img src={dynamicLogo} alt={siteName} height="17" />
                 </span>
               </a>
 

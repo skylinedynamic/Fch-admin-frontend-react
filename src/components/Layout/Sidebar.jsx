@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { usePermissions } from "../../lib/auth/usePermissions";
+import { useSiteSettings } from "../../modules/cms/queries";
 import { useAuthStore } from "../../store/auth/authStore";
 import faviconImg from "../../../assets/images/Favicon.png";
 import logoImg from "../../../assets/images/fch-logo-wide.png";
@@ -151,6 +152,28 @@ const menuItems = [
     isHostOnly: false,
   },
   {
+    label: "CMS",
+    icon: "ri-layout-grid-line",
+    id: "cms-menu",
+    subItems: [
+      {
+        to: "/cms/site-settings",
+        label: "Site Settings",
+        permission: "view site settings",
+      },
+      {
+        to: "/cms/blogs",
+        label: "Blogs",
+        permission: "view blogs",
+      },
+      {
+        to: "/cms/seo-settings",
+        label: "SEO Settings",
+        permission: "view seo settings",
+      },
+    ],
+  },
+  {
     to: "/admin/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
@@ -167,6 +190,18 @@ export default function Sidebar() {
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission, isRestricted } = usePermissions();
   const location = useLocation();
+  const { data: settingsData } = useSiteSettings();
+  const settings = settingsData?.data;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+
+  const getLogoUrl = (path, fallback) => {
+    if (!path) return fallback;
+    if (path.startsWith('http')) return path;
+    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
+  };
+
+  const dynamicLogo = getLogoUrl(settings?.partner_logo, logoImg);
+  const dynamicFavicon = getLogoUrl(settings?.favicon, faviconImg);
 
   // Auto-expand menu on route change
   useEffect(() => {
@@ -279,18 +314,18 @@ export default function Sidebar() {
       <div className="navbar-brand-box">
         <a href="/" className="logo logo-dark">
           <span className="logo-sm">
-            <img src={faviconImg} alt="" height="22" />
+            <img src={dynamicFavicon} alt="" height="22" />
           </span>
           <span className="logo-lg">
-            <img src={logoImg} alt="" width="200" height="auto" />
+            <img src={dynamicLogo} alt="" width="200" height="auto" />
           </span>
         </a>
         <a href="/" className="logo logo-light">
           <span className="logo-sm">
-            <img src={faviconImg} alt="" height="40" />
+            <img src={dynamicFavicon} alt="" height="40" />
           </span>
           <span className="logo-lg">
-            <img src={logoImg} alt="" width="200" height="auto" />
+            <img src={dynamicLogo} alt="" width="200" height="auto" />
           </span>
         </a>
         <button

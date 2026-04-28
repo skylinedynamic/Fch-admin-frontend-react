@@ -42,6 +42,13 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
+import BlogList from './pages/cms/BlogList.tsx';
+import BlogEdit from './pages/cms/BlogEdit.tsx';
+import BlogCategories from './pages/cms/BlogCategories.tsx';
+import BlogTags from './pages/cms/BlogTags.tsx';
+import SeoSettings from './pages/cms/SeoSettings.tsx';
+import SiteSettings from './pages/cms/SiteSettings.tsx';
+import { useSiteSettings } from './modules/cms/queries';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -75,6 +82,23 @@ export default function App() {
   }, []);
 
   const user = useAuthStore((state) => state.user);
+  const { data: settingsData } = useSiteSettings();
+
+  useEffect(() => {
+    if (settingsData?.data?.favicon) {
+      const favicon = settingsData.data.favicon;
+      const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+      const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${favicon.replace(/^\//, '')}`;
+      
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
+  }, [settingsData]);
 
   return (
     <>
@@ -144,9 +168,25 @@ export default function App() {
             </Route>
 
 
-            {/* Settings Route */}
-            <Route element={<PermissionRoute permission="view settings" />}>
-              <Route path="admin/settings" element={<Settings />} />
+            {/* CMS Routes */}
+            <Route path="cms">
+              <Route element={<PermissionRoute permission="view blogs" />}>
+                <Route path="blogs" element={<BlogList />} />
+                <Route path="blog-categories" element={<BlogCategories />} />
+                <Route path="blog-tags" element={<BlogTags />} />
+                <Route element={<PermissionRoute permission="create blogs" />}>
+                  <Route path="blogs/create" element={<BlogEdit />} />
+                </Route>
+                <Route element={<PermissionRoute permission="update blogs" />}>
+                  <Route path="blogs/:id/edit" element={<BlogEdit />} />
+                </Route>
+              </Route>
+              <Route element={<PermissionRoute permission="view seo settings" />}>
+                <Route path="seo-settings" element={<SeoSettings />} />
+              </Route>
+              <Route element={<PermissionRoute permission="view site settings" />}>
+                <Route path="site-settings" element={<SiteSettings />} />
+              </Route>
             </Route>
 
             <Route path="change-password" element={<ChangePassword />} />
@@ -220,6 +260,12 @@ export default function App() {
               <Route element={<PermissionRoute permission="view subscriptions" />}>
                 <Route path="subscriptions" element={<Subscriptions />} />
               </Route>
+            </Route>
+
+            {/* General Settings */}
+            <Route element={<PermissionRoute permission="view settings" />}>
+              <Route path="settings" element={<Settings />} />
+              <Route path="admin/settings" element={<Settings />} />
             </Route>
 
             {/* Under Construction - accessible to all authenticated users */}
