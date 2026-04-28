@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
-import { updatePassword } from './services'
-import type { UpdatePasswordData } from './types'
+import { updatePassword, updateProfile } from './services'
+import type { UpdatePasswordData, UpdateProfileData } from './types'
 
 export const queryKeys = {
     authProfile: {
@@ -11,5 +11,11 @@ export const queryKeys = {
 export const useUpdatePassword = () => {
     return useMutation({
         mutationFn: (payload: UpdatePasswordData) => updatePassword(payload),
+    })
+}
+
+export const useUpdateProfile = () => {
+    return useMutation({
+        mutationFn: (payload: UpdateProfileData) => updateProfile(payload),
     })
 }
