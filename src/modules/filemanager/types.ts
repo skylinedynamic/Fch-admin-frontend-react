@@ -50,6 +50,7 @@ export interface PasteItemsResponse {
 export interface FileManagerContext {
   entity_type?: string
   entity_id?: number | string
+  get_all?: boolean
 }
 
 export interface FolderTreeResponse {

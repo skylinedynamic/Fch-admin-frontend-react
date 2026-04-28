@@ -38,6 +38,7 @@ interface CustomFileManagerProps {
   onSelectFiles?: (files: FileSystemItem[]) => void
   onCancelSelection?: () => void
   onChanged?: () => void
+  rootLabel?: string
 }
 
 export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
@@ -56,7 +57,8 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
   onPaste,
   onSelectFiles,
   onCancelSelection,
-  onChanged
+  onChanged,
+  rootLabel
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -324,6 +326,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
           tree={folderTree}
           currentPath={currentPath}
           onNavigate={onNavigate}
+          rootLabel={rootLabel}
         />
       </div>
 
@@ -415,7 +418,7 @@ export const CustomFileManager: React.FC<CustomFileManagerProps> = ({
         </div>
 
         {/* Breadcrumb */}
-        <Breadcrumb currentPath={currentPath} onNavigate={onNavigate} />
+        <Breadcrumb currentPath={currentPath} onNavigate={onNavigate} rootLabel={rootLabel} />
 
         {/* Content */}
         <div className="fm-content">

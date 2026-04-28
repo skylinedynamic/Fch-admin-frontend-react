@@ -55,6 +55,11 @@ const menuItems = [
         to: '/intake-review/funding-review',
         label: 'Funding Review',
         permission: 'view funding application',
+      },
+      {
+        to: '/intake-review/change-requests',
+        label: 'Change Requests',
+        permission: 'view change requests',
       }
     ]
   },
@@ -79,6 +84,12 @@ const menuItems = [
         to: "/verification-center",
         label: "Verification Center",
         permission: "view verification request", // Reuse permission or add new one
+        isHostOnly: true,
+      },
+      {
+        to: "/credit-accounts",
+        label: "Credit Accounts",
+        permission: "view credit accounts", // Temporary permission or add new one
         isHostOnly: true,
       },
     ],
@@ -126,12 +137,12 @@ const menuItems = [
   //   label: 'Support Tickets',
   //   permission: 'view support tickets',
   // },
-  // {
-  //   to: '/under-construction/resources',
-  //   icon: 'ri-folder-fill',
-  //   label: 'Resources',
-  //   permission: 'view resources',
-  // },
+  {
+    to: '/resources',
+    icon: 'ri-folder-fill',
+    label: 'Resources',
+    permission: 'view resources',
+  },
   {
     to: "/employees",
     icon: "ri-user-2-fill",
@@ -177,7 +188,7 @@ const menuItems = [
     to: "/admin/settings",
     icon: "ri-file-settings-fill",
     label: "Settings",
-    permission: "view settings",
+    permission: ["update payment settings", "update partner agreement settings", "update borrower agreement settings"],
     isHostOnly: false,
   },
 ];
@@ -188,7 +199,7 @@ export default function Sidebar() {
   );
   const [open, setOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
-  const { hasPermission, isRestricted } = usePermissions();
+  const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
   const location = useLocation();
   const { data: settingsData } = useSiteSettings();
   const settings = settingsData?.data;
@@ -268,7 +279,11 @@ export default function Sidebar() {
   const visibleMenuItems = useMemo(() => {
     const checkVisibility = (item) => {
       // 1. Basic permission check
-      if (item.permission && !hasPermission(item.permission)) {
+      if (Array.isArray(item.permission)) {
+        if (!hasAnyPermission(item.permission)) {
+          return false;
+        }
+      } else if (item.permission && !hasPermission(item.permission)) {
         return false;
       }
 

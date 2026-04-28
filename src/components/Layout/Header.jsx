@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { clearAuth, getUser } from '../../lib/auth'
+import { clearAuth } from '../../lib/auth'
+import { useAuthStore } from '../../store/auth/authStore'
 import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link } from 'react-router-dom'
@@ -22,17 +23,13 @@ export default function Header() {
 
   const dynamicLogo = getLogoUrl(settings?.partner_logo, "/assets/images/fch-logo-wide.png");
   const dynamicFavicon = getLogoUrl(settings?.favicon, "/assets/images/Favicon.png");
-  const siteName = settings?.site_name || "Four Corner Funding";
+  const siteName = settings?.site_name || "";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof document !== 'undefined') {
       return (document.documentElement.getAttribute('data-sidebar-size') || 'lg') === 'sm'
     }
     return false
   })
-
-  useEffect(() => {
-    setUser(getUser())
-  }, [])
 
   const handleLogout = async (e) => {
     e?.preventDefault?.()

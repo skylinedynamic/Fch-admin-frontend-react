@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/auth'
 
 
 type Props = {
-    permission: string
+    permission: string | string[]
     redirectTo?: string
 }
 
@@ -20,16 +20,28 @@ export default function PermissionRoute({ permission, redirectTo = '/' }: Props)
     const userSubscription = useAuthStore((state) => state.userSubscription)
     const isRestricted = isSubscriptionRestricted(userSubscription)
 
-    
+
     // Check if the current route is allowed even when restricted
-    const isAllowedWhenRestricted = ['view dashboard', 'view invoices', 'view payments'].includes(permission)
-    
+    const allowedRestrictedPerms = [
+        'view dashboard', 'view invoices', 'view payments'
+    ];
+
+    const isAllowedWhenRestricted = Array.isArray(permission)
+        ? permission.some(p => allowedRestrictedPerms.includes(p))
+        : allowedRestrictedPerms.includes(permission)
+
     // If restricted and NOT on an allowed route, block access
     let allowed = false;
 
-    if(permission){
-        allowed = hasPermission(permission) && (!isRestricted || isAllowedWhenRestricted)
-    }else{
+    if (permission) {
+        let hasPerm = false;
+        if (Array.isArray(permission)) {
+            hasPerm = permission.some(p => hasPermission(p));
+        } else {
+            hasPerm = hasPermission(permission);
+        }
+        allowed = hasPerm && (!isRestricted || isAllowedWhenRestricted)
+    } else {
         allowed = (!isRestricted || isAllowedWhenRestricted)
     }
 

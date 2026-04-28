@@ -3,14 +3,18 @@ export const FILE_MANAGER_CONFIG = {
   MAX_NAME_LENGTH: 20,
   ALLOWED_EXTENSIONS: [
     // Images
-    'jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'bmp',
+    'jpg', 'jpeg', 'png', 'svg', 'gif', 'webp', 'bmp', 'heic', 'tiff', 'tif', 'ico', 'avif',
+
     // Documents
-    'doc', 'docx', 'pdf', 'txt',
+    'doc', 'docx', 'pdf', 'txt', 'rtf', 'odt',
+
     // Data
-    'xls', 'xlsx', 'csv',
+    'xls', 'xlsx', 'csv', 'ods',
+
     // Archives
-    'zip',
+    'zip', 'rar', '7z',
+
     // Videos
-    'mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv'
+    'mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'm4v'
   ]
 }

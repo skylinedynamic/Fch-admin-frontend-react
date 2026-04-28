@@ -510,7 +510,7 @@ export default function ClientDetails() {
                                         </li>
                                     )}
                                 </ul>
-                                
+
                             </div>
                             <div className="card-body p-4">
                                 <ClientForm

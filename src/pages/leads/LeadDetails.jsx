@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
+import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
@@ -74,11 +75,13 @@ export default function LeadDetails() {
         partner_id: '',
         partner_manager: '',
         lead_source_note: '',
+        referral_partner_id: '',
         entity_type_note: '',
         industry_type_note: ''
     });
 
     const [users, setUsers] = useState([]);
+    const [referralPartners, setReferralPartners] = useState([]);
 
     const [profileStats, setProfileStats] = useState({
         total_meetings: 0,
@@ -191,6 +194,7 @@ export default function LeadDetails() {
                     domain: formData.domain,
                     lead_source: formData.lead_source,
                     lead_source_note: formData.lead_source_note,
+                    referral_partner_id: formData.referral_partner_id,
                     requirement_details: formData.requirement_details
                 };
             } else {
@@ -351,8 +355,13 @@ export default function LeadDetails() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const usersRes = await allUsers();
+                const [usersRes, referralRes] = await Promise.all([
+                    allUsers(),
+                    fetchReferralPartners()
+                ]);
+                
                 if (usersRes.status) setUsers(usersRes.data || []);
+                setReferralPartners(referralRes || []);
             } catch (err) {
                 console.error(err);
             }
@@ -711,6 +720,23 @@ export default function LeadDetails() {
                                                                             placeholder="Please specify lead source"
                                                                         />
                                                                         {errors.lead_source_note && <div className="invalid-feedback d-block">{errors.lead_source_note}</div>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {formData.lead_source === 'Referral Partner' && (
+                                                                <div className="col-lg-6">
+                                                                    <div className="mb-3">
+                                                                        <label className="form-label">Referral Contact <span className="text-danger">*</span></label>
+                                                                        <Dropdown
+                                                                            value={formData.referral_partner_id}
+                                                                            options={referralPartners.map(p => ({ label: p.full_name, value: p.id }))}
+                                                                            onChange={(e) => handleInputChange({ target: { name: 'referral_partner_id', value: e.value } })}
+                                                                            placeholder="Select Referral Partner"
+                                                                            filter
+                                                                            className={`w-100 ${errors.referral_partner_id ? 'p-invalid' : ''}`}
+                                                                        />
+                                                                        {errors.referral_partner_id && <div className="invalid-feedback d-block">{errors.referral_partner_id}</div>}
                                                                     </div>
                                                                 </div>
                                                             )}

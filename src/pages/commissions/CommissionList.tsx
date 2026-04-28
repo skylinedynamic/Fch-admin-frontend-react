@@ -135,6 +135,13 @@ export default function CommissionList() {
             }
         };
         loadPartnersList();
+
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, [isPartner]);
 
     const handleClearFilters = () => {
@@ -188,10 +195,10 @@ export default function CommissionList() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -238,7 +245,7 @@ export default function CommissionList() {
                 </div>
 
                 {/* Filters and Table */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card shadow-sm border-0">
                             <div className="card-body">
@@ -319,7 +326,7 @@ export default function CommissionList() {
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
-                                            scrollHeight="600px"
+                                            scrollHeight="flex"
                                             value={commissionData?.data || []}
                                             paginator
                                             lazy

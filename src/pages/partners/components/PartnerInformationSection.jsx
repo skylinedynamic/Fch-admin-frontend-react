@@ -11,7 +11,7 @@ import { FileManagerModal } from '../../../components/FileManagerModal/FileManag
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 
-const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || (import.meta.env.VITE_BASE_URL ? `${import.meta.env.VITE_BASE_URL}/storage` : '');
 
 export default function PartnerInformationSection({
     formData,
@@ -88,36 +88,48 @@ export default function PartnerInformationSection({
             return URL.createObjectURL(formData.partner_image);
         }
 
+        // 2. If we have a preview URL from file manager selection (Highest priority for selected files)
+        if (previewUrl) {
+            return previewUrl;
+        }
+
         const buildUrl = (path) => {
-            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
+            if (!path || typeof path !== 'string') return avatarDefault;
+            
+            // If it's already a full URL or blob, return it as is
+            if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
                 return path;
             }
 
-            // Clean up BOTH base URL and path
-            const baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
+            // If it's the default avatar or a local asset, return it as is
+            if (path === avatarDefault || path.startsWith('/assets/')) {
+                return path;
+            }
+
+            // Clean up base URL and path
+            // Fallback to /storage if VITE_STORAGE_URL is missing to avoid frontend origin issues
+            const baseUrl = (STORAGE_URL.trim() || '/storage').replace(/\/+$/, '');
             let cleanPath = path.trim().replace(/^\/+/, '');
 
-            // Ensure partners structure if missing
+            // Ensure partners directory structure if it's just a filename
             if (partnerId && !cleanPath.includes('partners/')) {
-                // If it already has some other path, we preserve it, 
-                // but if it's just a filename, we add the partner path
+                // If it doesn't contain a slash, it's just a filename
                 if (!cleanPath.includes('/')) {
                     cleanPath = `partners/${partnerId}/${cleanPath}`;
                 }
             }
 
-            // Construct full URL and remove any double slashes except after protocol
+            // Construct full URL and remove double slashes
             const fullUrl = `${baseUrl}/${cleanPath}`;
             return fullUrl.replace(/([^:]\/)\/+/g, "$1");
         };
 
-        // 2. If we have a preview URL from file manager selection
-        if (previewUrl && formData.partner_image && typeof formData.partner_image === 'string' && !formData.partner_image.startsWith('http')) {
-            return buildUrl(previewUrl);
-        }
-
-        // 3. Use current partner_image if it's a string (from DB)
+        // 3. Use current partner_image if it's a string (path from DB or selected from file manager)
         if (typeof formData.partner_image === 'string' && formData.partner_image.trim() !== '') {
+            // If the string is already a full URL (returned by some API resources), return it
+            if (formData.partner_image.startsWith('http')) {
+                return formData.partner_image;
+            }
             return buildUrl(formData.partner_image);
         }
 

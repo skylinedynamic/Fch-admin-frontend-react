@@ -121,6 +121,13 @@ export default function BorrowerVerificationRequests() {
 
     useEffect(() => {
         fetchProfileData();
+
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, [borrower_id]);
 
     useEffect(() => {
@@ -378,9 +385,9 @@ export default function BorrowerVerificationRequests() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -447,7 +454,7 @@ export default function BorrowerVerificationRequests() {
 
 
 
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-12">
                         <div className="card border-0 shadow-sm">
                             <div className="card-body">
@@ -609,6 +616,8 @@ export default function BorrowerVerificationRequests() {
                                     />
                                 ) : (
                                     <DataTable
+                                        scrollable
+                                        scrollHeight="flex"
                                         value={requests || []}
                                         paginator
                                         rows={perPage}

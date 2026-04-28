@@ -3,7 +3,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import Flatpickr from 'react-flatpickr';
 import { toast } from 'react-toastify';
-import { formatPhoneNumber, normalizeDate } from '../../../utils/formatters';
+import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
 import {
     useClient,
     useUpdateClient,
@@ -316,7 +316,15 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // 4. Handle Inputs
     const handleInputChange = (e: any) => {
         const name = e.target ? e.target.name : e.name;
-        const value = e.target ? e.target.value : e.value;
+        let value = e.target ? e.target.value : e.value;
+    
+        if (name === 'postal_code' || name === 'business_postal_code') {
+            value = formatZipCode(value);
+        } else if (name === 'business_ein') {
+            value = formatBusinessEIN(value);
+        } else if (name === 'duns_number') {
+            value = formatDUNS(value);
+        }
 
         if (name === 'enrollment_payment') {
             setFormData(prev => ({
@@ -734,8 +742,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             className={`form-control ${errors.business_ein ? 'is-invalid' : ''}`}
                             id="business_ein"
                             name="business_ein"
-                            placeholder="Enter 9-digit EIN"
-                            maxLength={9}
+                            placeholder="XX-XXXXXXX"
+                            maxLength={10}
                             value={formData.business_ein || ''}
                             onChange={handleInputChange}
                         />
@@ -878,6 +886,38 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             onChange={handleInputChange}
                         />
                         {errors.business_postal_code && <div className="invalid-feedback">{errors.business_postal_code}</div>}
+                    </div>
+                </div>
+
+
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="fico_score" className="form-label">Personal Credit Scores</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.fico_score ? 'is-invalid' : ''}`}
+                            id="fico_score"
+                            name="fico_score"
+                            placeholder="0"
+                            value={formData.fico_score || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.fico_score && <div className="invalid-feedback">{errors.fico_score}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label htmlFor="paydex_score" className="form-label">Business Credit Scores</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.paydex_score ? 'is-invalid' : ''}`}
+                            id="paydex_score"
+                            name="paydex_score"
+                            placeholder="0"
+                            value={formData.paydex_score || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.paydex_score && <div className="invalid-feedback">{errors.paydex_score}</div>}
                     </div>
                 </div>
 

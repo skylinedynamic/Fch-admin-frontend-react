@@ -56,6 +56,13 @@ export default function Contacts() {
     // Initialize filters on mount
     useEffect(() => {
         initFilters();
+
+        // Add class to body to prevent global scroll
+        document.body.classList.add('table-page-fit-active');
+
+        return () => {
+            document.body.classList.remove('table-page-fit-active');
+        };
     }, []);
 
     // Load contacts data with filters
@@ -193,14 +200,21 @@ export default function Contacts() {
     // Column body templates
     const fullNameBody = (rowData) => {
         return (
-            <span className="fw-medium">
-                {rowData.full_name}
-            </span>
+            <div className="d-flex align-items-center">
+                <span className="fw-medium">
+                    {rowData.full_name}
+                </span>
+                {rowData.is_referral_partner && (
+                    <span className="badge bg-success-subtle text-success ms-2 px-2 py-1 fs-11 border border-success-subtle rounded-pill">
+                        <i className="ri-shake-hands-line me-1 align-bottom"></i> Referral Partner
+                    </span>
+                )}
+            </div>
         );
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content page-content-fit">
             <style>{`
                 .p-datatable .p-datatable-emptymessage td {
                     text-align: center !important;
@@ -213,7 +227,7 @@ export default function Contacts() {
 
             {/* Header */}
             <div className="container-fluid">
-                <div className="row page-subheader-sticky bg-body">
+                <div className="row pb-1">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -257,7 +271,7 @@ export default function Contacts() {
                 </div>
 
                 {/* Filters and Table */}
-                <div className="row">
+                <div className="row row-table-fit">
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
@@ -315,7 +329,7 @@ export default function Contacts() {
                                     <div className="table-responsive table-card mt-1">
                                         <DataTable
                                             scrollable
-                                            scrollHeight="510px"
+                                            scrollHeight="flex"
                                             value={contacts}
                                             paginator
                                             lazy

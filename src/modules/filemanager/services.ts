@@ -17,7 +17,8 @@ export const fetchDocuments = async (path: string = '/', context?: FileManagerCo
   const body: any = {
     path,
     entity_type: context?.entity_type ?? '',
-    entity_id: context?.entity_id ?? ''
+    entity_id: context?.entity_id ?? '',
+    get_all: context?.get_all ?? false
   }
 
   const { data } = await apiClient.post<DocumentsResponse>(`${BASE_URL}/list`, body)
@@ -30,6 +31,8 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
   formData.append('path', path)
   if (context?.entity_type) formData.append('entity_type', context.entity_type)
   if (context?.entity_id) formData.append('entity_id', String(context.entity_id))
+  if (context?.get_all) formData.append('get_all', String(context.get_all))
+  if (context?.get_all !== undefined) formData.append('get_all', String(context.get_all))
 
   const { data } = await apiClient.post<UploadFileResponse>(`${BASE_URL}/upload`, formData, {
     headers: {
@@ -109,7 +112,8 @@ export const fetchFolderTree = async (path: string = '/', context?: FileManagerC
   const body: any = {
     path,
     entity_type: context?.entity_type ?? '',
-    entity_id: context?.entity_id ?? ''
+    entity_id: context?.entity_id ?? '',
+    get_all: context?.get_all ?? false
   }
 
   const { data } = await apiClient.post<FolderTreeResponse>(`${BASE_URL}/tree`, body)

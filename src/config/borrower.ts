@@ -22,6 +22,24 @@ export const APPLICATION_STATUS_CLASS_MAP: Record<string, string> = {
   [APPLICATION_STATUS_OPTIONS[4].value]: 'bg-danger-subtle text-danger'
 };
 
+export const CHANGE_REQUEST_STATUS = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected'
+} as const;
+
+export const CHANGE_REQUEST_STATUS_OPTIONS = [
+  { label: 'Pending', value: CHANGE_REQUEST_STATUS.PENDING },
+  { label: 'Approved', value: CHANGE_REQUEST_STATUS.APPROVED },
+  { label: 'Rejected', value: CHANGE_REQUEST_STATUS.REJECTED }
+];
+
+export const CHANGE_REQUEST_STATUS_CLASS_MAP: Record<string, string> = {
+  [CHANGE_REQUEST_STATUS.PENDING]: 'bg-warning-subtle text-warning',
+  [CHANGE_REQUEST_STATUS.APPROVED]: 'bg-success-subtle text-success',
+  [CHANGE_REQUEST_STATUS.REJECTED]: 'bg-danger-subtle text-danger'
+};
+
 export const FUNDING_TYPE_OPTIONS = [
   { label: 'Working Capital', value: 'Working Capital' },
   { label: 'Equipment', value: 'Equipment' },

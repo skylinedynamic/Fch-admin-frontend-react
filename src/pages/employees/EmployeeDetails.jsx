@@ -315,7 +315,7 @@ export default function EmployeeDetails() {
       if (checked) {
         // Only perform check if it's a new employee OR if existing employee doesn't have a user account yet
         const hasExistingAccount = id && employee.user && Object.keys(employee.user).length > 0;
-        
+
         if (!hasExistingAccount) {
           // Immediately check the checkbox for better UX
           setEmployee((prev) => ({
@@ -326,65 +326,65 @@ export default function EmployeeDetails() {
           }));
 
           const performLimitCheck = async () => {
-             // Skip limit check for host users (superadmins)
-             if (user?.is_host == 1) {
+            // Skip limit check for host users (superadmins)
+            if (user?.is_host == 1) {
+              return;
+            }
+
+            try {
+              setLoadingLimitCheck(true);
+
+              // Fetch fresh user details to check if host or limits
+              const detailsRes = await getUserDetails();
+              const freshUser = detailsRes?.data?.user;
+
+              // Double check host status from fresh data
+              if (freshUser?.is_host == 1) {
                 return;
-             }
+              }
 
-             try {
-               setLoadingLimitCheck(true);
-               
-               // Fetch fresh user details to check if host or limits
-               const detailsRes = await getUserDetails();
-               const freshUser = detailsRes?.data?.user;
-               
-               // Double check host status from fresh data
-               if (freshUser?.is_host == 1) {
-                  return;
-               }
-               
-               const data = await getUserCount();
-               const currentCount = parseInt(data?.data?.count || 0);
-               const freeLimit = parseInt(freshUser?.total_free_users || 0);
-               const paidLimit = parseInt(freshUser?.total_paid_users || 0);
-               const totalAllowed = freeLimit + paidLimit;
+              const data = await getUserCount();
+              const currentCount = parseInt(data?.data?.count || 0);
+              const freeLimit = parseInt(freshUser?.total_free_users || 0);
+              const paidLimit = parseInt(freshUser?.total_paid_users || 0);
+              const totalAllowed = freeLimit + paidLimit;
 
-               if (currentCount >= totalAllowed) {
-                  // Limit reached! Uncheck the box and show modal
-                  setEmployee((prev) => ({
-                    ...prev,
-                    create_account: false,
-                    role_id: '',
-                    user: {}
-                  }));
-                  
-                  setLimitData({
-                      count: currentCount,
-                      price: data?.data?.per_user_price || '0',
-                      limit: totalAllowed,
-                      quantity: 1,
-                      months: 1,
-                      totalPrice: parseFloat(data?.data?.per_user_price || 0)
-                  });
-                  setShowLimitModal(true);
-                  return;
-               }
-               
-               // Limit OK - checkbox already checked above
+              if (currentCount >= totalAllowed) {
+                // Limit reached! Uncheck the box and show modal
+                setEmployee((prev) => ({
+                  ...prev,
+                  create_account: false,
+                  role_id: '',
+                  user: {}
+                }));
 
-             } catch (error) {
-               console.error("Failed to check user limit:", error);
-               toast.error("Failed to check user limit");
-               // Revert checkbox on error
-               setEmployee((prev) => ({
-                 ...prev,
-                 create_account: false,
-                 role_id: '',
-                 user: {}
-               }));
-             } finally {
-               setLoadingLimitCheck(false);
-             }
+                setLimitData({
+                  count: currentCount,
+                  price: data?.data?.per_user_price || '0',
+                  limit: totalAllowed,
+                  quantity: 1,
+                  months: 1,
+                  totalPrice: parseFloat(data?.data?.per_user_price || 0)
+                });
+                setShowLimitModal(true);
+                return;
+              }
+
+              // Limit OK - checkbox already checked above
+
+            } catch (error) {
+              console.error("Failed to check user limit:", error);
+              toast.error("Failed to check user limit");
+              // Revert checkbox on error
+              setEmployee((prev) => ({
+                ...prev,
+                create_account: false,
+                role_id: '',
+                user: {}
+              }));
+            } finally {
+              setLoadingLimitCheck(false);
+            }
           };
           performLimitCheck();
           return; // Exit early as we handle state inside async block
@@ -512,7 +512,7 @@ export default function EmployeeDetails() {
     toast.success('Payment completed successfully!');
     // Delay reload to allow toast to be seen
     setTimeout(() => {
-        window.location.reload();
+      window.location.reload();
     }, 2000);
   };
 

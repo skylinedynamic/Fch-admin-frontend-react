@@ -632,17 +632,43 @@
   border-top: 1px solid #cbd5e1
 }
 
-/* ── The document — A4 width, unlimited height ── */
-.ab4-doc {
+/* ── Page wrapper — stacks A4 sheets vertically ── */
+.ab4-pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.ab4-pages-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 15 px gap between pages — same colour as Preview's .page-sep */
+.ab4-page-sep {
   width: 794px;
   max-width: 100%;
+  height: 15px;
+  background: #e8edf5;
+  flex-shrink: 0;
+}
+
+/* ── The document — exact A4 at 96 dpi ── */
+.ab4-doc {
+  width: 794px;
   min-height: 1123px;
   background: #ffffff;
-  padding: var(--page-padding, 72px 80px 96px);
+  padding:
+    var(--doc-pad-top,  72px)
+    var(--doc-pad-sides, 80px)
+    var(--doc-pad-bot,  96px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, .04), 0 8px 32px rgba(0, 0, 0, .12);
   border-radius: 2px;
   flex-shrink: 0;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* ── Empty state ── */
@@ -827,6 +853,8 @@
   border-radius: var(--radius, 5px);
   padding: var(--pad, 0px);
   opacity: var(--opacity, 1);
+  margin-top: var(--mt, 0px);
+  margin-bottom: var(--mb, 0px);
   transition: all .12s
 }
 
@@ -848,7 +876,6 @@
 .ab4-block--sel {
   outline: 2px solid #6366f1;
   outline-offset: 5px;
-  background: rgba(238, 242, 255, .15)
 }
 
 .ab4-badge {
@@ -995,7 +1022,6 @@
 
 .ab4-editor p {
   margin: 0 0 10px;
-  font-size: 14px;
   line-height: 1.8
 }
 
@@ -1003,7 +1029,6 @@
 .ab4-editor ol {
   padding-left: 22px;
   margin: 0 0 10px;
-  font-size: 14px;
   line-height: 1.8
 }
 
