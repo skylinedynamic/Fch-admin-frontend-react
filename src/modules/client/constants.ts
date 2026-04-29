@@ -66,6 +66,7 @@ export const ENROLLMENT_TABS: Record<string, string> = {
     FINANCIALS: 'businessFinancials',
     CHECKLIST: 'documentChecklist',
     DOCUMENTS: 'documents',
+    TASK_LIST: 'taskList',
     AGREEMENT: 'agreement'
 };
 

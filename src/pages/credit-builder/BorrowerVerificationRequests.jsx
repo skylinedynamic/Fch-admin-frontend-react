@@ -527,7 +527,7 @@ export default function BorrowerVerificationRequests() {
                                     </div>
                                 </form>
 
-                                <div className="card bg-primary-subtle border-0 mb-4 position-relative overflow-hidden" style={{ borderRadius: '15px' }}>
+                                <div className="card bg-primary-subtle border-0 mb-4 position-relative overflow-hidden" style={{ borderRadius: '4px' }}>
                                     <div className="card-body p-4">
                                         {/* Decorative backgrounds */}
 

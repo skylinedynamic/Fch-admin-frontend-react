@@ -185,6 +185,8 @@ export default function Header() {
                 <a className="dropdown-item" href="#"><i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Help</span></a>
                 <div className="dropdown-divider"></div>
                 <a className="dropdown-item" href="#"><i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Settings</span></a> */}
+                <Link className="dropdown-item" to="/profile"><i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Profile</span></Link>
+
                 {hasPermission('view contacts') && (
                   <Link className="dropdown-item" to="/contacts">
                     <i className="mdi mdi-account-outline text-muted fs-16 align-middle me-1"></i>
@@ -197,7 +199,6 @@ export default function Header() {
                     <span className="align-middle">My Agreement</span>
                   </Link>
                 )}
-                <Link className="dropdown-item" to="/change-password"><i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Change Password</span></Link>
                 <a className="dropdown-item" href="#" onClick={handleLogout}><i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span className="align-middle">Logout</span></a>
               </div>
             </div>

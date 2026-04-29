@@ -37,14 +37,6 @@ export default function EmployeeDetails() {
   const canCreate = hasPermission('create employees');
   const canUpdate = hasPermission('update employees');
 
-  // Access control: redirect to access-denied if lacks required permission
-  if (id && !canUpdate) {
-    return <Navigate to="/access-denied" replace />;
-  }
-  if (!id && !canCreate) {
-    return <Navigate to="/access-denied" replace />;
-  }
-
   // State
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(true);

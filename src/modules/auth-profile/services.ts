@@ -10,3 +10,8 @@ export async function updateProfile(data: UpdateProfileData): Promise<AuthProfil
     const response = await apiClient.post('/common/auth-profile/update-profile', data)
     return response.data
 }
+
+export async function updateProfilePicture(data: { image: string }): Promise<AuthProfileResponse> {
+    const response = await apiClient.post('/common/auth-profile/update-profile-picture', data)
+    return response.data
+}

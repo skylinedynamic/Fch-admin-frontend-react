@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useUpdatePassword, useUpdateProfile } from '../../modules/auth-profile';
+import { useUpdatePassword, useUpdateProfile, useUpdateProfilePicture } from '../../modules/auth-profile';
 import { useAuthStore } from '../../store/auth';
+import { refreshUser } from '../../lib/auth/authApi';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
+import { formatPhoneNumber } from '../../utils/formatters';
 
-const ChangePassword = () => {
+const Profile = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const setCredentials = useAuthStore((state) => state.setCredentials);
@@ -14,6 +16,7 @@ const ChangePassword = () => {
 
     const { mutateAsync: updatePassword, isPending: isSubmittingPassword } = useUpdatePassword();
     const { mutateAsync: updateProfile, isPending: isSubmittingProfile } = useUpdateProfile();
+    const { mutateAsync: updateProfilePic } = useUpdateProfilePicture();
 
     const [activeTab, setActiveTab] = useState('profile');
 
@@ -46,7 +49,7 @@ const ChangePassword = () => {
             setProfileData({
                 first_name: firstName,
                 last_name: lastName,
-                phone_number: user.phone_number || '',
+                phone_number: formatPhoneNumber(user.phone_number) || '',
                 email: user.email || '',
                 image: user.image || ''
             });
@@ -64,7 +67,12 @@ const ChangePassword = () => {
     };
 
     const handleProfileChange = (e) => {
-        const { name, value } = e.target;
+        let { name, value } = e.target;
+
+        if (name === 'phone_number') {
+            value = formatPhoneNumber(value);
+        }
+
         setProfileData(prev => ({ ...prev, [name]: value }));
         if (profileErrors[name]) {
             setProfileErrors(prev => ({ ...prev, [name]: '' }));
@@ -115,19 +123,11 @@ const ChangePassword = () => {
         if (!validateProfile()) return;
 
         try {
-            const response = await updateProfile(profileData);
+            const { image, ...dataToUpdate } = profileData;
+            const response = await updateProfile(dataToUpdate);
             if (response.status) {
                 toast.success(response.message || 'Profile updated successfully!');
-                // Update global store
-                setCredentials({
-                    token,
-                    user: {
-                        ...user,
-                        ...profileData,
-                        name: `${profileData.first_name} ${profileData.last_name}`.trim()
-                    },
-                    rememberMe
-                });
+                await refreshUser();
             } else {
                 toast.error(response.message || 'Failed to update profile');
             }
@@ -147,7 +147,7 @@ const ChangePassword = () => {
         try {
             const response = await updatePassword(passwordData);
             if (response.status) {
-                toast.success(response.message || 'Password updated successfully!');
+                toast.success(response.message);
                 setPasswordData({
                     current_password: '',
                     new_password: '',
@@ -155,7 +155,7 @@ const ChangePassword = () => {
                 });
                 setPasswordStrength(0);
             } else {
-                toast.error(response.message || 'Failed to update password');
+                toast.error(response.message);
             }
         } catch (error) {
             if (error?.response?.data?.errors) {
@@ -178,13 +178,18 @@ const ChangePassword = () => {
         return 'Strong';
     };
 
+    const userFullName = user?.name || '';
+    const userNameParts = userFullName.trim().split(' ');
+    const userFirstName = userNameParts[0] || '';
+    const userLastName = userNameParts.length > 1 ? userNameParts.slice(1).join(' ') : '';
+
     return (
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">My Profile</h4>
                                 <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -194,6 +199,31 @@ const ChangePassword = () => {
                                         <li className="breadcrumb-item active" aria-current="page">Profile</li>
                                     </ol>
                                 </nav>
+                            </div>
+                            <div>
+                                {activeTab === 'profile' ? (
+                                    <button
+                                        type="submit"
+                                        form="profile-form"
+                                        className="btn btn-primary px-4 shadow-sm"
+                                        disabled={isSubmittingProfile}
+                                    >
+                                        {isSubmittingProfile ? (
+                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...</>
+                                        ) : 'Save Changes'}
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="submit"
+                                        form="password-form"
+                                        className="btn btn-primary px-4 shadow-sm"
+                                        disabled={isSubmittingPassword}
+                                    >
+                                        {isSubmittingPassword ? (
+                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Updating...</>
+                                        ) : 'Update Password'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -205,21 +235,21 @@ const ChangePassword = () => {
                             <div className="position-relative d-inline-block mx-auto mb-4">
                                 <div className="avatar-xl rounded-circle border border-primary p-1 bg-body shadow-sm overflow-hidden" style={{ width: '120px', height: '120px' }}>
                                     <img
-                                        src={profileData.image ? `${import.meta.env.VITE_BASE_URL}/storage/${profileData.image}` : "https://via.placeholder.com/120"}
+                                        src={user?.image ? `${user.image}` : "https://via.placeholder.com/120"}
                                         alt="profile"
                                         className="img-fluid rounded-circle h-100 w-100 object-fit-cover"
                                     />
                                 </div>
                                 <button
-                                    className="btn btn-primary btn-sm rounded-circle position-absolute bottom-0 end-0 shadow"
+                                    className="btn btn-primary rounded-circle position-absolute bottom-0 end-0 shadow"
                                     onClick={() => setShowFileManager(true)}
                                     title="Update Profile Picture"
-                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}
+                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                    <i className="ri-camera-fill"></i>
+                                    <i className="ri-camera-fill fs-18"></i>
                                 </button>
                             </div>
-                            <h5 className="mb-1 fw-bold">{profileData.first_name} {profileData.last_name}</h5>
+                            <h5 className="mb-1 fw-bold">{userFullName || 'User'}</h5>
                             <p className="text-muted mb-0">{user?.role?.toUpperCase()}</p>
                             <div className="mt-4 border-top pt-4 text-start">
                                 <div className="d-flex align-items-center mb-3">
@@ -237,7 +267,7 @@ const ChangePassword = () => {
                                     </div>
                                     <div className="flex-grow-1 ms-3">
                                         <p className="text-muted fs-11 mb-0 text-uppercase">First Name</p>
-                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{profileData.first_name}</h6>
+                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{userFirstName}</h6>
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center mb-3">
@@ -246,7 +276,7 @@ const ChangePassword = () => {
                                     </div>
                                     <div className="flex-grow-1 ms-3">
                                         <p className="text-muted fs-11 mb-0 text-uppercase">Last Name</p>
-                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{profileData.last_name}</h6>
+                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{userLastName}</h6>
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center mb-3">
@@ -255,7 +285,7 @@ const ChangePassword = () => {
                                     </div>
                                     <div className="flex-grow-1 ms-3">
                                         <p className="text-muted fs-11 mb-0 text-uppercase">Phone Number</p>
-                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{profileData.phone_number || 'N/A'}</h6>
+                                        <h6 className="mb-0 text-truncate" style={{ maxWidth: '160px' }}>{user?.phone_number ? formatPhoneNumber(user.phone_number) : 'N/A'}</h6>
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center">
@@ -304,7 +334,7 @@ const ChangePassword = () => {
                                     {/* Profile Tab */}
                                     {activeTab === 'profile' && (
                                         <div className="tab-pane active" role="tabpanel">
-                                            <form onSubmit={handleProfileSubmit}>
+                                            <form id="profile-form" onSubmit={handleProfileSubmit}>
                                                 <div className="row g-4">
                                                     <div className="col-md-6">
                                                         <label className="form-label fw-semibold">First Name</label>
@@ -336,12 +366,11 @@ const ChangePassword = () => {
                                                         <label className="form-label fw-semibold">Email Address</label>
                                                         <input
                                                             type="email"
-                                                            className={`form-control ${profileErrors.email ? 'is-invalid' : ''}`}
+                                                            className={`form-control bg-light text-muted ${profileErrors.email ? 'is-invalid' : ''}`}
                                                             name="email"
                                                             value={profileData.email}
-                                                            onChange={handleProfileChange}
                                                             placeholder="Enter your email"
-                                                            disabled={isSubmittingProfile}
+                                                            readOnly
                                                         />
                                                         {profileErrors.email && <div className="invalid-feedback">{profileErrors.email}</div>}
                                                     </div>
@@ -360,22 +389,7 @@ const ChangePassword = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-4 d-flex justify-content-end">
-                                                    <button
-                                                        type="submit"
-                                                        className="btn btn-primary px-4 shadow-sm"
-                                                        disabled={isSubmittingProfile}
-                                                    >
-                                                        {isSubmittingProfile ? (
-                                                            <>
-                                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                Saving...
-                                                            </>
-                                                        ) : (
-                                                            'Save Changes'
-                                                        )}
-                                                    </button>
-                                                </div>
+
                                             </form>
                                         </div>
                                     )}
@@ -383,7 +397,7 @@ const ChangePassword = () => {
                                     {/* Password Tab */}
                                     {activeTab === 'password' && (
                                         <div className="tab-pane active" role="tabpanel">
-                                            <form onSubmit={handlePasswordSubmit}>
+                                            <form id="password-form" onSubmit={handlePasswordSubmit}>
                                                 <div className="mb-4">
                                                     <label className="form-label fw-semibold">Current Password</label>
                                                     <input
@@ -448,50 +462,36 @@ const ChangePassword = () => {
                                                         </small>
                                                     </div>
                                                 )}
-
-                                                <div className="mt-4 d-flex justify-content-end gap-2">
-
-                                                    <button
-                                                        type="submit"
-                                                        className="btn btn-primary px-4 shadow-sm"
-                                                        disabled={isSubmittingPassword}
-                                                    >
-                                                        {isSubmittingPassword ? (
-                                                            <>
-                                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                Updating...
-                                                            </>
-                                                        ) : (
-                                                            'Update Password'
-                                                        )}
-                                                    </button>
+                                                {/* Security Tips Card */}
+                                                <div className="card border border-light shadow-none mt-4 bg-light bg-opacity-50">
+                                                    <div className="card-body">
+                                                        <h6 className="card-title fw-semibold mb-3">Password Requirements</h6>
+                                                        <ul className="list-unstyled mb-0 text-muted vstack gap-2">
+                                                            <li className={passwordData.new_password.length >= 8 ? "text-success" : ""}>
+                                                                <i className={`ri-check-line me-2 ${passwordData.new_password.length >= 8 ? "text-success" : "text-muted"}`}></i>
+                                                                Minimum 8 characters long
+                                                            </li>
+                                                            <li className={/[a-z]/.test(passwordData.new_password) && /[A-Z]/.test(passwordData.new_password) ? "text-success" : ""}>
+                                                                <i className={`ri-check-line me-2 ${/[a-z]/.test(passwordData.new_password) && /[A-Z]/.test(passwordData.new_password) ? "text-success" : "text-muted"}`}></i>
+                                                                Include uppercase and lowercase letters
+                                                            </li>
+                                                            <li className={/\d/.test(passwordData.new_password) ? "text-success" : ""}>
+                                                                <i className={`ri-check-line me-2 ${/\d/.test(passwordData.new_password) ? "text-success" : "text-muted"}`}></i>
+                                                                Include at least one number
+                                                            </li>
+                                                            <li className={/[^a-zA-Z\d]/.test(passwordData.new_password) ? "text-success" : ""}>
+                                                                <i className={`ri-check-line me-2 ${/[^a-zA-Z\d]/.test(passwordData.new_password) ? "text-success" : "text-muted"}`}></i>
+                                                                Include at least one special character
+                                                            </li>
+                                                        </ul>
+                                                    </div>
                                                 </div>
+
+
+
                                             </form>
 
-                                            {/* Security Tips Card */}
-                                            <div className="card border border-light shadow-none mt-4 bg-light bg-opacity-50">
-                                                <div className="card-body">
-                                                    <h6 className="card-title fw-semibold mb-3">Password Requirements</h6>
-                                                    <ul className="list-unstyled mb-0 text-muted vstack gap-2">
-                                                        <li>
-                                                            <i className="ri-check-line text-success me-2"></i>
-                                                            Minimum 8 characters long
-                                                        </li>
-                                                        <li>
-                                                            <i className="ri-check-line text-success me-2"></i>
-                                                            Include uppercase and lowercase letters
-                                                        </li>
-                                                        <li>
-                                                            <i className="ri-check-line text-success me-2"></i>
-                                                            Include at least one number
-                                                        </li>
-                                                        <li>
-                                                            <i className="ri-check-line text-success me-2"></i>
-                                                            Include at least one special character
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
+
                                         </div>
                                     )}
                                 </div>
@@ -508,9 +508,28 @@ const ChangePassword = () => {
                 entityType="users"
                 entityId={user?.id || '0'}
                 initialPath={profileData.image ? profileData.image.split('/').slice(0, -1).join('/') || '/' : '/'}
-                onSelectFiles={(files) => {
+                onSelectFiles={async (files) => {
                     if (files && files.length > 0) {
-                        setProfileData(prev => ({ ...prev, image: files[0].path }));
+                        const newImage = files[0].path;
+                        try {
+                            const response = await updateProfilePic({ image: newImage });
+                            if (response.status) {
+                                toast.success(response.message || 'Profile picture updated successfully!');
+                                setProfileData(prev => ({ ...prev, image: newImage }));
+                                setCredentials({
+                                    token,
+                                    user: {
+                                        ...user,
+                                        image: newImage
+                                    },
+                                    rememberMe
+                                });
+                            } else {
+                                toast.error(response.message || 'Failed to update profile picture');
+                            }
+                        } catch (error) {
+                            toast.error('Something went wrong while updating profile picture.');
+                        }
                         setShowFileManager(false);
                     }
                 }}
@@ -521,5 +540,5 @@ const ChangePassword = () => {
     );
 };
 
-export default ChangePassword;
+export default Profile;
 

@@ -3,6 +3,7 @@ import ClientInfoSection, { ClientInfoSectionRef } from './ClientInfoSection';
 import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './BusinessFinancialsSection';
 import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
+import TaskListSection from './TaskListSection';
 // @ts-ignore
 import AgreementSection from '../../partners/components/AgreementSection';
 import { ENROLLMENT_TABS } from '../../../modules/client';
@@ -133,6 +134,13 @@ export default function ClientForm({
             {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
                 <div className="tab-pane active show" role="tabpanel">
                     <ClientDocumentsSection isLoading={isLoading} />
+                </div>
+            )}
+
+            {/* Task List Tab */}
+            {activeTab === ENROLLMENT_TABS.TASK_LIST && (
+                <div className="tab-pane active show" role="tabpanel">
+                    <TaskListSection clientId={clientId} />
                 </div>
             )}
 

@@ -41,7 +41,7 @@ import ChangeRequests from './pages/applications/change-requests/ChangeRequests.
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
 import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
-import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
+import Profile from './pages/auth-profile/Profile';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
@@ -118,10 +118,11 @@ export default function App() {
             {/* Employees Routes - requires 'view employees' permission */}
             <Route element={<PermissionRoute permission="view employees" />}>
               <Route path="employees" element={<Employees />} />
+              <Route path="employee-details/:id" element={<EmployeeDetails />} />
               <Route element={<PermissionRoute permission="create employees" />}>
                 <Route path="employees/create" element={<EmployeeDetails />} />
               </Route>
-              <Route path="employee-details/:id" element={<EmployeeDetails />} />
+
             </Route>
 
             {/* Clients Routes - requires 'view clients' permission */}
@@ -155,7 +156,7 @@ export default function App() {
               <Route path="settings" element={<Settings />} />
             </Route>
 
-            <Route path="change-password" element={<ChangePassword />} />
+            <Route path="profile" element={<Profile />} />
 
 
             {/* Credit Builder Menu Routes - Host Only */}

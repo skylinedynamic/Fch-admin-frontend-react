@@ -12,6 +12,10 @@ export type UpdateProfileData = {
     image?: string;
 }
 
+export type UpdateProfilePictureData = {
+    image: string;
+}
+
 export type AuthProfileResponse = {
     status: boolean;
     message: string;

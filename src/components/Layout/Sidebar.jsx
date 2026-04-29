@@ -373,9 +373,9 @@ export default function Sidebar() {
             <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i>{" "}
             <span className="align-middle">Settings</span>
           </a>
-          <Link className="dropdown-item" to="/change-password">
-            <i className="mdi mdi-key-outline text-muted fs-16 align-middle me-1"></i>{" "}
-            <span className="align-middle">Change Password</span>
+          <Link className="dropdown-item" to="/profile">
+            <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>{" "}
+            <span className="align-middle">Profile</span>
           </Link>
           <a
             className="dropdown-item"
