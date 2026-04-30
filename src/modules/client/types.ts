@@ -122,3 +122,57 @@ export type ClientListStatistics = {
     inactive_borrowers: number;
     new_this_month: number;
 };
+
+export type TierTaskVendor = {
+    id: number;
+    name: string;
+    logo_url?: string;
+    website?: string;
+};
+
+export type TierTask = {
+    id: number;
+    title: string;
+    subtitle?: string;
+    description?: string;
+    status: string;
+    note?: string;
+    completed_at?: string;
+    url?: string;
+    logo?: string;
+    button_title?: string;
+    estimated_completion_days?: number;
+    order: number;
+    vendor?: TierTaskVendor;
+    migrated_task_id?: number | null;
+};
+
+export type BorrowerTier = {
+    id: number;
+    code: string;
+    name: string;
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    status: string;
+    order: number;
+    has_vendor: boolean;
+    task_to_complete?: number;
+    tasks: TierTask[];
+};
+
+export type BorrowerProgress = {
+    id: number;
+    name: string;
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    current_tier_estimated_completion_days: number;
+    current_tier_tasks_remaining: number;
+    current_tier_complete_task: number;
+    current_tier_complete_percentage: number;
+    total_tasks_remaining: number;
+    total_complete_task: number;
+    total_complete_percentage: number;
+    tiers: BorrowerTier[];
+};

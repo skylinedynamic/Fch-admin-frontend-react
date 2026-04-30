@@ -39,7 +39,7 @@ export default function TableLoader({ rows = 10, columns = 6, showHeader = true 
     }
 
     return (
-        <div className="fade-panel h-100">
+        <div className="fade-panel">
             <div className="">
                 <DataTable value={skeletonItems} className="p-datatable-sm" showGridlines={false} stripedRows={false}>
                     {columnDefinitions}

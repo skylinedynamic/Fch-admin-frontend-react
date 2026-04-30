@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/auth';
 import { refreshUser } from '../../lib/auth/authApi';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { formatPhoneNumber } from '../../utils/formatters';
+import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_EMPLOYEE } from '../../config/appConfig';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -505,9 +506,13 @@ const Profile = () => {
                 isOpen={showFileManager}
                 toggle={() => setShowFileManager(!showFileManager)}
                 selectionMode={true}
-                entityType="users"
-                entityId={user?.id || '0'}
-                initialPath={profileData.image ? profileData.image.split('/').slice(0, -1).join('/') || '/' : '/'}
+                entityType={
+                    user?.entity_type === ENTITY_TYPE_PARTNER ? 'partners' :
+                        user?.entity_type === ENTITY_TYPE_EMPLOYEE ? 'employees' :
+                            'users'
+                }
+                entityId={user?.entity_id || '0'}
+                initialPath="/"
                 onSelectFiles={async (files) => {
                     if (files && files.length > 0) {
                         const newImage = files[0].path;
@@ -534,7 +539,7 @@ const Profile = () => {
                     }
                 }}
                 section="Profile"
-                getAll={true}
+                getAll={false}
             />
         </div>
     );

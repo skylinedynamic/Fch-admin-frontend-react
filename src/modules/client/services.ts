@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Client, ClientFilterParams } from './types';
+import type { Client, ClientFilterParams, BorrowerTier, BorrowerProgress } from './types';
 
 // Base API path
 const BASE_PATH = '/common/borrowers'; // Keeping backend endpoint as /borrowers
@@ -134,5 +134,17 @@ export const fetchBorrowerPlans = async (): Promise<any> => {
 // Fetch non-host borrower plans (for partner clients)
 export const fetchNonHostBorrowerPlans = async (): Promise<any> => {
     const { data } = await apiClient.get('/common/non-host-borrower-plans');
+    return data;
+};
+
+// Fetch borrower tier-wise task list
+export const fetchBorrowerTierWiseTaskList = async (borrowerId: string | number): Promise<{ status: boolean, data: BorrowerTier[] }> => {
+    const { data } = await apiClient.post(`/admin/credit-builder/tiers/borrowers/tier-wise-tasklist`, { borrower_id: borrowerId });
+    return data;
+};
+
+// Fetch borrower progress
+export const fetchBorrowerProgress = async (borrowerId: string | number): Promise<{ status: boolean, data: BorrowerProgress }> => {
+    const { data } = await apiClient.post(`/admin/credit-builder/tiers/borrowers/progress`, { borrower_id: borrowerId });
     return data;
 };

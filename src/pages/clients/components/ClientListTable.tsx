@@ -356,7 +356,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             </form>
 
             {clientsLoading ? (
-                <TableLoader rows={10} columns={[{ style: { width: '3rem' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '180px' } }, { style: { minWidth: '220px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '150px' } }, { style: { minWidth: '130px' } }, { style: { minWidth: '120px' } }]} />
+                <TableLoader rows={11} />
             ) : (
                 <div className="table-responsive table-card mt-1">
                     <DataTable<Client[]>

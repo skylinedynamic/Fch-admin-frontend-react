@@ -12,8 +12,11 @@ import {
     fetchBorrowerProfileStats,
     fetchBorrowerTiers,
     fetchBorrowerPlans,
-    fetchNonHostBorrowerPlans
+    fetchNonHostBorrowerPlans,
+    fetchBorrowerTierWiseTaskList,
+    fetchBorrowerProgress
 } from './services';
+import type { BorrowerTier, BorrowerProgress } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
 import { fetchPartners } from '../partner/services';
 import type { Client, ClientFilterParams } from './types';
@@ -33,6 +36,8 @@ export const clientKeys = {
     tiers: () => ['tiers'] as const,
     plans: () => ['plans', 'host'] as const,
     nonHostPlans: () => ['plans', 'non-host'] as const,
+    tierTasks: (id: string | number) => [...clientKeys.detail(id), 'tierTasks'] as const,
+    progress: (id: string | number) => [...clientKeys.detail(id), 'progress'] as const,
 };
 
 // Hooks
@@ -197,5 +202,27 @@ export const useNonHostBorrowerPlans = (enabled: boolean = true) => {
         },
         staleTime: 5 * 60 * 1000,
         enabled
+    });
+};
+
+export const useBorrowerTierWiseTaskList = (borrowerId: string | number, enabled: boolean = true) => {
+    return useQuery<BorrowerTier[]>({
+        queryKey: clientKeys.tierTasks(borrowerId),
+        queryFn: async () => {
+            const result = await fetchBorrowerTierWiseTaskList(borrowerId);
+            return (result.status && result.data) ? result.data : [];
+        },
+        enabled: enabled && !!borrowerId,
+    });
+};
+export const useBorrowerProgress = (borrowerId: string | number, enabled: boolean = true) => {
+    return useQuery<BorrowerProgress>({
+        queryKey: clientKeys.progress(borrowerId),
+        queryFn: async () => {
+            const result = await fetchBorrowerProgress(borrowerId);
+            // Default to empty arrays/objects if null
+            return (result.status && result.data) ? result.data : {} as BorrowerProgress;
+        },
+        enabled: enabled && !!borrowerId,
     });
 };

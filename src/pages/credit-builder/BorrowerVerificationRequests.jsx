@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
 import TableLoader from '../../components/Loader/TableLoader';
+import BorrowerProfileBannerSkeleton from '../../components/Loader/BorrowerProfileBannerSkeleton';
 
 export default function BorrowerVerificationRequests() {
     const location = useLocation();
@@ -527,83 +528,75 @@ export default function BorrowerVerificationRequests() {
                                     </div>
                                 </form>
 
-                                <div className="card bg-primary-subtle border-0 mb-4 position-relative overflow-hidden" style={{ borderRadius: '4px' }}>
-                                    <div className="card-body p-4">
-                                        {/* Decorative backgrounds */}
+                                {profileLoading ? (
+                                    <BorrowerProfileBannerSkeleton />
+                                ) : (
+                                    <div className="borrower-profile-banner">
+                                        <div className="borrower-profile-banner-body">
+                                            {/* Decorative backgrounds */}
 
 
-                                        <div className="row align-items-center position-relative">
-                                            <div className="col-auto">
-                                                <div className="avatar-md p-1 bg-white rounded-circle shadow-sm">
-                                                    {profileLoading ? (
-                                                        <div className="skeleton-line rounded-circle w-100 h-100"></div>
-                                                    ) : (
+                                            <div className="row align-items-center position-relative">
+                                                <div className="col-auto">
+                                                    <div className="avatar-md p-1 bg-white rounded-circle shadow-sm">
                                                         <div className="avatar-title bg-primary rounded-circle fs-24">
                                                             {profileData?.first_name ? profileData.first_name.charAt(0).toUpperCase() : 'B'}
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="col">
-                                                <div className="ps-2">
-                                                    <div className="row g-0 align-items-center">
-                                                        <div className="col-md-6 border-end-md pe-md-4">
-                                                            <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Borrower Name</span>
-                                                            <div className="d-flex align-items-center">
-                                                                {profileLoading ? (
-                                                                    <div className="skeleton-line w-50" style={{ height: '20px', borderRadius: '4px' }}></div>
-                                                                ) : (
+                                                <div className="col">
+                                                    <div className="ps-2">
+                                                        <div className="row g-0 align-items-center">
+                                                            <div className="col-md-6 border-end-md pe-md-4">
+                                                                <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Borrower Name</span>
+                                                                <div className="d-flex align-items-center">
                                                                     <>
-                                                                        <h4 className="fs-18 mb-0 fw-bold text-primary">{profileData?.full_name || 'N/A'}</h4>
+                                                                        <h4 className="fs-16 mb-0 fw-bold text-primary">{profileData?.full_name || 'N/A'}</h4>
                                                                         {profileData?.status && <span className="badge bg-success-subtle text-success ms-2 fs-10 text-uppercase">{profileData.status}</span>}
                                                                     </>
-                                                                )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-md-6 ps-md-4">
+                                                                <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Partner Name</span>
+                                                                <div className="d-flex align-items-center">
+                                                                    <i className="ri-building-line me-2 text-primary fs-16"></i>
+                                                                    <h5 className="fs-14 mb-0 fw-medium text-dark-emphasis">{profileData?.partner_name || 'N/A'}</h5>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="col-md-6 ps-md-4">
-                                                            <span className="text-muted text-uppercase fw-semibold fs-11 d-block mb-1">Partner Name</span>
-                                                            <div className="d-flex align-items-center">
-                                                                <i className="ri-building-line me-2 text-primary fs-16"></i>
-                                                                {profileLoading ? (
-                                                                    <div className="skeleton-line w-50" style={{ height: '16px', borderRadius: '4px' }}></div>
-                                                                ) : (
-                                                                    <h5 className="fs-15 mb-0 fw-medium text-dark-emphasis">{profileData?.partner_name || 'N/A'}</h5>
-                                                                )}
-                                                            </div>
+                                                        <div>
+                                                            <p className="text-muted mb-0 fs-12">
+                                                                <h6 className="fs-14 mb-0 fw-medium text-info">
+                                                                </h6>        </p>
                                                         </div>
-                                                    </div>
-                                                    <div className="mt-2 pt-2 border-top">
-                                                        <p className="text-muted mb-0 fs-12">
-                                                            <h6 className="fs-14 mb-0 fw-medium text-info">
-                                                            </h6>        </p>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="col-lg-auto mt-3 mt-lg-0 border-start-lg ps-lg-4">
-                                                <div className="d-flex gap-4">
+                                                <div className="col-lg-auto mt-lg-0 border-start-lg ps-lg-4">
+                                                    <div className="d-flex gap-4">
+                                                        <div className="text-center">
+                                                            <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Requests</p>
+                                                            <h6 className="mb-0 fw-bold">{totalRecords}</h6>
+                                                        </div>
+                                                    </div>
                                                     <div className="text-center">
-                                                        <p className="text-muted text-uppercase fw-semibold fs-11 mb-1">Total Requests</p>
-                                                        <h6 className="mb-0 fw-bold">{totalRecords}</h6>
+                                                        <button
+                                                            className="btn btn-sm btn-soft-primary w-100"
+                                                            onClick={() => setShowProfileModal(true)}
+                                                        >
+                                                            <i className="ri-user-line me-1 align-bottom"></i> View Profile
+                                                        </button>
                                                     </div>
-                                                </div>
-                                                <div className="mt-3 text-center">
-                                                    <button
-                                                        className="btn btn-sm btn-soft-primary w-100"
-                                                        onClick={() => setShowProfileModal(true)}
-                                                    >
-                                                        <i className="ri-user-line me-1 align-bottom"></i> View Profile
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
 
 
                                 {loading ? (
                                     <TableLoader
-                                        rows={8}
+                                        rows={10}
                                         columns={[
                                             { style: { width: '3%' } },
                                             { style: { width: '28%' } },

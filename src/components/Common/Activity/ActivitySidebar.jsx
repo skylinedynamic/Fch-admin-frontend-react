@@ -402,10 +402,10 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-14 mb-0 text-dark">
+                                                                    <h6 className="fs-13 mb-0">
                                                                         {getTitle(activity)}
                                                                     </h6>
-                                                                    <div className="fs-12 text-muted" style={{ fontWeight: '500' }}>
+                                                                    <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
                                                                         by {activity.causer_name || activity.creator?.name || 'System'}
                                                                         <span className="mx-1"> • </span>
                                                                         <i className="ri-time-line align-middle me-1"></i>
