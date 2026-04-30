@@ -64,8 +64,8 @@ export const cmsService = {
   },
 
   // SEO
-  fetchSeoSettings: async () => {
-    const response = await apiClient.get("/admin/cms/seo-settings");
+  fetchSeoSettings: async (params) => {
+    const response = await apiClient.get("/admin/cms/seo-settings", { params });
     return response.data;
   },
   fetchSeoSetting: async (id) => {
@@ -92,6 +92,10 @@ export const cmsService = {
 
   // Site Settings
   fetchSiteSettings: async () => {
+    const response = await apiClient.get("/common/site-settings");
+    return response.data;
+  },
+  fetchAdminSiteSettings: async () => {
     const response = await apiClient.get("/admin/cms/site-settings");
     return response.data;
   },
@@ -102,7 +106,7 @@ export const cmsService = {
     return response.data;
   },
   fetchPublicSettings: async () => {
-    const response = await apiClient.get("/website/settings");
+    const response = await apiClient.get("/common/site-settings");
     return response.data;
   },
 };

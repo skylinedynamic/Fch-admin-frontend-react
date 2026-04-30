@@ -30,9 +30,8 @@ export const uploadFile = async (file: File, path: string, onProgress?: (progres
   formData.append('file', file)
   formData.append('path', path)
   if (context?.entity_type) formData.append('entity_type', context.entity_type)
-  if (context?.entity_id) formData.append('entity_id', String(context.entity_id))
-  if (context?.get_all) formData.append('get_all', String(context.get_all))
-  if (context?.get_all !== undefined) formData.append('get_all', String(context.get_all))
+  if (context?.entity_id !== undefined && context?.entity_id !== null) formData.append('entity_id', String(context.entity_id))
+  if (context?.get_all !== undefined && context?.get_all !== null) formData.append('get_all', String(context.get_all))
 
   const { data } = await apiClient.post<UploadFileResponse>(`${BASE_URL}/upload`, formData, {
     headers: {

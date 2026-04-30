@@ -19,12 +19,14 @@ export interface Blog {
     summary: string;
     content: string;
     is_published: boolean | number;
+    is_featured: boolean | number;
     featured_image?: string;
     meta_title?: string;
     meta_description?: string;
     keywords?: string;
-    tags?: Tag[];
+    blog_tag_id?: (number | string)[];
     category?: Category;
+    tag?: Tag;
     created_at?: string;
 }
 
@@ -35,10 +37,11 @@ export interface BlogFormData {
     summary: string;
     content: string;
     is_published: boolean;
+    is_featured: boolean;
     meta_title: string;
     meta_description: string;
     keywords: string;
-    tag_ids: number[];
+    blog_tag_id: (string | number)[];
 }
 
 // ─── Site Settings ───────────────────────────────────────────────────────────

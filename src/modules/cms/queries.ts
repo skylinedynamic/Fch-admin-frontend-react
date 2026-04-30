@@ -90,10 +90,10 @@ export const useDeleteTags = () => {
   });
 };
 
-export const useSeoSettings = () => {
+export const useSeoSettings = (params?: any) => {
   return useQuery({
-    queryKey: ["seo-settings"],
-    queryFn: cmsService.fetchSeoSettings,
+    queryKey: ["seo-settings", params],
+    queryFn: () => cmsService.fetchSeoSettings(params),
   });
 };
 

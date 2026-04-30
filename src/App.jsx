@@ -45,16 +45,17 @@ import ChangePassword from './pages/auth-profile/ChangePassword.jsx';
 import CommissionList from './pages/commissions/CommissionList';
 import CommissionDetails from './pages/commissions/CommissionDetails';
 import DownloadAgreement from './pages/partners/DownloadAgreement.jsx';
-import Resource from './pages/resources/Resource.tsx';
-import ManageResources from './pages/resources/ManageResources.tsx';
-import ResourceForm from './pages/resources/ResourceForm.tsx';
 import BlogList from './pages/cms/BlogList.tsx';
 import BlogEdit from './pages/cms/BlogEdit.tsx';
 import BlogCategories from './pages/cms/BlogCategories.tsx';
 import BlogTags from './pages/cms/BlogTags.tsx';
 import SeoSettings from './pages/cms/SeoSettings.tsx';
+import SeoSettingEdit from './pages/cms/SeoSettingEdit.tsx';
 import SiteSettings from './pages/cms/SiteSettings.tsx';
-import { useSiteSettings } from './modules/cms/queries';
+import { useSiteSettings, usePublicSiteSettings } from './modules/cms/queries';
+import Resource from './pages/resources/Resource.tsx';
+import ManageResources from './pages/resources/ManageResources.tsx';
+import ResourceForm from './pages/resources/ResourceForm.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -88,11 +89,11 @@ export default function App() {
   }, []);
 
   const user = useAuthStore((state) => state.user);
-  const { data: settingsData } = useSiteSettings();
+  const { data: publicSettingsData } = usePublicSiteSettings();
 
   useEffect(() => {
-    if (settingsData?.data?.favicon) {
-      const favicon = settingsData.data.favicon;
+    if (publicSettingsData?.data?.favicon) {
+      const favicon = publicSettingsData.data.favicon;
       const BASE_URL = import.meta.env.VITE_BASE_URL || '';
       const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${favicon.replace(/^\//, '')}`;
       
@@ -104,7 +105,7 @@ export default function App() {
       }
       link.href = faviconUrl;
     }
-  }, [settingsData]);
+  }, [publicSettingsData]);
 
   return (
     <>
@@ -184,15 +185,20 @@ export default function App() {
                   <Route path="blogs/create" element={<BlogEdit />} />
                 </Route>
                 <Route element={<PermissionRoute permission="update blogs" />}>
-                  <Route path="blogs/:id/edit" element={<BlogEdit />} />
+                  <Route path="blogs/edit/:id" element={<BlogEdit />} />
                 </Route>
               </Route>
               <Route element={<PermissionRoute permission="view seo settings" />}>
                 <Route path="seo-settings" element={<SeoSettings />} />
+                <Route element={<PermissionRoute permission="update seo settings" />}>
+                  <Route path="seo-settings/create" element={<SeoSettingEdit />} />
+                  <Route path="seo-settings/edit/:id" element={<SeoSettingEdit />} />
+                </Route>
               </Route>
               <Route element={<PermissionRoute permission="view site settings" />}>
                 <Route path="site-settings" element={<SiteSettings />} />
               </Route>
+            </Route>
             {/* Settings Route */}
             <Route element={<PermissionRoute permission={["update payment settings", "update partner agreement settings", "update borrower agreement settings"]} />}>
               <Route path="settings" element={<Settings />} />
@@ -279,7 +285,7 @@ export default function App() {
             </Route>
 
             {/* General Settings */}
-            <Route element={<PermissionRoute permission="view settings" />}>
+            <Route element={<PermissionRoute permission="update borrower agreement settings" />}>
               <Route path="settings" element={<Settings />} />
               <Route path="admin/settings" element={<Settings />} />
             </Route>
