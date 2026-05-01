@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { SettingsData, UpdateSettingsPayload, SettingsResponse } from './types';
+import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse } from './types';
 
 // Base API path
 const BASE_PATH = '/common/settings';
@@ -21,5 +21,10 @@ export const fetchAppConfig = async (key: string): Promise<any> => {
 
 export const saveAppConfig = async (key: string, value: any): Promise<any> => {
     const { data } = await apiClient.post('/common/app-config/save', { key, value });
+    return data;
+};
+
+export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTestMailResponse> => {
+    const { data } = await apiClient.post('/notifications/test-email', payload);
     return data;
 };

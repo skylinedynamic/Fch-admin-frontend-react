@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import FormLoader from '../../../components/Loader/FormLoader';
 import AgreementBuilder from './AgreementBuilder';
 import { usePermissions } from '../../../lib/auth/usePermissions';
+import { useAuthStore } from '../../../store/auth/authStore';
+import TestMailForm from './TestMailForm';
 
 export default function SettingsForm({
     formData,
@@ -58,6 +60,11 @@ export default function SettingsForm({
     const canSeeBorrowerAgreement = hasPermission('update borrower agreement settings');
     if (canSeePartnerAgreement || canSeeBorrowerAgreement) {
         sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
+    }
+
+    const user = useAuthStore((state) => state.user);
+    if (user && (user.is_host == 1 || user.is_host == true)) {
+        sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
     }
 
     // Auto-select first available section if the active one isn't available
@@ -201,6 +208,8 @@ export default function SettingsForm({
                     <div className="card p-0 overflow-hidden">
                         <AgreementBuilder />
                     </div>
+                ) : activeSection === 'test_mail' ? (
+                    <TestMailForm />
                 ) : (
                     <form onSubmit={onSubmit}>
                         <div className="card">
