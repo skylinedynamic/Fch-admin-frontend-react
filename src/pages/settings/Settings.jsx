@@ -119,9 +119,9 @@ export default function Settings() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row mb-3 pb-1 page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Settings</h4>
                                 <nav aria-label="breadcrumb" className="d-none d-sm-block">
@@ -137,7 +137,9 @@ export default function Settings() {
                                             </span>
                                         </li>
                                         <li className="breadcrumb-item active" aria-current="page">
-                                            {activeSection === 'payment' ? 'Payment Method' : 'Agreement Management'}
+                                            {activeSection === 'payment' ? 'Payment Method' :
+                                                activeSection === 'agreement' ? 'Agreement Management' :
+                                                    activeSection === 'test_mail' ? 'Test Mail' : 'Settings'}
                                         </li>
                                     </ol>
                                 </nav>
@@ -146,7 +148,7 @@ export default function Settings() {
                     </div>
                 </div>
 
-                <div className="row mt-3">
+                <div className="row">
                     <div className="col-12">
                         <SettingsForm
                             formData={formData}

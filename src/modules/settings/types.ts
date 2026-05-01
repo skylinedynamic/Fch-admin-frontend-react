@@ -34,3 +34,14 @@ export interface UpdateSettingsPayload {
         notifications?: boolean;
     };
 }
+
+export interface SendTestMailPayload {
+    email: string;
+    body: string;
+}
+
+export interface SendTestMailResponse {
+    status: boolean;
+    message: string;
+    data: any[];
+}
