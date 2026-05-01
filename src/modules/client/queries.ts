@@ -14,7 +14,8 @@ import {
     fetchBorrowerPlans,
     fetchNonHostBorrowerPlans,
     fetchBorrowerTierWiseTaskList,
-    fetchBorrowerProgress
+    fetchBorrowerProgress,
+    updateTaskVerificationStatus
 } from './services';
 import type { BorrowerTier, BorrowerProgress } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
@@ -224,5 +225,18 @@ export const useBorrowerProgress = (borrowerId: string | number, enabled: boolea
             return (result.status && result.data) ? result.data : {} as BorrowerProgress;
         },
         enabled: enabled && !!borrowerId,
+    });
+};
+
+export const useUpdateTaskVerificationStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateTaskVerificationStatus,
+        onSuccess: (data, variables) => {
+            if (variables.borrower_id) {
+                queryClient.invalidateQueries({ queryKey: clientKeys.tierTasks(variables.borrower_id) });
+                queryClient.invalidateQueries({ queryKey: clientKeys.progress(variables.borrower_id) });
+            }
+        },
     });
 };

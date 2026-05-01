@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useBorrowerTierWiseTaskList, useBorrowerProgress } from '../../../modules/client';
+import { useBorrowerTierWiseTaskList, useBorrowerProgress, useUpdateTaskVerificationStatus } from '../../../modules/client';
 import type { BorrowerTier } from '../../../modules/client/types';
 import TaskListSkeleton from '../../../components/Loader/TaskListSkeleton';
 import { VERIFICATION_STATUS } from '../../../config/creditBuilder';
+import VerificationActionModal from '../../credit-builder/components/VerificationActionModal';
 
 interface TaskItem {
     id: string;
@@ -10,6 +11,7 @@ interface TaskItem {
     status: string;
     isVerified: boolean;
     logo?: string | null;
+    migrated_task_id?: string | number | null;
 }
 
 export default function TaskListSection({ clientId }: { clientId?: string | null }) {
@@ -20,6 +22,18 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
     const [selectedTier, setSelectedTier] = useState<BorrowerTier | null>(null);
     const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [activeTab, setActiveTab] = useState('all');
+    const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+    const [modalConfig, setModalConfig] = useState<{
+        show: boolean;
+        type: 'manual_verify' | 'reject' | '';
+        taskId: string | null;
+        isBulk: boolean;
+    }>({
+        show: false,
+        type: '',
+        taskId: null,
+        isBulk: false,
+    });
     const manualSelection = useRef(false);
 
     useEffect(() => {
@@ -47,6 +61,7 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                 status: task.status,
                 isVerified: task.status === VERIFICATION_STATUS.COMPLETED,
                 logo: task.logo,
+                migrated_task_id: task.migrated_task_id,
             })));
         } else {
             setTasks([]);
@@ -56,24 +71,44 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
     const handleSelectTier = (tier: BorrowerTier) => {
         manualSelection.current = true;
         setSelectedTier(tier);
+        setSelectedTasks([]);
     };
 
+    const toggleSelectTask = (id: string) => {
+        setSelectedTasks(prev =>
+            prev.includes(id) ? prev.filter(taskId => taskId !== id) : [...prev, id]
+        );
+    };
+
+    const verifyMutation = useUpdateTaskVerificationStatus();
+
     const handleAction = (id: string, isVerify: boolean) => {
-        setTasks(prev => prev.map(task =>
-            task.id === id ? {
-                ...task,
-                isVerified: isVerify,
-                status: isVerify ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED
-            } : task
-        ));
+        // Local update for immediate feedback (optional, since query invalidation will refetch)
+        setTasks(prev => prev.map(task => {
+            if (task.id === id) {
+                if (task.status === VERIFICATION_STATUS.COMPLETED && !isVerify) return task;
+                return {
+                    ...task,
+                    isVerified: isVerify,
+                    status: isVerify ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED
+                };
+            }
+            return task;
+        }));
     };
 
     const bulkAction = (verified: boolean) => {
-        setTasks(prev => prev.map(task => ({
-            ...task,
-            isVerified: verified,
-            status: verified ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED
-        })));
+        setTasks(prev => prev.map(task => {
+            if (selectedTasks.includes(task.id)) {
+                if (task.status === VERIFICATION_STATUS.COMPLETED && !verified) return task;
+                return {
+                    ...task,
+                    isVerified: verified,
+                    status: verified ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED
+                };
+            }
+            return task;
+        }));
     };
 
     if (isLoading) {
@@ -118,9 +153,9 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                     <div className="card-body">
                         <div className="d-flex align-items-center justify-content-between mb-2">
                             <div className="d-flex align-items-center">
-                                <h6 className="cb-summary-title">
-                                    <span className="text-dark">Current Tier:</span>
-                                    <span className="text-primary ms-1">{currentTierName} - {currentTierTitle}</span>
+                                <h6 className="cb-summary-title text-muted">
+                                    <span>Current Tier:</span>
+                                    <span className="ms-1">{currentTierName} - {currentTierTitle}</span>
                                 </h6>
                             </div>
                             <div className="d-flex align-items-center">
@@ -214,18 +249,28 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                         <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
                             <li>
                                 <a
-                                    className="dropdown-item d-flex align-items-center"
+                                    className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
                                     href="#"
-                                    onClick={(e) => { e.preventDefault(); bulkAction(true); }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        if (selectedTasks.length > 0) {
+                                            setModalConfig({ show: true, type: 'manual_verify', taskId: null, isBulk: true });
+                                        }
+                                    }}
                                 >
                                     <i className="ri-check-double-line me-2 text-success"></i> Bulk Verification
                                 </a>
                             </li>
                             <li>
                                 <a
-                                    className="dropdown-item d-flex align-items-center"
+                                    className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
                                     href="#"
-                                    onClick={(e) => { e.preventDefault(); bulkAction(false); }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        if (selectedTasks.length > 0) {
+                                            setModalConfig({ show: true, type: 'reject', taskId: null, isBulk: true });
+                                        }
+                                    }}
                                 >
                                     <i className="ri-close-circle-line me-2 text-danger"></i> Bulk Rejection
                                 </a>
@@ -238,14 +283,15 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
             {filteredTasks.length > 0 ? (
                 <div className="list-group list-group-flush border-dashed mt-3">
                     {filteredTasks.map((task) => (
-                        <div key={task.id} className="list-group-item d-flex align-items-center cb-task-list-item px-0">
+                        <div key={task.id} className={`list-group-item d-flex align-items-center cb-task-list-item px-0`}>
                             <div className="flex-shrink-0 me-3">
                                 <div className="form-check fs-18">
                                     <input
                                         className="form-check-input border-2 cb-task-checkbox"
                                         type="checkbox"
-                                        checked={task.isVerified}
-                                        onChange={() => handleAction(task.id, !task.isVerified)}
+                                        checked={selectedTasks.includes(task.id)}
+                                        onChange={() => toggleSelectTask(task.id)}
+                                        disabled={task.isVerified}
                                         id={`task-${task.id}`}
                                     />
                                 </div>
@@ -274,27 +320,20 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                             <div className="flex-shrink-0 d-flex gap-2">
                                 {task.status === VERIFICATION_STATUS.COMPLETED ? (
                                     <>
-                                        <span className="badge badge-soft-success d-flex align-items-center px-1">
+                                        <span className="badge badge-soft-success d-flex align-items-center fw-normal px-1">
                                             <i className="ri-check-line me-1"></i> Verified
                                         </span>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
-                                            onClick={() => handleAction(task.id, false)}
-                                        >
-                                            Reject
-                                        </button>
                                     </>
                                 ) : task.status === VERIFICATION_STATUS.REJECTED ? (
                                     <>
                                         <button
                                             type="button"
                                             className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
-                                            onClick={() => handleAction(task.id, true)}
+                                            onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
                                         >
                                             Verify
                                         </button>
-                                        <span className="badge badge-soft-danger d-flex align-items-center px-1">
+                                        <span className="badge badge-soft-danger fw-normal d-flex align-items-center px-1">
                                             <i className="ri-close-line me-1"></i> Rejected
                                         </span>
                                     </>
@@ -303,14 +342,14 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                                         <button
                                             type="button"
                                             className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
-                                            onClick={() => handleAction(task.id, true)}
+                                            onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
                                         >
                                             Verify
                                         </button>
                                         <button
                                             type="button"
                                             className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
-                                            onClick={() => handleAction(task.id, false)}
+                                            onClick={() => setModalConfig({ show: true, type: 'reject', taskId: task.id, isBulk: false })}
                                         >
                                             Reject
                                         </button>
@@ -325,6 +364,44 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                     No {activeTab !== 'all' ? activeTab : ''} tasks found for this tier.
                 </div>
             )}
+
+            <VerificationActionModal
+                show={modalConfig.show}
+                onHide={() => setModalConfig(prev => ({ ...prev, show: false }))}
+                onConfirm={(reason) => {
+                    const isVerify = modalConfig.type === 'manual_verify';
+                    const status = isVerify ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED;
+                    const taskIds = modalConfig.isBulk ? selectedTasks : (modalConfig.taskId ? [modalConfig.taskId] : []);
+                    const migratedTaskId = !modalConfig.isBulk && modalConfig.taskId
+                        ? tasks.find(t => t.id === modalConfig.taskId)?.migrated_task_id
+                        : null;
+
+                    if (taskIds.length > 0 && clientId) {
+                        verifyMutation.mutate({
+                            task_ids: taskIds,
+                            borrower_id: clientId,
+                            status: status,
+                            note: reason,
+                            migrated_task_id: migratedTaskId
+                        }, {
+                            onSuccess: () => {
+                                // Apply local updates if needed, though queries will invalidate
+                                if (modalConfig.isBulk) {
+                                    bulkAction(isVerify);
+                                    setSelectedTasks([]);
+                                } else if (modalConfig.taskId) {
+                                    handleAction(modalConfig.taskId, isVerify);
+                                }
+                                setModalConfig(prev => ({ ...prev, show: false }));
+                            }
+                        });
+                    }
+                }}
+                actionType={modalConfig.type}
+                loading={verifyMutation.isPending}
+                isBulk={modalConfig.isBulk}
+                count={modalConfig.isBulk ? selectedTasks.length : 1}
+            />
         </div>
     );
 }
