@@ -151,10 +151,11 @@ export const fetchBorrowerProgress = async (borrowerId: string | number): Promis
 
 // Update task verification status
 export const updateTaskVerificationStatus = async (payload: { 
-    task_ids: string[] | number[], 
+    tasks: { task_id: string | number, migrated_task_id?: string | number | null }[], 
     borrower_id: string | number, 
+    tier_id: string | number,
     status: string, 
-    note?: string 
+    note?: string
 }) => {
     const { data } = await apiClient.post(`/admin/credit-builder/tasks/update-status`, payload);
     return data;

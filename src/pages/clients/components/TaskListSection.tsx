@@ -289,7 +289,7 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                                     <input
                                         className="form-check-input border-2 cb-task-checkbox"
                                         type="checkbox"
-                                        checked={selectedTasks.includes(task.id)}
+                                        checked={task.isVerified || selectedTasks.includes(task.id)}
                                         onChange={() => toggleSelectTask(task.id)}
                                         disabled={task.isVerified}
                                         id={`task-${task.id}`}
@@ -346,13 +346,15 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                                         >
                                             Verify
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
-                                            onClick={() => setModalConfig({ show: true, type: 'reject', taskId: task.id, isBulk: false })}
-                                        >
-                                            Reject
-                                        </button>
+                                        {task.status !== VERIFICATION_STATUS.PENDING && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
+                                                onClick={() => setModalConfig({ show: true, type: 'reject', taskId: task.id, isBulk: false })}
+                                            >
+                                                Reject
+                                            </button>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -371,18 +373,28 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
                 onConfirm={(reason) => {
                     const isVerify = modalConfig.type === 'manual_verify';
                     const status = isVerify ? VERIFICATION_STATUS.COMPLETED : VERIFICATION_STATUS.REJECTED;
-                    const taskIds = modalConfig.isBulk ? selectedTasks : (modalConfig.taskId ? [modalConfig.taskId] : []);
-                    const migratedTaskId = !modalConfig.isBulk && modalConfig.taskId
-                        ? tasks.find(t => t.id === modalConfig.taskId)?.migrated_task_id
-                        : null;
+                    const rawTaskIds = modalConfig.isBulk ? selectedTasks : (modalConfig.taskId ? [modalConfig.taskId] : []);
+                    const taskIds = rawTaskIds.filter(id => {
+                        const task = tasks.find(t => t.id === id);
+                        return task?.status !== VERIFICATION_STATUS.COMPLETED;
+                    });
+                    const migratedTaskIds = taskIds.map(id => {
+                        const task = tasks.find(t => t.id === id);
+                        return task?.migrated_task_id ? Number(task.migrated_task_id) : null;
+                    });
 
                     if (taskIds.length > 0 && clientId) {
+                        const tasksPayload = taskIds.map((id, index) => ({
+                            task_id: Number(id),
+                            migrated_task_id: migratedTaskIds[index]
+                        }));
+
                         verifyMutation.mutate({
-                            task_ids: taskIds,
-                            borrower_id: clientId,
+                            tasks: tasksPayload,
+                            borrower_id: Number(clientId),
+                            tier_id: Number(selectedTier?.id),
                             status: status,
-                            note: reason,
-                            migrated_task_id: migratedTaskId
+                            note: reason
                         }, {
                             onSuccess: () => {
                                 // Apply local updates if needed, though queries will invalidate
