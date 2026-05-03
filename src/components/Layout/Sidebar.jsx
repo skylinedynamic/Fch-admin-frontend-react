@@ -166,6 +166,7 @@ const menuItems = [
     label: "CMS",
     icon: "ri-layout-grid-line",
     id: "cms-menu",
+    isHostOnly: true,
     subItems: [
       {
         to: "/cms/site-settings",
@@ -304,6 +305,11 @@ export default function Sidebar() {
       .map((item) => {
         // If it has subItems, filter them first
         if (item.subItems) {
+          // First check if the parent itself is visible
+          if (!checkVisibility(item)) {
+            return null;
+          }
+
           const filteredSubItems = item.subItems.filter((sub) =>
             checkVisibility(sub),
           );
@@ -313,8 +319,6 @@ export default function Sidebar() {
             return null;
           }
 
-          // For parent items with subItems, their visibility depends solely on their children.
-          // We don't apply checkVisibility to the parent itself.
           return { ...item, subItems: filteredSubItems };
         }
 

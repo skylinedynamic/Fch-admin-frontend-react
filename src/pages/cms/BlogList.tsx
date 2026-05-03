@@ -318,14 +318,15 @@ export default function BlogList() {
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm table-wrap-content"
+                                            filterDisplay="menu"
                                             emptyMessage="No blog posts found matching your criteria."
                                             loading={isFetching && !isLoading}
                                         >
-                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem', textAlign: 'center' }} bodyStyle={{ textAlign: 'center' }} />
-                                            <Column field="title" header="TITLE & SLUG" body={titleBody} sortable style={{ minWidth: '250px' }} />
-                                            <Column field="category.name" header="CATEGORY" body={categoryBody} sortable style={{ minWidth: '150px' }} />
-                                            <Column field="created_at" header="CREATED AT" body={dateBody} sortable style={{ minWidth: '180px' }} />
-                                            <Column field="status" header="STATUS" body={statusBody} sortable style={{ minWidth: '120px' }} />
+                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem', textAlign: 'center' }} bodyStyle={{ textAlign: 'center' }} exportable={false} />
+                                            <Column field="title" header="TITLE & SLUG" body={titleBody} sortable filter showFilterMatchModes filterPlaceholder="Search title" style={{ minWidth: '250px' }} />
+                                            <Column field="category.name" header="CATEGORY" body={categoryBody} sortable filter showFilterMatchModes filterPlaceholder="Search category" style={{ minWidth: '150px' }} />
+                                            <Column field="created_at" header="CREATED AT" body={dateBody} sortable filter showFilterMatchModes filterPlaceholder="Search date" style={{ minWidth: '180px' }} />
+                                            <Column field="is_published" header="STATUS" body={statusBody} sortable filter showFilterMatchModes filterPlaceholder="Search status" style={{ minWidth: '120px' }} />
                                             <Column header="ACTION" body={actionBody} style={{ minWidth: '100px', textAlign: 'center' }} />
                                         </DataTable>
                                     </div>
