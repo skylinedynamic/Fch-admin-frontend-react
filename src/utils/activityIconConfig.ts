@@ -33,7 +33,8 @@ import {
     LOG_TYPE_BATCH_PROCESS,
     LOG_TYPE_APPOINTMENT_CREATE,
     LOG_TYPE_APPOINTMENT_UPDATE,
-    LOG_TYPE_APPOINTMENT_DELETE
+    LOG_TYPE_APPOINTMENT_DELETE,
+    LOG_TYPE_TASK_VERIFICATION
 } from '../config/appConfig';
 
 export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): AvatarConfig | null => {
@@ -63,6 +64,10 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
 
     if (logTypeRaw === LOG_TYPE_DOCUMENT_UPLOAD || logTypeRaw === LOG_TYPE_CHECKLIST_UPDATE) {
         return { icon: 'ri-folder-2-line', bgClass: 'bg-info-subtle text-info' };
+    }
+
+    if (logTypeRaw === LOG_TYPE_TASK_VERIFICATION) {
+        return { icon: 'ri-survey-line', bgClass: 'bg-primary-subtle text-primary' };
     }
 
     // 2. Base Entity Avatars

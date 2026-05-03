@@ -19,19 +19,12 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
     const { data: tiersData = [], isLoading: isTiersLoading, isFetching: isTiersFetching } = useBorrowerTierWiseTaskList(clientId || '');
     const { data: progress, isLoading: isProgressLoading, isFetching: isProgressFetching } = useBorrowerProgress(clientId || '');
 
-    const [isTabChanging, setIsTabChanging] = useState(false);
     const isLoading = isTiersLoading || isProgressLoading;
-    const isUpdating = isTiersFetching || isProgressFetching || isTabChanging;
 
     const [selectedTier, setSelectedTier] = useState<BorrowerTier | null>(null);
     const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [activeTab, setActiveTab] = useState('all');
 
-    useEffect(() => {
-        setIsTabChanging(true);
-        const timer = setTimeout(() => setIsTabChanging(false), 400);
-        return () => clearTimeout(timer);
-    }, [activeTab, selectedTier?.id]);
     const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
     const [modalConfig, setModalConfig] = useState<{
         show: boolean;
@@ -156,231 +149,223 @@ export default function TaskListSection({ clientId }: { clientId?: string | null
 
     return (
         <div className="task-list-container py-2">
-            {isUpdating ? (
-                <TaskListSkeleton />
-            ) : (
-                <>
-                    {progress?.id && (
-                        <div className="card cb-summary-card">
-                            {/* ... (Keep existing summary content) ... */}
-                            <div className="card-body">
-                                <div className="d-flex align-items-center justify-content-between mb-2">
-                                    <div className="d-flex align-items-center">
-                                        <h6 className="cb-summary-title text-muted">
-                                            <span>Current Tier:</span>
-                                            <span className="ms-1">{currentTierName} - {currentTierTitle}</span>
-                                        </h6>
-                                    </div>
-                                    <div className="d-flex align-items-center">
-                                        <span className="cb-program-label me-2">Overall Program:</span>
-                                        <h5 className="cb-progress-percent mb-0">{totalProgressPercent}%</h5>
-                                    </div>
-                                </div>
-
-                                <div className="progress cb-progress-container">
-                                    <div
-                                        className="progress-bar bg-success cb-progress-bar"
-                                        role="progressbar"
-                                        style={{ width: `${totalProgressPercent}%` }}
-                                        aria-valuenow={totalProgressPercent}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                    ></div>
-                                </div>
-
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div className="d-flex align-items-center">
-                                        <i className="ri-medal-fill text-success fs-14 me-1"></i>
-                                        <span className="text-dark cb-milestone-info">
-                                            {totalTasksVerified} <span className="text-muted fw-normal">of {totalTasksCount} completed</span>
-                                        </span>
-                                    </div>
-                                    {currentTierDescription && (
-                                        <div className="cb-tier-desc-mini">
-                                            <i className="ri-information-line me-1"></i>
-                                            {currentTierDescription.replace(/<[^>]*>?/gm, '')}
-                                        </div>
-                                    )}
-                                </div>
+            {progress?.id && (
+                <div className="card cb-summary-card">
+                    <div className="card-body">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <div className="d-flex align-items-center">
+                                <h6 className="cb-summary-title text-muted">
+                                    <span>Current Tier:</span>
+                                    <span className="ms-1">{currentTierName} - {currentTierTitle}</span>
+                                </h6>
                             </div>
-                        </div>
-                    )}
-
-                    <div className="d-flex justify-content-between align-items-end mt-4 border-bottom">
-                        {/* Status Tabs */}
-                        <div className="cb-status-tabs d-flex mb-0 border-bottom-0">
-                            <div className={`cb-status-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
-                                All ({counts.all})
-                            </div>
-                            <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.PENDING ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.PENDING)}>
-                                Pending ({counts.pending})
-                            </div>
-                            <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.PROCESSING ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.PROCESSING)}>
-                                Processing ({counts.processing})
-                            </div>
-                            <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.COMPLETED ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.COMPLETED)}>
-                                Verified ({counts.verified})
-                            </div>
-                            <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.REJECTED ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.REJECTED)}>
-                                Rejected ({counts.rejected})
+                            <div className="d-flex align-items-center">
+                                <span className="cb-program-label me-2">Overall Program:</span>
+                                <h5 className="cb-progress-percent mb-0">{totalProgressPercent}%</h5>
                             </div>
                         </div>
 
-                        <div className="d-flex gap-2 pb-2 cb-task-actions">
-                            <div className="dropdown">
-                                <button
-                                    className="btn btn-soft-primary btn-sm dropdown-toggle shadow-none"
-                                    type="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    {selectedTier?.name || 'Select Tier'}
-                                </button>
-                                <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-0">
-                                    {tiersData.map((tier: BorrowerTier) => (
-                                        <li key={tier.id}>
-                                            <a
-                                                className="dropdown-item"
-                                                href="#"
-                                                onClick={(e) => { e.preventDefault(); handleSelectTier(tier); }}
-                                            >
-                                                {tier.name}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
+                        <div className="progress cb-progress-container">
+                            <div
+                                className="progress-bar bg-success cb-progress-bar"
+                                role="progressbar"
+                                style={{ width: `${totalProgressPercent}%` }}
+                                aria-valuenow={totalProgressPercent}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                            ></div>
+                        </div>
+
+                        <div className="d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center">
+                                <i className="ri-medal-fill text-success fs-14 me-1"></i>
+                                <span className="text-dark cb-milestone-info">
+                                    {totalTasksVerified} <span className="text-muted fw-normal">of {totalTasksCount} completed</span>
+                                </span>
                             </div>
-                            <div className="dropdown">
-                                <button
-                                    className="btn btn-soft-info btn-sm dropdown-toggle shadow-none"
-                                    type="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    Bulk Actions
-                                </button>
-                                <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
-                                    <li>
-                                        <a
-                                            className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                if (selectedTasks.length > 0) {
-                                                    setModalConfig({ show: true, type: 'manual_verify', taskId: null, isBulk: true });
-                                                }
-                                            }}
-                                        >
-                                            <i className="ri-check-double-line me-2 text-success"></i> Bulk Verification
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                if (selectedTasks.length > 0) {
-                                                    setModalConfig({ show: true, type: 'reject', taskId: null, isBulk: true });
-                                                }
-                                            }}
-                                        >
-                                            <i className="ri-close-circle-line me-2 text-danger"></i> Bulk Rejection
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            {currentTierDescription && (
+                                <div className="cb-tier-desc-mini">
+                                    <i className="ri-information-line me-1"></i>
+                                    {currentTierDescription.replace(/<[^>]*>?/gm, '')}
+                                </div>
+                            )}
                         </div>
                     </div>
+                </div>
+            )}
 
-                    {filteredTasks.length > 0 ? (
-                        <div className="list-group list-group-flush border-dashed mt-3">
-                            {filteredTasks.map((task) => (
-                                <div key={task.id} className={`list-group-item d-flex align-items-center cb-task-list-item px-0`}>
-                                    <div className="flex-shrink-0 me-3">
-                                        <div className="form-check fs-18">
-                                            <input
-                                                className="form-check-input border-2 cb-task-checkbox"
-                                                type="checkbox"
-                                                checked={task.isVerified || selectedTasks.includes(task.id)}
-                                                onChange={() => toggleSelectTask(task.id)}
-                                                disabled={task.isVerified}
-                                                id={`task-${task.id}`}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow-1">
-                                        <div className="d-flex align-items-center">
-                                            {task.logo && (
-                                                <div className="cb-task-logo-container">
-                                                    <img src={task.logo} alt={task.title} className="cb-task-logo" />
-                                                </div>
-                                            )}
-                                            <label
-                                                htmlFor={`task-${task.id}`}
-                                                className={`cb-task-title mb-0 ${task.isVerified ? 'text-success' : 'text-dark'}`}
-                                            >
-                                                {task.title}
-                                            </label>
-                                            <span className={`ms-2 cb-status-badge ${task.status === VERIFICATION_STATUS.COMPLETED ? 'cb-status-verified' :
-                                                task.status === VERIFICATION_STATUS.PROCESSING ? 'cb-status-processing' :
-                                                    task.status === VERIFICATION_STATUS.REJECTED ? 'cb-status-rejected' : 'cb-status-pending'
-                                                }`}>
-                                                {task.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex-shrink-0 d-flex gap-2">
-                                        {task.status === VERIFICATION_STATUS.COMPLETED ? (
-                                            <>
-                                                <span className="badge badge-soft-success d-flex align-items-center fw-normal px-1">
-                                                    <i className="ri-check-line me-1"></i> Verified
-                                                </span>
-                                            </>
-                                        ) : task.status === VERIFICATION_STATUS.REJECTED ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
-                                                    onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
-                                                >
-                                                    Verify
-                                                </button>
-                                                <span className="badge badge-soft-danger fw-normal d-flex align-items-center px-1">
-                                                    <i className="ri-close-line me-1"></i> Rejected
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
-                                                    onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
-                                                >
-                                                    Verify
-                                                </button>
-                                                {task.status !== VERIFICATION_STATUS.PENDING && (
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
-                                                        onClick={() => setModalConfig({ show: true, type: 'reject', taskId: task.id, isBulk: false })}
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
+            <div className="d-flex justify-content-between align-items-end mt-4 border-bottom">
+                {/* Status Tabs */}
+                <div className="cb-status-tabs d-flex mb-0 border-bottom-0">
+                    <div className={`cb-status-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
+                        All ({counts.all})
+                    </div>
+                    <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.PENDING ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.PENDING)}>
+                        Pending ({counts.pending})
+                    </div>
+                    <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.PROCESSING ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.PROCESSING)}>
+                        Processing ({counts.processing})
+                    </div>
+                    <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.COMPLETED ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.COMPLETED)}>
+                        Verified ({counts.verified})
+                    </div>
+                    <div className={`cb-status-tab ${activeTab === VERIFICATION_STATUS.REJECTED ? 'active' : ''}`} onClick={() => setActiveTab(VERIFICATION_STATUS.REJECTED)}>
+                        Rejected ({counts.rejected})
+                    </div>
+                </div>
+
+                <div className="d-flex gap-2 pb-2 cb-task-actions">
+                    <div className="dropdown">
+                        <button
+                            className="btn btn-soft-primary btn-sm dropdown-toggle shadow-none"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            {selectedTier?.name || 'Select Tier'}
+                        </button>
+                        <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-0">
+                            {tiersData.map((tier: BorrowerTier) => (
+                                <li key={tier.id}>
+                                    <a
+                                        className="dropdown-item"
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleSelectTier(tier); }}
+                                    >
+                                        {tier.name}
+                                    </a>
+                                </li>
                             ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-muted mb-0 mt-4 py-4 bg-light rounded-2 border border-dashed" style={{ fontSize: '14px' }}>
-                            No {activeTab !== 'all' ? activeTab : ''} tasks found for this tier.
-                        </div>
-                    )}
+                        </ul>
+                    </div>
+                    <div className="dropdown">
+                        <button
+                            className="btn btn-soft-info btn-sm dropdown-toggle shadow-none"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            Bulk Actions
+                        </button>
+                        <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
+                            <li>
+                                <a
+                                    className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
+                                    href="#"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        if (selectedTasks.length > 0) {
+                                            setModalConfig({ show: true, type: 'manual_verify', taskId: null, isBulk: true });
+                                        }
+                                    }}
+                                >
+                                    <i className="ri-check-double-line me-2 text-success"></i> Bulk Verification
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    className={`dropdown-item d-flex align-items-center ${selectedTasks.length === 0 ? 'disabled opacity-50' : ''}`}
+                                    href="#"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        if (selectedTasks.length > 0) {
+                                            setModalConfig({ show: true, type: 'reject', taskId: null, isBulk: true });
+                                        }
+                                    }}
+                                >
+                                    <i className="ri-close-circle-line me-2 text-danger"></i> Bulk Rejection
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
-                </>
+            {filteredTasks.length > 0 ? (
+                <div className="list-group list-group-flush border-dashed mt-3">
+                    {filteredTasks.map((task) => (
+                        <div key={task.id} className={`list-group-item d-flex align-items-center cb-task-list-item px-0`}>
+                            <div className="flex-shrink-0 me-3">
+                                <div className="form-check fs-18">
+                                    <input
+                                        className="form-check-input border-2 cb-task-checkbox"
+                                        type="checkbox"
+                                        checked={task.isVerified || selectedTasks.includes(task.id)}
+                                        onChange={() => toggleSelectTask(task.id)}
+                                        disabled={task.isVerified}
+                                        id={`task-${task.id}`}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-grow-1">
+                                <div className="d-flex align-items-center">
+                                    {task.logo && (
+                                        <div className="cb-task-logo-container">
+                                            <img src={task.logo} alt={task.title} className="cb-task-logo" />
+                                        </div>
+                                    )}
+                                    <label
+                                        htmlFor={`task-${task.id}`}
+                                        className={`cb-task-title mb-0 ${task.isVerified ? 'text-success' : 'text-dark'}`}
+                                    >
+                                        {task.title}
+                                    </label>
+                                    <span className={`ms-2 cb-status-badge ${task.status === VERIFICATION_STATUS.COMPLETED ? 'cb-status-verified' :
+                                        task.status === VERIFICATION_STATUS.PROCESSING ? 'cb-status-processing' :
+                                            task.status === VERIFICATION_STATUS.REJECTED ? 'cb-status-rejected' : 'cb-status-pending'
+                                        }`}>
+                                        {task.status}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex-shrink-0 d-flex gap-2">
+                                {task.status === VERIFICATION_STATUS.COMPLETED ? (
+                                    <>
+                                        <span className="badge badge-soft-success d-flex align-items-center fw-normal px-1">
+                                            <i className="ri-check-line me-1"></i> Verified
+                                        </span>
+                                    </>
+                                ) : task.status === VERIFICATION_STATUS.REJECTED ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
+                                            onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
+                                        >
+                                            Verify
+                                        </button>
+                                        <span className="badge badge-soft-danger fw-normal d-flex align-items-center px-1">
+                                            <i className="ri-close-line me-1"></i> Rejected
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-soft-success shadow-none cb-verify-btn"
+                                            onClick={() => setModalConfig({ show: true, type: 'manual_verify', taskId: task.id, isBulk: false })}
+                                        >
+                                            Verify
+                                        </button>
+                                        {task.status !== VERIFICATION_STATUS.PENDING && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-soft-danger shadow-none cb-verify-btn"
+                                                onClick={() => setModalConfig({ show: true, type: 'reject', taskId: task.id, isBulk: false })}
+                                            >
+                                                Reject
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center text-muted mb-0 mt-4 py-4 bg-light rounded-2 border border-dashed" style={{ fontSize: '14px' }}>
+                    No {activeTab !== 'all' ? activeTab : ''} tasks found for this tier.
+                </div>
             )}
 
             <VerificationActionModal
