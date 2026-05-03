@@ -497,17 +497,19 @@ export default function ClientDetails() {
                                             <i className="far fa-envelope"></i> Documents
                                         </button>
                                     </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.TASK_LIST ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.TASK_LIST)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            <i className="fas fa-tasks"></i> Task List
-                                        </button>
-                                    </li>
+                                    {isHost && (
+                                        <li className="nav-item">
+                                            <button
+                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.TASK_LIST ? 'active' : ''}`}
+                                                onClick={() => handleTabChange(ENROLLMENT_TABS.TASK_LIST)}
+                                                type="button"
+                                                role="tab"
+                                                disabled={!id}
+                                            >
+                                                <i className="fas fa-tasks"></i> Task List
+                                            </button>
+                                        </li>
+                                    )}
                                     {formData.has_sign && (
                                         <li className="nav-item">
                                             <button

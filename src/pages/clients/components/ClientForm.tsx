@@ -138,7 +138,7 @@ export default function ClientForm({
             )}
 
             {/* Task List Tab */}
-            {activeTab === ENROLLMENT_TABS.TASK_LIST && (
+            {isHost && activeTab === ENROLLMENT_TABS.TASK_LIST && (
                 <div className="tab-pane active show" role="tabpanel">
                     <TaskListSection clientId={clientId} />
                 </div>
