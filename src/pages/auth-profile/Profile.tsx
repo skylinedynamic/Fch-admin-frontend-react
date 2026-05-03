@@ -520,6 +520,7 @@ const Profile = () => {
                             const response = await updateProfilePic({ image: newImage });
                             if (response.status) {
                                 toast.success(response.message || 'Profile picture updated successfully!');
+                                await refreshUser();
                                 setProfileData(prev => ({ ...prev, image: newImage }));
                                 setCredentials({
                                     token,

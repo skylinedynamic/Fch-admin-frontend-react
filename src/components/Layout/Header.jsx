@@ -13,7 +13,7 @@ export default function Header() {
   const { data: settingsData } = useSiteSettings()
   const settings = settingsData?.data
   const BASE_URL = import.meta.env.VITE_BASE_URL || ''
-  const [user, setUser] = useState(null)
+  const user = useAuthStore((state) => state.user)
 
   const getLogoUrl = (path, fallback) => {
     if (!path) return fallback;
