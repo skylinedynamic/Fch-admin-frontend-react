@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import 'summernote/dist/summernote-lite.js';
 
 /**
@@ -46,7 +46,8 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
     const editorRef = useRef(null);
     const isInternalChange = useRef(false);
     const lastContentRef = useRef(fieldValue || '');
-    const isInitialized = useRef(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const initStartedRef = useRef(false);
 
     // Keep track of the latest value to handle race conditions during async init
     const latestValueRef = useRef(fieldValue);
@@ -93,9 +94,10 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
 
     const initEditor = () => {
         const $j = window.jQuery || window.$;
-        if (!enabled || !editorRef.current || isInitialized.current) return;
+        if (!enabled || !editorRef.current || initStartedRef.current) return;
 
         if ($j && editorRef.current && $j(editorRef.current).summernote) {
+            initStartedRef.current = true;
             const $editor = $j(editorRef.current);
             const initialCode = latestValueRef.current || '';
 
@@ -104,11 +106,14 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
 
             console.log('[useSummernote] Initializing editor:', { fieldName });
 
+            let isSettingCode = false;
+
             $editor.summernote({
                 ...config,
                 dialogsInBody: true,  // Always render Insert Image/Video dialogs on <body> so they appear above Bootstrap modals
                 callbacks: {
                     onChange: (contents) => {
+                        if (isSettingCode) return;
                         const normalized = normalize(contents);
                         isInternalChange.current = true;
                         lastContentRef.current = normalized;
@@ -121,9 +126,12 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
                 }
             });
 
+            isSettingCode = true;
             $editor.summernote('code', initialCode);
+            isSettingCode = false;
+            
             lastContentRef.current = normalize(initialCode);
-            isInitialized.current = true;
+            setIsInitialized(true);
         } else if ($j && editorRef.current) {
             setTimeout(initEditor, 100);
         }
@@ -131,12 +139,13 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
 
     const destroyEditor = () => {
         const $ = window.jQuery || window.$;
-        if (isInitialized.current && $ && editorRef.current) {
+        if (initStartedRef.current && $ && editorRef.current) {
             try {
                 $(editorRef.current).summernote('destroy');
             } catch (e) { }
         }
-        isInitialized.current = false;
+        initStartedRef.current = false;
+        setIsInitialized(false);
     };
 
     // Re-initialize when enabled or fieldName changes
@@ -161,7 +170,7 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
 
     // Sync external updates
     useEffect(() => {
-        if (isInternalChange.current || !isInitialized.current || !enabled) return;
+        if (isInternalChange.current || !isInitialized || !enabled) return;
 
         const incoming = normalize(fieldValue);
         const currentRef = normalize(lastContentRef.current);
@@ -179,7 +188,7 @@ export const useSummernote = (fieldName, fieldValue, onChange, options = {}, ena
                 }
             }
         }
-    }, [fieldValue, enabled]);
+    }, [fieldValue, enabled, isInitialized]);
 
     return { editorRef: setRef };
 };
