@@ -236,13 +236,14 @@ export default function SeoSettings() {
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
+                                            filterDisplay="menu"
                                             emptyMessage="No SEO settings found."
                                             loading={isFetching && !isLoading}
                                         >
-                                            {hasPermission('delete seo settings') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
-                                            <Column field="page_name" header="PAGE NAME" body={pageNameBody} sortable style={{ minWidth: '250px' }} />
-                                            <Column field="path" header="PATH" body={pathBody} sortable style={{ minWidth: '180px' }} />
-                                            <Column field="meta_title" header="META TITLE" body={metaTitleBody} sortable style={{ minWidth: '280px' }} />
+                                            {hasPermission('delete seo settings') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
+                                            <Column field="page_name" header="PAGE NAME" body={pageNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search page" style={{ minWidth: '250px' }} />
+                                            <Column field="path" header="PATH" body={pathBody} sortable filter showFilterMatchModes filterPlaceholder="Search path" style={{ minWidth: '180px' }} />
+                                            <Column field="meta_title" header="META TITLE" body={metaTitleBody} sortable filter showFilterMatchModes filterPlaceholder="Search title" style={{ minWidth: '280px' }} />
                                             <Column field="og_image" header="SOCIAL IMAGE" body={ogImageBody} style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>
