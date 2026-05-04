@@ -18,14 +18,7 @@ export default function SiteSettings() {
     const { data: settingsData, isLoading } = useSiteSettings();
     const updateMutation = useUpdateSiteSettings();
 
-    const [formData, setFormData] = useState<SiteSettingsData>({
-        site_name: '',
-        site_slogan: '',
-        address: '',
-        phone_number: '',
-        email: '',
-        map_iframe: ''
-    });
+    const [formData, setFormData] = useState<SiteSettingsData>({} as SiteSettingsData);
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
     const [headerLogo, setHeaderLogo] = useState<File | string | null>(null);
     const [previewHeaderLogo, setPreviewHeaderLogo] = useState<string | null>(null);
@@ -41,14 +34,12 @@ export default function SiteSettings() {
     useEffect(() => {
         if (settingsData?.data) {
             const s = settingsData.data;
-            setFormData({
-                site_name: s.site_name || '',
-                site_slogan: s.site_slogan || '',
-                address: s.address || '',
-                phone_number: s.phone_number || '',
-                email: s.email || '',
-                map_iframe: s.map_iframe || ''
-            });
+            
+            // Accurately merge all dynamic keys from the database into the form state
+            setFormData(prev => ({
+                ...prev,
+                ...s
+            }));
 
             if (s.social_links) {
                 try {
@@ -379,7 +370,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Site Name <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.site_name ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-building-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.site_name ? 'is-invalid border-danger' : ''}`} name="site_name" value={formData.site_name} onChange={handleChange} placeholder="Your Brand Name" />
+                                                        <input type="text" className={`form-control ps-2 ${validationErrors.site_name ? 'is-invalid border-danger' : ''}`} name="site_name" value={formData.site_name || ''} onChange={handleChange} placeholder="Your Brand Name" />
                                                         {validationErrors.site_name && <div className="invalid-feedback d-block mt-1">{validationErrors.site_name}</div>}
                                                     </div>
                                                 </div>
@@ -389,7 +380,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Site Slogan</label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.site_slogan ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-price-tag-3-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.site_slogan ? 'is-invalid border-danger' : ''}`} name="site_slogan" value={formData.site_slogan} onChange={handleChange} placeholder="Your Brand Slogan" />
+                                                        <input type="text" className={`form-control ps-2 ${validationErrors.site_slogan ? 'is-invalid border-danger' : ''}`} name="site_slogan" value={formData.site_slogan || ''} onChange={handleChange} placeholder="Your Brand Slogan" />
                                                         {validationErrors.site_slogan && <div className="invalid-feedback d-block mt-1">{validationErrors.site_slogan}</div>}
                                                     </div>
                                                 </div>
@@ -399,7 +390,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Contact Email <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.email ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-mail-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.email ? 'is-invalid border-danger' : ''}`} name="email" value={formData.email} onChange={handleChange} placeholder="contact@example.com" />
+                                                        <input type="text" className={`form-control ps-2 ${validationErrors.email ? 'is-invalid border-danger' : ''}`} name="email" value={formData.email || ''} onChange={handleChange} placeholder="contact@example.com" />
                                                         {validationErrors.email && <div className="invalid-feedback d-block mt-1">{validationErrors.email}</div>}
                                                     </div>
                                                 </div>
@@ -409,7 +400,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Phone Number <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.phone_number ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-phone-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.phone_number ? 'is-invalid border-danger' : ''}`} name="phone_number" value={formData.phone_number} onChange={handleChange} placeholder="+1 234 567 890" />
+                                                        <input type="text" className={`form-control ps-2 ${validationErrors.phone_number ? 'is-invalid border-danger' : ''}`} name="phone_number" value={formData.phone_number || ''} onChange={handleChange} placeholder="+1 234 567 890" />
                                                         {validationErrors.phone_number && <div className="invalid-feedback d-block mt-1">{validationErrors.phone_number}</div>}
                                                     </div>
                                                 </div>
@@ -419,7 +410,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Office Address <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.address ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-map-pin-line fs-16"></i></span>
-                                                        <input type="text" className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" value={formData.address} onChange={handleChange} placeholder="123 Business St, City" />
+                                                         <textarea className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" rows={3} value={formData.address || ''} onChange={handleChange} placeholder="123 Business St, City" style={{ whiteSpace: 'pre-wrap' }}></textarea>
                                                         {validationErrors.address && <div className="invalid-feedback d-block mt-1">{validationErrors.address}</div>}
                                                     </div>
                                                 </div>
@@ -429,10 +420,52 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Google Maps Iframe <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-start align-items-center pt-2 ${validationErrors.map_iframe ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-map-2-line fs-16"></i></span>
-                                                        <textarea className={`form-control ps-2 ${validationErrors.map_iframe ? 'is-invalid border-danger' : ''}`} rows={5} name="map_iframe" value={formData.map_iframe} onChange={handleChange} placeholder='<iframe src="..."></iframe>'></textarea>
+                                                        <textarea className={`form-control ps-2 ${validationErrors.map_iframe ? 'is-invalid border-danger' : ''}`} rows={5} name="map_iframe" value={formData.map_iframe || ''} onChange={handleChange} placeholder='<iframe src="..."></iframe>'></textarea>
                                                         {validationErrors.map_iframe && <div className="invalid-feedback d-block mt-1">{validationErrors.map_iframe}</div>}
                                                     </div>
                                                     <div className="form-text text-muted mt-2">Paste the embed code from Google Maps here.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-md-12 mt-4">
+                                                <div className="card-header bg-transparent border-bottom-0 pb-0 pt-2 px-0 d-flex align-items-center mb-3">
+                                                    <div className="avatar-xs me-2">
+                                                        <div className="avatar-title bg-info-subtle text-info rounded-circle fs-14">
+                                                            <i className="ri-shield-keyhole-line"></i>
+                                                        </div>
+                                                    </div>
+                                                    <h6 className="card-title mb-0 fw-bold">Marketing & Security</h6>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-md-12">
+                                                <div className="mb-3">
+                                                    <label className="form-label fw-semibold fs-13">Google Analytics Measurement ID</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light d-flex align-items-center justify-content-center" style={{ width: '42px' }}><i className="ri-bar-chart-box-line fs-16"></i></span>
+                                                        <input type="text" className="form-control ps-2" name="google_measurement_id" value={formData.google_measurement_id || ''} onChange={handleChange} placeholder="G-XXXXXXXXXX" />
+                                                    </div>
+                                                    <div className="form-text text-muted mt-1">Enter your Google Analytics 4 Measurement ID to enable tracking.</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <div className="mb-3">
+                                                    <label className="form-label fw-semibold fs-13">reCAPTCHA Site Key</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light d-flex align-items-center justify-content-center" style={{ width: '42px' }}><i className="ri-google-line fs-16"></i></span>
+                                                        <input type="text" className="form-control ps-2" name="recaptcha_site_key" value={formData.recaptcha_site_key || ''} onChange={handleChange} placeholder="Site Key" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <div className="mb-3">
+                                                    <label className="form-label fw-semibold fs-13">reCAPTCHA Secret Key</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light d-flex align-items-center justify-content-center" style={{ width: '42px' }}><i className="ri-lock-password-line fs-16"></i></span>
+                                                        <input type="text" className="form-control ps-2" name="recaptcha_secret_key" value={formData.recaptcha_secret_key || ''} onChange={handleChange} placeholder="Secret Key" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

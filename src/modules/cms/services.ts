@@ -92,7 +92,7 @@ export const cmsService = {
 
   // Site Settings
   fetchSiteSettings: async () => {
-    const response = await apiClient.get("/common/site-settings");
+    const response = await apiClient.get("/admin/cms/site-settings");
     return response.data;
   },
   fetchAdminSiteSettings: async () => {
@@ -106,7 +106,7 @@ export const cmsService = {
     return response.data;
   },
   fetchPublicSettings: async () => {
-    const response = await apiClient.get("/common/site-settings");
+    const response = await apiClient.get("/admin/cms/site-settings");
     return response.data;
   },
 };

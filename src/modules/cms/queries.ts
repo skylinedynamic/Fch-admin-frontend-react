@@ -147,8 +147,8 @@ export const useDeleteSeoSettings = () => {
 
 export const useSiteSettings = () => {
   return useQuery({
-    queryKey: ["site-settings"],
-    queryFn: cmsService.fetchSiteSettings,
+    queryKey: ["admin-site-settings"],
+    queryFn: cmsService.fetchAdminSiteSettings,
   });
 };
 
@@ -157,7 +157,7 @@ export const useUpdateSiteSettings = () => {
   return useMutation({
     mutationFn: (data) => cmsService.updateSiteSettings(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-site-settings"] });
     },
   });
 };
