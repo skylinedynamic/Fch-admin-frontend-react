@@ -6,6 +6,7 @@ import { ResourceItem, ResourceFormData } from '../../modules/resource/types';
 import { toast } from 'react-toastify';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { RESOURCE_TYPE_OPTIONS, TYPES_REQUIRING_FILE, TYPES_REQUIRING_LINK, RESOURCE_ICONS } from '../../utils/resourceConfig';
+import { buildStorageUrl } from '../../utils/imageHelpers';
 import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
@@ -28,6 +29,7 @@ const ResourceForm: React.FC = () => {
     const [iconSearch, setIconSearch] = useState('');
     const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
     const [fileOptions, setFileOptions] = useState<File | null>(null);
+    const [activeProviderLogoIdx, setActiveProviderLogoIdx] = useState<number | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState<ResourceFormData>({
@@ -114,7 +116,7 @@ const ResourceForm: React.FC = () => {
     };
 
     const addProvider = () =>
-        setFormData(prev => ({ ...prev, providers: [...(prev.providers || []), { name: '', desc: '', is_recommended: false, btn_label: 'Get Started', link: '' }] }));
+        setFormData(prev => ({ ...prev, providers: [...(prev.providers || []), { name: '', desc: '', desc_list: [], logo: '', is_recommended: false, btn_label: 'Get Started', link: '' }] }));
 
     const removeProvider = (index: number) =>
         setFormData(prev => ({ ...prev, providers: (prev.providers || []).filter((_, i) => i !== index) }));
@@ -140,6 +142,7 @@ const ResourceForm: React.FC = () => {
             }
         }
     };
+
 
     if (isLoading && isEdit) {
         return (
@@ -266,8 +269,8 @@ const ResourceForm: React.FC = () => {
                                         </div>
 
                                         <div className="col-lg-12">
-                                            <label htmlFor="subtitle" className="form-label">{isBusinessService ? 'Short Description' : 'Subtitle'}</label>
-                                            <textarea className={`form-control ${validationErrors.subtitle ? 'is-invalid' : ''}`} id="subtitle" name="subtitle" rows={2} placeholder="Enter a brief description" value={formData.subtitle} onChange={handleInputChange}></textarea>
+                                            <label htmlFor="subtitle" className="form-label">Subtitle</label>
+                                            <input type="text" className={`form-control ${validationErrors.subtitle ? 'is-invalid' : ''}`} id="subtitle" name="subtitle" placeholder="Enter subtitle" value={formData.subtitle} onChange={handleInputChange} />
                                             {validationErrors.subtitle && <div className="invalid-feedback">{validationErrors.subtitle}</div>}
                                         </div>
                                     </div>
@@ -293,7 +296,7 @@ const ResourceForm: React.FC = () => {
                                                 {isFileRequired && (
                                                     <div className="col-lg-12">
                                                         <label className="form-label">Resource Document {!isEdit && <span className="text-danger">*</span>}</label>
-                                                        <div className={`d-flex align-items-center justify-content-between p-3 border rounded cursor-pointer bg-light ${validationErrors.file ? 'border-danger' : ''}`} onClick={() => setShowFileManager(true)}>
+                                                        <div className={`d-flex align-items-center justify-content-between p-3 border rounded cursor-pointer bg-light ${validationErrors.file ? 'border-danger' : ''}`} onClick={() => { setActiveProviderLogoIdx(null); setShowFileManager(true); }}>
                                                             <div className="d-flex align-items-center gap-3">
                                                                 <i className="ri-file-upload-line fs-24 text-primary"></i>
                                                                 <div>
@@ -437,7 +440,62 @@ const ResourceForm: React.FC = () => {
 
                                                                     <div className="col-12">
                                                                         <label className="form-label">Short Description</label>
-                                                                        <textarea className="form-control" rows={2} value={p.desc} onChange={(e) => handleProviderChange(idx, 'desc', e.target.value)} placeholder="Brief description of services offered..."></textarea>
+                                                                        <textarea
+                                                                            className="form-control"
+                                                                            rows={2}
+                                                                            value={p.desc}
+                                                                            onChange={(e) => handleProviderChange(idx, 'desc', e.target.value)}
+                                                                            placeholder="Brief description of services offered..."
+                                                                        ></textarea>
+                                                                    </div>
+
+                                                                    <div className="col-12">
+                                                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                                                            <label className="form-label mb-0">Description Points</label>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-link text-primary text-decoration-underline p-0"
+                                                                                onClick={() => {
+                                                                                    const newList = [...(p.desc_list || []), ''];
+                                                                                    handleProviderChange(idx, 'desc_list', newList);
+                                                                                }}
+                                                                            >
+                                                                                + Add Point
+                                                                            </button>
+                                                                        </div>
+                                                                        {(p.desc_list || []).length === 0 && (
+                                                                            <div className="text-center py-2 bg-light rounded border border-dashed">
+                                                                                <p className="text-muted fs-12 mb-0">No points added yet.</p>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="vstack gap-2">
+                                                                            {(p.desc_list || []).map((point, pIdx) => (
+                                                                                <div key={pIdx} className="d-flex align-items-center gap-2">
+                                                                                    <span className="text-muted fs-12" style={{ minWidth: '15px' }}>{pIdx + 1}.</span>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="form-control form-control-sm bg-light border-0 shadow-none"
+                                                                                        value={point}
+                                                                                        onChange={(e) => {
+                                                                                            const newList = [...(p.desc_list || [])];
+                                                                                            newList[pIdx] = e.target.value;
+                                                                                            handleProviderChange(idx, 'desc_list', newList);
+                                                                                        }}
+                                                                                        placeholder="Enter description point..."
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        className="btn btn-sm btn-link text-danger p-0"
+                                                                                        onClick={() => {
+                                                                                            const newList = (p.desc_list || []).filter((_, i) => i !== pIdx);
+                                                                                            handleProviderChange(idx, 'desc_list', newList);
+                                                                                        }}
+                                                                                    >
+                                                                                        <i className="ri-delete-bin-line fs-16"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="col-12">
                                                                         <label className="form-label">Button Label</label>
@@ -449,6 +507,26 @@ const ResourceForm: React.FC = () => {
                                                                         <div className="input-group">
                                                                             <span className="input-group-text bg-light"><i className="ri-link"></i></span>
                                                                             <input type="text" className="form-control" value={p.link} onChange={(e) => handleProviderChange(idx, 'link', e.target.value)} placeholder="https://..." />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="col-12">
+                                                                        <label className="form-label">Provider Logo</label>
+                                                                        <div className={`d-flex align-items-center justify-content-between p-2 border rounded cursor-pointer bg-light`} onClick={() => { setActiveProviderLogoIdx(idx); setShowFileManager(true); }}>
+                                                                            <div className="d-flex align-items-center gap-2 overflow-hidden">
+                                                                                {p.logo ? (
+                                                                                    <img src={buildStorageUrl(p.logo)} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} className="rounded border bg-white flex-shrink-0" />
+                                                                                ) : (
+                                                                                    <div className="avatar-xs bg-white rounded border d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '28px', height: '28px' }}>
+                                                                                        <i className="ri-image-line text-muted"></i>
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="overflow-hidden">
+                                                                                    <p className="mb-0 fw-medium fs-13 text-truncate">{p.logo ? p.logo.split('/').pop() : 'No logo selected'}</p>
+                                                                                    <p className="text-muted fs-11 mb-0 text-truncate">Click to browse</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className="btn btn-sm btn-link text-primary text-decoration-none p-0 flex-shrink-0">Browse</span>
                                                                         </div>
                                                                     </div>
 
@@ -531,16 +609,25 @@ const ResourceForm: React.FC = () => {
 
             <FileManagerModal
                 isOpen={showFileManager}
-                toggle={() => setShowFileManager(!showFileManager)}
+                toggle={() => { setShowFileManager(!showFileManager); if (showFileManager) setActiveProviderLogoIdx(null); }}
                 selectionMode={true}
                 entityType="resources"
                 entityId={id || nextId || '0'}
-                initialPath={formData.file && typeof formData.file === 'string' ? formData.file.split('/').slice(0, -1).join('/') || '/' : '/'}
+                initialPath="/"
                 onSelectFiles={(files) => {
                     if (files && files.length > 0) {
-                        setFormData(prev => ({ ...prev, file: files[0].path }));
-                        setFileOptions(null);
-                        if (validationErrors['file']) setValidationErrors(prev => ({ ...prev, file: [] }));
+                        const selectedPath = files[0].path.trim().replace(/^\/+/, '');
+                        const fullPath = selectedPath.startsWith('resources/') ? selectedPath : `resources/${selectedPath}`;
+
+                        if (activeProviderLogoIdx !== null) {
+                            handleProviderChange(activeProviderLogoIdx, 'logo', fullPath);
+                            setActiveProviderLogoIdx(null);
+                        } else {
+                            setFormData(prev => ({ ...prev, file: fullPath }));
+                            setFileOptions(null);
+                            if (validationErrors['file']) setValidationErrors(prev => ({ ...prev, file: [] }));
+                        }
+                        setShowFileManager(false);
                     }
                 }}
                 section="Resources"

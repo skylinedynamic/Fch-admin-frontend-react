@@ -1,6 +1,8 @@
 export interface Provider {
     name: string;
     desc: string;
+    desc_list?: string[];
+    logo?: string;
     is_recommended: boolean;
     btn_label: string;
     link: string;

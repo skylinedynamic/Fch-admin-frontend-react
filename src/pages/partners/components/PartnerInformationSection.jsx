@@ -10,8 +10,8 @@ import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
+import { buildStorageUrl } from '../../../utils/imageHelpers';
 
-const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || (import.meta.env.VITE_BASE_URL ? `${import.meta.env.VITE_BASE_URL}/storage` : '');
 
 export default function PartnerInformationSection({
     formData,
@@ -94,34 +94,18 @@ export default function PartnerInformationSection({
         }
 
         const buildUrl = (path) => {
-            if (!path || typeof path !== 'string') return avatarDefault;
-            
-            // If it's already a full URL or blob, return it as is
-            if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
-                return path;
-            }
+            if (!path || typeof path !== 'string' || path === avatarDefault) return avatarDefault;
 
-            // If it's the default avatar or a local asset, return it as is
-            if (path === avatarDefault || path.startsWith('/assets/')) {
-                return path;
-            }
-
-            // Clean up base URL and path
-            // Fallback to /storage if VITE_STORAGE_URL is missing to avoid frontend origin issues
-            const baseUrl = (STORAGE_URL.trim() || '/storage').replace(/\/+$/, '');
             let cleanPath = path.trim().replace(/^\/+/, '');
 
             // Ensure partners directory structure if it's just a filename
             if (partnerId && !cleanPath.includes('partners/')) {
-                // If it doesn't contain a slash, it's just a filename
                 if (!cleanPath.includes('/')) {
                     cleanPath = `partners/${partnerId}/${cleanPath}`;
                 }
             }
 
-            // Construct full URL and remove double slashes
-            const fullUrl = `${baseUrl}/${cleanPath}`;
-            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+            return buildStorageUrl(cleanPath, avatarDefault);
         };
 
         // 3. Use current partner_image if it's a string (path from DB or selected from file manager)
