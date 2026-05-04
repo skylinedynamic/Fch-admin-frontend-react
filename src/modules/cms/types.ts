@@ -69,7 +69,11 @@ export interface SiteSetting extends SiteSettingsData {
     footer_logo?: string;
     partner_logo?: string;
     favicon?: string;
-    social_links?: SocialLink[];
+    social_links?: string | SocialLink[];
+    agreement_signing_enabled?: string;
+    google_measurement_id?: string;
+    recaptcha_site_key?: string;
+    recaptcha_secret_key?: string;
     created_at?: string;
     updated_at?: string;
 }
