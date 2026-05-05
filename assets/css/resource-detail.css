@@ -42,11 +42,11 @@
     border-radius: 0.4rem;
     border: none;
     box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
-    height: 100%;
     display: flex;
     flex-direction: column;
     position: relative;
     transition: all 0.3s ease;
+    margin-bottom: 0;
 }
 
 .provider-card:hover {
@@ -72,7 +72,7 @@
 }
 
 .provider-logo-box {
-    width: 60px;
+    width: 180px;
     height: auto;
     border-radius: 4px;
     display: flex;
@@ -83,7 +83,7 @@
 }
 
 .provider-logo-box img {
-    width: 60px;
+    width: 180px;
     height: auto;
     object-fit: contain;
 }
@@ -103,7 +103,7 @@
 }
 
 .features-bullet-list {
-    margin-bottom: 15px;
+    margin-bottom: 0;
     padding-top: 15px;
     border-top: 1px dashed #e9ebec;
     list-style: none;
@@ -337,3 +337,11 @@
 .display-icon-btn {
     height: 37.5px !important;
 }
+
+.hover-translate-x {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-translate-x:hover {
+    transform: translateX(5px);
+}

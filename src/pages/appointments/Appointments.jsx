@@ -188,7 +188,7 @@ export default function Appointments() {
     return (
         <div className="page-content appointments-page">
             <div className="container-fluid">
-                <div className="row">
+                <div className="row mt-3">
                     <div className="col-12">
                         <div className="row">
                             <div className="col-lg-4 col-xl-3">

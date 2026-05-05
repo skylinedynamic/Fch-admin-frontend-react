@@ -475,7 +475,7 @@ const Resource: React.FC = () => {
                   {/* Asset Sidebar */}
                   <div className="card shadow-sm rounded-2 bg-white mb-0">
                     <div className="card-header border-bottom border-light p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                      <h6 className="fw-semibold text-dark mb-0 fs-14 text-uppercase tracking-wider">Download Assets</h6>
+                      <h6 className="fw-semibold text-dark mb-0 fs-14 tracking-wider">Download Assets</h6>
                       {hasPermission('create resources') && (
                         <button className="btn btn-sm btn-soft-danger px-3 py-1.5 fs-11 fw-semibold border-0" onClick={() => handleAddNew('download_assets')}>
                           <i className="ri-add-line me-1"></i> Add New
