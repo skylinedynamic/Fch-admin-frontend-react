@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { usePermissions } from "../../lib/auth/usePermissions";
-import { useSiteSettings } from "../../modules/cms/queries";
+import { usePublicSiteSettings } from "../../modules/cms/queries";
 import { useAuthStore } from "../../store/auth/authStore";
 import faviconImg from "../../../assets/images/Favicon.png";
 import logoImg from "../../../assets/images/fch-logo-wide.png";
@@ -202,7 +202,7 @@ export default function Sidebar() {
   const [expandedMenu, setExpandedMenu] = useState(null); // State for expanded submenus
   const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
   const location = useLocation();
-  const { data: settingsData } = useSiteSettings();
+  const { data: settingsData } = usePublicSiteSettings();
   const settings = settingsData?.data;
   const BASE_URL = import.meta.env.VITE_BASE_URL || '';
 

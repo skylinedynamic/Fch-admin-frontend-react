@@ -5,12 +5,12 @@ import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
-import { useSiteSettings } from '../../modules/cms/queries'
+import { usePublicSiteSettings } from '../../modules/cms/queries'
 
 export default function Header() {
   const navigate = useNavigate()
   const { hasPermission } = usePermissions()
-  const { data: settingsData } = useSiteSettings()
+  const { data: settingsData } = usePublicSiteSettings()
   const settings = settingsData?.data
   const BASE_URL = import.meta.env.VITE_BASE_URL || ''
   const user = useAuthStore((state) => state.user)

@@ -1,9 +1,9 @@
 import React from 'react'
 import { APP_CONFIG } from '../../config'
-import { useSiteSettings } from '../../modules/cms/queries'
+import { usePublicSiteSettings } from '../../modules/cms/queries'
 
 export default function Footer() {
-  const { data: settingsData } = useSiteSettings()
+  const { data: settingsData } = usePublicSiteSettings()
   const siteName = settingsData?.data?.site_name || APP_CONFIG.name
   return (
     <footer className="footer">

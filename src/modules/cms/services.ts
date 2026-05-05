@@ -106,7 +106,7 @@ export const cmsService = {
     return response.data;
   },
   fetchPublicSettings: async () => {
-    const response = await apiClient.get("/admin/cms/site-settings");
+    const response = await apiClient.get("/website/settings");
     return response.data;
   },
 };
