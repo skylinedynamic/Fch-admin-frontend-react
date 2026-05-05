@@ -43,6 +43,8 @@ const ResourceForm: React.FC = () => {
         status: true,
         overview: [],
         impact: [],
+        overview_text: '',
+        impact_text: '',
         providers: [],
     });
 
@@ -72,7 +74,12 @@ const ResourceForm: React.FC = () => {
                     file: (resource as any).file || '',
                     overview: resource.overview || [],
                     impact: resource.impact || [],
-                    providers: resource.providers || [],
+                    overview_text: resource.overview_text || '',
+                    impact_text: resource.impact_text || '',
+                    providers: (resource.providers || []).map((p: any) => ({
+                        ...p,
+                        logo: p.actual_path || p.logo
+                    })),
                 });
                 setIsLoading(false);
             }
@@ -135,10 +142,22 @@ const ResourceForm: React.FC = () => {
             }
             navigate('/resources');
         } catch (err: any) {
-            if (err.response?.status === 422 && err.response?.data?.errors) {
-                setValidationErrors(err.response.data.errors);
+            const resp = err.response;
+            const data = resp?.data;
+            let msg = 'Action failed';
+
+            if (typeof data === 'string') {
+                msg = data;
+            } else if (data?.message) {
+                msg = data.message;
+            } else if (err.message) {
+                msg = err.message;
+            }
+
+            if (resp?.status === 422 && data?.errors) {
+                setValidationErrors({ ...data.errors, general: [msg] });
             } else {
-                toast.error(err.response?.data?.message || 'Action failed');
+                setValidationErrors({ general: [msg] });
             }
         }
     };
@@ -154,18 +173,7 @@ const ResourceForm: React.FC = () => {
 
     return (
         <div className="page-content">
-            <style>{`
-                .p-dropdown .p-dropdown-label {
-                    display: flex !important;
-                    align-items: center !important;
-                    padding-top: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-                .p-dropdown {
-                    display: flex !important;
-                    align-items: center !important;
-                }
-            `}</style>
+
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row page-subheader-sticky bg-body">
@@ -201,6 +209,18 @@ const ResourceForm: React.FC = () => {
                         <div className="card">
                             <div className="card-body p-4">
                                 <form onSubmit={(e) => e.preventDefault()}>
+                                    {validationErrors.general && (
+                                        <div className="col-12 mb-4">
+                                            <div className="form-control is-invalid border-danger bg-danger-subtle p-3 text-danger fw-medium d-flex align-items-center gap-3">
+                                                <i className="ri-error-warning-fill fs-20"></i>
+                                                <div className="flex-grow-1">
+                                                    <span className="d-block fs-14 fw-bold mb-1 text-uppercase">Server Error</span>
+                                                    <span className="d-block fs-13 lh-base">{validationErrors.general[0]}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Resource Information */}
                                     <div className="col-12">
                                         <h5 className="text-primary fs-16">Resource Information</h5>
@@ -226,6 +246,8 @@ const ResourceForm: React.FC = () => {
                                                         status: true,
                                                         overview: [],
                                                         impact: [],
+                                                        overview_text: '',
+                                                        impact_text: '',
                                                         providers: [],
                                                     });
                                                 }}
@@ -240,7 +262,7 @@ const ResourceForm: React.FC = () => {
                                         <div className="col-lg-6">
                                             <label className="form-label">Display Icon</label>
                                             <div className="position-relative" ref={dropdownRef}>
-                                                <button type="button" className="form-control d-flex align-items-center gap-2 text-start" onClick={() => { setShowIconDropdown(p => !p); setIconSearch(''); }}>
+                                                <button type="button" className="display-icon-btn form-control d-flex align-items-center gap-2 text-start" onClick={() => { setShowIconDropdown(p => !p); setIconSearch(''); }}>
                                                     {formData.icon ? <i className={`${formData.icon} fs-16 text-primary`}></i> : <i className="ri-image-line text-muted"></i>}
                                                     <span className="fs-13 flex-grow-1 text-truncate">{RESOURCE_ICONS.find(i => i.value === formData.icon)?.label || 'Select an icon...'}</span>
                                                     <i className="ri-arrow-down-s-line text-muted ms-auto"></i>
@@ -316,20 +338,30 @@ const ResourceForm: React.FC = () => {
                                     {/* Business Service Fields */}
                                     {isBusinessService && (
                                         <>
-                                            <div className="row g-3 mt-3">
-                                                {/* Overview Points */}
+                                            <div className="row g-4 mt-3">
+                                                {/* Overview */}
                                                 <div className="col-lg-6">
+                                                    <div className="mb-4">
+                                                        <label className="form-label fw-semibold">Overview Description</label>
+                                                        <textarea
+                                                            className="form-control"
+                                                            rows={2}
+                                                            name="overview_text"
+                                                            value={formData.overview_text}
+                                                            onChange={handleInputChange}
+                                                            placeholder="Main service overview text..."
+                                                        ></textarea>
+                                                    </div>
+
                                                     <div className="d-flex align-items-center justify-content-between mb-3">
-                                                        <label className="form-label mb-0">
-                                                            Overview
-                                                        </label>
+                                                        <label className="form-label mb-0">Overview Highlights</label>
                                                         <button type="button" className="btn btn-sm btn-link text-primary text-decoration-underline p-0" onClick={() => addArrayItem('overview')}>
                                                             + Add Point
                                                         </button>
                                                     </div>
                                                     {(formData.overview || []).length === 0 && (
-                                                        <div className="text-center py-3 bg-light rounded border">
-                                                            <p className="text-muted fs-13 mb-0">No overview points added. Click "Add Point" to begin.</p>
+                                                        <div className="text-center py-3 bg-light rounded border border-dashed">
+                                                            <p className="text-muted fs-12 mb-0">No highlight points added.</p>
                                                         </div>
                                                     )}
                                                     <div className="vstack gap-2">
@@ -341,7 +373,7 @@ const ResourceForm: React.FC = () => {
                                                                     className="form-control bg-light border-0 shadow-none"
                                                                     value={point}
                                                                     onChange={(e) => handleArrayChange('overview', idx, e.target.value)}
-                                                                    placeholder="Enter overview point..."
+                                                                    placeholder="Enter point..."
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -357,17 +389,27 @@ const ResourceForm: React.FC = () => {
 
                                                 {/* Why It Matters */}
                                                 <div className="col-lg-6">
+                                                    <div className="mb-4">
+                                                        <label className="form-label fw-semibold">Impact Description</label>
+                                                        <textarea
+                                                            className="form-control"
+                                                            rows={2}
+                                                            name="impact_text"
+                                                            value={formData.impact_text}
+                                                            onChange={handleInputChange}
+                                                            placeholder="Main impact explanation text..."
+                                                        ></textarea>
+                                                    </div>
+
                                                     <div className="d-flex align-items-center justify-content-between mb-3">
-                                                        <label className="form-label mb-0">
-                                                            Why It Matters
-                                                        </label>
+                                                        <label className="form-label mb-0">Impact Highlights</label>
                                                         <button type="button" className="btn btn-sm btn-link text-warning text-decoration-underline p-0" onClick={() => addArrayItem('impact')}>
                                                             + Add Point
                                                         </button>
                                                     </div>
                                                     {(formData.impact || []).length === 0 && (
-                                                        <div className="text-center py-3 bg-light rounded border">
-                                                            <p className="text-muted fs-13 mb-0">No impact points added. Click "Add Impact" to begin.</p>
+                                                        <div className="text-center py-3 bg-light rounded border border-dashed">
+                                                            <p className="text-muted fs-12 mb-0">No highlight points added.</p>
                                                         </div>
                                                     )}
                                                     <div className="vstack gap-2">
@@ -379,7 +421,7 @@ const ResourceForm: React.FC = () => {
                                                                     className="form-control bg-light border-0 shadow-none"
                                                                     value={point}
                                                                     onChange={(e) => handleArrayChange('impact', idx, e.target.value)}
-                                                                    placeholder="Enter impact point..."
+                                                                    placeholder="Enter point..."
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -435,7 +477,8 @@ const ResourceForm: React.FC = () => {
                                                                 <div className="row g-2">
                                                                     <div className="col-12">
                                                                         <label className="form-label">Provider Name</label>
-                                                                        <input type="text" className="form-control" value={p.name} onChange={(e) => handleProviderChange(idx, 'name', e.target.value)} placeholder="e.g. Acme Corp" />
+                                                                        <input type="text" className={`form-control ${validationErrors[`providers.${idx}.name`] ? 'is-invalid' : ''}`} value={p.name} onChange={(e) => handleProviderChange(idx, 'name', e.target.value)} placeholder="e.g. Acme Corp" />
+                                                                        {validationErrors[`providers.${idx}.name`] && <div className="invalid-feedback">{validationErrors[`providers.${idx}.name`]}</div>}
                                                                     </div>
 
                                                                     <div className="col-12">
@@ -504,9 +547,10 @@ const ResourceForm: React.FC = () => {
 
                                                                     <div className="col-12">
                                                                         <label className="form-label">Button URL</label>
-                                                                        <div className="input-group">
+                                                                        <div className="input-group has-validation">
                                                                             <span className="input-group-text bg-light"><i className="ri-link"></i></span>
-                                                                            <input type="text" className="form-control" value={p.link} onChange={(e) => handleProviderChange(idx, 'link', e.target.value)} placeholder="https://..." />
+                                                                            <input type="text" className={`form-control ${validationErrors[`providers.${idx}.link`] ? 'is-invalid' : ''}`} value={p.link} onChange={(e) => handleProviderChange(idx, 'link', e.target.value)} placeholder="https://..." />
+                                                                            {validationErrors[`providers.${idx}.link`] && <div className="invalid-feedback">{validationErrors[`providers.${idx}.link`]}</div>}
                                                                         </div>
                                                                     </div>
 

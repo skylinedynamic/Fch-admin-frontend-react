@@ -14,6 +14,12 @@ export const fetchResourcesByType = async (type: string): Promise<{ data: Resour
     return response.data;
 };
 
+// Fetch a single resource by ID
+export const fetchResourceById = async (id: number | string): Promise<{ data: ResourceItem }> => {
+    const response = await apiClient.get(`/common/resources/${id}`);
+    return response.data;
+};
+
 // Create a new resource
 export const createResource = async (data: ResourceFormData): Promise<{ data: ResourceItem }> => {
     const formData = new FormData();

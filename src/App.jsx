@@ -56,6 +56,7 @@ import { useSiteSettings, usePublicSiteSettings } from './modules/cms/queries';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
+import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -96,7 +97,7 @@ export default function App() {
       const favicon = publicSettingsData.data.favicon;
       const BASE_URL = import.meta.env.VITE_BASE_URL || '';
       const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${favicon.replace(/^\//, '')}`;
-      
+
       let link = document.querySelector("link[rel~='icon']");
       if (!link) {
         link = document.createElement('link');
@@ -294,6 +295,7 @@ export default function App() {
             {/* Resources Modules */}
             <Route element={<PermissionRoute permission="view resources" />}>
               <Route path="resources" element={<Resource />} />
+              <Route path="resources/service/:id" element={<ResourceServiceDetail />} />
               <Route path="resources/create" element={<ResourceForm />} />
               <Route path="resources/edit/:id" element={<ResourceForm />} />
               <Route path="manage-resources" element={<ManageResources />} />
