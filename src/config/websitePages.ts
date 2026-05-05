@@ -8,6 +8,9 @@ export const WEBSITE_PAGES = [
     { label: 'Credit Builder — /credit-builder',                       value: 'Credit Builder',            path: '/credit-builder' },
     { label: 'Partner Program — /partner-program',                     value: 'Partner Program',           path: '/partner-program' },
     { label: 'Pre-Qualification — /pre-qualification',                 value: 'Pre-Qualification',         path: '/pre-qualification' },
+    { label: 'Disclosure — /disclosure',                               value: 'Disclosure',                path: '/disclosure' },
+    { label: 'Privacy Policy — /privacy-policy',                       value: 'Privacy Policy',              path: '/privacy-policy' },
+    { label: 'Terms of Service — /terms',                              value: 'Terms of Service',            path: '/terms' },
 
     // ── Funding sub-pages ────────────────────────────────────────────────────
     { label: 'SBA Programs — /sba-programs',                          value: 'SBA Programs',              path: '/sba-programs' },
