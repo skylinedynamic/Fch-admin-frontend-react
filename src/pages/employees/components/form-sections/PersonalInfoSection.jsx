@@ -5,9 +5,8 @@ import { formatPhoneNumber } from '../../../../utils/formatters';
 import avatarDefault from '../../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
+import { buildStorageUrl } from '../../../../utils/imageHelpers';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
 export default function PersonalInfoSection({
     employee,
@@ -59,23 +58,7 @@ export default function PersonalInfoSection({
         }
 
         const buildUrl = (path) => {
-            if (!path || typeof path !== 'string') return avatarDefault;
-            
-            // If it's already a full URL or blob, return it as is
-            if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
-                return path;
-            }
-
-            // If it's the default avatar or a local asset, return it as is
-            if (path === avatarDefault || path.startsWith('/assets/')) {
-                return path;
-            }
-
-            // Clean up BOTH base URL and path
-            let baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
-            if (!baseUrl && BASE_URL) {
-                baseUrl = BASE_URL.trim().replace(/\/+$/, '') + '/storage';
-            }
+            if (!path || typeof path !== 'string' || path === avatarDefault) return avatarDefault;
 
             let cleanPath = path.trim().replace(/^\/+/, '');
 
@@ -86,9 +69,7 @@ export default function PersonalInfoSection({
                 }
             }
 
-            // Construct full URL and remove any double slashes except after protocol
-            const fullUrl = `${baseUrl}/${cleanPath}`;
-            return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+            return buildStorageUrl(cleanPath, avatarDefault);
         };
 
         // 2. If we have a profileImage prop that is a full URL (preview from file manager)

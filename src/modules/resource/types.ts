@@ -1,6 +1,8 @@
 export interface Provider {
     name: string;
     desc: string;
+    desc_list?: string[];
+    logo?: string;
     is_recommended: boolean;
     btn_label: string;
     link: string;
@@ -20,6 +22,8 @@ export interface ResourceItem {
     is_borrower: boolean;
     overview?: string[] | null;
     impact?: string[] | null;
+    overview_text?: string | null;
+    impact_text?: string | null;
     providers?: Provider[] | null;
     created_at: string;
     updated_at: string;
@@ -37,6 +41,8 @@ export interface ResourceFormData {
     file?: string | File | null;
     overview?: string[];
     impact?: string[];
+    overview_text?: string;
+    impact_text?: string;
     providers?: Provider[];
 }
 

@@ -3,6 +3,7 @@ import { queryKeys } from '../../lib/query/queryKeys';
 import {
     fetchGroupedResources,
     fetchResourcesByType,
+    fetchResourceById,
     createResource,
     updateResource,
     deleteResource
@@ -14,6 +15,7 @@ export const resourceKeys = {
     all: ['resources'] as const,
     grouped: () => [...resourceKeys.all, 'grouped'] as const,
     list: (type: string) => [...resourceKeys.all, 'list', type] as const,
+    detail: (id: number | string) => [...resourceKeys.all, 'detail', id] as const,
 };
 
 export const useGroupedResources = () => {
@@ -28,6 +30,14 @@ export const useResourcesByType = (type: string) => {
         queryKey: resourceKeys.list(type),
         queryFn: () => fetchResourcesByType(type),
         enabled: !!type,
+    });
+};
+
+export const useResource = (id: number | string | undefined) => {
+    return useQuery({
+        queryKey: resourceKeys.detail(id || ''),
+        queryFn: () => fetchResourceById(id!),
+        enabled: !!id,
     });
 };
 

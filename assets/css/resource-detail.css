@@ -1,0 +1,347 @@
+.resource-detail-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.breadcrumb-item.active {
+    color: #4b38b3;
+    font-weight: 500;
+}
+
+.section-card {
+    background: white;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    height: 100%;
+}
+
+.section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.provider-card {
+    background: #fff;
+    border-radius: 0.4rem;
+    border: none;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.3s ease;
+    margin-bottom: 0;
+}
+
+.provider-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(56, 65, 74, 0.1);
+}
+
+.provider-card .card-head {
+    padding: 16px 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.provider-card .card-head .update-text {
+    font-size: 11px;
+    color: #878a99;
+}
+
+.provider-card .card-body {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.provider-logo-box {
+    width: 100px;
+    height: auto;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    box-shadow: none !important;
+}
+
+.provider-logo-box img {
+    width: 100px;
+    height: auto;
+    object-fit: contain;
+}
+
+.provider-card .provider-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 0;
+    color: #495057;
+}
+
+.provider-card .provider-desc {
+    color: #878a99;
+    font-size: 13px;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.features-bullet-list {
+    margin-bottom: 0;
+    padding-top: 15px;
+    border-top: 1px dashed #e9ebec;
+    list-style: none;
+    padding-left: 0;
+}
+
+.features-bullet-list li {
+    font-size: 12px;
+    color: #495057;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.features-bullet-list li::before {
+    content: "\eb7b";
+    /* ri-checkbox-circle-line */
+    font-family: 'remixicon';
+    color: #0ab39c;
+    font-size: 14px;
+}
+
+.recom-badge {
+    display: none;
+    /* Moved to bottom left in footer */
+}
+
+.service-info-row {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f3f6f9;
+}
+
+/* Executive Service Briefing */
+.ls-1 {
+    letter-spacing: 1.5px;
+}
+
+.ls-sm {
+    letter-spacing: -0.02em;
+}
+
+.resource-highlights-section {
+    border-radius: 8px;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.tracking-wider {
+    letter-spacing: 0.05em;
+}
+
+.border-end.border-light {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.bg-light.bg-opacity-30 {
+    background-color: rgba(243, 246, 249, 0.5) !important;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.guidance-list-item {
+    transition: all 0.2s ease;
+}
+
+.outcome-step {
+    transition: all 0.3s ease;
+}
+
+.outcome-step:hover {
+    transform: translateX(3px);
+    border-color: #f7b84b !important;
+}
+
+.info-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #4b38b3;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.guidance-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.guidance-item {
+    font-size: 15px;
+    color: #495057;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.guidance-item i {
+    color: #0ab39c;
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+.benefit-pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.benefit-pill {
+    background: #f3f6f9;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 13px;
+    color: #495057;
+    font-weight: 500;
+    border: 1px solid #e9ebec;
+}
+
+.star-badge {
+    color: #f7b84b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.provider-card .card-footer {
+    padding: 15px 20px;
+    background: transparent;
+    border-top: 1px dashed #e9ebec;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-get-started {
+    background-color: rgba(10, 179, 156, 0.1);
+    color: #0ab39c;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: all 0.3s;
+    text-decoration: none !important;
+}
+
+.btn-get-started:hover {
+    background-color: #0ab39c;
+    color: #fff;
+}
+
+.star-icon {
+    font-size: 16px;
+    color: #adb5bd;
+    cursor: pointer;
+}
+
+.star-icon.active {
+    color: #f7b84b;
+}
+
+.provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.back-btn {
+    color: #6c757d;
+    transition: all 0.2s;
+    text-decoration: none !important;
+}
+
+.back-btn:hover {
+    color: #4b38b3;
+}
+
+.impact-highlight {
+    background: #f0effc;
+    border-left: 4px solid #4b38b3;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1.5rem;
+    }
+
+    .hero-icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+
+    .hero-icon-wrapper i {
+        font-size: 1.8rem;
+    }
+
+    .provider-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Recommended Ribbon - Right Side Flag */
+.provider-recommended-ribbon {
+    position: absolute;
+    top: 12px;
+    right: 0;
+    background-color: #20af9cb5;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px 4px 14px;
+    clip-path: polygon(10px 0%, 100% 0%, 100% 100%, 10px 100%, 0% 50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.3px;
+}
+
+.display-icon-btn {
+    height: 37.5px !important;
+}
+
+.hover-translate-x {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-translate-x:hover {
+    transform: translateX(5px);
+}

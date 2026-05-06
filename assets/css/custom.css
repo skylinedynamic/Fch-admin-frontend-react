@@ -1219,9 +1219,28 @@ File: Custom Css File
   object-fit: contain;
   max-height: 180px;
 }
-.borrower-req-header-card .card-body { padding: 0.6rem 1.2rem !important; }
-.borrower-req-header-card .avatar-md { width: 3rem !important; height: 3rem !important; }
-.borrower-req-header-card .avatar-title { font-size: 1.1rem !important; }
-.borrower-req-header-card .fs-18 { font-size: 0.95rem !important; }
-.borrower-req-header-card .fs-15 { font-size: 0.8rem !important; }
-.borrower-req-header-card .fs-11 { font-size: 10px !important; }
+
+.borrower-req-header-card .card-body {
+  padding: 0.6rem 1.2rem !important;
+}
+
+.borrower-req-header-card .avatar-md {
+  width: 3rem !important;
+  height: 3rem !important;
+}
+
+.borrower-req-header-card .avatar-title {
+  font-size: 1.1rem !important;
+}
+
+.borrower-req-header-card .fs-18 {
+  font-size: 0.95rem !important;
+}
+
+.borrower-req-header-card .fs-15 {
+  font-size: 0.8rem !important;
+}
+
+.borrower-req-header-card .fs-11 {
+  font-size: 10px !important;
+}

@@ -7,8 +7,8 @@ import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../.
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { STATUS_OPTIONS, CREDIT_CATEGORY_OPTIONS } from '../../../config/creditBuilder';
+import { buildStorageUrl } from '../../../utils/imageHelpers';
 
-const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || '';
 
 export default function CreditAccountForm() {
     const { hasPermission } = usePermissions();
@@ -89,19 +89,8 @@ export default function CreditAccountForm() {
     };
 
     const getImageSrc = () => {
-        const buildUrl = (path) => {
-            if (!path || typeof path !== 'string' || path.startsWith('http') || path.startsWith('blob:')) {
-                return path;
-            }
-            const baseUrl = STORAGE_URL.trim().replace(/\/+$/, '');
-            let cleanPath = path.trim().replace(/^\/+/, '');
-            // Consolidate the URL and encode spaces/special characters
-            const fullUrl = `${baseUrl}/${cleanPath}`.replace(/([^:]\/)\/+/g, "$1");
-            return encodeURI(fullUrl);
-        };
-
         if (previewUrl && formData.image_url && !formData.image_url.startsWith('http')) {
-            return buildUrl(previewUrl);
+            return buildStorageUrl(previewUrl);
         }
 
         if (formData.full_image_url) {
@@ -109,7 +98,7 @@ export default function CreditAccountForm() {
         }
 
         if (formData.image_url && typeof formData.image_url === 'string') {
-            return buildUrl(formData.image_url);
+            return buildStorageUrl(formData.image_url);
         }
 
         return null;

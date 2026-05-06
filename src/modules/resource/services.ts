@@ -14,10 +14,16 @@ export const fetchResourcesByType = async (type: string): Promise<{ data: Resour
     return response.data;
 };
 
+// Fetch a single resource by ID
+export const fetchResourceById = async (id: number | string): Promise<{ data: ResourceItem }> => {
+    const response = await apiClient.get(`/common/resources/${id}`);
+    return response.data;
+};
+
 // Create a new resource
 export const createResource = async (data: ResourceFormData): Promise<{ data: ResourceItem }> => {
     const formData = new FormData();
-    
+
     Object.entries(data).forEach(([key, val]) => {
         if (val === undefined || val === null) return;
 
@@ -29,13 +35,16 @@ export const createResource = async (data: ResourceFormData): Promise<{ data: Re
                 if (typeof item === 'object' && item !== null) {
                     // Handle provider objects
                     Object.entries(item).forEach(([subKey, subVal]) => {
-                        let valueToAppend: string | File;
-                        if (typeof subVal === 'boolean') {
-                            valueToAppend = subVal ? '1' : '0';
+                        if (Array.isArray(subVal)) {
+                            // Handle nested arrays like desc_list
+                            subVal.forEach((nestedItem, nestedIndex) => {
+                                formData.append(`${key}[${index}][${subKey}][${nestedIndex}]`, String(nestedItem ?? ''));
+                            });
+                        } else if (typeof subVal === 'boolean') {
+                            formData.append(`${key}[${index}][${subKey}]`, subVal ? '1' : '0');
                         } else {
-                            valueToAppend = String(subVal ?? '');
+                            formData.append(`${key}[${index}][${subKey}]`, String(subVal ?? ''));
                         }
-                        formData.append(`${key}[${index}][${subKey}]`, valueToAppend);
                     });
                 } else {
                     // Handle simple arrays (overview, impact)
@@ -56,7 +65,7 @@ export const createResource = async (data: ResourceFormData): Promise<{ data: Re
 // Update an existing resource
 export const updateResource = async (id: number | string, data: ResourceFormData): Promise<{ data: ResourceItem }> => {
     const formData = new FormData();
-    
+
     Object.entries(data).forEach(([key, val]) => {
         if (val === undefined || val === null) return;
 
@@ -66,13 +75,16 @@ export const updateResource = async (id: number | string, data: ResourceFormData
             val.forEach((item, index) => {
                 if (typeof item === 'object' && item !== null) {
                     Object.entries(item).forEach(([subKey, subVal]) => {
-                        let valueToAppend: string | File;
-                        if (typeof subVal === 'boolean') {
-                            valueToAppend = subVal ? '1' : '0';
+                        if (Array.isArray(subVal)) {
+                            // Handle nested arrays like desc_list
+                            subVal.forEach((nestedItem, nestedIndex) => {
+                                formData.append(`${key}[${index}][${subKey}][${nestedIndex}]`, String(nestedItem ?? ''));
+                            });
+                        } else if (typeof subVal === 'boolean') {
+                            formData.append(`${key}[${index}][${subKey}]`, subVal ? '1' : '0');
                         } else {
-                            valueToAppend = String(subVal ?? '');
+                            formData.append(`${key}[${index}][${subKey}]`, String(subVal ?? ''));
                         }
-                        formData.append(`${key}[${index}][${subKey}]`, valueToAppend);
                     });
                 } else {
                     formData.append(`${key}[${index}]`, String(item ?? ''));
@@ -85,7 +97,7 @@ export const updateResource = async (id: number | string, data: ResourceFormData
 
     // Add method spoofing for Laravel PUT requests via FormData
     formData.append('_method', 'PUT');
-    
+
     const response = await apiClient.post(`/admin/resources/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
