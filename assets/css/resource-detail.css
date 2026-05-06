@@ -72,7 +72,7 @@
 }
 
 .provider-logo-box {
-    width: 180px;
+    width: 100px;
     height: auto;
     border-radius: 4px;
     display: flex;
@@ -83,7 +83,7 @@
 }
 
 .provider-logo-box img {
-    width: 180px;
+    width: 100px;
     height: auto;
     object-fit: contain;
 }
@@ -344,4 +344,4 @@
 
 .hover-translate-x:hover {
     transform: translateX(5px);
-}
+}

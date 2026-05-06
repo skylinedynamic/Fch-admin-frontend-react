@@ -136,17 +136,17 @@ const ResourceServiceDetail: React.FC = () => {
                                             </div>
                                         )}
                                         <CardBody className="p-3">
-                                            <div className="d-flex flex-column align-items-center gap-3 mb-3 mt-2 text-center">
-                                                <div className="provider-logo-box bg-white shadow-sm rounded-0 text-start">
+                                            <div className="d-flex flex-row align-items-center gap-3 mb-3 mt-2">
+                                                <div className="provider-logo-box bg-white shadow-sm rounded-0 flex-shrink-0">
                                                     {provider.logo ? (
-                                                        <img src={provider.logo} alt={provider.name} />
+                                                        <img src={provider.logo} alt={provider.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                                                     ) : (
-                                                        <div className="avatar-xs d-flex align-items-center justify-content-center bg-light rounded-0">
+                                                        <div className="d-flex align-items-center justify-content-center bg-light rounded-0">
                                                             <i className="ri-building-line text-muted"></i>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="w-100 text-start">
+                                                <div className="text-start">
                                                     <h5 className="provider-title mb-0 fw-bold fs-14">{provider.name}</h5>
                                                 </div>
                                             </div>

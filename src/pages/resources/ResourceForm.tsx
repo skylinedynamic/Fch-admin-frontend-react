@@ -567,7 +567,7 @@ const ResourceForm: React.FC = () => {
                                                                                 )}
                                                                                 <div className="overflow-hidden">
                                                                                     <p className="mb-0 fw-medium fs-13 text-truncate">{p.logo ? p.logo.split('/').pop() : 'No logo selected'}</p>
-                                                                                    <p className="text-muted fs-11 mb-0 text-truncate">Click to browse (Dimension 180 x 54)</p>
+                                                                                    <p className="text-muted fs-11 mb-0 text-truncate">Click to browse (Dimension 100 x 40)</p>
                                                                                 </div>
                                                                             </div>
                                                                             <span className="btn btn-sm btn-link text-primary text-decoration-none p-0 flex-shrink-0">Browse</span>
