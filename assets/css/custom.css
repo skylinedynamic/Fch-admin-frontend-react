@@ -990,6 +990,7 @@ File: Custom Css File
 
 
 /* Resource Hub Final Standardized Styles */
+
 .rh-scroll::-webkit-scrollbar {
   width: 5px;
 }
@@ -1113,6 +1114,8 @@ File: Custom Css File
   overflow-y: auto !important;
   overflow-x: hidden !important;
   display: block !important;
+  padding-top: 8px !important;
+  padding-right: 4px !important;
 }
 
 .rh-scroll-460 {

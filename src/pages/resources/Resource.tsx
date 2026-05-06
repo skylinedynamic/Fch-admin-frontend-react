@@ -335,7 +335,7 @@ const Resource: React.FC = () => {
                         )}
                       </div>
                       <div className="card-body p-3 pt-0 rh-cat-body position-relative mb-0">
-                        <div className={`rh-scroll px-1 ${filteredLegal.length > 4 ? 'rh-scroll-320' : ''} ${user?.is_host == 1 ? 'p-1' : ''}`}>
+                        <div className={`rh-scroll ${filteredLegal.length > 4 ? 'rh-scroll-320' : ''} ${user?.is_host == 1 ? 'p-1' : ''}`}>
                           <div className="d-flex flex-column gap-2">
                             {filteredLegal.map((item, i) => (
                               <div className="p-3 rounded-2 border border-light-subtle d-flex align-items-center luxe-item transition-all cursor-pointer" key={item.id} onClick={() => handleItemClick(item)}>
@@ -374,7 +374,7 @@ const Resource: React.FC = () => {
                         )}
                       </div>
                       <div className="card-body p-3 pt-0 rh-cat-body position-relative mb-0">
-                        <div className={`rh-scroll px-1 ${filteredBus.length > 4 ? 'rh-scroll-320' : ''} ${user?.is_host == 1 ? 'p-1' : ''}`}>
+                        <div className={`rh-scroll ${filteredBus.length > 4 ? 'rh-scroll-320' : ''} ${user?.is_host == 1 ? 'p-1' : ''}`}>
                           <div className="d-flex flex-column gap-2">
                             {filteredBus.map((item, i) => (
                               <div
@@ -440,7 +440,7 @@ const Resource: React.FC = () => {
                         </div>
                       </div>
                       <div className="card-body p-3 rh-cat-body position-relative">
-                        <div className={`rh-scroll px-1 ${filteredEdu.length > 12 ? 'rh-scroll-460' : ''} ${user?.is_host == 1 ? 'p-2' : ''}`}>
+                        <div className={`rh-scroll ${filteredEdu.length > 12 ? 'rh-scroll-460' : ''} ${user?.is_host == 1 ? 'p-2' : ''}`}>
                           <div className="row g-3 mb-2">
                             {filteredEdu.map((edu, i) => (
                               <div className="col-6 col-md-4 col-xl-3" key={edu.id || i}>

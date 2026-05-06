@@ -46,6 +46,7 @@ const ResourceForm: React.FC = () => {
         overview_text: '',
         impact_text: '',
         providers: [],
+        sort_order: 0,
     });
 
     useEffect(() => {
@@ -76,6 +77,7 @@ const ResourceForm: React.FC = () => {
                     impact: resource.impact || [],
                     overview_text: resource.overview_text || '',
                     impact_text: resource.impact_text || '',
+                    sort_order: resource.sort_order || 0,
                     providers: (resource.providers || []).map((p: any) => ({
                         ...p,
                         logo: p.actual_path || p.logo
@@ -123,7 +125,7 @@ const ResourceForm: React.FC = () => {
     };
 
     const addProvider = () =>
-        setFormData(prev => ({ ...prev, providers: [...(prev.providers || []), { name: '', desc: '', desc_list: [], logo: '', is_recommended: false, btn_label: 'Get Started', link: '' }] }));
+        setFormData(prev => ({ ...prev, providers: [...(prev.providers || []), { name: '', desc: '', desc_list: [], logo: '', is_recommended: false, btn_label: 'Get Started', link: '', sort_order: 0 }] }));
 
     const removeProvider = (index: number) =>
         setFormData(prev => ({ ...prev, providers: (prev.providers || []).filter((_, i) => i !== index) }));
@@ -155,7 +157,21 @@ const ResourceForm: React.FC = () => {
             }
 
             if (resp?.status === 422 && data?.errors) {
-                setValidationErrors({ ...data.errors, general: [msg] });
+                const errors = data.errors;
+                setValidationErrors({ ...errors, general: [msg] });
+
+                // Scroll to first error
+                setTimeout(() => {
+                    const firstErrorKey = Object.keys(errors)[0];
+                    const element = document.getElementById(firstErrorKey) ||
+                        document.getElementsByName(firstErrorKey)[0] ||
+                        document.querySelector('.is-invalid') ||
+                        document.querySelector('.p-invalid');
+
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
             } else {
                 setValidationErrors({ general: [msg] });
             }
@@ -209,18 +225,6 @@ const ResourceForm: React.FC = () => {
                         <div className="card">
                             <div className="card-body p-4">
                                 <form onSubmit={(e) => e.preventDefault()}>
-                                    {validationErrors.general && (
-                                        <div className="col-12 mb-4">
-                                            <div className="form-control is-invalid border-danger bg-danger-subtle p-3 text-danger fw-medium d-flex align-items-center gap-3">
-                                                <i className="ri-error-warning-fill fs-20"></i>
-                                                <div className="flex-grow-1">
-                                                    <span className="d-block fs-14 fw-bold mb-1 text-uppercase">Server Error</span>
-                                                    <span className="d-block fs-13 lh-base">{validationErrors.general[0]}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* Resource Information */}
                                     <div className="col-12">
                                         <h5 className="text-primary fs-16">Resource Information</h5>
@@ -290,10 +294,15 @@ const ResourceForm: React.FC = () => {
                                             {validationErrors.title && <div className="invalid-feedback">{validationErrors.title}</div>}
                                         </div>
 
-                                        <div className="col-lg-12">
+                                        <div className="col-lg-6">
                                             <label htmlFor="subtitle" className="form-label">Subtitle</label>
                                             <input type="text" className={`form-control ${validationErrors.subtitle ? 'is-invalid' : ''}`} id="subtitle" name="subtitle" placeholder="Enter subtitle" value={formData.subtitle} onChange={handleInputChange} />
                                             {validationErrors.subtitle && <div className="invalid-feedback">{validationErrors.subtitle}</div>}
+                                        </div>
+
+                                        <div className="col-lg-6">
+                                            <label htmlFor="sort_order" className="form-label">Sort Order</label>
+                                            <input type="number" className="form-control" id="sort_order" name="sort_order" placeholder="0" value={formData.sort_order} onChange={handleInputChange} />
                                         </div>
                                     </div>
 
@@ -476,8 +485,8 @@ const ResourceForm: React.FC = () => {
                                                             <div className="p-3">
                                                                 <div className="row g-2">
                                                                     <div className="col-12">
-                                                                        <label className="form-label">Provider Name</label>
-                                                                        <input type="text" className={`form-control ${validationErrors[`providers.${idx}.name`] ? 'is-invalid' : ''}`} value={p.name} onChange={(e) => handleProviderChange(idx, 'name', e.target.value)} placeholder="e.g. Acme Corp" />
+                                                                        <label className="form-label" htmlFor={`providers.${idx}.name`}>Provider Name</label>
+                                                                        <input type="text" id={`providers.${idx}.name`} className={`form-control ${validationErrors[`providers.${idx}.name`] ? 'is-invalid' : ''}`} value={p.name} onChange={(e) => handleProviderChange(idx, 'name', e.target.value)} placeholder="e.g. Acme Corp" />
                                                                         {validationErrors[`providers.${idx}.name`] && <div className="invalid-feedback">{validationErrors[`providers.${idx}.name`]}</div>}
                                                                     </div>
 
@@ -541,15 +550,23 @@ const ResourceForm: React.FC = () => {
                                                                         </div>
                                                                     </div>
                                                                     <div className="col-12">
-                                                                        <label className="form-label">Button Label</label>
-                                                                        <input type="text" className="form-control" value={p.btn_label} onChange={(e) => handleProviderChange(idx, 'btn_label', e.target.value)} placeholder="Get Started" />
+                                                                        <div className="row g-2">
+                                                                            <div className="col-8">
+                                                                                <label className="form-label">Button Label</label>
+                                                                                <input type="text" className="form-control" value={p.btn_label} onChange={(e) => handleProviderChange(idx, 'btn_label', e.target.value)} placeholder="Get Started" />
+                                                                            </div>
+                                                                            <div className="col-4">
+                                                                                <label className="form-label">Sort</label>
+                                                                                <input type="number" className="form-control" value={p.sort_order} onChange={(e) => handleProviderChange(idx, 'sort_order', parseInt(e.target.value) || 0)} placeholder="0" />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
 
                                                                     <div className="col-12">
                                                                         <label className="form-label">Button URL</label>
                                                                         <div className="input-group has-validation">
                                                                             <span className="input-group-text bg-light"><i className="ri-link"></i></span>
-                                                                            <input type="text" className={`form-control ${validationErrors[`providers.${idx}.link`] ? 'is-invalid' : ''}`} value={p.link} onChange={(e) => handleProviderChange(idx, 'link', e.target.value)} placeholder="https://..." />
+                                                                            <input type="text" id={`providers.${idx}.link`} className={`form-control ${validationErrors[`providers.${idx}.link`] ? 'is-invalid' : ''}`} value={p.link} onChange={(e) => handleProviderChange(idx, 'link', e.target.value)} placeholder="https://..." />
                                                                             {validationErrors[`providers.${idx}.link`] && <div className="invalid-feedback">{validationErrors[`providers.${idx}.link`]}</div>}
                                                                         </div>
                                                                     </div>

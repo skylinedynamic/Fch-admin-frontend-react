@@ -6,6 +6,7 @@ export interface Provider {
     is_recommended: boolean;
     btn_label: string;
     link: string;
+    sort_order: number;
 }
 
 export interface ResourceItem {
@@ -25,6 +26,7 @@ export interface ResourceItem {
     overview_text?: string | null;
     impact_text?: string | null;
     providers?: Provider[] | null;
+    sort_order: number;
     created_at: string;
     updated_at: string;
 }
@@ -44,6 +46,7 @@ export interface ResourceFormData {
     overview_text?: string;
     impact_text?: string;
     providers?: Provider[];
+    sort_order?: number;
 }
 
 export interface GroupedResources {
