@@ -1,11 +1,12 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, useMemo, ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useSaveSeoSetting, useSeoSettings } from '../../modules/cms/queries';
+import { useBlogs, useSaveSeoSetting, useSeoSettings } from '../../modules/cms/queries';
 import { toast } from 'react-toastify';
 import CmsFormLoader from '../../components/Loader/CmsFormLoader';
 import { Dropdown } from 'primereact/dropdown';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../modules/filemanager/types';
+import { WEBSITE_PAGES } from '../../config/websitePages';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
@@ -18,25 +19,12 @@ interface SeoFormData {
     keywords: string;
 }
 
-// Predefined list of all website pages with their paths
-const WEBSITE_PAGES = [
-    { label: 'Home — /',                         value: 'Home',                path: '/' },
-    { label: 'Funding Options — /funding-options', value: 'Funding Options',    path: '/funding-options' },
-    { label: 'Credit Builder — /credit-builder',   value: 'Credit Builder',      path: '/credit-builder' },
-    { label: 'Partner Program — /partner-program',  value: 'Partner Program',     path: '/partner-program' },
-    { label: 'FAQ — /faq',                          value: 'FAQ',                 path: '/faq' },
-    { label: 'Terms of Service — /terms',           value: 'Terms of Service',    path: '/terms' },
-    { label: 'Privacy Policy — /privacy-policy',    value: 'Privacy Policy',      path: '/privacy-policy' },
-    { label: 'Disclosure — /disclosure',            value: 'Disclosure',          path: '/disclosure' },
-    { label: 'About Us — /about-us',                value: 'About Us',            path: '/about-us' },
-    { label: 'Career — /career',                    value: 'Career',              path: '/career' },
-];
-
 export default function SeoSettingEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const saveMutation = useSaveSeoSetting();
     const { data: seoData, isLoading, isFetching } = useSeoSettings();
+    const { data: blogsData } = useBlogs({ per_page: 100 }); // Fetch blogs for the dropdown
 
     const [formData, setFormData] = useState<SeoFormData>({
         page_name: '',
@@ -45,6 +33,16 @@ export default function SeoSettingEdit() {
         meta_description: '',
         keywords: '',
     });
+
+    // Combine static pages with dynamic blog posts
+    const pageOptions = useMemo(() => {
+        const blogOptions = (blogsData?.data?.data || []).map((blog: any) => ({
+            label: `Blog: ${blog.title} — /blog/${blog.slug}`,
+            value: `Blog: ${blog.title}`,
+            path: `/blog/${blog.slug}`
+        }));
+        return [...WEBSITE_PAGES, ...blogOptions];
+    }, [blogsData]);
     const [ogImage, setOgImage] = useState<string | null>(null);
     const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,7 +73,7 @@ export default function SeoSettingEdit() {
     }, [id, seoData]);
 
     const handlePageChange = (value: string) => {
-        const selected = WEBSITE_PAGES.find(p => p.value === value);
+        const selected = pageOptions.find(p => p.value === value);
         
         // Check if this page already has SEO settings in our data
         const existing = seoData?.data?.find((s: any) => s.page_name === value);
@@ -230,7 +228,7 @@ export default function SeoSettingEdit() {
                                         <label className="form-label">Page <span className="text-danger">*</span></label>
                                         <Dropdown
                                             value={formData.page_name}
-                                            options={WEBSITE_PAGES}
+                                            options={pageOptions}
                                             onChange={(e) => handlePageChange(e.value)}
                                             placeholder="Select a page..."
                                             className={`w-100 ${errors.page_name ? 'p-invalid' : ''}`}
