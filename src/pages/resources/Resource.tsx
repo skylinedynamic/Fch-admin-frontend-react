@@ -486,7 +486,7 @@ const Resource: React.FC = () => {
                       <div className="rh-scroll scrollable-container-assets px-0">
                         <div className="list-group list-group-flush">
                           {documentItems.map((doc, i) => (
-                            <div className="list-group-item border-bottom border-light list-group-item-action border-0 p-3 transition-all d-flex align-items-center justify-content-between cursor-pointer" key={doc.id} onClick={() => handleItemClick(doc.original)}>
+                            <div className="list-group-item border-bottom border-light border-0 p-3 transition-all hover-translate-x d-flex align-items-center justify-content-between cursor-pointer" key={doc.id} onClick={() => handleItemClick(doc.original)}>
                               <div className="d-flex align-items-center flex-grow-1 pe-2">
                                 <i className={`${doc.icon} text-${doc.color} fs-20 me-3`}></i>
                                 <div className="flex-grow-1 overflow-hidden d-flex align-items-center justify-content-between">
