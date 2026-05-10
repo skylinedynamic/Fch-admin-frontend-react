@@ -4,6 +4,8 @@ import AgreementBuilder from './AgreementBuilder';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import TestMailForm from './TestMailForm';
+import EmailConfigurationForm from './EmailConfigurationForm';
+import BrandingForm from './BrandingForm';
 
 export default function SettingsForm({
     formData,
@@ -60,6 +62,11 @@ export default function SettingsForm({
     const canSeeBorrowerAgreement = hasPermission('update borrower agreement settings');
     if (canSeePartnerAgreement || canSeeBorrowerAgreement) {
         sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
+    }
+
+    if (hasPermission('update general settings')) {
+        sections.push({ id: 'general_settings', label: 'Email Configuration', icon: 'ri-mail-settings-line' });
+        sections.push({ id: 'branding', label: 'Branding', icon: 'ri-brush-line' });
     }
 
     const user = useAuthStore((state) => state.user);
@@ -175,8 +182,8 @@ export default function SettingsForm({
         <div className="row g-4 align-items-start">
             {/* Sidebar */}
             <div className="col-lg-3">
-                <div className="card">
-                    <div className="card-header">
+                <div className="card shadow-sm border-0">
+                    <div className="card-header bg-white py-3">
                         <h5 className="card-title mb-0 fs-14">
                             <i className="ri-list-settings-line me-2 align-middle text-muted"></i>
                             Settings Menu
@@ -187,13 +194,13 @@ export default function SettingsForm({
                             <button
                                 key={section.id}
                                 type="button"
-                                className={`list-group-item list-group-item-action d-flex align-items-center gap-2 rounded-2 border-0 py-2 px-3 mb-1 fs-14 ${activeSection === section.id ? 'active' : 'text-body'}`}
+                                className={`list-group-item list-group-item-action d-flex align-items-center gap-2 rounded-2 border-0 py-2 px-3 mb-1 fs-14 ${activeSection === section.id ? 'active bg-primary text-white' : 'text-body hover-bg-light'}`}
                                 onClick={() => setActiveSection(section.id)}
                             >
-                                <i className={`${section.icon} fs-15 ${activeSection === section.id ? '' : 'text-muted'}`}></i>
+                                <i className={`${section.icon} fs-16 ${activeSection === section.id ? 'text-white' : 'text-muted'}`}></i>
                                 <span className="fw-medium">{section.label}</span>
                                 {activeSection === section.id
-                                    ? <i className="ri-checkbox-circle-fill ms-auto opacity-75 fs-14"></i>
+                                    ? <i className="ri-checkbox-circle-fill ms-auto opacity-75 fs-14 text-white"></i>
                                     : <i className="ri-arrow-right-s-line ms-auto text-muted fs-14"></i>
                                 }
                             </button>
@@ -205,9 +212,13 @@ export default function SettingsForm({
             {/* Content */}
             <div className="col-lg-9">
                 {activeSection === 'agreement' ? (
-                    <div className="card p-0 overflow-hidden">
+                    <div className="card shadow-sm border-0 overflow-hidden">
                         <AgreementBuilder />
                     </div>
+                ) : activeSection === 'general_settings' ? (
+                    <EmailConfigurationForm />
+                ) : activeSection === 'branding' ? (
+                    <BrandingForm />
                 ) : activeSection === 'test_mail' ? (
                     <TestMailForm />
                 ) : (

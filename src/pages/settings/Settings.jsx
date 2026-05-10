@@ -138,8 +138,10 @@ export default function Settings() {
                                         </li>
                                         <li className="breadcrumb-item active" aria-current="page">
                                             {activeSection === 'payment' ? 'Payment Method' :
-                                                activeSection === 'agreement' ? 'Agreement Management' :
-                                                    activeSection === 'test_mail' ? 'Test Mail' : 'Settings'}
+                                                activeSection === 'agreement' ? 'Agreement Builder' :
+                                                    activeSection === 'general_settings' ? 'Email Configuration' :
+                                                        activeSection === 'branding' ? 'Site Branding' :
+                                                            activeSection === 'test_mail' ? 'Test Mail' : 'Settings'}
                                         </li>
                                     </ol>
                                 </nav>
