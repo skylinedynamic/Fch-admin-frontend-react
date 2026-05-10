@@ -359,15 +359,25 @@ export default function LeadDetails() {
                     allUsers(),
                     fetchReferralPartners()
                 ]);
-                
-                if (usersRes.status) setUsers(usersRes.data || []);
+                if (usersRes.status) {
+                    const userData = usersRes.data || [];
+                    setUsers(userData);
+
+                    // Default Lead Owner (salesperson_id) for new lead
+                    if (!id && currentUser?.id) {
+                        const exists = userData.some(u => u.id == currentUser.id);
+                        if (exists) {
+                            setFormData(prev => ({ ...prev, salesperson_id: currentUser.id }));
+                        }
+                    }
+                }
                 setReferralPartners(referralRes || []);
             } catch (err) {
                 console.error(err);
             }
         };
         fetchData();
-    }, []);
+    }, [id, currentUser?.id]);
 
     // Cascading logic for location
     useEffect(() => {
