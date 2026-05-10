@@ -835,6 +835,10 @@ File: Custom Css File
   height: 140px !important;
 }
 
+.sk-h-150 {
+  height: 150px !important;
+}
+
 .sk-w-20 {
   width: 20px !important;
 }

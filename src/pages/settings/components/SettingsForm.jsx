@@ -4,6 +4,7 @@ import AgreementBuilder from './AgreementBuilder';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import TestMailForm from './TestMailForm';
+import TenantDomainConfig from './TenantDomainConfig';
 
 export default function SettingsForm({
     formData,
@@ -65,6 +66,10 @@ export default function SettingsForm({
     const user = useAuthStore((state) => state.user);
     if (user && (user.is_host == 1 || user.is_host == true)) {
         sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
+    }
+
+    if (user && user.entity_type === 'Partner' && user.is_host == 0 && user.partner_type === "White-Label Partner (WL)") {
+        sections.push({ id: 'custom_domain', label: 'Custom Domain', icon: 'ri-global-line' });
     }
 
     // Auto-select first available section if the active one isn't available
@@ -210,6 +215,8 @@ export default function SettingsForm({
                     </div>
                 ) : activeSection === 'test_mail' ? (
                     <TestMailForm />
+                ) : activeSection === 'custom_domain' ? (
+                    <TenantDomainConfig />
                 ) : (
                     <form onSubmit={onSubmit}>
                         <div className="card">

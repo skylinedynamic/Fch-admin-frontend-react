@@ -106,7 +106,9 @@ export default function PartnerProfile() {
         subscription_end_date: '',
         expiry_date: '',
         termination_date: '',
-        subscription_status: ''
+        subscription_status: '',
+        partner_domain: '',
+        borrower_domain: '',
     });
 
     // Fetch Partner Plans on mount
@@ -715,7 +717,7 @@ export default function PartnerProfile() {
                     // Force refresh both local form data and global user session
                     await fetchPartnerData(true);
                     await refreshUserData();
-                    
+
                     toast.success('Partner updated successfully');
                     window.dispatchEvent(new Event('refreshActivities'));
 
@@ -739,7 +741,7 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
+                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
                     const currentIndex = tabOrder.indexOf(activeTab);
                     const nextTab = tabOrder[currentIndex + 1];
 
@@ -827,7 +829,9 @@ export default function PartnerProfile() {
                                 <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {!['documents', 'clientList', 'subscription', 'agreement'].includes(activeTab) && (
+
+                                {/* Generic Partner Save Button */}
+                                {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig'].includes(activeTab) && (
                                     ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                                         <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                             {isSaving ? (
@@ -842,6 +846,22 @@ export default function PartnerProfile() {
                                             )}
                                         </button>
                                     )
+                                )}
+
+                                {/* Specific Tenant Config Save Button */}
+                                {activeTab === 'tenantConfig' && id && hasPermission('update partners') && (
+                                    <button type="submit" form="tenant-config-form" className="btn btn-primary w-lg waves-effect" disabled={isSaving}>
+                                        {isSaving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> Update
+                                            </>
+                                        )}
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -925,6 +945,18 @@ export default function PartnerProfile() {
                                             <i className="far fa-list-alt"></i> Subscription
                                         </a>
                                     </li>
+                                    {formData.partner_type === PARTNER_TYPES.WHITE_LABEL && (
+                                        <li className="nav-item">
+                                            <a
+                                                className={`nav-link ${activeTab === 'tenantConfig' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                                onClick={() => id && setActiveTab('tenantConfig')}
+                                                role="tab"
+                                                style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                            >
+                                                Tenant Config
+                                            </a>
+                                        </li>
+                                    )}
                                     {formData.has_sign && Number(formData.is_host) == 0 && (
                                         <li className="nav-item">
                                             <a
@@ -952,12 +984,13 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
-                                    loading={isPartnerLoading || isSaving}
+                                    loading={isPartnerLoading}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
                                     partnerPlans={partnerPlans}
                                     onRefresh={handleRefresh}
+                                    setIsSaving={setIsSaving}
                                 />
                             </div>
                         </div>
@@ -966,7 +999,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading || isSaving} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} />
                         </div>
                     )}
                 </div>

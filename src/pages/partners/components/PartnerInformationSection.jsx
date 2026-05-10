@@ -204,7 +204,17 @@ export default function PartnerInformationSection({
             {/* Company Name */}
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Company Name <span className="text-danger">*</span></label>
+                    <label className="form-label">
+                        Company Name <span className="text-danger">*</span>
+                        {formData.company_name && (
+                            <span className="ms-1 text-muted fw-normal" style={{ fontSize: '0.85em' }}>
+                                &nbsp;(Partner portal url be like : <code className="text-primary font-monospace">
+                                    {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
+                                    .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                </code>)
+                            </span>
+                        )}
+                    </label>
                     <input
                         type="text"
                         className={`form-control ${errors.company_name ? 'is-invalid' : ''}`}

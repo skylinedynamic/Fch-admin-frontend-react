@@ -73,7 +73,7 @@
 /* Fix for Sandbox/Production toggle to look premium */
 .form-check-inline .form-check-input:checked+.form-check-label {
   color: #002651;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .input-group-text {
