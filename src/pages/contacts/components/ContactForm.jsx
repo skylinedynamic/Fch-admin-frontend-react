@@ -67,7 +67,7 @@ export default function ContactForm({
                 {/* Company */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">Company <span className="text-danger">*</span></label>
+                        <label className="form-label">Company</label>
                         <input
                             type="text"
                             className={`form-control ${errors.company_name ? 'is-invalid' : ''}`}
@@ -132,7 +132,7 @@ export default function ContactForm({
                 {/* Address */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">Address <span className="text-danger">*</span></label>
+                        <label className="form-label">Address</label>
                         <input
                             type="text"
                             className={`form-control ${errors.address ? 'is-invalid' : ''}`}
@@ -148,14 +148,15 @@ export default function ContactForm({
                 {/* Country */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">Country <span className="text-danger">*</span></label>
+                        <label className="form-label">Country</label>
                         <Dropdown
                             value={contact.country}
                             options={countries}
                             onChange={(e) => onChange({ target: { name: 'country', value: e.value } })}
                             optionLabel="label"
-                            placeholder="Select Country"
+                            placeholder="Select one"
                             filter
+                            showClear
                             className={`w-100 ${errors.country ? 'p-invalid' : ''}`}
                         />
                         {errors.country && <div className="invalid-feedback d-block">{errors.country}</div>}
@@ -165,7 +166,7 @@ export default function ContactForm({
                 {/* State */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">State <span className="text-danger">*</span></label>
+                        <label className="form-label">State</label>
                         <Dropdown
                             value={contact.state}
                             options={states}
@@ -183,7 +184,7 @@ export default function ContactForm({
                 {/* City */}
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">City <span className="text-danger">*</span></label>
+                        <label className="form-label">City</label>
                         <Dropdown
                             value={contact.city}
                             options={[...cities, { label: 'Others', value: 'Others' }]}
@@ -202,7 +203,7 @@ export default function ContactForm({
                 {contact.city === 'Others' && (
                     <div className="col-lg-6">
                         <div className="mb-3">
-                            <label className="form-label">Other City <span className="text-danger">*</span></label>
+                            <label className="form-label">Other City</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.other_city ? 'is-invalid' : ''}`}
