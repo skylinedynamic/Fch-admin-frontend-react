@@ -4,7 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import Flatpickr from 'react-flatpickr';
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
-import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
@@ -209,8 +209,14 @@ export default function PartnerInformationSection({
                         {formData.company_name && (
                             <span className="ms-1 text-muted fw-normal" style={{ fontSize: '0.85em' }}>
                                 &nbsp;(Partner portal url be like : <code className="text-primary font-monospace">
-                                    {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
-                                    .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                    {formData.partner_domain ? (
+                                        formData.partner_domain
+                                    ) : (
+                                        <>
+                                            {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
+                                            .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                        </>
+                                    )}
                                 </code>)
                             </span>
                         )}
@@ -226,6 +232,32 @@ export default function PartnerInformationSection({
                     {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
                 </div>
             </div>
+
+            {/* Portal URL / Custom Domain - Visible only in update mode */}
+            {partnerId && (
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">
+                            {formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Custom Domain" : "Portal Subdomain"}
+                        </label>
+                        <div className="input-group material-shadow">
+                            <input
+                                type="text"
+                                className={`form-control ${formData.partner_type === PARTNER_TYPES.CERTIFIED ? '' : 'bg-light text-muted fw-medium'} ${errors.partner_domain ? 'is-invalid' : ''}`}
+                                name="partner_domain"
+                                placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
+                                value={formData.partner_type === PARTNER_TYPES.CERTIFIED ? (formData.partner_domain || '') : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')}
+                                onChange={handleInputChange}
+                                readOnly={formData.partner_type !== PARTNER_TYPES.CERTIFIED}
+                            />
+                            <span className="input-group-text bg-light text-muted px-3">
+                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                            </span>
+                        </div>
+                        {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
+                    </div>
+                </div>
+            )}
 
             {/* Phone Number */}
             <div className="col-lg-6">
@@ -409,6 +441,8 @@ export default function PartnerInformationSection({
                     <input type="text" className="form-control" name="website" placeholder="Enter website" value={formData.website} onChange={handleInputChange} />
                 </div>
             </div>
+
+
 
             {/* Partner Type */}
             <div className="col-lg-6">

@@ -128,7 +128,7 @@ export default function TenantConfigSection({
                             onChange={handleToggleChange}
                         />
                         <label className="form-check-label fw-semibold ms-2 fs-15 text-primary" htmlFor="active_custom_url">
-                            Activate Custom Portals URL
+                            Activate Custom Domain
                         </label>
                     </div>
                     <p className="text-muted fs-13 mb-0 ms-4 ps-2">

@@ -127,7 +127,7 @@ export default function TenantDomainConfig() {
                                         onChange={handleToggleChange}
                                     />
                                     <label className="form-check-label fw-bold ms-3 fs-15 text-dark mb-0" htmlFor="active_custom_url">
-                                        Enable Custom Domain Logic
+                                        Enable Custom Domain
                                     </label>
                                 </div>
                                 <p className="text-muted fs-13 mt-2 mb-0 ms-1">
@@ -218,30 +218,33 @@ export default function TenantDomainConfig() {
                                                                 <h6 className="fs-13 mb-1 fw-semibold text-dark">Add A Records</h6>
                                                                 <p className="text-muted fs-13 mb-3">Create two new <strong>A Records</strong> using these exact values:</p>
 
-                                                                <div className="border border-info-subtle rounded-3 overflow-hidden shadow-sm">
-                                                                    <div className="table-responsive">
-                                                                        <table className="table table-sm table-nowrap mb-0 fs-12">
-                                                                            <thead className="table-light">
-                                                                                <tr className="text-muted">
-                                                                                    <th className="ps-3 py-2">Type</th>
-                                                                                    <th className="py-2">Host / Name</th>
-                                                                                    <th className="pe-3 py-2 text-end">Value / IP</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody className="bg-white">
-                                                                                <tr>
-                                                                                    <td className="ps-3 py-2 fw-bold text-dark">A</td>
-                                                                                    <td className="py-2 text-primary font-monospace fw-bold">{config.partner_domain ? config.partner_domain.split('.')[0] : 'partner'}</td>
-                                                                                    <td className="pe-3 py-2 font-monospace text-dark text-end">{import.meta.env.VITE_BASE_URL_IP}</td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td className="ps-3 py-2 fw-bold text-dark">A</td>
-                                                                                    <td className="py-2 text-success font-monospace fw-bold">{config.borrower_domain ? config.borrower_domain.split('.')[0] : 'apply'}</td>
-                                                                                    <td className="pe-3 py-2 font-monospace text-dark text-end">{import.meta.env.VITE_BASE_URL_IP}</td>
-                                                                                </tr>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </div>
+                                                                <div className="vstack gap-2 mt-3">
+                                                                    {[
+                                                                        { label: 'Partner Portal', type: 'A Record', host: config.partner_domain ? config.partner_domain.split('.')[0] : 'partner', color: 'primary' },
+                                                                        { label: 'Borrower Portal', type: 'A Record', host: config.borrower_domain ? config.borrower_domain.split('.')[0] : 'apply', color: 'success' }
+                                                                    ].map((item, idx) => (
+                                                                        <div key={idx} className="p-3 bg-white-50 border border-info-subtle rounded-3 shadow-sm">
+                                                                            <div className="row align-items-center g-2 text-center text-md-start">
+                                                                                <div className="col-md-3">
+                                                                                    <span className={`badge bg-${item.color}-subtle text-${item.color} fs-11 px-2 py-1 rounded fw-bold text-uppercase`}>
+                                                                                        {item.label}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="col-md-2">
+                                                                                    <span className="text-muted fs-11 text-uppercase d-block mb-0 fw-medium">Type</span>
+                                                                                    <span className="fs-13 fw-bold text-info">{item.type}</span>
+                                                                                </div>
+                                                                                <div className="col-md-3">
+                                                                                    <span className="text-muted fs-11 text-uppercase d-block mb-0 fw-medium">Name / Host</span>
+                                                                                    <span className="fs-13 fw-bold text-dark">{item.host}</span>
+                                                                                </div>
+                                                                                <div className="col-md-4">
+                                                                                    <span className="text-muted fs-11 text-uppercase d-block mb-0 fw-medium">Value / Points to</span>
+                                                                                    <span className="fs-13 fw-bold text-dark">{import.meta.env.VITE_BASE_URL_IP}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                                 <small className="text-muted mt-2 d-block italic fs-11">* Ensure no other A records exist for these specific Host names.</small>
                                                             </div>
