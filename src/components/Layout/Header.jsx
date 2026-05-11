@@ -21,7 +21,7 @@ export default function Header() {
     return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
   };
 
-  const dynamicLogo = getLogoUrl("/partner-logo/black-logo.png");
+  const dynamicLogo = getLogoUrl("/site-settings/black-logo.png");
   const dynamicFavicon = getLogoUrl(settings?.favicon, "/assets/images/Favicon.png");
   const siteName = settings?.site_name || "";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
