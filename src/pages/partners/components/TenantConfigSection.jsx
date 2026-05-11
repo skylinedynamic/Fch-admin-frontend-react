@@ -131,7 +131,7 @@ export default function TenantConfigSection({
                             Activate Custom Domain
                         </label>
                     </div>
-                    <p className="text-muted fs-13 mb-0 ms-4 ps-2">
+                    <p className="text-muted fs-13 mb-0 ms-4 ps-5">
                         Toggle this to enable or disable custom domain mapping for this partner's white-label portals.
                     </p>
                 </div>
