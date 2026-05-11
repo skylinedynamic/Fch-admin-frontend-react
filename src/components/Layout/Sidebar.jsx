@@ -4,7 +4,6 @@ import { usePermissions } from "../../lib/auth/usePermissions";
 import { usePublicSiteSettings } from "../../modules/cms/queries";
 import { useAuthStore } from "../../store/auth/authStore";
 import faviconImg from "../../../assets/images/Favicon.png";
-import logoImg from "../../../assets/images/fch-logo-wide.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 
 // Menu item configuration with required permissions
@@ -212,7 +211,8 @@ export default function Sidebar() {
     return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
   };
 
-  const dynamicLogo = getLogoUrl(settings?.partner_logo, logoImg);
+  const dynamicLogoWide = getLogoUrl("/site-settings/black-logo.png");
+  const dynamicLogo = getLogoUrl(settings?.partner_logo);
   const dynamicFavicon = getLogoUrl(settings?.favicon, faviconImg);
 
   // Auto-expand menu on route change
@@ -267,6 +267,13 @@ export default function Sidebar() {
     if (body) {
       if (next) body.classList.add(cls);
       else body.classList.remove(cls);
+    }
+  };
+
+  const closeSidebarOnMobile = () => {
+    if (window.innerWidth < 992) {
+      document.body.classList.remove("vertical-sidebar-enable");
+      setOpen(false);
     }
   };
 
@@ -331,22 +338,30 @@ export default function Sidebar() {
   return (
     <div className={menuClass}>
       <div className="navbar-brand-box">
-        <a href="/" className="logo logo-dark">
+        <Link
+          to="/"
+          className="logo logo-dark"
+          onClick={closeSidebarOnMobile}
+        >
           <span className="logo-sm">
             <img src={dynamicFavicon} alt="" height="22" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogo} alt="" width="200" height="auto" />
+            <img src={dynamicLogoWide} alt="" width="200" height="auto" />
           </span>
-        </a>
-        <a href="/" className="logo logo-light">
+        </Link>
+        <Link
+          to="/"
+          className="logo logo-light"
+          onClick={closeSidebarOnMobile}
+        >
           <span className="logo-sm">
             <img src={dynamicFavicon} alt="" height="40" />
           </span>
           <span className="logo-lg">
             <img src={dynamicLogo} alt="" width="200" height="auto" />
           </span>
-        </a>
+        </Link>
         <button
           type="button"
           className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
@@ -412,7 +427,7 @@ export default function Sidebar() {
             <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i>{" "}
             <span className="align-middle">Settings</span>
           </a>
-          <Link className="dropdown-item" to="/profile">
+          <Link className="dropdown-item" to="/profile" onClick={closeSidebarOnMobile}>
             <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>{" "}
             <span className="align-middle">Profile</span>
           </Link>
@@ -421,6 +436,7 @@ export default function Sidebar() {
             href="#"
             onClick={(e) => {
               e.preventDefault();
+              closeSidebarOnMobile();
               import("../../lib/auth").then(({ logout, clearAuth }) => {
                 logout()
                   .catch(() => { })
@@ -500,6 +516,9 @@ export default function Sidebar() {
                             {item.subItems.map((subItem) => (
                               <li className="nav-item" key={subItem.to}>
                                 <NavLink
+                                  onClick={() => {
+                                    closeSidebarOnMobile();
+                                  }}
                                   to={subItem.to}
                                   className={({ isActive }) => {
                                     // Default active check
@@ -563,6 +582,7 @@ export default function Sidebar() {
                         return;
                       }
                       setExpandedMenu(null);
+                      closeSidebarOnMobile();
                     }}
                     style={
                       itemIsRestricted

@@ -252,7 +252,7 @@ export default function ChangeRequests() {
                         <div className="d-flex align-items-center justify-content-between py-2">
                             <div>
                                 <h4 className="fs-20 mb-1">Change Requests</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item">Intake &amp; Review</li>

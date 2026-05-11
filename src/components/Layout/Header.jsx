@@ -21,7 +21,7 @@ export default function Header() {
     return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
   };
 
-  const dynamicLogo = getLogoUrl(settings?.partner_logo, "/assets/images/fch-logo-wide.png");
+  const dynamicLogo = getLogoUrl("/partner-logo/black-logo.png");
   const dynamicFavicon = getLogoUrl(settings?.favicon, "/assets/images/Favicon.png");
   const siteName = settings?.site_name || "";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -86,6 +86,17 @@ export default function Header() {
       <div className="layout-width">
         <div className="navbar-header">
           <div className="d-flex">
+             <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon" onClick={toggleSidebar}>
+              {isSidebarCollapsed ? (
+                <i className="bx bx-chevron-right fs-20"></i>
+              ) : (
+                <span className="hamburger-icon">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </span>
+              )}
+            </button>
             <div className="navbar-brand-box horizontal-logo">
               <a href="/" className="logo logo-dark">
                 <span className="logo-sm">
@@ -106,17 +117,7 @@ export default function Header() {
               </a> */}
             </div>
 
-            <button type="button" className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger material-shadow-none" id="topnav-hamburger-icon" onClick={toggleSidebar}>
-              {isSidebarCollapsed ? (
-                <i className="bx bx-chevron-right fs-20"></i>
-              ) : (
-                <span className="hamburger-icon">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </span>
-              )}
-            </button>
+           
 
             {/* <form className="app-search d-none d-md-block">
               <div className="position-relative">
@@ -143,9 +144,9 @@ export default function Header() {
 
           <div className="d-flex align-items-center">
             <div className="dropdown d-md-none topbar-head-dropdown header-item">
-              <button type="button" className="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle" id="page-header-search-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              {/* <button type="button" className="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle" id="page-header-search-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i className="bx bx-search fs-22"></i>
-              </button>
+              </button> */}
               <div className="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-search-dropdown">
                 <form className="p-3">
                   <div className="form-group m-0">

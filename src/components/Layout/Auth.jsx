@@ -1,5 +1,4 @@
 import React from 'react'
-import logoImg from '../../../assets/images/fch-logo-wide.png'
 import { APP_CONFIG } from '../../config'
 import { usePublicSiteSettings } from '../../modules/cms/queries'
 
@@ -14,7 +13,7 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
     return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
   };
 
-  const dynamicLogo = getLogoUrl(settings?.partner_logo, logoImg);
+  const dynamicLogo = getLogoUrl(settings?.partner_logo);
   const siteName = settings?.site_name || APP_CONFIG.name;
   return (
     <div className="auth-page-wrapper pt-5">
