@@ -837,6 +837,17 @@ export default function FundingApplicationDetails() {
                                                                         </div>
                                                                     )}
                                                                 </div>
+                                                                {app.total_funded_amount && parseFloat(app.total_funded_amount.toString()) > 0 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-primary border-opacity-10">
+                                                                        <div>
+                                                                            <i className="ri-money-dollar-box-line text-success me-2"></i>
+                                                                            <span className="fw-medium">Total Funded Amount:</span>
+                                                                        </div>
+                                                                        <h5 className="mb-0 fw-bold text-success">
+                                                                            {formatCurrencyValue(parseFloat(app.total_funded_amount.toString()))}
+                                                                        </h5>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             <div className="row g-2">
