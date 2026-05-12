@@ -4,6 +4,7 @@ import { fetchSettings, updateSettings } from '../../../modules/settings/service
 import FormLoader from '../../../components/Loader/FormLoader';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
+import stripeLogo from '../../../../assets/images/stripe_logo.png';
 
 interface FormData {
     stripe_key_sandbox: string;
@@ -149,7 +150,7 @@ const StripeConfigForm: React.FC = () => {
             <div className="card-body p-4">
                 <div className="d-flex align-items-center bg-info-subtle border border-info border-opacity-25 border-dashed rounded-3 p-3 mb-4">
                     <div className="flex-shrink-0 me-4">
-                        <img src="/assets/images/stripe_logo.png" alt="Stripe Logo" style={{ height: '35px' }} />
+                        <img src={stripeLogo} alt="Stripe Logo" style={{ height: '35px' }} />
                     </div>
                     <div className="flex-grow-1">
                         <h6 className="mb-1 text-dark fw-semibold fs-14">Stripe Payments</h6>
@@ -272,7 +273,7 @@ const StripeConfigForm: React.FC = () => {
                     ? 'bg-danger-subtle border-start border-3 border-danger'
                     : 'bg-info-subtle border-start border-3 border-info'
                 }
-                imgSrc="/assets/images/stripe_logo.png"
+                imgSrc={stripeLogo}
                 confirmText={`Yes, Change to ${pendingMode === 'production' ? 'Production' : 'Sandbox'}`}
                 confirmBtnClass={pendingMode === 'production' ? 'btn-danger' : 'btn-primary'}
                 onClose={cancelModeChange}
