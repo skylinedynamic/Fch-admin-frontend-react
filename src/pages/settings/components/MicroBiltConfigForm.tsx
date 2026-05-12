@@ -187,7 +187,7 @@ const MicroBiltConfigForm: React.FC = () => {
                 <div className="card-body p-4">
                     <div className="d-flex align-items-center bg-info-subtle border border-info border-opacity-25 border-dashed rounded-3 p-3 mb-4">
                         <div className="flex-shrink-0 me-4">
-                            <img src="/assets/images/microbilt logo.png" alt="MicroBilt Logo" style={{ height: '35px' }} />
+                            <img src="/assets/images/microbilt_logo.png" alt="MicroBilt Logo" style={{ height: '35px' }} />
                         </div>
                         <div className="flex-grow-1">
                             <h6 className="mb-1 text-dark fw-semibold fs-14">Credit Data & Risk Management</h6>
@@ -332,7 +332,7 @@ const MicroBiltConfigForm: React.FC = () => {
                     ? 'bg-danger-subtle border-start border-3 border-danger'
                     : 'bg-info-subtle border-start border-3 border-info'
                 }
-                imgSrc="/assets/images/microbilt logo.png"
+                imgSrc="/assets/images/microbilt_logo.png"
                 confirmText={`Yes, Change to ${pendingMode === 'production' ? 'Production' : 'Sandbox'}`}
                 confirmBtnClass={pendingMode === 'production' ? 'btn-danger' : 'btn-primary'}
                 onClose={cancelModeChange}
