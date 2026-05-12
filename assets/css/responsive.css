@@ -1271,16 +1271,30 @@
     }
 }
 
-/* Desktop Sticky subheader */
-@media (min-width: 992px) {
-    .page-subheader-sticky {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 70px !important;
-        z-index: 1010 !important;
+    .page-content,
+    .page-content-fit {
+        padding: 60px 12px 20px 12px !important; 
+    }
+
+    /* Content offset for fixed mobile header */
+    .page-content-fit .container-fluid {
+        padding-top: 80px !important; 
+    }
+
+/* Mobile Fixed subheader */
+@media (max-width: 991.98px) {
+    .mobile-sticky-header {
+        position: fixed !important;
+        top: 60px !important; /* Fixed below the mobile topbar */
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1001 !important;
         background-color: #f3f3f9 !important;
-        padding: 15px 0 !important;
-        border-bottom: 1px solid rgba(0,0,0,0.02) !important;
+        padding: 10px 20px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06) !important;
     }
 }
 
