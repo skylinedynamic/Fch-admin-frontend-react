@@ -2,9 +2,9 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // Import assets - using relative paths from src/pages/Utility to root assets
-import error404 from '../../../assets/images/404-error.png';
-import error500 from '../../../assets/images/error500.png';
-import errorGeneral from '../../../assets/images/error.svg';
+import error404 from "../../../public/assets/images/404-error.png";
+import error500 from "../../../public/assets/images/error500.png";
+import errorGeneral from "../../../public/assets/images/error.svg";
 
 interface ErrorPageProps {
     status?: 403 | 404 | 500;

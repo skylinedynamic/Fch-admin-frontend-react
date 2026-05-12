@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import { downloadAgreementSign, cancelAgreementSign } from '../../../modules/agreement/services';
-import '../../../../assets/css/agreement-builder.css';
+import "../../../../public/assets/css/agreement-builder.css";
 
 const AgreementSection = ({ partnerId, clientId, formData, onRefresh }) => {
     const [showCancelModal, setShowCancelModal] = useState(false);

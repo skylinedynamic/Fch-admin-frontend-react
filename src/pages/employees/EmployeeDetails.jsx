@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { toast } from 'react-toastify';
-import '../../../assets/css/datepicker.css';
+import "../../../public/assets/css/datepicker.css";
 
 import {
   createEmployee,
@@ -24,7 +24,7 @@ import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
-import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../public/assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
 

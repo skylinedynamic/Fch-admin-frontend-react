@@ -3,9 +3,9 @@ import { NavLink, Link, useLocation } from "react-router-dom";
 import { usePermissions } from "../../lib/auth/usePermissions";
 import { usePublicSiteSettings } from "../../modules/cms/queries";
 import { useAuthStore } from "../../store/auth/authStore";
-import faviconImg from "../../../assets/images/Favicon.png";
-import logoImg from "../../../assets/images/fch-logo-wide.png";
-import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
+import faviconImg from "../../../public/assets/images/Favicon.png";
+import logoImg from "../../../public/assets/images/fch-logo-wide.png";
+import avatarDefault from "../../../public/assets/images/users/avatar-1.jpg";
 
 // Menu item configuration with required permissions
 const menuItems = [

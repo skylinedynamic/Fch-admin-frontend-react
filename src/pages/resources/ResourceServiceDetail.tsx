@@ -4,7 +4,7 @@ import { useResource } from '../../modules/resource/queries';
 import ResourceDetailLoader from '../../components/Loader/ResourceDetailLoader';
 import { Container, Row, Col, Card, CardHeader, CardBody, Button } from 'reactstrap';
 import ErrorPage from '../Utility/ErrorPage';
-import '../../../assets/css/resource-detail.css';
+import "../../../public/assets/css/resource-detail.css";
 
 const ResourceServiceDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();

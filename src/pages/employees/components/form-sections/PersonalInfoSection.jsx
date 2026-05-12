@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import Flatpickr from 'react-flatpickr';
 import { formatPhoneNumber } from '../../../../utils/formatters';
-import avatarDefault from '../../../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../../../public/assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
 import { buildStorageUrl } from '../../../../utils/imageHelpers';

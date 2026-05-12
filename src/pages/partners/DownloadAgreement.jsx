@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchSignedAgreementHtml } from '../../modules/agreement/services';
 import { toast } from 'react-toastify';
-import builderCss from '../../../assets/css/agreement-builder.css?raw';
-import '../../../assets/css/agreement-builder.css';
+import builderCss from "../../../public/assets/css/agreement-builder.css?raw";
+import "../../../public/assets/css/agreement-builder.css";
 
 const DownloadAgreement = () => {
     const { userId } = useParams();

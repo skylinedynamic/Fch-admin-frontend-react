@@ -18,7 +18,7 @@ import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
 
 // Styles
-import '../../../../assets/css/appointment-modal.css';
+import "../../../../public/assets/css/appointment-modal.css";
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);

@@ -8,7 +8,7 @@ import {
     getAgreementHtml
 } from './utils';
 import { AgreementBlock } from './types';
-import '../../../../../assets/css/agreement-builder.css';
+import "../../../../../public/assets/css/agreement-builder.css";
 
 // @ts-ignore
 import { AgreementDashboard } from './AgreementDashboard';

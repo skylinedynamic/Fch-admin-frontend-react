@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getActivityLogs, downloadActivityAttachment } from '../../../modules/activity-log/services';
 import { downloadBlob } from '../../../utils/fileDownload';
-import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../../public/assets/images/users/avatar-1.jpg";
 import '../StatisticsCardSkeleton.css';
 import {
     ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER,
