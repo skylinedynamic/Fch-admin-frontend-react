@@ -1,5 +1,5 @@
 import React from 'react'
-import logoImg from "../../../public/assets/images/fch-logo-wide.png"
+import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG } from '../../config'
 import { usePublicSiteSettings } from '../../modules/cms/queries'
 

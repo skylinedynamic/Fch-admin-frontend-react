@@ -5,7 +5,7 @@ import { MicroBiltConfig } from '../../../modules/settings/types';
 import FormLoader from '../../../components/Loader/FormLoader';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
-import microbiltLogo from "../../../../public/assets/images/microbilt_logo.png";
+import microbiltLogo from "../../../../assets/images/microbilt_logo.png";
 
 interface FormData {
     mode: string;

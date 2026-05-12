@@ -14,7 +14,7 @@ import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
-import avatarDefault from "../../../public/assets/images/users/avatar-1.jpg";
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 
 export default function ContactDetails() {
     const { id } = useParams();

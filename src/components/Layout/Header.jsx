@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { clearAuth } from '../../lib/auth'
 import { useAuthStore } from '../../store/auth/authStore'
 import { logout } from '../../lib/auth'
-import avatarDefault from "../../../public/assets/images/users/avatar-1.jpg"
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg"
 import { useNavigate, Link } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
 import { usePublicSiteSettings } from '../../modules/cms/queries'

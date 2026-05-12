@@ -29,17 +29,17 @@ const _loadFullCalendarCss = () => {
 };
 _loadFullCalendarCss();
 
-import "../public/assets/css/bootstrap.min.css"
-import "../public/assets/css/icons.min.css"
-import "../public/assets/css/app.min.css"
+import "../assets/css/bootstrap.min.css"
+import "../assets/css/icons.min.css"
+import "../assets/css/app.min.css"
 
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 
 
-import "../public/assets/css/custom.min.css"
-import "../public/assets/css/custom.css"
+import "../assets/css/custom.min.css"
+import "../assets/css/custom.css"
 
 const container = document.getElementById('root')
 const root = createRoot(container)

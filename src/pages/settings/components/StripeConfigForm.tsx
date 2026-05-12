@@ -4,7 +4,7 @@ import { fetchSettings, updateSettings } from '../../../modules/settings/service
 import FormLoader from '../../../components/Loader/FormLoader';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
-import stripeLogo from "../../../../public/assets/images/stripe_logo.png";
+import stripeLogo from "../../../../assets/images/stripe_logo.png";
 
 interface FormData {
     stripe_key_sandbox: string;

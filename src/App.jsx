@@ -65,7 +65,7 @@ window.jQuery = window.$ = $;
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
-import "../public/assets/css/summernote-fixes.css";
+import "../assets/css/summernote-fixes.css";
 
 // Icon Libraries
 import 'remixicon/fonts/remixicon.css';

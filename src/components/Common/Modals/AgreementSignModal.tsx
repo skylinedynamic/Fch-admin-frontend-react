@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { checkAgreementSign, submitAgreementSign } from '../../../modules/agreement/services'
 import { useAuthStore } from '../../../store/auth/authStore'
-import "../../../../public/assets/css/agreement-builder.css"
+import "../../../../assets/css/agreement-builder.css"
 import { AgreementSignModalLoader } from '../../Loader/AgreementLoader'
 
 /**

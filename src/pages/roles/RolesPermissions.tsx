@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useRoles, useDeleteRole } from '../../modules/role/queries'
-import newDocImg from "../../../public/assets/images/new-document.png"
+import newDocImg from "../../../assets/images/new-document.png"
 import RolesGridLoader from '../../components/Loader/RolesGridLoader'
 import ErrorState from '../../components/Loader/ErrorState'
 import { fetchRoleDetail } from '../../modules/role/services'

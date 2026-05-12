@@ -9,7 +9,7 @@ import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCou
 import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
-import "../../../public/assets/css/bootstrap.min.css";
+import "../../../assets/css/bootstrap.min.css";
 import { toast } from "react-toastify";
 import UserModal from './components/UserModal';
 import TableLoader from '../../components/Loader/TableLoader';

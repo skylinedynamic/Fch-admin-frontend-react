@@ -6,7 +6,7 @@ import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
-import avatarDefault from "../../../../public/assets/images/users/avatar-1.jpg";
+import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
