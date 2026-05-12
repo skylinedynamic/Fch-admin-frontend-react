@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
 
-const ResponseDetailModal = ({ show, onHide, data = [], message = '', raw = null }) => {
+const ResponseDetailModal = ({ show, onHide, data = [], message = '', raw = null, hideTabs = false }) => {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
     const [activeTab, setActiveTab] = useState('summary'); // 'summary' or 'raw'
@@ -47,30 +47,32 @@ const ResponseDetailModal = ({ show, onHide, data = [], message = '', raw = null
                     </div>
 
                     {/* Nav Tabs */}
-                    <div className="bg-light-subtle border-bottom">
-                        <ul className="nav nav-tabs-custom nav-success border-bottom-0 ps-3" role="tablist">
-                            <li className="nav-item">
-                                <button
-                                    className={`nav-link fs-13 py-2 ${activeTab === 'summary' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('summary')}
-                                    type="button"
-                                >
-                                    Summary View
-                                </button>
-                            </li>
-                            {raw && (
+                    {!hideTabs && (
+                        <div className="bg-light-subtle border-bottom">
+                            <ul className="nav nav-tabs-custom nav-success border-bottom-0 ps-3" role="tablist">
                                 <li className="nav-item">
                                     <button
-                                        className={`nav-link fs-13 py-2 ${activeTab === 'raw' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('raw')}
+                                        className={`nav-link fs-13 py-2 ${activeTab === 'summary' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('summary')}
                                         type="button"
                                     >
-                                        Raw JSON Response
+                                        Summary View
                                     </button>
                                 </li>
-                            )}
-                        </ul>
-                    </div>
+                                {raw && (
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link fs-13 py-2 ${activeTab === 'raw' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('raw')}
+                                            type="button"
+                                        >
+                                            Raw JSON Response
+                                        </button>
+                                    </li>
+                                )}
+                            </ul>
+                        </div>
+                    )}
 
                     <div className="modal-body p-0">
                         {activeTab === 'summary' ? (

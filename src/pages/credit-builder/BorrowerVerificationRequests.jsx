@@ -238,10 +238,11 @@ export default function BorrowerVerificationRequests() {
                 setVerificationResults({
                     message: result.message || 'Action processed successfully',
                     data: result.data || [],
-                    raw: result.raw_response || result.data // Assuming result might have raw_response or just data
+                    raw: null, // Hide JSON tab for immediate popup
+                    hideTabs: true // NEW: Hide the tab navigation section
                 });
                 setShowActionModal(false);
-                setResultModalShow(true); // Show the results modal
+                setResultModalShow(true); 
                 loadRequests();
                 setSelectedRequests([]);
             } else {
@@ -420,7 +421,8 @@ export default function BorrowerVerificationRequests() {
                                             setVerificationResults({
                                                 message: `Verification Details: ${rowData.task_title}`,
                                                 data: formattedData,
-                                                raw: resp
+                                                raw: resp,
+                                                hideTabs: false // Always show tabs when opened manually
                                             });
                                             setResultModalShow(true);
                                         }}
@@ -811,6 +813,7 @@ export default function BorrowerVerificationRequests() {
                 message={verificationResults.message}
                 data={verificationResults.data}
                 raw={verificationResults.raw}
+                hideTabs={verificationResults.hideTabs}
             />
 
             {/* Note View Modal */}
