@@ -167,7 +167,7 @@ export default function BlogList() {
                 {/* Header with Breadcrumbs */}
                 <div className="row pb-1">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Blogs</h4>
                                 <nav aria-label="breadcrumb">
@@ -177,7 +177,7 @@ export default function BlogList() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="mt-0">
+                            <div className="mt-3 mt-lg-0">
                                 <div className="btn-group">
                                     {selectedBlogs.length > 0 ? (
                                         <>

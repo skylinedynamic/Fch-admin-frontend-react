@@ -671,10 +671,11 @@
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         gap: 6px !important;
+        justify-content: flex-end !important;
     }
 
     .btn-group > .btn {
-        flex: 1 !important;
+        flex: 0 0 auto !important;
         white-space: nowrap !important;
         font-size: 13px !important;
         padding: 6px 10px !important;
@@ -1023,4 +1024,354 @@
         padding-bottom: 0 !important;
     }
 
+}
+
+
+/* ============================================================
+   13. PRIME REACT COMPONENTS (DATEPICKER)
+   ============================================================ */
+
+/* Base Styles (Migrated from datepicker.css) */
+.custom-datepicker .p-calendar {
+    display: flex !important;
+    width: 100% !important;
+    height: 38px !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.custom-datepicker .p-inputtext {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    border-top-left-radius: 6px !important;
+    border-bottom-left-radius: 6px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border: 1px solid #ced4da !important;
+    border-right: none !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    color: #495057;
+    background-color: #fff;
+    margin: 0 !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.custom-datepicker .p-calendar:not(.p-calendar-disabled).p-focus > .p-inputtext,
+.custom-datepicker .p-calendar:focus-within .p-inputtext {
+    border-color: #405189 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger {
+    flex: 0 0 40px !important;
+    height: 100% !important;
+    background: #f3f6f9 !important;
+    border: 1px solid #ced4da !important;
+    border-left: 1px solid #eff2f7 !important;
+    border-top-right-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    color: #405189 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.custom-datepicker .p-calendar:focus-within .p-datepicker-trigger {
+    border-color: #405189 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger:hover {
+    background: #e9ebec !important;
+    color: #354474 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger .p-button-icon {
+    font-size: 1rem !important;
+}
+
+.custom-datepicker .p-datepicker {
+    border: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: inherit;
+    min-width: 280px;
+}
+
+.custom-datepicker .p-datepicker-header {
+    background-color: #405189;
+    color: #ffffff;
+    padding: 0.6rem;
+    border-bottom: none;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-title {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev,
+.custom-datepicker .p-datepicker-header .p-datepicker-next {
+    color: #ffffff;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev:hover,
+.custom-datepicker .p-datepicker-header .p-datepicker-next:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.custom-datepicker table th {
+    color: #405189;
+    background-color: #f3f6f9;
+    padding: 0.4rem;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.custom-datepicker table td {
+    padding: 0.2rem;
+}
+
+.custom-datepicker table td > span {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.custom-datepicker table td > span.p-highlight {
+    background-color: #405189;
+    color: #ffffff;
+}
+
+.custom-datepicker .p-datepicker-today > span {
+    background-color: #f3f6f9;
+    color: #405189;
+    font-weight: bold;
+    border: 1px solid #405189;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .custom-datepicker .p-calendar {
+        height: 36px !important;
+    }
+    
+    .custom-datepicker .p-inputtext {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-trigger {
+        flex: 0 0 36px !important;
+    }
+
+    .custom-datepicker .p-datepicker {
+        min-width: 250px !important;
+    }
+
+    .custom-datepicker table td > span {
+        width: 1.8rem !important;
+        height: 1.8rem !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .custom-datepicker .p-datepicker-header {
+        padding: 0.4rem !important;
+    }
+    
+    .custom-datepicker .p-datepicker-header .p-datepicker-title {
+        font-size: 0.85rem !important;
+    }
+    
+    .custom-datepicker .p-datepicker-header .p-datepicker-prev,
+    .custom-datepicker .p-datepicker-header .p-datepicker-next {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .custom-datepicker .p-datepicker {
+        min-width: 230px !important;
+    }
+
+    .custom-datepicker table td > span {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+        font-size: 0.7rem !important;
+    }
+}
+
+/* Force Parents to allow sticky/fixed positioning - Accurate fix */
+#layout-wrapper, .main-content {
+    overflow: visible !important;
+}
+
+/* Reliable Fixed Header for Mobile Navigation */
+@media (max-width: 991px) {
+    .page-subheader-sticky {
+        position: fixed !important;
+        top: 70px !important; /* Standard Velzon Topbar Height */
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1040 !important; /* Stay above activities and modals */
+        background-color: #f3f3f9 !important;
+        padding: 12px 1.5rem !important;
+        margin: 0 !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    }
+
+    /* Standardized spacer for content below fixed header */
+    .page-subheader-sticky + .row {
+        margin-top: 100px !important;
+    }
+    
+    .breadcrumb {
+        font-size: 11px !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding-bottom: 5px !important;
+        margin-bottom: 15px !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .page-actions {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+        margin-top: 5px !important;
+    }
+
+    .page-actions .btn {
+        flex: 1 !important;
+        padding: 10px 5px !important;
+        font-size: 13px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+/* Desktop Sticky subheader */
+@media (min-width: 992px) {
+    .page-subheader-sticky {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 70px !important;
+        z-index: 1010 !important;
+        background-color: #f3f3f9 !important;
+        padding: 15px 0 !important;
+        border-bottom: 1px solid rgba(0,0,0,0.02) !important;
+    }
+}
+
+/* Profile Metrics 2-Column Responsive Fix */
+@media (max-width: 768px) {
+    .metrics-strip {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        justify-content: center !important;
+    }
+
+    .metrics-item {
+        flex: 0 0 calc(50% - 10px) !important;
+        width: calc(50% - 10px) !important;
+        min-width: unset !important;
+        padding: 12px !important;
+        margin: 0 !important;
+        background: #fff !important;
+        border: 1px solid #e9ebec !important;
+        border-radius: 6px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+    }
+    
+    .metrics-item i {
+        font-size: 1.25rem !important;
+        margin-right: 8px !important;
+    }
+
+    .metrics-content .metrics-label {
+        font-size: 11px !important;
+        color: #878a99 !important;
+    }
+
+    .metrics-content .metrics-value {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .metrics-item {
+        flex: 0 0 100% !important;
+        width: 100% !important;
+    }
+}
+
+/* ================================================================
+   SITE SETTINGS PAGE — Mobile margin-top fix
+   The sticky subheader is position:fixed so it's out of normal flow.
+   The form/skeleton directly after it needs explicit margin-top to
+   push content below the fixed header on mobile devices.
+
+   The .page-subheader-sticky + .row rule above does NOT apply here
+   because SiteSettings renders <form> / <div class="mt-n3"> directly,
+   NOT a .row, after the sticky header.
+   ================================================================ */
+
+/* Tablets (576px–991px): sticky header = ~1 row → ~80px tall */
+@media (max-width: 991px) and (min-width: 576px) {
+    #site-settings-form {
+        margin-top: 80px !important;
+    }
+
+    /* Loading skeleton state */
+    .page-content .container-fluid > .mt-n3 {
+        margin-top: 80px !important;
+    }
+
+    /* Inner negative margin inside form pulls content up — neutralise it */
+    #site-settings-form > .mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 12px !important;
+    }
+}
+
+/* Small phones (<576px): button wraps → sticky header grows to ~2 rows (~130px) */
+@media (max-width: 575.98px) {
+    #site-settings-form {
+        margin-top: 120px !important;
+    }
+
+    /* Loading skeleton state */
+    .page-content .container-fluid > .mt-n3 {
+        margin-top: 120px !important;
+    }
+
+    /* Neutralise mt-n3 that pulls form content upward into the fixed header */
+    #site-settings-form > .mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 14px !important;
+    }
 }

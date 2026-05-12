@@ -258,8 +258,8 @@ export default function SiteSettings() {
             <div className="container-fluid">
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
+                        <div className="d-flex align-items-center flex-nowrap py-2" style={{ gap: '8px' }}>
+                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
                                 <h4 className="fs-20 mb-1">Site Settings</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
@@ -269,7 +269,7 @@ export default function SiteSettings() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="d-flex gap-2">
+                            <div className="d-flex gap-2 flex-shrink-0">
                                 {hasPermission('update site settings') && (
                                     <button
                                         type="submit"
@@ -278,9 +278,15 @@ export default function SiteSettings() {
                                         disabled={updateMutation.isPending || isLoading}
                                     >
                                         {updateMutation.isPending ? (
-                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...</>
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </>
                                         ) : (
-                                            <><i className="ri-save-line me-1"></i> Save Settings</>
+                                            <>
+                                                <i className="ri-save-line me-1"></i>
+                                                Save Settings
+                                            </>
                                         )}
                                     </button>
                                 )}
@@ -473,25 +479,26 @@ export default function SiteSettings() {
                                 </div>
 
                                 <div className="card mb-4 shadow-sm border-0">
-                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
-                                        <div className="d-flex align-items-center">
-                                            <div className="avatar-sm me-3">
+                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between gap-2">
+                                        <div className="d-flex align-items-center" style={{ minWidth: 0, overflow: 'hidden' }}>
+                                            <div className="avatar-sm me-3 flex-shrink-0">
                                                 <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
                                                     <i className="ri-share-line"></i>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <h5 className="card-title mb-1 fw-bold">Social Media Links</h5>
-                                                <p className="text-muted mb-0 fs-13">Add and manage your social media profiles</p>
+                                            <div style={{ minWidth: 0 }}>
+                                                <h5 className="card-title mb-1 fw-bold text-truncate">Social Media Links</h5>
+                                                <p className="text-muted mb-0 fs-13 text-truncate">Add and manage your social media profiles</p>
                                             </div>
                                         </div>
                                         {hasPermission('add soical media') && (
                                             <button
                                                 type="button"
-                                                className="btn btn-primary fw-medium waves-effect waves-light"
+                                                className="btn btn-primary fw-medium waves-effect waves-light flex-shrink-0 d-flex align-items-center justify-content-center"
                                                 onClick={handleAddSocialLink}
                                             >
-                                                <i className="ri-add-fill me-1 align-bottom"></i> Add New
+                                                <i className="ri-add-fill fs-16 lh-1"></i>
+                                                <span className="d-none d-sm-inline ms-1">Add New</span>
                                             </button>
                                         )}
                                     </div>

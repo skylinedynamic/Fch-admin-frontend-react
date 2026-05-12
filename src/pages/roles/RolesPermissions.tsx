@@ -125,7 +125,7 @@ export default function RolesPermissions() {
       <div className="container-fluid">
         <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Roles &amp; Permissions</h4>
                 <nav aria-label="breadcrumb" className="d-block">
@@ -135,8 +135,8 @@ export default function RolesPermissions() {
                   </ol>
                 </nav>
               </div>
-              <div className="mt-0">
-                <Link to="/roles-permissions/create" className="btn btn-primary fw-medium">
+              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                <Link to="/roles-permissions/create" className="btn btn-primary fw-medium w-100 w-lg-auto">
                   <i className="ri-add-fill me-1 align-bottom"></i> Add Role
                 </Link>
               </div>

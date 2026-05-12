@@ -25,7 +25,8 @@ import {
 import { locationData } from '../../config';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { parseDate as parseDateHelper, normalizeDate } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import LeadConvertModal from './components/LeadConvertModal';
@@ -536,7 +537,7 @@ export default function LeadDetails() {
                     {/* Page Title */}
                     <div className="row page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Lead Profile</h4>
                                     <nav aria-label="breadcrumb">
@@ -547,7 +548,7 @@ export default function LeadDetails() {
                                         </ol>
                                     </nav>
                                 </div>
-                                <div className="d-flex gap-2">
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                     <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
@@ -1016,23 +1017,24 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Business Start Date</label>
-                                                                    <Flatpickr
-                                                                        options={{
-                                                                            dateFormat: "Y-m-d",
-                                                                            altInput: true,
-                                                                            altFormat: "d M, Y"
-                                                                        }}
-                                                                        value={parseDateHelper(formData.business_start_date)}
-                                                                        onChange={(dates) => {
-                                                                            const date = dates[0];
-                                                                            const dateString = date
-                                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                                                : "";
-                                                                            handleInputChange({ target: { name: "business_start_date", value: dateString } });
-                                                                        }}
-                                                                        className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
-                                                                        placeholder="Select date"
-                                                                    />
+                                                                    <div className="custom-datepicker">
+                                                                        <Calendar
+                                                                            value={parseDateHelper(formData.business_start_date)}
+                                                                            onChange={(e) => {
+                                                                                const date = e.value;
+                                                                                const dateString = date
+                                                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                                    : "";
+                                                                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                                                                            }}
+                                                                            dateFormat="dd M, yy"
+                                                                            placeholder="Select date"
+                                                                            showIcon
+                                                                            className="w-100"
+                                                                            appendTo="self"
+                                                                            readOnlyInput
+                                                                        />
+                                                                    </div>
                                                                     {errors.business_start_date && <div className="invalid-feedback d-block">{errors.business_start_date}</div>}
                                                                 </div>
                                                             </div>

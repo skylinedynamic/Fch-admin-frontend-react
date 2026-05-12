@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
 import {
@@ -661,24 +662,27 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="date_of_birth" className="form-label">Date of Birth</label>
-                        <Flatpickr
-                            id="date_of_birth"
-                            name="date_of_birth"
-                            options={{
-                                dateFormat: "Y-m-d",
-                                altInput: true,
-                                altFormat: "d M, Y",
-                                maxDate: "today"
-                            }}
-                            value={parseDate(formData.date_of_birth)}
-                            onChange={(dates) => {
-                                const dateString = toLocalDateString(dates[0]);
-                                handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
-                            }}
-                            placeholder="Select date of birth"
-                            className={`form-control ${errors.date_of_birth ? 'is-invalid' : ''}`}
-                        />
-                        {errors.date_of_birth && <div className="invalid-feedback">{errors.date_of_birth}</div>}
+                        <div className="custom-datepicker">
+                            <Calendar
+                                id="date_of_birth"
+                                value={parseDate(formData.date_of_birth)}
+                                onChange={(e) => {
+                                    const date = e.value as Date;
+                                    const dateString = date
+                                        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                        : "";
+                                    handleInputChange({ target: { name: 'date_of_birth', value: dateString } });
+                                }}
+                                dateFormat="dd M, yy"
+                                maxDate={new Date()}
+                                placeholder="Select date"
+                                showIcon
+                                className="w-100"
+                                appendTo="self"
+                                readOnlyInput
+                            />
+                        </div>
+                        {errors.date_of_birth && <div className="text-danger mt-1 small">{errors.date_of_birth}</div>}
                     </div>
                 </div>
                 <div className="col-lg-6">
@@ -989,23 +993,26 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label htmlFor="business_start_date" className="form-label">Business Start Date</label>
-                        <Flatpickr
-                            id="business_start_date"
-                            name="business_start_date"
-                            options={{
-                                dateFormat: "Y-m-d",
-                                altInput: true,
-                                altFormat: "d M, Y"
-                            }}
-                            value={parseDate(formData.business_start_date)}
-                            onChange={(dates) => {
-                                const dateString = toLocalDateString(dates[0]);
-                                handleInputChange({ target: { name: 'business_start_date', value: dateString } });
-                            }}
-                            className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
-                            placeholder="Select date"
-                        />
-                        {errors.business_start_date && <div className="invalid-feedback">{errors.business_start_date}</div>}
+                        <div className="custom-datepicker">
+                            <Calendar
+                                id="business_start_date"
+                                value={parseDate(formData.business_start_date)}
+                                onChange={(e) => {
+                                    const date = e.value as Date;
+                                    const dateString = date
+                                        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                        : "";
+                                    handleInputChange({ target: { name: 'business_start_date', value: dateString } });
+                                }}
+                                dateFormat="dd M, yy"
+                                placeholder="Select date"
+                                showIcon
+                                className="w-100"
+                                appendTo="self"
+                                readOnlyInput
+                            />
+                        </div>
+                        {errors.business_start_date && <div className="text-danger mt-1 small">{errors.business_start_date}</div>}
                     </div>
                 </div>
 

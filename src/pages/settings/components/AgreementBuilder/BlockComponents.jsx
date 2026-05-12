@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { PALETTE, makeBlock } from './utils';
 
 // ── A4 at 96 dpi ─────────────────────────────────────────────────────────────
@@ -139,9 +140,12 @@ function BlockBody({ block, helpers }) {
         {block.type === 'date' && (
           <div className="ab4-field">
             <div className="ab4-field-lbl">{block.fieldLabel}{block.fieldRequired ? ' *' : ''}:</div>
-            <Flatpickr className="form-control ab4-modern-fpick" options={{ dateFormat: 'd M, Y' }} placeholder="Select Date" />
+            <div className="custom-datepicker">
+                <Calendar className="w-100" dateFormat="dd M, yy" placeholder="Select Date" showIcon appendTo="self" readOnlyInput />
+            </div>
           </div>
         )}
+
         {block.type === 'checkbox' && <div className="ab4-field"><div className="ab4-cb-row"><input type="checkbox" readOnly className="ab4-cb" /><div className="ab4-cb-lbl">{block.fieldLabel}{block.fieldRequired ? ' *' : ''}</div></div></div>}
         {block.type === 'signature' && (
           <div className="ab4-sig">
@@ -150,7 +154,9 @@ function BlockBody({ block, helpers }) {
               <div className="ab4-sig-meta">{block.fieldLabel || 'SIGNATURE'}</div>
             </div>
             <div className="ab4-sig-col ab4-sig-col--date">
-              <Flatpickr className="form-control ab4-sig-input" options={{ dateFormat: 'd M, Y' }} placeholder="Click here" />
+              <div className="custom-datepicker">
+                <Calendar className="w-100" dateFormat="dd M, yy" placeholder="Click here" showIcon appendTo="self" readOnlyInput />
+              </div>
               <div className="ab4-sig-meta ab4-sig-meta--date">Signature Date</div>
             </div>
           </div>

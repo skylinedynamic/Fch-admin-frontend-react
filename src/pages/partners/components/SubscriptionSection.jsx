@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { parseDate } from '../../../utils/formatters';
 import { Dropdown } from 'primereact/dropdown';
 import { PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, SUBSCRIPTION_PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_STATUS_OPTIONS } from '../../../config/partnerTypeOptions';
@@ -189,24 +190,29 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">First Registration Date <span className="text-danger">*</span></label>
-                    <Flatpickr
-                        options={{ dateFormat: "d/m/Y" }}
-                        value={parseDate(formData.first_reg_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.first_reg_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
 
-                            // Update First Registration Date
-                            handleInputChange({ target: { name: "first_reg_date", value: dateString } });
+                                // Update First Registration Date
+                                handleInputChange({ target: { name: "first_reg_date", value: dateString } });
 
-                            // Auto-fill Subscription Start Date with the same date
-                            handleInputChange({ target: { name: "subscription_start_date", value: dateString } });
-                        }}
-                        className={`form-control ${errors.first_reg_date ? 'is-invalid' : ''}`}
-                        placeholder="d/m/y"
-                    />
+                                // Auto-fill Subscription Start Date with the same date
+                                handleInputChange({ target: { name: "subscription_start_date", value: dateString } });
+                            }}
+                            dateFormat="dd/mm/yy"
+                            placeholder="dd/mm/yy"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                     {errors.first_reg_date && <div className="invalid-feedback d-block">{errors.first_reg_date}</div>}
                 </div>
             </div>
@@ -219,19 +225,24 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Subscription Start Date <span className="text-danger">*</span></label>
-                    <Flatpickr
-                        options={{ dateFormat: "d/m/Y" }}
-                        value={parseDate(formData.subscription_start_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "subscription_start_date", value: dateString } });
-                        }}
-                        className={`form-control ${errors.subscription_start_date ? 'is-invalid' : ''}`}
-                        placeholder="d/m/y"
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.subscription_start_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "subscription_start_date", value: dateString } });
+                            }}
+                            dateFormat="dd/mm/yy"
+                            placeholder="dd/mm/yy"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                     {errors.subscription_start_date && <div className="invalid-feedback d-block">{errors.subscription_start_date}</div>}
                 </div>
             </div>
@@ -240,23 +251,25 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Subscription End Date {!isOneTime && <span className="text-danger">*</span>}</label>
-                    <Flatpickr
-                        options={{
-                            dateFormat: "d/m/Y",
-                            clickOpens: isOneTime // Only open calendar if One-Time (enabled)
-                        }}
-                        value={parseDate(formData.subscription_end_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "subscription_end_date", value: dateString } });
-                        }}
-                        className={`form-control ${errors.subscription_end_date ? 'is-invalid' : ''}`}
-                        placeholder="d/m/y"
-                        disabled={!isOneTime} // Disabled if auto-calculated (Payment Plan), Enabled if One-Time
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.subscription_end_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "subscription_end_date", value: dateString } });
+                            }}
+                            dateFormat="dd/mm/yy"
+                            placeholder="dd/mm/yy"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                            disabled={!isOneTime}
+                        />
+                    </div>
                     {errors.subscription_end_date && <div className="invalid-feedback d-block">{errors.subscription_end_date}</div>}
                     {!isOneTime && (
                         <small className="text-muted">
@@ -284,22 +297,24 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Expiry Date</label>
-                    <Flatpickr
-                        options={{
-                            dateFormat: "d/m/Y",
-                            allowInput: true
-                        }}
-                        value={parseDate(formData.expiry_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "expiry_date", value: dateString } });
-                        }}
-                        className={`form-control ${errors.expiry_date ? 'is-invalid' : ''}`}
-                        placeholder="d/m/y"
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.expiry_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "expiry_date", value: dateString } });
+                            }}
+                            dateFormat="dd/mm/yy"
+                            placeholder="dd/mm/yy"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                     {errors.expiry_date && <div className="invalid-feedback d-block">{errors.expiry_date}</div>}
                 </div>
             </div>
@@ -308,22 +323,24 @@ export default function SubscriptionSection({ formData, handleInputChange, error
             <div className="col-lg-6 col-12">
                 <div className="mb-3">
                     <label className="form-label">Termination Date</label>
-                    <Flatpickr
-                        options={{
-                            dateFormat: "d/m/Y",
-                            allowInput: true
-                        }}
-                        value={parseDate(formData.termination_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "termination_date", value: dateString } });
-                        }}
-                        className={`form-control ${errors.termination_date ? 'is-invalid' : ''}`}
-                        placeholder="d/m/y"
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.termination_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "termination_date", value: dateString } });
+                            }}
+                            dateFormat="dd/mm/yy"
+                            placeholder="dd/mm/yy"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                     {errors.termination_date && <div className="invalid-feedback d-block">{errors.termination_date}</div>}
                 </div>
             </div>

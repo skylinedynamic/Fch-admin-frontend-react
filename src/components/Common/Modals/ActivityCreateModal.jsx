@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
+import { Calendar } from 'primereact/calendar';
+import { parseDate } from '../../../utils/formatters';
+
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
@@ -10,8 +11,8 @@ const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
 
 export default function ActivityCreateModal({ entityId, entityType, onActivityCreated }) {
     const referenceRef = useRef(null);
-    const dateInputRef = useRef(null);
     const textareaRef = useRef(null); // Local ref to capture the DOM node
+
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
@@ -220,20 +221,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         };
     }, []);
 
-    // Initialize Flatpickr for date field
-    useEffect(() => {
-        if (dateInputRef.current) {
-            const fp = flatpickr(dateInputRef.current, {
-                enableTime: false,
-                dateFormat: "Y-m-d",
-                defaultDate: formData.activity_date || new Date(),
-                onChange: (selectedDates, dateStr) => {
-                    setFormData(prev => ({ ...prev, activity_date: dateStr }));
-                }
-            });
-            return () => fp.destroy();
-        }
-    }, [formData.activity_date]);
+
 
     // Reset validation and form on modal close/open
     useEffect(() => {
@@ -331,16 +319,25 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label">Date <span className="text-danger">*</span></label>
-                                    <input
-                                        type="text"
-                                        className={`form-control ${errors.activity_date ? 'is-invalid' : ''}`}
-                                        id="activityDate"
-                                        name="activity_date"
-                                        ref={dateInputRef}
-                                        placeholder="Select date and time"
-                                        required
-                                    />
-                                    {errors.activity_date && <div className="invalid-feedback">{errors.activity_date[0]}</div>}
+                                    <div className="custom-datepicker">
+                                        <Calendar
+                                            value={parseDate(formData.activity_date)}
+                                            onChange={(e) => {
+                                                const date = e.value;
+                                                const dateString = date
+                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                    : "";
+                                                setFormData(prev => ({ ...prev, activity_date: dateString }));
+                                            }}
+                                            dateFormat="dd M, yy"
+                                            placeholder="Select date"
+                                            showIcon
+                                            className="w-100"
+                                            appendTo="self"
+                                            readOnlyInput
+                                        />
+                                    </div>
+                                    {errors.activity_date && <div className="text-danger mt-1 small">{errors.activity_date[0]}</div>}
                                 </div>
                                 <div className="col-12">
                                     <label className={`form-label ${errors.subject ? 'text-danger' : ''}`}>

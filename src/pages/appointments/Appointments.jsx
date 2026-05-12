@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 // FullCalendar Imports
 import FullCalendar from '@fullcalendar/react';
@@ -188,7 +190,21 @@ export default function Appointments() {
     return (
         <div className="page-content appointments-page">
             <div className="container-fluid">
-                <div className="row mt-3">
+                <div className="row pb-1 page-subheader-sticky bg-body">
+                    <div className="col-12">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="flex-grow-1">
+                                <h4 className="fs-20 mb-1">Appointments</h4>
+                                <nav aria-label="breadcrumb">
+                                    <ol className="breadcrumb m-0 fs-12 text-muted">
+                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
+                                        <li className="breadcrumb-item active text-primary font-weight-bold" aria-current="page">Appointments</li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                     <div className="col-12">
                         <div className="row">
                             <div className="col-lg-4 col-xl-3">
@@ -405,6 +421,5 @@ export default function Appointments() {
                 </div>
                 <AppointmentModal ref={appointmentModalRef} onSuccess={loadAppointments} />
             </div>
-        </div>
     );
 }
