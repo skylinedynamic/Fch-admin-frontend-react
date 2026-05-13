@@ -324,7 +324,7 @@ export default function Partners() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row partner-section">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

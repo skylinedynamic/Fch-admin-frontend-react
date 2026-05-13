@@ -211,7 +211,7 @@ export default function FundingApplication() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row funding-section">
                     {statsLoading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

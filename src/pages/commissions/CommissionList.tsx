@@ -215,7 +215,7 @@ export default function CommissionList() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row commission-section">
                     {isLoading ? (
                         <>
                             <StatisticsCardSkeleton />

@@ -265,7 +265,7 @@ export default function ChangeRequests() {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="row">
+                <div className="row change-request-section">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

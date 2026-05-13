@@ -207,7 +207,7 @@ export default function BlogList() {
                 </div>
 
                 {/* Statistics Cards with Skeleton */}
-                <div className="row">
+                <div className="row blog-section">
                     {isLoading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

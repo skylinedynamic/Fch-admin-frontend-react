@@ -14,7 +14,7 @@ interface ClientStatsProps {
 const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoading }) => {
     if (isLoading || !stats) {
         return (
-            <div className="row">
+            <div className="row client-section">
                 {[1, 2, 3, 4].map((index) => (
                     <StatisticsCardSkeleton key={`skeleton-${index}`} />
                 ))}
@@ -64,7 +64,7 @@ const ClientStats: React.FC<ClientStatsProps> = ({ stats, filteredTotal, isLoadi
     ];
 
     return (
-        <div className="row">
+        <div className="row client-section">
             {statisticsConfig.map((config, index) => (
                 <StatisticsCard
                     key={`stat-${index}`}

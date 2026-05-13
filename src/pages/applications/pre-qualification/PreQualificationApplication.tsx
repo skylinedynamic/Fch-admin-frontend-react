@@ -257,7 +257,7 @@ export default function PreQualificationApplication() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row pre-qual-section">
                     {statsLoading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

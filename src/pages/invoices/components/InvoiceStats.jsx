@@ -5,7 +5,7 @@ import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSke
 export default function InvoiceStats({ stats, loading }) {
     if (loading && !stats) {
         return (
-            <div className="row">
+            <div className="row invoice-section">
                 <StatisticsCardSkeleton />
                 <StatisticsCardSkeleton />
                 <StatisticsCardSkeleton />
@@ -42,7 +42,7 @@ export default function InvoiceStats({ stats, loading }) {
     ];
 
     return (
-        <div className="row">
+        <div className="row invoice-section">
             {statCards.map((card, index) => (
                 <StatisticsCard
                     key={`stat-${index}`}

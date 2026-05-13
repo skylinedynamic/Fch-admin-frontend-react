@@ -447,7 +447,7 @@ export default function Leads() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row lead-section">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

@@ -198,7 +198,7 @@ export default function Subscriptions() {
                     </div>
                 </div>
 
-                <div className="row">
+                <div className="row subscription-section">
                     {statsLoading && (!stats || stats.total_subscriptions === 0) ? (
                         <>
                             <StatisticsCardSkeleton />
