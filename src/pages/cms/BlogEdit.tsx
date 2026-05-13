@@ -94,18 +94,18 @@ export default function BlogEdit() {
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
-        
+
         setFormData(prev => {
             const newData = {
                 ...prev,
                 [name]: type === 'checkbox' ? checked : value
             };
-            
+
             if (name === 'title' && !id) {
                 const slugValue = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
                 newData.slug = slugValue;
             }
-            
+
             return newData;
         });
     };
@@ -183,7 +183,7 @@ export default function BlogEdit() {
                 data.append(key, value.toString());
             }
         });
-        
+
         if (featuredImage) {
             data.append('featured_image', featuredImage);
         }
@@ -215,7 +215,7 @@ export default function BlogEdit() {
                 {/* Page Header - Sticky Subheader Pattern */}
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">{id ? (blogLoading ? 'Loading Blog...' : 'Edit Blog') : 'Create Blog'}</h4>
                                 <nav aria-label="breadcrumb">
@@ -255,331 +255,331 @@ export default function BlogEdit() {
                     <CmsFormLoader showHeader={false} />
                 ) : (
                     <div className="row mt-n3">
-                    {/* Left Column: Main Content & SEO */}
-                    <div className="col-lg-8">
-                        <form id="blog-form" onSubmit={handleSubmit}>
-                            <div className="card mb-4 shadow-sm border-0">
-                                <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar-sm me-3">
-                                            <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
-                                                <i className="ri-file-text-line"></i>
+                        {/* Left Column: Main Content & SEO */}
+                        <div className="col-lg-8">
+                            <form id="blog-form" onSubmit={handleSubmit}>
+                                <div className="card mb-4 shadow-sm border-0">
+                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
+                                        <div className="d-flex align-items-center">
+                                            <div className="avatar-sm me-3">
+                                                <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
+                                                    <i className="ri-file-text-line"></i>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <h5 className="card-title mb-1 fw-bold">Post Content</h5>
-                                            <p className="text-muted mb-0 fs-13">Manage your blog post title, summary and main content</p>
+                                            <div>
+                                                <h5 className="card-title mb-1 fw-bold">Post Content</h5>
+                                                <p className="text-muted mb-0 fs-13">Manage your blog post title, summary and main content</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="card-body p-4">
-                                    <div className="row">
-                                        <div className="col-12 mb-3">
-                                            <h5 className="text-primary fs-16 mb-1">General Information</h5>
-                                            <hr className="mt-1" />
-                                        </div>
-
-                                        <div className="col-lg-12">
-                                            <div className="mb-3">
-                                                <label className="form-label">Post Title <span className="text-danger">*</span></label>
-                                                <input
-                                                    type="text"
-                                                    name="title"
-                                                    className={`form-control ${errors.title ? 'is-invalid' : ''}`}
-                                                    value={formData.title}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter post title"
-                                                />
-                                                {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                                    <div className="card-body p-4">
+                                        <div className="row">
+                                            <div className="col-12 mb-3">
+                                                <h5 className="text-primary fs-16 mb-1">General Information</h5>
+                                                <hr className="mt-1" />
                                             </div>
-                                        </div>
 
-
-
-                                        <div className="col-lg-12">
-                                            <div className="mb-4">
-                                                <label className="form-label">Summary / Excerpt</label>
-                                                <textarea
-                                                    name="summary"
-                                                    className={`form-control ${errors.summary ? 'is-invalid' : ''}`}
-                                                    rows={3}
-                                                    value={formData.summary}
-                                                    onChange={handleChange}
-                                                    placeholder="Write a brief summary for the blog listing page..."
-                                                ></textarea>
-                                                {errors.summary && <div className="invalid-feedback">{errors.summary}</div>}
+                                            <div className="col-lg-12">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Post Title <span className="text-danger">*</span></label>
+                                                    <input
+                                                        type="text"
+                                                        name="title"
+                                                        className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+                                                        value={formData.title}
+                                                        onChange={handleChange}
+                                                        placeholder="Enter post title"
+                                                    />
+                                                    {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div className="col-lg-12">
-                                            <div className="mb-3">
-                                                <label className="form-label">Main Content <span className="text-danger">*</span></label>
-                                                {errors.content && (
-                                                    <style>{`
+
+
+                                            <div className="col-lg-12">
+                                                <div className="mb-4">
+                                                    <label className="form-label">Summary / Excerpt</label>
+                                                    <textarea
+                                                        name="summary"
+                                                        className={`form-control ${errors.summary ? 'is-invalid' : ''}`}
+                                                        rows={3}
+                                                        value={formData.summary}
+                                                        onChange={handleChange}
+                                                        placeholder="Write a brief summary for the blog listing page..."
+                                                    ></textarea>
+                                                    {errors.summary && <div className="invalid-feedback">{errors.summary}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-12">
+                                                <div className="mb-3">
+                                                    <label className="form-label">Main Content <span className="text-danger">*</span></label>
+                                                    {errors.content && (
+                                                        <style>{`
                                                         .summernote-error-wrapper .note-editor {
                                                             border-color: #f06548 !important;
                                                         }
                                                     `}</style>
-                                                )}
-                                                <div className={errors.content ? 'summernote-error-wrapper' : ''}>
-                                                    <textarea
-                                                        ref={summernoteRef}
-                                                        name="content"
-                                                        className="d-none"
-                                                    ></textarea>
-                                                </div>
-                                                {errors.content && <div className="invalid-feedback d-block">{errors.content}</div>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="card mb-4 shadow-sm border-0">
-                                <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar-sm me-3">
-                                            <div className="avatar-title bg-info-subtle text-info rounded-circle fs-20">
-                                                <i className="ri-search-eye-line"></i>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h5 className="card-title mb-1 fw-bold">Search Engine Optimize</h5>
-                                            <p className="text-muted mb-0 fs-13">Improve your post visibility on search engines</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        type="button" 
-                                        className="btn btn-soft-info btn-sm" 
-                                        onClick={() => setShowSeoInputs(!showSeoInputs)}
-                                    >
-                                        {showSeoInputs ? 'Close SEO meta' : 'Edit SEO meta'}
-                                    </button>
-                                </div>
-                                <div className="card-body p-4">
-                                    {/* SEO Preview */}
-                                    <div className="seo-preview mb-4">
-                                        <h4 className="mb-1" style={{ color: '#1a0dab', fontSize: '18px', fontWeight: 400 }}>
-                                            {formData.meta_title || formData.title || 'SEO Title Preview'}
-                                        </h4>
-                                        <div className="mb-1" style={{ color: '#006621', fontSize: '14px' }}>
-                                            {WEBSITE_URL}/blog/{formData.slug || 'post-url-slug'}
-                                        </div>
-                                        <div style={{ color: '#545454', fontSize: '14px' }}>
-                                            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {formData.meta_description || formData.summary || 'Short description for search engines...'}
-                                        </div>
-                                    </div>
-
-                                    {/* SEO Inputs */}
-                                    {showSeoInputs && (
-                                        <div className="row border-top pt-4">
-                                            <div className="col-lg-12">
-                                                <div className="mb-4">
-                                                    <label className="form-label d-flex justify-content-between align-items-center">
-                                                        <span>SEO Title</span>
-                                                        <span className="text-muted fs-12">({(formData.meta_title || '').length}/70)</span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="meta_title"
-                                                        className={`form-control ${errors.meta_title ? 'is-invalid' : ''}`}
-                                                        value={formData.meta_title}
-                                                        onChange={handleChange}
-                                                        placeholder="SEO optimized title"
-                                                        maxLength={70}
-                                                    />
-                                                    <div className="text-muted fs-12 mt-1">Optimal length: 50-60 characters. This appears as the clickable headline in search results.</div>
-                                                    {errors.meta_title && <div className="invalid-feedback d-block">{errors.meta_title}</div>}
-                                                </div>
-                                            </div>
-
-                                            <div className="col-lg-12">
-                                                <div className="mb-4">
-                                                    <label className="form-label d-flex justify-content-between align-items-center">
-                                                        <span>SEO description</span>
-                                                        <span className="text-muted fs-12">({(formData.meta_description || '').length}/160)</span>
-                                                    </label>
-                                                    <textarea
-                                                        name="meta_description"
-                                                        className={`form-control ${errors.meta_description ? 'is-invalid' : ''}`}
-                                                        rows={3}
-                                                        value={formData.meta_description}
-                                                        onChange={handleChange}
-                                                        placeholder="Short description for search engines..."
-                                                        maxLength={160}
-                                                    ></textarea>
-                                                    <div className="text-muted fs-12 mt-1">Optimal length: 150-160 characters. This is the summary that appears under the title in search results.</div>
-                                                    {errors.meta_description && <div className="invalid-feedback d-block">{errors.meta_description}</div>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    {/* Right Column: Settings & Sidebars */}
-                    <div className="col-lg-4">
-                        {/* Publish Status Card */}
-                        <div className="card mb-4 shadow-sm border-0">
-                            <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm me-3">
-                                        <div className="avatar-title bg-success-subtle text-success rounded-circle fs-18">
-                                            <i className="ri-rocket-line"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h5 className="card-title mb-0 fw-bold">Publishing</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="card-body p-4">
-                                <div className="row g-3">
-                                    <div className="col-12">
-                                        <label className="form-label">Publish Status</label>
-                                        <div className="form-check form-switch form-switch-md d-flex align-items-center justify-content-between p-3 bg-light rounded">
-                                            <label className="form-check-label mb-0">
-                                                {formData.is_published ? <span className="text-success fw-medium">Published</span> : <span className="text-muted fw-medium">Draft</span>}
-                                            </label>
-                                            <input
-                                                className="form-check-input ms-0"
-                                                type="checkbox"
-                                                name="is_published"
-                                                id="isPublishedSwitch"
-                                                checked={formData.is_published}
-                                                onChange={handleChange}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="col-12">
-                                        <label className="form-label">Featured Post</label>
-                                        <div className="form-check form-switch form-switch-md d-flex align-items-center justify-content-between p-3 bg-light rounded">
-                                            <label className="form-check-label mb-0">
-                                                {formData.is_featured ? <span className="text-warning fw-medium">Featured</span> : <span className="text-muted fw-medium">Regular</span>}
-                                            </label>
-                                            <input
-                                                className="form-check-input ms-0"
-                                                type="checkbox"
-                                                name="is_featured"
-                                                id="isFeaturedSwitch"
-                                                checked={formData.is_featured}
-                                                onChange={handleChange}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Classification Card */}
-                        <div className="card mb-4 shadow-sm border-0">
-                            <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
-                                <div className="d-flex align-items-center">
-                                    <div className="avatar-sm me-3">
-                                        <div className="avatar-title bg-warning-subtle text-warning rounded-circle fs-18">
-                                            <i className="ri-folders-line"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h5 className="card-title mb-0 fw-bold">Classification</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="card-body p-4">
-                                <div className="mb-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <label className="form-label mb-0">Category</label>
-                                        <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowCatModal(true)}>
-                                            <i className="ri-add-line"></i> Add New
-                                        </button>
-                                    </div>
-                                    <Dropdown
-                                        value={formData.category_id}
-                                        options={categoriesData?.data?.map((c: any) => ({ label: c.name, value: c.id.toString() })) || []}
-                                        onChange={(e) => setFormData({ ...formData, category_id: e.value })}
-                                        placeholder="Select Category"
-                                        className={`w-100 ${errors.category_id ? 'p-invalid' : ''}`}
-                                        filter
-                                        showClear
-                                    />
-                                    {errors.category_id && <div className="text-danger fs-12 mt-1">{errors.category_id}</div>}
-                                </div>
-
-                                <div className="mb-0">
-                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <label className="form-label mb-0">Tags</label>
-                                        <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowTagModal(true)}>
-                                            <i className="ri-add-line"></i> Add New
-                                        </button>
-                                    </div>
-                                    <MultiSelect
-                                        value={formData.blog_tag_id}
-                                        options={tagsData?.data?.map((t: any) => ({ label: t.name, value: t.id.toString() })) || []}
-                                        onChange={(e) => setFormData({ ...formData, blog_tag_id: e.value })}
-                                        placeholder="Select Tags"
-                                        className={`w-100 ${errors.blog_tag_id ? 'p-invalid' : ''}`}
-                                        filter
-                                        display="chip"
-                                        maxSelectedLabels={20}
-                                    />
-                                    {errors.blog_tag_id && <div className="text-danger fs-12 mt-1">{errors.blog_tag_id}</div>}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Featured Image Card */}
-                        <div className="card border shadow-none mb-4">
-                            <div className="card-header border-bottom-dashed py-2">
-                                <h6 className="card-title mb-0 fs-13">
-                                    <i className="ri-image-line align-middle text-primary me-1"></i> Featured Image
-                                </h6>
-                            </div>
-                            <div className="card-body p-2">
-                                <div className="text-center">
-                                    <div 
-                                        className="position-relative d-inline-block cursor-pointer w-100" 
-                                        onClick={() => {
-                                            setActiveFileTarget('featured');
-                                            setShowFileManager(true);
-                                        }}
-                                        title="Recommended: 1200x630px • Max 2MB"
-                                    >
-                                        <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '150px', border: errors.featured_image ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
-                                            {previewImage ? (
-                                                <img
-                                                    src={previewImage}
-                                                    alt="Featured Preview"
-                                                    className="img-fluid rounded object-fit-contain"
-                                                    style={{ maxHeight: '130px' }}
-                                                    onError={(e: any) => { e.target.src = '/images/blog/placeholder.png'; }}
-                                                />
-                                            ) : (
-                                                <div className="text-center">
-                                                    <div className="avatar-sm mx-auto mb-2">
-                                                        <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
-                                                            <i className="ri-image-add-line"></i>
-                                                        </div>
+                                                    )}
+                                                    <div className={errors.content ? 'summernote-error-wrapper' : ''}>
+                                                        <textarea
+                                                            ref={summernoteRef}
+                                                            name="content"
+                                                            className="d-none"
+                                                        ></textarea>
                                                     </div>
-                                                    <p className="text-muted fs-11 mb-0">Select Featured Image</p>
+                                                    {errors.content && <div className="invalid-feedback d-block">{errors.content}</div>}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
-                                        {previewImage && (
-                                            <div className="position-absolute bottom-0 end-0 mb-2 me-2">
-                                                <span className="btn btn-sm btn-primary rounded-circle shadow p-1 lh-1 text-white" style={{ width: '26px', height: '26px' }}>
-                                                    <i className="ri-pencil-fill fs-12"></i>
-                                                </span>
+                                    </div>
+                                </div>
+
+                                <div className="card mb-4 shadow-sm border-0">
+                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                                        <div className="d-flex align-items-center">
+                                            <div className="avatar-sm me-3">
+                                                <div className="avatar-title bg-info-subtle text-info rounded-circle fs-20">
+                                                    <i className="ri-search-eye-line"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h5 className="card-title mb-1 fw-bold">Search Engine Optimize</h5>
+                                                <p className="text-muted mb-0 fs-13">Improve your post visibility on search engines</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-soft-info btn-sm"
+                                            onClick={() => setShowSeoInputs(!showSeoInputs)}
+                                        >
+                                            {showSeoInputs ? 'Close SEO meta' : 'Edit SEO meta'}
+                                        </button>
+                                    </div>
+                                    <div className="card-body p-4">
+                                        {/* SEO Preview */}
+                                        <div className="seo-preview mb-4">
+                                            <h4 className="mb-1" style={{ color: '#1a0dab', fontSize: '18px', fontWeight: 400 }}>
+                                                {formData.meta_title || formData.title || 'SEO Title Preview'}
+                                            </h4>
+                                            <div className="mb-1" style={{ color: '#006621', fontSize: '14px' }}>
+                                                {WEBSITE_URL}/blog/{formData.slug || 'post-url-slug'}
+                                            </div>
+                                            <div style={{ color: '#545454', fontSize: '14px' }}>
+                                                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {formData.meta_description || formData.summary || 'Short description for search engines...'}
+                                            </div>
+                                        </div>
+
+                                        {/* SEO Inputs */}
+                                        {showSeoInputs && (
+                                            <div className="row border-top pt-4">
+                                                <div className="col-lg-12">
+                                                    <div className="mb-4">
+                                                        <label className="form-label d-flex justify-content-between align-items-center">
+                                                            <span>SEO Title</span>
+                                                            <span className="text-muted fs-12">({(formData.meta_title || '').length}/70)</span>
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            name="meta_title"
+                                                            className={`form-control ${errors.meta_title ? 'is-invalid' : ''}`}
+                                                            value={formData.meta_title}
+                                                            onChange={handleChange}
+                                                            placeholder="SEO optimized title"
+                                                            maxLength={70}
+                                                        />
+                                                        <div className="text-muted fs-12 mt-1">Optimal length: 50-60 characters. This appears as the clickable headline in search results.</div>
+                                                        {errors.meta_title && <div className="invalid-feedback d-block">{errors.meta_title}</div>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="col-lg-12">
+                                                    <div className="mb-4">
+                                                        <label className="form-label d-flex justify-content-between align-items-center">
+                                                            <span>SEO description</span>
+                                                            <span className="text-muted fs-12">({(formData.meta_description || '').length}/160)</span>
+                                                        </label>
+                                                        <textarea
+                                                            name="meta_description"
+                                                            className={`form-control ${errors.meta_description ? 'is-invalid' : ''}`}
+                                                            rows={3}
+                                                            value={formData.meta_description}
+                                                            onChange={handleChange}
+                                                            placeholder="Short description for search engines..."
+                                                            maxLength={160}
+                                                        ></textarea>
+                                                        <div className="text-muted fs-12 mt-1">Optimal length: 150-160 characters. This is the summary that appears under the title in search results.</div>
+                                                        {errors.meta_description && <div className="invalid-feedback d-block">{errors.meta_description}</div>}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
-                                    {errors.featured_image && <div className="text-danger fs-11 mt-1">{errors.featured_image}</div>}
-                                    <p className="text-muted mt-2 fs-11 mb-0">Recommended: 1200x630px. Max: 2MB.</p>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Right Column: Settings & Sidebars */}
+                        <div className="col-lg-4">
+                            {/* Publish Status Card */}
+                            <div className="card mb-4 shadow-sm border-0">
+                                <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
+                                    <div className="d-flex align-items-center">
+                                        <div className="avatar-sm me-3">
+                                            <div className="avatar-title bg-success-subtle text-success rounded-circle fs-18">
+                                                <i className="ri-rocket-line"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 className="card-title mb-0 fw-bold">Publishing</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="card-body p-4">
+                                    <div className="row g-3">
+                                        <div className="col-12">
+                                            <label className="form-label">Publish Status</label>
+                                            <div className="form-check form-switch form-switch-md d-flex align-items-center justify-content-between p-3 bg-light rounded">
+                                                <label className="form-check-label mb-0">
+                                                    {formData.is_published ? <span className="text-success fw-medium">Published</span> : <span className="text-muted fw-medium">Draft</span>}
+                                                </label>
+                                                <input
+                                                    className="form-check-input ms-0"
+                                                    type="checkbox"
+                                                    name="is_published"
+                                                    id="isPublishedSwitch"
+                                                    checked={formData.is_published}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-12">
+                                            <label className="form-label">Featured Post</label>
+                                            <div className="form-check form-switch form-switch-md d-flex align-items-center justify-content-between p-3 bg-light rounded">
+                                                <label className="form-check-label mb-0">
+                                                    {formData.is_featured ? <span className="text-warning fw-medium">Featured</span> : <span className="text-muted fw-medium">Regular</span>}
+                                                </label>
+                                                <input
+                                                    className="form-check-input ms-0"
+                                                    type="checkbox"
+                                                    name="is_featured"
+                                                    id="isFeaturedSwitch"
+                                                    checked={formData.is_featured}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Classification Card */}
+                            <div className="card mb-4 shadow-sm border-0">
+                                <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4">
+                                    <div className="d-flex align-items-center">
+                                        <div className="avatar-sm me-3">
+                                            <div className="avatar-title bg-warning-subtle text-warning rounded-circle fs-18">
+                                                <i className="ri-folders-line"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 className="card-title mb-0 fw-bold">Classification</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="card-body p-4">
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <label className="form-label mb-0">Category</label>
+                                            <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowCatModal(true)}>
+                                                <i className="ri-add-line"></i> Add New
+                                            </button>
+                                        </div>
+                                        <Dropdown
+                                            value={formData.category_id}
+                                            options={categoriesData?.data?.map((c: any) => ({ label: c.name, value: c.id.toString() })) || []}
+                                            onChange={(e) => setFormData({ ...formData, category_id: e.value })}
+                                            placeholder="Select Category"
+                                            className={`w-100 ${errors.category_id ? 'p-invalid' : ''}`}
+                                            filter
+                                            showClear
+                                        />
+                                        {errors.category_id && <div className="text-danger fs-12 mt-1">{errors.category_id}</div>}
+                                    </div>
+
+                                    <div className="mb-0">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <label className="form-label mb-0">Tags</label>
+                                            <button type="button" className="btn btn-link btn-sm p-0 text-primary" onClick={() => setShowTagModal(true)}>
+                                                <i className="ri-add-line"></i> Add New
+                                            </button>
+                                        </div>
+                                        <MultiSelect
+                                            value={formData.blog_tag_id}
+                                            options={tagsData?.data?.map((t: any) => ({ label: t.name, value: t.id.toString() })) || []}
+                                            onChange={(e) => setFormData({ ...formData, blog_tag_id: e.value })}
+                                            placeholder="Select Tags"
+                                            className={`w-100 ${errors.blog_tag_id ? 'p-invalid' : ''}`}
+                                            filter
+                                            display="chip"
+                                            maxSelectedLabels={20}
+                                        />
+                                        {errors.blog_tag_id && <div className="text-danger fs-12 mt-1">{errors.blog_tag_id}</div>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Featured Image Card */}
+                            <div className="card border shadow-none mb-4">
+                                <div className="card-header border-bottom-dashed py-2">
+                                    <h6 className="card-title mb-0 fs-13">
+                                        <i className="ri-image-line align-middle text-primary me-1"></i> Featured Image
+                                    </h6>
+                                </div>
+                                <div className="card-body p-2">
+                                    <div className="text-center">
+                                        <div
+                                            className="position-relative d-inline-block cursor-pointer w-100"
+                                            onClick={() => {
+                                                setActiveFileTarget('featured');
+                                                setShowFileManager(true);
+                                            }}
+                                            title="Recommended: 1200x630px • Max 2MB"
+                                        >
+                                            <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '150px', border: errors.featured_image ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
+                                                {previewImage ? (
+                                                    <img
+                                                        src={previewImage}
+                                                        alt="Featured Preview"
+                                                        className="img-fluid rounded object-fit-contain"
+                                                        style={{ maxHeight: '130px' }}
+                                                        onError={(e: any) => { e.target.src = '/images/blog/placeholder.png'; }}
+                                                    />
+                                                ) : (
+                                                    <div className="text-center">
+                                                        <div className="avatar-sm mx-auto mb-2">
+                                                            <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
+                                                                <i className="ri-image-add-line"></i>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-muted fs-11 mb-0">Select Featured Image</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {previewImage && (
+                                                <div className="position-absolute bottom-0 end-0 mb-2 me-2">
+                                                    <span className="btn btn-sm btn-primary rounded-circle shadow p-1 lh-1 text-white" style={{ width: '26px', height: '26px' }}>
+                                                        <i className="ri-pencil-fill fs-12"></i>
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {errors.featured_image && <div className="text-danger fs-11 mt-1">{errors.featured_image}</div>}
+                                        <p className="text-muted mt-2 fs-11 mb-0">Recommended: 1200x630px. Max: 2MB.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                     </div>
                 )}
             </div>
@@ -763,7 +763,7 @@ export default function BlogEdit() {
                     )}
                 </div>
             </Dialog>
-            <FileManagerModal 
+            <FileManagerModal
                 isOpen={showFileManager}
                 toggle={() => setShowFileManager(false)}
                 onSelectFiles={(files) => handleFileSelect(files[0])}
