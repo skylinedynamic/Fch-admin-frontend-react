@@ -202,6 +202,11 @@
         /* Increased top padding further */
     }
 
+    .resource-page-content {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: 0px !important;
+    }
+
     .container-fluid {
         padding-left: 6px !important;
         padding-right: 6px !important;
@@ -1363,6 +1368,10 @@
         margin-top: 80px !important;
     }
 
+    .resource-section {
+        margin-top: 45px !important;
+    }
+
     .appointment-section {
         margin-top: 45px !important;
     }
@@ -1384,7 +1393,8 @@
     .tier-section,
     .verification-section,
     .credit-account-section,
-    .lead-section {
+    .lead-section,
+    .resource-section .row.g-2 {
         display: flex !important;
         flex-wrap: wrap !important;
         gap: 0 !important;
@@ -1413,12 +1423,14 @@
     .payment-section [class*="col-"],
     .invoice-section [class*="col-"],
     .pre-qual-section [class*="col-"],
-    .blog-section [class*="col-"] {
+    .blog-section [class*="col-"],
+    .resource-section .row.g-2>[class*="col-"] {
         flex: 0 0 50% !important;
+        width: 50% !important;
         max-width: 50% !important;
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-        margin-bottom: 5px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        margin-bottom: 4px !important;
     }
 
     .partner-section .card-body,
@@ -1443,8 +1455,32 @@
     }
 
     .partner-section .kpi-title,
-    .client-section .kpi-title {
-        font-size: 11px !important;
+    .client-section .kpi-title,
+    .resource-section .card-body {
+        padding: 10px 8px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 34px !important;
+        height: 34px !important;
+        margin-right: 8px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 16px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 18px !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 10px !important;
+    }
+
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
     }
 }
 
@@ -1537,5 +1573,80 @@
     #site-settings-form>.mt-n3 {
         margin-top: 0 !important;
         padding-top: 14px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   RESOURCE PAGE SPECIFIC REFINEMENTS
+   Ensures 2-column layout with larger cards and reduced gaps.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .resource-section .row.g-2 {
+        margin-left: -5px !important;
+        margin-right: -5px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    .resource-section .row.g-2>[class*="col-"] {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .resource-section .card {
+        margin-bottom: 0 !important;
+    }
+
+    .resource-section .card-body {
+        padding: 16px 12px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 44px !important;
+        height: 44px !important;
+        margin-right: 12px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 22px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 11px !important;
+        margin-bottom: 3px !important;
+        letter-spacing: 0.2px !important;
+    }
+
+    /* Training Academy Mobile Height Fix */
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   USERS PAGE SPECIFIC REFINEMENTS
+   Ensures the search box and filters are not hidden behind
+   the fixed mobile header.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+
+    .user-section .row-table-fit,
+    .employee-section .row-table-fit {
+        margin-top: 90px !important;
+    }
+
+    .user-section .card,
+    .employee-section .card {
+        margin-bottom: 10px !important;
     }
 }

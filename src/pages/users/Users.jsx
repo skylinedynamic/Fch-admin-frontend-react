@@ -458,7 +458,7 @@ export default function Users() {
   };
 
   return (
-    <div className="page-content page-content-fit">
+    <div className="page-content page-content-fit user-section">
       <div className="container-fluid">
         <div className="row pb-1 mobile-sticky-header">
           <div className="col-12">

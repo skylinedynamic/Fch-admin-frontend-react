@@ -278,12 +278,13 @@ const Resource: React.FC = () => {
           </div>
         </div>
 
-        {isLoading ? (
-          <ResourceLoader />
-        ) : (
-          <>
-            {/* Metric Header */}
-            <div className="row g-3">
+        <div className="col-12 resource-section">
+          {isLoading ? (
+            <ResourceLoader />
+          ) : (
+            <>
+              {/* Metric Header */}
+              <div className="row g-2 mb-3">
               {[
                 { label: 'Total Resources', value: (resources.legal_registration?.length || 0) + (resources.education_help?.length || 0) + (resources.download_assets?.length || 0) + (resources.training_academy?.length || 0), icon: 'ri-stack-fill', color: 'primary' },
                 { label: 'Education & Help', value: resources.education_help?.length || 0, icon: 'ri-book-open-fill', color: 'primary' },
@@ -574,6 +575,7 @@ const Resource: React.FC = () => {
             </div>
           </>
         )}
+      </div>
 
         <DeleteConfirmationModal
           show={showDeleteModal}

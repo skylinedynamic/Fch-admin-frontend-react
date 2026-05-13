@@ -84,7 +84,7 @@ export default function Employees() {
   };
 
   return (
-    <div className="page-content page-content-fit">
+    <div className="page-content page-content-fit employee-section">
       <div className="container-fluid">
         <EmployeeListHeader
           selection={selection}
