@@ -1363,6 +1363,14 @@
         margin-top: 80px !important;
     }
 
+    .appointment-section {
+        margin-top: 45px !important;
+    }
+
+    .appointments-page .upcoming-event-list-scroll {
+        height: 230px !important;
+    }
+
     /* 2 COLUMNS FOR STATISTICS CARDS (PARTNERS/CLIENTS/LEADS LIST) */
     .partner-section,
     .client-section,
