@@ -247,7 +247,7 @@ export default function ChangeRequests() {
             <div className="container-fluid">
 
                 {/* Page Header */}
-                <div className="row pb-1">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between py-2">
                             <div>

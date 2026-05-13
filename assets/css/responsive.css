@@ -1278,8 +1278,9 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
     }
 
-    /* Standardized spacer for content below fixed header */
-    .page-subheader-sticky+.row {
+    .page-subheader-sticky+.row,
+    .page-subheader-sticky+form,
+    .page-subheader-sticky+div {
         margin-top: 100px !important;
     }
 
@@ -1355,6 +1356,9 @@
     .blog-section,
     .payment-section,
     .invoice-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
     .lead-section {
         margin-top: 80px !important;
     }
@@ -1369,6 +1373,9 @@
     .payment-section,
     .invoice-section,
     .pre-qual-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
     .lead-section {
         display: flex !important;
         flex-wrap: wrap !important;
