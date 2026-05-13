@@ -4,7 +4,7 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 export default function EmployeeListHeader({ selection, onDeleteSelected }) {
     const { hasPermission } = usePermissions();
     return (
-        <div className="row pb-1">
+        <div className="row pb-1 mobile-sticky-header">
             <div className="col-12">
                 <div className="d-flex align-items-center justify-content-between flex-row py-2">
                     <div className="flex-grow-1">

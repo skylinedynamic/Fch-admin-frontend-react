@@ -165,7 +165,7 @@ export default function BlogList() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header with Breadcrumbs */}
-                <div className="row pb-1">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">

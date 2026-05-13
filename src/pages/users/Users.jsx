@@ -460,7 +460,7 @@ export default function Users() {
   return (
     <div className="page-content page-content-fit">
       <div className="container-fluid">
-        <div className="row pb-1">
+        <div className="row pb-1 mobile-sticky-header">
           <div className="col-12">
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
