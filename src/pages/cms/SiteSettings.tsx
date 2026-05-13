@@ -254,7 +254,7 @@ export default function SiteSettings() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content site-settings-section">
             <div className="container-fluid">
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">

@@ -1650,3 +1650,49 @@
         margin-bottom: 10px !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════════
+   PAGE-SUBHEADER-STICKY MOBILE FIXES
+   For detail/form pages (Site Settings, Blog Edit, etc.)
+   The sticky header is fixed on mobile, so we need to push
+   the form content down to prevent it hiding behind it.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+
+
+    .site-settings-section form.mt-n3,
+    .site-settings-section div.mt-n3 {
+        margin-top: 0 !important;
+    }
+
+    /* Blog Edit — reduce gap between sticky header and first card */
+    .blog-edit-section .container-fluid {
+        padding-top: 90px !important;
+    }
+
+    .blog-edit-section .row.mt-n3 {
+        margin-top: 0 !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SEO SETTINGS PAGE MOBILE FIXES
+   Ensures search bar and table are visible below the fixed
+   mobile sticky header.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+    .seo-section .row-table-fit {
+        margin-top: 85px !important;
+    }
+
+    .seo-section .card {
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .site-settings-section {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: -14px !important;
+    }
+}

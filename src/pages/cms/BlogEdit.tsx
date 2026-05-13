@@ -210,7 +210,7 @@ export default function BlogEdit() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content blog-edit-section">
             <div className="container-fluid">
                 {/* Page Header - Sticky Subheader Pattern */}
                 <div className="row pb-1 page-subheader-sticky bg-body">

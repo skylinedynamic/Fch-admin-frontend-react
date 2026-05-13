@@ -114,7 +114,7 @@ export default function SeoSettings() {
     );
 
     return (
-        <div className="page-content page-content-fit">
+        <div className="page-content page-content-fit seo-section">
             <div className="container-fluid">
                 {/* Header with Breadcrumbs */}
                 <div className="row pb-1 mobile-sticky-header">
