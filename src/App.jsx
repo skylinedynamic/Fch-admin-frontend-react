@@ -57,6 +57,7 @@ import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
 import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
+import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -207,6 +208,7 @@ export default function App() {
 
   return (
     <>
+      <ConfigurationGuardModal />
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>

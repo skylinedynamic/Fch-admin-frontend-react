@@ -1696,3 +1696,121 @@
         margin-top: -14px !important;
     }
 }
+
+    }
+}
+
+/* ============================================================
+   INVOICE MOBILE OPTIMIZATION
+   Added dynamic buttons and improved preview layout
+   ============================================================ */
+
+.btn-pay-now {
+    background-color: #001f3f !important;
+    color: #ffffff !important;
+    border: 1px solid #d4af37 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-pay-now:hover {
+    background-color: #002d5c !important;
+    color: #d4af37 !important;
+    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.2) !important;
+}
+
+@media (max-width: 991.98px) {
+    .invoice-action-btns {
+        gap: 6px !important;
+    }
+
+    .btn-pay-now {
+        padding: 5px 12px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .btn-pay-now {
+        padding: 5px 8px !important;
+        min-width: 35px !important;
+    }
+
+    .btn-pay-now .btn-text {
+        display: none !important;
+    }
+
+    .btn-pay-now .icon-pay {
+        margin-right: 0 !important;
+        font-size: 16px !important;
+    }
+
+    /* Accurate Desktop-like Layout on Mobile */
+    #demo .card-body {
+        padding: 12px !important;
+    }
+
+    #demo .text-center.text-sm-start {
+        text-align: left !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    #demo .text-center.text-sm-start .col-6 {
+        width: 50% !important;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        margin-bottom: 15px !important;
+    }
+
+    #demo .card-header .d-flex {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    #demo .card-logo {
+        height: 35px !important; /* Scale down logo to prevent overlap */
+        width: auto !important;
+    }
+
+    #demo .card-header .flex-grow-1 {
+        text-align: left !important;
+    }
+
+    #demo .card-header .flex-shrink-0 {
+        margin-top: 0 !important;
+        text-align: right !important;
+        max-width: 50% !important;
+    }
+
+    #demo .card-header h6 {
+        font-size: 10px !important;
+        white-space: nowrap !important;
+    }
+
+    #demo .card-body p, 
+    #demo .card-body h5,
+    #demo .card-body h6 {
+        font-size: 10px !important;
+    }
+
+    #demo .table-responsive table {
+        font-size: 10px !important;
+    }
+
+    #demo .hstack.gap-2 {
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    #demo .hstack.gap-2 .btn {
+        flex: 1 1 0 !important; /* Force equal width */
+        padding: 8px 4px !important;
+        font-size: 11px !important;
+        min-width: 0 !important;
+    }
+}

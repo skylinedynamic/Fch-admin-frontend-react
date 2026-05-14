@@ -68,3 +68,8 @@ export const updateGeneralInformation = async (payload: any): Promise<any> => {
     const { data } = await apiClient.post('/common/general-information-update', payload);
     return data;
 };
+
+export const fetchGlobalConfigurations = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/global-configurations');
+    return data;
+};

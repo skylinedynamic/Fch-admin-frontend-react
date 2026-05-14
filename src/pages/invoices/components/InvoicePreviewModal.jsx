@@ -270,41 +270,38 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             </div>
                                             <div className="hstack gap-2 justify-content-center justify-content-sm-between d-print-none mt-4 flex-wrap">
                                                 <button
-                                                    className="btn btn-default"
+                                                    className="btn btn-soft-danger flex-grow-1 flex-sm-grow-0"
                                                     onClick={onHide}
                                                 >
                                                     <i className="ri-close-line align-bottom me-1"></i>
                                                     Close
                                                 </button>
-                                                <div className="hstack gap-2">
+                                                <button
+                                                    className="btn btn-primary shadow-sm flex-grow-1 flex-sm-grow-0"
+                                                    onClick={handleDownload}
+                                                    disabled={downloadLoading}
+                                                >
+                                                    {downloadLoading ? (
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    ) : (
+                                                        <i className="ri-download-2-line align-bottom me-1"></i>
+                                                    )}
+                                                    Download
+                                                </button>
+                                                {(user?.is_host == 1 && displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase()) && (
                                                     <button
-                                                        className="btn btn-primary shadow-sm"
-                                                        onClick={handleDownload}
-                                                        disabled={downloadLoading}
+                                                        className="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0"
+                                                        onClick={handleSend}
+                                                        disabled={sendLoading}
                                                     >
-                                                        {downloadLoading ? (
+                                                        {sendLoading ? (
                                                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                                                         ) : (
-                                                            <i className="ri-download-2-line align-bottom me-1"></i>
+                                                            <i className="ri-send-plane-fill align-bottom me-1"></i>
                                                         )}
-                                                        Download
+                                                        E-Mail Invoice
                                                     </button>
-                                                    {(user?.is_host == 1 && displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase()) && (
-                                                        // {(((displayInvoice?.borrower_id && user?.is_host == 0) || displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase())) && (
-                                                        <button
-                                                            className="btn btn-danger shadow-sm"
-                                                            onClick={handleSend}
-                                                            disabled={sendLoading}
-                                                        >
-                                                            {sendLoading ? (
-                                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                            ) : (
-                                                                <i className="ri-send-plane-fill align-bottom me-1"></i>
-                                                            )}
-                                                            E-Mail Invoice
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
