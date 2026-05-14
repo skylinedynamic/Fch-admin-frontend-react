@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { toast } from 'react-toastify';
-import "../../../assets/css/datepicker.css";
 
 import {
   createEmployee,
