@@ -103,12 +103,12 @@ export default function App() {
 
       // 2. Dynamic Favicon
       let favicon = publicSettingsData.data.partner_favicon || publicSettingsData.data.favicon;
-      
+
       // Clean up 'null' or empty strings
       if (favicon === 'null' || !favicon) {
         favicon = publicSettingsData.data.favicon;
       }
-      
+
       if (favicon && favicon !== 'null') {
         const BASE_URL = import.meta.env.VITE_BASE_URL || '';
         const faviconPath = favicon.replace(/^\//, '');

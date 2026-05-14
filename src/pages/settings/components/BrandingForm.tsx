@@ -8,25 +8,30 @@ import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+const BASE_URL = (import.meta as any).env.VITE_BASE_URL || '';
 
-function resolveLogoUrl(path) {
+function resolveLogoUrl(path: string | null) {
     if (!path || path === 'null') return null;
     if (path.startsWith('http')) return path;
     const clean = path.replace(/^\//, '');
     return `${BASE_URL}/storage/${clean.startsWith('site-settings/') ? clean : 'site-settings/' + clean}`;
 }
 
-const BrandingItem = ({ title, icon, value, onSelect, loading, error, description, required, primaryColor }) => {
+interface BrandingItemProps {
+    title: string;
+    icon: string;
+    value: string;
+    onSelect: () => void;
+    loading?: boolean;
+    error?: string;
+    description?: string;
+    required?: boolean;
+    primaryColor?: string;
+}
+
+const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelect, loading, error, description, required, primaryColor }) => {
     const [imgError, setImgError] = useState(false);
     const preview = resolveLogoUrl(value);
-
-    // Resolve RGB for button shadow
-    const rgb = primaryColor && primaryColor.startsWith('#') ? 
-        (() => {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(primaryColor);
-            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '64, 81, 137';
-        })() : '64, 81, 137';
 
     useEffect(() => {
         setImgError(false);
@@ -78,13 +83,13 @@ const BrandingItem = ({ title, icon, value, onSelect, loading, error, descriptio
                                 </div>
                             )}
                         </div>
-                            {preview && !imgError && (
-                                <div className="position-absolute top-50 end-0 translate-middle-y me-2">
-                                    <span className="btn btn-primary btn-sm rounded-circle shadow p-0 d-flex align-items-center justify-content-center text-white" style={{ width: '28px', height: '28px' }}>
-                                        <i className="ri-pencil-fill fs-12"></i>
-                                    </span>
-                                </div>
-                            )}
+                        {preview && !imgError && (
+                            <div className="position-absolute top-50 end-0 translate-middle-y me-2">
+                                <span className="btn btn-primary btn-sm rounded-circle shadow p-0 d-flex align-items-center justify-content-center text-white" style={{ width: '28px', height: '28px' }}>
+                                    <i className="ri-pencil-fill fs-12"></i>
+                                </span>
+                            </div>
+                        )}
                     </div>
                     {error && <div className="text-danger fs-11 mt-1 text-start ps-1">{error}</div>}
                     {description && !error && <p className="text-muted fs-11 mt-1 mb-0 text-start ps-1">{description}</p>}
@@ -94,17 +99,30 @@ const BrandingItem = ({ title, icon, value, onSelect, loading, error, descriptio
     );
 };
 
-export default function BrandingForm() {
+interface BrandingState {
+    header_logo: string;
+    footer_logo: string;
+    partner_logo: string;
+    borrower_logo: string;
+    partner_favicon: string;
+    borrower_favicon: string;
+    primary_color: string;
+    secondary_color: string;
+    site_name: string;
+    copyright_text: string;
+}
+
+const BrandingForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
     const partnerId = user?.partner_id || user?.entity_id;
 
-    const [fetching, setFetching] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [showFileManager, setShowFileManager] = useState(false);
-    const [activeField, setActiveField] = useState(null);
-    const [errors, setErrors] = useState({});
+    const [fetching, setFetching] = useState<boolean>(true);
+    const [saving, setSaving] = useState<boolean>(false);
+    const [showFileManager, setShowFileManager] = useState<boolean>(false);
+    const [activeField, setActiveField] = useState<keyof BrandingState | null>(null);
+    const [errors, setErrors] = useState<any>({});
 
-    const [branding, setBranding] = useState({
+    const [branding, setBranding] = useState<BrandingState>({
         header_logo: '',
         footer_logo: '',
         partner_logo: '',
@@ -124,12 +142,12 @@ export default function BrandingForm() {
     const loadBranding = async () => {
         try {
             setFetching(true);
-            const res = await fetchGeneralInformation('site-settings', partnerId || undefined);
+            const res: any = await fetchGeneralInformation('site-settings', partnerId || undefined);
             if (res?.data) {
                 const cleanedData = { ...res.data };
                 if (cleanedData.primary_color === 'null') cleanedData.primary_color = '#405189';
                 if (cleanedData.secondary_color === 'null') cleanedData.secondary_color = '#0ab39c';
-                
+
                 setBranding(prev => ({
                     ...prev,
                     ...cleanedData
@@ -142,11 +160,10 @@ export default function BrandingForm() {
         }
     };
 
-    const handleFileSelection = (selectedFiles) => {
+    const handleFileSelection = (selectedFiles: any[]) => {
         if (!selectedFiles?.length || !activeField) return;
         const file = selectedFiles[0];
 
-        // 🟢 Frontend Validation (Immediate Feedback)
         const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
         const isFavicon = activeField.includes('favicon');
         const extension = file.name.split('.').pop()?.toLowerCase();
@@ -155,8 +172,8 @@ export default function BrandingForm() {
             const message = isFavicon
                 ? 'Please select a valid image file (PNG, JPG, SVG, ICO, or WebP)'
                 : 'Please select a valid image file (PNG, JPG, SVG, or WebP)';
-            
-            setErrors(prev => ({ ...prev, [activeField]: message }));
+
+            setErrors((prev: any) => ({ ...prev, [activeField]: message }));
             setShowFileManager(false);
             return;
         }
@@ -165,32 +182,30 @@ export default function BrandingForm() {
         const fullPath = cleanPath.startsWith('site-settings/') ? cleanPath : `site-settings/${cleanPath}`;
 
         setBranding(prev => ({ ...prev, [activeField]: fullPath }));
-        setErrors(prev => ({ ...prev, [activeField]: null })); // Clear error on valid selection
+        setErrors((prev: any) => ({ ...prev, [activeField]: null }));
         setShowFileManager(false);
     };
 
-    const handleSave = async (e) => {
+    const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         try {
             setSaving(true);
-            const payload = { 
+            const payload = {
                 ...branding,
                 entity_type: 'App\\Models\\Partner\\Partner',
                 entity_id: partnerId || undefined
             };
 
-            // Ensure we don't save the string 'null'
             if (payload.primary_color === 'null' || !payload.primary_color) payload.primary_color = '#405189';
             if (payload.secondary_color === 'null' || !payload.secondary_color) payload.secondary_color = '#0ab39c';
 
-            const response = await updateGeneralInformation(payload);
+            const response: any = await updateGeneralInformation(payload);
             toast.success(response.message || 'Site settings updated successfully');
             setErrors({});
-            // Reload window accurately to apply all branding changes immediately
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
-        } catch (err) {
+        } catch (err: any) {
             if (err?.response?.status === 422) {
                 setErrors(err.response.data.errors || {});
                 toast.error('Please fix the validation errors.');
@@ -222,7 +237,6 @@ export default function BrandingForm() {
                 <div className="card-body p-4">
                     <form onSubmit={handleSave}>
                         <div className="row g-4">
-                            {/* SITE NAME */}
                             <div className="col-12">
                                 <label className="form-label fw-semibold fs-13">Site Name <span className="text-danger">*</span></label>
                                 <input
@@ -235,7 +249,6 @@ export default function BrandingForm() {
                                 {errors.site_name && <div className="invalid-feedback fs-11">{errors.site_name}</div>}
                             </div>
 
-                            {/* LOGOS */}
                             <div className="col-md-6">
                                 <BrandingItem
                                     title="Partner Portal Logo"
@@ -261,7 +274,6 @@ export default function BrandingForm() {
                                 />
                             </div>
 
-                            {/* FAVICONS */}
                             <div className="col-md-6">
                                 <BrandingItem
                                     title="Partner Favicon"
@@ -286,7 +298,6 @@ export default function BrandingForm() {
                                 />
                             </div>
 
-                            {/* COLORS */}
                             <div className="col-md-6">
                                 <label className="form-label fw-semibold fs-13">Primary Theme Color <span className="text-danger">*</span></label>
                                 <div className="d-flex gap-2 align-items-center">
@@ -330,12 +341,10 @@ export default function BrandingForm() {
                         </div>
 
                         <div className="text-end mt-5 pt-3 border-top">
-                            <button 
-                                type="submit" 
-                                className="btn px-5" 
+                            <button
+                                type="submit"
                                 disabled={saving}
-                                className="btn btn-primary waves-effect waves-light"
-
+                                className="btn btn-primary waves-effect waves-light px-5"
                             >
                                 {saving ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : <><i className="ri-save-line me-1"></i>Save Branding</>}
                             </button>
@@ -356,3 +365,5 @@ export default function BrandingForm() {
         </div>
     );
 }
+
+export default BrandingForm;

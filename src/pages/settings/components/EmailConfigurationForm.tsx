@@ -10,17 +10,36 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 
-export default function EmailConfigurationForm() {
+interface EmailFormState {
+    enable_custom_configuration: boolean;
+    site_name: string;
+    email_provider: string;
+    smtp_driver: string;
+    smtp_host: string;
+    smtp_port: string;
+    smtp_encryption: string;
+    smtp_username: string;
+    smtp_password: string;
+    aws_access_key: string;
+    aws_secret_key: string;
+    aws_region: string;
+    from_address: string;
+    from_name: string;
+    bcc_emails: string;
+    is_active: boolean;
+    id?: number;
+}
+
+const EmailConfigurationForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
     const partnerId = user?.partner_id || user?.entity_id;
 
-    const [fetching, setFetching] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [configs, setConfigs] = useState([]);
-    const [provider, setProvider] = useState('smtp');
-    const [errors, setErrors] = useState({});
+    const [fetching, setFetching] = useState<boolean>(true);
+    const [saving, setSaving] = useState<boolean>(false);
+    const [provider, setProvider] = useState<string>('smtp');
+    const [errors, setErrors] = useState<any>({});
 
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<EmailFormState>({
         enable_custom_configuration: false,
         site_name: '',
         email_provider: 'smtp',
@@ -46,13 +65,11 @@ export default function EmailConfigurationForm() {
     const loadConfigs = async () => {
         try {
             setFetching(true);
-            const res = await fetchEmailConfigurations(partnerId);
-            // Handle both direct data array and nested data.data array from Laravel Resources accurately
+            const res: any = await fetchEmailConfigurations(partnerId);
             const configList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.data) ? res.data.data : []);
-            
+
             if (configList && configList.length > 0) {
-                setConfigs(configList);
-                const current = configList[0]; // Take the first one for now
+                const current = configList[0];
                 setForm({
                     ...current,
                     enable_custom_configuration: Boolean(current.enable_custom_configuration),
@@ -68,22 +85,22 @@ export default function EmailConfigurationForm() {
         }
     };
 
-    const handleSaveEmail = async (e) => {
+    const handleSaveEmail = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setSaving(true);
             setErrors({});
-            
+
             await saveEmailConfiguration({
                 ...form,
                 email_provider: provider,
                 partner_id: partnerId,
-                is_active: true // Always ensure the saved config is active
+                is_active: true
             });
 
             toast.success('Configuration saved successfully.');
             loadConfigs();
-        } catch (err) {
+        } catch (err: any) {
             if (err?.response?.status === 422) {
                 setErrors(err.response.data.errors || {});
             } else {
@@ -315,3 +332,5 @@ export default function EmailConfigurationForm() {
         </div>
     );
 }
+
+export default EmailConfigurationForm;

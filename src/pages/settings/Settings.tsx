@@ -14,7 +14,9 @@ const Settings: React.FC = () => {
     const getBreadcrumbTitle = () => {
         switch (activeSection) {
             case 'payment': return 'Payment Method';
-            case 'agreement': return 'Agreement Management';
+            case 'agreement': return 'Agreement Builder';
+            case 'general_settings': return 'Email Configuration';
+            case 'branding': return 'Site Branding';
             case 'test_mail': return 'Test Mail';
             case 'microbilt': return 'MicroBilt Config';
             default: return 'Settings';

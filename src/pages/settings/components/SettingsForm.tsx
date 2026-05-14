@@ -6,6 +6,8 @@ import { useAuthStore } from '../../../store/auth/authStore';
 import TestMailForm from './TestMailForm';
 import MicroBiltConfigForm from './MicroBiltConfigForm';
 import StripeConfigForm from './StripeConfigForm';
+import EmailConfigurationForm from './EmailConfigurationForm';
+import BrandingForm from './BrandingForm';
 
 interface SettingsFormProps {
     fetching: boolean;
@@ -37,7 +39,14 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     if (user && (user.is_host == 1 || user.is_host == true)) {
         sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
         sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
+    }
 
+    if (hasPermission('update email configuration settings')) {
+        sections.push({ id: 'email_configuration', label: 'Email Configuration', icon: 'ri-mail-settings-line' });
+    }
+
+    if (hasPermission('update branding settings')) {
+        sections.push({ id: 'branding', label: 'Branding', icon: 'ri-brush-line' });
     }
 
     // Auto-select first available section if the active one isn't available
@@ -125,6 +134,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <TestMailForm />
                 ) : activeSection === 'microbilt' ? (
                     <MicroBiltConfigForm />
+                ) : activeSection === 'email_configuration' ? (
+                    <EmailConfigurationForm />
+                ) : activeSection === 'branding' ? (
+                    <BrandingForm />
                 ) : (
                     <StripeConfigForm />
                 )}
