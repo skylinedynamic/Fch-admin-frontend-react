@@ -14,7 +14,7 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
     return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
   };
 
-  const dynamicLogo = getLogoUrl(settings?.partner_logo);
+  const dynamicLogo = getLogoUrl(settings?.primary_logo, logoImg);
   const siteName = settings?.site_name || APP_CONFIG.name;
   return (
     <div className="auth-page-wrapper pt-5">

@@ -65,12 +65,12 @@ export interface SiteSettingsData {
 export interface SiteSetting extends SiteSettingsData {
     id?: number;
     partner_id?: number;
+    primary_logo?: string;
+    secondary_logo?: string;
+    favicon?: string;
     header_logo?: string;
     footer_logo?: string;
-    partner_logo?: string;
-    favicon?: string;
-    partner_favicon?: string;
-    borrower_favicon?: string;
+    website_favicon?: string;
     social_links?: string | SocialLink[];
     agreement_signing_enabled?: string;
     google_measurement_id?: string;

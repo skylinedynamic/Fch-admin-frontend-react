@@ -100,15 +100,13 @@ const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelec
 };
 
 interface BrandingState {
-    header_logo: string;
-    footer_logo: string;
-    partner_logo: string;
-    borrower_logo: string;
-    partner_favicon: string;
-    borrower_favicon: string;
+    primary_logo: string;
+    secondary_logo: string;
+    favicon: string;
+    site_name: string;
+    site_slogan: string;
     primary_color: string;
     secondary_color: string;
-    site_name: string;
     copyright_text: string;
 }
 
@@ -123,15 +121,13 @@ const BrandingForm: React.FC = () => {
     const [errors, setErrors] = useState<any>({});
 
     const [branding, setBranding] = useState<BrandingState>({
-        header_logo: '',
-        footer_logo: '',
-        partner_logo: '',
-        borrower_logo: '',
-        partner_favicon: '',
-        borrower_favicon: '',
+        primary_logo: '',
+        secondary_logo: '',
+        favicon: '',
+        site_name: '',
+        site_slogan: '',
         primary_color: '#405189',
         secondary_color: '#0ab39c',
-        site_name: '',
         copyright_text: ''
     });
 
@@ -249,51 +245,51 @@ const BrandingForm: React.FC = () => {
                                 {errors.site_name && <div className="invalid-feedback fs-11">{errors.site_name}</div>}
                             </div>
 
-                            <div className="col-md-6">
-                                <BrandingItem
-                                    title="Partner Portal Logo"
-                                    icon="ri-user-settings-line"
-                                    value={branding.partner_logo}
-                                    onSelect={() => { setActiveField('partner_logo'); setShowFileManager(true); }}
-                                    error={errors.partner_logo}
-                                    description="Logo shown in the partner administration dashboard."
-                                    required={true}
-                                    primaryColor={branding.primary_color}
+                            <div className="col-12">
+                                <label className="form-label fw-semibold fs-13">Site Slogan</label>
+                                <input
+                                    type="text"
+                                    className={`form-control ${errors.site_slogan ? 'is-invalid' : ''}`}
+                                    placeholder="Enter your company slogan"
+                                    value={branding.site_slogan}
+                                    onChange={e => setBranding(prev => ({ ...prev, site_slogan: e.target.value }))}
                                 />
-                            </div>
-                            <div className="col-md-6">
-                                <BrandingItem
-                                    title="Borrower Portal Logo"
-                                    icon="ri-user-heart-line"
-                                    value={branding.borrower_logo}
-                                    onSelect={() => { setActiveField('borrower_logo'); setShowFileManager(true); }}
-                                    error={errors.borrower_logo}
-                                    description="Logo shown in the public borrower application portal."
-                                    required={true}
-                                    primaryColor={branding.primary_color}
-                                />
+                                {errors.site_slogan && <div className="invalid-feedback fs-11">{errors.site_slogan}</div>}
                             </div>
 
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <BrandingItem
-                                    title="Partner Favicon"
-                                    icon="ri-global-line"
-                                    value={branding.partner_favicon}
-                                    onSelect={() => { setActiveField('partner_favicon'); setShowFileManager(true); }}
-                                    error={errors.partner_favicon}
-                                    description="Browser tab icon for the partner administration dashboard."
+                                    title="Primary Logo (White Transparent)"
+                                    icon="ri-image-2-line"
+                                    value={branding.primary_logo}
+                                    onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
+                                    error={errors.primary_logo}
+                                    description="Used for dark backgrounds (header, etc)."
                                     required={true}
                                     primaryColor={branding.primary_color}
                                 />
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <BrandingItem
-                                    title="Borrower Favicon"
+                                    title="Secondary Logo (Black Transparent)"
+                                    icon="ri-image-line"
+                                    value={branding.secondary_logo}
+                                    onSelect={() => { setActiveField('secondary_logo'); setShowFileManager(true); }}
+                                    error={errors.secondary_logo}
+                                    description="Used for light backgrounds (Optional - falls back to primary logo)."
+                                    required={false}
+                                    primaryColor={branding.primary_color}
+                                />
+                            </div>
+                            <div className="col-md-4">
+                                <BrandingItem
+                                    title="Site Favicon"
                                     icon="ri-global-line"
-                                    value={branding.borrower_favicon}
-                                    onSelect={() => { setActiveField('borrower_favicon'); setShowFileManager(true); }}
-                                    error={errors.borrower_favicon}
-                                    description="Browser tab icon for the public borrower portal."
+                                    value={branding.favicon}
+                                    onSelect={() => { setActiveField('favicon'); setShowFileManager(true); }}
+                                    error={errors.favicon}
+                                    description="Browser tab icon."
+                                    required={true}
                                     primaryColor={branding.primary_color}
                                 />
                             </div>
