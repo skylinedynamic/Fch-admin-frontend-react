@@ -1,0 +1,1698 @@
+/* ============================================================
+   FCH Admin Dashboard — Full Mobile Responsive CSS
+   FIXED: Sidebar nav gaps (padding-bottom, last-child margin)
+   ONLY @media queries — zero desktop style changes
+   ============================================================ */
+
+
+/* ============================================================
+   BREAKPOINT 1: Tablets & Mobile (max-width: 991.98px)
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* ────────────────────────────────────────────────────────
+       1. BODY & LAYOUT WRAPPER
+    ──────────────────────────────────────────────────────── */
+    body.table-page-fit-active {
+        overflow: auto !important;
+        height: auto !important;
+    }
+
+    body.table-page-fit-active #layout-wrapper {
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    body.table-page-fit-active .main-content {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #layout-wrapper {
+        overflow-x: hidden !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       2. SIDEBAR
+    ──────────────────────────────────────────────────────── */
+
+    .app-menu.navbar-menu {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 0 !important;
+        /* FIX: was 50px — caused bottom gap */
+        z-index: 1050 !important;
+    }
+
+    .app-menu .navbar-brand-box {
+        display: none !important;
+    }
+
+    .vertical-sidebar-enable .app-menu .navbar-brand-box {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 20px 15px !important;
+        height: 110px !important;
+        background: #001f3f !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .app-menu .navbar-brand-box .logo {
+        display: none !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light {
+        display: block !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light .logo-sm {
+        display: none !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-light .logo-lg {
+        display: block !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-lg img {
+        max-width: 180px !important;
+        height: auto !important;
+        max-height: 70px !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+
+    #scrollbar {
+        height: calc(100vh - 110px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .navbar-nav {
+        height: auto !important;
+        padding-bottom: 20px !important;
+        /* FIX: was 120px — caused huge gap between items */
+        overflow: visible !important;
+    }
+
+    .navbar-nav .nav-item {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+        /* FIX: was 50px — caused gap after "Settings" */
+    }
+
+    .navbar-nav .nav-link {
+        display: flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+        padding: 10px 16px !important;
+    }
+
+    .navbar-nav .sub-menu {
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    .sidebar-footer,
+    .menu-bottom,
+    .sidebar-bottom {
+        position: relative !important;
+        bottom: auto !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       3. TOPBAR / HEADER
+    ──────────────────────────────────────────────────────── */
+
+    header#page-topbar {
+        left: 0 !important;
+        width: 100% !important;
+        z-index: 1040 !important;
+    }
+
+    header#page-topbar .navbar-header .navbar-brand-box,
+    header#page-topbar .navbar-header .horizontal-logo,
+    header#page-topbar .navbar-header .logo {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding: 0 10px !important;
+        width: auto !important;
+        min-width: 150px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm {
+        display: none !important;
+    }
+
+    header#page-topbar .navbar-header .logo-lg,
+    header#page-topbar .navbar-header .logo-dark .logo-lg,
+    header#page-topbar .navbar-header .logo-light .logo-lg {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    header#page-topbar .navbar-header .logo-lg img {
+        height: 32px !important;
+        width: auto !important;
+        max-width: 160px !important;
+        display: block !important;
+    }
+
+    .topbar-user,
+    .header-item {
+        padding: 0 6px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       4. PAGE CONTENT AREA
+    ──────────────────────────────────────────────────────── */
+
+    .page-content,
+    .page-content-fit {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: 75px !important;
+
+        /* Increased top padding further */
+    }
+
+    .resource-page-content {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: 0px !important;
+    }
+
+    .container-fluid {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
+
+    .card-header {
+        padding: 12px 10px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        /* Better for wrapping titles */
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+
+    .card-title {
+        font-size: 13px !important;
+        /* Slightly smaller to fit */
+        margin-bottom: 0 !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        flex: 1 !important;
+        /* Take remaining space */
+    }
+
+    .card-title i {
+        font-size: 15px !important;
+    }
+
+    .card-header .flex-shrink-0 {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        padding-top: 2px !important;
+    }
+
+    .page-title-box {
+        padding: 8px 0 !important;
+    }
+
+    .table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+        display: block !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 0 !important;
+    }
+
+    .table-card {
+        margin: 0 !important;
+    }
+
+    .table {
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .dashboard-header {
+        margin-top: 12px !important;
+        margin-bottom: 10px !important;
+        padding: 0 5px !important;
+    }
+
+    .dashboard-header h4 {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+    }
+
+    .dashboard-header p {
+        font-size: 13px !important;
+    }
+
+
+    .dashboard-header .btn,
+    .card-body .btn {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       5. CARDS & GRID ALIGNMENT
+    ──────────────────────────────────────────────────────── */
+
+    /* Ensure uniform column padding so all cards are the same width */
+    .row>[class*="col-"] {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .row {
+        margin-left: -8px !important;
+        margin-right: -8px !important;
+    }
+
+    .card {
+        margin-bottom: 16px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
+    .list-fluid-card {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       6. STATISTICS CARDS
+    ──────────────────────────────────────────────────────── */
+
+    .statistics-card,
+    .card-animate {
+        margin-bottom: 16px !important;
+    }
+
+    .card-animate .fs-22 {
+        font-size: 18px !important;
+    }
+
+    .card-animate .text-muted {
+        font-size: 11px !important;
+    }
+
+    .card-animate .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .card-animate a.text-decoration-underline,
+    .card-animate .cursor-pointer {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+    }
+
+    .card-animate .avatar-title {
+        font-size: 16px !important;
+    }
+
+    /* Table within cards on dashboard */
+    .table thead th {
+        font-size: 10px !important;
+        padding: 8px 5px !important;
+        letter-spacing: 0.1px !important;
+        background-color: #f3f6f9 !important;
+        border-bottom: 1px solid #e9ebec !important;
+    }
+
+    .table tbody td {
+        font-size: 11px !important;
+        padding: 8px 5px !important;
+    }
+
+    /* Fix "No data found" alignment on mobile */
+    .table td.text-center {
+        text-align: left !important;
+        padding-left: 10px !important;
+    }
+
+    .table-nowrap td,
+    .table-nowrap th {
+        white-space: nowrap !important;
+    }
+
+    .badge {
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       7. FILTER ROW
+    ──────────────────────────────────────────────────────── */
+
+    .row.g-3 .col-xxl-3,
+    .row.g-3 .col-xxl-4,
+    .row.g-3 .col-xxl-2 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    .row.g-3 .col-xxl-3:last-child,
+    .row.g-3 .col-xxl-4:last-child {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .employee-filter-dropdown {
+        width: 100% !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       8. DATA TABLE — HORIZONTAL SCROLL
+    ──────────────────────────────────────────────────────── */
+
+    .table-responsive,
+    .table-responsive.table-card {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+        border: none !important;
+    }
+
+    .p-datatable.p-datatable-scrollable {
+        height: auto !important;
+    }
+
+    .p-datatable-wrapper {
+        height: auto !important;
+        max-height: none !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-scrollable-body {
+        height: auto !important;
+        max-height: 55vh !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-scrollable-header,
+    .p-datatable-scrollable-header-box {
+        overflow: hidden !important;
+    }
+
+    .p-datatable-thead>tr>th,
+    .p-datatable-tbody>tr>td {
+        white-space: nowrap !important;
+    }
+
+    .p-datatable-sm .p-datatable-tbody>tr>td,
+    .p-datatable-sm .p-datatable-thead>tr>th {
+        font-size: 13px !important;
+        padding: 8px 10px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       9. PAGINATOR
+       Layout: [<< < 1 > >>] .............. [10 ▾]
+       Pagination left — rows-per-page dropdown right
+    ──────────────────────────────────────────────────────── */
+
+    .p-paginator {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 10px 8px !important;
+        gap: 3px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-last {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages {
+        display: inline-flex !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
+        gap: 3px !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+        border-radius: 4px !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+        text-overflow: clip !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        padding: 0 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        margin-left: auto !important;
+        margin-top: 0 !important;
+        flex-shrink: 0 !important;
+        min-width: 72px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 34px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options.p-dropdown,
+    .p-dropdown.p-paginator-rpp-options {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-width: 72px !important;
+        width: auto !important;
+        height: 34px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        padding: 0 28px 0 10px !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 34px !important;
+        height: 34px !important;
+        min-width: 0 !important;
+        flex: 1 !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 24px !important;
+        min-width: 24px !important;
+        height: 34px !important;
+        flex-shrink: 0 !important;
+        overflow: visible !important;
+    }
+
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       10. BREADCRUMB
+    ──────────────────────────────────────────────────────── */
+
+    .breadcrumb {
+        font-size: 12px !important;
+        flex-wrap: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       11. MODALS
+    ──────────────────────────────────────────────────────── */
+
+    .modal-dialog {
+        margin: 10px !important;
+        max-width: calc(100% - 20px) !important;
+    }
+
+    .modal-body {
+        padding: 16px !important;
+    }
+
+}
+
+
+/* ============================================================
+   BREAKPOINT 2: Small phones (max-width: 576px)
+   ============================================================ */
+@media (max-width: 576px) {
+
+    /* ────────────────────────────────────────────────────────
+       1. LAYOUT & SPACING
+    ──────────────────────────────────────────────────────── */
+
+    .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .page-content,
+    .page-content-fit {
+        padding: 65px 10px 30px 10px !important;
+    }
+
+    .fs-20 {
+        font-size: 17px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       2. PAGE HEADER (title left, button right)
+    ──────────────────────────────────────────────────────── */
+
+    .d-flex.align-items-center.justify-content-between.flex-row {
+        flex-direction: row !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row .flex-grow-1 {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row h4 {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 16px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row .mt-0 {
+        flex-shrink: 0 !important;
+        width: auto !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       3. ACTION BUTTONS
+    ──────────────────────────────────────────────────────── */
+
+    .btn-group {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        justify-content: flex-end !important;
+    }
+
+    .btn-group>.btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        font-size: 13px !important;
+        padding: 6px 10px !important;
+        border-radius: 0.25rem !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       4. FILTER ROW
+    ──────────────────────────────────────────────────────── */
+
+    .row.g-3>[class*="col-"] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+    }
+
+    .row.g-3>[class*="col-"]:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .row.g-3 {
+        --vz-gutter-y: 0.75rem !important;
+        --bs-gutter-y: 0.75rem !important;
+    }
+
+    .employee-filter-dropdown {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+
+    .d-flex.gap-2 .btn {
+        flex: 1 !important;
+        font-size: 13px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       5. CONTACTS PAGE — search + filter stacking
+    ──────────────────────────────────────────────────────── */
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-grow-1 {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0 {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0>.d-flex {
+        width: 100% !important;
+    }
+
+    .card-body>form .d-flex.align-items-center.gap-2.mb-3>.flex-shrink-0>.d-flex>button {
+        flex: 1 !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       6. CARDS
+    ──────────────────────────────────────────────────────── */
+
+    .card-body {
+        padding: 12px 10px !important;
+    }
+
+    .row>.col-xxl-3.col-md-6,
+    .row>[class*="col-md-6"] {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       7. TABLE
+    ──────────────────────────────────────────────────────── */
+
+    .table-responsive,
+    .table-responsive.table-card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .p-datatable-sm .p-datatable-tbody>tr>td,
+    .p-datatable-sm .p-datatable-thead>tr>th {
+        font-size: 12px !important;
+        padding: 7px 8px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       8. PAGINATOR — compact, numbers + dropdown fully visible
+    ──────────────────────────────────────────────────────── */
+
+    .p-paginator {
+        padding: 8px 6px !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next,
+    .p-paginator .p-paginator-last {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page,
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        font-weight: 700 !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+        min-width: 70px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 30px !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options.p-dropdown,
+    .p-dropdown.p-paginator-rpp-options {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-width: 70px !important;
+        width: auto !important;
+        height: 30px !important;
+        overflow: visible !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        padding: 0 26px 0 8px !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 30px !important;
+        height: 30px !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 22px !important;
+        min-width: 22px !important;
+        height: 30px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       9. SIDEBAR
+    ──────────────────────────────────────────────────────── */
+
+    .navbar-nav {
+        padding-bottom: 20px !important;
+        /* FIX: was 140px — caused huge gap between items */
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+        /* FIX: ensure no gap after last item */
+    }
+
+    .app-menu.navbar-menu {
+        padding-bottom: 0 !important;
+        /* FIX: was 80px — caused bottom dead space */
+    }
+
+    #scrollbar {
+        height: calc(100svh - 110px) !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       10. FORMS & INPUTS
+    ──────────────────────────────────────────────────────── */
+
+    .form-control,
+    .form-select,
+    .p-inputtext,
+    .p-dropdown {
+        font-size: 14px !important;
+    }
+
+    .input-group .btn {
+        padding: 6px 10px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       11. BADGES
+    ──────────────────────────────────────────────────────── */
+
+    .badge {
+        font-size: 11px !important;
+        padding: 3px 7px !important;
+    }
+
+
+    /* ────────────────────────────────────────────────────────
+       12. MODALS
+    ──────────────────────────────────────────────────────── */
+
+    .modal-dialog {
+        margin: 8px !important;
+        max-width: calc(100% - 16px) !important;
+    }
+
+    .modal-footer {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .modal-footer .btn {
+        width: 100% !important;
+    }
+
+}
+
+
+/* ============================================================
+   BREAKPOINT 3: Very small phones (max-width: 400px)
+   ============================================================ */
+@media (max-width: 400px) {
+
+    .container-fluid {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .card-body {
+        padding: 10px 8px !important;
+    }
+
+    .d-flex.align-items-center.justify-content-between.flex-row h4 {
+        font-size: 15px !important;
+    }
+
+    .btn-group>.btn {
+        font-size: 12px !important;
+        padding: 5px 8px !important;
+    }
+
+    /* Page number buttons */
+    .p-paginator .p-paginator-pages .p-paginator-page,
+    .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        font-size: 11px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-prev,
+    .p-paginator .p-paginator-next,
+    .p-paginator .p-paginator-last {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        font-size: 11px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options,
+    .p-paginator .p-dropdown.p-paginator-rpp-options,
+    .p-paginator .p-inputwrapper {
+        min-width: 65px !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 26px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-label,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-label {
+        font-size: 11px !important;
+        padding: 0 22px 0 7px !important;
+        line-height: 26px !important;
+        height: 26px !important;
+    }
+
+    .p-paginator .p-paginator-rpp-options .p-dropdown-trigger,
+    .p-dropdown.p-paginator-rpp-options .p-dropdown-trigger {
+        width: 20px !important;
+        min-width: 20px !important;
+        height: 26px !important;
+    }
+
+    /* Stats cards — single column on tiny phones */
+    .row>.col-xxl-3.col-md-6,
+    .row>[class*="col-md-6"] {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Sidebar — minimal bottom padding on tiny phones */
+    .navbar-nav {
+        padding-bottom: 10px !important;
+    }
+
+    .navbar-nav .nav-item:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .app-menu.navbar-menu {
+        padding-bottom: 0 !important;
+    }
+
+}
+
+
+/* ============================================================
+   13. PRIME REACT COMPONENTS (DATEPICKER)
+   ============================================================ */
+
+/* Base Styles (Migrated from datepicker.css) */
+.custom-datepicker .p-calendar {
+    display: flex !important;
+    width: 100% !important;
+    height: 38px !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.custom-datepicker .p-inputtext {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    border-top-left-radius: 6px !important;
+    border-bottom-left-radius: 6px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border: 1px solid #ced4da !important;
+    border-right: none !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    color: #495057;
+    background-color: #fff;
+    margin: 0 !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.custom-datepicker .p-calendar:not(.p-calendar-disabled).p-focus>.p-inputtext,
+.custom-datepicker .p-calendar:focus-within .p-inputtext {
+    border-color: #405189 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger {
+    flex: 0 0 40px !important;
+    height: 100% !important;
+    background: #f3f6f9 !important;
+    border: 1px solid #ced4da !important;
+    border-left: 1px solid #eff2f7 !important;
+    border-top-right-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    color: #405189 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.custom-datepicker .p-calendar:focus-within .p-datepicker-trigger {
+    border-color: #405189 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger:hover {
+    background: #e9ebec !important;
+    color: #354474 !important;
+}
+
+.custom-datepicker .p-datepicker-trigger .p-button-icon {
+    font-size: 1rem !important;
+}
+
+.custom-datepicker .p-datepicker {
+    border: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: inherit;
+    min-width: 280px;
+}
+
+.custom-datepicker .p-datepicker-header {
+    background-color: #405189;
+    color: #ffffff;
+    padding: 0.6rem;
+    border-bottom: none;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-title {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev,
+.custom-datepicker .p-datepicker-header .p-datepicker-next {
+    color: #ffffff;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+}
+
+.custom-datepicker .p-datepicker-header .p-datepicker-prev:hover,
+.custom-datepicker .p-datepicker-header .p-datepicker-next:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.custom-datepicker table th {
+    color: #405189;
+    background-color: #f3f6f9;
+    padding: 0.4rem;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.custom-datepicker table td {
+    padding: 0.2rem;
+}
+
+.custom-datepicker table td>span {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.custom-datepicker table td>span.p-highlight {
+    background-color: #405189;
+    color: #ffffff;
+}
+
+.custom-datepicker .p-datepicker-today>span {
+    background-color: #f3f6f9;
+    color: #405189;
+    font-weight: bold;
+    border: 1px solid #405189;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .custom-datepicker .p-calendar {
+        height: 36px !important;
+    }
+
+    .custom-datepicker .p-inputtext {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-trigger {
+        flex: 0 0 36px !important;
+    }
+
+    .custom-datepicker .p-datepicker {
+        min-width: 250px !important;
+    }
+
+    .custom-datepicker table td>span {
+        width: 1.8rem !important;
+        height: 1.8rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header {
+        padding: 0.4rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header .p-datepicker-title {
+        font-size: 0.85rem !important;
+    }
+
+    .custom-datepicker .p-datepicker-header .p-datepicker-prev,
+    .custom-datepicker .p-datepicker-header .p-datepicker-next {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .custom-datepicker .p-datepicker {
+        min-width: 230px !important;
+    }
+
+    .custom-datepicker table td>span {
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+        font-size: 0.7rem !important;
+    }
+}
+
+/* Force Parents to allow sticky/fixed positioning - Accurate fix */
+#layout-wrapper,
+.main-content {
+    overflow: visible !important;
+}
+
+/* Reliable Fixed Header for Mobile Navigation */
+@media (max-width: 991px) {
+    .page-subheader-sticky {
+        position: fixed !important;
+        top: 70px !important;
+        /* Standard Velzon Topbar Height */
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1040 !important;
+        /* Stay above activities and modals */
+        background-color: #f3f3f9 !important;
+        padding: 12px 1.5rem !important;
+        margin: 0 !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .page-subheader-sticky+.row,
+    .page-subheader-sticky+form,
+    .page-subheader-sticky+div {
+        margin-top: 100px !important;
+    }
+
+    .breadcrumb {
+        font-size: 11px !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding-bottom: 5px !important;
+        margin-bottom: 15px !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .page-actions {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+        margin-top: 5px !important;
+    }
+
+    .page-actions .btn {
+        flex: 1 !important;
+        padding: 10px 5px !important;
+        font-size: 13px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+.page-content,
+.page-content-fit {
+    padding: 60px 12px 20px 12px !important;
+}
+
+/* Content offset for fixed mobile header */
+.page-content-fit .container-fluid {
+    padding-top: 80px !important;
+}
+
+/* Mobile Fixed subheader */
+@media (max-width: 991.98px) {
+    .mobile-sticky-header {
+        position: fixed !important;
+        top: 60px !important;
+        /* Fixed below the mobile topbar */
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1001 !important;
+        background-color: #f3f3f9 !important;
+        padding: 10px 20px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06) !important;
+    }
+}
+
+/* ================================================================
+   PARTNERS & CLIENTS PAGES — Mobile margin-top fix
+   Ensures statistics cards don't get hidden behind the sticky header.
+   ================================================================ */
+
+@media (max-width: 991px) {
+
+    .partner-section,
+    .client-section,
+    .commission-section,
+    .change-request-section,
+    .funding-section,
+    .subscription-section,
+    .pre-qual-section,
+    .blog-section,
+    .payment-section,
+    .invoice-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
+    .lead-section {
+        margin-top: 80px !important;
+    }
+
+    .resource-section {
+        margin-top: 45px !important;
+    }
+
+    .appointment-section {
+        margin-top: 45px !important;
+    }
+
+    .appointments-page .upcoming-event-list-scroll {
+        height: 230px !important;
+    }
+
+    /* 2 COLUMNS FOR STATISTICS CARDS (PARTNERS/CLIENTS/LEADS LIST) */
+    .partner-section,
+    .client-section,
+    .commission-section,
+    .change-request-section,
+    .subscription-section,
+    .blog-section,
+    .payment-section,
+    .invoice-section,
+    .pre-qual-section,
+    .tier-section,
+    .verification-section,
+    .credit-account-section,
+    .lead-section,
+    .resource-section .row.g-2 {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+        margin-left: -2px !important;
+        margin-right: -2px !important;
+    }
+
+    .partner-section>div,
+    .client-section>div,
+    .lead-section>div,
+    .commission-section>div,
+    .change-request-section>div,
+    .blog-section>div,
+    .funding-section>div,
+    .subscription-section>div,
+    .payment-section>div,
+    .invoice-section>div,
+    .pre-qual-section>div,
+    .partner-section [class*="col-"],
+    .client-section [class*="col-"],
+    .lead-section [class*="col-"],
+    .commission-section [class*="col-"],
+    .change-request-section [class*="col-"],
+    .funding-section [class*="col-"],
+    .subscription-section [class*="col-"],
+    .payment-section [class*="col-"],
+    .invoice-section [class*="col-"],
+    .pre-qual-section [class*="col-"],
+    .blog-section [class*="col-"],
+    .resource-section .row.g-2>[class*="col-"] {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .partner-section .card-body,
+    .client-section .card-body {
+        padding: 12px !important;
+    }
+
+    .partner-section .avatar-sm,
+    .client-section .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .partner-section .ms-3,
+    .client-section .ms-3 {
+        margin-left: 0.5rem !important;
+    }
+
+    .partner-section h4,
+    .client-section h4 {
+        font-size: 16px !important;
+    }
+
+    .partner-section .kpi-title,
+    .client-section .kpi-title,
+    .resource-section .card-body {
+        padding: 10px 8px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 34px !important;
+        height: 34px !important;
+        margin-right: 8px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 16px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 18px !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 10px !important;
+    }
+
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
+    }
+}
+
+/* Profile Metrics 2-Column Responsive Fix — Robust Grid */
+@media (max-width: 991px) {
+    .metrics-strip {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 auto 10px auto !important;
+        width: 100% !important;
+    }
+
+    .metrics-strip .metrics-item {
+        flex: 0 0 calc(50% - 4px) !important;
+        width: calc(50% - 4px) !important;
+        max-width: calc(50% - 4px) !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 10px 8px !important;
+        box-sizing: border-box !important;
+    }
+
+    .metrics-strip .metrics-item i {
+        font-size: 1.1rem !important;
+        margin-right: 6px !important;
+    }
+
+    .metrics-strip .metrics-content .metrics-label {
+        font-size: 10px !important;
+        color: #878a99 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .metrics-strip .metrics-content .metrics-value {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+}
+
+/* ================================================================
+   SITE SETTINGS PAGE — Mobile margin-top fix
+   The sticky subheader is position:fixed so it's out of normal flow.
+   The form/skeleton directly after it needs explicit margin-top to
+   push content below the fixed header on mobile devices.
+
+   The .page-subheader-sticky + .row rule above does NOT apply here
+   because SiteSettings renders <form> / <div class="mt-n3"> directly,
+   NOT a .row, after the sticky header.
+   ================================================================ */
+
+/* Tablets (576px–991px): sticky header = ~1 row → ~80px tall */
+@media (max-width: 991px) and (min-width: 576px) {
+    #site-settings-form {
+        margin-top: 80px !important;
+    }
+
+    /* Loading skeleton state */
+    .page-content .container-fluid>.mt-n3 {
+        margin-top: 80px !important;
+    }
+
+    /* Inner negative margin inside form pulls content up — neutralise it */
+    #site-settings-form>.mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 12px !important;
+    }
+}
+
+/* Small phones (<576px): button wraps → sticky header grows to ~2 rows (~130px) */
+@media (max-width: 575.98px) {
+    #site-settings-form {
+        margin-top: 120px !important;
+    }
+
+    .page-content .container-fluid>.mt-n3 {
+        margin-top: 168px !important;
+    }
+
+
+    /* .page-content .container-fluid>.mt-n3:first-child {
+        margin-top: 168px !important;
+    } */
+
+    /* Neutralise mt-n3 that pulls form content upward into the fixed header */
+    #site-settings-form>.mt-n3 {
+        margin-top: 0 !important;
+        padding-top: 14px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   RESOURCE PAGE SPECIFIC REFINEMENTS
+   Ensures 2-column layout with larger cards and reduced gaps.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .resource-section .row.g-2 {
+        margin-left: -5px !important;
+        margin-right: -5px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    .resource-section .row.g-2>[class*="col-"] {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .resource-section .card {
+        margin-bottom: 0 !important;
+    }
+
+    .resource-section .card-body {
+        padding: 16px 12px !important;
+    }
+
+    .resource-section .avatar-md {
+        width: 44px !important;
+        height: 44px !important;
+        margin-right: 12px !important;
+    }
+
+    .resource-section .resource-card-icon {
+        font-size: 22px !important;
+    }
+
+    .resource-section h4 {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+
+    .resource-section p.text-muted {
+        font-size: 11px !important;
+        margin-bottom: 3px !important;
+        letter-spacing: 0.2px !important;
+    }
+
+    /* Training Academy Mobile Height Fix */
+    .resource-section .scrollable-container-training {
+        height: 280px !important;
+        min-height: 280px !important;
+    }
+}
+
+/* ────────────────────────────────────────────────────────
+   USERS PAGE SPECIFIC REFINEMENTS
+   Ensures the search box and filters are not hidden behind
+   the fixed mobile header.
+   ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+
+    .user-section .row-table-fit,
+    .employee-section .row-table-fit {
+        margin-top: 90px !important;
+    }
+
+    .user-section .card,
+    .employee-section .card {
+        margin-bottom: 10px !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE-SUBHEADER-STICKY MOBILE FIXES
+   For detail/form pages (Site Settings, Blog Edit, etc.)
+   The sticky header is fixed on mobile, so we need to push
+   the form content down to prevent it hiding behind it.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+
+
+    .site-settings-section form.mt-n3,
+    .site-settings-section div.mt-n3 {
+        margin-top: 0 !important;
+    }
+
+    /* Blog Edit — reduce gap between sticky header and first card */
+    .blog-edit-section .container-fluid {
+        padding-top: 90px !important;
+    }
+
+    .blog-edit-section .row.mt-n3 {
+        margin-top: 0 !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SEO SETTINGS PAGE MOBILE FIXES
+   Ensures search bar and table are visible below the fixed
+   mobile sticky header.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+    .seo-section .row-table-fit {
+        margin-top: 85px !important;
+    }
+
+    .seo-section .card {
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .site-settings-section {
+        padding: 85px 12px 20px 2px !important;
+        margin-top: -14px !important;
+    }
+}

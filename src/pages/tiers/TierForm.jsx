@@ -323,7 +323,7 @@ export default function TierForm() {
                     </div>
                 </div>
 
-                <div className="row">
+                <div className="row tier-section">
                     <div className="col-xxl-12">
                         <div className="card">
                             <div className="card-header">

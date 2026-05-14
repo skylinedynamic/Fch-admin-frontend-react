@@ -218,7 +218,7 @@ export default function CreditAccountsList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -244,7 +244,7 @@ export default function CreditAccountsList() {
                     </div>
                 </div>
 
-                <div className="row row-table-fit">
+                <div className="row row-table-fit credit-account-section">
                     <div className="col-12">
                         <div className="card">
                             <div className="card-body list-fluid-card">

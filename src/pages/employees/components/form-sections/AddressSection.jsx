@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { parseDate } from '../../../../utils/formatters';
 import { formatPhoneNumber } from '../../../../utils/formatters';
 
@@ -84,20 +85,24 @@ export default function AddressSection({
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Joining Date</label>
-                    <Flatpickr
-                        options={{ dateFormat: "d M, Y" }}
-                        value={parseDate(employee.joining_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            onChange({ target: { name: "joining_date", value: dateString } });
-                        }}
-                        className="form-control"
-                        placeholder="Select date"
-                        readOnly
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(employee.joining_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                onChange({ target: { name: "joining_date", value: dateString } });
+                            }}
+                            dateFormat="dd M, yy"
+                            placeholder="Select date"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                 </div>
             </div>
 

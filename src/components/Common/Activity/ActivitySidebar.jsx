@@ -315,14 +315,14 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
     return (
         <div className="card">
             {/* Card Header */}
-            <div className="card-header px-2 py-2 align-items-center justify-content-between d-flex">
-                <h4 style={{ padding: '8px 0px' }} className="card-title mb-0 me-2">
+            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2">
+                <h4 className="card-title mb-0">
                     <i className="ri-history-line align-middle me-2"></i>Activity
                 </h4>
-                <div className="d-flex flex-wrap gap-2 chip-actions">
+                <div className="d-flex gap-2 chip-actions w-100 w-sm-auto justify-content-center justify-content-sm-end">
                     <button
                         type="button"
-                        className="btn btn-light btn-sm"
+                        className="btn btn-light btn-sm text-nowrap"
                         data-bs-toggle="modal"
                         data-bs-target="#emailComposeModal"
                     >
@@ -330,7 +330,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                     </button>
                     <button
                         type="button"
-                        className="btn btn-light btn-sm"
+                        className="btn btn-light btn-sm text-nowrap"
                         data-bs-toggle="modal"
                         data-bs-target="#activityCreateModal"
                     >

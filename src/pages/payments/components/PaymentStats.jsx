@@ -36,7 +36,7 @@ export default function PaymentStats({ stats, loading }) {
 
     if (loading && !stats) {
         return (
-            <div className="row">
+            <div className="row payment-section">
                 {config.map((_, index) => (
                     <StatisticsCardSkeleton key={`skeleton-${index}`} />
                 ))}
@@ -45,7 +45,7 @@ export default function PaymentStats({ stats, loading }) {
     }
 
     return (
-        <div className="row">
+        <div className="row payment-section">
             {config.map((item, index) => (
                 <StatisticsCard
                     key={`stat-${index}`}

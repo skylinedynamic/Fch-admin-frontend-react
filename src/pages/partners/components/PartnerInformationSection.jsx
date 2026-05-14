@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
 import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../config/partnerTypeOptions';
@@ -130,8 +131,8 @@ export default function PartnerInformationSection({
         <>
             {/* Profile Image */}
             <div className="col-lg-12">
-                <div className="card">
-                    <div className="profile-user position-relative d-inline-block mx-auto mb-4">
+                <div className="card mt-3 mt-lg-0">
+                    <div className="profile-user position-relative d-inline-block mx-auto mb-4 mt-3 mt-lg-2">
                         <img
                             src={getImageSrc()}
                             className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
@@ -172,7 +173,7 @@ export default function PartnerInformationSection({
                     )}
 
                     <div className="text-center mb-3">
-                        <span className="badge bg-light text-muted border">
+                        <span className="badge bg-light text-muted border text-wrap lh-base px-3 py-2" style={{ whiteSpace: 'normal' }}>
                             <i className="ri-information-line me-1"></i>
                             Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
                         </span>
@@ -405,24 +406,28 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Joining Date - Flatpickr */}
+            {/* Joining Date - PrimeReact Calendar with Custom Styling */}
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Joining Date</label>
-                    <Flatpickr
-                        options={{ dateFormat: "d M, Y" }}
-                        value={parseDate(formData.joining_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "joining_date", value: dateString } });
-                        }}
-                        className="form-control"
-                        placeholder="Select date"
-                        readOnly
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.joining_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "joining_date", value: dateString } });
+                            }}
+                            dateFormat="dd M, yy"
+                            placeholder="Select date"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                 </div>
             </div>
 

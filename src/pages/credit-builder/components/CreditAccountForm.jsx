@@ -190,7 +190,7 @@ export default function CreditAccountForm() {
                     </div>
                 ) : (
                     <form id="credit-account-form" onSubmit={handleSubmit}>
-                        <div className="row">
+                        <div className="row credit-account-section">
                             <div className="col-lg-8">
                                 <div className="card shadow-sm">
                                     <div className="card-header border-bottom-dashed">

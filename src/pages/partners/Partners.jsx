@@ -280,12 +280,12 @@ export default function Partners() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header mirrored from Clients.jsx */}
-                <div className="row pb-1">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Partners</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item active" aria-current="page">Partners</li>
@@ -324,7 +324,7 @@ export default function Partners() {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="row">
+                <div className="row partner-section">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

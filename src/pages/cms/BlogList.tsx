@@ -165,7 +165,7 @@ export default function BlogList() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header with Breadcrumbs */}
-                <div className="row pb-1">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
@@ -207,7 +207,7 @@ export default function BlogList() {
                 </div>
 
                 {/* Statistics Cards with Skeleton */}
-                <div className="row">
+                <div className="row blog-section">
                     {isLoading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

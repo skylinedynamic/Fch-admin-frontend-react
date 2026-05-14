@@ -193,7 +193,7 @@ const Profile = () => {
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">My Profile</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item">Settings</li>

@@ -166,17 +166,17 @@ export default function CreateRole() {
       <div className="container-fluid">
         <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Create Roles &amp; Permissions</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <nav aria-label="breadcrumb" className="d-block">
                   <ol className="breadcrumb m-0">
                     <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                     <li className="breadcrumb-item active" aria-current="page">Create Roles &amp; Permissions</li>
                   </ol>
                 </nav>
               </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-0">
+              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                 <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
                   <i className="ri-arrow-left-line align-middle me-1"></i> Back
                 </button>
