@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dropdown } from 'primereact/dropdown';
+import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { smtpEncryptionOptions } from '../../../config/emailConfiguration';
 import {
     fetchEmailConfigurations,
@@ -10,6 +10,8 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
+import emailConfigLogo from "../../../../assets/images/email_config_logo.png";
 
 interface EmailFormState {
     enable_custom_configuration: boolean;
@@ -38,11 +40,13 @@ const EmailConfigurationForm: React.FC = () => {
 
     const [fetching, setFetching] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
+    const [showModal, setShowModal] = useState<boolean>(false);
+    const [pendingProvider, setPendingProvider] = useState<string | null>(null);
     const [provider, setProvider] = useState<string>('smtp');
     const [errors, setErrors] = useState<any>({});
 
     const [form, setForm] = useState<EmailFormState>({
-        enable_custom_configuration: false,
+        enable_custom_configuration: true,
         site_name: '',
         email_provider: 'smtp',
         smtp_driver: 'smtp',
@@ -74,7 +78,7 @@ const EmailConfigurationForm: React.FC = () => {
                 const current = configList[0];
                 setForm({
                     ...current,
-                    enable_custom_configuration: Boolean(current.enable_custom_configuration),
+                    enable_custom_configuration: true,
                     is_active: Boolean(current.is_active)
                 });
                 setProvider(current.email_provider || 'smtp');
@@ -87,6 +91,27 @@ const EmailConfigurationForm: React.FC = () => {
         }
     };
 
+    const handleProviderChangeRequest = (newProvider: string) => {
+        if (newProvider !== provider) {
+            setPendingProvider(newProvider);
+            setShowModal(true);
+        }
+    };
+
+    const confirmProviderChange = () => {
+        if (pendingProvider) {
+            setProvider(pendingProvider);
+            setErrors({});
+        }
+        setShowModal(false);
+        setPendingProvider(null);
+    };
+
+    const cancelProviderChange = () => {
+        setShowModal(false);
+        setPendingProvider(null);
+    };
+
     const handleSaveEmail = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -97,6 +122,7 @@ const EmailConfigurationForm: React.FC = () => {
                 ...form,
                 email_provider: provider,
                 partner_id: partnerId,
+                enable_custom_configuration: true,
                 is_active: true
             });
 
@@ -117,12 +143,12 @@ const EmailConfigurationForm: React.FC = () => {
     if (fetching) return <FormLoader count={4} colClass="col-12" />;
 
     return (
-        <div className="animate__animated animate__fadeIn">
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-header bg-white border-bottom py-3 d-flex align-items-center gap-3">
+        <>
+            <div className="card">
+                <div className="card-header d-flex align-items-center gap-3 bg-white border-bottom py-3">
                     <div className="avatar-sm flex-shrink-0">
                         <div className="avatar-title bg-primary-subtle text-primary rounded fs-20">
-                            <i className="ri-mail-settings-line"></i>
+                            <i className="ri-mail-send-line"></i>
                         </div>
                     </div>
                     <div>
@@ -132,208 +158,285 @@ const EmailConfigurationForm: React.FC = () => {
                 </div>
 
                 <div className="card-body p-4">
-                    <form onSubmit={handleSaveEmail}>
-                        {/* CUSTOM CONFIG TOGGLE */}
-                        <div className="mb-4 pb-3 border-bottom">
-                            <div className="form-check form-switch form-switch-md mb-2">
-                                <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    id="enable_custom_configuration"
-                                    checked={form.enable_custom_configuration}
-                                    onChange={(e) => setForm({ ...form, enable_custom_configuration: e.target.checked })}
-                                />
-                                <label className="form-check-label fw-semibold fs-14" htmlFor="enable_custom_configuration">
-                                    Enable Custom Email Configuration
-                                </label>
-                            </div>
-                            <p className="text-muted fs-12 mb-0">
-                                If disabled, the system will use the host partner's default mail server.
+                    <div className="d-flex align-items-center bg-info-subtle border border-info border-opacity-25 border-dashed rounded-3 p-3 mb-4">
+                        <div className="flex-shrink-0 me-4">
+                            <img src={emailConfigLogo} alt="Email Config Logo" style={{ height: '55px', objectFit: 'contain' }} />
+                        </div>
+                        <div className="flex-grow-1">
+                            <h6 className="mb-1 text-dark fw-semibold fs-14">Transactional Email Service</h6>
+                            <p className="text-muted mb-0 fs-13">
+                                Configure your system's outbound mail server. Connect via SMTP or AWS SES to ensure reliable delivery of receipts, notifications, and system alerts directly to your clients.
                             </p>
                         </div>
+                    </div>
 
-                        {form.enable_custom_configuration && (
-                            <div className="animate__animated animate__fadeIn">
-                                {/* PROVIDER TABS */}
-                                <div className="mb-4">
-                                    <label className="form-label fw-semibold fs-13 text-muted text-uppercase mb-2">Email Provider</label>
-                                    <div className="d-flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setProvider('smtp');
-                                                setErrors({});
-                                            }}
-                                            className={`btn btn-sm px-4 ${provider === 'smtp' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                        >
-                                            <i className="ri-server-line me-1"></i> SMTP
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setProvider('aws_ses');
-                                                setErrors({});
-                                            }}
-                                            className={`btn btn-sm px-4 ${provider === 'aws_ses' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                        >
-                                            <i className="ri-amazon-line me-1"></i> AWS SES
-                                        </button>
+                    <form onSubmit={handleSaveEmail}>
+                        <div className="animate__animated animate__fadeIn">
+                            {/* PROVIDER SELECTION BOX (MICROBILT STYLE) */}
+                                <div className="mb-4 bg-primary-subtle rounded-3 p-3">
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <h6 className="mb-1 fw-bold fs-14 text-dark">Email Provider</h6>
+                                            <p className="text-muted mb-0 fs-13">
+                                                Currently configuring <strong>{provider === 'aws_ses' ? 'AWS SES' : 'SMTP'}</strong> configuration.
+                                            </p>
+                                        </div>
+                                        <div style={{ minWidth: '180px' }}>
+                                            <Dropdown
+                                                value={provider}
+                                                options={[
+                                                    { label: '📧 SMTP Server', value: 'smtp' },
+                                                    { label: '🚀 AWS SES', value: 'aws_ses' }
+                                                ]}
+                                                onChange={(e: DropdownChangeEvent) => handleProviderChangeRequest(e.value)}
+                                                placeholder="Select Provider"
+                                                className="w-100"
+                                                disabled={saving}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* SENDER INFO */}
-                                <div className="row g-3 mb-4">
+                                <div className="row g-4 mb-4">
                                     <div className="col-md-6">
-                                        <label className="form-label fs-13 fw-medium">From Address <span className="text-danger">*</span></label>
-                                        <input
-                                            type="email"
-                                            className={`form-control ${errors.from_address ? 'is-invalid' : ''}`}
-                                            value={form.from_address}
-                                            onChange={(e) => setForm({ ...form, from_address: e.target.value })}
-                                            placeholder="e.g. no-reply@yourdomain.com"
-                                        />
-                                        {errors.from_address && <div className="invalid-feedback">{errors.from_address}</div>}
+                                        <div className="input-group">
+                                            <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                From Address <span className="text-danger ms-1">*</span>
+                                            </span>
+                                            <input
+                                                type="email"
+                                                className={`form-control fs-14 ${errors.from_address ? 'is-invalid border-danger' : ''}`}
+                                                value={form.from_address}
+                                                onChange={(e) => setForm({ ...form, from_address: e.target.value })}
+                                                placeholder="no-reply@domain.com"
+                                                style={{ boxShadow: 'none' }}
+                                            />
+                                        </div>
+                                        {errors.from_address && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.from_address}</div>}
                                     </div>
                                     <div className="col-md-6">
-                                        <label className="form-label fs-13 fw-medium">From Name <span className="text-danger">*</span></label>
-                                        <input
-                                            type="text"
-                                            className={`form-control ${errors.from_name ? 'is-invalid' : ''}`}
-                                            value={form.from_name}
-                                            onChange={(e) => setForm({ ...form, from_name: e.target.value })}
-                                            placeholder="e.g. Your Company Name"
-                                        />
-                                        {errors.from_name && <div className="invalid-feedback">{errors.from_name}</div>}
+                                        <div className="input-group">
+                                            <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                From Name <span className="text-danger ms-1">*</span>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className={`form-control fs-14 ${errors.from_name ? 'is-invalid border-danger' : ''}`}
+                                                value={form.from_name}
+                                                onChange={(e) => setForm({ ...form, from_name: e.target.value })}
+                                                placeholder="Your Company Name"
+                                                style={{ boxShadow: 'none' }}
+                                            />
+                                        </div>
+                                        {errors.from_name && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.from_name}</div>}
                                     </div>
                                 </div>
 
                                 {/* SMTP SETTINGS */}
                                 {provider === 'smtp' && (
-                                    <div className="row g-3 mb-4 animate__animated animate__fadeIn">
+                                    <div className="row g-4 mb-4 animate__animated animate__fadeIn">
                                         <div className="col-md-9">
-                                            <label className="form-label fs-13 fw-medium">SMTP Host <span className="text-danger">*</span></label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${errors.smtp_host ? 'is-invalid' : ''}`}
-                                                value={form.smtp_host}
-                                                onChange={(e) => setForm({ ...form, smtp_host: e.target.value })}
-                                                placeholder="e.g. smtp.mailtrap.io"
-                                            />
-                                            {errors.smtp_host && <div className="invalid-feedback">{errors.smtp_host}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    SMTP Host <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className={`form-control fs-14 ${errors.smtp_host ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.smtp_host}
+                                                    onChange={(e) => setForm({ ...form, smtp_host: e.target.value })}
+                                                    placeholder="smtp.mailtrap.io"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.smtp_host && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.smtp_host}</div>}
                                         </div>
                                         <div className="col-md-3">
-                                            <label className="form-label fs-13 fw-medium">Port <span className="text-danger">*</span></label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${errors.smtp_port ? 'is-invalid' : ''}`}
-                                                value={form.smtp_port}
-                                                onChange={(e) => setForm({ ...form, smtp_port: e.target.value })}
-                                                placeholder="e.g. 587"
-                                            />
-                                            {errors.smtp_port && <div className="invalid-feedback">{errors.smtp_port}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '70px', justifyContent: 'center' }}>
+                                                    Port <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className={`form-control fs-14 ${errors.smtp_port ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.smtp_port}
+                                                    onChange={(e) => setForm({ ...form, smtp_port: e.target.value })}
+                                                    placeholder="587"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.smtp_port && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.smtp_port}</div>}
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label fs-13 fw-medium">Encryption <span className="text-danger">*</span></label>
-                                            <Dropdown
-                                                value={form.smtp_encryption}
-                                                options={smtpEncryptionOptions}
-                                                onChange={(e) => setForm({ ...form, smtp_encryption: e.value })}
-                                                placeholder="Select Encryption"
-                                                className={`w-100 ${errors.smtp_encryption ? 'p-invalid' : ''}`}
-                                            />
-                                            {errors.smtp_encryption && <div className="invalid-feedback d-block">{errors.smtp_encryption}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Encryption <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <div className="flex-grow-1">
+                                                    <Dropdown
+                                                        value={form.smtp_encryption}
+                                                        options={smtpEncryptionOptions}
+                                                        onChange={(e: DropdownChangeEvent) => setForm({ ...form, smtp_encryption: e.value })}
+                                                        placeholder="Select Encryption"
+                                                        className={`w-100 rounded-start-0 ${errors.smtp_encryption ? 'p-invalid' : ''}`}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {errors.smtp_encryption && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.smtp_encryption}</div>}
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label fs-13 fw-medium">Username <span className="text-danger">*</span></label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${errors.smtp_username ? 'is-invalid' : ''}`}
-                                                value={form.smtp_username}
-                                                onChange={(e) => setForm({ ...form, smtp_username: e.target.value })}
-                                                placeholder="e.g. 333b2a141588f8"
-                                            />
-                                            {errors.smtp_username && <div className="invalid-feedback">{errors.smtp_username}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Username <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className={`form-control fs-14 ${errors.smtp_username ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.smtp_username}
+                                                    onChange={(e) => setForm({ ...form, smtp_username: e.target.value })}
+                                                    placeholder="user@domain.com"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.smtp_username && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.smtp_username}</div>}
                                         </div>
                                         <div className="col-12">
-                                            <label className="form-label fs-13 fw-medium">Password <span className="text-danger">*</span></label>
-                                            <input
-                                                type="password"
-                                                className={`form-control ${errors.smtp_password ? 'is-invalid' : ''}`}
-                                                value={form.smtp_password}
-                                                onChange={(e) => setForm({ ...form, smtp_password: e.target.value })}
-                                                placeholder="e.g. e5d9ae5ad4cd00"
-                                            />
-                                            {errors.smtp_password && <div className="invalid-feedback">{errors.smtp_password}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Password <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="password"
+                                                    className={`form-control fs-14 ${errors.smtp_password ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.smtp_password}
+                                                    onChange={(e) => setForm({ ...form, smtp_password: e.target.value })}
+                                                    placeholder="........"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.smtp_password && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.smtp_password}</div>}
                                         </div>
                                     </div>
                                 )}
 
                                 {/* AWS SETTINGS */}
                                 {provider === 'aws_ses' && (
-                                    <div className="row g-3 mb-4 animate__animated animate__fadeIn">
+                                    <div className="row g-4 mb-4 animate__animated animate__fadeIn">
                                         <div className="col-md-6">
-                                            <label className="form-label fs-13 fw-medium">Access Key <span className="text-danger">*</span></label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${errors.aws_access_key ? 'is-invalid' : ''}`}
-                                                value={form.aws_access_key}
-                                                onChange={(e) => setForm({ ...form, aws_access_key: e.target.value })}
-                                                placeholder="e.g. AKIAEXAMPLE123456"
-                                            />
-                                            {errors.aws_access_key && <div className="invalid-feedback">{errors.aws_access_key}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Access Key <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className={`form-control fs-14 ${errors.aws_access_key ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.aws_access_key}
+                                                    onChange={(e) => setForm({ ...form, aws_access_key: e.target.value })}
+                                                    placeholder="AKIAEXAMPLE..."
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.aws_access_key && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.aws_access_key}</div>}
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label fs-13 fw-medium">Secret Key <span className="text-danger">*</span></label>
-                                            <input
-                                                type="password"
-                                                className={`form-control ${errors.aws_secret_key ? 'is-invalid' : ''}`}
-                                                value={form.aws_secret_key}
-                                                onChange={(e) => setForm({ ...form, aws_secret_key: e.target.value })}
-                                                placeholder="e.g. abcdEXAMPLEsecretKEY1234567890"
-                                            />
-                                            {errors.aws_secret_key && <div className="invalid-feedback">{errors.aws_secret_key}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Secret Key <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="password"
+                                                    className={`form-control fs-14 ${errors.aws_secret_key ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.aws_secret_key}
+                                                    onChange={(e) => setForm({ ...form, aws_secret_key: e.target.value })}
+                                                    placeholder="........"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.aws_secret_key && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.aws_secret_key}</div>}
                                         </div>
                                         <div className="col-12">
-                                            <label className="form-label fs-13 fw-medium">Region <span className="text-danger">*</span></label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${errors.aws_region ? 'is-invalid' : ''}`}
-                                                value={form.aws_region}
-                                                onChange={(e) => setForm({ ...form, aws_region: e.target.value })}
-                                                placeholder="e.g. ap-southeast-1"
-                                            />
-                                            {errors.aws_region && <div className="invalid-feedback">{errors.aws_region}</div>}
+                                            <div className="input-group">
+                                                <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                    Region <span className="text-danger ms-1">*</span>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className={`form-control fs-14 ${errors.aws_region ? 'is-invalid border-danger' : ''}`}
+                                                    value={form.aws_region}
+                                                    onChange={(e) => setForm({ ...form, aws_region: e.target.value })}
+                                                    placeholder="us-east-1"
+                                                    style={{ boxShadow: 'none' }}
+                                                />
+                                            </div>
+                                            {errors.aws_region && <div className="text-danger small mt-1 ps-2"><i className="ri-error-warning-line me-1"></i>{errors.aws_region}</div>}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* BCC & STATUS */}
-                                <div className="row g-3 mb-4">
+                                {/* BCC Emails */}
+                                <div className="row g-4 mb-4">
                                     <div className="col-12">
-                                        <label className="form-label fs-13 fw-medium">BCC Emails (comma separated)</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={form.bcc_emails}
-                                            onChange={(e) => setForm({ ...form, bcc_emails: e.target.value })}
-                                            placeholder="e.g. admin@yourdomain.com, log@yourdomain.com"
-                                        />
+                                        <div className="input-group">
+                                            <span className={`input-group-text bg-light text-muted fw-medium`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                BCC Emails
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="form-control fs-14"
+                                                value={form.bcc_emails}
+                                                onChange={(e) => setForm({ ...form, bcc_emails: e.target.value })}
+                                                placeholder="admin@domain.com, log@domain.com"
+                                                style={{ boxShadow: 'none' }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        )}
 
-
-                        <div className="text-end pt-3 border-top mt-4">
-                            <button type="submit" className="btn btn-primary px-5 shadow-sm" disabled={saving}>
-                                {saving ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : <><i className="ri-save-line me-1"></i>Save Configuration</>}
-                            </button>
+                        <div className="col-12 mt-5 pt-3 border-top">
+                            <div className="d-flex justify-content-end">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"
+                                    disabled={saving}
+                                >
+                                    {saving ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <span>Saving Configuration...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ri-save-2-line fs-18"></i>
+                                            <span>Save Configuration</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
+
+            <DynamicActionModal
+                show={showModal}
+                title="Confirm Provider Change"
+                description={
+                    <>
+                        You are about to switch the email provider to <strong>{pendingProvider === 'aws_ses' ? 'AWS SES' : 'SMTP'}</strong>.
+                    </>
+                }
+                warningText="Please ensure your credentials for the new provider are correct. Incorrect settings will prevent emails from being sent."
+                warningBgClass="bg-info-subtle border-start border-3 border-info"
+                imgSrc={emailConfigLogo}
+                confirmText={`Yes, Change to ${pendingProvider === 'aws_ses' ? 'AWS SES' : 'SMTP'}`}
+                confirmBtnClass="btn-primary"
+                onClose={cancelProviderChange}
+                onConfirm={confirmProviderChange}
+            />
+        </>
     );
-}
+};
 
 export default EmailConfigurationForm;
