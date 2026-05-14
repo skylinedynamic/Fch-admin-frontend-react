@@ -9,6 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface EmailFormState {
     enable_custom_configuration: boolean;
@@ -33,6 +34,7 @@ interface EmailFormState {
 const EmailConfigurationForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
     const partnerId = user?.partner_id || user?.entity_id;
+    const queryClient = useQueryClient();
 
     const [fetching, setFetching] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
@@ -98,6 +100,7 @@ const EmailConfigurationForm: React.FC = () => {
                 is_active: true
             });
 
+            queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             toast.success('Configuration saved successfully.');
             loadConfigs();
         } catch (err: any) {

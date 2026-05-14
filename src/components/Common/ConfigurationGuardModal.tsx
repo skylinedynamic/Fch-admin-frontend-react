@@ -1,11 +1,16 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
+import { useGlobalConfigurations } from '../../modules/settings/queries';
 
 const ConfigurationGuardModal = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
+
+    // Fetch global config flags
+    const { data: configRes } = useGlobalConfigurations(!!user);
+    const flags = configRes?.data?.status_flags || {};
 
     // Guarded routes
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
@@ -14,12 +19,12 @@ const ConfigurationGuardModal = () => {
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     // Show modal if on a guarded route and configurations are missing (null means missing)
-    const showModal = isGuardedRoute && (user?.is_email_fresh === null || user?.is_refresh_settings === null);
+    const showModal = isGuardedRoute && (flags.is_email_fresh === null || flags.is_refresh_settings === null);
 
     if (!showModal) return null;
 
-    const isEmailMissing = user?.is_email_fresh === null;
-    const isBrandingMissing = user?.is_refresh_settings === null;
+    const isEmailMissing = flags.is_email_fresh === null;
+    const isBrandingMissing = flags.is_refresh_settings === null;
 
     return (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1060 }}>

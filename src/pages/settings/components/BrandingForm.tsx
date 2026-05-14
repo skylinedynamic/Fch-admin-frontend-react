@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 const BASE_URL = (import.meta as any).env.VITE_BASE_URL || '';
 
@@ -113,6 +114,7 @@ interface BrandingState {
 const BrandingForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
     const partnerId = user?.partner_id || user?.entity_id;
+    const queryClient = useQueryClient();
 
     const [fetching, setFetching] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
@@ -196,11 +198,9 @@ const BrandingForm: React.FC = () => {
             if (payload.secondary_color === 'null' || !payload.secondary_color) payload.secondary_color = '#0ab39c';
 
             const response: any = await updateGeneralInformation(payload);
+            queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             toast.success(response.message || 'Site settings updated successfully');
             setErrors({});
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
         } catch (err: any) {
             if (err?.response?.status === 422) {
                 setErrors(err.response.data.errors || {});
