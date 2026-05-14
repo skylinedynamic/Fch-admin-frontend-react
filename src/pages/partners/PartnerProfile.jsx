@@ -945,7 +945,7 @@ export default function PartnerProfile() {
                                             <i className="far fa-list-alt"></i> Subscription
                                         </a>
                                     </li>
-                                    {formData.partner_type === PARTNER_TYPES.WHITE_LABEL && (
+                                    {formData.partner_type === PARTNER_TYPES.WHITE_LABEL && Number(formData.is_host) == 0 && (
                                         <li className="nav-item">
                                             <a
                                                 className={`nav-link ${activeTab === 'tenantConfig' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
