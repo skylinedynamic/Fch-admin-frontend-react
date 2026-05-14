@@ -138,7 +138,7 @@ const BrandingForm: React.FC = () => {
     const loadBranding = async () => {
         try {
             setFetching(true);
-            const res: any = await fetchGeneralInformation('site-settings', partnerId || undefined);
+            const res: any = await fetchGeneralInformation(user?.entity_type || undefined, partnerId || undefined);
             if (res?.data) {
                 const cleanedData = { ...res.data };
                 if (cleanedData.primary_color === 'null') cleanedData.primary_color = '#405189';
@@ -188,7 +188,7 @@ const BrandingForm: React.FC = () => {
             setSaving(true);
             const payload = {
                 ...branding,
-                entity_type: 'App\\Models\\Partner\\Partner',
+                entity_type: user?.entity_type || undefined,
                 entity_id: partnerId || undefined
             };
 
