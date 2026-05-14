@@ -29,7 +29,7 @@ export default function SiteSettings() {
     const [favicon, setFavicon] = useState<File | string | null>(null);
     const [previewFavicon, setPreviewFavicon] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
-    const [showFileManager, setShowFileManager] = useState<'header' | 'footer' | 'partner' | 'favicon' | false>(false);
+    const [showFileManager, setShowFileManager] = useState<'header' | 'footer' | 'partner' | 'partner_favicon' | false>(false);
 
     useEffect(() => {
         if (settingsData?.data) {
@@ -72,11 +72,11 @@ export default function SiteSettings() {
                 setPartnerLogo(s.partner_logo.replace(`${BASE_URL}/storage/`, ''));
             }
 
-            if (s.favicon) {
-                const favPath = s.favicon.replace(/^\//, '');
-                const favUrl = s.favicon.startsWith('http') ? s.favicon : `${BASE_URL}/storage/${favPath}`;
+            if (s.partner_favicon) {
+                const favPath = s.partner_favicon.replace(/^\//, '');
+                const favUrl = s.partner_favicon.startsWith('http') ? s.partner_favicon : `${BASE_URL}/storage/${favPath}`;
                 setPreviewFavicon(favUrl);
-                setFavicon(s.favicon.replace(`${BASE_URL}/storage/`, ''));
+                setFavicon(s.partner_favicon.replace(`${BASE_URL}/storage/`, ''));
             }
         }
     }, [settingsData]);
@@ -100,8 +100,8 @@ export default function SiteSettings() {
                     setValidationErrors({ ...validationErrors, footer_logo: message });
                 } else if (showFileManager === 'partner') {
                     setValidationErrors({ ...validationErrors, partner_logo: message });
-                } else if (showFileManager === 'favicon') {
-                    setValidationErrors({ ...validationErrors, favicon: message });
+                } else if (showFileManager === 'partner_favicon') {
+                    setValidationErrors({ ...validationErrors, partner_favicon: message });
                 }
                 return;
             }
@@ -118,8 +118,8 @@ export default function SiteSettings() {
                     setValidationErrors({ ...validationErrors, footer_logo: message });
                 } else if (showFileManager === 'partner') {
                     setValidationErrors({ ...validationErrors, partner_logo: message });
-                } else if (showFileManager === 'favicon') {
-                    setValidationErrors({ ...validationErrors, favicon: message });
+                } else if (showFileManager === 'partner_favicon') {
+                    setValidationErrors({ ...validationErrors, partner_favicon: message });
                 }
                 return;
             }
@@ -136,8 +136,8 @@ export default function SiteSettings() {
                 setValidationErrors({ ...validationErrors, partner_logo: undefined });
                 setPartnerLogo(file.path);
                 setPreviewPartnerLogo(file.url || `${BASE_URL}/storage/${file.path}`);
-            } else if (showFileManager === 'favicon') {
-                setValidationErrors({ ...validationErrors, favicon: undefined });
+            } else if (showFileManager === 'partner_favicon') {
+                setValidationErrors({ ...validationErrors, partner_favicon: undefined });
                 setFavicon(file.path);
                 setPreviewFavicon(file.url || `${BASE_URL}/storage/${file.path}`);
             }
@@ -235,13 +235,17 @@ export default function SiteSettings() {
         }
 
         if (favicon) {
-            data.append('favicon', favicon);
+            data.append('partner_favicon', favicon);
         }
 
         setValidationErrors({});
         try {
             const response = await updateMutation.mutateAsync(data);
             toast.success(response.message || 'Site settings updated successfully');
+            // Reload window accurately to apply all branding changes immediately
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } catch (error: any) {
             const errors = error?.response?.data?.errors;
             if (errors) {
@@ -667,7 +671,11 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.header_logo && <div className="text-danger fs-11 mt-1">{validationErrors.header_logo}</div>}
+                                                            {validationErrors.header_logo && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.header_logo) ? validationErrors.header_logo[0] : validationErrors.header_logo}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -710,7 +718,11 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.footer_logo && <div className="text-danger fs-11 mt-1">{validationErrors.footer_logo}</div>}
+                                                            {validationErrors.footer_logo && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.footer_logo) ? validationErrors.footer_logo[0] : validationErrors.footer_logo}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -753,7 +765,11 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.partner_logo && <div className="text-danger fs-11 mt-1">{validationErrors.partner_logo}</div>}
+                                                            {validationErrors.partner_logo && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.partner_logo) ? validationErrors.partner_logo[0] : validationErrors.partner_logo}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -771,10 +787,10 @@ export default function SiteSettings() {
                                                         <div className="text-center">
                                                             <div
                                                                 className="position-relative d-inline-block cursor-pointer w-100"
-                                                                onClick={() => setShowFileManager('favicon')}
+                                                                onClick={() => setShowFileManager('partner_favicon')}
                                                                 title="ICO, PNG, SVG • Max 1MB"
                                                             >
-                                                                <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.favicon ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
+                                                                <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.partner_favicon ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
                                                                     {previewFavicon ? (
                                                                         <img src={previewFavicon} alt="Favicon" className="img-fluid rounded object-fit-contain" style={{ maxHeight: '75px' }} />
                                                                     ) : (
@@ -796,7 +812,11 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.favicon && <div className="text-danger fs-11 mt-1">{validationErrors.favicon}</div>}
+                                                            {validationErrors.partner_favicon && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.partner_favicon) ? validationErrors.partner_favicon[0] : validationErrors.partner_favicon}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

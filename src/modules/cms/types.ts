@@ -69,6 +69,8 @@ export interface SiteSetting extends SiteSettingsData {
     footer_logo?: string;
     partner_logo?: string;
     favicon?: string;
+    partner_favicon?: string;
+    borrower_favicon?: string;
     social_links?: string | SocialLink[];
     agreement_signing_enabled?: string;
     google_measurement_id?: string;

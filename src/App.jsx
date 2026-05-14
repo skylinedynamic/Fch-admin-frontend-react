@@ -93,18 +93,120 @@ export default function App() {
   const { data: publicSettingsData } = usePublicSiteSettings();
 
   useEffect(() => {
-    if (publicSettingsData?.data?.favicon) {
-      const favicon = publicSettingsData.data.favicon;
-      const BASE_URL = import.meta.env.VITE_BASE_URL || '';
-      const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${favicon.replace(/^\//, '')}`;
+    if (publicSettingsData?.data) {
+      const { site_name, partner_favicon, primary_color } = publicSettingsData.data;
 
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.getElementsByTagName('head')[0].appendChild(link);
+      // 1. Dynamic Browser Title
+      if (site_name) {
+        document.title = site_name;
       }
-      link.href = faviconUrl;
+
+      // 2. Dynamic Favicon
+      let favicon = publicSettingsData.data.partner_favicon || publicSettingsData.data.favicon;
+      
+      // Clean up 'null' or empty strings
+      if (favicon === 'null' || !favicon) {
+        favicon = publicSettingsData.data.favicon;
+      }
+      
+      if (favicon && favicon !== 'null') {
+        const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+        const faviconPath = favicon.replace(/^\//, '');
+        const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${faviconPath}`;
+
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = faviconUrl;
+      }
+
+      // 3. Dynamic Sidebar Styling (Primary Color BG + Secondary Color Icons)
+      if (primary_color && primary_color !== 'null') {
+        const secondary = publicSettingsData.data.secondary_color || '#F7B84B';
+        const styleId = 'dynamic-sidebar-overrides';
+        let style = document.getElementById(styleId);
+        if (!style) {
+          style = document.createElement('style');
+          style.id = styleId;
+          document.head.appendChild(style);
+        }
+        style.innerHTML = `
+          /* SIDEBAR BACKGROUND */
+          .app-menu, .navbar-brand-box {
+            background: ${primary_color} !important;
+          }
+          
+          /* NAVIGATION TEXT (WHITE) */
+          .navbar-menu .navbar-nav .nav-link, 
+          .navbar-menu .navbar-nav .nav-sm .nav-link,
+          .navbar-menu .navbar-title {
+            color: #ffffff !important;
+          }
+          
+          /* NAVIGATION ICONS (SECONDARY COLOR) */
+          .navbar-menu .navbar-nav .nav-link i {
+            color: ${secondary} !important;
+          }
+          
+          /* ACTIVE STATE (SECONDARY BG + WHITE TEXT/ICON) */
+          /* HOVER & ACTIVE EFFECTS (SECONDARY COLOR) */
+          .navbar-menu .navbar-nav .nav-link:hover,
+          .navbar-menu .navbar-nav .nav-sm .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+          }
+
+          /* DYNAMIC UI BUTTONS (PRIMARY & SECONDARY) */
+          .btn-primary {
+            background-color: ${primary_color} !important;
+            border-color: ${primary_color} !important;
+          }
+          .btn-primary:hover, .btn-primary:active, .btn-primary:focus {
+            background-color: ${primary_color} !important;
+            filter: brightness(90%);
+            border-color: ${primary_color} !important;
+          }
+
+          .btn-warning {
+            background-color: ${secondary} !important;
+            border-color: ${secondary} !important;
+            color: #ffffff !important; /* Ensure text is readable on secondary color */
+          }
+          .btn-warning:hover, .btn-warning:active, .btn-warning:focus {
+            background-color: ${secondary} !important;
+            filter: brightness(90%);
+            border-color: ${secondary} !important;
+            color: #ffffff !important;
+          }
+
+          /* Ensure filter icon stays white */
+          .btn-warning i {
+            color: #ffffff !important;
+          }
+          
+          .navbar-menu .navbar-nav .nav-link.active,
+          .navbar-menu .navbar-nav .nav-sm .nav-link.active {
+            background-color: ${secondary} !important;
+            color: #ffffff !important;
+          }
+          
+          .navbar-menu .navbar-nav .nav-link.active i,
+          .navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
+            color: #ffffff !important;
+          }
+
+          /* Ensure sub-menu indicators also follow white/secondary theme */
+          .navbar-menu .navbar-nav .nav-sm .nav-link::before {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+          }
+          .navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
+            background-color: #ffffff !important;
+          }
+        `;
+      }
     }
   }, [publicSettingsData]);
 
