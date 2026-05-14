@@ -94,10 +94,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     // Removed renderPaymentSettings as it is now in StripeConfigForm
 
     return (
-        <div className="row g-4 align-items-start">
+        <div className="row g-3 g-lg-2 align-items-start">
             {/* Sidebar */}
             <div className="col-lg-3">
-                <div className="card">
+                <div className="card settings-menu-card">
                     <div className="card-header">
                         <h5 className="card-title mb-0 fs-14">
                             <i className="ri-list-settings-line me-2 align-middle text-muted"></i>

@@ -67,27 +67,23 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
         const isPending = toggleMutation.isPending && (toggleMutation.variables as any)?.id === agreement?.id;
 
         return (
-            <div className="d-flex align-items-center gap-3 py-3 border-bottom border-light last-child-no-border">
-                <div className="avatar-sm flex-shrink-0">
-                    <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
-                        <i className="ri-file-pdf-2-line"></i>
+            <div className="d-flex align-items-center gap-3 py-3 border-bottom border-light last-child-no-border agreement-row-mobile">
+                <div className="d-flex align-items-center gap-3 flex-grow-1">
+                    <div className="avatar-sm flex-shrink-0">
+                        <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
+                            <i className="ri-file-pdf-2-line"></i>
+                        </div>
+                    </div>
+                    <div
+                        className="flex-grow-1"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => onEdit(type)}
+                    >
+                        <div className="fw-semibold fs-14 text-dark">{label}</div>
+                        <div className="text-muted fs-13">{isActive ? subtext : 'No active template'}</div>
                     </div>
                 </div>
-                <div
-                    className="flex-grow-1"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => onEdit(type)}
-                    onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-                        e.currentTarget.style.opacity = '0.7';
-                    }}
-                    onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-                        e.currentTarget.style.opacity = '1';
-                    }}
-                >
-                    <div className="fw-semibold fs-14 text-dark">{label}</div>
-                    <div className="text-muted fs-13">{isActive ? subtext : 'No active template'}</div>
-                </div>
-                <div className="d-flex align-items-center gap-3 flex-shrink-0">
+                <div className="d-flex align-items-center gap-3 flex-shrink-0 action-container">
                     <div className="d-flex align-items-center gap-2">
                         <span className={`fs-12 fw-medium ${isActive ? 'text-success' : 'text-muted'}`}>
                             {isActive ? 'Active' : 'Inactive'}
@@ -99,7 +95,7 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                         />
                     </div>
                     <button
-                        className="btn btn-sm btn-primary waves-effect d-flex align-items-center gap-1"
+                        className="btn btn-sm btn-primary waves-effect d-flex align-items-center gap-1 btn-edit"
                         onClick={() => onEdit(type)}
                     >
                         <i className="ri-edit-line fs-14"></i>
@@ -123,10 +119,10 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                     <p className="text-muted mb-0 fs-13">Manage active agreement templates for partner and borrower onboarding</p>
                 </div>
             </div>
-            <div className="card-body p-4">
+            <div className="card-body p-3 p-sm-4">
                 {/* Global Feature Toggle */}
                 {isHost && (
-                    <div className="p-3 bg-primary-subtle rounded-3 mb-4 d-flex align-items-center justify-content-between border border-primary-subtle">
+                    <div className="p-3 bg-primary-subtle rounded-3 mb-2 d-flex align-items-center justify-content-between border border-primary-subtle">
                         <div className="d-flex align-items-center gap-3">
                             <div className="avatar-xs flex-shrink-0">
                                 <div className="avatar-title bg-primary text-white rounded-circle fs-14">
