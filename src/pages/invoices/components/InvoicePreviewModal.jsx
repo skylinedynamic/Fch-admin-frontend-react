@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
 import { APP_CONFIG } from '../../../config';
 import { STATUS_PAID } from '../../../config/invoiceConfig';
-import invoiceLogo from '../../../../assets/images/logo-mail.png';
+import invoiceLogo from "../../../../assets/images/logo-mail.png";
 
 // Helper to format currency
 const formatCurrency = (amount) => {

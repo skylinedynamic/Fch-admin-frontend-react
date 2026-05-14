@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { checkAgreementSign, submitAgreementSign } from '../../../modules/agreement/services'
 import { useAuthStore } from '../../../store/auth/authStore'
-import '../../../../assets/css/agreement-builder.css'
-// @ts-ignore
-import { AgreementSignModalLoader } from '../../Loader/AgreementLoader.jsx'
+import "../../../../assets/css/agreement-builder.css"
+import { AgreementSignModalLoader } from '../../Loader/AgreementLoader'
 
 /**
  * AgreementSignModal
@@ -212,7 +211,7 @@ export default function AgreementSignModal() {
           setSubmitting(false)
           return
         }
-        
+
         // Extract filled HTML
         if (typeof win.getFilledHTML === 'function') {
           filledHTML = win.getFilledHTML();
@@ -239,9 +238,9 @@ export default function AgreementSignModal() {
     setSubmitting(true)
     setError(null)
     try {
-      const res = await submitAgreementSign({ 
-          agreement_template_id: template.id,
-          content_html: filledHTML
+      const res = await submitAgreementSign({
+        agreement_template_id: template.id,
+        content_html: filledHTML
       })
       if (res?.status) {
         setSuccess(true)
@@ -370,7 +369,7 @@ export default function AgreementSignModal() {
                       <button
                         onClick={handleSubmit}
                         disabled={!agreed || submitting}
-                        className={`asm-btn asm-btn-submit ${( !agreed || submitting) ? 'asm-btn-disabled' : ''}`}
+                        className={`asm-btn asm-btn-submit ${(!agreed || submitting) ? 'asm-btn-disabled' : ''}`}
                       >
                         {submitting ? (
                           <><span className="asm-spinner" /> Processing...</>

@@ -36,7 +36,7 @@ import PreQualificationApplication from './pages/applications/pre-qualification/
 import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
-import Settings from './pages/settings/Settings.jsx';
+import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
@@ -65,7 +65,7 @@ window.jQuery = window.$ = $;
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
-import '../assets/css/summernote-fixes.css';
+import "../assets/css/summernote-fixes.css";
 
 // Icon Libraries
 import 'remixicon/fonts/remixicon.css';

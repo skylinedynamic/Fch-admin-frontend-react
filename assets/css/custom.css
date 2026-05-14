@@ -1251,3 +1251,21 @@ File: Custom Css File
 .borrower-req-header-card .fs-11 {
   font-size: 10px !important;
 }
+
+/* PrimeReact Dropdown Vertical Centering */
+.p-dropdown {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.p-dropdown .p-dropdown-label {
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 100% !important;
+}
+
+.p-dropdown .p-dropdown-trigger {
+  height: 100% !important;
+}

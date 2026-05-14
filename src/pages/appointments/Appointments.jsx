@@ -19,7 +19,7 @@ import { fetchAppointments, updateAppointment } from '../../modules/appointment/
 import AppointmentModal from '../../components/Common/Modals/AppointmentModal';
 
 // Custom CSS
-import '../../../assets/css/appointments.css';
+import "../../../assets/css/appointments.css";
 
 // Config
 import { APPOINTMENT_STATUS_CONFIG } from '../../config/appointmentTypeOptions';
