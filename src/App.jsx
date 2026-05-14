@@ -94,7 +94,7 @@ export default function App() {
 
   useEffect(() => {
     if (publicSettingsData?.data) {
-      const { site_name, partner_favicon, primary_color } = publicSettingsData.data;
+      const { site_name, favicon, primary_color } = publicSettingsData.data;
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -102,17 +102,12 @@ export default function App() {
       }
 
       // 2. Dynamic Favicon
-      let favicon = publicSettingsData.data.partner_favicon || publicSettingsData.data.favicon;
+      const currentFavicon = favicon || publicSettingsData.data.website_favicon;
 
-      // Clean up 'null' or empty strings
-      if (favicon === 'null' || !favicon) {
-        favicon = publicSettingsData.data.favicon;
-      }
-
-      if (favicon && favicon !== 'null') {
+      if (currentFavicon && currentFavicon !== 'null') {
         const BASE_URL = import.meta.env.VITE_BASE_URL || '';
-        const faviconPath = favicon.replace(/^\//, '');
-        const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${faviconPath}`;
+        const faviconPath = currentFavicon.replace(/^\//, '');
+        const faviconUrl = currentFavicon.startsWith('http') ? currentFavicon : `${BASE_URL}/storage/${faviconPath}`;
 
         let link = document.querySelector("link[rel~='icon']");
         if (!link) {
