@@ -144,7 +144,54 @@ const EmailConfigurationForm: React.FC = () => {
 
     return (
         <>
-            <div className="card">
+            <style>{`
+                @media (max-width: 576px) {
+                    .email-config-form .input-group {
+                        flex-direction: column !important;
+                    }
+                    .email-config-form .input-group-text {
+                        width: 100% !important;
+                        min-width: unset !important;
+                        border-radius: 8px 8px 0 0 !important;
+                        justify-content: flex-start !important;
+                        padding: 10px 15px !important;
+                        border-bottom: none !important;
+                        font-size: 12px !important;
+                    }
+                    .email-config-form .form-control, 
+                    .email-config-form .p-dropdown {
+                        width: 100% !important;
+                        border-radius: 0 0 8px 8px !important;
+                    }
+                    .email-config-form .p-dropdown .p-dropdown-label {
+                        padding: 10px 15px !important;
+                    }
+                    .email-config-form .card-header {
+                        flex-direction: column;
+                        align-items: flex-start !important;
+                        gap: 15px !important;
+                    }
+                    .email-config-form .banner-box {
+                        flex-direction: column;
+                        text-align: center;
+                    }
+                    .email-config-form .banner-box .me-4 {
+                        margin-right: 0 !important;
+                        margin-bottom: 15px;
+                    }
+                    .email-config-form .footer-actions {
+                        width: 100% !important;
+                    }
+                    .email-config-form .footer-actions button {
+                        width: 100% !important;
+                        justify-content: center;
+                    }
+                    .email-config-form .card-body {
+                        padding-bottom: 4rem !important;
+                    }
+                }
+            `}</style>
+            <div className="card email-config-form">
                 <div className="card-header d-flex align-items-center gap-3 bg-white border-bottom py-3">
                     <div className="avatar-sm flex-shrink-0">
                         <div className="avatar-title bg-primary-subtle text-primary rounded fs-20">
@@ -395,7 +442,7 @@ const EmailConfigurationForm: React.FC = () => {
                             </div>
 
                         <div className="col-12 mt-5 pt-3 border-top">
-                            <div className="d-flex justify-content-end">
+                            <div className="d-flex justify-content-end footer-actions">
                                 <button
                                     type="submit"
                                     className="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"

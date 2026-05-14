@@ -8,86 +8,164 @@ const ConfigurationGuardModal = () => {
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
 
-    // Fetch global config flags
     const { data: configRes } = useGlobalConfigurations(!!user);
     const flags = configRes?.data?.status_flags || {};
 
-    // Guarded routes
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
-    
-    // Check if current path starts with any of the guarded routes
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
-    // Show modal if on a guarded route and configurations are missing (null means missing)
-    const showModal = isGuardedRoute && (flags.is_email_fresh === null || flags.is_refresh_settings === null);
+    // Show modal if ANY config is missing
+    const isEmailMissing = flags.is_email_fresh === null;
+    const isBrandingMissing = flags.is_refresh_settings === null;
+    const showModal = isGuardedRoute && (isEmailMissing || isBrandingMissing);
 
     if (!showModal) return null;
 
-    const isEmailMissing = flags.is_email_fresh === null;
-    const isBrandingMissing = flags.is_refresh_settings === null;
+    const segment = location.pathname.split('/')[1];
+    const pageLabel = segment.charAt(0).toUpperCase() + segment.slice(1);
 
     return (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1060 }}>
-            <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '15px', overflow: 'hidden' }}>
-                    <div className="row g-0">
-                        <div className="col-md-5 d-none d-md-flex align-items-center justify-content-center bg-primary p-4 text-white text-center">
-                            <div>
-                                <i className="ri-shield-user-fill" style={{ fontSize: '100px' }}></i>
-                                <h3 className="mt-3 fw-bold text-white">Action Required</h3>
-                                <p className="opacity-75">Please complete your system configuration to unlock these features.</p>
-                            </div>
+        <>
+            <style>{`
+                .cgm-overlay {
+                    position: fixed; inset: 0;
+                    background: rgba(8,12,28,0.85);
+                    z-index: 1060;
+                    display: flex; align-items: center; justify-content: center;
+                    padding: 1rem;
+                    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+                }
+                .cgm-modal {
+                    width: 820px; max-width: 100%;
+                    display: flex; flex-direction: row;
+                    border-radius: 24px; overflow: hidden;
+                    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+                }
+                .cgm-left {
+                    width: 40%; background: #1e3a8a;
+                    display: flex; flex-direction: column;
+                    align-items: center; justify-content: center;
+                    padding: 3.5rem 2rem; text-align: center;
+                }
+                .cgm-shield {
+                    width: 120px; height: 120px; border-radius: 50%;
+                    background: rgba(255,255,255,0.08);
+                    border: 1.5px solid rgba(255,255,255,0.15);
+                    display: flex; align-items: center; justify-content: center;
+                    margin: 0 auto 2rem;
+                }
+                .cgm-right {
+                    flex: 1; background: #ffffff;
+                    padding: 3rem 2.5rem;
+                    display: flex; flex-direction: column; justify-content: center;
+                }
+                .cgm-item {
+                    display: flex; align-items: center; gap: 14px;
+                    padding: 16px 18px; border-radius: 14px;
+                    border: 1px solid #e5e7eb; background: #f9fafb;
+                    margin-bottom: 12px;
+                }
+                .cgm-icon-box {
+                    width: 46px; height: 46px; border-radius: 12px;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
+                }
+                .cgm-btn-main {
+                    width: 100%; padding: 15px; border-radius: 50px;
+                    background: #1e3a8a; color: #fff; border: none;
+                    font-size: 15px; font-weight: 700; cursor: pointer;
+                    letter-spacing: 0.02em; margin-top: 8px;
+                }
+                .cgm-btn-ghost {
+                    width: 100%; padding: 10px; background: none;
+                    border: none; color: #9ca3af; font-size: 14px;
+                    cursor: pointer; margin-top: 6px;
+                }
+
+                @media (max-width: 640px) {
+                    .cgm-overlay { align-items: flex-end; padding: 0; }
+                    .cgm-modal { flex-direction: column; border-radius: 20px 20px 0 0; width: 100%; }
+                    .cgm-left { width: 100%; flex-direction: row; text-align: left; padding: 1.75rem 1.5rem; gap: 1rem; }
+                    .cgm-shield { width: 64px; height: 64px; min-width: 64px; margin: 0; flex-shrink: 0; }
+                    .cgm-shield svg { width: 32px; height: 37px; }
+                    .cgm-left-title { font-size: 1.1rem !important; margin-bottom: 0.3rem !important; }
+                    .cgm-left-sub { font-size: 0.78rem !important; max-width: unset !important; }
+                    .cgm-right { padding: 1.75rem 1.25rem; }
+                    .cgm-right-title { font-size: 1.35rem !important; margin-bottom: 0.5rem !important; }
+                    .cgm-item { padding: 12px 14px; gap: 12px; }
+                    .cgm-icon-box { width: 40px; height: 40px; border-radius: 10px; }
+                    .cgm-btn-main { padding: 13px; font-size: 14px; }
+                }
+            `}</style>
+
+            <div className="cgm-overlay">
+                <div className="cgm-modal">
+
+                    {/* Left */}
+                    <div className="cgm-left">
+                        <div className="cgm-shield">
+                            <svg width="58" height="66" viewBox="0 0 58 66" fill="none">
+                                <path d="M29 2L4 13v18c0 16.5 10.7 31.9 25 36 14.3-4.1 25-19.5 25-36V13L29 2z"
+                                    fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                                <circle cx="29" cy="28" r="10" fill="rgba(255,255,255,0.95)" />
+                                <path d="M29 40c-8 0-14 4-14 9v1h28v-1c0-5-6-9-14-9z" fill="rgba(255,255,255,0.95)" />
+                            </svg>
                         </div>
-                        <div className="col-md-7 p-5 bg-white">
-                            <h2 className="fw-bold mb-4" style={{ color: '#0a1c3d' }}>Configuration Incomplete</h2>
-                            
-                            <p className="text-muted mb-4">To ensure the system functions accurately for your business, you must set up the following global settings before accessing <strong>{location.pathname.split('/')[1].charAt(0).toUpperCase() + location.pathname.split('/')[1].slice(1)}</strong>.</p>
-
-                            <div className="d-flex flex-column gap-3 mb-5">
-                                {isBrandingMissing && (
-                                    <div className="p-3 border rounded-3 d-flex align-items-center bg-light">
-                                        <div className="rounded-circle bg-warning bg-opacity-10 p-2 me-3">
-                                            <i className="ri-palette-line text-warning fs-4"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-1 fw-bold">Branding Configuration</h6>
-                                            <small className="text-muted text-wrap">Logos, colors, and site identity are missing.</small>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {isEmailMissing && (
-                                    <div className="p-3 border rounded-3 d-flex align-items-center bg-light">
-                                        <div className="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
-                                            <i className="ri-mail-send-line text-danger fs-4"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-1 fw-bold">Email Configuration</h6>
-                                            <small className="text-muted text-wrap">SMTP or AWS SES settings required for notifications.</small>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="d-grid gap-2">
-                                <button 
-                                    onClick={() => navigate('/settings')} 
-                                    className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm py-3"
-                                >
-                                    Go to Global Settings
-                                </button>
-                                <button 
-                                    onClick={() => navigate('/')} 
-                                    className="btn btn-link text-muted mt-2"
-                                >
-                                    Back to Dashboard
-                                </button>
-                            </div>
+                        <div>
+                            <p className="cgm-left-title" style={{ color: '#fff', fontSize: '1.45rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                                Action Required
+                            </p>
+                            <p className="cgm-left-sub" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', lineHeight: 1.7, maxWidth: 200 }}>
+                                Please complete your system configuration to unlock these features.
+                            </p>
                         </div>
                     </div>
+
+                    {/* Right */}
+                    <div className="cgm-right">
+                        <h2 className="cgm-right-title" style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.6rem', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+                            Configuration<br />Incomplete
+                        </h2>
+                        <p style={{ fontSize: '0.875rem', color: '#6b7280', lineHeight: 1.7, marginBottom: '1.5rem' }}>
+                            To ensure the system functions accurately, complete the following global settings before accessing{' '}
+                            <strong style={{ color: '#0f172a', fontWeight: 700 }}>{pageLabel}</strong>.
+                        </p>
+
+                        {/* Branding — shown only when missing */}
+                        {isBrandingMissing && (
+                            <div className="cgm-item">
+                                <div className="cgm-icon-box" style={{ background: '#fef3c7' }}>
+                                    <i className="ri-palette-line" style={{ fontSize: 22, color: '#b45309' }} />
+                                </div>
+                                <div>
+                                    <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 3 }}>Branding Configuration</p>
+                                    <p style={{ fontSize: 12.5, color: '#9ca3af' }}>Logos, colors, and site identity are missing.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Email — always shown alongside branding */}
+                        <div className="cgm-item">
+                            <div className="cgm-icon-box" style={{ background: '#fee2e2' }}>
+                                <i className="ri-mail-send-line" style={{ fontSize: 22, color: '#dc2626' }} />
+                            </div>
+                            <div>
+                                <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 3 }}>Email Configuration</p>
+                                <p style={{ fontSize: 12.5, color: '#9ca3af' }}>SMTP or AWS SES settings required for notifications.</p>
+                            </div>
+                        </div>
+
+                        <button onClick={() => navigate('/settings')} className="cgm-btn-main">
+                            Go to Global Settings
+                        </button>
+                        <button onClick={() => navigate('/')} className="cgm-btn-ghost">
+                            Back to Dashboard
+                        </button>
+                    </div>
+
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
