@@ -30,7 +30,7 @@ export default function Header() {
     const clean = path.replace(/^\//, '')
     return `${BASE_URL}/storage/${clean}`
   }
-  
+
   const dynamicLogo = getLogoUrl(settings?.secondary_logo || settings?.primary_logo, `${BASE_URL}/storage/site-settings/black-logo.png`)
   const dynamicLogoLight = getLogoUrl(settings?.primary_logo, `${BASE_URL}/storage/site-settings/logo-white.png`)
   const dynamicFavicon = getLogoUrl(settings?.favicon, `${BASE_URL}/storage/site-settings/Favicon.png`)
@@ -256,7 +256,7 @@ export default function Header() {
                 )}
               </button>
 
-              <div className="navbar-brand-box horizontal-logo">
+              <div className="horizontal-logo">
                 <a href="/" className="logo">
                   <span className="logo-sm">
                     <img src={dynamicFavicon} alt={siteName} height="22" />
