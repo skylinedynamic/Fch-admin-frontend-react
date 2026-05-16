@@ -223,6 +223,7 @@ const BrandingForm: React.FC = () => {
 
             const response: any = await updateGeneralInformation(payload);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
+            queryClient.invalidateQueries({ queryKey: ['public-site-settings'] });
             toast.success(response.message || 'Site settings updated successfully');
             setErrors({});
         } catch (err: any) {
