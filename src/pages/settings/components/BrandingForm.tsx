@@ -15,18 +15,18 @@ function resolveLogoUrl(path: string | null | undefined) {
     if (!path || path === 'null' || path === 'undefined') return null;
     if (typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
-    
+
     // Remove leading slash and handle storage/ prefix
     let clean = path.replace(/^\//, '');
     if (clean.startsWith('storage/')) {
         clean = clean.replace(/^storage\//, '');
     }
-    
+
     // Ensure site-settings/ prefix
     if (!clean.startsWith('site-settings/')) {
         clean = 'site-settings/' + clean;
     }
-    
+
     return `${BASE_URL}/storage/${clean}`;
 }
 
@@ -145,7 +145,7 @@ const BrandingForm: React.FC = () => {
         site_slogan: '',
         primary_color: '#001F3F',
         secondary_color: '#D4AF37',
-        copyright_text: ''
+        copyright_text: `Copyright © ${new Date().getFullYear()} Four Corner Funding. All rights reserved.`
     });
 
     useEffect(() => {
@@ -158,8 +158,14 @@ const BrandingForm: React.FC = () => {
             const res: any = await fetchGeneralInformation(user?.entity_type || undefined, partnerId || undefined);
             if (res?.data) {
                 const cleanedData = { ...res.data };
-                if (cleanedData.primary_color === 'null') cleanedData.primary_color = '#001F3F';
-                if (cleanedData.secondary_color === 'null') cleanedData.secondary_color = '#D4AF37';
+
+                // Explicitly handle defaults if values are missing or the string 'null'
+                cleanedData.primary_color = (cleanedData.primary_color && cleanedData.primary_color !== 'null') ? cleanedData.primary_color : '#001F3F';
+                cleanedData.secondary_color = (cleanedData.secondary_color && cleanedData.secondary_color !== 'null') ? cleanedData.secondary_color : '#D4AF37';
+
+                if (!cleanedData.copyright_text || cleanedData.copyright_text === 'null') {
+                    cleanedData.copyright_text = `Copyright © ${new Date().getFullYear()} Four Corner Funding. All rights reserved.`;
+                }
 
                 setBranding(prev => ({
                     ...prev,
@@ -324,15 +330,15 @@ const BrandingForm: React.FC = () => {
                                     <input
                                         type="color"
                                         className="form-control form-control-color"
-                                        value={branding.primary_color && branding.primary_color !== 'null' ? branding.primary_color : '#001F3F'}
+                                        value={branding.primary_color || '#001F3F'}
                                         onChange={e => setBranding(prev => ({ ...prev, primary_color: e.target.value }))}
                                         style={{ width: '60px' }}
                                     />
                                     <input
                                         type="text"
                                         className={`form-control ${errors.primary_color ? 'is-invalid' : ''}`}
-                                        placeholder="#405189"
-                                        value={branding.primary_color && branding.primary_color !== 'null' ? branding.primary_color : ''}
+                                        placeholder="#001F3F"
+                                        value={branding.primary_color || '#001F3F'}
                                         onChange={e => setBranding(prev => ({ ...prev, primary_color: e.target.value }))}
                                     />
                                 </div>
@@ -344,15 +350,15 @@ const BrandingForm: React.FC = () => {
                                     <input
                                         type="color"
                                         className="form-control form-control-color"
-                                        value={branding.secondary_color && branding.secondary_color !== 'null' ? branding.secondary_color : '#D4AF37'}
+                                        value={branding.secondary_color || '#D4AF37'}
                                         onChange={e => setBranding(prev => ({ ...prev, secondary_color: e.target.value }))}
                                         style={{ width: '60px' }}
                                     />
                                     <input
                                         type="text"
                                         className={`form-control ${errors.secondary_color ? 'is-invalid' : ''}`}
-                                        placeholder="#0ab39c"
-                                        value={branding.secondary_color && branding.secondary_color !== 'null' ? branding.secondary_color : ''}
+                                        placeholder="#D4AF37"
+                                        value={branding.secondary_color || '#D4AF37'}
                                         onChange={e => setBranding(prev => ({ ...prev, secondary_color: e.target.value }))}
                                     />
                                 </div>
