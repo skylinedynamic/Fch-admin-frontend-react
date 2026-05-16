@@ -11,11 +11,23 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const BASE_URL = (import.meta as any).env.VITE_BASE_URL || '';
 
-function resolveLogoUrl(path: string | null) {
-    if (!path || path === 'null') return null;
+function resolveLogoUrl(path: string | null | undefined) {
+    if (!path || path === 'null' || path === 'undefined') return null;
+    if (typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
-    const clean = path.replace(/^\//, '');
-    return `${BASE_URL}/storage/${clean.startsWith('site-settings/') ? clean : 'site-settings/' + clean}`;
+    
+    // Remove leading slash and handle storage/ prefix
+    let clean = path.replace(/^\//, '');
+    if (clean.startsWith('storage/')) {
+        clean = clean.replace(/^storage\//, '');
+    }
+    
+    // Ensure site-settings/ prefix
+    if (!clean.startsWith('site-settings/')) {
+        clean = 'site-settings/' + clean;
+    }
+    
+    return `${BASE_URL}/storage/${clean}`;
 }
 
 interface BrandingItemProps {
@@ -28,9 +40,11 @@ interface BrandingItemProps {
     description?: string;
     required?: boolean;
     primaryColor?: string;
+    dimensions?: string;
+    allowedFormats?: string;
 }
 
-const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelect, loading, error, description, required, primaryColor }) => {
+const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelect, loading, error, description, required, primaryColor, dimensions, allowedFormats }) => {
     const [imgError, setImgError] = useState(false);
     const preview = resolveLogoUrl(value);
 
@@ -50,7 +64,7 @@ const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelec
                     <div
                         className="position-relative d-inline-block cursor-pointer w-100"
                         onClick={onSelect}
-                        title="PNG, SVG, JPG • Max 2MB"
+                        title={`Professional transparent background recommended. ${allowedFormats || 'PNG, SVG, JPG, WEBP'} • Max 2MB`}
                     >
                         <div
                             className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3"
@@ -80,7 +94,8 @@ const BrandingItem: React.FC<BrandingItemProps> = ({ title, icon, value, onSelec
                                         </div>
                                     </div>
                                     <p className="text-muted fs-11 mb-0 fw-medium">Upload {title}</p>
-                                    <p className="text-muted fs-10 mb-0 opacity-75">PNG, SVG, JPG • 2MB</p>
+                                    {dimensions && <p className="text-muted fs-10 mb-0">({dimensions})</p>}
+                                    <p className="text-muted fs-10 mb-0 opacity-75">{allowedFormats || 'PNG, SVG, JPG, WEBP'} • 2MB</p>
                                 </div>
                             )}
                         </div>
@@ -128,8 +143,8 @@ const BrandingForm: React.FC = () => {
         favicon: '',
         site_name: '',
         site_slogan: '',
-        primary_color: '#405189',
-        secondary_color: '#0ab39c',
+        primary_color: '#001F3F',
+        secondary_color: '#D4AF37',
         copyright_text: ''
     });
 
@@ -143,8 +158,8 @@ const BrandingForm: React.FC = () => {
             const res: any = await fetchGeneralInformation(user?.entity_type || undefined, partnerId || undefined);
             if (res?.data) {
                 const cleanedData = { ...res.data };
-                if (cleanedData.primary_color === 'null') cleanedData.primary_color = '#405189';
-                if (cleanedData.secondary_color === 'null') cleanedData.secondary_color = '#0ab39c';
+                if (cleanedData.primary_color === 'null') cleanedData.primary_color = '#001F3F';
+                if (cleanedData.secondary_color === 'null') cleanedData.secondary_color = '#D4AF37';
 
                 setBranding(prev => ({
                     ...prev,
@@ -176,6 +191,12 @@ const BrandingForm: React.FC = () => {
             return;
         }
 
+        if (file.size && file.size > 2 * 1024 * 1024) {
+            setErrors((prev: any) => ({ ...prev, [activeField]: 'File size must not exceed 2MB' }));
+            setShowFileManager(false);
+            return;
+        }
+
         const cleanPath = file.path.trim().replace(/^\/+/, '');
         const fullPath = cleanPath.startsWith('site-settings/') ? cleanPath : `site-settings/${cleanPath}`;
 
@@ -194,17 +215,16 @@ const BrandingForm: React.FC = () => {
                 entity_id: partnerId || undefined
             };
 
-            if (payload.primary_color === 'null' || !payload.primary_color) payload.primary_color = '#405189';
-            if (payload.secondary_color === 'null' || !payload.secondary_color) payload.secondary_color = '#0ab39c';
-
             const response: any = await updateGeneralInformation(payload);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             toast.success(response.message || 'Site settings updated successfully');
             setErrors({});
         } catch (err: any) {
             if (err?.response?.status === 422) {
-                setErrors(err.response.data.errors || {});
-                toast.error('Please fix the validation errors.');
+                const backendErrors = err.response.data.errors || {};
+                setErrors(backendErrors);
+                const firstError = Object.values(backendErrors)[0];
+                // toast.error(Array.isArray(firstError) ? firstError[0] : 'Please fix the validation errors.');
             } else {
                 toast.error('Failed to update branding settings.');
             }
@@ -259,24 +279,26 @@ const BrandingForm: React.FC = () => {
 
                             <div className="col-md-4">
                                 <BrandingItem
-                                    title="Primary Logo (White Transparent)"
+                                    title="Primary Logo"
+                                    dimensions="6493x1969px"
                                     icon="ri-image-2-line"
                                     value={branding.primary_logo}
                                     onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
                                     error={errors.primary_logo}
-                                    description="Used for dark backgrounds (header, etc)."
+                                    description="Professional transparent background recommended."
                                     required={true}
                                     primaryColor={branding.primary_color}
                                 />
                             </div>
                             <div className="col-md-4">
                                 <BrandingItem
-                                    title="Secondary Logo (Black Transparent)"
+                                    title="Secondary Logo"
+                                    dimensions="6500x2500px"
                                     icon="ri-image-line"
                                     value={branding.secondary_logo}
                                     onSelect={() => { setActiveField('secondary_logo'); setShowFileManager(true); }}
                                     error={errors.secondary_logo}
-                                    description="Used for light backgrounds (Optional - falls back to primary logo)."
+                                    description="Professional transparent background recommended."
                                     required={false}
                                     primaryColor={branding.primary_color}
                                 />
@@ -284,11 +306,13 @@ const BrandingForm: React.FC = () => {
                             <div className="col-md-4">
                                 <BrandingItem
                                     title="Site Favicon"
+                                    dimensions="200x200px"
+                                    allowedFormats="ICO, PNG, SVG, JPG, WEBP"
                                     icon="ri-global-line"
                                     value={branding.favicon}
                                     onSelect={() => { setActiveField('favicon'); setShowFileManager(true); }}
                                     error={errors.favicon}
-                                    description="Browser tab icon."
+                                    description="Square ICO or PNG with transparent background recommended."
                                     required={true}
                                     primaryColor={branding.primary_color}
                                 />
@@ -300,7 +324,7 @@ const BrandingForm: React.FC = () => {
                                     <input
                                         type="color"
                                         className="form-control form-control-color"
-                                        value={branding.primary_color && branding.primary_color !== 'null' ? branding.primary_color : '#405189'}
+                                        value={branding.primary_color && branding.primary_color !== 'null' ? branding.primary_color : '#001F3F'}
                                         onChange={e => setBranding(prev => ({ ...prev, primary_color: e.target.value }))}
                                         style={{ width: '60px' }}
                                     />
@@ -311,8 +335,8 @@ const BrandingForm: React.FC = () => {
                                         value={branding.primary_color && branding.primary_color !== 'null' ? branding.primary_color : ''}
                                         onChange={e => setBranding(prev => ({ ...prev, primary_color: e.target.value }))}
                                     />
-                                    {errors.primary_color && <div className="invalid-feedback fs-11">{errors.primary_color}</div>}
                                 </div>
+                                {errors.primary_color && <div className="text-danger fs-11 mt-1">{errors.primary_color}</div>}
                             </div>
                             <div className="col-md-6">
                                 <label className="form-label fw-semibold fs-13">Secondary Theme Color <span className="text-danger">*</span></label>
@@ -320,7 +344,7 @@ const BrandingForm: React.FC = () => {
                                     <input
                                         type="color"
                                         className="form-control form-control-color"
-                                        value={branding.secondary_color && branding.secondary_color !== 'null' ? branding.secondary_color : '#0ab39c'}
+                                        value={branding.secondary_color && branding.secondary_color !== 'null' ? branding.secondary_color : '#D4AF37'}
                                         onChange={e => setBranding(prev => ({ ...prev, secondary_color: e.target.value }))}
                                         style={{ width: '60px' }}
                                     />
@@ -331,8 +355,8 @@ const BrandingForm: React.FC = () => {
                                         value={branding.secondary_color && branding.secondary_color !== 'null' ? branding.secondary_color : ''}
                                         onChange={e => setBranding(prev => ({ ...prev, secondary_color: e.target.value }))}
                                     />
-                                    {errors.secondary_color && <div className="invalid-feedback fs-11">{errors.secondary_color}</div>}
                                 </div>
+                                {errors.secondary_color && <div className="text-danger fs-11 mt-1">{errors.secondary_color}</div>}
                             </div>
                         </div>
 
