@@ -516,7 +516,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         } catch (error) {
             if (error.response?.data?.errors) {
                 setFormErrors(error.response.data.errors);
-            } else {
+            } else if (error.response?.status !== 403) {
                 toast.error(error.response?.data?.message || 'Failed to save appointment');
             }
         } finally {
@@ -548,7 +548,9 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 toast.error(response?.message || "Failed to delete appointment");
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to delete appointment");
+            if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || "Failed to delete appointment");
+            }
         } finally {
             setIsDeleting(false);
         }
