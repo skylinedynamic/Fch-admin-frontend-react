@@ -254,7 +254,7 @@ export default function LeadDetails() {
                     mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 });
                 setErrors(mappedErrors);
-            } else {
+            } else if (err.response?.status !== 403) {
                 toast.error(err.response?.data?.message || 'Failed to save lead');
             }
         } finally {
@@ -293,7 +293,7 @@ export default function LeadDetails() {
                     flatErrors[key] = Array.isArray(val) ? val[0] : val;
                 });
                 setMissingInfoErrors(flatErrors);
-            } else {
+            } else if (err.response?.status !== 403) {
                 toast.error(err.response?.data?.message || 'Failed to update lead information');
             }
         } finally {

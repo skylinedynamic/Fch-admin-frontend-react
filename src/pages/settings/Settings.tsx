@@ -24,16 +24,16 @@ const Settings: React.FC = () => {
     }
 
     return (
-        <div className="page-content">
+        <div className="page-content settings-page-wrapper">
             <div className="container-fluid">
                 {/* Header */}
                 <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Settings</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
-                                    <ol className="breadcrumb m-0">
+                                <h4 className="fs-18 mb-1">Settings</h4>
+                                <nav aria-label="breadcrumb">
+                                    <ol className="breadcrumb m-0 fs-12">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
                                         <li className="breadcrumb-item">
                                             <span

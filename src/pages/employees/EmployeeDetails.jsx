@@ -611,9 +611,8 @@ export default function EmployeeDetails() {
         // No toast notifications for validation errors - errors shown inline only
         // toast.error for validation errors removed as per requirement
       } else if (error.response?.data?.message) {
-        // Only show general error message in toast (not field-specific)
-        toast.error(error.response.data.message);
-      } else {
+        // No toast here to avoid double messages (handled by global interceptor)
+      } else if (error.response?.status !== 403) {
         toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
       }
     } finally {

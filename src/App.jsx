@@ -57,6 +57,7 @@ import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
 import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
+import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -94,7 +95,7 @@ export default function App() {
 
   useEffect(() => {
     if (publicSettingsData?.data) {
-      const { site_name, partner_favicon, primary_color } = publicSettingsData.data;
+      const { site_name, favicon, primary_color } = publicSettingsData.data;
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -102,17 +103,12 @@ export default function App() {
       }
 
       // 2. Dynamic Favicon
-      let favicon = publicSettingsData.data.partner_favicon || publicSettingsData.data.favicon;
+      const currentFavicon = favicon || publicSettingsData.data.website_favicon;
 
-      // Clean up 'null' or empty strings
-      if (favicon === 'null' || !favicon) {
-        favicon = publicSettingsData.data.favicon;
-      }
-
-      if (favicon && favicon !== 'null') {
+      if (currentFavicon && currentFavicon !== 'null') {
         const BASE_URL = import.meta.env.VITE_BASE_URL || '';
-        const faviconPath = favicon.replace(/^\//, '');
-        const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${faviconPath}`;
+        const faviconPath = currentFavicon.replace(/^\//, '');
+        const faviconUrl = currentFavicon.startsWith('http') ? currentFavicon : `${BASE_URL}/storage/${faviconPath}`;
 
         let link = document.querySelector("link[rel~='icon']");
         if (!link) {
@@ -212,6 +208,7 @@ export default function App() {
 
   return (
     <>
+      <ConfigurationGuardModal />
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>

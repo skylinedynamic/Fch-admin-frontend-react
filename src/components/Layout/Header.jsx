@@ -24,13 +24,16 @@ export default function Header() {
   const menuRef = useRef(null)          // the portal menu
 
   const getLogoUrl = (path, fallback) => {
-    if (!path) return fallback
+    if (!path || path === 'null') return fallback
+    if (typeof path !== 'string') return fallback
     if (path.startsWith('http')) return path
-    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`
+    const clean = path.replace(/^\//, '')
+    return `${BASE_URL}/storage/${clean}`
   }
 
-  const dynamicLogo = getLogoUrl('/site-settings/black-logo.png')
-  const dynamicFavicon = getLogoUrl(settings?.favicon, '/assets/images/Favicon.png')
+  const dynamicLogo = getLogoUrl(settings?.secondary_logo || settings?.primary_logo, `${BASE_URL}/storage/site-settings/black-logo.png`)
+  const dynamicLogoLight = getLogoUrl(settings?.primary_logo, `${BASE_URL}/storage/site-settings/logo-white.png`)
+  const dynamicFavicon = getLogoUrl(settings?.favicon, `${BASE_URL}/storage/site-settings/Favicon.png`)
   const siteName = settings?.site_name || ''
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -253,13 +256,13 @@ export default function Header() {
                 )}
               </button>
 
-              <div className="navbar-brand-box horizontal-logo">
-                <a href="/" className="logo logo-dark">
+              <div className="horizontal-logo">
+                <a href="/" className="logo">
                   <span className="logo-sm">
                     <img src={dynamicFavicon} alt={siteName} height="22" />
                   </span>
                   <span className="logo-lg">
-                    <img src={dynamicLogo} alt={siteName} height="17" />
+                    <img src={dynamicLogo} alt={siteName} height="35" />
                   </span>
                 </a>
               </div>

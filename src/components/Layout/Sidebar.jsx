@@ -206,14 +206,16 @@ export default function Sidebar() {
   const BASE_URL = import.meta.env.VITE_BASE_URL || '';
 
   const getLogoUrl = (path, fallback) => {
-    if (!path) return fallback;
+    if (!path || path === 'null') return fallback;
+    if (typeof path !== 'string') return fallback;
     if (path.startsWith('http')) return path;
-    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
+    const clean = path.replace(/^\//, '');
+    return `${BASE_URL}/storage/${clean}`;
   };
 
-  const dynamicLogoWide = getLogoUrl("/site-settings/black-logo.png");
-  const dynamicLogo = getLogoUrl(settings?.partner_logo);
-  const dynamicFavicon = getLogoUrl(settings?.favicon, faviconImg);
+  const dynamicLogoWide = getLogoUrl(settings?.primary_logo, `${BASE_URL}/storage/site-settings/logo-white.png`);
+  const dynamicLogo = getLogoUrl(settings?.secondary_logo, `${BASE_URL}/storage/site-settings/black-logo.png`);
+  const dynamicFavicon = getLogoUrl(settings?.favicon, `${BASE_URL}/storage/site-settings/Favicon.png`);
 
   // Auto-expand menu on route change
   useEffect(() => {
@@ -347,7 +349,7 @@ export default function Sidebar() {
             <img src={dynamicFavicon} alt="" height="22" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogoWide} alt="" width="200" height="auto" />
+            <img src={dynamicLogo} alt="" width="200" height="auto" />
           </span>
         </Link>
         <Link
@@ -359,7 +361,7 @@ export default function Sidebar() {
             <img src={dynamicFavicon} alt="" height="40" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogo} alt="" width="200" height="auto" />
+            <img src={dynamicLogoWide} alt="" width="200" height="auto" />
           </span>
         </Link>
         <button

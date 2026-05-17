@@ -81,9 +81,9 @@ export default function InvoiceTable({
         const isNotPaid = rowData.status != STATUS_PAID;
         const isNotHost = user?.is_host == 0;
         return (
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2 invoice-action-btns">
                 <button
-                    className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center"
+                    className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center btn-invoice-preview"
                     style={{ width: '28px', height: '28px' }}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -95,14 +95,14 @@ export default function InvoiceTable({
                 </button>
                 {isNotPaid && isNotHost && (
                     <button
-                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
+                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0 btn-pay-now"
                         onClick={(e) => {
                             e.stopPropagation();
                             handlePayClick(rowData);
                         }}
                     >
-                        <i className="ri-secure-payment-line align-middle me-1"></i>
-                        Pay Now
+                        <i className="ri-secure-payment-line align-middle me-1 icon-pay"></i>
+                        <span className="btn-text">Pay Now</span>
                     </button>
                 )}
             </div>

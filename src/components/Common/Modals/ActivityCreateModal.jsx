@@ -148,7 +148,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                     normalizedErrors[key] = Array.isArray(error) ? error : [error];
                 });
                 setErrors(normalizedErrors);
-            } else {
+            } else if (err.response?.status !== 403) {
                 toast.error(responseData?.message || 'Failed to create activity');
             }
         } finally {

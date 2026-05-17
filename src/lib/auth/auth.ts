@@ -1,6 +1,7 @@
 // Auth utilities backed by Zustand store with persist
 import { getAuthState, setAuthState, clearAuthState, AuthUser, setUserSubscriptionState, UserSubscription, getUserSubscriptionState } from '../../store/auth'
 import { getUserDetails, refreshUser } from './authApi'
+import { fetchGlobalConfigurations } from '../../modules/settings/services'
 
 const COOKIE_NAME = 'auth_session_active'
 
@@ -113,9 +114,37 @@ export async function refreshSubscription(): Promise<void> {
         phase: user.phase,
         is_host: user.is_host
       })
+
+      // Sync configurations if flags are set or cache is missing
+      const cachedConfig = localStorage.getItem('global_configurations');
+      const needsSync = user.is_email_fresh === 1 || user.is_refresh_settings === 1 || !cachedConfig;
+
+      if (needsSync) {
+        await syncConfigurations(user)
+      }
     }
   } catch (error) {
     console.error("Failed to refresh user details", error)
+  }
+}
+
+async function syncConfigurations(user: any): Promise<void> {
+  try {
+    const res = await fetchGlobalConfigurations();
+    if (res?.status && res?.data) {
+        // Cache the merged result
+        localStorage.setItem('global_configurations', JSON.stringify(res.data));
+        
+        // Also cache individually for backward compatibility if components rely on it
+        if (res.data.email_configuration) {
+            localStorage.setItem('cached_email_config', JSON.stringify(res.data.email_configuration));
+        }
+        if (res.data.branding) {
+            localStorage.setItem('cached_branding_config', JSON.stringify(res.data.branding));
+        }
+    }
+  } catch (error) {
+    console.error("Failed to sync global configurations", error)
   }
 }
 
