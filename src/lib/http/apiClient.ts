@@ -9,7 +9,7 @@ export const apiClient: AxiosInstance = axios.create({
   },
 })
 
-// Attach Authorization and Timezone headers
+// Attach Authorization, Timezone, and Domain headers
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   config.headers = config.headers || {}
@@ -18,9 +18,10 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
 
-  // Pass user timezone via header
+  // Pass user timezone and current portal domain via headers
   if (typeof window !== 'undefined') {
-    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
+    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    (config.headers as Record<string, string>)['X-Domain'] = window.location.hostname;
   }
 
   return config
