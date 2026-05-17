@@ -134,7 +134,6 @@ const EmailConfigurationForm: React.FC = () => {
 
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             toast.success('Configuration saved successfully.');
-            loadConfigs();
         } catch (err: any) {
             if (err?.response?.status === 422) {
                 setErrors(err.response.data.errors || {});
@@ -306,13 +305,13 @@ const EmailConfigurationForm: React.FC = () => {
                                                 className={`form-control fs-14 ${errors.smtp_host ? 'is-invalid border-danger' : ''}`}
                                                 value={form.smtp_host}
                                                 onChange={(e) => {
-                                                setForm({ ...form, smtp_host: e.target.value });
-                                                if (errors.smtp_host) {
-                                                    const newErrors = { ...errors };
-                                                    delete newErrors.smtp_host;
-                                                    setErrors(newErrors);
-                                                }
-                                            }}
+                                                    setForm({ ...form, smtp_host: e.target.value });
+                                                    if (errors.smtp_host) {
+                                                        const newErrors = { ...errors };
+                                                        delete newErrors.smtp_host;
+                                                        setErrors(newErrors);
+                                                    }
+                                                }}
                                                 placeholder="smtp.mailtrap.io"
                                                 style={{ boxShadow: 'none' }}
                                             />
