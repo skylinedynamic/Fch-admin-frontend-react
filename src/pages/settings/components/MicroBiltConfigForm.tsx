@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { fetchMultipleAppConfigs, saveMultipleAppConfigs } from '../../../modules/settings/services';
+import { fetchAppConfigurations, saveAppConfigurations } from '../../../modules/settings/services';
+import { MODULE_MICROBILT } from '../../../config/appConfig';
 import { MicroBiltConfig } from '../../../modules/settings/types';
 import FormLoader from '../../../components/Loader/FormLoader';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
@@ -55,10 +56,9 @@ const MicroBiltConfigForm: React.FC = () => {
     const loadConfig = async () => {
         try {
             setFetching(true);
-            const response = await fetchMultipleAppConfigs<MicroBiltConfig>(API_KEYS);
+            const response = await fetchAppConfigurations(MODULE_MICROBILT);
             if (response && response.data) {
-                // Laravel Resource might wrap in data: { data: { ... } }
-                const configData = (response.data as any).data || response.data;
+                const configData = response.data;
 
                 setFormData({
                     mode: configData.microbilt_mode || '',
@@ -148,7 +148,7 @@ const MicroBiltConfigForm: React.FC = () => {
                 microbilt_client_secret_production: formData.client_secret_production
             };
 
-            await saveMultipleAppConfigs(payload);
+            await saveAppConfigurations(MODULE_MICROBILT, payload);
             toast.success('MicroBilt configuration saved successfully!');
         } catch (error: any) {
             console.error('Failed to save MicroBilt config:', error);

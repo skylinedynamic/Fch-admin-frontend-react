@@ -4,6 +4,29 @@
 
 <head>
   <meta charset="utf-8" />
+  <script>
+    (function() {
+      try {
+        var storeStr = localStorage.getItem('app-config-store');
+        if (storeStr) {
+          var parsed = JSON.parse(storeStr);
+          if (parsed && parsed.state && parsed.state.branding) {
+            var branding = parsed.state.branding;
+            var primary = branding.primary_color;
+            var secondary = branding.secondary_color || '#F7B84B';
+            if (primary && primary !== 'null') {
+              document.documentElement.style.setProperty('--primary-color', primary);
+            }
+            if (secondary && secondary !== 'null') {
+              document.documentElement.style.setProperty('--secondary-color', secondary);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Branding initialization error:', e);
+      }
+    })();
+  </script>
   <title>Four Corner Funding | Partner Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="shortcut icon" href="/assets/images/Favicon.png" />

@@ -1,11 +1,10 @@
 import React from 'react'
 import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG } from '../../config'
-import { usePublicSiteSettings } from '../../modules/cms/queries'
+import { useConfigStore } from '../../store/config'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
-  const { data: settingsData } = usePublicSiteSettings();
-  const settings = settingsData?.data;
+  const { branding: settings } = useConfigStore()
   const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
   const getLogoUrl = (path, fallback) => {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-    fetchGeneralInformation,
-    updateGeneralInformation
+    fetchAppConfigurations,
+    saveAppConfigurations
 } from '../../../modules/settings/services';
+import { MODULE_BRANDING } from '../../../config/appConfig';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { useAuthStore } from '../../../store/auth/authStore';
@@ -152,7 +153,7 @@ const BrandingForm: React.FC = () => {
     const loadBranding = async () => {
         try {
             setFetching(true);
-            const res: any = await fetchGeneralInformation();
+            const res: any = await fetchAppConfigurations(MODULE_BRANDING);
             if (res?.data) {
                 const cleanedData = { ...res.data };
 
@@ -229,7 +230,7 @@ const BrandingForm: React.FC = () => {
                 ...branding
             };
 
-            const response: any = await updateGeneralInformation(payload);
+            const response: any = await saveAppConfigurations(MODULE_BRANDING, payload);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             queryClient.invalidateQueries({ queryKey: ['public-site-settings'] });
             toast.success(response.message || 'Site settings updated successfully');

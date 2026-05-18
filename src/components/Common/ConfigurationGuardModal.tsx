@@ -1,26 +1,23 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
-import { useGlobalConfigurations } from '../../modules/settings/queries';
-import { usePublicSiteSettings } from '../../modules/cms/queries';
+import { useConfigStore } from '../../store/config';
 
 const ConfigurationGuardModal = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const user = useAuthStore((state) => state.user);
 
-    const { data: configRes } = useGlobalConfigurations(!!user);
-    const flags = configRes?.data?.status_flags || {};
-
-    const { data: publicSettingsData } = usePublicSiteSettings();
-    const primaryColor = publicSettingsData?.data?.primary_color || '#1e3a8a';
+    // Retrieve branding and flags directly from our global Zustand store!
+    const { branding, statusFlags: flags } = useConfigStore();
+    const primaryColor = branding?.primary_color || '#1e3a8a';
 
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     // Show modal if ANY config is missing and user is a White-Label Partner
-    const isEmailMissing = flags.is_fresh_email === null;
-    const isBrandingMissing = flags.is_fresh_settings === null;
+    const isEmailMissing = !flags || flags.is_fresh_email === null;
+    const isBrandingMissing = !flags || flags.is_fresh_settings === null;
     const isWhiteLabel = user?.partner_type === 'White-Label Partner (WL)';
     const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing);
 

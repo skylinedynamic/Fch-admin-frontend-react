@@ -1708,7 +1708,7 @@
 .btn-pay-now {
     background-color: #001f3f !important;
     color: #ffffff !important;
-    border: 1px solid #d4af37 !important;
+    border: 1px solid var(--secondary-color) !important;
     transition: all 0.3s ease !important;
 }
 

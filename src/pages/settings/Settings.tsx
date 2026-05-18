@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchSettings, updateSettings } from '../../modules/settings/services';
 import SettingsForm from './components/SettingsForm';
-import { toast } from 'react-toastify';
 import "../../../assets/css/settings-redesign.css";
 
 // interface FormData and Errors removed as they are now handled by sub-components

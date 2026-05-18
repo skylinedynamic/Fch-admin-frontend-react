@@ -30,6 +30,7 @@ jobs:
           echo "VITE_WEBSITE_URL=https://skylinedynamic.dev/" >> .env.production
           echo "VITE_BASE_URL=https://skylinedynamic.dev/" >> .env.production
           echo "VITE_BASE_URL_IP=54.88.91.253" >> .env.production
+          echo "VITE_DEVELOPMENT_MODE=production" >> .env.production
 
       - name: Build Application
         run: npm run build

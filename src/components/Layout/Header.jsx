@@ -2,18 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { clearAuth } from '../../lib/auth'
 import { useAuthStore } from '../../store/auth/authStore'
+import { useConfigStore } from '../../store/config'
 import { logout } from '../../lib/auth'
 import avatarDefault from '../../../assets/images/users/avatar-1.jpg'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
-import { usePublicSiteSettings } from '../../modules/cms/queries'
 
 export default function Header() {
   const navigate = useNavigate()
   const location = useLocation()
   const { hasPermission } = usePermissions()
-  const { data: settingsData } = usePublicSiteSettings()
-  const settings = settingsData?.data
+  const { branding: settings } = useConfigStore()
   const BASE_URL = import.meta.env.VITE_BASE_API_URL || ''
   const user = useAuthStore((state) => state.user)
 

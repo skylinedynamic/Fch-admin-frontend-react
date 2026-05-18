@@ -52,7 +52,9 @@ import BlogTags from './pages/cms/BlogTags.tsx';
 import SeoSettings from './pages/cms/SeoSettings.tsx';
 import SeoSettingEdit from './pages/cms/SeoSettingEdit.tsx';
 import SiteSettings from './pages/cms/SiteSettings.tsx';
-import { useSiteSettings, usePublicSiteSettings } from './modules/cms/queries';
+import { useSiteSettings } from './modules/cms/queries';
+import { useGlobalConfigurations } from './modules/settings/queries';
+import { useConfigStore } from './store/config';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
@@ -91,11 +93,21 @@ export default function App() {
   }, []);
 
   const user = useAuthStore((state) => state.user);
-  const { data: publicSettingsData } = usePublicSiteSettings();
+
+  // Fetch authenticated global configurations (branding + status flags)
+  const { data: globalConfigData } = useGlobalConfigurations(!!user);
+
+  const setGlobalConfigs = useConfigStore((state) => state.setGlobalConfigs);
 
   useEffect(() => {
-    if (publicSettingsData?.data) {
-      const { site_name, favicon, primary_color } = publicSettingsData.data;
+    if (user && globalConfigData?.data) {
+      const activeBranding = globalConfigData.data.branding;
+      const activeFlags = globalConfigData.data.status_flags;
+
+      // Persist global config in Zustand
+      setGlobalConfigs(activeBranding, activeFlags);
+
+      const { site_name, favicon, primary_color, secondary_color } = activeBranding;
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -103,7 +115,7 @@ export default function App() {
       }
 
       // 2. Dynamic Favicon
-      const currentFavicon = favicon || publicSettingsData.data.website_favicon;
+      const currentFavicon = favicon || activeBranding.website_favicon;
 
       if (currentFavicon && currentFavicon !== 'null') {
         const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
@@ -119,92 +131,31 @@ export default function App() {
         link.href = faviconUrl;
       }
 
-      // 3. Dynamic Sidebar Styling (Primary Color BG + Secondary Color Icons)
+      // 3. Dynamic CSS Variables
       if (primary_color && primary_color !== 'null') {
-        const secondary = publicSettingsData.data.secondary_color || '#F7B84B';
-        const styleId = 'dynamic-sidebar-overrides';
-        let style = document.getElementById(styleId);
-        if (!style) {
-          style = document.createElement('style');
-          style.id = styleId;
-          document.head.appendChild(style);
+        const secondary = secondary_color || '#F7B84B';
+
+        // Dynamic CSS variables set on :root
+        document.documentElement.style.setProperty('--primary-color', primary_color);
+        document.documentElement.style.setProperty('--secondary-color', secondary);
+
+        // Also dynamically set Bootstrap/Velzon primary variables
+        document.documentElement.style.setProperty('--vz-primary', primary_color, 'important');
+
+        const hexToRgb = (hex) => {
+          const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+          const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+          return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+        };
+
+        const rgbVal = hexToRgb(primary_color);
+        if (rgbVal) {
+          document.documentElement.style.setProperty('--vz-primary-rgb', rgbVal, 'important');
         }
-        style.innerHTML = `
-          /* SIDEBAR BACKGROUND */
-          .app-menu, .navbar-brand-box {
-            background: ${primary_color} !important;
-          }
-          
-          /* NAVIGATION TEXT (WHITE) */
-          .navbar-menu .navbar-nav .nav-link, 
-          .navbar-menu .navbar-nav .nav-sm .nav-link,
-          .navbar-menu .navbar-title {
-            color: #ffffff !important;
-          }
-          
-          /* NAVIGATION ICONS (SECONDARY COLOR) */
-          .navbar-menu .navbar-nav .nav-link i {
-            color: ${secondary} !important;
-          }
-          
-          /* ACTIVE STATE (SECONDARY BG + WHITE TEXT/ICON) */
-          /* HOVER & ACTIVE EFFECTS (SECONDARY COLOR) */
-          .navbar-menu .navbar-nav .nav-link:hover,
-          .navbar-menu .navbar-nav .nav-sm .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: #ffffff !important;
-          }
-
-          /* DYNAMIC UI BUTTONS (PRIMARY & SECONDARY) */
-          .btn-primary {
-            background-color: ${primary_color} !important;
-            border-color: ${primary_color} !important;
-          }
-          .btn-primary:hover, .btn-primary:active, .btn-primary:focus {
-            background-color: ${primary_color} !important;
-            filter: brightness(90%);
-            border-color: ${primary_color} !important;
-          }
-
-          .btn-warning {
-            background-color: ${secondary} !important;
-            border-color: ${secondary} !important;
-            color: #ffffff !important; /* Ensure text is readable on secondary color */
-          }
-          .btn-warning:hover, .btn-warning:active, .btn-warning:focus {
-            background-color: ${secondary} !important;
-            filter: brightness(90%);
-            border-color: ${secondary} !important;
-            color: #ffffff !important;
-          }
-
-          /* Ensure filter icon stays white */
-          .btn-warning i {
-            color: #ffffff !important;
-          }
-          
-          .navbar-menu .navbar-nav .nav-link.active,
-          .navbar-menu .navbar-nav .nav-sm .nav-link.active {
-            background-color: ${secondary} !important;
-            color: #ffffff !important;
-          }
-          
-          .navbar-menu .navbar-nav .nav-link.active i,
-          .navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
-            color: #ffffff !important;
-          }
-
-          /* Ensure sub-menu indicators also follow white/secondary theme */
-          .navbar-menu .navbar-nav .nav-sm .nav-link::before {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-          }
-          .navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
-            background-color: #ffffff !important;
-          }
-        `;
       }
     }
-  }, [publicSettingsData]);
+  }, [globalConfigData, user, setGlobalConfigs]);
 
   return (
     <>

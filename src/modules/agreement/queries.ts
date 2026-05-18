@@ -24,12 +24,11 @@ export const useSaveAppConfig = () => {
   return useMutation({
     mutationFn: (variables: { key: string, value: any }) => saveAppConfig(variables.key, variables.value),
     onSuccess: (res, variables) => {
-      if (res.status) {
-        qc.invalidateQueries({ queryKey: ['appConfig', variables.key] })
-      }
+      qc.invalidateQueries({ queryKey: ['appConfig', variables.key] })
     },
   })
 }
+
 
 /**
  * Hook to fetch an agreement template by slug.
