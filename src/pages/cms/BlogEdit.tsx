@@ -12,7 +12,7 @@ import CmsFormLoader from '../../components/Loader/CmsFormLoader';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../modules/filemanager/types';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
 
 export default function BlogEdit() {

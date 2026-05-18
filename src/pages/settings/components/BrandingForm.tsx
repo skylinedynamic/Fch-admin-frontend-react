@@ -9,7 +9,7 @@ import { useAuthStore } from '../../../store/auth/authStore';
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { useQueryClient } from '@tanstack/react-query';
 
-const BASE_URL = (import.meta as any).env.VITE_BASE_URL || '';
+const BASE_URL = (import.meta as any).env.VITE_BASE_API_URL || '';
 
 function resolveLogoUrl(path: string | null | undefined) {
     if (!path || path === 'null' || path === 'undefined') return null;

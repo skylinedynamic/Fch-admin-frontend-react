@@ -156,7 +156,6 @@ const EmailConfigurationForm: React.FC = () => {
 
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
             toast.success('Configuration saved successfully.');
-            loadConfigs();
         } catch (err: any) {
             if (err?.response?.status === 422) {
                 setErrors(err.response.data.errors || {});

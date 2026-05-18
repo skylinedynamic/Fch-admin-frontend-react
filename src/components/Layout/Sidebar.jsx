@@ -203,7 +203,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { data: settingsData } = usePublicSiteSettings();
   const settings = settingsData?.data;
-  const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+  const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
   const getLogoUrl = (path, fallback) => {
     if (!path || path === 'null') return fallback;

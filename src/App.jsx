@@ -106,7 +106,7 @@ export default function App() {
       const currentFavicon = favicon || publicSettingsData.data.website_favicon;
 
       if (currentFavicon && currentFavicon !== 'null') {
-        const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+        const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
         const faviconPath = currentFavicon.replace(/^\//, '');
         const faviconUrl = currentFavicon.startsWith('http') ? currentFavicon : `${BASE_URL}/storage/${faviconPath}`;
 

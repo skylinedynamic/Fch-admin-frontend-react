@@ -17,8 +17,9 @@ const Settings: React.FC = () => {
             case 'agreement': return 'Agreement Builder';
             case 'general_settings': return 'Email Configuration';
             case 'branding': return 'Site Branding';
-            case 'test_mail': return 'Test Mail';
+            case 'domain_configuration': return 'Custom Domain';
             case 'microbilt': return 'MicroBilt Config';
+            case 'test_mail': return 'Test Mail';
             default: return 'Settings';
         }
     }

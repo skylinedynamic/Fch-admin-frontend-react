@@ -14,7 +14,7 @@ export default function Header() {
   const { hasPermission } = usePermissions()
   const { data: settingsData } = usePublicSiteSettings()
   const settings = settingsData?.data
-  const BASE_URL = import.meta.env.VITE_BASE_URL || ''
+  const BASE_URL = import.meta.env.VITE_BASE_API_URL || ''
   const user = useAuthStore((state) => state.user)
 
   // ─── Avatar dropdown state ───────────────────────────────────────────────

@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
+import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import FormLoader from '../../../components/Loader/FormLoader';
 import AgreementBuilder from './AgreementBuilder';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -8,6 +10,8 @@ import MicroBiltConfigForm from './MicroBiltConfigForm';
 import StripeConfigForm from './StripeConfigForm';
 import EmailConfigurationForm from './EmailConfigurationForm';
 import BrandingForm from './BrandingForm';
+// @ts-ignore
+import TenantDomainConfig from './TenantDomainConfig';
 
 interface SettingsFormProps {
     fetching: boolean;
@@ -36,11 +40,6 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'agreement', label: 'Agreement Builder', icon: 'ri-file-text-line' });
     }
 
-    if (user && (user.is_host == 1 || user.is_host == true)) {
-        sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
-        sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
-    }
-
     if (hasPermission('update email configuration settings')) {
         sections.push({ id: 'email_configuration', label: 'Email Configuration', icon: 'ri-mail-settings-line' });
     }
@@ -48,6 +47,21 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     if (hasPermission('update branding settings')) {
         sections.push({ id: 'branding', label: 'Branding', icon: 'ri-brush-line' });
     }
+
+    // Custom Domain Configuration - Only for White-Label Partners (who are not the host)
+    if (
+        user?.entity_type == ENTITY_TYPE_PARTNER &&
+        user?.is_host == 0 &&
+        user.partner_type == PARTNER_TYPES.WHITE_LABEL
+    ) {
+        sections.push({ id: 'domain_configuration', label: 'Custom Domain', icon: 'ri-global-line' });
+    }
+
+    if (user && (user.is_host == 1 || user.is_host == true)) {
+        sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
+    }
+
+    sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
 
     // Auto-select first available section if the active one isn't available
     useEffect(() => {
@@ -138,6 +152,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <EmailConfigurationForm />
                 ) : activeSection === 'branding' ? (
                     <BrandingForm />
+                ) : activeSection === 'domain_configuration' ? (
+                    <TenantDomainConfig />
                 ) : (
                     <StripeConfigForm />
                 )}

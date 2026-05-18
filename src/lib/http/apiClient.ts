@@ -3,13 +3,13 @@ import { toast } from 'react-toastify'
 import { getToken, clearAuth } from '../auth'
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_URL || '',
   headers: {
     Accept: 'application/json',
   },
 })
 
-// Attach Authorization and Timezone headers
+// Attach Authorization, Timezone, and Domain headers
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   config.headers = config.headers || {}
@@ -18,9 +18,10 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
 
-  // Pass user timezone via header
+  // Pass user timezone and current portal domain via headers
   if (typeof window !== 'undefined') {
-    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
+    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    (config.headers as Record<string, string>)['X-Domain'] = window.location.hostname;
   }
 
   return config

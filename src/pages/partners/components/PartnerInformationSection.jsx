@@ -207,7 +207,7 @@ export default function PartnerInformationSection({
                 <div className="mb-3">
                     <label className="form-label">
                         Company Name <span className="text-danger">*</span>
-                        {formData.company_name && (
+                        {formData.company_name && !partnerId && (
                             <span className="ms-1 text-muted fw-normal" style={{ fontSize: '0.85em' }}>
                                 &nbsp;(Partner portal url be like : <code className="text-primary font-monospace">
                                     {formData.partner_domain ? (
@@ -215,7 +215,7 @@ export default function PartnerInformationSection({
                                     ) : (
                                         <>
                                             {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
-                                            .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                            .{new URL(import.meta.env.VITE_BASE_API_URL || window.location.href).host}
                                         </>
                                     )}
                                 </code>)
@@ -234,8 +234,8 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Portal URL / Custom Domain - Visible only in update mode */}
-            {partnerId && (
+            {/* Portal URL / Custom Domain - Visible only in update mode for Certified Partners */}
+            {partnerId && formData.partner_type === PARTNER_TYPES.CERTIFIED && (
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label className="form-label">

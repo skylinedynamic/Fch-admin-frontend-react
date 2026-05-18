@@ -15,7 +15,7 @@ export const buildStorageUrl = (path: any, fallback: string = ''): string => {
         return path;
     }
 
-    const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || (import.meta.env.VITE_BASE_URL ? `${import.meta.env.VITE_BASE_URL}/storage` : '');
+    const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || (import.meta.env.VITE_BASE_API_URL ? `${import.meta.env.VITE_BASE_API_URL}/storage` : '');
 
     // Clean up base URL and path
     const baseUrl = (STORAGE_URL.trim() || '/storage').replace(/\/+$/, '');
