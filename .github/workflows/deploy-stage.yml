@@ -25,9 +25,11 @@ jobs:
       - name: Create Environment Variables
         run: |
           # Create exactly the .env variable required for staging
-          echo "VITE_API_BASE_URL=https://api.skylinedynamic.dev/api/v1" > .env.production
-          echo "VITE_BASE_URL=https://api.skylinedynamic.dev" >> .env.production
+          echo "VITE_API_URL=https://api.skylinedynamic.dev/api/v1" > .env.production
+          echo "VITE_BASE_API_URL=https://api.skylinedynamic.dev" >> .env.production
           echo "VITE_WEBSITE_URL=https://skylinedynamic.dev/" >> .env.production
+          echo "VITE_BASE_URL=https://skylinedynamic.dev/" >> .env.production
+          echo "VITE_BASE_URL_IP=54.88.91.253" >> .env.production
 
       - name: Build Application
         run: npm run build
