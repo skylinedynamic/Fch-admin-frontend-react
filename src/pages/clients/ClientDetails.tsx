@@ -241,12 +241,9 @@ export default function ClientDetails() {
 
                 const response: any = await createClient(payload);
 
-                // Handle Payment for Non-Hosts - ACCURATE LEAD PATTERN (is_host == 0)
-                const clientData = response.data || response;
-                const bId = clientData?.borrower?.id || clientData?.id || response.id;
-                const invId = response.data?.invoice?.id || clientData?.invoice?.id || response.invoice?.id || null;
+                const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
 
-                if (!isHost && bId && amount > 0) {
+                if (!isHost && !isWL && bId && amount > 0) {
                     setNewBorrowerId(bId);
                     setPaymentInvoiceId(invId);
                     setPaymentAmount(amount);
@@ -259,7 +256,11 @@ export default function ClientDetails() {
                     return;
                 }
 
-                toast.success("Client created successfully");
+                if (isWL) {
+                    toast.success("Client created successfully. Partner fee ($800) charged automatically. Onboarding email sent to borrower.");
+                } else {
+                    toast.success("Client created successfully");
+                }
 
                 if (clientData && clientData.id) {
                     window.dispatchEvent(new Event('refreshActivities'));
