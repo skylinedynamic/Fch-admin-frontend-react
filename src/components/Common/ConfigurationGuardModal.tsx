@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
 import { useGlobalConfigurations } from '../../modules/settings/queries';
+import { usePublicSiteSettings } from '../../modules/cms/queries';
 
 const ConfigurationGuardModal = () => {
     const navigate = useNavigate();
@@ -10,6 +11,9 @@ const ConfigurationGuardModal = () => {
 
     const { data: configRes } = useGlobalConfigurations(!!user);
     const flags = configRes?.data?.status_flags || {};
+
+    const { data: publicSettingsData } = usePublicSiteSettings();
+    const primaryColor = publicSettingsData?.data?.primary_color || '#1e3a8a';
 
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
@@ -30,7 +34,7 @@ const ConfigurationGuardModal = () => {
             <style>{`
                 .cgm-overlay {
                     position: fixed; inset: 0;
-                    background: rgba(8,12,28,0.85);
+                    background: rgb(8 12 28 / 52%);
                     z-index: 1060;
                     display: flex; align-items: center; justify-content: center;
                     padding: 1rem;
@@ -39,11 +43,11 @@ const ConfigurationGuardModal = () => {
                 .cgm-modal {
                     width: 820px; max-width: 100%;
                     display: flex; flex-direction: row;
-                    border-radius: 24px; overflow: hidden;
+                    border-radius: 10px; overflow: hidden;
                     box-shadow: 0 40px 100px rgba(0,0,0,0.5);
                 }
                 .cgm-left {
-                    width: 40%; background: #1e3a8a;
+                    width: 40%; background: ${primaryColor};
                     display: flex; flex-direction: column;
                     align-items: center; justify-content: center;
                     padding: 3.5rem 2rem; text-align: center;
@@ -73,7 +77,7 @@ const ConfigurationGuardModal = () => {
                 }
                 .cgm-btn-main {
                     width: 100%; padding: 15px; border-radius: 50px;
-                    background: #1e3a8a; color: #fff; border: none;
+                    background: ${primaryColor}; color: #fff; border: none;
                     font-size: 15px; font-weight: 700; cursor: pointer;
                     letter-spacing: 0.02em; margin-top: 8px;
                 }
@@ -117,7 +121,7 @@ const ConfigurationGuardModal = () => {
                                 Action Required
                             </p>
                             <p className="cgm-left-sub" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', lineHeight: 1.7, maxWidth: 200 }}>
-                                Please complete your system configuration to unlock these features.
+                                Please complete your system configuration.
                             </p>
                         </div>
                     </div>
@@ -125,7 +129,7 @@ const ConfigurationGuardModal = () => {
                     {/* Right */}
                     <div className="cgm-right">
                         <h2 className="cgm-right-title" style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.6rem', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                            Configuration<br />Incomplete
+                            Configuration Incomplete
                         </h2>
                         <p style={{ fontSize: '0.875rem', color: '#6b7280', lineHeight: 1.7, marginBottom: '1.5rem' }}>
                             To ensure the system functions accurately, complete the following global settings before accessing{' '}

@@ -2,7 +2,7 @@ import { apiClient } from '../../lib/http/apiClient';
 import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse } from './types';
 
 // Base API path
-const BASE_PATH = '/common/settings';
+const BASE_PATH = '/common/payment-methods';
 
 export const fetchSettings = async (): Promise<SettingsResponse> => {
     const { data } = await apiClient.get(BASE_PATH);
@@ -15,22 +15,22 @@ export const updateSettings = async (payload: UpdateSettingsPayload): Promise<Se
 };
 
 export const fetchAppConfig = async <T = string>(key: string): Promise<AppConfigResponse<Record<string, T>>> => {
-    const { data } = await apiClient.post('/admin/app-configurations/show', { keys: [key] });
+    const { data } = await apiClient.post('/common/app-config/show', { key });
     return data;
 };
 
 export const fetchMultipleAppConfigs = async <T = Record<string, string>>(keys: string[]): Promise<AppConfigResponse<T>> => {
-    const { data } = await apiClient.post('/admin/app-configurations/show', { keys });
+    const { data } = await apiClient.post('/common/app-config/show', { keys });
     return data;
 };
 
 export const saveAppConfig = async (key: string, value: any): Promise<AppConfigResponse<null>> => {
-    const { data } = await apiClient.post('/admin/app-configurations/save', { [key]: value });
+    const { data } = await apiClient.post('/common/app-config/save', { key, value });
     return data;
 };
 
 export const saveMultipleAppConfigs = async (settings: object): Promise<AppConfigResponse<null>> => {
-    const { data } = await apiClient.post('/admin/app-configurations/save', settings);
+    const { data } = await apiClient.post('/common/app-config/save', settings);
     return data;
 };
 
