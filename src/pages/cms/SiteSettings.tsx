@@ -11,7 +11,7 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
-const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
 export default function SiteSettings() {
     const { hasPermission } = usePermissions();
@@ -32,7 +32,7 @@ export default function SiteSettings() {
     useEffect(() => {
         if (settingsData?.data) {
             const s = settingsData.data;
-            
+
             // Accurately merge all dynamic keys from the database into the form state
             setFormData(prev => ({
                 ...prev,
@@ -403,7 +403,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Office Address <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.address ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-map-pin-line fs-16"></i></span>
-                                                         <textarea className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" rows={3} value={formData.address || ''} onChange={handleChange} placeholder="123 Business St, City" style={{ whiteSpace: 'pre-wrap' }}></textarea>
+                                                        <textarea className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" rows={3} value={formData.address || ''} onChange={handleChange} placeholder="123 Business St, City" style={{ whiteSpace: 'pre-wrap' }}></textarea>
                                                         {validationErrors.address && <div className="invalid-feedback d-block mt-1">{validationErrors.address}</div>}
                                                     </div>
                                                 </div>

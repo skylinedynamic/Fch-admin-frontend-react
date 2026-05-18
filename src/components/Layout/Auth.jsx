@@ -6,7 +6,7 @@ import { usePublicSiteSettings } from '../../modules/cms/queries'
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   const { data: settingsData } = usePublicSiteSettings();
   const settings = settingsData?.data;
-  const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+  const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
   const getLogoUrl = (path, fallback) => {
     if (!path) return fallback;
