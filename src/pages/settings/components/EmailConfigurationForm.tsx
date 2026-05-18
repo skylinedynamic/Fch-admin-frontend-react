@@ -71,7 +71,7 @@ const EmailConfigurationForm: React.FC = () => {
     const loadConfigs = async () => {
         try {
             setFetching(true);
-            const res: any = await fetchEmailConfigurations(partnerId);
+            const res: any = await fetchEmailConfigurations();
             const configList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.data) ? res.data.data : []);
 
             if (configList && configList.length > 0) {
@@ -127,7 +127,6 @@ const EmailConfigurationForm: React.FC = () => {
             const payload: any = {
                 ...form,
                 email_provider: provider,
-                partner_id: partnerId,
                 enable_custom_configuration: true,
                 is_active: true
             };

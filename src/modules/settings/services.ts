@@ -39,9 +39,8 @@ export const sendTestMail = async (payload: SendTestMailPayload): Promise<SendTe
     return data;
 };
 
-export const fetchEmailConfigurations = async (partnerId?: number): Promise<any> => {
-    const params = { partner_id: partnerId };
-    const { data } = await apiClient.get('/common/email-configurations', { params });
+export const fetchEmailConfigurations = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/email-configurations');
     return data;
 };
 
@@ -50,22 +49,19 @@ export const saveEmailConfiguration = async (payload: any): Promise<any> => {
     return data;
 };
 
-export const toggleEmailConfigStatus = async (id: number): Promise<any> => {
-    const { data } = await apiClient.patch(`/common/email-configurations/${id}/toggle-status`);
+export const toggleEmailConfigStatus = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/email-configurations/toggle-status');
     return data;
 };
 
-// General Information (Branding)
-export const fetchGeneralInformation = async (entityType?: string, entityId?: number): Promise<any> => {
-    const params: Record<string, any> = {};
-    if (entityType) params.entity_type = entityType;
-    if (entityId)   params.entity_id   = entityId;
-    const { data } = await apiClient.get('/common/general-information', { params });
+// Branding Information
+export const fetchGeneralInformation = async (): Promise<any> => {
+    const { data } = await apiClient.get('/common/branding-info');
     return data;
 };
 
 export const updateGeneralInformation = async (payload: any): Promise<any> => {
-    const { data } = await apiClient.post('/common/general-information-update', payload);
+    const { data } = await apiClient.post('/common/branding-info', payload);
     return data;
 };
 

@@ -21,7 +21,6 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Pass user timezone and current portal domain via headers
   if (typeof window !== 'undefined') {
     (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    (config.headers as Record<string, string>)['X-Domain'] = window.location.hostname;
   }
 
   return config

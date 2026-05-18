@@ -16,15 +16,12 @@ function resolveLogoUrl(path: string | null | undefined) {
     if (typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
 
-    // Remove leading slash and handle storage/ prefix
+    // Remove leading slash
     let clean = path.replace(/^\//, '');
+
+    // If it already starts with storage/, remove it to prevent double-prefixing
     if (clean.startsWith('storage/')) {
         clean = clean.replace(/^storage\//, '');
-    }
-
-    // Ensure site-settings/ prefix
-    if (!clean.startsWith('site-settings/')) {
-        clean = 'site-settings/' + clean;
     }
 
     return `${BASE_URL}/storage/${clean}`;
@@ -155,7 +152,7 @@ const BrandingForm: React.FC = () => {
     const loadBranding = async () => {
         try {
             setFetching(true);
-            const res: any = await fetchGeneralInformation(user?.entity_type || undefined, partnerId || undefined);
+            const res: any = await fetchGeneralInformation();
             if (res?.data) {
                 const cleanedData = { ...res.data };
 
@@ -204,9 +201,22 @@ const BrandingForm: React.FC = () => {
         }
 
         const cleanPath = file.path.trim().replace(/^\/+/, '');
-        const fullPath = cleanPath.startsWith('site-settings/') ? cleanPath : `site-settings/${cleanPath}`;
 
-        setBranding(prev => ({ ...prev, [activeField]: fullPath }));
+        // Build the prefix based on entity type and ID
+        const eType = user?.entity_type || 'site-settings';
+        const isPartner = eType.includes('Partner') || eType === 'partners';
+        const prefix = isPartner ? `partners/${partnerId}` : 'site-settings';
+
+        // Prepend prefix if it's not already there
+        let finalPath = cleanPath;
+        if (!cleanPath.startsWith(prefix) && !cleanPath.startsWith('http')) {
+            finalPath = `${prefix}/${cleanPath}`;
+        }
+
+        // Clean up double slashes and 'storage/' if it exists
+        finalPath = finalPath.replace(/\/+/g, '/').replace(/^storage\//, '');
+
+        setBranding(prev => ({ ...prev, [activeField]: finalPath }));
         setErrors((prev: any) => ({ ...prev, [activeField]: null }));
         setShowFileManager(false);
     };
@@ -216,9 +226,7 @@ const BrandingForm: React.FC = () => {
         try {
             setSaving(true);
             const payload = {
-                ...branding,
-                entity_type: user?.entity_type || undefined,
-                entity_id: partnerId || undefined
+                ...branding
             };
 
             const response: any = await updateGeneralInformation(payload);
@@ -385,9 +393,9 @@ const BrandingForm: React.FC = () => {
                 toggle={() => setShowFileManager(!showFileManager)}
                 selectionMode={true}
                 onSelectFiles={handleFileSelection}
-                entityType="site-settings"
+                entityType="partners"
                 entityId={partnerId || 0}
-                getAll={true}
+                getAll={false}
             />
         </div>
     );

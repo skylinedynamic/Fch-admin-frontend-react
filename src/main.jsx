@@ -41,14 +41,23 @@ import App from './App.jsx'
 import "../assets/css/custom.min.css"
 import "../assets/css/custom.css"
 
+const isLocal = import.meta.env.VITE_DEVELOPMENT_MODE == 'local'
+
+const rootContent = (
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </BrowserRouter>
+)
+
 const container = document.getElementById('root')
 const root = createRoot(container)
+
 root.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+  isLocal ? rootContent : (
+    <React.StrictMode>
+      {rootContent}
+    </React.StrictMode>
+  )
 )
