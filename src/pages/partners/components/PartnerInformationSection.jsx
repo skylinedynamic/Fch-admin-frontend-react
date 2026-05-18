@@ -215,7 +215,7 @@ export default function PartnerInformationSection({
                                     ) : (
                                         <>
                                             {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
-                                            .{new URL(import.meta.env.VITE_BASE_API_URL || window.location.href).host}
+                                            .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
                                         </>
                                     )}
                                 </code>)
