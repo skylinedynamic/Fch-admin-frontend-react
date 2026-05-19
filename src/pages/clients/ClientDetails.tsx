@@ -241,6 +241,10 @@ export default function ClientDetails() {
 
                 const response: any = await createClient(payload);
 
+                const clientData = response?.data?.data || response?.data || response;
+                const bId = clientData?.id || clientData?.borrower_id;
+                const invId = clientData?.invoice_id;
+
                 const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
 
                 if (!isHost && !isWL && bId && amount > 0) {

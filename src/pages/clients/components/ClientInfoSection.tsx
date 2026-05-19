@@ -5,6 +5,7 @@ import { Calendar } from 'primereact/calendar';
 
 import { toast } from 'react-toastify';
 import { formatPhoneNumber, normalizeDate, formatZipCode, formatBusinessEIN, formatDUNS } from '../../../utils/formatters';
+import { apiClient } from '../../../lib/http/apiClient';
 import {
     useClient,
     useUpdateClient,
@@ -83,6 +84,21 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     // Fetch Plans
     const { data: borrowerPlans = [] } = useBorrowerPlans(isHost);
     const { data: nonHostPlans = [] } = useNonHostBorrowerPlans(!isHost);
+    const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchFixedPlan = async () => {
+            try {
+                const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+                if (response.data?.status && response.data?.data?.payment_amount) {
+                    setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+                }
+            } catch (error) {
+                console.error('Failed to fetch fixed enrollment plan:', error);
+            }
+        };
+        fetchFixedPlan();
+    }, []);
 
     const enrollmentOptions = React.useMemo(() => {
         const plans = isHost ? borrowerPlans : nonHostPlans;
@@ -1172,11 +1188,9 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                             : Number(currentPaymentAmount);
                                         const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
 
-                                        if (isWL && (String(formData.plan_id) === '5' || (selectedOption && String(selectedOption.id) === '5'))) {
-                                            const customAmount = formData.enrollment_payment !== undefined && formData.enrollment_payment !== ''
-                                                ? Number(formData.enrollment_payment)
-                                                : 2497.00;
-
+                                        if (isWL) {
+                                            const customAmount = currentPaymentAmount;
+                                            
                                             return (
                                                 <>
                                                     <input type="hidden" name="is_partner_paying" value="false" />
@@ -1194,7 +1208,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                             <i className="ri-bank-card-line"></i> Payment Plan:
                                                         </span>
                                                         <span className="info-value text-muted">
-                                                            One Time Payment
+                                                            {selectedOption?.enrollment_type || formData.enrollment_type}
                                                         </span>
                                                     </div>
                                                     <hr />
@@ -1205,9 +1219,27 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                              <i className="ri-file-list-3-line text-primary me-1"></i> Borrower Invoice:
                                                          </span>
                                                          <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                             ${customAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                             ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                          </span>
                                                      </div>
+                                                     {installments > 1 && (
+                                                         <div className="d-flex justify-content-between align-items-center mb-1">
+                                                             <span className="info-label text-primary" style={{ fontWeight: 600 }}>
+                                                                 <i className="ri-calendar-line text-primary me-1"></i> Duration:
+                                                             </span>
+                                                             <span className="info-value text-muted">{installments} months</span>
+                                                         </div>
+                                                     )}
+                                                     {installments > 1 && (
+                                                         <div className="d-flex justify-content-between align-items-center mb-1">
+                                                             <span className="info-label text-primary" style={{ fontWeight: 600 }}>
+                                                                 <i className="ri-calculator-line text-primary me-1"></i> Total Amount:
+                                                             </span>
+                                                             <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
+                                                                 ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                             </span>
+                                                         </div>
+                                                     )}
                                                      <div className="d-flex justify-content-between align-items-center mb-3">
                                                          <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
                                                              Billed directly to borrower's card via WL Stripe
@@ -1220,7 +1252,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                              <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
                                                          </span>
                                                          <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                             $800.00
+                                                             ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                          </span>
                                                      </div>
                                                      <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1232,7 +1264,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                     <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                         <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                             <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                            Two completely separate invoices are created. Partner pays $800.00 immediately, Borrower pays ${customAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.
+                                                            Two completely separate invoices are created. Partner pays ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} immediately, Borrower pays ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.
                                                         </p>
                                                     </div>
                                                 </>
