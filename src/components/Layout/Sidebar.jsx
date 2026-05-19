@@ -202,19 +202,10 @@ export default function Sidebar() {
   const { hasPermission, isRestricted, hasAnyPermission } = usePermissions();
   const location = useLocation();
   const { branding: settings } = useConfigStore();
-  const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
-  const getLogoUrl = (path, fallback) => {
-    if (!path || path === 'null') return fallback;
-    if (typeof path !== 'string') return fallback;
-    if (path.startsWith('http')) return path;
-    const clean = path.replace(/^\//, '');
-    return `${BASE_URL}/storage/${clean}`;
-  };
-
-  const dynamicLogoWide = getLogoUrl(settings?.primary_logo, `${BASE_URL}/storage/site-settings/logo-white.png`);
-  const dynamicLogo = getLogoUrl(settings?.secondary_logo, `${BASE_URL}/storage/site-settings/black-logo.png`);
-  const dynamicFavicon = getLogoUrl(settings?.favicon, `${BASE_URL}/storage/site-settings/Favicon.png`);
+  const dynamicLogoWide = settings?.primary_logo_full_url;
+  const dynamicLogo = settings?.secondary_logo_full_url;
+  const dynamicFavicon = settings?.favicon_full_url;
 
   // Auto-expand menu on route change
   useEffect(() => {

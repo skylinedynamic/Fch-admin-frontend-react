@@ -107,7 +107,7 @@ export default function App() {
       // Persist global config in Zustand
       setGlobalConfigs(activeBranding, activeFlags);
 
-      const { site_name, favicon, primary_color, secondary_color } = activeBranding;
+      const { site_name, favicon_full_url, primary_color, secondary_color } = activeBranding;
 
       // 1. Dynamic Browser Title
       if (site_name) {
@@ -115,12 +115,10 @@ export default function App() {
       }
 
       // 2. Dynamic Favicon
-      const currentFavicon = favicon || activeBranding.website_favicon;
+      const currentFavicon = favicon_full_url;
 
       if (currentFavicon && currentFavicon !== 'null') {
-        const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
-        const faviconPath = currentFavicon.replace(/^\//, '');
-        const faviconUrl = currentFavicon.startsWith('http') ? currentFavicon : `${BASE_URL}/storage/${faviconPath}`;
+        const faviconUrl = currentFavicon;
 
         let link = document.querySelector("link[rel~='icon']");
         if (!link) {

@@ -2,18 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type BrandingConfig = {
+  primary_logo?: string | null;
+  primary_logo_full_url?: string | null;
+  secondary_logo?: string | null;
+  secondary_logo_full_url?: string | null;
+  favicon?: string | null;
+  favicon_full_url?: string | null;
   site_name?: string | null;
   site_slogan?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
-  meta_title?: string | null;
-  header_logo?: string | null;
-  footer_logo?: string | null;
-  primary_logo?: string | null;
-  secondary_logo?: string | null;
-  favicon?: string | null;
-  website_favicon?: string | null;
-  is_white_label?: boolean;
 };
 
 export type StatusFlags = {

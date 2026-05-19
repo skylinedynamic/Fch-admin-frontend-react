@@ -13,7 +13,6 @@ export default function Header() {
   const location = useLocation()
   const { hasPermission } = usePermissions()
   const { branding: settings } = useConfigStore()
-  const BASE_URL = import.meta.env.VITE_BASE_API_URL || ''
   const user = useAuthStore((state) => state.user)
 
   // ─── Avatar dropdown state ───────────────────────────────────────────────
@@ -22,17 +21,10 @@ export default function Header() {
   const btnRef = useRef(null)           // the trigger button
   const menuRef = useRef(null)          // the portal menu
 
-  const getLogoUrl = (path, fallback) => {
-    if (!path || path === 'null') return fallback
-    if (typeof path !== 'string') return fallback
-    if (path.startsWith('http')) return path
-    const clean = path.replace(/^\//, '')
-    return `${BASE_URL}/storage/${clean}`
-  }
 
-  const dynamicLogo = getLogoUrl(settings?.secondary_logo || settings?.primary_logo, `${BASE_URL}/storage/site-settings/black-logo.png`)
-  const dynamicLogoLight = getLogoUrl(settings?.primary_logo, `${BASE_URL}/storage/site-settings/logo-white.png`)
-  const dynamicFavicon = getLogoUrl(settings?.favicon, `${BASE_URL}/storage/site-settings/Favicon.png`)
+  const dynamicLogo = settings?.secondary_logo_full_url;
+  const dynamicLogoLight = settings?.primary_logo_full_url;
+  const dynamicFavicon = settings?.favicon_full_url;
   const siteName = settings?.site_name || ''
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {

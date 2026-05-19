@@ -37,7 +37,7 @@ export const toggleEmailConfigStatus = async (): Promise<any> => {
 
 
 export const fetchGlobalConfigurations = async (): Promise<any> => {
-    const { data } = await apiClient.get('/common/global-configurations');
+    const { data } = await apiClient.get('/common/partner-theme');
     return data;
 };
 
