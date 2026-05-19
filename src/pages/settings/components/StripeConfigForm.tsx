@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { fetchSettings, updateSettings } from '../../../modules/settings/services';
-import FormLoader from '../../../components/Loader/FormLoader';
+import { StripeConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import stripeLogo from "../../../../assets/images/stripe_logo.png";
@@ -52,7 +52,6 @@ const StripeConfigForm: React.FC = () => {
                 });
             }
         } catch (error) {
-            console.error('Failed to load Stripe configuration:', error);
             toast.error('Failed to load Stripe configuration.');
         } finally {
             setFetching(false);
@@ -121,15 +120,6 @@ const StripeConfigForm: React.FC = () => {
         }
     };
 
-    if (fetching) {
-        return (
-            <div className="card">
-                <div className="card-body p-4">
-                    <FormLoader count={4} colClass="col-12" />
-                </div>
-            </div>
-        );
-    }
 
     const isSandbox = formData.payment_mode !== 'production';
     const suffix = isSandbox ? '_sandbox' : '_production';
@@ -148,116 +138,122 @@ const StripeConfigForm: React.FC = () => {
                 </div>
             </div>
             <div className="card-body p-4">
-                <div className="d-flex align-items-center bg-info-subtle border border-info border-opacity-25 border-dashed rounded-3 p-3 mb-4">
-                    <div className="flex-shrink-0 me-4">
-                        <img src={stripeLogo} alt="Stripe Logo" style={{ height: '35px' }} />
-                    </div>
-                    <div className="flex-grow-1">
-                        <h6 className="mb-1 text-dark fw-semibold fs-14">Stripe Payments</h6>
-                        <p className="text-muted mb-0 fs-13">
-                            Connect your platform to Stripe to handle secure transactions. This configuration supports both testing and live environments with dedicated API keys for each.
-                        </p>
-                    </div>
-                </div>
-
-                <form onSubmit={handleSubmit}>
-                    <div className="animate__animated animate__fadeIn">
-                        {/* Environment Toggle */}
-                        <div className="mb-4 bg-primary-subtle rounded-3 p-3">
-                            <div className="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <h6 className="mb-1 fw-bold fs-14">Operating Environment</h6>
-                                    <p className="text-muted mb-0 fs-13">
-                                        Currently configuring the <strong>{isSandbox ? 'Sandbox' : 'Production'}</strong> API credentials.
-                                    </p>
-                                </div>
-                                <div>
-                                    <Dropdown
-                                        value={formData.payment_mode}
-                                        options={[
-                                            { label: '🧪 Sandbox', value: 'sandbox' },
-                                            { label: '🚀 Production', value: 'production' }
-                                        ]}
-                                        onChange={(e: DropdownChangeEvent) => handleModeChangeRequest(e.value)}
-                                        placeholder="Select Environment"
-                                        className="w-100"
-                                        disabled={loading}
-                                    />
-                                </div>
+                {fetching ? (
+                    <StripeConfigSkeleton />
+                ) : (
+                    <>
+                        <div className="d-flex align-items-center bg-info-subtle rounded-3 p-3 mb-4">
+                            <div className="flex-shrink-0 me-4">
+                                <img src={stripeLogo} alt="Stripe Logo" style={{ height: '35px' }} />
+                            </div>
+                            <div className="flex-grow-1">
+                                <h6 className="mb-1 text-dark fw-semibold fs-14">Stripe Payments</h6>
+                                <p className="text-muted mb-0 fs-13">
+                                    Connect your platform to Stripe to handle secure transactions. This configuration supports both testing and live environments with dedicated API keys for each.
+                                </p>
                             </div>
                         </div>
 
-                        <div className="row g-4 mt-2">
-                            {/* Publishable Key */}
-                            <div className="col-12">
-                                <div className="input-group">
-                                    <span className={`input-group-text ${errors[`stripe_key${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`} style={{ minWidth: '150px', justifyContent: 'center' }}>
-                                        Publishable Key
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className={`form-control fs-14 ${errors[`stripe_key${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                        name={`stripe_key${suffix}`}
-                                        value={formData[`stripe_key${suffix}` as keyof FormData] || ''}
-                                        onChange={handleInputChange}
-                                        placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
-                                        style={{ boxShadow: 'none' }}
-                                    />
-                                    {errors[`stripe_key${suffix}`] && (
-                                        <div className="invalid-feedback ps-3 pb-2">
-                                            <i className="ri-error-warning-line me-1"></i>{errors[`stripe_key${suffix}`]}
+                        <form onSubmit={handleSubmit}>
+                            <div className="animate__animated animate__fadeIn">
+                                {/* Environment Toggle */}
+                                <div className="mb-4 bg-primary-subtle rounded-3 p-3">
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <h6 className="mb-1 fw-bold fs-14">Operating Environment</h6>
+                                            <p className="text-muted mb-0 fs-13">
+                                                Currently configuring the <strong>{isSandbox ? 'Sandbox' : 'Production'}</strong> API credentials.
+                                            </p>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Secret Key */}
-                            <div className="col-12">
-                                <div className="input-group">
-                                    <span className={`input-group-text ${errors[`stripe_secret${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`} style={{ minWidth: '150px', justifyContent: 'center' }}>
-                                        Secret Key
-                                    </span>
-                                    <input
-                                        type="password"
-                                        className={`form-control fs-14 ${errors[`stripe_secret${suffix}`] ? 'is-invalid border-danger' : ''}`}
-                                        name={`stripe_secret${suffix}`}
-                                        value={formData[`stripe_secret${suffix}` as keyof FormData] || ''}
-                                        onChange={handleInputChange}
-                                        placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
-                                        style={{ boxShadow: 'none' }}
-                                    />
-                                    {errors[`stripe_secret${suffix}`] && (
-                                        <div className="invalid-feedback ps-3 pb-2">
-                                            <i className="ri-error-warning-line me-1"></i>{errors[`stripe_secret${suffix}`]}
+                                        <div>
+                                            <Dropdown
+                                                value={formData.payment_mode}
+                                                options={[
+                                                    { label: '🧪 Sandbox', value: 'sandbox' },
+                                                    { label: '🚀 Production', value: 'production' }
+                                                ]}
+                                                onChange={(e: DropdownChangeEvent) => handleModeChangeRequest(e.value)}
+                                                placeholder="Select Environment"
+                                                className="w-100"
+                                                disabled={loading}
+                                            />
                                         </div>
-                                    )}
+                                    </div>
+                                </div>
+
+                                <div className="row g-4 mt-2">
+                                    {/* Publishable Key */}
+                                    <div className="col-12">
+                                        <div className="input-group">
+                                            <span className={`input-group-text ${errors[`stripe_key${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`} style={{ minWidth: '150px', justifyContent: 'center' }}>
+                                                Publishable Key
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className={`form-control fs-14 ${errors[`stripe_key${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                name={`stripe_key${suffix}`}
+                                                value={formData[`stripe_key${suffix}` as keyof FormData] || ''}
+                                                onChange={handleInputChange}
+                                                placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
+                                                style={{ boxShadow: 'none' }}
+                                            />
+                                            {errors[`stripe_key${suffix}`] && (
+                                                <div className="invalid-feedback ps-3 pb-2">
+                                                    <i className="ri-error-warning-line me-1"></i>{errors[`stripe_key${suffix}`]}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Secret Key */}
+                                    <div className="col-12">
+                                        <div className="input-group">
+                                            <span className={`input-group-text ${errors[`stripe_secret${suffix}`] ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-muted'}`} style={{ minWidth: '150px', justifyContent: 'center' }}>
+                                                Secret Key
+                                            </span>
+                                            <input
+                                                type="password"
+                                                className={`form-control fs-14 ${errors[`stripe_secret${suffix}`] ? 'is-invalid border-danger' : ''}`}
+                                                name={`stripe_secret${suffix}`}
+                                                value={formData[`stripe_secret${suffix}` as keyof FormData] || ''}
+                                                onChange={handleInputChange}
+                                                placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
+                                                style={{ boxShadow: 'none' }}
+                                            />
+                                            {errors[`stripe_secret${suffix}`] && (
+                                                <div className="invalid-feedback ps-3 pb-2">
+                                                    <i className="ri-error-warning-line me-1"></i>{errors[`stripe_secret${suffix}`]}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-12 mt-5 pt-3 border-top">
+                                    <div className="d-flex justify-content-end">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center gap-2"
+                                            disabled={loading}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Saving Configuration...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="ri-checkbox-circle-line fs-16"></i>
+                                                    <span>Save Stripe Settings</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="col-12 mt-5 pt-3 border-top">
-                            <div className="d-flex justify-content-end">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary px-4 py-2 fw-medium d-flex align-items-center gap-2"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                            <span>Saving Configuration...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-checkbox-circle-line fs-16"></i>
-                                            <span>Save Stripe Settings</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+                        </form>
+                    </>
+                )}
             </div>
 
             <DynamicActionModal

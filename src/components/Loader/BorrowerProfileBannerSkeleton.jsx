@@ -1,5 +1,4 @@
 import React from 'react';
-import './SkeletonLoader.css';
 
 const BorrowerProfileBannerSkeleton = () => {
     return (

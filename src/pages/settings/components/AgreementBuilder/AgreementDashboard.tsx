@@ -1,15 +1,15 @@
 import React from 'react';
 import { toast } from 'react-toastify';
 import { getUser } from '../../../../lib/auth/auth';
+import { MODULE_AGREEMENT } from '../../../../config/appConfig';
 import {
     useAgreements,
     useToggleAgreementStatus,
-    useAppConfig,
-    useSaveAppConfig
 } from '../../../../modules/agreement';
+import { useAppConfigurations, useSaveAppConfigurations } from '../../../../modules/settings/queries';
 // @ts-ignore
 import { Switch } from './CommonUI';
-import { AgreementDashboardLoader } from '../../../../components/Loader/AgreementLoader';
+import { AgreementDashboardSkeleton } from '../../../../components/Loader/SpecificSkeletons';
 import { usePermissions } from '../../../../lib/auth/usePermissions';
 
 interface AgreementDashboardProps {
@@ -25,19 +25,18 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
 
     const toggleMutation = useToggleAgreementStatus();
 
-    const { data: configRes, isLoading: loadingConfig } = useAppConfig('agreement_signing_enabled');
-    const saveConfigMutation = useSaveAppConfig();
-    const isSigningEnabled = configRes?.data?.value === '1';
-
-    if (loadingList || loadingConfig) {
-        return <AgreementDashboardLoader />;
-    }
+    const { data: configRes, isLoading: loadingConfig } = useAppConfigurations(MODULE_AGREEMENT);
+    const saveConfigMutation = useSaveAppConfigurations();
+    const isSigningEnabled = configRes?.data?.agreement_signing_enabled === '1';
 
     const handleGlobalToggle = async (val: boolean) => {
+        // ... existing handleGlobalToggle (omitted for brevity, will use multi_replace if needed but let's try to be precise)
         try {
             await saveConfigMutation.mutateAsync({
-                key: 'agreement_signing_enabled',
-                value: val ? '1' : '0'
+                module: MODULE_AGREEMENT,
+                settings: {
+                    agreement_signing_enabled: val ? '1' : '0'
+                }
             });
             toast.success('Agreement signing feature updated');
         } catch (e) {
@@ -120,49 +119,55 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                 </div>
             </div>
             <div className="card-body p-3 p-sm-4">
-                {/* Global Feature Toggle */}
-                {isHost && (
-                    <div className="p-3 bg-primary-subtle rounded-3 mb-2 d-flex align-items-center justify-content-between border border-primary-subtle">
-                        <div className="d-flex align-items-center gap-3">
-                            <div className="avatar-xs flex-shrink-0">
-                                <div className="avatar-title bg-primary text-white rounded-circle fs-14">
-                                    <i className="ri-shield-check-line"></i>
+                {loadingList || loadingConfig ? (
+                    <AgreementDashboardSkeleton />
+                ) : (
+                    <>
+                        {/* Global Feature Toggle */}
+                        {isHost && (
+                            <div className="p-3 bg-primary-subtle rounded-3 mb-2 d-flex align-items-center justify-content-between border border-primary-subtle">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="avatar-xs flex-shrink-0">
+                                        <div className="avatar-title bg-primary text-white rounded-circle fs-14">
+                                            <i className="ri-shield-check-line"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 className="mb-0 fs-14 fw-semibold">Agreement Signing Feature</h6>
+                                        <p className="text-muted mb-0 fs-12">Enable or disable digital signing workflow globally</p>
+                                    </div>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <span className={`fs-12 fw-medium ${isSigningEnabled ? 'text-primary' : 'text-muted'}`}>
+                                        {isSigningEnabled ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                    <div style={{ transform: 'scale(1.1)', transformOrigin: 'right' }}>
+                                        <Switch
+                                            checked={isSigningEnabled}
+                                            onChange={handleGlobalToggle}
+                                            disabled={saveConfigMutation.isPending}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <h6 className="mb-0 fs-14 fw-semibold">Agreement Signing Feature</h6>
-                                <p className="text-muted mb-0 fs-12">Enable or disable digital signing workflow globally</p>
-                            </div>
-                        </div>
-                        <div className="d-flex align-items-center gap-2">
-                            <span className={`fs-12 fw-medium ${isSigningEnabled ? 'text-primary' : 'text-muted'}`}>
-                                {isSigningEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                            <div style={{ transform: 'scale(1.1)', transformOrigin: 'right' }}>
-                                <Switch
-                                    checked={isSigningEnabled}
-                                    onChange={handleGlobalToggle}
-                                    disabled={saveConfigMutation.isPending}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                        )}
 
-                {hasPermission('update partner agreement settings') && (
-                    <AgreementRow
-                        type="partner"
-                        label="Partner Agreement Paper"
-                        subtext="Manage default digital agreement for partner onboarding"
-                    />
-                )}
+                        {hasPermission('update partner agreement settings') && (
+                            <AgreementRow
+                                type="partner"
+                                label="Partner Agreement Paper"
+                                subtext="Manage default digital agreement for partner onboarding"
+                            />
+                        )}
 
-                {hasPermission('update borrower agreement settings') && (
-                    <AgreementRow
-                        type="borrower"
-                        label="Borrower Agreement Paper"
-                        subtext="Manage default digital agreement for borrower signatures"
-                    />
+                        {hasPermission('update borrower agreement settings') && (
+                            <AgreementRow
+                                type="borrower"
+                                label="Borrower Agreement Paper"
+                                subtext="Manage default digital agreement for borrower signatures"
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </div>

@@ -73,14 +73,12 @@ File: Custom Css File
   color: #ffffff !important;
 }
 
-.navbar-menu .navbar-nav .nav-link.active,
-.navbar-menu .navbar-nav .nav-sm .nav-link.active {
+.navbar-menu .navbar-nav .menu-link.active {
   background-color: var(--secondary-color) !important;
   color: #ffffff !important;
 }
 
-.navbar-menu .navbar-nav .nav-link.active i,
-.navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
+.navbar-menu .navbar-nav .menu-link.active i {
   color: #ffffff !important;
 }
 
@@ -378,11 +376,14 @@ File: Custom Css File
   background: transparent;
 }
 
-/* Sub-menu link active state */
 .menu-dropdown .nav-link.active {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1) !important;
+  font-weight: 600;
+}
+
+.menu-dropdown .nav-link.active i {
+  color: #fff !important;
 }
 
 /* Arrow icon styling - Positioned absolutely or flexed before text */

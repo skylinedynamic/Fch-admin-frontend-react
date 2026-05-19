@@ -47,18 +47,14 @@ export const fetchAppConfigurations = async (module: string): Promise<any> => {
     return data;
 };
 
+export const fetchPublicAppConfigurations = async (module: string): Promise<any> => {
+    const { data } = await apiClient.post('/common/get-configurations', { module });
+    return data;
+};
+
 export const saveAppConfigurations = async (module: string, settings: object): Promise<any> => {
     const { data } = await apiClient.post('/common/app-configurations/save', { module, ...settings });
     return data;
 };
 
-// Generic single key config helpers
-export const fetchAppConfig = async (key: string): Promise<any> => {
-    const { data } = await apiClient.post('/common/app-configurations', { key });
-    return data;
-};
 
-export const saveAppConfig = async (key: string, value: any): Promise<any> => {
-    const { data } = await apiClient.post('/common/app-configurations/save', { key, value });
-    return data;
-};

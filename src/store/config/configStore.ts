@@ -4,7 +4,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export type BrandingConfig = {
   site_name?: string | null;
   site_slogan?: string | null;
-  copyright_text?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
   meta_title?: string | null;

@@ -6,6 +6,7 @@ export const APP_CONFIG = {
 export const MODULE_BRANDING = 'branding';
 export const MODULE_MICROBILT = 'microbilt';
 export const MODULE_WEBSITE = 'website';
+export const MODULE_AGREEMENT = 'agreement';
 
 export const ENTITY_TYPE_LEAD = 'Lead';
 export const ENTITY_TYPE_PARTNER = 'Partner';

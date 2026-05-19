@@ -1,11 +1,23 @@
 import React from 'react'
 import logoImg from "../../../assets/images/fch-logo-wide.png"
-import { APP_CONFIG } from '../../config'
-import { useConfigStore } from '../../store/config'
+import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
+import { fetchPublicAppConfigurations } from '../../modules/settings/services'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
-  const { branding: settings } = useConfigStore()
+  const [settings, setSettings] = React.useState(null);
   const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
+
+  React.useEffect(() => {
+    fetchPublicAppConfigurations(MODULE_BRANDING)
+      .then((res) => {
+        if (res.status && res.data) {
+          setSettings(res.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch public branding settings", err);
+      });
+  }, []);
 
   const getLogoUrl = (path, fallback) => {
     if (!path) return fallback;
