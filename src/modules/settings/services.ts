@@ -1,5 +1,6 @@
+import axios from 'axios';
 import { apiClient } from '../../lib/http/apiClient';
-import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse } from './types';
+import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations } from './types';
 
 // Base API path
 
@@ -47,10 +48,11 @@ export const fetchAppConfigurations = async (module: string): Promise<any> => {
     return data;
 };
 
-export const fetchPublicAppConfigurations = async (module: string): Promise<any> => {
-    const { data } = await apiClient.post('/common/get-configurations', { module });
+export const fetchThemeConfigurations = async (): Promise<AppConfigResponse<ThemeConfigurations>> => {
+    const { data } = await apiClient.get('/common/get-theme');
     return data;
 };
+
 
 export const saveAppConfigurations = async (module: string, settings: object): Promise<any> => {
     const { data } = await apiClient.post('/common/app-configurations/save', { module, ...settings });

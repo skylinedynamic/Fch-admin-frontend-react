@@ -1,3 +1,8 @@
+:root {
+    --primary-color: var(--primary-color);
+    --secondary-color: var(--secondary-color);
+}
+
 /* ============================================================
    FCH Admin Dashboard — Full Mobile Responsive CSS
    FIXED: Sidebar nav gaps (padding-bottom, last-child margin)
@@ -64,7 +69,7 @@
         justify-content: center !important;
         padding: 20px 15px !important;
         height: 110px !important;
-        background: #001f3f !important;
+        background: var(--primary-color) !important;
         position: sticky !important;
         top: 0 !important;
         z-index: 100 !important;
@@ -1706,7 +1711,7 @@
    ============================================================ */
 
 .btn-pay-now {
-    background-color: #001f3f !important;
+    background-color: var(--primary-color) !important;
     color: #ffffff !important;
     border: 1px solid var(--secondary-color) !important;
     transition: all 0.3s ease !important;
@@ -1714,7 +1719,7 @@
 
 .btn-pay-now:hover {
     background-color: #002d5c !important;
-    color: #d4af37 !important;
+    color: var(--secondary-color) !important;
     box-shadow: 0 4px 12px rgba(0, 31, 63, 0.2) !important;
 }
 

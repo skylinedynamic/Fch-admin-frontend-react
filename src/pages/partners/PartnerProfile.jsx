@@ -705,6 +705,18 @@ export default function PartnerProfile() {
                             if (!formDataToSend.has('monthly_platform_fee')) {
                                 formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
                             }
+                        } else if (key === 'partner_domain') {
+                            if (formData.partner_type === PARTNER_TYPES.CERTIFIED) {
+                                if (value && typeof value === 'string') {
+                                    const cleanValue = value.trim();
+                                    if (cleanValue !== '') {
+                                        const firstPart = cleanValue.split('.')[0];
+                                        formDataToSend.append('partner_domain', firstPart);
+                                    }
+                                }
+                            }
+                        } else if (key === 'borrower_domain') {
+                            // Do not send borrower_domain
                         } else if (value !== '' && value !== null) {
                             formDataToSend.append(key, value);
                         }

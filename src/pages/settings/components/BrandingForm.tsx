@@ -243,6 +243,14 @@ const BrandingForm: React.FC = () => {
         }
     };
 
+    const handleResetColors = () => {
+        setBranding(prev => ({
+            ...prev,
+            primary_color: '#001F3F',
+            secondary_color: '#D4AF37'
+        }));
+    };
+
 
     return (
         <div className="animate__animated animate__fadeIn">
@@ -330,7 +338,7 @@ const BrandingForm: React.FC = () => {
                                     />
                                 </div>
 
-                                <div className="col-md-6">
+                                <div className="col-md-5">
                                     <label className="form-label fw-semibold fs-13">Primary Theme Color <span className="text-danger">*</span></label>
                                     <div className="d-flex gap-2 align-items-center">
                                         <input
@@ -350,7 +358,7 @@ const BrandingForm: React.FC = () => {
                                     </div>
                                     {errors.primary_color && <div className="text-danger fs-11 mt-1">{errors.primary_color}</div>}
                                 </div>
-                                <div className="col-md-6">
+                                <div className="col-md-5">
                                     <label className="form-label fw-semibold fs-13">Secondary Theme Color <span className="text-danger">*</span></label>
                                     <div className="d-flex gap-2 align-items-center">
                                         <input
@@ -369,6 +377,17 @@ const BrandingForm: React.FC = () => {
                                         />
                                     </div>
                                     {errors.secondary_color && <div className="text-danger fs-11 mt-1">{errors.secondary_color}</div>}
+                                </div>
+                                <div className="col-md-2 d-flex flex-column justify-content-end pb-1">
+                                    <label className="form-label d-none d-md-block">&nbsp;</label>
+                                    <button
+                                        type="button"
+                                        className="btn btn-soft-danger w-100"
+                                        onClick={handleResetColors}
+                                        style={{ height: '37.5px' }}
+                                    >
+                                        <i className="ri-refresh-line align-middle me-1"></i> Reset
+                                    </button>
                                 </div>
                             </div>
 

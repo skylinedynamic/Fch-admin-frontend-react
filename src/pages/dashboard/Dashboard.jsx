@@ -47,7 +47,7 @@ export default function Dashboard() {
       <div className="page-content">
         <div className="container-fluid">
           {/* Welcome header */}
-          <div className="row mb-3 pb-1 dashboard-header">
+          <div className="row mb-3 pb-1 dashboard-header mt-3">
             <div className="col-12">
               <div className="d-flex align-items-lg-center flex-lg-row flex-column">
                 <div className="flex-grow-1">

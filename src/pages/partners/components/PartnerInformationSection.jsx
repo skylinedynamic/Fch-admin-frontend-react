@@ -239,7 +239,7 @@ export default function PartnerInformationSection({
                 <div className="col-lg-6">
                     <div className="mb-3">
                         <label className="form-label">
-                            {formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Custom Domain" : "Portal Subdomain"}
+                            {formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Custom Domain" : "Portal Subdomain"} <span className="text-danger">*</span>
                         </label>
                         <div className="input-group material-shadow">
                             <input
@@ -247,8 +247,16 @@ export default function PartnerInformationSection({
                                 className={`form-control ${formData.partner_type === PARTNER_TYPES.CERTIFIED ? '' : 'bg-light text-muted fw-medium'} ${errors.partner_domain ? 'is-invalid' : ''}`}
                                 name="partner_domain"
                                 placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
-                                value={formData.partner_type === PARTNER_TYPES.CERTIFIED ? (formData.partner_domain || '') : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')}
-                                onChange={handleInputChange}
+                                value={formData.partner_type === PARTNER_TYPES.CERTIFIED ? (formData.partner_domain ? formData.partner_domain.split('.')[0] : '') : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')}
+                                onChange={(e) => {
+                                    const cleanedValue = e.target.value
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9-]/g, '')
+                                        .replace(/-+/g, '-')
+                                        .replace(/^[^a-z]+/g, '');
+                                    e.target.value = cleanedValue;
+                                    handleInputChange(e);
+                                }}
                                 readOnly={formData.partner_type !== PARTNER_TYPES.CERTIFIED}
                             />
                             <span className="input-group-text bg-light text-muted px-3">

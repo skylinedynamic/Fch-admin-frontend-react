@@ -67,3 +67,15 @@ export interface MicroBiltConfig {
     microbilt_client_secret_production: string;
 }
 
+export interface ThemeConfigurations {
+    favicon: string | null;
+    favicon_full_url: string | null;
+    primary_color: string | null;
+    primary_logo: string | null;
+    primary_logo_full_url: string | null;
+    secondary_color: string | null;
+    secondary_logo: string | null;
+    secondary_logo_full_url: string | null;
+    site_name: string | null;
+    site_slogan: string | null;
+}

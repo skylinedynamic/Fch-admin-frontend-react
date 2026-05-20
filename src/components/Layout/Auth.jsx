@@ -1,31 +1,31 @@
 import React from 'react'
 import logoImg from "../../../assets/images/fch-logo-wide.png"
 import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
-import { fetchPublicAppConfigurations } from '../../modules/settings/services'
+import { fetchThemeConfigurations } from '../../modules/settings/services'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
   const [settings, setSettings] = React.useState(null);
-  const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
   React.useEffect(() => {
-    fetchPublicAppConfigurations(MODULE_BRANDING)
+    fetchThemeConfigurations()
       .then((res) => {
         if (res.status && res.data) {
           setSettings(res.data);
+          
+          if (res.data.primary_color) {
+            document.documentElement.style.setProperty('--primary-color', res.data.primary_color);
+          }
+          if (res.data.secondary_color) {
+            document.documentElement.style.setProperty('--secondary-color', res.data.secondary_color);
+          }
         }
       })
       .catch((err) => {
-        console.error("Failed to fetch public branding settings", err);
+        console.error("Failed to fetch theme configurations", err);
       });
   }, []);
 
-  const getLogoUrl = (path, fallback) => {
-    if (!path) return fallback;
-    if (path.startsWith('http')) return path;
-    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
-  };
-
-  const dynamicLogo = getLogoUrl(settings?.primary_logo, logoImg);
+  const dynamicLogo = settings?.primary_logo_full_url || logoImg;
   const siteName = settings?.site_name || APP_CONFIG.name;
   return (
     <div className="auth-page-wrapper pt-5">
