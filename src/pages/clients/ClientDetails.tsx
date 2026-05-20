@@ -261,7 +261,7 @@ export default function ClientDetails() {
                 }
 
                 if (isWL) {
-                    toast.success("Client created successfully. Partner fee ($800) charged automatically. Onboarding email sent to borrower.");
+                    toast.success("Client created successfully. Partner fee ($800) charged automatically.");
                 } else {
                     toast.success("Client created successfully");
                 }
