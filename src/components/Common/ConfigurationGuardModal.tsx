@@ -9,17 +9,19 @@ const ConfigurationGuardModal = () => {
     const user = useAuthStore((state) => state.user);
 
     // Retrieve branding and flags directly from our global Zustand store!
-    const { branding, statusFlags: flags } = useConfigStore();
+    const { branding, statusFlags } = useConfigStore();
     const primaryColor = branding?.primary_color || '#1e3a8a';
+    const flags = statusFlags;
 
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     // Show modal if ANY config is missing and user is a White-Label Partner
-    const isEmailMissing = !flags || flags.is_fresh_email === null;
-    const isBrandingMissing = !flags || flags.is_fresh_settings === null;
+    const isEmailMissing = flags.is_fresh_email === null;
+    const isBrandingMissing = flags.is_fresh_settings === null;
+    const isPaymentMissing = flags.is_fresh_payment === null;
     const isWhiteLabel = user?.partner_type === 'White-Label Partner (WL)';
-    const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing);
+    const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing);
 
     if (!showModal) return null;
 
@@ -146,16 +148,31 @@ const ConfigurationGuardModal = () => {
                             </div>
                         )}
 
-                        {/* Email — always shown alongside branding */}
-                        <div className="cgm-item">
-                            <div className="cgm-icon-box" style={{ background: '#fee2e2' }}>
-                                <i className="ri-mail-send-line" style={{ fontSize: 22, color: '#dc2626' }} />
+                        {/* Email — shown only when missing */}
+                        {isEmailMissing && (
+                            <div className="cgm-item">
+                                <div className="cgm-icon-box" style={{ background: '#fee2e2' }}>
+                                    <i className="ri-mail-send-line" style={{ fontSize: 22, color: '#dc2626' }} />
+                                </div>
+                                <div>
+                                    <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 3 }}>Email Configuration</p>
+                                    <p style={{ fontSize: 12.5, color: '#9ca3af' }}>SMTP or AWS SES settings required for notifications.</p>
+                                </div>
                             </div>
-                            <div>
-                                <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 3 }}>Email Configuration</p>
-                                <p style={{ fontSize: 12.5, color: '#9ca3af' }}>SMTP or AWS SES settings required for notifications.</p>
+                        )}
+
+                        {/* Payment Integration — shown only when missing */}
+                        {isPaymentMissing && (
+                            <div className="cgm-item">
+                                <div className="cgm-icon-box" style={{ background: '#ede9fe' }}>
+                                    <i className="ri-bank-card-line" style={{ fontSize: 22, color: '#7c3aed' }} />
+                                </div>
+                                <div>
+                                    <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 3 }}>Payment Integration</p>
+                                    <p style={{ fontSize: 12.5, color: '#9ca3af' }}>Stripe payment settings are required to process transactions.</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <button onClick={() => navigate('/settings')} className="cgm-btn-main">
                             Go to Global Settings
