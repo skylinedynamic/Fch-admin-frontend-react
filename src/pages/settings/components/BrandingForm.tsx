@@ -125,7 +125,7 @@ interface BrandingState {
 
 const BrandingForm: React.FC = () => {
     const user = useAuthStore((s) => s.user);
-    const partnerId = user?.partner_id || user?.entity_id;
+    const partnerId = (user?.partner_id as string | number | undefined) || user?.entity_id;
     const queryClient = useQueryClient();
 
     const [fetching, setFetching] = useState<boolean>(true);
@@ -219,9 +219,17 @@ const BrandingForm: React.FC = () => {
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
-        // Frontend validation: only site_name is required
+        // Frontend validation: site_name and primary_logo are required
+        const newErrors: any = {};
         if (!branding.site_name || !branding.site_name.trim()) {
-            setErrors({ site_name: 'Site name is required.' });
+            newErrors.site_name = 'Site name is required.';
+        }
+        if (!branding.primary_logo || !branding.primary_logo.trim()) {
+            newErrors.primary_logo = 'Primary logo is required.';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
@@ -313,7 +321,7 @@ const BrandingForm: React.FC = () => {
                                         onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
                                         error={errors.primary_logo}
                                         description="Professional transparent background recommended."
-                                        required={false}
+                                        required={true}
                                         primaryColor={branding.primary_color}
                                     />
                                 </div>
