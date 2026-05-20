@@ -1,0 +1,251 @@
+:root {
+    --primary-color: #001f3f;
+    --secondary-color: #F7B84B;
+}
+
+.cgm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(8 12 28 / 52%);
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.cgm-modal {
+    width: 820px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: row;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+}
+
+.cgm-left {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem 2rem;
+    text-align: center;
+    background: var(--primary-color);
+}
+
+.cgm-shield {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+}
+
+.cgm-right {
+    flex: 1;
+    background: #ffffff;
+    padding: 3rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.cgm-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    margin-bottom: 12px;
+}
+
+.cgm-icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cgm-btn-main {
+    width: 100%;
+    padding: 15px;
+    border-radius: 50px;
+    color: #fff;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    margin-top: 8px;
+    background: var(--primary-color);
+}
+
+.cgm-btn-ghost {
+    width: 100%;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+    .cgm-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .cgm-modal {
+        flex-direction: column;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+    }
+
+    .cgm-left {
+        width: 100%;
+        flex-direction: row;
+        text-align: left;
+        padding: 1.75rem 1.5rem;
+        gap: 1rem;
+    }
+
+    .cgm-shield {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .cgm-shield svg {
+        width: 32px;
+        height: 37px;
+    }
+
+    .cgm-left-title {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    .cgm-left-sub {
+        font-size: 0.78rem !important;
+        max-width: unset !important;
+    }
+
+    .cgm-right {
+        padding: 1.75rem 1.25rem;
+    }
+
+    .cgm-right-title {
+        font-size: 1.35rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .cgm-item {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+
+    .cgm-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+    }
+
+    .cgm-btn-main {
+        padding: 13px;
+        font-size: 14px;
+    }
+}
+
+/* Typography and Icon Colors */
+.cgm-left-title {
+    color: #fff;
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.cgm-left-sub {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    max-width: 200px;
+}
+
+.cgm-right-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+}
+
+.cgm-right-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.cgm-right-desc strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.cgm-item-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+    margin-bottom: 3px;
+}
+
+.cgm-item-desc {
+    font-size: 12.5px;
+    color: #9ca3af;
+}
+
+.cgm-icon-box i {
+    font-size: 22px;
+}
+
+.cgm-bg-branding {
+    background: #fef3c7;
+}
+
+.cgm-icon-branding {
+    color: #b45309;
+}
+
+.cgm-bg-email {
+    background: #fee2e2;
+}
+
+.cgm-icon-email {
+    color: #dc2626;
+}
+
+.cgm-bg-payment {
+    background: #ede9fe;
+}
+
+.cgm-icon-payment {
+    color: #7c3aed;
+}
