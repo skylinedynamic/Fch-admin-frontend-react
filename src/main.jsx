@@ -40,6 +40,7 @@ import App from './App.jsx'
 
 import "../assets/css/custom.min.css"
 import "../assets/css/custom.css"
+import "../assets/css/datepicker.css"
 
 const isLocal = import.meta.env.VITE_DEVELOPMENT_MODE == 'local'
 
