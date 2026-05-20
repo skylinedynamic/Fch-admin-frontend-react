@@ -17,9 +17,9 @@ const ConfigurationGuardModal = () => {
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     // Show modal if ANY config is missing and user is a White-Label Partner
-    const isEmailMissing = flags.is_fresh_email === null;
-    const isBrandingMissing = flags.is_fresh_settings === null;
-    const isPaymentMissing = flags.is_fresh_payment === null;
+    const isEmailMissing = !flags || flags.is_fresh_email === null;
+    const isBrandingMissing = !flags || flags.is_fresh_settings === null;
+    const isPaymentMissing = !flags || flags.is_fresh_payment === null;
     const isWhiteLabel = user?.partner_type === 'White-Label Partner (WL)';
     const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing);
 
