@@ -222,7 +222,6 @@ const BrandingForm: React.FC = () => {
         // Frontend validation: only site_name is required
         if (!branding.site_name || !branding.site_name.trim()) {
             setErrors({ site_name: 'Site name is required.' });
-            toast.error('Site name is required.');
             return;
         }
 
