@@ -18,6 +18,7 @@ export type StatusFlags = {
   is_fresh_email?: boolean | null;
   is_fresh_settings?: boolean | null;
   is_fresh_site_settings?: boolean | null;
+  is_fresh_payment?: boolean | null;
 };
 
 type ConfigState = {
@@ -26,6 +27,7 @@ type ConfigState = {
   setBranding: (branding: BrandingConfig | null) => void;
   setStatusFlags: (flags: StatusFlags | null) => void;
   setGlobalConfigs: (branding: BrandingConfig | null, flags: StatusFlags | null) => void;
+  setPaymentMethodSettings: (isFreshPayment: boolean | null) => void;
   clearConfigs: () => void;
 };
 
@@ -37,6 +39,13 @@ export const useConfigStore = create<ConfigState>()(
       setBranding: (branding) => set({ branding }),
       setStatusFlags: (flags) => set({ statusFlags: flags }),
       setGlobalConfigs: (branding, flags) => set({ branding, statusFlags: flags }),
+      setPaymentMethodSettings: (isFreshPayment) =>
+        set((state) => ({
+          statusFlags: {
+            ...state.statusFlags,
+            is_fresh_payment: isFreshPayment,
+          },
+        })),
       clearConfigs: () => set({ branding: null, statusFlags: null }),
     }),
     {
