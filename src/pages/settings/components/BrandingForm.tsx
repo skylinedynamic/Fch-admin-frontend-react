@@ -218,6 +218,14 @@ const BrandingForm: React.FC = () => {
 
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+
+        // Frontend validation: only site_name is required
+        if (!branding.site_name || !branding.site_name.trim()) {
+            setErrors({ site_name: 'Site name is required.' });
+            toast.error('Site name is required.');
+            return;
+        }
+
         try {
             setSaving(true);
             const payload = {
@@ -306,7 +314,7 @@ const BrandingForm: React.FC = () => {
                                         onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
                                         error={errors.primary_logo}
                                         description="Professional transparent background recommended."
-                                        required={true}
+                                        required={false}
                                         primaryColor={branding.primary_color}
                                     />
                                 </div>
@@ -333,13 +341,13 @@ const BrandingForm: React.FC = () => {
                                         onSelect={() => { setActiveField('favicon'); setShowFileManager(true); }}
                                         error={errors.favicon}
                                         description="Square ICO or PNG with transparent background recommended."
-                                        required={true}
+                                        required={false}
                                         primaryColor={branding.primary_color}
                                     />
                                 </div>
 
                                 <div className="col-md-5">
-                                    <label className="form-label fw-semibold fs-13">Primary Theme Color <span className="text-danger">*</span></label>
+                                    <label className="form-label fw-semibold fs-13">Primary Theme Color</label>
                                     <div className="d-flex gap-2 align-items-center">
                                         <input
                                             type="color"
@@ -359,7 +367,7 @@ const BrandingForm: React.FC = () => {
                                     {errors.primary_color && <div className="text-danger fs-11 mt-1">{errors.primary_color}</div>}
                                 </div>
                                 <div className="col-md-5">
-                                    <label className="form-label fw-semibold fs-13">Secondary Theme Color <span className="text-danger">*</span></label>
+                                    <label className="form-label fw-semibold fs-13">Secondary Theme Color</label>
                                     <div className="d-flex gap-2 align-items-center">
                                         <input
                                             type="color"
