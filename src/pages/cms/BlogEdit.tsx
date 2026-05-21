@@ -252,7 +252,7 @@ export default function BlogEdit() {
                 </div>
 
                 {id && blogLoading ? (
-                    <CmsFormLoader showHeader={false} />
+                    <CmsFormLoader showHeader={false} rowClassName="row mt-n3" />
                 ) : (
                     <div className="row mt-n3">
                         {/* Left Column: Main Content & SEO */}
@@ -530,7 +530,7 @@ export default function BlogEdit() {
                             </div>
 
                             {/* Featured Image Card */}
-                            <div className="card border shadow-none mb-4">
+                            <div className="card shadow-none mb-4">
                                 <div className="card-header border-bottom-dashed py-2">
                                     <h6 className="card-title mb-0 fs-13">
                                         <i className="ri-image-line align-middle text-primary me-1"></i> Featured Image

@@ -214,7 +214,7 @@ export default function SeoSettingEdit() {
                 {id && (isLoading || isFetching) ? (
                     <CmsFormLoader showHeader={false} />
                 ) : (
-                    <div className="row mt-4">
+                    <div className="row">
                         {/* Left Column: Main Configuration */}
                         <div className="col-lg-8">
                             <form id="seo-form" onSubmit={handleSubmit}>
@@ -352,7 +352,7 @@ export default function SeoSettingEdit() {
                         {/* Right Column */}
                         <div className="col-lg-4">
                             {/* Social Sharing Image (OG Image) */}
-                            <div className="card border shadow-none mb-4">
+                            <div className="card  shadow-none mb-4">
                                 <div className="card-header border-bottom-dashed py-2">
                                     <h6 className="card-title mb-0 fs-13">
                                         <i className="ri-image-line align-middle text-info me-1"></i> Social Sharing Image (OG)
