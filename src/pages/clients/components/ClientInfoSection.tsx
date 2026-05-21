@@ -24,7 +24,7 @@ import { locationData, getCountryPhoneInfo } from '../../../config/locations';
 import { allUsers } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
-import { PARTNER_TYPES } from '../../../config/partnerTypeOptions';
+import { PARTNER_TYPES, CLIENT_TYPE_LABELS, STRIPE_BILLING_LABELS, ENROLLMENT_INSTALLMENTS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 
 
 interface ClientInfoSectionProps {
@@ -1173,8 +1173,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
                                             }, isHost)
                                             : {
-                                                installments: formData.enrollment_type?.toLowerCase().includes('one time') ? 1 :
-                                                    (formData.enrollment_type?.includes('6') ? 6 : (isHost ? 6 : 1)),
+                                                installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
+                                                    (formData.enrollment_type === ENROLLMENT_TYPES.SIX_MONTH_STR ? ENROLLMENT_INSTALLMENTS.SIX_MONTHS : (isHost ? ENROLLMENT_INSTALLMENTS.DEFAULT_HOST : ENROLLMENT_INSTALLMENTS.DEFAULT_NON_HOST)),
                                                 totalAmount: formData.payment_amount || formData.amount || 0,
                                                 price: formData.payment_amount || formData.amount || 0
                                             };
@@ -1194,8 +1194,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
                                         if (isWLOrCP) {
                                             const customAmount = currentPaymentAmount;
-                                            const clientTypeLabel = isCP ? 'Certified Partner Client' : 'White-Label Partner Client';
-                                            const stripeLabel = isCP ? "Billed directly to borrower's card via Stripe" : "Billed directly to borrower's card via WL Stripe";
+                                            const clientTypeLabel = isCP ? CLIENT_TYPE_LABELS.CERTIFIED : CLIENT_TYPE_LABELS.WHITE_LABEL;
+                                            const stripeLabel = isCP ? STRIPE_BILLING_LABELS.CERTIFIED : STRIPE_BILLING_LABELS.WHITE_LABEL;
 
                                             return (
                                                 <>
@@ -1263,14 +1263,14 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                            Charged automatically on Partner's card on file
+                                                            Charged automatically on Partner's card.
                                                         </span>
                                                     </div>
 
                                                     <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
                                                         <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
                                                             <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                            Two completely separate invoices are created. Partner pays ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} immediately, Borrower pays ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.
+                                                            Two completely separate invoices are created. The Borrower pays ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
                                                         </p>
                                                     </div>
                                                 </>
