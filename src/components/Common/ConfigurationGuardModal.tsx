@@ -23,10 +23,10 @@ const ConfigurationGuardModal = () => {
     const isBrandingMissing = !flags || flags.is_fresh_settings === null || flags.is_fresh_settings === false;
     const isPaymentMissing = !flags || flags.is_fresh_payment === null || flags.is_fresh_payment === false;
 
-    const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL;
-    const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED;
+    const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL && !user?.is_host;
+    const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED && !user?.is_host;
 
-    const showModal = isGuardedRoute && (
+    const showModal = !user?.is_host && isGuardedRoute && (
         (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
         (isCertified && isPaymentMissing)
     );
