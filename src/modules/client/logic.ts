@@ -79,7 +79,16 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
         }
     } else {
         if (payload.plan_id) {
-            amount = payload.payment_amount ? parseFloat(payload.payment_amount as string) : 0;
+            const rawAmount = payload.enrollment_payment ??
+                payload.payment_amount ??
+                payload.amount;
+
+            amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined)
+                ? 0
+                : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
+            if (isNaN(amount)) amount = 0;
+
             enrollment_type = payload.enrollment_type || 'One Time Payment';
         } else {
             amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;

@@ -18,12 +18,18 @@ const ConfigurationGuardModal = () => {
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
-    // Show modal if ANY config is missing and user is a White-Label Partner
+    // Show modal if configuration is missing based on partner type
     const isEmailMissing = !flags || flags.is_fresh_email === null;
     const isBrandingMissing = !flags || flags.is_fresh_settings === null;
     const isPaymentMissing = !flags || flags.is_fresh_payment === null;
+    
     const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL;
-    const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing);
+    const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED;
+
+    const showModal = isGuardedRoute && (
+        (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
+        (isCertified && isPaymentMissing)
+    );
 
     if (!showModal) return null;
 
@@ -65,8 +71,8 @@ const ConfigurationGuardModal = () => {
                             <strong>{pageLabel}</strong>.
                         </p>
 
-                        {/* Branding — shown only when missing */}
-                        {isBrandingMissing && (
+                        {/* Branding — shown only when missing for White-Label */}
+                        {isWhiteLabel && isBrandingMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-branding">
                                     <i className="ri-palette-line cgm-icon-branding" />
@@ -78,8 +84,8 @@ const ConfigurationGuardModal = () => {
                             </div>
                         )}
 
-                        {/* Email — shown only when missing */}
-                        {isEmailMissing && (
+                        {/* Email — shown only when missing for White-Label */}
+                        {isWhiteLabel && isEmailMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-email">
                                     <i className="ri-mail-send-line cgm-icon-email" />
@@ -91,8 +97,8 @@ const ConfigurationGuardModal = () => {
                             </div>
                         )}
 
-                        {/* Payment Integration — shown only when missing */}
-                        {isPaymentMissing && (
+                        {/* Payment Integration — shown only when missing for White-Label or Certified Partner */}
+                        {(isWhiteLabel || isCertified) && isPaymentMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-payment">
                                     <i className="ri-bank-card-line cgm-icon-payment" />

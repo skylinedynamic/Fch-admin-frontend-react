@@ -29,6 +29,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
+import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
 // @ts-ignore
 import LeadPaymentModal from '../leads/components/LeadPaymentModal';
 // ENROLLMENT_TYPE_OPTIONS removed - using dynamic settings instead
@@ -194,6 +195,11 @@ export default function ClientDetails() {
         setFormData(prev => {
             const newData = { ...prev, [name]: value };
 
+            if (name === 'enrollment_payment') {
+                newData.payment_amount = value;
+                newData.amount = value;
+            }
+
             // Handle cascading clears
             if (name === 'country') {
                 newData.state = '';
@@ -245,9 +251,9 @@ export default function ClientDetails() {
                 const bId = clientData?.id || clientData?.borrower_id;
                 const invId = clientData?.invoice_id;
 
-                const isWL = currentUser?.partner_type === 'White-Label Partner (WL)';
+                const isWLOrCP = currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED;
 
-                if (!isHost && !isWL && bId && amount > 0) {
+                if (!isHost && !isWLOrCP && bId && amount > 0) {
                     setNewBorrowerId(bId);
                     setPaymentInvoiceId(invId);
                     setPaymentAmount(amount);
@@ -260,7 +266,7 @@ export default function ClientDetails() {
                     return;
                 }
 
-                if (isWL) {
+                if (isWLOrCP) {
                     toast.success("Client created successfully. Partner fee ($800) charged automatically.");
                 } else {
                     toast.success("Client created successfully");
