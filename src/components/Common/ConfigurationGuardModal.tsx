@@ -19,9 +19,9 @@ const ConfigurationGuardModal = () => {
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
     // Show modal if configuration is missing based on partner type
-    const isEmailMissing = !flags || flags.is_fresh_email === null;
-    const isBrandingMissing = !flags || flags.is_fresh_settings === null;
-    const isPaymentMissing = !flags || flags.is_fresh_payment === null;
+    const isEmailMissing = !flags || flags.is_fresh_email === null || flags.is_fresh_email === false;
+    const isBrandingMissing = !flags || flags.is_fresh_settings === null || flags.is_fresh_settings === false;
+    const isPaymentMissing = !flags || flags.is_fresh_payment === null || flags.is_fresh_payment === false;
 
     const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL;
     const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED;
@@ -30,6 +30,15 @@ const ConfigurationGuardModal = () => {
         (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
         (isCertified && isPaymentMissing)
     );
+
+    console.log('ConfigurationGuardModal debug:', {
+        partner_type: user?.partner_type,
+        isWhiteLabel,
+        isCertified,
+        isPaymentMissing,
+        isGuardedRoute,
+        flags
+    });
 
     if (!showModal) return null;
 
