@@ -314,8 +314,8 @@ const BrandingForm: React.FC = () => {
 
                                 <div className="col-md-4">
                                     <BrandingItem
-                                        title="Primary Logo"
-                                        dimensions="6493x1969px"
+                                        title="Primary Logo (White Text)"
+                                        dimensions="400 x 120"
                                         icon="ri-image-2-line"
                                         value={branding.primary_logo}
                                         onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
@@ -327,8 +327,8 @@ const BrandingForm: React.FC = () => {
                                 </div>
                                 <div className="col-md-4">
                                     <BrandingItem
-                                        title="Secondary Logo"
-                                        dimensions="6500x2500px"
+                                        title="Secondary Logo (Black Text)"
+                                        dimensions="400 x 120"
                                         icon="ri-image-line"
                                         value={branding.secondary_logo}
                                         onSelect={() => { setActiveField('secondary_logo'); setShowFileManager(true); }}
@@ -341,7 +341,7 @@ const BrandingForm: React.FC = () => {
                                 <div className="col-md-4">
                                     <BrandingItem
                                         title="Site Favicon"
-                                        dimensions="200x200px"
+                                        dimensions="100x100px"
                                         allowedFormats="ICO, PNG, SVG, JPG, WEBP"
                                         icon="ri-global-line"
                                         value={branding.favicon}
