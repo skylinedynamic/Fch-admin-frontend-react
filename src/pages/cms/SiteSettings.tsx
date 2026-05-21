@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSiteSettings, useUpdateSiteSettings } from '../../modules/cms/queries';
-import { SiteSettingsData, SocialLink, SOCIAL_PLATFORMS } from '../../modules/cms/types';
+import { SiteSettingsData, SiteSetting, SocialLink, SOCIAL_PLATFORMS } from '../../modules/cms/types';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import FormLoader from '../../components/Loader/FormLoader';
@@ -11,14 +11,15 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
+
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
 export default function SiteSettings() {
     const { hasPermission } = usePermissions();
     const { data: settingsData, isLoading } = useSiteSettings();
-    const updateMutation = useUpdateSiteSettings();
+    const updateMutation = useUpdateSiteSettings() as any;
 
-    const [formData, setFormData] = useState<SiteSettingsData>({} as SiteSettingsData);
+    const [formData, setFormData] = useState<SiteSetting>({} as SiteSetting);
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
     const [headerLogo, setHeaderLogo] = useState<File | string | null>(null);
     const [previewHeaderLogo, setPreviewHeaderLogo] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export default function SiteSettings() {
     const [websiteFavicon, setWebsiteFavicon] = useState<File | string | null>(null);
     const [previewWebsiteFavicon, setPreviewWebsiteFavicon] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
-    const [showFileManager, setShowFileManager] = useState<'header' | 'footer' | 'favicon' | false>(false);
+    const [showFileManager, setShowFileManager] = useState<'primary' | 'secondary' | 'favicon' | false>(false);
 
     useEffect(() => {
         if (settingsData?.data) {
@@ -38,6 +39,27 @@ export default function SiteSettings() {
                 ...prev,
                 ...s
             }));
+
+        }
+    }, [settingsData]);
+
+    const getRelativePath = (url: string | null | undefined): string | null => {
+        if (!url) return null;
+        if (typeof url === 'string') {
+            if (url.startsWith('http')) {
+                const storageIndex = url.indexOf('/storage/');
+                if (storageIndex !== -1) {
+                    return url.substring(storageIndex + 9);
+                }
+            }
+            return url;
+        }
+        return null;
+    };
+
+    useEffect(() => {
+        if (settingsData?.data) {
+            const s = settingsData.data;
 
             if (s.social_links) {
                 try {
@@ -50,24 +72,30 @@ export default function SiteSettings() {
             }
 
             if (s.header_logo) {
-                const logoPath = s.header_logo.replace(/^\//, '');
-                const logoUrl = s.header_logo.startsWith('http') ? s.header_logo : `${BASE_URL}/storage/${logoPath}`;
-                setPreviewHeaderLogo(logoUrl);
-                setHeaderLogo(s.header_logo.replace(`${BASE_URL}/storage/`, ''));
+                const rel = getRelativePath(s.header_logo);
+                setHeaderLogo(rel);
+                setPreviewHeaderLogo(s.header_logo);
+            } else {
+                setHeaderLogo(null);
+                setPreviewHeaderLogo(null);
             }
 
             if (s.footer_logo) {
-                const logoPath = s.footer_logo.replace(/^\//, '');
-                const logoUrl = s.footer_logo.startsWith('http') ? s.footer_logo : `${BASE_URL}/storage/${logoPath}`;
-                setPreviewFooterLogo(logoUrl);
-                setFooterLogo(s.footer_logo.replace(`${BASE_URL}/storage/`, ''));
+                const rel = getRelativePath(s.footer_logo);
+                setFooterLogo(rel);
+                setPreviewFooterLogo(s.footer_logo);
+            } else {
+                setFooterLogo(null);
+                setPreviewFooterLogo(null);
             }
 
             if (s.website_favicon) {
-                const favPath = s.website_favicon.replace(/^\//, '');
-                const favUrl = s.website_favicon.startsWith('http') ? s.website_favicon : `${BASE_URL}/storage/${favPath}`;
-                setPreviewWebsiteFavicon(favUrl);
-                setWebsiteFavicon(s.website_favicon.replace(`${BASE_URL}/storage/`, ''));
+                const rel = getRelativePath(s.website_favicon);
+                setWebsiteFavicon(rel);
+                setPreviewWebsiteFavicon(s.website_favicon);
+            } else {
+                setWebsiteFavicon(null);
+                setPreviewWebsiteFavicon(null);
             }
         }
     }, [settingsData]);
@@ -77,56 +105,57 @@ export default function SiteSettings() {
             const file = files[0];
 
             // Validate if selected file is an image
-            const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
+            const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp', 'ico'];
             const extension = file.name.split('.').pop()?.toLowerCase();
 
-            if (extension && !allowedExtensions.includes(extension) && !(showFileManager === 'favicon' && extension === 'ico')) {
-                const message = showFileManager === 'favicon'
-                    ? 'Please select a valid image file (PNG, JPG, SVG, WebP)'
-                    : 'Please select a valid image file (PNG, JPG, SVG, or WebP)';
-
-                if (showFileManager === 'header') {
-                    setValidationErrors({ ...validationErrors, header_logo: message });
-                } else if (showFileManager === 'footer') {
-                    setValidationErrors({ ...validationErrors, footer_logo: message });
-                } else if (showFileManager === 'partner') {
-                    setValidationErrors({ ...validationErrors, partner_logo: message });
-                } else if (showFileManager === 'partner_favicon') {
-                    setValidationErrors({ ...validationErrors, partner_favicon: message });
+            if (extension && !allowedExtensions.includes(extension)) {
+                const message = 'Please select a valid image file (PNG, JPG, JPEG, SVG, WebP, or ICO)';
+                if (showFileManager === 'primary') {
+                    setValidationErrors(prev => ({ ...prev, header_logo: message }));
+                } else if (showFileManager === 'secondary') {
+                    setValidationErrors(prev => ({ ...prev, footer_logo: message }));
+                } else if (showFileManager === 'favicon') {
+                    setValidationErrors(prev => ({ ...prev, website_favicon: message }));
                 }
                 return;
             }
 
             // File size validation (2MB for logos, 1MB for favicon)
             const maxSize = showFileManager === 'favicon' ? 1024 * 1024 : 2 * 1024 * 1024;
-            if (file.size > maxSize) {
+            if (file.size && file.size > maxSize) {
                 const limit = showFileManager === 'favicon' ? '1MB' : '2MB';
                 const message = `The selected file is too large. Maximum size allowed is ${limit}.`;
-
-                if (showFileManager === 'header') {
-                    setValidationErrors({ ...validationErrors, header_logo: message });
-                } else if (showFileManager === 'footer') {
-                    setValidationErrors({ ...validationErrors, footer_logo: message });
-                } else if (showFileManager === 'partner') {
-                    setValidationErrors({ ...validationErrors, partner_logo: message });
-                } else if (showFileManager === 'partner_favicon') {
-                    setValidationErrors({ ...validationErrors, partner_favicon: message });
+                if (showFileManager === 'primary') {
+                    setValidationErrors(prev => ({ ...prev, header_logo: message }));
+                } else if (showFileManager === 'secondary') {
+                    setValidationErrors(prev => ({ ...prev, footer_logo: message }));
+                } else if (showFileManager === 'favicon') {
+                    setValidationErrors(prev => ({ ...prev, website_favicon: message }));
                 }
                 return;
             }
 
-            if (showFileManager === 'header') {
-                setValidationErrors({ ...validationErrors, header_logo: undefined });
-                setHeaderLogo(file.path);
-                setPreviewHeaderLogo(file.url || `${BASE_URL}/storage/${file.path}`);
-            } else if (showFileManager === 'footer') {
-                setValidationErrors({ ...validationErrors, footer_logo: undefined });
-                setFooterLogo(file.path);
-                setPreviewFooterLogo(file.url || `${BASE_URL}/storage/${file.path}`);
+            const cleanPath = file.path.trim().replace(/^\/+/, '');
+            const prefix = 'site-settings';
+            let relativePath = cleanPath;
+            if (!cleanPath.startsWith(prefix) && !cleanPath.startsWith('http')) {
+                relativePath = `${prefix}/${cleanPath}`;
+            }
+
+            const previewUrl = file.url || `${BASE_URL}/storage/${relativePath}`;
+
+            if (showFileManager === 'primary') {
+                setValidationErrors(prev => ({ ...prev, header_logo: undefined }));
+                setHeaderLogo(relativePath);
+                setPreviewHeaderLogo(previewUrl);
+            } else if (showFileManager === 'secondary') {
+                setValidationErrors(prev => ({ ...prev, footer_logo: undefined }));
+                setFooterLogo(relativePath);
+                setPreviewFooterLogo(previewUrl);
             } else if (showFileManager === 'favicon') {
-                setValidationErrors({ ...validationErrors, website_favicon: undefined });
-                setWebsiteFavicon(file.path);
-                setPreviewWebsiteFavicon(file.url || `${BASE_URL}/storage/${file.path}`);
+                setValidationErrors(prev => ({ ...prev, website_favicon: undefined }));
+                setWebsiteFavicon(relativePath);
+                setPreviewWebsiteFavicon(previewUrl);
             }
         }
         setShowFileManager(false);
@@ -135,100 +164,113 @@ export default function SiteSettings() {
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
-        // Automatic YouTube to Iframe conversion for map_iframe field
         if (name === 'map_iframe' && !value.includes('<iframe')) {
             let src = value.trim();
-
-            // YouTube: build embed URL from video ID
             const ytMatch = src.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-            if (ytMatch) src = `https://www.youtube.com/embed/${ytMatch[1]}`;
-
-            // Google Maps: build embed URL
-            else if (src.includes('google.com/maps') || src.includes('maps.app.goo.gl'))
+            if (ytMatch) {
+                src = `https://www.youtube.com/embed/${ytMatch[1]}`;
+            } else if (src.includes('google.com/maps') || src.includes('maps.app.goo.gl')) {
                 src = `https://maps.google.com/maps?q=${encodeURIComponent(src)}&output=embed`;
+            }
 
-            // Wrap any valid URL in an iframe
             if (/^https?:\/\/.+/i.test(src)) {
-                setFormData({ ...formData, [name]: `<iframe src="${src}" width="100%" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>` });
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: `<iframe src="${src}" width="100%" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>`
+                } as any));
                 return;
             }
         }
 
         if (name === 'phone_number') {
-            setFormData({ ...formData, [name]: formatPhoneNumber(value) });
+            setFormData(prev => ({
+                ...prev,
+                [name]: formatPhoneNumber(value) || ''
+            } as any));
             return;
         }
 
-        setFormData({ ...formData, [name]: value });
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        } as any));
     };
 
     const handleAddSocialLink = () => {
-        setSocialLinks([...socialLinks, { platform: '', icon: '', url: '', isCustom: false }]);
+        setSocialLinks(prev => [...prev, { platform: '', icon: '', url: '', isCustom: false }]);
     };
 
     const handleRemoveSocialLink = (index: number) => {
-        const newLinks = [...socialLinks];
-        newLinks.splice(index, 1);
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSocialLinkChange = (index: number, field: keyof SocialLink, value: string) => {
-        const newLinks = [...socialLinks];
-        newLinks[index][field] = value;
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => i === index ? { ...link, [field]: value } : link));
     };
 
     const handlePlatformSelect = (index: number, value: string) => {
-        const newLinks = [...socialLinks];
-        if (value === 'Custom') {
-            newLinks[index].platform = '';
-            newLinks[index].icon = '';
-            newLinks[index].isCustom = true;
-        } else {
-            const selected = SOCIAL_PLATFORMS.find(p => p.value === value);
-            newLinks[index].platform = value;
-            newLinks[index].icon = selected ? selected.icon : '';
-            newLinks[index].isCustom = false;
-        }
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => {
+            if (i !== index) return link;
+            if (value === 'Custom') {
+                return { ...link, platform: '', icon: '', isCustom: true };
+            } else {
+                const selected = SOCIAL_PLATFORMS.find(p => p.value === value);
+                return { ...link, platform: value, icon: selected ? selected.icon : '', isCustom: false };
+            }
+        }));
     };
 
     const handleCustomPlatformBack = (index: number) => {
-        const newLinks = [...socialLinks];
-        newLinks[index].platform = '';
-        newLinks[index].icon = '';
-        newLinks[index].isCustom = false;
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => i === index ? { ...link, platform: '', icon: '', isCustom: false } : link));
     };
-
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const data = new FormData();
-        Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+
+        Object.entries(formData).forEach(([key, value]) => {
+            if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
+                data.append(key, value !== null && value !== undefined ? String(value) : '');
+            }
+        });
+
         const linksToSave = socialLinks.map(({ isCustom: _ic, ...rest }) => rest);
         data.append('social_links', JSON.stringify(linksToSave));
 
+        const prepareLogoPath = (logo: File | string | null): File | string => {
+            if (!logo) return '';
+            if (typeof logo === 'string') {
+                const clean = logo.trim().replace(/^\/+/, '');
+                if (!clean.startsWith('site-settings/') && !clean.startsWith('http')) {
+                    return `site-settings/${clean}`;
+                }
+                return clean;
+            }
+            return logo;
+        };
+
         if (headerLogo) {
-            data.append('header_logo', headerLogo);
+            data.append('header_logo', prepareLogoPath(headerLogo));
+        } else {
+            data.append('header_logo', '');
         }
 
         if (footerLogo) {
-            data.append('footer_logo', footerLogo);
+            data.append('footer_logo', prepareLogoPath(footerLogo));
+        } else {
+            data.append('footer_logo', '');
         }
 
         if (websiteFavicon) {
-            data.append('website_favicon', websiteFavicon);
+            data.append('website_favicon', prepareLogoPath(websiteFavicon));
+        } else {
+            data.append('website_favicon', '');
         }
 
         setValidationErrors({});
         try {
             const response = await updateMutation.mutateAsync(data);
             toast.success(response.message || 'Site settings updated successfully');
-            // Reload window accurately to apply all branding changes immediately
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
         } catch (error: any) {
             const errors = error?.response?.data?.errors;
             if (errors) {
@@ -757,7 +799,7 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.favicon && (
+                                                            {validationErrors.website_favicon && (
                                                                 <div className="text-danger fs-11 mt-1 text-start ps-1">
                                                                     {Array.isArray(validationErrors.website_favicon) ? validationErrors.website_favicon[0] : validationErrors.website_favicon}
                                                                 </div>
