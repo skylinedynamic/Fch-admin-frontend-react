@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { fetchSettings, updateSettings } from '../../../modules/settings/services';
 import { StripeConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
@@ -19,6 +20,7 @@ interface FormErrors {
 }
 
 const StripeConfigForm: React.FC = () => {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
     const [showModal, setShowModal] = useState<boolean>(false);
@@ -112,6 +114,7 @@ const StripeConfigForm: React.FC = () => {
         try {
             await updateSettings(formData);
             toast.success('Stripe configuration saved successfully!');
+            queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
         } catch (error: any) {
             console.error('Failed to save Stripe config:', error);
             toast.error(error.response?.data?.message || 'Failed to save configuration.');
