@@ -6,12 +6,12 @@ import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMai
 
 
 export const fetchSettings = async (): Promise<SettingsResponse> => {
-    const { data } = await apiClient.get('/common/payment-methods');
+    const { data } = await apiClient.get('/common/payment-methods-fetch');
     return data;
 };
 
 export const updateSettings = async (payload: UpdateSettingsPayload): Promise<SettingsData> => {
-    const { data } = await apiClient.post('/common/payment-methods', payload);
+    const { data } = await apiClient.post('/common/payment-methods-update', payload);
     return data;
 };
 
