@@ -61,7 +61,18 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
     }
 
-    sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
+    // Test Mail — only for host partners or white-label partners
+    if (
+        user &&
+        user.entity_type === ENTITY_TYPE_PARTNER &&
+        (
+            user.is_host == 1 ||
+            user.is_host == true ||
+            user.partner_type === PARTNER_TYPES.WHITE_LABEL
+        )
+    ) {
+        sections.push({ id: 'test_mail', label: 'Test Mail', icon: 'ri-mail-send-line' });
+    }
 
     // Auto-select first available section if the active one isn't available
     useEffect(() => {
