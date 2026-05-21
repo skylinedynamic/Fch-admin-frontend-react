@@ -347,34 +347,14 @@ export default function Leads() {
             const response = await convertLead(targetLead.id, payload);
 
             if (response.status || response.id) {
-                const bId = response.data?.borrower?.id || response.data?.id || response.id;
-                const invId = response.data?.invoice?.id || null;
-
-                // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
-                if (!isHost && targetType == ENTITY_TYPE_BORROWER && payload?.amount > 0 && !payload?.payment_intent_id) {
-                    setNewBorrowerId(bId);
-                    setPaymentAmount(payload.amount);
-                    setPaymentInvoiceId(invId);
-                    setShowConvertModal(false);
-                    // Add a small delay for LeadConvertModal to close before showing LeadPaymentModal
-                    setTimeout(() => {
-                        setShowPaymentModal(true);
-                    }, 300);
-                    toast.success(`Lead successfully converted. Please complete the payment.`);
-                    return;
-                }
-
                 toast.success(`Lead successfully converted to ${targetType}`);
-                setAppliedFilters({ ...appliedFilters });
                 setShowConvertModal(false);
-                setShowPaymentModal(false);
+                setAppliedFilters({ ...appliedFilters });
             }
         } catch (err) {
             console.error('Conversion error:', err);
-            // Extract backend validation errors and show them inline in the modal
             const backendFieldErrors = err.response?.data?.errors;
             if (backendFieldErrors && typeof backendFieldErrors === 'object') {
-                // Flatten array values (Laravel returns arrays per field)
                 const flatErrors = {};
                 Object.keys(backendFieldErrors).forEach(key => {
                     const val = backendFieldErrors[key];
