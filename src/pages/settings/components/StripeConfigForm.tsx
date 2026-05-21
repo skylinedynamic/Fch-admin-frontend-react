@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { fetchSettings, updateSettings } from '../../../modules/settings/services';
+import { fetchSettingsPaymentIntegration, updateSettingsPaymentIntegration } from '../../../modules/settings/services';
 import { StripeConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
@@ -42,7 +42,7 @@ const StripeConfigForm: React.FC = () => {
     const loadConfig = async () => {
         try {
             setFetching(true);
-            const response = await fetchSettings();
+            const response = await fetchSettingsPaymentIntegration();
             if (response && response.data) {
                 const data = (response.data as any).data || response.data;
                 setFormData({
@@ -112,7 +112,7 @@ const StripeConfigForm: React.FC = () => {
 
         setLoading(true);
         try {
-            await updateSettings(formData);
+            await updateSettingsPaymentIntegration(formData);
             toast.success('Stripe configuration saved successfully!');
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
         } catch (error: any) {
