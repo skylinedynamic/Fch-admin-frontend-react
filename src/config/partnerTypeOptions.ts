@@ -22,6 +22,24 @@ export const ENROLLMENT_TYPES = {
   PAYMENT_PLAN: "Payment Plan ($797/mo, 11-month plan)",
   PAYMENT_PLAN_STR: "Payment Plan (11-month plan)",
   PAYMENT_PLAN_VALUE: 797,
+  SIX_MONTH_STR: "6 Month Payment",
+};
+
+export const ENROLLMENT_INSTALLMENTS = {
+  ONE_TIME: 1,
+  SIX_MONTHS: 6,
+  DEFAULT_HOST: 6,
+  DEFAULT_NON_HOST: 1,
+};
+
+export const CLIENT_TYPE_LABELS = {
+  CERTIFIED: "Certified Partner Client",
+  WHITE_LABEL: "White-Label Partner Client",
+};
+
+export const STRIPE_BILLING_LABELS = {
+  CERTIFIED: "Billed directly to borrower's card via Stripe",
+  WHITE_LABEL: "Billed directly to borrower's card via WL Stripe",
 };
 
 export const SUBSCRIPTION_STATUS_TYPES = {

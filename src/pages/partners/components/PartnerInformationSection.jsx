@@ -503,7 +503,7 @@ export default function PartnerInformationSection({
                             );
 
                             const options = matchedPlans.map(plan => ({
-                                label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
+                                label: `${plan.enrollment_type}`,
                                 value: plan.enrollment_type
                             }));
 

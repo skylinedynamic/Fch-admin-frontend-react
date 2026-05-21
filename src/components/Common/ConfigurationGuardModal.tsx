@@ -12,18 +12,33 @@ const ConfigurationGuardModal = () => {
 
     // Retrieve branding and flags directly from our global Zustand store!
     const { branding, statusFlags } = useConfigStore();
-    const primaryColor = branding?.primary_color || '#1e3a8a';
+    const primaryColor = branding?.primary_color;
     const flags = statusFlags;
 
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
-    // Show modal if ANY config is missing and user is a White-Label Partner
-    const isEmailMissing = !flags || flags.is_fresh_email === null;
-    const isBrandingMissing = !flags || flags.is_fresh_settings === null;
-    const isPaymentMissing = !flags || flags.is_fresh_payment === null;
-    const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL;
-    const showModal = isGuardedRoute && isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing);
+    // Show modal if configuration is missing based on partner type
+    const isEmailMissing = !flags || flags.is_fresh_email === null || flags.is_fresh_email === false;
+    const isBrandingMissing = !flags || flags.is_fresh_settings === null || flags.is_fresh_settings === false;
+    const isPaymentMissing = !flags || flags.is_fresh_payment === null || flags.is_fresh_payment === false;
+
+    const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL && !user?.is_host;
+    const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED && !user?.is_host;
+
+    const showModal = !user?.is_host && isGuardedRoute && (
+        (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
+        (isCertified && isPaymentMissing)
+    );
+
+    console.log('ConfigurationGuardModal debug:', {
+        partner_type: user?.partner_type,
+        isWhiteLabel,
+        isCertified,
+        isPaymentMissing,
+        isGuardedRoute,
+        flags
+    });
 
     if (!showModal) return null;
 
@@ -65,8 +80,8 @@ const ConfigurationGuardModal = () => {
                             <strong>{pageLabel}</strong>.
                         </p>
 
-                        {/* Branding — shown only when missing */}
-                        {isBrandingMissing && (
+                        {/* Branding — shown only when missing for White-Label */}
+                        {isWhiteLabel && isBrandingMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-branding">
                                     <i className="ri-palette-line cgm-icon-branding" />
@@ -78,8 +93,8 @@ const ConfigurationGuardModal = () => {
                             </div>
                         )}
 
-                        {/* Email — shown only when missing */}
-                        {isEmailMissing && (
+                        {/* Email — shown only when missing for White-Label */}
+                        {isWhiteLabel && isEmailMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-email">
                                     <i className="ri-mail-send-line cgm-icon-email" />
@@ -91,8 +106,8 @@ const ConfigurationGuardModal = () => {
                             </div>
                         )}
 
-                        {/* Payment Integration — shown only when missing */}
-                        {isPaymentMissing && (
+                        {/* Payment Integration — shown only when missing for White-Label or Certified Partner */}
+                        {(isWhiteLabel || isCertified) && isPaymentMissing && (
                             <div className="cgm-item">
                                 <div className="cgm-icon-box cgm-bg-payment">
                                     <i className="ri-bank-card-line cgm-icon-payment" />
