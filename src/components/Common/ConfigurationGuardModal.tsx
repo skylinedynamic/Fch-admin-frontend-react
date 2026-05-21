@@ -12,7 +12,7 @@ const ConfigurationGuardModal = () => {
 
     // Retrieve branding and flags directly from our global Zustand store!
     const { branding, statusFlags } = useConfigStore();
-    const primaryColor = branding?.primary_color || '#1e3a8a';
+    const primaryColor = branding?.primary_color;
     const flags = statusFlags;
 
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
@@ -22,7 +22,7 @@ const ConfigurationGuardModal = () => {
     const isEmailMissing = !flags || flags.is_fresh_email === null;
     const isBrandingMissing = !flags || flags.is_fresh_settings === null;
     const isPaymentMissing = !flags || flags.is_fresh_payment === null;
-    
+
     const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL;
     const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED;
 
