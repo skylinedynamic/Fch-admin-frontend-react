@@ -5,6 +5,7 @@ import { fetchPartnerPlans } from '../../../modules/partner/services';
 import { fetchBorrowerPlans, fetchNonHostBorrowerPlans } from '../../../modules/client/services';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../../config/appConfig';
 import LeadConvertSkeleton from '../../../components/Loader/LeadConvertSkeleton';
+import { apiClient } from '../../../lib/http/apiClient';
 
 export default function LeadConvertModal({ show, onHide, onConfirm, lead, targetType = ENTITY_TYPE_BORROWER, loading, isHost, backendErrors = {}, onFieldChange }) {
     const [planId, setPlanId] = useState(null);
@@ -15,17 +16,15 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const [borrowerPlans, setBorrowerPlans] = useState([]);
     const [fetching, setFetching] = useState(false);
 
-    // Custom overrides for isHost
     const [customEnrollmentAmount, setCustomEnrollmentAmount] = useState('');
     const [customPlatformFee, setCustomPlatformFee] = useState('');
+    const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState(0);
 
-    // Validation errors
     const [validationErrors, setValidationErrors] = useState({});
 
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
 
-    // Initialize Modal
     useEffect(() => {
         if (!modalRef.current) return;
         if (!modalInstanceRef.current) {
@@ -41,7 +40,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                 modalInstanceRef.current.dispose();
                 modalInstanceRef.current = null;
             }
-            // Robust cleanup of any orphaned backdrop elements
             document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
             document.body.classList.remove('modal-open');
             document.body.style.paddingRight = '';
@@ -55,14 +53,26 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         }
     }, [backendErrors]);
 
-    // Show/Hide Logic
+    useEffect(() => {
+        const fetchFixedPlan = async () => {
+            try {
+                const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+                if (response.data?.status && response.data?.data?.payment_amount) {
+                    setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+                }
+            } catch (error) {
+                console.error('Failed to fetch fixed enrollment plan:', error);
+            }
+        };
+        fetchFixedPlan();
+    }, []);
+
     useEffect(() => {
         const modal = modalInstanceRef.current;
         if (!modal) return;
         if (show) {
             setFetching(true);
             modal.show();
-            // Fetch plans when modal opens
             const loadData = async () => {
                 try {
                     const promises = [fetchPartnerPlans()];
@@ -86,14 +96,11 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                     if (borrowerPlansRes && borrowerPlansRes.status) {
                         const plans = borrowerPlansRes.data || [];
                         setBorrowerPlans(plans);
-                        // Auto-select first plan (especially for non-host)
                         if (plans.length > 0) {
                             setPlanId(plans[0].id);
                             setEnrollmentType(plans[0].enrollment_type);
-                            if (isHost) {
-                                setCustomEnrollmentAmount(plans[0].payment_amount || '');
-                                setCustomPlatformFee(plans[0].platform_fee || 0);
-                            }
+                            setCustomEnrollmentAmount(plans[0].payment_amount || '');
+                            setCustomPlatformFee(plans[0].platform_fee || 0);
                         }
                     }
                 } catch (err) {
@@ -104,23 +111,23 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             };
             loadData();
         } else {
-            // Check if it's already shown before calling hide
             const modalElement = modalRef.current;
             if (modalElement && modalElement.classList.contains('show')) {
                 modal.hide();
             }
-            // Reset state
             setPlanId(null);
             setEnrollmentType('');
             setPartnerType('');
             setPartnerEnrollmentType('');
+            setCustomEnrollmentAmount('');
+            setCustomPlatformFee('');
             setValidationErrors({});
         }
     }, [show, isHost, targetType]);
 
     const enrollmentOptions = useMemo(() => {
         return borrowerPlans.map(plan => ({
-            label: `${plan.enrollment_type} ($${Number(plan.payment_amount).toLocaleString()})`,
+            label: plan.enrollment_type,
             value: plan.id,
             price: Number(plan.payment_amount),
             enrollment_type: plan.enrollment_type
@@ -128,23 +135,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     }, [borrowerPlans]);
 
     const handleConfirm = () => {
-        setValidationErrors({}); // Clear errors before submission
+        setValidationErrors({});
 
-        // --- Build Payload ---
         const payload = {};
+
         if (targetType == ENTITY_TYPE_BORROWER) {
             payload.plan_id = planId;
             payload.enrollment_type = enrollmentType;
 
             const selectedPlan = borrowerPlans.find(plan => plan.id === planId);
             if (selectedPlan) {
+                // Both host and non-host use customEnrollmentAmount (synced from DB, editable by host)
+                payload.enrollment_amount = customEnrollmentAmount;
+                payload.amount = customEnrollmentAmount;
                 if (isHost) {
-                    payload.enrollment_amount = customEnrollmentAmount;
-                    payload.amount = customEnrollmentAmount;
                     payload.monthly_platform_fee = customPlatformFee;
-                } else {
-                    payload.enrollment_amount = selectedPlan.payment_amount;
-                    payload.amount = selectedPlan.payment_amount;
                 }
             }
         } else if (targetType == ENTITY_TYPE_PARTNER) {
@@ -158,16 +163,14 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
 
             if (selectedPlan) {
                 payload.plan_id = selectedPlan.id;
+                payload.enrollment_amount = customEnrollmentAmount;
+                payload.amount = customEnrollmentAmount;
                 if (isHost) {
-                    payload.enrollment_amount = customEnrollmentAmount;
-                    payload.amount = customEnrollmentAmount;
                     payload.monthly_platform_fee = customPlatformFee;
-                } else {
-                    payload.enrollment_amount = (selectedPlan.payment_amount || 0);
-                    payload.amount = payload.enrollment_amount;
                 }
             }
         }
+
         onConfirm(payload);
     };
 
@@ -181,6 +184,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
     const icon = targetType == ENTITY_TYPE_PARTNER ? 'ri-shake-hands-line text-success' : 'ri-user-received-2-line text-primary';
 
     const selectedBorrowerPlan = borrowerPlans.find(p => p.id === planId);
+
     const selectedPartnerPlan = useMemo(() => {
         if (targetType != ENTITY_TYPE_PARTNER) return null;
         return partnerPlans.find(plan =>
@@ -188,6 +192,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
             plan.enrollment_type === partnerEnrollmentType
         );
     }, [partnerPlans, partnerType, partnerEnrollmentType, targetType]);
+
+    // The displayed enrollment amount — live for both host (editable) and non-host (DB value)
+    const displayBorrowerAmount = Number(customEnrollmentAmount || 0);
 
     return (
         <div className="modal fade flip" ref={modalRef} tabIndex="-1" aria-hidden="true">
@@ -205,52 +212,43 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                     This action will create a new {targetType.toLowerCase()} profile and cannot be undone.
                                 </p>
 
-                                {/* Borrower Conversion Fees - Dynamic */}
+                                {/* ── Borrower Conversion ── */}
                                 {targetType == ENTITY_TYPE_BORROWER && (
                                     <div className="mb-4 text-start">
-                                        {isHost ? (
-                                            <div className="mb-3">
-                                                <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
-                                                <Dropdown
-                                                    value={planId}
-                                                    options={enrollmentOptions}
-                                                    onChange={(e) => {
-                                                        setPlanId(e.value);
-                                                        const opt = enrollmentOptions.find(o => o.value === e.value);
-                                                        const type = opt ? opt.enrollment_type : '';
-                                                        setEnrollmentType(type);
 
-                                                        // Inform parent to clear backend errors for these fields
-                                                        if (onFieldChange) {
-                                                            onFieldChange(['plan_id', 'enrollment_type']);
-                                                        }
+                                        {/* Enrollment dropdown — visible for BOTH host and non-host */}
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Select Enrollment Type <span className="text-danger">*</span></label>
+                                            <Dropdown
+                                                value={planId}
+                                                options={enrollmentOptions}
+                                                onChange={(e) => {
+                                                    setPlanId(e.value);
+                                                    const opt = enrollmentOptions.find(o => o.value === e.value);
+                                                    setEnrollmentType(opt ? opt.enrollment_type : '');
+                                                    if (onFieldChange) onFieldChange(['plan_id', 'enrollment_type']);
+                                                    const originalPlan = borrowerPlans.find(plan => plan.id === e.value);
+                                                    if (originalPlan) {
+                                                        setCustomEnrollmentAmount(originalPlan.payment_amount || '');
+                                                        setCustomPlatformFee(originalPlan.platform_fee || 0);
+                                                        if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
+                                                    }
+                                                }}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="Select Enrollment Type"
+                                                className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
+                                                appendTo="self"
+                                            />
+                                            {(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) && (
+                                                <div className="invalid-feedback d-block">
+                                                    {validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type}
+                                                </div>
+                                            )}
+                                        </div>
 
-                                                        // Sync custom amounts for host
-                                                        if (isHost && opt) {
-                                                            const originalPlan = borrowerPlans.find(plan => plan.id === e.value);
-                                                            if (originalPlan) {
-                                                                setCustomEnrollmentAmount(originalPlan.payment_amount || '');
-                                                                setCustomPlatformFee(originalPlan.platform_fee || 0);
-                                                                if (onFieldChange) {
-                                                                    onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
-                                                                }
-                                                            }
-                                                        }
-                                                    }}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Select Enrollment Type"
-                                                    className={`w-100 ${(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) ? 'p-invalid' : ''}`}
-                                                    appendTo="self"
-                                                />
-                                                {(validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type) && <div className="invalid-feedback d-block">{validationErrors.plan_id || backendErrors?.plan_id || backendErrors?.enrollment_type}</div>}
-                                            </div>
-                                        ) : (
-                                            /* Hidden plan selector logic for non-host - happens in useEffect */
-                                            null
-                                        )}
-
-                                        {isHost && planId && (
+                                        {/* Enrollment Payment — editable for host, editable (DB pre-filled) for non-host */}
+                                        {planId && (
                                             <div className="row g-3 mb-3 animate__animated animate__fadeIn">
                                                 <div className="col-lg-12">
                                                     <label className="form-label fw-semibold">Enrollment Payment ($) <span className="text-danger">*</span></label>
@@ -265,37 +263,92 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         placeholder="Enter amount"
                                                     />
                                                     {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
-                                                        <div className="invalid-feedback">{validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}</div>
+                                                        <div className="invalid-feedback">
+                                                            {validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
                                         )}
 
+                                        {/* Fee Summary Card */}
                                         {selectedBorrowerPlan && (
-                                            <div className="bg-success bg-opacity-10 p-4 rounded-2 d-flex align-items-center animate__animated animate__fadeInUp">
-                                                <div className="flex-shrink-0 me-3">
-                                                    <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
-                                                        <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
+                                            <div className="border rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+
+                                                {/* Borrower Invoice row */}
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <span style={{ fontWeight: 600 }} className="text-dark">
+                                                        <i className="ri-user-line me-1 text-primary"></i> Borrower Invoice:
+                                                    </span>
+                                                    <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                        ${displayBorrowerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                        Charged to the borrower upon enrollment.
+                                                    </span>
+                                                </div>
+
+                                                {/* Duration row — shown for multi-installment plans */}
+                                                {selectedBorrowerPlan.total_installments_count > 1 && (
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                            <i className="ri-calendar-line me-1 text-primary"></i> Duration:
+                                                        </span>
+                                                        <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                                                            {selectedBorrowerPlan.total_installments_count} months
+                                                        </span>
                                                     </div>
-                                                </div>
-                                                <div className="flex-grow-1 ps-2">
-                                                    <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
-                                                    <p className="mb-0 text-muted fs-15 lh-base">
-                                                        A {selectedBorrowerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedBorrowerPlan.payment_amount).toFixed(2)}</span>
-                                                        {selectedBorrowerPlan.total_installments_count && (
-                                                            <span> for {selectedBorrowerPlan.total_installments_count} installments</span>
-                                                        )}
-                                                    </p>
-                                                </div>
+                                                )}
+
+                                                {/* Total Amount row — shown for multi-installment plans */}
+                                                {selectedBorrowerPlan.total_installments_count > 1 && (
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                            <i className="ri-calculator-line me-1 text-primary"></i> Total Amount:
+                                                        </span>
+                                                        <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                            ${(displayBorrowerAmount * selectedBorrowerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Partner Invoice row — shown when fixedEnrollmentAmount exists */}
+                                                {fixedEnrollmentAmount > 0 && (
+                                                    <>
+                                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                                            <span style={{ fontWeight: 600 }} className="text-warning">
+                                                                <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
+                                                            </span>
+                                                            <span className="text-warning fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                                Charged automatically on Partner's card.
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Info note */}
+                                                        <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
+                                                            <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                                                                <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
+                                                                Two completely separate invoices are created. The Borrower pays <strong>${displayBorrowerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>, and upon successful payment, <strong>${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> is automatically charged to the Partner account immediately.
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Partner Conversion Fields */}
+                                {/* ── Partner Conversion ── */}
                                 {targetType == ENTITY_TYPE_PARTNER && (
                                     <div className="mb-4 text-start">
-                                        {/* Only show Partner Type dropdown if there are distinct non-null partner types */}
+
                                         {Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && (
                                             <div className="mb-3">
                                                 <label className="form-label fw-semibold">Select Partner Type <span className="text-danger">*</span></label>
@@ -307,9 +360,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     }))}
                                                     onChange={(e) => {
                                                         setPartnerType(e.value);
-                                                        setPartnerEnrollmentType(''); // Reset enrollment type when partner type changes
-                                                        setCustomEnrollmentAmount(''); // Reset amount for host override
-                                                        setCustomPlatformFee(''); // Reset fee for host override
+                                                        setPartnerEnrollmentType('');
+                                                        setCustomEnrollmentAmount('');
+                                                        setCustomPlatformFee('');
                                                         setValidationErrors(prev => ({ ...prev, partnerType: '' }));
                                                         if (onFieldChange) onFieldChange(['partner_type']);
                                                     }}
@@ -319,7 +372,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                     className={`w-100 ${backendErrors?.partner_type ? 'p-invalid' : ''}`}
                                                     appendTo="self"
                                                 />
-                                                {backendErrors?.partner_type && <div className="invalid-feedback d-block">{backendErrors.partner_type}</div>}
+                                                {backendErrors?.partner_type && (
+                                                    <div className="invalid-feedback d-block">{backendErrors.partner_type}</div>
+                                                )}
                                             </div>
                                         )}
 
@@ -330,25 +385,21 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 options={(partnerPlans || [])
                                                     .filter(plan => !partnerType || plan.partner_type === partnerType || (Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length === 0))
                                                     .map(plan => ({
-                                                        label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
+                                                        label: plan.enrollment_type,
                                                         value: plan.enrollment_type
                                                     }))
                                                 }
                                                 onChange={(e) => {
                                                     setPartnerEnrollmentType(e.value);
                                                     if (onFieldChange) onFieldChange(['enrollment_type', 'plan_id']);
-
-                                                    // Sync custom amounts for host
-                                                    if (isHost) {
-                                                        const selectedPlan = partnerPlans.find(plan =>
-                                                            (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
-                                                            plan.enrollment_type === e.value
-                                                        );
-                                                        if (selectedPlan) {
-                                                            setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
-                                                            setCustomPlatformFee(selectedPlan.platform_fee || 0);
-                                                            if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
-                                                        }
+                                                    const selectedPlan = partnerPlans.find(plan =>
+                                                        (plan.partner_type === partnerType || (!partnerType && !plan.partner_type)) &&
+                                                        plan.enrollment_type === e.value
+                                                    );
+                                                    if (selectedPlan) {
+                                                        setCustomEnrollmentAmount(selectedPlan.payment_amount || '');
+                                                        setCustomPlatformFee(selectedPlan.platform_fee || 0);
+                                                        if (onFieldChange) onFieldChange(['enrollment_amount', 'amount', 'monthly_platform_fee', 'platform_fee']);
                                                     }
                                                 }}
                                                 optionLabel="label"
@@ -356,7 +407,6 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 placeholder="Select Enrollment Type"
                                                 className={`w-100 ${(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type || backendErrors?.plan_id) ? 'p-invalid' : ''}`}
                                                 appendTo="self"
-                                                // Disabled only if we have partner types but haven't selected one yet
                                                 disabled={Array.from(new Set((partnerPlans || []).map(p => p.partner_type))).filter(Boolean).length > 0 && !partnerType}
                                             />
                                             {(validationErrors.partnerEnrollmentType || backendErrors?.enrollment_type || backendErrors?.plan_id) && (
@@ -366,6 +416,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                             )}
                                         </div>
 
+                                        {/* Editable amount inputs — only for isHost */}
                                         {isHost && partnerEnrollmentType && (
                                             <div className="row g-3 mb-3 animate__animated animate__fadeInUp">
                                                 <div className="col-lg-6">
@@ -381,7 +432,9 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         placeholder="Enter amount"
                                                     />
                                                     {(validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount) && (
-                                                        <div className="invalid-feedback">{validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}</div>
+                                                        <div className="invalid-feedback">
+                                                            {validationErrors.customEnrollmentAmount || backendErrors?.enrollment_amount || backendErrors?.amount}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="col-lg-6">
@@ -398,34 +451,75 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                         placeholder="Enter amount"
                                                     />
                                                     {(validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee) && (
-                                                        <div className="invalid-feedback d-block">{validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}</div>
+                                                        <div className="invalid-feedback d-block">
+                                                            {validationErrors.customPlatformFee || backendErrors?.monthly_platform_fee || backendErrors?.platform_fee}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
                                         )}
 
+                                        {/* Partner Fee Summary Card */}
                                         {selectedPartnerPlan && (
-                                            <div className="bg-success bg-opacity-10 p-4 rounded-2 d-flex align-items-center animate__animated animate__fadeInUp">
-                                                <div className="flex-shrink-0 me-3">
-                                                    <div className="bg-white p-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
-                                                        <i className="ri-money-dollar-box-fill text-success" style={{ fontSize: '3rem' }}></i>
+                                            <div className="border rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
+
+                                                {/* Partner Invoice row */}
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <span style={{ fontWeight: 600 }} className="text-dark">
+                                                        <i className="ri-shield-user-line me-1 text-success"></i> Partner Invoice:
+                                                    </span>
+                                                    <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                        ${Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                        Charged to the partner upon enrollment.
+                                                    </span>
+                                                </div>
+
+                                                {/* Duration row — shown for multi-installment plans */}
+                                                {selectedPartnerPlan.total_installments_count > 1 && (
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                            <i className="ri-calendar-line me-1 text-success"></i> Duration:
+                                                        </span>
+                                                        <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                                                            {selectedPartnerPlan.total_installments_count} months
+                                                        </span>
                                                     </div>
-                                                </div>
-                                                <div className="flex-grow-1 ps-2">
-                                                    <h5 className="text-success fw-bold mb-1 fs-18">Enrollment Fee Applied</h5>
-                                                    <p className="mb-0 text-muted fs-15 lh-base">
-                                                        A {selectedPartnerPlan.enrollment_type.toLowerCase()} fee <span className="text-success fw-bold fs-18">${Number(isHost && customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount).toFixed(2)}</span>
-                                                        {selectedPartnerPlan.total_installments_count && (
-                                                            <span>/month</span>
-                                                        )}
-                                                        {isHost && (
-                                                            <div className="small mt-1 text-success">
-                                                                <i className="ri-information-line me-1"></i>
-                                                                Platform fee of <strong>${Number(customPlatformFee).toLocaleString()}/mo</strong> starts on the 12th month
-                                                            </div>
-                                                        )}
-                                                    </p>
-                                                </div>
+                                                )}
+
+                                                {/* Total Amount row — shown for multi-installment plans */}
+                                                {selectedPartnerPlan.total_installments_count > 1 && (
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span style={{ fontWeight: 600 }} className="text-dark">
+                                                            <i className="ri-calculator-line me-1 text-success"></i> Total Amount:
+                                                        </span>
+                                                        <span className="text-success fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                            ${(Number(customEnrollmentAmount !== '' ? customEnrollmentAmount : selectedPartnerPlan.payment_amount) * selectedPartnerPlan.total_installments_count).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Platform Fee row */}
+                                                {isHost && customPlatformFee > 0 && (
+                                                    <>
+                                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                                            <span style={{ fontWeight: 600 }} className="text-warning">
+                                                                <i className="ri-money-dollar-circle-line text-warning me-1"></i> Platform Fee:
+                                                            </span>
+                                                            <span className="text-warning fw-bold" style={{ fontSize: '1.05rem' }}>
+                                                                ${Number(customPlatformFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo
+                                                            </span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="text-muted ps-3" style={{ fontSize: '0.75rem' }}>
+                                                                Starts on the 12th month.
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -462,4 +556,3 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
         </div>
     );
 }
-
