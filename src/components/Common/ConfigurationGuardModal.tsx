@@ -18,15 +18,21 @@ const ConfigurationGuardModal = () => {
     const guardedRoutes = ['/leads', '/appointments', '/users', '/employees', '/clients'];
     const isGuardedRoute = guardedRoutes.some(route => location.pathname.startsWith(route));
 
-    // Show modal if configuration is missing based on partner type
-    const isEmailMissing = !flags || flags.is_fresh_email === null || flags.is_fresh_email === false;
-    const isBrandingMissing = !flags || flags.is_fresh_settings === null || flags.is_fresh_settings === false;
-    const isPaymentMissing = !flags || flags.is_fresh_payment === null || flags.is_fresh_payment === false;
+    const parseTrueFlag = (value: unknown) =>
+        value === true || value === 'true' || value === 1 || value === '1';
 
-    const isWhiteLabel = user?.partner_type === PARTNER_TYPES.WHITE_LABEL && !user?.is_host;
-    const isCertified = user?.partner_type === PARTNER_TYPES.CERTIFIED && !user?.is_host;
+    // Show modal only after config flags are loaded and a real missing state is detected
+    const isEmailMissing = !parseTrueFlag(flags?.is_fresh_email);
+    const isBrandingMissing = !parseTrueFlag(flags?.is_fresh_settings);
+    const isPaymentMissing = !parseTrueFlag(flags?.is_fresh_payment);
+    const configLoaded = flags !== null && flags !== undefined;
 
-    const showModal = !user?.is_host && isGuardedRoute && (
+    const isHost = user?.is_host == 1;
+    const partnerType = (user?.partner_type || '').toString().trim();
+    const isWhiteLabel = partnerType === PARTNER_TYPES.WHITE_LABEL && !isHost;
+    const isCertified = partnerType === PARTNER_TYPES.CERTIFIED && !isHost;
+
+    const showModal = !isHost && isGuardedRoute && configLoaded && (
         (isWhiteLabel && (isEmailMissing || isBrandingMissing || isPaymentMissing)) ||
         (isCertified && isPaymentMissing)
     );
