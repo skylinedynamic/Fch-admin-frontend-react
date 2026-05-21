@@ -1190,7 +1190,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         const partnerType = formData.partner_type || currentUser?.partner_type;
                                         const isWL = partnerType === PARTNER_TYPES.WHITE_LABEL;
                                         const isCP = partnerType === PARTNER_TYPES.CERTIFIED;
-                                        const isWLOrCP = isWL || isCP;
+                                        const isWLOrCP = (isWL || isCP) && !isHost;
 
                                         if (isWLOrCP) {
                                             const customAmount = currentPaymentAmount;
