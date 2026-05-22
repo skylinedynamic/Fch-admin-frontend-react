@@ -25,8 +25,8 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
       });
   }, []);
 
-  const dynamicLogo = settings?.primary_logo_full_url || logoImg;
-  const siteName = settings?.site_name || APP_CONFIG.name;
+  const dynamicLogo = settings?.primary_logo_full_url;
+  const siteName = settings?.site_name ;
   return (
     <div className="auth-page-wrapper pt-5">
 
