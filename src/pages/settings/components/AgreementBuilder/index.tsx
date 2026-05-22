@@ -35,6 +35,8 @@ const AgreementBuilder: React.FC = () => {
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [pagePad, setPagePad] = useState<number>(80);
     const [docBg, setDocBg] = useState<string>('#ffffff');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const previewRef = useRef<HTMLIFrameElement>(null);
@@ -177,9 +179,12 @@ const AgreementBuilder: React.FC = () => {
 
     return (
         <div className="ab4-root fade-panel">
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFileChange} />
+            <input ref={fileInputRef} type="file" accept="image/*" className="d-none" onChange={onFileChange} />
             <div className="ab4-toolbar">
                 <div className="d-flex align-items-center gap-3">
+                    <button className="ab4-mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} title="Toggle palette">
+                        <i className="ri-menu-line" />
+                    </button>
                     <button className="ab4-back-btn" onClick={() => setScreen('dashboard')} title="Back to Dashboard">
                         <i className="ri-arrow-left-line" />
                     </button>
@@ -198,11 +203,17 @@ const AgreementBuilder: React.FC = () => {
                 </div>
             </div>
 
-            <div className="ab4-layout">
+            <div className={`ab4-layout ${sidebarOpen ? 'ab4-layout--drawer-open' : ''}`}>
+                {sidebarOpen && <div className="ab4-drawer-backdrop" onClick={() => setSidebarOpen(false)} />}
                 {view === 'editor' ? (
                     <>
-                        <div className="ab4-palette" onClick={() => setSelectedId(null)}>
-                            <div className="ab4-pal-hdr">Palette</div>
+                        <div className={`ab4-palette ${sidebarCollapsed ? 'ab4-palette--collapsed' : ''} ${sidebarOpen ? 'ab4-palette--open' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedId(null); }}>
+                            <div className="ab4-pal-hdr">
+                                <span>Palette</span>
+                                <button type="button" className="ab4-sidebar-toggle" onClick={(e) => { e.stopPropagation(); setSidebarCollapsed(!sidebarCollapsed); }} title="Toggle sidebar">
+                                    <i className={`ri-arrow-${sidebarCollapsed ? 'right' : 'left'}-line`} />
+                                </button>
+                            </div>
                             {PALETTE.map(g => (
                                 <div key={g.group} className="ab4-grp">
                                     <div className="ab4-grp-title">{g.group}</div>
@@ -261,10 +272,7 @@ const AgreementBuilder: React.FC = () => {
                         <div className="ab4-preview-bar px-3">
                             <div className="d-flex align-items-center justify-content-between w-100">
                                 <div className="d-flex align-items-center gap-2">
-                                    <div className="ab4-tbar-icon" style={{
-                                        // @ts-ignore
-                                        '--size': '28px', '--bg': 'rgba(16, 185, 129, 0.1)', '--clr': '#10b981'
-                                    }}><i className="ri-eye-line" /></div>
+                                    <div className="ab4-tbar-icon ab4-tbar-icon--preview"><i className="ri-eye-line" /></div>
                                     <div className="fw-semibold">Agreement Preview</div>
                                     <div className="ab4-live-indicator">
                                         <span className="ab4-live-dot"></span>
@@ -286,7 +294,7 @@ const AgreementBuilder: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={html} title="Preview" frameBorder="0" style={{ height: 'calc(100% - 50px)' }} />
+                        <iframe ref={previewRef} className="ab4-preview-frame" srcDoc={html} title="Preview" frameBorder="0" />
                     </div>
                 )}
             </div>

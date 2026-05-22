@@ -42,11 +42,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
                             <div className="row g-2 mt-2 mb-2">
                                 <div className="col-4">
-                                    <label className="ab4-pl fs-9">Size</label>
+                                    <label className="ab4-pl fs-10">Size</label>
                                     <input type="number" className="form-control form-control-sm" value={selected.fontSize || 14} onChange={e => u({ fontSize: +e.target.value })} />
                                 </div>
                                 <div className="col-8">
-                                    <label className="ab4-pl fs-9">Weight</label>
+                                    <label className="ab4-pl fs-10">Weight</label>
                                     <div className="ab4-btn-grid">
                                         {['400', '600', '800'].map(w => (
                                             <button key={w} className={`ab4-bg-btn ${selected.fontWeight === w ? 'ab4-bg-btn--on' : ''}`} onClick={() => u({ fontWeight: w })}>
@@ -66,8 +66,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                             </div>
 
                             <div className="row g-2 mb-2">
-                                <div className="col-6"><label className="ab4-pl fs-9">Line H</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.lineHeight || 1.6} onChange={e => u({ lineHeight: +e.target.value })} /></div>
-                                <div className="col-6"><label className="ab4-pl fs-9">Tracking</label><input type="number" step="0.5" className="form-control form-control-sm" value={selected.letterSpacing || 0} onChange={e => u({ letterSpacing: +e.target.value })} /></div>
+                                <div className="col-6"><label className="ab4-pl fs-10">Line H</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.lineHeight || 1.6} onChange={e => u({ lineHeight: +e.target.value })} /></div>
+                                <div className="col-6"><label className="ab4-pl fs-10">Tracking</label><input type="number" step="0.5" className="form-control form-control-sm" value={selected.letterSpacing || 0} onChange={e => u({ letterSpacing: +e.target.value })} /></div>
                             </div>
 
                             <label className="ab4-pl">Formatting & Lists</label>
@@ -93,11 +93,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                                 ]} />
                             <div className="row g-2 mt-2">
                                 <div className="col-4">
-                                    <label className="ab4-pl fs-9">Size</label>
+                                    <label className="ab4-pl fs-10">Size</label>
                                     <input type="number" className="form-control form-control-sm" value={selected.partyLabelSize || 12} onChange={e => u({ partyLabelSize: +e.target.value })} />
                                 </div>
                                 <div className="col-8">
-                                    <label className="ab4-pl fs-9">Weight</label>
+                                    <label className="ab4-pl fs-10">Weight</label>
                                     <div className="ab4-btn-grid">
                                         {['400', '700', '800'].map(w => (
                                             <button key={w} className={`ab4-bg-btn ${selected.partyLabelWeight === w ? 'ab4-bg-btn--on' : ''}`} onClick={() => u({ partyLabelWeight: w })}>
@@ -124,8 +124,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                             </div>
 
                             <div className="row g-2 mb-3">
-                                <div className="col-6"><label className="ab4-pl fs-9">Line H</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.partyLabelLineHeight || 1.2} onChange={e => u({ partyLabelLineHeight: +e.target.value })} /></div>
-                                <div className="col-6"><label className="ab4-pl fs-9">Track</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.partyLabelSpacing || 0} onChange={e => u({ partyLabelSpacing: +e.target.value })} /></div>
+                                <div className="col-6"><label className="ab4-pl fs-10">Line H</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.partyLabelLineHeight || 1.2} onChange={e => u({ partyLabelLineHeight: +e.target.value })} /></div>
+                                <div className="col-6"><label className="ab4-pl fs-10">Track</label><input type="number" step="0.1" className="form-control form-control-sm" value={selected.partyLabelSpacing || 0} onChange={e => u({ partyLabelSpacing: +e.target.value })} /></div>
                             </div>
 
                             <label className="ab4-pl">Titles</label>
@@ -155,13 +155,13 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <div className="ab4-ps">
                         <label className="ab4-pl">Spacing & Radius</label>
                         <div className="row g-2 mb-2">
-                            <div className="col-4"><label className="ab4-pl fs-9">Top M</label><input type="number" className="form-control form-control-sm" value={selected.marginTop || 0} onChange={e => u({ marginTop: +e.target.value })} /></div>
-                            <div className="col-4"><label className="ab4-pl fs-9">Bot M</label><input type="number" className="form-control form-control-sm" value={selected.marginBottom || 0} onChange={e => u({ marginBottom: +e.target.value })} /></div>
-                            <div className="col-4"><label className="ab4-pl fs-9">Pad</label><input type="number" className="form-control form-control-sm" value={selected.padding || 0} onChange={e => u({ padding: +e.target.value })} /></div>
+                            <div className="col-4"><label className="ab4-pl fs-10">Top M</label><input type="number" className="form-control form-control-sm" value={selected.marginTop || 0} onChange={e => u({ marginTop: +e.target.value })} /></div>
+                            <div className="col-4"><label className="ab4-pl fs-10">Bot M</label><input type="number" className="form-control form-control-sm" value={selected.marginBottom || 0} onChange={e => u({ marginBottom: +e.target.value })} /></div>
+                            <div className="col-4"><label className="ab4-pl fs-10">Pad</label><input type="number" className="form-control form-control-sm" value={selected.padding || 0} onChange={e => u({ padding: +e.target.value })} /></div>
                         </div>
                         <div className="row g-2">
-                            <div className="col-6"><label className="ab4-pl fs-9">Radius</label><input type="number" className="form-control form-control-sm" value={selected.borderRadius || 0} onChange={e => u({ borderRadius: +e.target.value })} /></div>
-                            <div className="col-6"><label className="ab4-pl fs-9">Opacity</label><input type="number" step="0.1" max="1" min="0" className="form-control form-control-sm" value={selected.bgOpacity || 1} onChange={e => u({ bgOpacity: +e.target.value })} /></div>
+                            <div className="col-6"><label className="ab4-pl fs-10">Radius</label><input type="number" className="form-control form-control-sm" value={selected.borderRadius || 0} onChange={e => u({ borderRadius: +e.target.value })} /></div>
+                            <div className="col-6"><label className="ab4-pl fs-10">Opacity</label><input type="number" step="0.1" max="1" min="0" className="form-control form-control-sm" value={selected.bgOpacity || 1} onChange={e => u({ bgOpacity: +e.target.value })} /></div>
                         </div>
                     </div>
 
@@ -192,12 +192,12 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                         <div className="ab4-ps">
                             <label className="ab4-pl"><i className="ri-list-settings-line me-1" /> Field Setup</label>
                             <div className="mb-2">
-                                <label className="ab4-pl fs-9">Field Label</label>
+                                <label className="ab4-pl fs-10">Field Label</label>
                                 <input className="form-control form-control-sm" value={selected.fieldLabel || ''} onChange={e => u({ fieldLabel: e.target.value })} placeholder="Label" />
                             </div>
                             {['input', 'textarea'].includes(selected.type || '') && (
                                 <div className="mb-2">
-                                    <label className="ab4-pl fs-9">Placeholder</label>
+                                    <label className="ab4-pl fs-10">Placeholder</label>
                                     <input className="form-control form-control-sm" value={selected.fieldPlaceholder || ''} onChange={e => u({ fieldPlaceholder: e.target.value })} placeholder="Placeholder" />
                                 </div>
                             )}
@@ -217,10 +217,10 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <div className="ab4-props-hdr text-secondary"><i className="ri-file-text-line" />Global Settings</div>
                     <div className="ab4-ps">
                         <label className="ab4-pl text-uppercase">Page Layout</label>
-                        <label className="ab4-pl fs-9">Page Padding: <strong>{pagePad}px</strong></label>
+                        <label className="ab4-pl fs-10">Page Padding: <strong>{pagePad}px</strong></label>
                         <input type="range" className="form-range mb-2" min={20} max={150} value={pagePad} onChange={e => setPagePad(+e.target.value)} />
 
-                        <label className="ab4-pl fs-9 mt-3">Document Color</label>
+                        <label className="ab4-pl fs-10 mt-3">Document Color</label>
                         <div className="ab4-color-grid">
                             {['#ffffff', '#fafafa', '#f8fafc', '#fcfcfc', '#fffef5'].map(c => (
                                 <div key={c}

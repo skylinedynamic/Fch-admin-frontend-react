@@ -23,17 +23,68 @@ export function TextBlock({ block, onUpdate, onFocused, onBlurred }: TextBlockPr
     const [hover, setHover] = useState(false);
     useEffect(() => { if (ref.current) ref.current.innerHTML = block.content || ''; }, []);
 
+    // When the block's fontSize changes via the sidebar, strip any inline font-size
+    // styles (or legacy <font> tags) that browsers add inside contentEditable so the
+    // container-level CSS variable applies to the ENTIRE text block, not just the
+    // cursor / newly-typed text.
+    useEffect(() => {
+        if (!ref.current) return;
+        const originalHtml = ref.current.innerHTML;
+        let changed = false;
+
+        const stripInlineProp = (prop: string) => {
+            const regex = new RegExp(`${prop}\\s*:\\s*[^;]+;?`, 'gi');
+            ref.current!.querySelectorAll('[style]').forEach((el) => {
+                if (el === ref.current) return;
+                const style = (el as HTMLElement).getAttribute('style') || '';
+                if (style.toLowerCase().includes(prop)) {
+                    const cleaned = style.replace(regex, '').trim();
+                    if (cleaned) (el as HTMLElement).setAttribute('style', cleaned);
+                    else (el as HTMLElement).removeAttribute('style');
+                    changed = true;
+                }
+            });
+        };
+
+        stripInlineProp('font-size');
+
+        // Remove legacy <font> tags (old execCommand fontSize)
+        ref.current!.querySelectorAll('font').forEach((el) => {
+            const parent = el.parentNode!;
+            while (el.firstChild) parent.insertBefore(el.firstChild, el);
+            parent.removeChild(el);
+            changed = true;
+        });
+
+        if (changed) {
+            const newHtml = ref.current.innerHTML;
+            if (newHtml !== originalHtml) {
+                onUpdate({ content: newHtml });
+            }
+        }
+    }, [block.fontSize]);
+
     const bVars = {
         '--fs': `${block.fontSize}px`,
+        fontSize: `${block.fontSize}px`,
         '--fw': block.fontWeight,
+        fontWeight: block.fontWeight,
         '--fst': block.fontStyle,
+        fontStyle: block.fontStyle,
         '--ff': block.fontFamily,
+        fontFamily: block.fontFamily,
         '--ta': block.textAlign,
+        textAlign: block.textAlign,
         '--color': block.color,
+        color: block.color,
         '--lh': block.lineHeight,
+        lineHeight: block.lineHeight,
         '--ls': `${block.letterSpacing}px`,
+        letterSpacing: `${block.letterSpacing}px`,
         '--mt': `${block.marginTop}px`,
+        marginTop: `${block.marginTop}px`,
         '--mb': `${block.marginBottom}px`,
+        marginBottom: `${block.marginBottom}px`,
     } as React.CSSProperties;
 
     const exec = (cmd: string) => {
@@ -262,7 +313,7 @@ export function BlockList({
     useEffect(() => {
         if (isNested) return;
         if (rafRef.current) clearTimeout(rafRef.current);
-        rafRef.current = setTimeout(distribute, 150);
+        rafRef.current = setTimeout(distribute, 500);
         return () => clearTimeout(rafRef.current);
     }, [blocks, distribute, isNested]);
 

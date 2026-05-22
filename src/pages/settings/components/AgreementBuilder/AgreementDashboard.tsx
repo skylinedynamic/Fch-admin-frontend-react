@@ -74,8 +74,7 @@ export const AgreementDashboard: React.FC<AgreementDashboardProps> = ({ onEdit }
                         </div>
                     </div>
                     <div
-                        className="flex-grow-1"
-                        style={{ cursor: 'pointer' }}
+                        className="flex-grow-1 cursor-pointer"
                         onClick={() => onEdit(type)}
                     >
                         <div className="fw-semibold fs-14 text-dark">{label}</div>
