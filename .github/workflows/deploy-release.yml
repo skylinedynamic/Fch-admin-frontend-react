@@ -25,9 +25,12 @@ jobs:
       - name: Create Environment Variables
         run: |
           # Production API URL
-          echo "VITE_API_BASE_URL=https://api.fourcornerfunding.com/api/v1" > .env.production
-          echo "VITE_BASE_URL=https://api.fourcornerfunding.com" >> .env.production
-          echo "VITE_WEBSITE_URL=https://fourcornerfunding.com/" >> .env.production
+          echo "VITE_API_URL=https://api.fourcornerfunding.com/api/v1" > .env.production
+          echo "VITE_BASE_API_URL=https://api.fourcornerfunding.com" >> .env.production
+          echo "VITE_WEBSITE_URL=https://fourcornerfunding.com" >> .env.production
+          echo "VITE_BASE_URL=https://fourcornerfunding.com" >> .env.production
+          echo "VITE_BASE_URL_IP=54.88.91.253" >> .env.production
+          echo "VITE_DEVELOPMENT_MODE=production" >> .env.production
 
       - name: Build Application
         run: npm run build
