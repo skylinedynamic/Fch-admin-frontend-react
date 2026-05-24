@@ -137,6 +137,23 @@ export default function SeoSettingEdit() {
         e.preventDefault();
         setErrors({});
 
+        // // --- Frontend Validation ---
+        // const validationErrors: Record<string, string> = {};
+        // if (!formData.page_name.trim()) {
+        //     validationErrors.page_name = 'Page is required.';
+        // }
+        // if (!formData.meta_title.trim()) {
+        //     validationErrors.meta_title = 'SEO title is required.';
+        // }
+        // if (!formData.meta_description.trim()) {
+        //     validationErrors.meta_description = 'SEO description is required.';
+        // }
+        // if (Object.keys(validationErrors).length > 0) {
+        //     setErrors(validationErrors);
+        //     return;
+        // }
+        // // --- End Frontend Validation ---
+
         const data = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
             data.append(key, String(value));
@@ -292,7 +309,6 @@ export default function SeoSettingEdit() {
                                                     <div className="mb-4">
                                                         <label className="form-label d-flex justify-content-between align-items-center">
                                                             <span>SEO Title</span>
-                                                            <span className="text-muted fs-12">({(formData.meta_title || '').length}/70)</span>
                                                         </label>
                                                         <input
                                                             type="text"
@@ -301,9 +317,7 @@ export default function SeoSettingEdit() {
                                                             value={formData.meta_title}
                                                             onChange={handleChange}
                                                             placeholder="SEO optimized title"
-                                                            maxLength={70}
                                                         />
-                                                        <div className="text-muted fs-12 mt-1">Optimal length: 50-60 characters. This appears as the clickable headline in search results.</div>
                                                         {errors.meta_title && <div className="invalid-feedback d-block">{errors.meta_title}</div>}
                                                     </div>
                                                 </div>
@@ -312,7 +326,6 @@ export default function SeoSettingEdit() {
                                                     <div className="mb-4">
                                                         <label className="form-label d-flex justify-content-between align-items-center">
                                                             <span>SEO description</span>
-                                                            <span className="text-muted fs-12">({(formData.meta_description || '').length}/160)</span>
                                                         </label>
                                                         <textarea
                                                             name="meta_description"
@@ -321,9 +334,7 @@ export default function SeoSettingEdit() {
                                                             value={formData.meta_description}
                                                             onChange={handleChange}
                                                             placeholder="Short description for search engines..."
-                                                            maxLength={160}
                                                         ></textarea>
-                                                        <div className="text-muted fs-12 mt-1">Optimal length: 120-160 characters. This appears below the title in search results and should entice users to click.</div>
                                                         {errors.meta_description && <div className="invalid-feedback d-block">{errors.meta_description}</div>}
                                                     </div>
                                                 </div>
