@@ -448,6 +448,7 @@ export default function Users() {
       setSelection([]);
       setDeletingUserId(null);
       setShowDeleteModal(false);
+      await getUserDetails();
       loadUsers();
     } catch (error) {
       console.error(error);
