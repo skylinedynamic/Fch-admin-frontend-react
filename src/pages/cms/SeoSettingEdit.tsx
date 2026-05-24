@@ -248,11 +248,16 @@ export default function SeoSettingEdit() {
                                                 options={pageOptions}
                                                 onChange={(e) => handlePageChange(e.value)}
                                                 placeholder="Select a page..."
-                                                className={`w-100 ${errors.page_name ? 'p-invalid' : ''}`}
+                                                className={`w-100 ${(errors.page_name || errors.path) ? 'p-invalid' : ''}`}
                                                 filter
                                             />
-                                            {/* {id && <div className="form-text text-muted">Page cannot be changed when editing.</div>} */}
                                             {errors.page_name && <div className="text-danger fs-12 mt-1">{errors.page_name}</div>}
+                                            {errors.path && (
+                                                <div className="text-danger fs-12 mt-1">
+                                                    <i className="ri-error-warning-line me-1"></i>
+                                                    SEO settings for this page already exist. Please select a different page or edit the existing record.
+                                                </div>
+                                            )}
                                             {formData.path && (
                                                 <div className="mt-2">
                                                     <span className="badge bg-light text-dark border fs-12">
