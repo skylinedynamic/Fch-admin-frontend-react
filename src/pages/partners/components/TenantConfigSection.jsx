@@ -99,7 +99,6 @@ export default function TenantConfigSection({
 
                 // Show specific validation error message if available
                 const firstError = Object.values(apiErrors)[0];
-                toast.error(Array.isArray(firstError) ? firstError[0] : 'Validation failed. Please check the domains.');
             } else {
                 toast.error(error.response?.data?.message || 'Failed to update configuration');
             }

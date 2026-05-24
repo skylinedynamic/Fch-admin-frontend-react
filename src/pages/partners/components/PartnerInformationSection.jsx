@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
@@ -27,6 +27,18 @@ export default function PartnerInformationSection({
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const domainManuallyEditedRef = useRef(false);
+
+    // Show partner_domain field: always in create mode, only for Certified in edit mode
+    const showPartnerDomain = !partnerId || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+
+    // Auto-sync partner_domain from company_name in create mode when user hasn't manually edited it
+    useEffect(() => {
+        if (!partnerId && !domainManuallyEditedRef.current && formData.company_name) {
+            const autoDomain = formData.company_name.toLowerCase().replace(/[^a-z]/g, '');
+            handleInputChange({ target: { name: 'partner_domain', value: autoDomain } });
+        }
+    }, [formData.company_name]);
 
     // Calculate dynamic values for summary and overrides
     const selectedPlan = partnerPlans.find(
@@ -44,17 +56,6 @@ export default function PartnerInformationSection({
     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
 
     const totalInvestment = formData.total_subscription_amount || (Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11));
-
-    // Auto-scroll to first error field
-    useEffect(() => {
-        if (errors && Object.keys(errors).length > 0) {
-            // Find the first error field
-            const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
-            if (firstErrorField) {
-                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }, [errors]);
 
     // Filter results from file manager based on allowed extensions
     const handleFileSelection = (selectedFiles) => {
@@ -210,12 +211,15 @@ export default function PartnerInformationSection({
                         {formData.company_name && !partnerId && (
                             <span className="ms-1 text-muted fw-normal" style={{ fontSize: '0.85em' }}>
                                 &nbsp;(Partner portal url be like : <code className="text-primary font-monospace">
-                                    {formData.partner_domain ? (
-                                        formData.partner_domain
+                               {formData.partner_domain ? (
+                                        <>
+                                            {formData.partner_domain}.
+                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                        </>
                                     ) : (
                                         <>
-                                            {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}
-                                            .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                            {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}.
+                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
                                         </>
                                     )}
                                 </code>)
@@ -234,32 +238,62 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Portal URL / Custom Domain - Visible only in update mode for Certified Partners */}
-            {partnerId && formData.partner_type === PARTNER_TYPES.CERTIFIED && (
+            {/* Portal URL / Custom Domain - Visible on create (all types) and edit (Certified only) */}
+            {showPartnerDomain && partnerId && formData.partner_type === PARTNER_TYPES.CERTIFIED && (
                 <div className="col-lg-6">
                     <div className="mb-3">
-                        <label className="form-label">
-                            {formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Custom Domain" : "Portal Subdomain"} <span className="text-danger">*</span>
+                        <label className="form-label">Partner Subdomain <span className="text-danger">*</span>
                         </label>
                         <div className="input-group material-shadow">
                             <input
                                 type="text"
-                                className={`form-control ${formData.partner_type === PARTNER_TYPES.CERTIFIED ? '' : 'bg-light text-muted fw-medium'} ${errors.partner_domain ? 'is-invalid' : ''}`}
+                                className={`form-control ${errors.partner_domain ? 'is-invalid' : ''}`}
                                 name="partner_domain"
-                                placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
-                                value={formData.partner_type === PARTNER_TYPES.CERTIFIED ? (formData.partner_domain ? formData.partner_domain.split('.')[0] : '') : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')}
+                                placeholder="Enter custom subdomain"
+                                value={formData.partner_domain ? formData.partner_domain.split('.')[0] : ''}
                                 onChange={(e) => {
                                     const cleanedValue = e.target.value
                                         .toLowerCase()
                                         .replace(/[^a-z0-9-]/g, '')
                                         .replace(/-+/g, '-')
                                         .replace(/^[^a-z]+/g, '');
-                                    e.target.value = cleanedValue;
-                                    handleInputChange(e);
+                                    handleInputChange({ target: { name: 'partner_domain', value: cleanedValue } });
                                 }}
-                                readOnly={formData.partner_type !== PARTNER_TYPES.CERTIFIED}
                             />
-                            <span className="input-group-text bg-light text-muted px-3">
+                            <span className="input-group-text text-muted px-3">
+                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                            </span>
+                        </div>
+                        {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
+                    </div>
+                </div>
+            )}
+            {showPartnerDomain && !partnerId && (
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Partner Subdomain <span className="text-danger">*</span>
+                        </label>
+                        <div className="input-group material-shadow">
+                            <input
+                                type="text"
+                                className={`form-control ${formData.partner_type !== PARTNER_TYPES.CERTIFIED ? 'bg-light text-muted fw-medium' : ''} ${errors.partner_domain ? 'is-invalid' : ''}`}
+                                name="partner_domain"
+                                placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
+                                value={domainManuallyEditedRef.current
+                                    ? (formData.partner_domain || '')
+                                    : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')
+                                }
+                                onChange={(e) => {
+                                    domainManuallyEditedRef.current = true;
+                                    const cleanedValue = e.target.value
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9-]/g, '')
+                                        .replace(/-+/g, '-')
+                                        .replace(/^[^a-z]+/g, '');
+                                    handleInputChange({ target: { name: 'partner_domain', value: cleanedValue } });
+                                }}
+                            />
+                            <span className="input-group-text text-muted px-3">
                                 .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
                             </span>
                         </div>
