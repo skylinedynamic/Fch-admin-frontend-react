@@ -45,7 +45,7 @@ export default function ContactDetails() {
         email: '',
         address: '',
         state: '',
-        country: 'United States', // Default
+        country: '', // Default empty
         city: '',
         other_city: '',
         zip_code: '',
@@ -55,11 +55,11 @@ export default function ContactDetails() {
         is_referral_partner: false
     });
 
-    // Initialize states for default country (United States) on new contact creation
+    // Initialize states for default country on new contact creation
     useEffect(() => {
-        if (!id && contact.country === 'United States') {
-            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === 'United States');
-            const countryCode = countryEntry ? countryEntry[0] : 'USA';
+        if (!id && contact.country) {
+            const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === contact.country);
+            const countryCode = countryEntry ? countryEntry[0] : null;
 
             if (countryCode && locationData[countryCode]) {
                 const stateOptions = Object.keys(locationData[countryCode].states).map((key) => ({
@@ -69,7 +69,7 @@ export default function ContactDetails() {
                 setStates(stateOptions);
             }
         }
-    }, [id]);
+    }, [id, contact.country]);
 
     // Fetch contact data if editing
     useEffect(() => {
@@ -78,7 +78,7 @@ export default function ContactDetails() {
             fetchContactById(id)
                 .then((data) => {
                     // Location logic to populate states based on fetched country
-                    let finalCountry = data.country || 'United States';
+                    let finalCountry = data.country || '';
 
                     // Find country code based on Name
                     const countryEntry = Object.entries(locationData).find(([key, val]) => val.name === finalCountry);
@@ -145,6 +145,15 @@ export default function ContactDetails() {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
+        // Clear error for this field
+        if (errors[name]) {
+            setErrors(prev => {
+                const updated = { ...prev };
+                delete updated[name];
+                return updated;
+            });
+        }
+
         // Handle country change cascading
         if (name === 'country') {
             // Find code based on Name
@@ -196,7 +205,35 @@ export default function ContactDetails() {
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
+
+        if (!contact.full_name?.trim()) {
+            newErrors.full_name = 'Full name is required';
+        }
+
+        if (!contact.email?.trim()) {
+            newErrors.email = 'Email is required';
+        } else if (!emailRegex.test(contact.email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!contact.mobile_number?.trim()) {
+            newErrors.mobile_number = 'Mobile number is required';
+        } else if (!phoneRegex.test(contact.mobile_number)) {
+            newErrors.mobile_number = 'Please enter a valid mobile number (e.g., (555) 555-5555)';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = async () => {
+        if (!validateForm()) {
+            return;
+        }
         setErrors({});
         setSaving(true);
 
