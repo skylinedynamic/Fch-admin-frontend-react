@@ -161,9 +161,11 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                     <div className="col-lg-12">
                                         <div className="card-header border-bottom-dashed p-4">
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
-                                                <div className="flex-grow-1 text-center text-sm-start">
-                                                    <img src={displayInvoice.branding?.primary_logo} className="card-logo card-logo-dark" alt="Logo" height="65" />
-                                                </div>
+                                                {displayInvoice.branding?.primary_logo && (
+                                                    <div className="flex-grow-1 text-center text-sm-start">
+                                                        <img src={displayInvoice.branding?.primary_logo} className="card-logo card-logo-dark" alt="Logo" height="65" />
+                                                    </div>
+                                                )}
                                                 <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{displayInvoice.invoice_id || displayInvoice.id}</span></h6>
                                                     {/* <h6 className="mb-1"><span className="text-muted fw-normal">Email:</span> <span id="email" className="fw-semibold"> support@fourcornerholdings.com</span></h6>
@@ -255,8 +257,12 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 <h6 className="text-muted text-uppercase fw-semibold mb-3">Payment Details:</h6>
                                                 <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>
                                                 <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
-                                                <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
-                                                <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                                                {displayInvoice.status.toLowerCase() == STATUS_PAID.toLowerCase() && (
+                                                    <>
+                                                        <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
+                                                        <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                                                    </>
+                                                )}
                                             </div>
                                             <div className="mt-4">
                                                 <div className="alert alert-info">
@@ -277,18 +283,20 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     <i className="ri-close-line align-bottom me-1"></i>
                                                     Close
                                                 </button>
-                                                <button
-                                                    className="btn btn-primary shadow-sm flex-grow-1 flex-sm-grow-0"
-                                                    onClick={handleDownload}
-                                                    disabled={downloadLoading}
-                                                >
-                                                    {downloadLoading ? (
-                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                    ) : (
-                                                        <i className="ri-download-2-line align-bottom me-1"></i>
-                                                    )}
-                                                    Download
-                                                </button>
+                                                {displayInvoice.branding?.site_name && (
+                                                    <button
+                                                        className="btn btn-primary shadow-sm flex-grow-1 flex-sm-grow-0"
+                                                        onClick={handleDownload}
+                                                        disabled={downloadLoading}
+                                                    >
+                                                        {downloadLoading ? (
+                                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                        ) : (
+                                                            <i className="ri-download-2-line align-bottom me-1"></i>
+                                                        )}
+                                                        Download
+                                                    </button>
+                                                )}
                                                 {(user?.is_host == 1 && displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase()) && (
                                                     <button
                                                         className="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0"

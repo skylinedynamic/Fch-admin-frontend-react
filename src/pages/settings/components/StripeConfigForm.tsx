@@ -6,6 +6,8 @@ import { StripeConfigSkeleton } from '../../../components/Loader/SpecificSkeleto
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../components/Common/Modals/DynamicActionModal';
 import stripeLogo from "../../../../assets/images/stripe_logo.png";
+import { useAuthStore } from '../../../store/auth/authStore';
+import { apiClient } from '../../../lib/http/apiClient';
 
 interface FormData {
     stripe_key_sandbox: string;
@@ -13,6 +15,7 @@ interface FormData {
     stripe_key_production: string;
     stripe_secret_production: string;
     payment_mode: string;
+    partner_auto_charge_host_fee?: any;
 }
 
 interface FormErrors {
@@ -20,6 +23,7 @@ interface FormErrors {
 }
 
 const StripeConfigForm: React.FC = () => {
+    const user = useAuthStore((state: any) => state.user);
     const queryClient = useQueryClient();
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
@@ -30,14 +34,28 @@ const StripeConfigForm: React.FC = () => {
         stripe_secret_sandbox: '',
         stripe_key_production: '',
         stripe_secret_production: '',
-        payment_mode: 'sandbox'
+        payment_mode: 'sandbox',
+        partner_auto_charge_host_fee: 1
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
+    const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
     useEffect(() => {
         loadConfig();
+        fetchFixedPlan();
     }, []);
+
+    const fetchFixedPlan = async () => {
+        try {
+            const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+            if (response.data?.status && response.data?.data?.payment_amount) {
+                setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+            }
+        } catch (error) {
+            console.error('Failed to fetch fixed enrollment plan:', error);
+        }
+    };
 
     const loadConfig = async () => {
         try {
@@ -50,7 +68,10 @@ const StripeConfigForm: React.FC = () => {
                     stripe_secret_sandbox: data.stripe_secret_sandbox || '',
                     stripe_key_production: data.stripe_key_production || '',
                     stripe_secret_production: data.stripe_secret_production || '',
-                    payment_mode: data.payment_mode || 'sandbox'
+                    payment_mode: data.payment_mode || 'sandbox',
+                    partner_auto_charge_host_fee: data.partner_auto_charge_host_fee !== undefined && data.partner_auto_charge_host_fee !== null
+                        ? (data.partner_auto_charge_host_fee == 1 || data.partner_auto_charge_host_fee === 'true' || data.partner_auto_charge_host_fee === true)
+                        : 1
                 });
             }
         } catch (error) {
@@ -67,6 +88,11 @@ const StripeConfigForm: React.FC = () => {
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: checked ? 1 : 0 }));
     };
 
     const handleModeChangeRequest = (newMode: string) => {
@@ -230,6 +256,38 @@ const StripeConfigForm: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Partner Auto Charge Fee */}
+                                    {user?.is_host == 0 && (
+                                        <div className="col-12 mt-4">
+                                            <div className="p-3 border border-light-subtle rounded-3 bg-light bg-opacity-50">
+                                                <div className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <h6 className="mb-1 fw-semibold fs-14 text-dark">
+                                                            Host Fee Auto Deduction
+                                                        </h6>
+                                                        <p className="text-muted mb-0 fs-13">
+                                                            Automatically transfer ${fixedEnrollmentAmount} from the partner account to the host account upon successful transactions.
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex-shrink-0 ms-3">
+                                                        <div className="form-check form-switch form-switch-md mb-0" dir="ltr">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="form-check-input"
+                                                                id="partner_auto_charge_host_fee"
+                                                                name="partner_auto_charge_host_fee"
+                                                                checked={!!formData.partner_auto_charge_host_fee}
+                                                                onChange={handleCheckboxChange}
+                                                                disabled={loading}
+                                                                style={{ cursor: 'pointer' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="col-12 mt-5 pt-3 border-top">
