@@ -51,7 +51,7 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
               <div className="text-center text-white-50 mt-5 mb-3">
                 <div>
                   <a href="/" className="d-inline-block auth-logo">
-                    <img src={dynamicLogo} alt={siteName} width="250" height="auto" />
+                    <img src={dynamicLogo} alt={siteName} className="auth-logo-img" />
                   </a>
                 </div>
               </div>

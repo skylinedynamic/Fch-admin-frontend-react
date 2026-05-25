@@ -329,7 +329,7 @@ export default function Sidebar() {
 
   return (
     <div className={menuClass}>
-      <div className="navbar-brand-box py-1">
+      <div className="navbar-brand-box py-2">
         <Link
           to="/"
           className="logo logo-dark"

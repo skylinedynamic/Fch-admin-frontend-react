@@ -724,6 +724,12 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         font-size: 17px !important;
     }
 
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 180px !important;
+        height: 45px !important;
+    }
+
 
     /* ────────────────────────────────────────────────────────
        2. PAGE HEADER (title left, button right)
@@ -1079,6 +1085,12 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 
     .d-flex.align-items-center.justify-content-between.flex-row h4 {
         font-size: 15px !important;
+    }
+
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 150px !important;
+        height: 38px !important;
     }
 
     .btn-group>.btn {
