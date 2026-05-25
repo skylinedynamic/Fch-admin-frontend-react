@@ -315,12 +315,12 @@ const BrandingForm: React.FC = () => {
                                 <div className="col-md-4">
                                     <BrandingItem
                                         title="Primary Logo (White Text)"
-                                        dimensions="400 x 120"
+                                        dimensions="Recommended: 420 × 127 px"
                                         icon="ri-image-2-line"
                                         value={branding.primary_logo}
                                         onSelect={() => { setActiveField('primary_logo'); setShowFileManager(true); }}
                                         error={errors.primary_logo}
-                                        description="Professional transparent background recommended."
+                                        description="Recommended: 420 × 127 px. Professional transparent background recommended."
                                         required={true}
                                         primaryColor={branding.primary_color}
                                     />
@@ -328,12 +328,12 @@ const BrandingForm: React.FC = () => {
                                 <div className="col-md-4">
                                     <BrandingItem
                                         title="Secondary Logo (Black Text)"
-                                        dimensions="400 x 120"
+                                        dimensions="Recommended: 420 × 127 px"
                                         icon="ri-image-line"
                                         value={branding.secondary_logo}
                                         onSelect={() => { setActiveField('secondary_logo'); setShowFileManager(true); }}
                                         error={errors.secondary_logo}
-                                        description="Professional transparent background recommended."
+                                        description="Recommended: 420 × 127 px. Professional transparent background recommended."
                                         required={false}
                                         primaryColor={branding.primary_color}
                                     />
@@ -341,13 +341,13 @@ const BrandingForm: React.FC = () => {
                                 <div className="col-md-4">
                                     <BrandingItem
                                         title="Site Favicon"
-                                        dimensions="100x100px"
+                                        dimensions="Recommended: 50 × 50 px"
                                         allowedFormats="ICO, PNG, SVG, JPG, WEBP"
                                         icon="ri-global-line"
                                         value={branding.favicon}
                                         onSelect={() => { setActiveField('favicon'); setShowFileManager(true); }}
                                         error={errors.favicon}
-                                        description="Square ICO or PNG with transparent background recommended."
+                                        description="Recommended: 50 × 50 px. Square ICO or PNG with transparent background recommended."
                                         required={false}
                                         primaryColor={branding.primary_color}
                                     />

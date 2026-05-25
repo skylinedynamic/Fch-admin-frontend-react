@@ -329,17 +329,17 @@ export default function Sidebar() {
 
   return (
     <div className={menuClass}>
-      <div className="navbar-brand-box">
+      <div className="navbar-brand-box py-1">
         <Link
           to="/"
           className="logo logo-dark"
           onClick={closeSidebarOnMobile}
         >
           <span className="logo-sm">
-            <img src={dynamicFavicon} alt="" height="22" />
+            <img src={dynamicFavicon} alt="" className="sidebar-logo-sm" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogo} alt="" width="200" height="auto" />
+            <img src={dynamicLogo} alt="" className="sidebar-logo-lg" />
           </span>
         </Link>
         <Link
@@ -348,10 +348,10 @@ export default function Sidebar() {
           onClick={closeSidebarOnMobile}
         >
           <span className="logo-sm">
-            <img src={dynamicFavicon} alt="" height="40" />
+            <img src={dynamicFavicon} alt="" className="sidebar-logo-sm" />
           </span>
           <span className="logo-lg">
-            <img src={dynamicLogoWide} alt="" width="200" height="auto" />
+            <img src={dynamicLogoWide} alt="" className="sidebar-logo-lg" />
           </span>
         </Link>
         <button
