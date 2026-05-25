@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import type { Partner } from './types';
+import type { Partner, TenantConfig } from './types';
 
 export const fetchPartners = async (payload: any = {}) => {
   const response = await apiClient.post('/admin/partners/fetch-partners', payload);
@@ -105,8 +105,8 @@ export const fetchGlobalSubscriptions = async (payload: any = {}) => {
 };
 
 export const fetchSubscriptionStats = async () => {
-    const { data } = await apiClient.post('/admin/partners/subscriptions-stats');
-    return data;
+  const { data } = await apiClient.post('/admin/partners/subscriptions-stats');
+  return data;
 };
 
 export const fetchPartnerStats = async () => {
@@ -131,5 +131,26 @@ export const fetchPartnerPlans = async () => {
 
 export const fetchNonHostBorrowerPlans = async () => {
   const { data } = await apiClient.get('/common/non-host-borrower-plans');
+  return data;
+};
+
+export const getTenantConfig = async (id: string | number): Promise<TenantConfig> => {
+  const { data } = await apiClient.get(`/admin/partners/tenant-config/${id}`);
+  return data;
+};
+
+export const updateTenantConfig = async (id: string | number, payload: Partial<TenantConfig>): Promise<Partner> => {
+  const { data } = await apiClient.post(`/admin/partners/tenant-config/${id}`, payload);
+  return data;
+};
+
+// Common Tenant Config for Partners
+export const getMyTenantConfig = async (): Promise<TenantConfig> => {
+  const { data } = await apiClient.get('/common/partner/tenant-config');
+  return data;
+};
+
+export const updateMyTenantConfig = async (payload: Partial<TenantConfig>): Promise<Partner> => {
+  const { data } = await apiClient.post('/common/partner/tenant-config', payload);
   return data;
 };

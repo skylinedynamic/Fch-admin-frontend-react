@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
+import { Calendar } from 'primereact/calendar';
+import { parseDate } from '../../../utils/formatters';
+
 import Modal from 'bootstrap/js/dist/modal';
 import $ from 'jquery';
 import { toast } from 'react-toastify';
@@ -18,12 +19,12 @@ import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { APPOINTMENT_TYPE_OPTIONS, TIMEZONE_OPTIONS, TIME_SLOTS } from '../../../config';
 
 // Styles
-import '../../../../assets/css/appointment-modal.css';
+import "../../../../assets/css/appointment-modal.css";
 
 const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
     const eventModalRef = useRef(null);
-    const dateInputRef = useRef(null);
     const descriptionEditorRef = useRef(null); // This ref will be passed to the useSummernote hook
+
     const [modalInstance, setModalInstance] = useState(null);
     const [viewMode, setViewMode] = useState(true);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -290,11 +291,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
             });
             setFormErrors({});
 
-            // Sync flatpickr if already initialized
-            const dateInput = document.getElementById("event-start-date-modal");
-            if (dateInput && dateInput._flatpickr) {
-                dateInput._flatpickr.setDate(defaultDate);
-            }
+
 
             if (modalInstance) modalInstance.show();
         }
@@ -519,7 +516,7 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
         } catch (error) {
             if (error.response?.data?.errors) {
                 setFormErrors(error.response.data.errors);
-            } else {
+            } else if (error.response?.status !== 403) {
                 toast.error(error.response?.data?.message || 'Failed to save appointment');
             }
         } finally {
@@ -551,32 +548,15 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                 toast.error(response?.message || "Failed to delete appointment");
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to delete appointment");
+            if (error.response?.status !== 403) {
+                toast.error(error.response?.data?.message || "Failed to delete appointment");
+            }
         } finally {
             setIsDeleting(false);
         }
     };
 
-    // Flatpickr initialization
-    useEffect(() => {
-        if (dateInputRef.current && !viewMode) {
-            const fp = flatpickr(dateInputRef.current, {
-                mode: "single",
-                minDate: "today",
-                defaultDate: formData.date,
-                disableMobile: true, // Forces custom UI on mobile
-                onChange: (selectedDates, dateStr) => {
-                    setFormData(prev => ({ ...prev, date: dateStr }));
-                },
-                onReady: (selectedDates, dateStr, instance) => {
-                    if (instance.calendarContainer) {
-                        instance.calendarContainer.classList.add('appointment-modal-theme');
-                    }
-                }
-            });
-            return () => fp.destroy();
-        }
-    }, [viewMode]);
+
 
 
     // Use global Summernote hook
@@ -863,12 +843,25 @@ const AppointmentModal = forwardRef(({ onSuccess }, ref) => {
                                             <div className="row mx-0">
                                                 <div className="col-md-6 col-12 mb-3 px-2">
                                                     <label className="form-label fs-13 fw-semibold">Event Date <span className="text-danger">*</span></label>
-                                                    <div className="input-group">
-                                                        <input type="text" ref={dateInputRef} id="event-start-date-modal"
-                                                            className={`form-control ${formErrors.appointment_date ? 'is-invalid' : ''}`}
-                                                            value={formData.date} readOnly placeholder="Select date" />
-                                                        <span className="input-group-text bg-light"><i className="ri-calendar-event-line text-muted"></i></span>
-                                                        {formErrors.appointment_date && <div className="invalid-feedback d-block mt-1" style={{ position: 'absolute', bottom: '-22px', left: '0', fontSize: '10px' }}>{formErrors.appointment_date}</div>}
+                                                    <div className="custom-datepicker">
+                                                        <Calendar
+                                                            value={parseDate(formData.date)}
+                                                            onChange={(e) => {
+                                                                const date = e.value;
+                                                                const dateString = date
+                                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                    : "";
+                                                                setFormData(prev => ({ ...prev, date: dateString }));
+                                                            }}
+                                                            minDate={new Date()}
+                                                            dateFormat="yy-mm-dd"
+                                                            placeholder="Select date"
+                                                            showIcon
+                                                            className="w-100"
+                                                            appendTo="self"
+                                                            readOnlyInput
+                                                        />
+                                                        {formErrors.appointment_date && <div className="text-danger mt-1" style={{ fontSize: '10px' }}>{formErrors.appointment_date}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="col-md-6 col-12 mb-3 px-2">

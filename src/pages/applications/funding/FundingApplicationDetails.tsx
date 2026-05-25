@@ -536,7 +536,7 @@ export default function FundingApplicationDetails() {
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Funding Application Details</h4>
                                     <nav aria-label="breadcrumb">
@@ -546,6 +546,11 @@ export default function FundingApplicationDetails() {
                                             <li className="breadcrumb-item active" aria-current="page">Details</li>
                                         </ol>
                                     </nav>
+                                </div>
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    <Link to="/intake-review/funding-review" className="btn btn-outline-secondary w-lg waves-effect">
+                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                    </Link>
                                 </div>
                             </div>
                         </div>
@@ -837,6 +842,17 @@ export default function FundingApplicationDetails() {
                                                                         </div>
                                                                     )}
                                                                 </div>
+                                                                {app.total_funded_amount && parseFloat(app.total_funded_amount.toString()) > 0 && (
+                                                                    <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-primary border-opacity-10">
+                                                                        <div>
+                                                                            <i className="ri-money-dollar-box-line text-success me-2"></i>
+                                                                            <span className="fw-medium">Total Funded Amount:</span>
+                                                                        </div>
+                                                                        <h5 className="mb-0 fw-bold text-success">
+                                                                            {formatCurrencyValue(parseFloat(app.total_funded_amount.toString()))}
+                                                                        </h5>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             <div className="row g-2">

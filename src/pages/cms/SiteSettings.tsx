@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSiteSettings, useUpdateSiteSettings } from '../../modules/cms/queries';
-import { SiteSettingsData, SocialLink, SOCIAL_PLATFORMS } from '../../modules/cms/types';
+import { SiteSettingsData, SiteSetting, SocialLink, SOCIAL_PLATFORMS } from '../../modules/cms/types';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import FormLoader from '../../components/Loader/FormLoader';
@@ -11,35 +11,55 @@ import { Dropdown } from 'primereact/dropdown';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import { usePermissions } from '../../lib/auth/usePermissions';
-const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+
+const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 
 export default function SiteSettings() {
     const { hasPermission } = usePermissions();
     const { data: settingsData, isLoading } = useSiteSettings();
-    const updateMutation = useUpdateSiteSettings();
+    const updateMutation = useUpdateSiteSettings() as any;
 
-    const [formData, setFormData] = useState<SiteSettingsData>({} as SiteSettingsData);
+    const [formData, setFormData] = useState<SiteSetting>({} as SiteSetting);
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
     const [headerLogo, setHeaderLogo] = useState<File | string | null>(null);
     const [previewHeaderLogo, setPreviewHeaderLogo] = useState<string | null>(null);
     const [footerLogo, setFooterLogo] = useState<File | string | null>(null);
     const [previewFooterLogo, setPreviewFooterLogo] = useState<string | null>(null);
-    const [partnerLogo, setPartnerLogo] = useState<File | string | null>(null);
-    const [previewPartnerLogo, setPreviewPartnerLogo] = useState<string | null>(null);
-    const [favicon, setFavicon] = useState<File | string | null>(null);
-    const [previewFavicon, setPreviewFavicon] = useState<string | null>(null);
+    const [websiteFavicon, setWebsiteFavicon] = useState<File | string | null>(null);
+    const [previewWebsiteFavicon, setPreviewWebsiteFavicon] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
-    const [showFileManager, setShowFileManager] = useState<'header' | 'footer' | 'partner' | 'favicon' | false>(false);
+    const [showFileManager, setShowFileManager] = useState<'primary' | 'secondary' | 'favicon' | false>(false);
 
     useEffect(() => {
         if (settingsData?.data) {
             const s = settingsData.data;
-            
+
             // Accurately merge all dynamic keys from the database into the form state
             setFormData(prev => ({
                 ...prev,
                 ...s
             }));
+
+        }
+    }, [settingsData]);
+
+    const getRelativePath = (url: string | null | undefined): string | null => {
+        if (!url) return null;
+        if (typeof url === 'string') {
+            if (url.startsWith('http')) {
+                const storageIndex = url.indexOf('/storage/');
+                if (storageIndex !== -1) {
+                    return url.substring(storageIndex + 9);
+                }
+            }
+            return url;
+        }
+        return null;
+    };
+
+    useEffect(() => {
+        if (settingsData?.data) {
+            const s = settingsData.data;
 
             if (s.social_links) {
                 try {
@@ -52,31 +72,30 @@ export default function SiteSettings() {
             }
 
             if (s.header_logo) {
-                const logoPath = s.header_logo.replace(/^\//, '');
-                const logoUrl = s.header_logo.startsWith('http') ? s.header_logo : `${BASE_URL}/storage/${logoPath}`;
-                setPreviewHeaderLogo(logoUrl);
-                setHeaderLogo(s.header_logo.replace(`${BASE_URL}/storage/`, ''));
+                const rel = getRelativePath(s.header_logo);
+                setHeaderLogo(rel);
+                setPreviewHeaderLogo(s.header_logo);
+            } else {
+                setHeaderLogo(null);
+                setPreviewHeaderLogo(null);
             }
 
             if (s.footer_logo) {
-                const logoPath = s.footer_logo.replace(/^\//, '');
-                const logoUrl = s.footer_logo.startsWith('http') ? s.footer_logo : `${BASE_URL}/storage/${logoPath}`;
-                setPreviewFooterLogo(logoUrl);
-                setFooterLogo(s.footer_logo.replace(`${BASE_URL}/storage/`, ''));
+                const rel = getRelativePath(s.footer_logo);
+                setFooterLogo(rel);
+                setPreviewFooterLogo(s.footer_logo);
+            } else {
+                setFooterLogo(null);
+                setPreviewFooterLogo(null);
             }
 
-            if (s.partner_logo) {
-                const logoPath = s.partner_logo.replace(/^\//, '');
-                const logoUrl = s.partner_logo.startsWith('http') ? s.partner_logo : `${BASE_URL}/storage/${logoPath}`;
-                setPreviewPartnerLogo(logoUrl);
-                setPartnerLogo(s.partner_logo.replace(`${BASE_URL}/storage/`, ''));
-            }
-
-            if (s.favicon) {
-                const favPath = s.favicon.replace(/^\//, '');
-                const favUrl = s.favicon.startsWith('http') ? s.favicon : `${BASE_URL}/storage/${favPath}`;
-                setPreviewFavicon(favUrl);
-                setFavicon(s.favicon.replace(`${BASE_URL}/storage/`, ''));
+            if (s.website_favicon) {
+                const rel = getRelativePath(s.website_favicon);
+                setWebsiteFavicon(rel);
+                setPreviewWebsiteFavicon(s.website_favicon);
+            } else {
+                setWebsiteFavicon(null);
+                setPreviewWebsiteFavicon(null);
             }
         }
     }, [settingsData]);
@@ -86,60 +105,57 @@ export default function SiteSettings() {
             const file = files[0];
 
             // Validate if selected file is an image
-            const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
+            const allowedExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp', 'ico'];
             const extension = file.name.split('.').pop()?.toLowerCase();
 
-            if (extension && !allowedExtensions.includes(extension) && !(showFileManager === 'favicon' && extension === 'ico')) {
-                const message = showFileManager === 'favicon'
-                    ? 'Please select a valid image file (PNG, JPG, SVG, WebP)'
-                    : 'Please select a valid image file (PNG, JPG, SVG, or WebP)';
-
-                if (showFileManager === 'header') {
-                    setValidationErrors({ ...validationErrors, header_logo: message });
-                } else if (showFileManager === 'footer') {
-                    setValidationErrors({ ...validationErrors, footer_logo: message });
-                } else if (showFileManager === 'partner') {
-                    setValidationErrors({ ...validationErrors, partner_logo: message });
+            if (extension && !allowedExtensions.includes(extension)) {
+                const message = 'Please select a valid image file (PNG, JPG, JPEG, SVG, WebP, or ICO)';
+                if (showFileManager === 'primary') {
+                    setValidationErrors(prev => ({ ...prev, header_logo: message }));
+                } else if (showFileManager === 'secondary') {
+                    setValidationErrors(prev => ({ ...prev, footer_logo: message }));
                 } else if (showFileManager === 'favicon') {
-                    setValidationErrors({ ...validationErrors, favicon: message });
+                    setValidationErrors(prev => ({ ...prev, website_favicon: message }));
                 }
                 return;
             }
 
             // File size validation (2MB for logos, 1MB for favicon)
             const maxSize = showFileManager === 'favicon' ? 1024 * 1024 : 2 * 1024 * 1024;
-            if (file.size > maxSize) {
+            if (file.size && file.size > maxSize) {
                 const limit = showFileManager === 'favicon' ? '1MB' : '2MB';
                 const message = `The selected file is too large. Maximum size allowed is ${limit}.`;
-
-                if (showFileManager === 'header') {
-                    setValidationErrors({ ...validationErrors, header_logo: message });
-                } else if (showFileManager === 'footer') {
-                    setValidationErrors({ ...validationErrors, footer_logo: message });
-                } else if (showFileManager === 'partner') {
-                    setValidationErrors({ ...validationErrors, partner_logo: message });
+                if (showFileManager === 'primary') {
+                    setValidationErrors(prev => ({ ...prev, header_logo: message }));
+                } else if (showFileManager === 'secondary') {
+                    setValidationErrors(prev => ({ ...prev, footer_logo: message }));
                 } else if (showFileManager === 'favicon') {
-                    setValidationErrors({ ...validationErrors, favicon: message });
+                    setValidationErrors(prev => ({ ...prev, website_favicon: message }));
                 }
                 return;
             }
 
-            if (showFileManager === 'header') {
-                setValidationErrors({ ...validationErrors, header_logo: undefined });
-                setHeaderLogo(file.path);
-                setPreviewHeaderLogo(file.url || `${BASE_URL}/storage/${file.path}`);
-            } else if (showFileManager === 'footer') {
-                setValidationErrors({ ...validationErrors, footer_logo: undefined });
-                setFooterLogo(file.path);
-                setPreviewFooterLogo(file.url || `${BASE_URL}/storage/${file.path}`);
-            } else if (showFileManager === 'partner') {
-                setValidationErrors({ ...validationErrors, partner_logo: undefined });
-                setPartnerLogo(file.path);
-                setPreviewPartnerLogo(file.url || `${BASE_URL}/storage/${file.path}`);
+            const cleanPath = file.path.trim().replace(/^\/+/, '');
+            const prefix = 'site-settings';
+            let relativePath = cleanPath;
+            if (!cleanPath.startsWith(prefix) && !cleanPath.startsWith('http')) {
+                relativePath = `${prefix}/${cleanPath}`;
+            }
+
+            const previewUrl = file.url || `${BASE_URL}/storage/${relativePath}`;
+
+            if (showFileManager === 'primary') {
+                setValidationErrors(prev => ({ ...prev, header_logo: undefined }));
+                setHeaderLogo(relativePath);
+                setPreviewHeaderLogo(previewUrl);
+            } else if (showFileManager === 'secondary') {
+                setValidationErrors(prev => ({ ...prev, footer_logo: undefined }));
+                setFooterLogo(relativePath);
+                setPreviewFooterLogo(previewUrl);
             } else if (showFileManager === 'favicon') {
-                setValidationErrors({ ...validationErrors, favicon: undefined });
-                setFavicon(file.path);
-                setPreviewFavicon(file.url || `${BASE_URL}/storage/${file.path}`);
+                setValidationErrors(prev => ({ ...prev, website_favicon: undefined }));
+                setWebsiteFavicon(relativePath);
+                setPreviewWebsiteFavicon(previewUrl);
             }
         }
         setShowFileManager(false);
@@ -148,94 +164,107 @@ export default function SiteSettings() {
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
-        // Automatic YouTube to Iframe conversion for map_iframe field
         if (name === 'map_iframe' && !value.includes('<iframe')) {
             let src = value.trim();
-
-            // YouTube: build embed URL from video ID
             const ytMatch = src.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-            if (ytMatch) src = `https://www.youtube.com/embed/${ytMatch[1]}`;
-
-            // Google Maps: build embed URL
-            else if (src.includes('google.com/maps') || src.includes('maps.app.goo.gl'))
+            if (ytMatch) {
+                src = `https://www.youtube.com/embed/${ytMatch[1]}`;
+            } else if (src.includes('google.com/maps') || src.includes('maps.app.goo.gl')) {
                 src = `https://maps.google.com/maps?q=${encodeURIComponent(src)}&output=embed`;
+            }
 
-            // Wrap any valid URL in an iframe
             if (/^https?:\/\/.+/i.test(src)) {
-                setFormData({ ...formData, [name]: `<iframe src="${src}" width="100%" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>` });
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: `<iframe src="${src}" width="100%" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>`
+                } as any));
                 return;
             }
         }
 
         if (name === 'phone_number') {
-            setFormData({ ...formData, [name]: formatPhoneNumber(value) });
+            setFormData(prev => ({
+                ...prev,
+                [name]: formatPhoneNumber(value) || ''
+            } as any));
             return;
         }
 
-        setFormData({ ...formData, [name]: value });
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        } as any));
     };
 
     const handleAddSocialLink = () => {
-        setSocialLinks([...socialLinks, { platform: '', icon: '', url: '', isCustom: false }]);
+        setSocialLinks(prev => [...prev, { platform: '', icon: '', url: '', isCustom: false }]);
     };
 
     const handleRemoveSocialLink = (index: number) => {
-        const newLinks = [...socialLinks];
-        newLinks.splice(index, 1);
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSocialLinkChange = (index: number, field: keyof SocialLink, value: string) => {
-        const newLinks = [...socialLinks];
-        newLinks[index][field] = value;
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => i === index ? { ...link, [field]: value } : link));
     };
 
     const handlePlatformSelect = (index: number, value: string) => {
-        const newLinks = [...socialLinks];
-        if (value === 'Custom') {
-            newLinks[index].platform = '';
-            newLinks[index].icon = '';
-            newLinks[index].isCustom = true;
-        } else {
-            const selected = SOCIAL_PLATFORMS.find(p => p.value === value);
-            newLinks[index].platform = value;
-            newLinks[index].icon = selected ? selected.icon : '';
-            newLinks[index].isCustom = false;
-        }
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => {
+            if (i !== index) return link;
+            if (value === 'Custom') {
+                return { ...link, platform: '', icon: '', isCustom: true };
+            } else {
+                const selected = SOCIAL_PLATFORMS.find(p => p.value === value);
+                return { ...link, platform: value, icon: selected ? selected.icon : '', isCustom: false };
+            }
+        }));
     };
 
     const handleCustomPlatformBack = (index: number) => {
-        const newLinks = [...socialLinks];
-        newLinks[index].platform = '';
-        newLinks[index].icon = '';
-        newLinks[index].isCustom = false;
-        setSocialLinks(newLinks);
+        setSocialLinks(prev => prev.map((link, i) => i === index ? { ...link, platform: '', icon: '', isCustom: false } : link));
     };
-
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const data = new FormData();
-        Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+
+        Object.entries(formData).forEach(([key, value]) => {
+            if (!['header_logo', 'footer_logo', 'website_favicon'].includes(key)) {
+                data.append(key, value !== null && value !== undefined ? String(value) : '');
+            }
+        });
+
         const linksToSave = socialLinks.map(({ isCustom: _ic, ...rest }) => rest);
         data.append('social_links', JSON.stringify(linksToSave));
 
+        const prepareLogoPath = (logo: File | string | null): File | string => {
+            if (!logo) return '';
+            if (typeof logo === 'string') {
+                const clean = logo.trim().replace(/^\/+/, '');
+                if (!clean.startsWith('site-settings/') && !clean.startsWith('http')) {
+                    return `site-settings/${clean}`;
+                }
+                return clean;
+            }
+            return logo;
+        };
+
         if (headerLogo) {
-            data.append('header_logo', headerLogo);
+            data.append('header_logo', prepareLogoPath(headerLogo));
+        } else {
+            data.append('header_logo', '');
         }
 
         if (footerLogo) {
-            data.append('footer_logo', footerLogo);
+            data.append('footer_logo', prepareLogoPath(footerLogo));
+        } else {
+            data.append('footer_logo', '');
         }
 
-        if (partnerLogo) {
-            data.append('partner_logo', partnerLogo);
-        }
-
-        if (favicon) {
-            data.append('favicon', favicon);
+        if (websiteFavicon) {
+            data.append('website_favicon', prepareLogoPath(websiteFavicon));
+        } else {
+            data.append('website_favicon', '');
         }
 
         setValidationErrors({});
@@ -254,12 +283,12 @@ export default function SiteSettings() {
     };
 
     return (
-        <div className="page-content">
+        <div className="page-content site-settings-section">
             <div className="container-fluid">
                 <div className="row pb-1 page-subheader-sticky bg-body">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
+                        <div className="d-flex align-items-center flex-nowrap py-2" style={{ gap: '8px' }}>
+                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
                                 <h4 className="fs-20 mb-1">Site Settings</h4>
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
@@ -269,7 +298,7 @@ export default function SiteSettings() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="d-flex gap-2">
+                            <div className="d-flex gap-2 flex-shrink-0">
                                 {hasPermission('update site settings') && (
                                     <button
                                         type="submit"
@@ -278,9 +307,15 @@ export default function SiteSettings() {
                                         disabled={updateMutation.isPending || isLoading}
                                     >
                                         {updateMutation.isPending ? (
-                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...</>
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Saving...
+                                            </>
                                         ) : (
-                                            <><i className="ri-save-line me-1"></i> Save Settings</>
+                                            <>
+                                                <i className="ri-save-line me-1"></i>
+                                                Save Settings
+                                            </>
                                         )}
                                     </button>
                                 )}
@@ -410,7 +445,7 @@ export default function SiteSettings() {
                                                     <label className="form-label fw-semibold fs-13">Office Address <span className="text-danger">*</span></label>
                                                     <div className="input-group">
                                                         <span className={`input-group-text bg-light d-flex align-items-center justify-content-center ${validationErrors.address ? 'border-danger text-danger' : 'text-muted'}`} style={{ width: '42px' }}><i className="ri-map-pin-line fs-16"></i></span>
-                                                         <textarea className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" rows={3} value={formData.address || ''} onChange={handleChange} placeholder="123 Business St, City" style={{ whiteSpace: 'pre-wrap' }}></textarea>
+                                                        <textarea className={`form-control ps-2 ${validationErrors.address ? 'is-invalid border-danger' : ''}`} name="address" rows={3} value={formData.address || ''} onChange={handleChange} placeholder="123 Business St, City" style={{ whiteSpace: 'pre-wrap' }}></textarea>
                                                         {validationErrors.address && <div className="invalid-feedback d-block mt-1">{validationErrors.address}</div>}
                                                     </div>
                                                 </div>
@@ -473,25 +508,26 @@ export default function SiteSettings() {
                                 </div>
 
                                 <div className="card mb-4 shadow-sm border-0">
-                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
-                                        <div className="d-flex align-items-center">
-                                            <div className="avatar-sm me-3">
+                                    <div className="card-header bg-transparent border-bottom-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between gap-2">
+                                        <div className="d-flex align-items-center" style={{ minWidth: 0, overflow: 'hidden' }}>
+                                            <div className="avatar-sm me-3 flex-shrink-0">
                                                 <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
                                                     <i className="ri-share-line"></i>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <h5 className="card-title mb-1 fw-bold">Social Media Links</h5>
-                                                <p className="text-muted mb-0 fs-13">Add and manage your social media profiles</p>
+                                            <div style={{ minWidth: 0 }}>
+                                                <h5 className="card-title mb-1 fw-bold text-truncate">Social Media Links</h5>
+                                                <p className="text-muted mb-0 fs-13 text-truncate">Add and manage your social media profiles</p>
                                             </div>
                                         </div>
                                         {hasPermission('add soical media') && (
                                             <button
                                                 type="button"
-                                                className="btn btn-primary fw-medium waves-effect waves-light"
+                                                className="btn btn-primary fw-medium waves-effect waves-light flex-shrink-0 d-flex align-items-center justify-content-center"
                                                 onClick={handleAddSocialLink}
                                             >
-                                                <i className="ri-add-fill me-1 align-bottom"></i> Add New
+                                                <i className="ri-add-fill fs-16 lh-1"></i>
+                                                <span className="d-none d-sm-inline ms-1">Add New</span>
                                             </button>
                                         )}
                                     </div>
@@ -630,19 +666,19 @@ export default function SiteSettings() {
                                     <div className="card-body p-3">
                                         <div className="row g-3">
 
-                                            {/* Header Logo */}
+                                            {/* Primary Logo */}
                                             <div className="col-12">
                                                 <div className="card border shadow-none mb-3">
                                                     <div className="card-header border-bottom-dashed py-2">
                                                         <h6 className="card-title mb-0 fs-13">
-                                                            <i className="ri-layout-top-2-line align-middle text-primary me-1"></i> Header Logo
+                                                            <i className="ri-image-2-line align-middle text-primary me-1"></i> Header Logo <span className="text-danger">*</span>
                                                         </h6>
                                                     </div>
                                                     <div className="card-body p-2">
                                                         <div className="text-center">
                                                             <div
                                                                 className="position-relative d-inline-block cursor-pointer w-100"
-                                                                onClick={() => setShowFileManager('header')}
+                                                                onClick={() => setShowFileManager('primary')}
                                                                 title="PNG, SVG, JPG • Max 2MB"
                                                             >
                                                                 <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.header_logo ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
@@ -652,7 +688,7 @@ export default function SiteSettings() {
                                                                         <div className="text-center">
                                                                             <div className="avatar-sm mx-auto mb-2">
                                                                                 <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-20">
-                                                                                    <i className="ri-layout-top-2-line"></i>
+                                                                                    <i className="ri-image-2-line"></i>
                                                                                 </div>
                                                                             </div>
                                                                             <p className="text-muted fs-11 mb-0">PNG, SVG, JPG <i className="ri-information-line" title="Max 2MB"></i></p>
@@ -667,25 +703,30 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.header_logo && <div className="text-danger fs-11 mt-1">{validationErrors.header_logo}</div>}
+                                                            {validationErrors.header_logo && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.header_logo) ? validationErrors.header_logo[0] : validationErrors.header_logo}
+                                                                </div>
+                                                            )}
+                                                            <p className="text-muted fs-11 mt-1 mb-0 text-start ps-1">Used for dark backgrounds.</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Footer Logo */}
+                                            {/* Secondary Logo */}
                                             <div className="col-12">
                                                 <div className="card border shadow-none mb-3">
                                                     <div className="card-header border-bottom-dashed py-2">
                                                         <h6 className="card-title mb-0 fs-13">
-                                                            <i className="ri-layout-bottom-2-line align-middle text-success me-1"></i> Footer Logo
+                                                            <i className="ri-image-line align-middle text-success me-1"></i> Footer Logo
                                                         </h6>
                                                     </div>
                                                     <div className="card-body p-2">
                                                         <div className="text-center">
                                                             <div
                                                                 className="position-relative d-inline-block cursor-pointer w-100"
-                                                                onClick={() => setShowFileManager('footer')}
+                                                                onClick={() => setShowFileManager('secondary')}
                                                                 title="PNG, SVG, JPG • Max 2MB"
                                                             >
                                                                 <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.footer_logo ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
@@ -695,7 +736,7 @@ export default function SiteSettings() {
                                                                         <div className="text-center">
                                                                             <div className="avatar-sm mx-auto mb-2">
                                                                                 <div className="avatar-title bg-success-subtle text-success rounded-circle fs-20">
-                                                                                    <i className="ri-layout-bottom-2-line"></i>
+                                                                                    <i className="ri-image-line"></i>
                                                                                 </div>
                                                                             </div>
                                                                             <p className="text-muted fs-11 mb-0">PNG, SVG, JPG <i className="ri-information-line" title="Max 2MB"></i></p>
@@ -710,50 +751,12 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.footer_logo && <div className="text-danger fs-11 mt-1">{validationErrors.footer_logo}</div>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Partner Logo */}
-                                            <div className="col-12">
-                                                <div className="card border shadow-none mb-3">
-                                                    <div className="card-header border-bottom-dashed py-2">
-                                                        <h6 className="card-title mb-0 fs-13">
-                                                            <i className="ri-medal-line align-middle text-warning me-1"></i> Partner Logo
-                                                        </h6>
-                                                    </div>
-                                                    <div className="card-body p-2">
-                                                        <div className="text-center">
-                                                            <div
-                                                                className="position-relative d-inline-block cursor-pointer w-100"
-                                                                onClick={() => setShowFileManager('partner')}
-                                                                title="PNG, SVG, JPG • Max 2MB"
-                                                            >
-                                                                <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.partner_logo ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
-                                                                    {previewPartnerLogo ? (
-                                                                        <img src={previewPartnerLogo} alt="Partner Logo" className="img-fluid rounded object-fit-contain" style={{ maxHeight: '75px' }} />
-                                                                    ) : (
-                                                                        <div className="text-center">
-                                                                            <div className="avatar-sm mx-auto mb-2">
-                                                                                <div className="avatar-title bg-warning-subtle text-warning rounded-circle fs-20">
-                                                                                    <i className="ri-medal-line"></i>
-                                                                                </div>
-                                                                            </div>
-                                                                            <p className="text-muted fs-11 mb-0">PNG, SVG, JPG <i className="ri-information-line" title="Max 2MB"></i></p>
-                                                                        </div>
-                                                                    )}
+                                                            {validationErrors.footer_logo && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.footer_logo) ? validationErrors.footer_logo[0] : validationErrors.footer_logo}
                                                                 </div>
-                                                                {previewPartnerLogo && (
-                                                                    <div className="position-absolute bottom-0 end-0 mb-2 me-2">
-                                                                        <span className="btn btn-sm btn-warning rounded-circle shadow p-1 lh-1 text-white" style={{ width: '26px', height: '26px' }}>
-                                                                            <i className="ri-pencil-fill fs-12"></i>
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {validationErrors.partner_logo && <div className="text-danger fs-11 mt-1">{validationErrors.partner_logo}</div>}
+                                                            )}
+                                                            <p className="text-muted fs-11 mt-1 mb-0 text-start ps-1">Used for light backgrounds (Optional).</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -764,7 +767,7 @@ export default function SiteSettings() {
                                                 <div className="card border shadow-none mb-3">
                                                     <div className="card-header border-bottom-dashed py-2">
                                                         <h6 className="card-title mb-0 fs-13">
-                                                            <i className="ri-global-line align-middle text-info me-1"></i> Favicon
+                                                            <i className="ri-global-line align-middle text-info me-1"></i> Website Favicon <span className="text-danger">*</span>
                                                         </h6>
                                                     </div>
                                                     <div className="card-body p-2">
@@ -774,9 +777,9 @@ export default function SiteSettings() {
                                                                 onClick={() => setShowFileManager('favicon')}
                                                                 title="ICO, PNG, SVG • Max 1MB"
                                                             >
-                                                                <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.favicon ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
-                                                                    {previewFavicon ? (
-                                                                        <img src={previewFavicon} alt="Favicon" className="img-fluid rounded object-fit-contain" style={{ maxHeight: '75px' }} />
+                                                                <div className="bg-light rounded d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: '120px', border: validationErrors.website_favicon ? '2px solid #dc3545' : '1px solid #e9ebec' }}>
+                                                                    {previewWebsiteFavicon ? (
+                                                                        <img src={previewWebsiteFavicon} alt="Favicon" className="img-fluid rounded object-fit-contain" style={{ maxHeight: '75px' }} />
                                                                     ) : (
                                                                         <div className="text-center">
                                                                             <div className="avatar-sm mx-auto mb-2">
@@ -788,7 +791,7 @@ export default function SiteSettings() {
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                                {previewFavicon && (
+                                                                {previewWebsiteFavicon && (
                                                                     <div className="position-absolute bottom-0 end-0 mb-2 me-2">
                                                                         <span className="btn btn-sm btn-info rounded-circle shadow p-1 lh-1 text-white" style={{ width: '26px', height: '26px' }}>
                                                                             <i className="ri-pencil-fill fs-12"></i>
@@ -796,7 +799,12 @@ export default function SiteSettings() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {validationErrors.favicon && <div className="text-danger fs-11 mt-1">{validationErrors.favicon}</div>}
+                                                            {validationErrors.website_favicon && (
+                                                                <div className="text-danger fs-11 mt-1 text-start ps-1">
+                                                                    {Array.isArray(validationErrors.website_favicon) ? validationErrors.website_favicon[0] : validationErrors.website_favicon}
+                                                                </div>
+                                                            )}
+                                                            <p className="text-muted fs-11 mt-1 mb-0 text-start ps-1">Browser tab icon.</p>
                                                         </div>
                                                     </div>
                                                 </div>

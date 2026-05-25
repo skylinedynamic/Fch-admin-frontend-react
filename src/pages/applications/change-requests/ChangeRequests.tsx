@@ -247,12 +247,12 @@ export default function ChangeRequests() {
             <div className="container-fluid">
 
                 {/* Page Header */}
-                <div className="row pb-1">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between py-2">
                             <div>
                                 <h4 className="fs-20 mb-1">Change Requests</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item">Intake &amp; Review</li>
@@ -265,7 +265,7 @@ export default function ChangeRequests() {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="row">
+                <div className="row change-request-section">
                     {loading ? (
                         [1, 2, 3, 4].map(i => <StatisticsCardSkeleton key={i} />)
                     ) : (

@@ -9,7 +9,7 @@ import { fetchUsers, createUser, fetchRoles, updateUser, deleteUsers, getUserCou
 import { getUserDetails } from '../../lib/auth/authApi';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { USER_STATUS } from '../../config/statusOptions';
-import '../../../assets/css/bootstrap.min.css';
+import "../../../assets/css/bootstrap.min.css";
 import { toast } from "react-toastify";
 import UserModal from './components/UserModal';
 import TableLoader from '../../components/Loader/TableLoader';
@@ -448,6 +448,7 @@ export default function Users() {
       setSelection([]);
       setDeletingUserId(null);
       setShowDeleteModal(false);
+      await getUserDetails();
       loadUsers();
     } catch (error) {
       console.error(error);
@@ -458,14 +459,14 @@ export default function Users() {
   };
 
   return (
-    <div className="page-content page-content-fit">
+    <div className="page-content page-content-fit user-section">
       <div className="container-fluid">
-        <div className="row pb-1">
+        <div className="row pb-1 mobile-sticky-header">
           <div className="col-12">
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Users</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <nav aria-label="breadcrumb" className="d-block">
                   <ol className="breadcrumb m-0">
                     <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
                     <li className="breadcrumb-item active" aria-current="page">Users</li>

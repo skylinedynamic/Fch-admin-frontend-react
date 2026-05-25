@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700;800&family=Roboto:wght@400;700&display=swap');
 
 /* ─── Agreement Builder v4 ─────────────────────────────────────────────────── */
+
+:root {
+  --primary-color: #001f3f;
+  --secondary-color: #f7b84b;
+}
+
 .ab4-text-wrap {
   position: relative;
   width: 100%
@@ -661,9 +667,7 @@
   min-height: 1123px;
   background: #ffffff;
   padding:
-    var(--doc-pad-top,  72px)
-    var(--doc-pad-sides, 80px)
-    var(--doc-pad-bot,  96px);
+    var(--doc-pad-top, 72px) var(--doc-pad-sides, 80px) var(--doc-pad-bot, 96px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, .04), 0 8px 32px rgba(0, 0, 0, .12);
   border-radius: 2px;
   flex-shrink: 0;
@@ -1595,7 +1599,7 @@
 }
 
 .ab4-dash-file-box:hover {
-  border-color: #405189;
+  border-color: var(--primary-color);
   background: #fdfdfd;
 }
 
@@ -1674,7 +1678,7 @@
 }
 
 .ab4-switch--on .ab4-switch-track {
-  background: #405189;
+  background: var(--primary-color) !important;
 }
 
 
@@ -2206,7 +2210,7 @@
 .asm-brand-icon {
   width: 44px;
   height: 44px;
-  background: #405189;
+  background: var(--primary-color);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -2230,7 +2234,7 @@
 .asm-step-num {
   font-size: 10px;
   font-weight: 800;
-  color: #405189;
+  color: var(--primary-color) !important;
   text-transform: uppercase;
   letter-spacing: 2px;
   margin-bottom: 12px;
@@ -2266,7 +2270,7 @@
 
 .asm-legal-icon {
   font-size: 20px;
-  color: #405189;
+  color: var(--primary-color) !important;
   margin-top: 2px;
   opacity: 0.8;
 }
@@ -2377,7 +2381,7 @@
 
 .asm-btn-submit {
   padding: 10px 24px;
-  background: #405189;
+  background: var(--primary-color);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -2692,11 +2696,11 @@
 }
 
 .as-title {
-  color: #405189;
+  color: var(--primary-color);
 }
 
 .as-btn {
-  background-color: #405189 !important;
+  background-color: var(--primary-color);
   /* Original Theme Color */
   color: white !important;
   border-radius: 6px !important;

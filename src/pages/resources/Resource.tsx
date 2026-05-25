@@ -267,7 +267,7 @@ const Resource: React.FC = () => {
             <div className="d-flex align-items-center justify-content-between flex-row py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Resources</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <nav aria-label="breadcrumb" className="d-block">
                   <ol className="breadcrumb m-0">
                     <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                     <li className="breadcrumb-item active fw-medium" aria-current="page">Resources</li>
@@ -278,12 +278,13 @@ const Resource: React.FC = () => {
           </div>
         </div>
 
-        {isLoading ? (
-          <ResourceLoader />
-        ) : (
-          <>
-            {/* Metric Header */}
-            <div className="row g-3">
+        <div className="col-12 resource-section">
+          {isLoading ? (
+            <ResourceLoader />
+          ) : (
+            <>
+              {/* Metric Header */}
+              <div className="row g-2 mb-3">
               {[
                 { label: 'Total Resources', value: (resources.legal_registration?.length || 0) + (resources.education_help?.length || 0) + (resources.download_assets?.length || 0) + (resources.training_academy?.length || 0), icon: 'ri-stack-fill', color: 'primary' },
                 { label: 'Education & Help', value: resources.education_help?.length || 0, icon: 'ri-book-open-fill', color: 'primary' },
@@ -574,6 +575,7 @@ const Resource: React.FC = () => {
             </div>
           </>
         )}
+      </div>
 
         <DeleteConfirmationModal
           show={showDeleteModal}

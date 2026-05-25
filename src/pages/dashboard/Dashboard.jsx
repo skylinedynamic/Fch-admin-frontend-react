@@ -17,31 +17,25 @@ export default function Dashboard() {
   const dashboardData = dashboardResponse?.data;
 
   const renderKPI = (title, count, iconClass, colorClass, link, linkText, isCurrency = false) => (
-    <div className="col-xl-3 col-md-6">
-      <div className="card card-animate">
-        <div className="card-body">
-          <div className="d-flex align-items-center">
-            <div className="flex-grow-1 overflow-hidden">
-              <p className="text-uppercase fw-medium text-muted text-truncate mb-0">{title}</p>
-            </div>
+    <div className="col-xl-3 col-md-6 mb-3">
+      <div className="card card-animate h-100 mb-0">
+        <div className="card-body d-flex align-items-center">
+          <div className="flex-grow-1 overflow-hidden">
+            <p className="text-uppercase fw-medium text-muted text-truncate mb-2">{title}</p>
+            {isLoading ? (
+              <div className="skeleton-line col-8 mb-2 d-block" style={{ height: '28px' }}></div>
+            ) : (
+              <h4 className="fs-22 fw-semibold ff-secondary mb-2">
+                {isCurrency ? formatCurrency(count) : count}
+              </h4>
+            )}
+            {link && <Link to={link} className="text-decoration-underline">{linkText}</Link>}
+            {!link && linkText && <span className="text-decoration-underline cursor-pointer">{linkText}</span>}
           </div>
-          <div className="d-flex align-items-end justify-content-between mt-4">
-            <div>
-              {isLoading ? (
-                <div className="skeleton-line col-8 mb-3 d-block" style={{ height: '28px' }}></div>
-              ) : (
-                <h4 className="fs-22 fw-semibold ff-secondary">
-                  {isCurrency ? formatCurrency(count) : count}
-                </h4>
-              )}
-              {link && <Link to={link} className="text-decoration-underline">{linkText}</Link>}
-              {!link && linkText && <span className="text-decoration-underline cursor-pointer">{linkText}</span>}
-            </div>
-            <div className="avatar-sm flex-shrink-0">
-              <span className={`avatar-title bg-${colorClass}-subtle rounded fs-3`}>
-                <i className={`${iconClass} text-${colorClass}`}></i>
-              </span>
-            </div>
+          <div className="avatar-sm flex-shrink-0 ms-3">
+            <span className={`avatar-title bg-${colorClass}-subtle rounded fs-3`}>
+              <i className={`${iconClass} text-${colorClass}`}></i>
+            </span>
           </div>
         </div>
       </div>
@@ -53,7 +47,7 @@ export default function Dashboard() {
       <div className="page-content">
         <div className="container-fluid">
           {/* Welcome header */}
-          <div className="row mb-3 pb-1">
+          <div className="row mb-3 pb-1 dashboard-header mt-3">
             <div className="col-12">
               <div className="d-flex align-items-lg-center flex-lg-row flex-column">
                 <div className="flex-grow-1">
@@ -185,8 +179,8 @@ export default function Dashboard() {
             <div className='col-xl-8'>
               {/* Pre-Qualification Applications */}
               <div className="row">
-                <div className="col-xxl-12">
-                  <div className="card">
+                <div className="col-xxl-12 mb-3">
+                  <div className="card mb-0">
                     <div className="card-header align-items-center d-flex">
                       <h4 className="card-title mb-0 flex-grow-1">
                         <i className="ri-checkbox-circle-line align-middle me-1 text-primary"></i> Pre-Qualification Applications
@@ -242,8 +236,8 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="col-xxl-12">
-                  <div className="card">
+                <div className="col-xxl-12 mb-3">
+                  <div className="card mb-0">
                     <div className="card-header align-items-center d-flex">
                       <h4 className="card-title mb-0 flex-grow-1">
                         <i className="ri-focus-2-line align-middle me-1 text-primary"></i> Recent Funding Applications
@@ -305,8 +299,8 @@ export default function Dashboard() {
 
             <div className='col-xl-4'>
               <div className="row">
-                <div className="col-xl-12">
-                  <div className="card">
+                <div className="col-xl-12 mb-3">
+                  <div className="card mb-0">
                     <div className="card-header align-items-center d-flex">
                       <h4 className="card-title mb-0 flex-grow-1">Upcoming Meetings</h4>
                     </div>
@@ -363,8 +357,8 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="col-xxl-12">
-                  <div className="card">
+                <div className="col-xxl-12 mb-3">
+                  <div className="card mb-0">
                     <div className="card-header align-items-center d-flex">
                       <h4 className="card-title mb-0 flex-grow-1">
                         <i className="ri-shield-check-line align-middle me-1 text-info"></i> Latest Leads

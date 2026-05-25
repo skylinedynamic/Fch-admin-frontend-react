@@ -4,7 +4,7 @@ import { useResource } from '../../modules/resource/queries';
 import ResourceDetailLoader from '../../components/Loader/ResourceDetailLoader';
 import { Container, Row, Col, Card, CardHeader, CardBody, Button } from 'reactstrap';
 import ErrorPage from '../Utility/ErrorPage';
-import '../../../assets/css/resource-detail.css';
+import "../../../assets/css/resource-detail.css";
 
 const ResourceServiceDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -33,7 +33,7 @@ const ResourceServiceDetail: React.FC = () => {
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">{resource.title}</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/resources">Resources</Link></li>

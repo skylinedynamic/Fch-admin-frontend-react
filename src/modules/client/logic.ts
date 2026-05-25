@@ -78,8 +78,22 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
             enrollment_type = 'Default Enrollment';
         }
     } else {
-        amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
-        enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
+        if (payload.plan_id) {
+            const rawAmount = payload.enrollment_payment ??
+                payload.payment_amount ??
+                payload.amount;
+
+            amount = (rawAmount === '' || rawAmount === null || rawAmount === undefined)
+                ? 0
+                : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
+
+            if (isNaN(amount)) amount = 0;
+
+            enrollment_type = payload.enrollment_type || 'One Time Payment';
+        } else {
+            amount = nonHostPlan?.payment_amount ? parseFloat(nonHostPlan.payment_amount as string) : 800;
+            enrollment_type = nonHostPlan?.enrollment_type || 'Fixed enrollment';
+        }
     }
 
     payload.amount = amount;
@@ -87,7 +101,7 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     payload.enrollment_type = enrollment_type;
     payload.payment_amount = amount;
     payload.entity_type = 'Borrower';
-    payload.is_partner_paying = !isHost;
+    payload.is_partner_paying = !isHost && String(payload.plan_id) !== '5';
     payload.status = formData.status;
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
@@ -127,7 +141,7 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
     }
 
     if (!isHost) {
-        payload.is_partner_paying = true;
+        payload.is_partner_paying = String(payload.plan_id) !== '5';
     } else {
         const rawAmount = payload.enrollment_payment ?? payload.payment_amount ?? payload.amount;
 

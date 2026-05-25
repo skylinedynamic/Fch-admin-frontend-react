@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { useAuthStore } from '../../../store/auth';
 import { APP_CONFIG } from '../../../config';
 import { STATUS_PAID } from '../../../config/invoiceConfig';
-import invoiceLogo from '../../../../assets/images/logo-mail.png';
+import invoiceLogo from "../../../../assets/images/logo-mail.png";
 
 // Helper to format currency
 const formatCurrency = (amount) => {
@@ -162,7 +162,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                         <div className="card-header border-bottom-dashed p-4">
                                             <div className="d-flex flex-column flex-sm-row align-items-center">
                                                 <div className="flex-grow-1 text-center text-sm-start">
-                                                    <img src={invoiceLogo} className="card-logo card-logo-dark" alt="FCH Logo" height="65" />
+                                                    <img src={displayInvoice.branding?.primary_logo} className="card-logo card-logo-dark" alt="Logo" height="65" />
                                                 </div>
                                                 <div className="flex-shrink-0 mt-sm-0 mt-4 text-center text-sm-end">
                                                     <h6 className="mb-1"><span className="text-muted fw-normal">Invoice No:</span> <span id="legal-register-no" className="fw-semibold"> #{displayInvoice.invoice_id || displayInvoice.id}</span></h6>
@@ -178,8 +178,9 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             <div className="row g-3">
                                                 <div className="col-6">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Address</h6>
-                                                    <p className="text-muted mb-1">{APP_CONFIG.name}</p>
-                                                    {/* <p className="text-muted mb-0">California, United States</p> */}
+                                                    <p className="text-muted mb-1">{displayInvoice.branding?.site_name || APP_CONFIG.name}</p>
+                                                    <p className="text-muted mb-1">{displayInvoice.branding?.address || ''}</p>
+                                                    <p className="text-muted mb-0">{displayInvoice.branding?.city}{displayInvoice.branding?.city && ', '}{displayInvoice.branding?.state} {displayInvoice.branding?.postal_code}</p>
                                                 </div>
                                                 <div className="col-6 text-end">
                                                     <h6 className="text-muted text-uppercase fw-semibold mb-3">Billing Address</h6>
@@ -270,41 +271,38 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             </div>
                                             <div className="hstack gap-2 justify-content-center justify-content-sm-between d-print-none mt-4 flex-wrap">
                                                 <button
-                                                    className="btn btn-default"
+                                                    className="btn btn-soft-danger flex-grow-1 flex-sm-grow-0"
                                                     onClick={onHide}
                                                 >
                                                     <i className="ri-close-line align-bottom me-1"></i>
                                                     Close
                                                 </button>
-                                                <div className="hstack gap-2">
+                                                <button
+                                                    className="btn btn-primary shadow-sm flex-grow-1 flex-sm-grow-0"
+                                                    onClick={handleDownload}
+                                                    disabled={downloadLoading}
+                                                >
+                                                    {downloadLoading ? (
+                                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    ) : (
+                                                        <i className="ri-download-2-line align-bottom me-1"></i>
+                                                    )}
+                                                    Download
+                                                </button>
+                                                {(user?.is_host == 1 && displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase()) && (
                                                     <button
-                                                        className="btn btn-primary shadow-sm"
-                                                        onClick={handleDownload}
-                                                        disabled={downloadLoading}
+                                                        className="btn btn-danger shadow-sm flex-grow-1 flex-sm-grow-0"
+                                                        onClick={handleSend}
+                                                        disabled={sendLoading}
                                                     >
-                                                        {downloadLoading ? (
+                                                        {sendLoading ? (
                                                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                                                         ) : (
-                                                            <i className="ri-download-2-line align-bottom me-1"></i>
+                                                            <i className="ri-send-plane-fill align-bottom me-1"></i>
                                                         )}
-                                                        Download
+                                                        E-Mail Invoice
                                                     </button>
-                                                    {(user?.is_host == 1 && displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase()) && (
-                                                        // {(((displayInvoice?.borrower_id && user?.is_host == 0) || displayInvoice.status?.toLowerCase() != STATUS_PAID.toLowerCase())) && (
-                                                        <button
-                                                            className="btn btn-danger shadow-sm"
-                                                            onClick={handleSend}
-                                                            disabled={sendLoading}
-                                                        >
-                                                            {sendLoading ? (
-                                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                            ) : (
-                                                                <i className="ri-send-plane-fill align-bottom me-1"></i>
-                                                            )}
-                                                            E-Mail Invoice
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

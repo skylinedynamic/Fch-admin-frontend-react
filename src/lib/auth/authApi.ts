@@ -67,7 +67,7 @@ export async function logout(): Promise<{ status?: boolean; message?: string; da
 // Send password reset link
 export async function forgotPassword(email: string): Promise<any> {
   try {
-    const res = await apiClient.post('/auth/forgot', { email })
+    const res = await apiClient.post('/auth/forgot', { email }, { _skipToast: true } as any)
     const data = res?.data
     if (data?.status === true) {
       return data
@@ -88,7 +88,7 @@ export async function resetPassword(payload: {
   password_confirmation: string
 }): Promise<any> {
   try {
-    const res = await apiClient.post('/auth/reset', payload)
+    const res = await apiClient.post('/auth/reset', payload, { _skipToast: true } as any)
     const data = res?.data
     if (data?.status === true) {
       return data

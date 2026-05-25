@@ -4,12 +4,12 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 export default function EmployeeListHeader({ selection, onDeleteSelected }) {
     const { hasPermission } = usePermissions();
     return (
-        <div className="row pb-1">
+        <div className="row pb-1 mobile-sticky-header">
             <div className="col-12">
                 <div className="d-flex align-items-center justify-content-between flex-row py-2">
                     <div className="flex-grow-1">
                         <h4 className="fs-20 mb-1">Employees</h4>
-                        <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                        <nav aria-label="breadcrumb" className="d-block">
                             <ol className="breadcrumb m-0">
                                 <li className="breadcrumb-item"><a href="/">Dashboard</a></li>
                                 <li className="breadcrumb-item active" aria-current="page">Employees</li>

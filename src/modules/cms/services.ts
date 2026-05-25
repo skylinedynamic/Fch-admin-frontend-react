@@ -65,7 +65,7 @@ export const cmsService = {
 
   // SEO
   fetchSeoSettings: async (params) => {
-    const response = await apiClient.get("/admin/cms/seo-settings", { params });
+    const response = await apiClient.post("/admin/cms/seo-settings", { params });
     return response.data;
   },
   fetchSeoSetting: async (id) => {
@@ -79,7 +79,7 @@ export const cmsService = {
       });
       return response.data;
     } else {
-      const response = await apiClient.post("/admin/cms/seo-settings", data, {
+      const response = await apiClient.post("/admin/cms/seo-settings/store", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data;

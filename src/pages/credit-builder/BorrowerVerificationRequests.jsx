@@ -10,6 +10,7 @@ import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowe
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
 import ResponseDetailModal from './components/ResponseDetailModal'; // Import Result Modal
+import NoteViewModal from './components/NoteViewModal'; // Import Note Modal
 import { toast } from 'react-toastify';
 import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
 import { useTiers } from '../../modules/tiers/queries';
@@ -189,7 +190,13 @@ export default function BorrowerVerificationRequests() {
 
     // Response Detail Modal
     const [resultModalShow, setResultModalShow] = useState(false);
-    const [verificationResults, setVerificationResults] = useState({ message: '', data: [] });
+    const [verificationResults, setVerificationResults] = useState({ message: '', data: [], raw: null });
+
+    // Note Modal
+    const [showNoteModal, setShowNoteModal] = useState(false);
+    const [selectedNote, setSelectedNote] = useState('');
+    const [selectedNoteStatus, setSelectedNoteStatus] = useState('');
+    const [selectedTaskTitle, setSelectedTaskTitle] = useState('');
 
     const openActionModal = (type, rowData = null) => {
         setActionType(type);
@@ -230,10 +237,12 @@ export default function BorrowerVerificationRequests() {
             if (result.status) {
                 setVerificationResults({
                     message: result.message || 'Action processed successfully',
-                    data: result.data || []
+                    data: result.data || [],
+                    raw: null, // Hide JSON tab for immediate popup
+                    hideTabs: true // NEW: Hide the tab navigation section
                 });
                 setShowActionModal(false);
-                setResultModalShow(true); // Show the results modal
+                setResultModalShow(true); 
                 loadRequests();
                 setSelectedRequests([]);
             } else {
@@ -317,70 +326,140 @@ export default function BorrowerVerificationRequests() {
     };
 
     const actionBodyTemplate = (rowData) => {
-        // Show buttons only for processing status, otherwise show status with note icon if exists
-        if (rowData.status === VERIFICATION_STATUS.PROCESSING) {
-            return (
-                <div className="d-flex gap-2 justify-content-center">
-                    {rowData.tier_code === 'T0' && rowData.has_api && (
-                        <button
-                            className="btn btn-sm btn-soft-primary"
-                            onClick={() => openActionModal('api_verify', rowData)}
-                            title="MicroBilt Verification"
-                        >
-                            MicroBilt Verification
-                        </button>
-                    )}
+        const isProcessing = rowData.status === VERIFICATION_STATUS.PROCESSING;
+        const hasNote = !!(rowData.note || rowData.rejection_reason);
 
-                    <button
-                        className="btn btn-sm btn-soft-success"
-                        onClick={() => openActionModal('manual_verify', rowData)}
-                        title="Manual Verification"
-                    >
-                        Manual Verification
-                    </button>
-                    <button
-                        className="btn btn-sm btn-soft-danger"
-                        onClick={() => openActionModal('reject', rowData)}
-                        title="Reject"
-                    >
-                        Reject
-                    </button>
-                </div>
+        // If no actions are available for this row, we can either show a disabled dropdown or nothing.
+        const hasShowResponse = (rowData.status === VERIFICATION_STATUS.COMPLETED || rowData.status === VERIFICATION_STATUS.REJECTED) && !!rowData.microbilt_response;
+        const hasPendingNote = !hasNote && rowData.status === VERIFICATION_STATUS.PENDING;
+
+        const anyAction = isProcessing || hasShowResponse || hasNote || hasPendingNote;
+
+        if (!anyAction) {
+            return (
+                <button
+                    className="btn btn-soft-primary btn-sm disabled"
+                    type="button"
+                    style={{ cursor: 'default' }}
+                >
+                    <i className="ri-equalizer-fill align-middle"></i>
+                </button>
             );
         }
-
-        // For other statuses (Complete, Rejected, Pending), show badge with Note icon in Action column
-        let badgeClass = 'bg-info-subtle text-info';
-        if (rowData.status === VERIFICATION_STATUS.PENDING) badgeClass = 'bg-warning-subtle text-warning';
-        if (rowData.status === VERIFICATION_STATUS.COMPLETED) badgeClass = 'bg-success-subtle text-success';
-        if (rowData.status === VERIFICATION_STATUS.REJECTED) badgeClass = 'bg-danger-subtle text-danger';
-
-        const tooltipContent = (rowData.status === VERIFICATION_STATUS.COMPLETED || rowData.status === VERIFICATION_STATUS.REJECTED)
-            ? (rowData.note || rowData.rejection_reason)
-            : null;
-
-        const tooltipId = `action-note-${rowData.id}`;
-
         return (
-            <div className="d-flex align-items-center justify-content-center gap-2">
-                <span className={`badge ${badgeClass} fs-12 text-capitalize`}>
-                    {rowData.status}
-                </span>
-                {tooltipContent && (
-                    <>
-                        <button
-                            className="btn btn-sm btn-icon btn-soft-info border-0 rounded-circle p-0"
-                            id={tooltipId}
-                            type="button"
-                            style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                            <i className="ri-sticky-note-line fs-14"></i>
-                        </button>
-                        <UncontrolledTooltip placement="top" target={tooltipId} container="body">
-                            {tooltipContent}
-                        </UncontrolledTooltip>
-                    </>
-                )}
+            <div className="dropdown d-inline-block">
+                <button
+                    className="btn btn-soft-primary btn-sm dropdown"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <i className="ri-equalizer-fill align-middle"></i>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end shadow-sm border-light-subtle">
+                    {isProcessing ? (
+                        <>
+                            {rowData.tier_code === 'T0' && rowData.has_api && (
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="dropdown-item d-flex align-items-center gap-2"
+                                        onClick={() => openActionModal('api_verify', rowData)}
+                                    >
+                                        <i className="ri-cpu-line text-primary fs-16"></i>
+                                        <span>MicroBilt Verification</span>
+                                    </button>
+                                </li>
+                            )}
+                            <li>
+                                <button
+                                    type="button"
+                                    className="dropdown-item d-flex align-items-center gap-2"
+                                    onClick={() => openActionModal('manual_verify', rowData)}
+                                >
+                                    <i className="ri-checkbox-circle-line text-success fs-16"></i>
+                                    <span>Manual Verification</span>
+                                </button>
+                            </li>
+                            <li>
+                                <hr className="dropdown-divider border-light" />
+                            </li>
+                            <li>
+                                <button
+                                    type="button"
+                                    className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                                    onClick={() => openActionModal('reject', rowData)}
+                                >
+                                    <i className="ri-close-circle-line text-danger fs-16"></i>
+                                    <span>Reject Request</span>
+                                </button>
+                            </li>
+                        </>
+                    ) : (
+                        <>
+                            {hasShowResponse && (
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="dropdown-item d-flex align-items-center gap-2"
+                                        onClick={() => {
+                                            const resp = rowData.microbilt_response;
+                                            const formattedData = (() => {
+                                                if (!resp) return [];
+                                                if (Array.isArray(resp)) return resp;
+                                                if (resp.MsgRsHdr?.Status) {
+                                                    const status = resp.MsgRsHdr.Status;
+                                                    const report = resp.ReportSummary?.ReportSummaryDetail?.[0] || {};
+                                                    return [{
+                                                        task_name: report.ReportDesc || rowData.task_title || "MicroBilt Check",
+                                                        is_verified: status.StatusCode === 0,
+                                                        message: `${status.StatusDesc}${status.StatusCode === -4 ? ' - No matching record found in MicroBilt database.' : ''}`
+                                                    }];
+                                                }
+                                                return [resp];
+                                            })();
+                                            setVerificationResults({
+                                                message: `Verification Details: ${rowData.task_title}`,
+                                                data: formattedData,
+                                                raw: resp,
+                                                hideTabs: false // Always show tabs when opened manually
+                                            });
+                                            setResultModalShow(true);
+                                        }}
+                                    >
+                                        <i className="ri-eye-line text-primary fs-16"></i>
+                                        <span>MicroBilt Response</span>
+                                    </button>
+                                </li>
+                            )}
+                            {hasNote && (
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="dropdown-item d-flex align-items-center gap-2"
+                                        onClick={() => {
+                                            setSelectedNote(rowData.note || rowData.rejection_reason);
+                                            setSelectedNoteStatus(rowData.status);
+                                            setSelectedTaskTitle(rowData.task_title);
+                                            setShowNoteModal(true);
+                                        }}
+                                    >
+                                        <i className="ri-file-list-3-line text-muted fs-16"></i>
+                                        <span>View Note</span>
+                                    </button>
+                                </li>
+                            )}
+                            {hasPendingNote && (
+                                <li>
+                                    <button type="button" className="dropdown-item disabled d-flex align-items-center gap-2 text-muted">
+                                        <i className="ri-information-line fs-16"></i>
+                                        <span>Pending Review</span>
+                                    </button>
+                                </li>
+                            )}
+                        </>
+                    )}
+                </ul>
             </div>
         );
     };
@@ -564,11 +643,7 @@ export default function BorrowerVerificationRequests() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-muted mb-0 fs-12">
-                                                                <h6 className="fs-14 mb-0 fw-medium text-info">
-                                                                </h6>        </p>
-                                                        </div>
+                                                        {/* Removed empty paragraph and heading to fix DOM nesting warning */}
                                                     </div>
                                                 </div>
                                                 <div className="col-lg-auto mt-lg-0 border-start-lg ps-lg-4">
@@ -599,12 +674,13 @@ export default function BorrowerVerificationRequests() {
                                         rows={10}
                                         columns={[
                                             { style: { width: '3%' } },
-                                            { style: { width: '28%' } },
-                                            { style: { width: '10%' } },
+                                            { style: { width: '25%' } },
+                                            { style: { width: '8%' } },
+                                            { style: { width: '13%' } },
                                             { style: { width: '13%' } },
                                             { style: { width: '12%' } },
-                                            { style: { width: '10%' } },
-                                            { style: { width: '27%' } }
+                                            { style: { width: '8%' } },
+                                            { style: { width: '18%' } }
                                         ]}
                                     />
                                 ) : (
@@ -662,6 +738,22 @@ export default function BorrowerVerificationRequests() {
                                             style={{ width: '13%' }}
                                         />
                                         <Column
+                                            field="verified_with"
+                                            header="Verified With"
+                                            sortable
+                                            style={{ width: '13%' }}
+                                            body={(rowData) => {
+                                                if (!rowData.verified_with) return <span className="text-muted">—</span>;
+                                                const isMicrobilt = rowData.verified_with === 'MicroBilt';
+                                                return (
+                                                    <span className={`badge ${isMicrobilt ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'} fs-11`}>
+                                                        <i className={`${isMicrobilt ? 'ri-cpu-line' : 'ri-user-settings-line'} me-1 align-bottom`}></i>
+                                                        {rowData.verified_with}
+                                                    </span>
+                                                );
+                                            }}
+                                        />
+                                        <Column
                                             field="request_date"
                                             header="Request Date"
                                             sortable
@@ -677,14 +769,14 @@ export default function BorrowerVerificationRequests() {
                                             body={dayCountTemplate}
                                             sortable
                                             alignHeader={'center'}
-                                            style={{ width: '10%', textAlign: 'center' }}
+                                            style={{ width: '8%', textAlign: 'center' }}
                                         />
                                         <Column
                                             sortable
                                             header="Action"
                                             body={actionBodyTemplate}
                                             alignHeader={'center'}
-                                            style={{ minWidth: '14rem', textAlign: 'center', width: '27%' }}
+                                            style={{ minWidth: '12rem', textAlign: 'center', width: '18%' }}
                                         />
                                     </DataTable>
                                 )}
@@ -720,6 +812,17 @@ export default function BorrowerVerificationRequests() {
                 onHide={() => setResultModalShow(false)}
                 message={verificationResults.message}
                 data={verificationResults.data}
+                raw={verificationResults.raw}
+                hideTabs={verificationResults.hideTabs}
+            />
+
+            {/* Note View Modal */}
+            <NoteViewModal
+                show={showNoteModal}
+                onHide={() => setShowNoteModal(false)}
+                note={selectedNote}
+                status={selectedNoteStatus}
+                taskTitle={selectedTaskTitle}
             />
         </div>
     );

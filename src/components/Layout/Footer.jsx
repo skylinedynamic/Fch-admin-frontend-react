@@ -1,10 +1,10 @@
 import React from 'react'
 import { APP_CONFIG } from '../../config'
-import { usePublicSiteSettings } from '../../modules/cms/queries'
+import { useConfigStore } from '../../store/config'
 
 export default function Footer() {
-  const { data: settingsData } = usePublicSiteSettings()
-  const siteName = settingsData?.data?.site_name || APP_CONFIG.name
+  const { branding: settings } = useConfigStore()
+  const siteName = settings?.site_name || APP_CONFIG.name
   return (
     <footer className="footer">
       <div className="container-fluid">

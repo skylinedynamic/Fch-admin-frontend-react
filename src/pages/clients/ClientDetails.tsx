@@ -29,6 +29,7 @@ import { usePermissions } from '../../lib/auth/usePermissions';
 import { scrollToFirstError } from '../../utils/formUtils';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth/authStore';
+import { PARTNER_TYPES } from '../../config/partnerTypeOptions';
 // @ts-ignore
 import LeadPaymentModal from '../leads/components/LeadPaymentModal';
 // ENROLLMENT_TYPE_OPTIONS removed - using dynamic settings instead
@@ -194,6 +195,11 @@ export default function ClientDetails() {
         setFormData(prev => {
             const newData = { ...prev, [name]: value };
 
+            if (name === 'enrollment_payment') {
+                newData.payment_amount = value;
+                newData.amount = value;
+            }
+
             // Handle cascading clears
             if (name === 'country') {
                 newData.state = '';
@@ -241,12 +247,13 @@ export default function ClientDetails() {
 
                 const response: any = await createClient(payload);
 
-                // Handle Payment for Non-Hosts - ACCURATE LEAD PATTERN (is_host == 0)
-                const clientData = response.data || response;
-                const bId = clientData?.borrower?.id || clientData?.id || response.id;
-                const invId = response.data?.invoice?.id || clientData?.invoice?.id || response.invoice?.id || null;
+                const clientData = response?.data?.data || response?.data || response;
+                const bId = clientData?.id || clientData?.borrower_id;
+                const invId = clientData?.invoice_id;
 
-                if (!isHost && bId && amount > 0) {
+                const isWLOrCP = currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED;
+
+                if (!isHost && !isWLOrCP && bId && amount > 0) {
                     setNewBorrowerId(bId);
                     setPaymentInvoiceId(invId);
                     setPaymentAmount(amount);
@@ -259,7 +266,11 @@ export default function ClientDetails() {
                     return;
                 }
 
-                toast.success("Client created successfully");
+                if (isWLOrCP) {
+                    toast.success("Client created successfully. Partner fee ($800) charged automatically.");
+                } else {
+                    toast.success("Client created successfully");
+                }
 
                 if (clientData && clientData.id) {
                     window.dispatchEvent(new Event('refreshActivities'));

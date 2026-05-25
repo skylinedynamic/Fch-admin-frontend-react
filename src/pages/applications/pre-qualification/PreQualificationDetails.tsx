@@ -150,9 +150,9 @@ export default function PreQualificationDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row pb-1">
+                    <div className="row pb-1 page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Application Details</h4>
                                     <nav aria-label="breadcrumb">
@@ -162,6 +162,11 @@ export default function PreQualificationDetails() {
                                             <li className="breadcrumb-item active" aria-current="page">Details</li>
                                         </ol>
                                     </nav>
+                                </div>
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    <Link to="/intake-review/pre-qualification" className="btn btn-outline-secondary w-lg waves-effect">
+                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                    </Link>
                                 </div>
                             </div>
                         </div>

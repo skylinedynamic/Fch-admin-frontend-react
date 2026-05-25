@@ -29,26 +29,36 @@ const _loadFullCalendarCss = () => {
 };
 _loadFullCalendarCss();
 
-import '../assets/css/bootstrap.min.css'
-import '../assets/css/icons.min.css'
-import '../assets/css/app.min.css'
+import "../assets/css/bootstrap.min.css"
+import "../assets/css/icons.min.css"
+import "../assets/css/app.min.css"
 
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 
 
-import '../assets/css/custom.min.css'
-import '../assets/css/custom.css'
+import "../assets/css/custom.min.css"
+import "../assets/css/custom.css"
+import "../assets/css/datepicker.css"
+
+const isLocal = import.meta.env.VITE_DEVELOPMENT_MODE == 'local'
+
+const rootContent = (
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </BrowserRouter>
+)
 
 const container = document.getElementById('root')
 const root = createRoot(container)
+
 root.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+  isLocal ? rootContent : (
+    <React.StrictMode>
+      {rootContent}
+    </React.StrictMode>
+  )
 )

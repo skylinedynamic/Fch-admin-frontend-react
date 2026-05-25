@@ -6,6 +6,7 @@ import ClientListSection from './ClientListSection';
 import SubscriptionSection from './SubscriptionSection';
 import SubscriptionListSection from './SubscriptionListSection';
 import AgreementSection from './AgreementSection';
+import TenantConfigSection from './TenantConfigSection';
 import FormLoader from '../../../components/Loader/FormLoader';
 
 export default function PartnerForm({
@@ -26,6 +27,7 @@ export default function PartnerForm({
     , documentsClearKey
     , partnerPlans
     , onRefresh
+    , setIsSaving
 }) {
     return (
         <div className="tab-content">
@@ -105,6 +107,16 @@ export default function PartnerForm({
                     ) : (
                         <SubscriptionListSection partnerId={partnerId} />
                     )}
+                </div>
+            )}
+
+            {/* Tenant Config Tab */}
+            {activeTab === 'tenantConfig' && (
+                <div className="tab-pane active show">
+                    <TenantConfigSection
+                        partnerId={partnerId}
+                        setIsSaving={setIsSaving}
+                    />
                 </div>
             )}
 

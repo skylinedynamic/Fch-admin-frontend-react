@@ -14,3 +14,9 @@ export interface SubscriptionStats {
   expired_subscriptions: number;
   revenue_this_month: number;
 }
+
+export interface TenantConfig {
+  active_custom_url: boolean;
+  partner_domain: string;
+  borrower_domain: string;
+}

@@ -36,7 +36,7 @@ import PreQualificationApplication from './pages/applications/pre-qualification/
 import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
-import Settings from './pages/settings/Settings.jsx';
+import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
@@ -52,11 +52,14 @@ import BlogTags from './pages/cms/BlogTags.tsx';
 import SeoSettings from './pages/cms/SeoSettings.tsx';
 import SeoSettingEdit from './pages/cms/SeoSettingEdit.tsx';
 import SiteSettings from './pages/cms/SiteSettings.tsx';
-import { useSiteSettings, usePublicSiteSettings } from './modules/cms/queries';
+import { useSiteSettings } from './modules/cms/queries';
+import { useGlobalConfigurations } from './modules/settings/queries';
+import { useConfigStore } from './store/config';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
 import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
+import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -65,14 +68,14 @@ window.jQuery = window.$ = $;
 
 // Import Summernote CSS globally
 import 'summernote/dist/summernote-lite.css';
-import '../assets/css/summernote-fixes.css';
+import "../assets/css/summernote-fixes.css";
 
 // Icon Libraries
 import 'remixicon/fonts/remixicon.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-// Import Flatpickr CSS
-import 'flatpickr/dist/flatpickr.css';
+
+// Icon Libraries
 
 export default function App() {
   useEffect(() => {
@@ -90,26 +93,71 @@ export default function App() {
   }, []);
 
   const user = useAuthStore((state) => state.user);
-  const { data: publicSettingsData } = usePublicSiteSettings();
+
+  // Fetch authenticated global configurations (branding + status flags)
+  const { data: globalConfigData } = useGlobalConfigurations(!!user);
+
+  const setGlobalConfigs = useConfigStore((state) => state.setGlobalConfigs);
 
   useEffect(() => {
-    if (publicSettingsData?.data?.favicon) {
-      const favicon = publicSettingsData.data.favicon;
-      const BASE_URL = import.meta.env.VITE_BASE_URL || '';
-      const faviconUrl = favicon.startsWith('http') ? favicon : `${BASE_URL}/storage/${favicon.replace(/^\//, '')}`;
+    if (user && globalConfigData?.data) {
+      const activeBranding = globalConfigData.data.branding;
+      const activeFlags = globalConfigData.data.status_flags;
 
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.getElementsByTagName('head')[0].appendChild(link);
+      // Persist global config in Zustand
+      setGlobalConfigs(activeBranding, activeFlags);
+
+      const { site_name, favicon_full_url, primary_color, secondary_color } = activeBranding;
+
+      // 1. Dynamic Browser Title
+      if (site_name) {
+        document.title = site_name;
       }
-      link.href = faviconUrl;
+
+      // 2. Dynamic Favicon
+      const currentFavicon = favicon_full_url;
+
+      if (currentFavicon && currentFavicon !== 'null') {
+        const faviconUrl = currentFavicon;
+
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = faviconUrl;
+      }
+
+      // 3. Dynamic CSS Variables
+      if (primary_color && primary_color !== 'null') {
+        const secondary = secondary_color || '#F7B84B';
+
+        // Dynamic CSS variables set on :root
+        document.documentElement.style.setProperty('--primary-color', primary_color);
+        document.documentElement.style.setProperty('--secondary-color', secondary);
+
+        // Also dynamically set Bootstrap/Velzon primary variables
+        document.documentElement.style.setProperty('--vz-primary', primary_color, 'important');
+
+        const hexToRgb = (hex) => {
+          const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+          const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+          return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+        };
+
+        const rgbVal = hexToRgb(primary_color);
+        if (rgbVal) {
+          document.documentElement.style.setProperty('--vz-primary-rgb', rgbVal, 'important');
+        }
+      }
     }
-  }, [publicSettingsData]);
+  }, [globalConfigData, user, setGlobalConfigs]);
 
   return (
     <>
+      <ConfigurationGuardModal />
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         <Route element={<GuestRoute />}>

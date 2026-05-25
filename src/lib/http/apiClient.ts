@@ -3,13 +3,13 @@ import { toast } from 'react-toastify'
 import { getToken, clearAuth } from '../auth'
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_URL || '',
   headers: {
     Accept: 'application/json',
   },
 })
 
-// Attach Authorization and Timezone headers
+// Attach Authorization, Timezone, and Domain headers
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   config.headers = config.headers || {}
@@ -18,9 +18,9 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
 
-  // Pass user timezone via header
+  // Pass user timezone and current portal domain via headers
   if (typeof window !== 'undefined') {
-    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
+    (config.headers as Record<string, string>)['X-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
   return config
@@ -31,10 +31,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     const status = error?.response?.status
+    const skipToast = (error.config as any)?._skipToast
 
     // Toast for network connectivity issues (no response or network error)
     if (!error.response || (error.code && error.code === 'ERR_NETWORK')) {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !skipToast) {
         const offline = typeof navigator !== 'undefined' && !navigator.onLine
         const message = offline
           ? 'You appear to be offline. Please reconnect and try again.'
@@ -54,9 +55,11 @@ apiClient.interceptors.response.use(
       }
     } else if (status === 403) {
       // Forbidden: keep auth, show informative toast, do not redirect
-      const serverMessage = (error.response?.data as any)?.message
-      const message = serverMessage || 'You do not have permission to perform this action.'
-      toast.error(message, { toastId: 'forbidden-error' })
+      if (!skipToast) {
+        const serverMessage = (error.response?.data as any)?.message
+        const message = serverMessage || 'You do not have permission to perform this action.'
+        toast.error(message, { toastId: 'forbidden-error' })
+      }
     }
     return Promise.reject(error)
   }

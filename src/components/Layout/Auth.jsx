@@ -1,37 +1,48 @@
 import React from 'react'
-import logoImg from '../../../assets/images/fch-logo-wide.png'
-import { APP_CONFIG } from '../../config'
-import { usePublicSiteSettings } from '../../modules/cms/queries'
+import logoImg from "../../../assets/images/fch-logo-wide.png"
+import { APP_CONFIG, MODULE_BRANDING } from '../../config/appConfig'
+import { fetchThemeConfigurations } from '../../modules/settings/services'
 
 export default function Auth({ header, children, belowCard, colClass = 'col-xl-5 col-lg-6 col-md-8' }) {
-  const { data: settingsData } = usePublicSiteSettings();
-  const settings = settingsData?.data;
-  const BASE_URL = import.meta.env.VITE_BASE_URL || '';
+  const [settings, setSettings] = React.useState(null);
 
-  const getLogoUrl = (path, fallback) => {
-    if (!path) return fallback;
-    if (path.startsWith('http')) return path;
-    return `${BASE_URL}/storage/${path.replace(/^\//, '')}`;
-  };
+  React.useEffect(() => {
+    fetchThemeConfigurations()
+      .then((res) => {
+        if (res.status && res.data) {
+          setSettings(res.data);
+          
+          if (res.data.primary_color) {
+            document.documentElement.style.setProperty('--primary-color', res.data.primary_color);
+          }
+          if (res.data.secondary_color) {
+            document.documentElement.style.setProperty('--secondary-color', res.data.secondary_color);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch theme configurations", err);
+      });
+  }, []);
 
-  const dynamicLogo = getLogoUrl(settings?.partner_logo, logoImg);
-  const siteName = settings?.site_name || APP_CONFIG.name;
+  const dynamicLogo = settings?.primary_logo_full_url;
+  const siteName = settings?.site_name ;
   return (
     <div className="auth-page-wrapper pt-5">
-      
+
       <div className="auth-one-bg-position auth-one-bg" id="auth-particles">
-      <div className="bg-overlay"></div>
-      <div className="shape">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          version="1.1"
-          xmlnsXlink="http://www.w3.org/1999/xlink"
-          viewBox="0 0 1440 120"
-        >
-          <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
-        </svg>
+        <div className="bg-overlay"></div>
+        <div className="shape">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 1440 120"
+          >
+            <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+          </svg>
+        </div>
       </div>
-    </div>
 
       <div className="auth-page-content">
         <div className="container">

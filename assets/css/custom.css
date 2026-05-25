@@ -6,8 +6,93 @@ Contact: support@themesbrand.com
 File: Custom Css File
 */
 
+:root {
+  --primary-color: #001f3f;
+  --secondary-color: #f7b84b;
+  --vz-primary: var(--primary-color) !important;
+  --vz-primary-rgb: 0, 31, 63 !important;
+}
+
+/* SIDEBAR BACKGROUND */
+.app-menu,
+.navbar-brand-box {
+  background: var(--primary-color) !important;
+}
+
+/* NAVIGATION TEXT (WHITE) */
+.navbar-menu .navbar-nav .nav-link,
+.navbar-menu .navbar-nav .nav-sm .nav-link,
+.navbar-menu .navbar-title {
+  color: #ffffff !important;
+}
+
+/* NAVIGATION ICONS (SECONDARY COLOR) */
+.navbar-menu .navbar-nav .nav-link i {
+  color: var(--secondary-color) !important;
+}
+
+/* ACTIVE STATE (SECONDARY BG + WHITE TEXT/ICON) */
+/* HOVER & ACTIVE EFFECTS (SECONDARY COLOR) */
+.navbar-menu .navbar-nav .nav-link:hover,
+.navbar-menu .navbar-nav .nav-sm .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* DYNAMIC UI BUTTONS (PRIMARY & SECONDARY) */
+.btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus {
+  background-color: var(--primary-color) !important;
+  filter: brightness(90%);
+  border-color: var(--primary-color) !important;
+}
+
+.btn-warning {
+  background-color: var(--secondary-color) !important;
+  border-color: var(--secondary-color) !important;
+  color: #ffffff !important;
+}
+
+.btn-warning:hover,
+.btn-warning:active,
+.btn-warning:focus {
+  background-color: var(--secondary-color) !important;
+  filter: brightness(90%);
+  border-color: var(--secondary-color) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure filter icon stays white */
+.btn-warning i {
+  color: #ffffff !important;
+}
+
+.navbar-menu .navbar-nav .menu-link.active {
+  background-color: var(--secondary-color) !important;
+  color: #ffffff !important;
+}
+
+.navbar-menu .navbar-nav .menu-link.active i {
+  color: #ffffff !important;
+}
+
+/* Ensure sub-menu indicators also follow white/secondary theme */
+.navbar-menu .navbar-nav .nav-sm .nav-link::before {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.navbar-menu .navbar-nav .nav-sm .nav-link.active::before {
+  background-color: #ffffff !important;
+}
+
 .navbar-menu {
-  background: #001f3f;
+  background: var(--primary-color);
 }
 
 .border {
@@ -71,7 +156,7 @@ File: Custom Css File
 }
 
 #roles-permissions-page .count-badge.solid {
-  background: #d4af37;
+  background: var(--secondary-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -291,11 +376,14 @@ File: Custom Css File
   background: transparent;
 }
 
-/* Sub-menu link active state */
 .menu-dropdown .nav-link.active {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1) !important;
+  font-weight: 600;
+}
+
+.menu-dropdown .nav-link.active i {
+  color: #fff !important;
 }
 
 /* Arrow icon styling - Positioned absolutely or flexed before text */
@@ -365,7 +453,7 @@ File: Custom Css File
 
 .choices__list--dropdown .choices__item--selectable.is-highlighted {
   background-color: #f3f6f9 !important;
-  color: #405189 !important;
+  color: var(--primary-color) !important;
 }
 
 .choices__list--dropdown .choices__placeholder {
@@ -506,7 +594,7 @@ File: Custom Css File
 
 /* Optional: adjust Today/Month/Week button active style to match screenshot */
 .fc .fc-button.fc-button-primary {
-  background-color: #405189;
+  background-color: var(--primary-color);
   color: #fff;
   border: none;
 }
@@ -519,7 +607,7 @@ File: Custom Css File
 }
 
 /* .modal-title {
-    color: #405189 !important;
+    color: var(--primary-color) !important;
     font-weight: 600 !important;
 } */
 
@@ -542,8 +630,8 @@ File: Custom Css File
 }
 
 #form-event .form-check-input:checked {
-  background-color: #405189;
-  border-color: #405189;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 #form-event .form-check-label {
@@ -554,7 +642,7 @@ File: Custom Css File
 /* Choices Custom highlighting */
 .choices__list--dropdown .choices__item--selectable.is-highlighted {
   background-color: #f3f6fa !important;
-  color: #405189 !important;
+  color: var(--primary-color) !important;
 }
 
 .choices__list--dropdown .choices__item {
@@ -637,7 +725,7 @@ File: Custom Css File
 .fc .fc-button-primary {
   background-color: #e2eafc !important;
   border-color: transparent !important;
-  color: #405189 !important;
+  color: var(--primary-color) !important;
   font-weight: 500 !important;
   text-transform: capitalize !important;
   padding: 6px 14px !important;
@@ -648,7 +736,7 @@ File: Custom Css File
 
 .fc .fc-button-primary:hover {
   background-color: #d0defa !important;
-  color: #405189 !important;
+  color: var(--primary-color) !important;
 }
 
 .fc .fc-button-primary:disabled {
@@ -658,8 +746,8 @@ File: Custom Css File
 /* Active & Today State */
 .fc .fc-button-primary.fc-today-button,
 .fc .fc-button-primary.fc-button-active {
-  background-color: #405189 !important;
-  border-color: #405189 !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
   color: #ffffff !important;
 }
 
@@ -833,6 +921,10 @@ File: Custom Css File
 
 .sk-h-140 {
   height: 140px !important;
+}
+
+.sk-h-150 {
+  height: 150px !important;
 }
 
 .sk-w-20 {
@@ -1037,7 +1129,7 @@ File: Custom Css File
 }
 
 .list-group-item-action:hover {
-  background-color: #405189 !important;
+  background-color: var(--primary-color) !important;
   transform: translateX(4px);
 }
 
@@ -1100,7 +1192,7 @@ File: Custom Css File
 }
 
 .text-primary-custom {
-  color: #405189 !important;
+  color: var(--primary-color) !important;
 }
 
 .bg-primary-custom-subtle {
@@ -1195,11 +1287,11 @@ File: Custom Css File
 }
 
 .bg-navy {
-  background-color: #001f3f !important;
+  background-color: var(--primary-color) !important;
 }
 
 .bg-premium-header {
-  background: linear-gradient(135deg, #001f3f 0%, #003366 100%) !important;
+  background: linear-gradient(135deg, var(--primary-color) 0%, rgba(0, 0, 0, 0.2) 100%) !important;
 }
 
 /* Credit Account Form Image Dropzone */
@@ -1246,4 +1338,33 @@ File: Custom Css File
 
 .borrower-req-header-card .fs-11 {
   font-size: 10px !important;
+}
+
+/* PrimeReact Dropdown Vertical Centering */
+.p-dropdown {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.p-dropdown .p-dropdown-label {
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 100% !important;
+}
+
+.p-dropdown .p-dropdown-trigger {
+  height: 100% !important;
+}
+
+.list-group-item.active {
+  z-index: 2;
+  color: #fff !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.navbar-menu {
+  border-right: 1px solid var(--primary-color) !important;
 }

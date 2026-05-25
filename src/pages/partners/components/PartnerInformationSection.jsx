@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { relationOptions } from '../../../config';
 import { parseDate } from '../../../utils/formatters';
-import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../config/partnerTypeOptions';
 import { formatPhoneNumber } from '../../../utils/formatters';
-import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
@@ -26,6 +27,18 @@ export default function PartnerInformationSection({
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const domainManuallyEditedRef = useRef(false);
+
+    // Show partner_domain field: always in create mode, only for Certified in edit mode
+    const showPartnerDomain = !partnerId || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+
+    // Auto-sync partner_domain from company_name in create mode when user hasn't manually edited it
+    useEffect(() => {
+        if (!partnerId && !domainManuallyEditedRef.current && formData.company_name) {
+            const autoDomain = formData.company_name.toLowerCase().replace(/[^a-z]/g, '');
+            handleInputChange({ target: { name: 'partner_domain', value: autoDomain } });
+        }
+    }, [formData.company_name]);
 
     // Calculate dynamic values for summary and overrides
     const selectedPlan = partnerPlans.find(
@@ -43,17 +56,6 @@ export default function PartnerInformationSection({
     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
 
     const totalInvestment = formData.total_subscription_amount || (Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11));
-
-    // Auto-scroll to first error field
-    useEffect(() => {
-        if (errors && Object.keys(errors).length > 0) {
-            // Find the first error field
-            const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
-            if (firstErrorField) {
-                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }, [errors]);
 
     // Filter results from file manager based on allowed extensions
     const handleFileSelection = (selectedFiles) => {
@@ -130,8 +132,8 @@ export default function PartnerInformationSection({
         <>
             {/* Profile Image */}
             <div className="col-lg-12">
-                <div className="card">
-                    <div className="profile-user position-relative d-inline-block mx-auto mb-4">
+                <div className="card mt-3 mt-lg-0">
+                    <div className="profile-user position-relative d-inline-block mx-auto mb-4 mt-3 mt-lg-2">
                         <img
                             src={getImageSrc()}
                             className="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
@@ -172,7 +174,7 @@ export default function PartnerInformationSection({
                     )}
 
                     <div className="text-center mb-3">
-                        <span className="badge bg-light text-muted border">
+                        <span className="badge bg-light text-muted border text-wrap lh-base px-3 py-2" style={{ whiteSpace: 'normal' }}>
                             <i className="ri-information-line me-1"></i>
                             Allowed image types: JPG, JPEG, PNG (Maximum size: 1 MB).
                         </span>
@@ -204,7 +206,26 @@ export default function PartnerInformationSection({
             {/* Company Name */}
             <div className="col-lg-6">
                 <div className="mb-3">
-                    <label className="form-label">Company Name <span className="text-danger">*</span></label>
+                    <label className="form-label">
+                        Company Name <span className="text-danger">*</span>
+                        {formData.company_name && !partnerId && (
+                            <span className="ms-1 text-muted fw-normal" style={{ fontSize: '0.85em' }}>
+                                &nbsp;(Partner portal url be like : <code className="text-primary font-monospace">
+                               {formData.partner_domain ? (
+                                        <>
+                                            {formData.partner_domain}.
+                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {formData.company_name.toLowerCase().replace(/[^a-z]/g, '')}.
+                                            {new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                                        </>
+                                    )}
+                                </code>)
+                            </span>
+                        )}
+                    </label>
                     <input
                         type="text"
                         className={`form-control ${errors.company_name ? 'is-invalid' : ''}`}
@@ -216,6 +237,70 @@ export default function PartnerInformationSection({
                     {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
                 </div>
             </div>
+
+            {/* Portal URL / Custom Domain - Visible on create (all types) and edit (Certified only) */}
+            {showPartnerDomain && partnerId && formData.partner_type === PARTNER_TYPES.CERTIFIED && (
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Partner Subdomain <span className="text-danger">*</span>
+                        </label>
+                        <div className="input-group material-shadow">
+                            <input
+                                type="text"
+                                className={`form-control ${errors.partner_domain ? 'is-invalid' : ''}`}
+                                name="partner_domain"
+                                placeholder="Enter custom subdomain"
+                                value={formData.partner_domain ? formData.partner_domain.split('.')[0] : ''}
+                                onChange={(e) => {
+                                    const cleanedValue = e.target.value
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9-]/g, '')
+                                        .replace(/-+/g, '-')
+                                        .replace(/^[^a-z]+/g, '');
+                                    handleInputChange({ target: { name: 'partner_domain', value: cleanedValue } });
+                                }}
+                            />
+                            <span className="input-group-text text-muted px-3">
+                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                            </span>
+                        </div>
+                        {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
+                    </div>
+                </div>
+            )}
+            {showPartnerDomain && !partnerId && (
+                <div className="col-lg-6">
+                    <div className="mb-3">
+                        <label className="form-label">Partner Subdomain <span className="text-danger">*</span>
+                        </label>
+                        <div className="input-group material-shadow">
+                            <input
+                                type="text"
+                                className={`form-control ${formData.partner_type !== PARTNER_TYPES.CERTIFIED ? 'bg-light text-muted fw-medium' : ''} ${errors.partner_domain ? 'is-invalid' : ''}`}
+                                name="partner_domain"
+                                placeholder={formData.partner_type === PARTNER_TYPES.CERTIFIED ? "Enter custom subdomain" : ""}
+                                value={domainManuallyEditedRef.current
+                                    ? (formData.partner_domain || '')
+                                    : (formData.company_name ? formData.company_name.toLowerCase().replace(/[^a-z]/g, '') : '')
+                                }
+                                onChange={(e) => {
+                                    domainManuallyEditedRef.current = true;
+                                    const cleanedValue = e.target.value
+                                        .toLowerCase()
+                                        .replace(/[^a-z0-9-]/g, '')
+                                        .replace(/-+/g, '-')
+                                        .replace(/^[^a-z]+/g, '');
+                                    handleInputChange({ target: { name: 'partner_domain', value: cleanedValue } });
+                                }}
+                            />
+                            <span className="input-group-text text-muted px-3">
+                                .{new URL(import.meta.env.VITE_BASE_URL || window.location.href).host}
+                            </span>
+                        </div>
+                        {errors.partner_domain && <div className="invalid-feedback d-block mt-1">{errors.partner_domain}</div>}
+                    </div>
+                </div>
+            )}
 
             {/* Phone Number */}
             <div className="col-lg-6">
@@ -363,24 +448,28 @@ export default function PartnerInformationSection({
                 </div>
             </div>
 
-            {/* Joining Date - Flatpickr */}
+            {/* Joining Date - PrimeReact Calendar with Custom Styling */}
             <div className="col-lg-6">
                 <div className="mb-3">
                     <label className="form-label">Joining Date</label>
-                    <Flatpickr
-                        options={{ dateFormat: "d M, Y" }}
-                        value={parseDate(formData.joining_date)}
-                        onChange={(dates) => {
-                            const date = dates[0];
-                            const dateString = date
-                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                : "";
-                            handleInputChange({ target: { name: "joining_date", value: dateString } });
-                        }}
-                        className="form-control"
-                        placeholder="Select date"
-                        readOnly
-                    />
+                    <div className="custom-datepicker">
+                        <Calendar
+                            value={parseDate(formData.joining_date)}
+                            onChange={(e) => {
+                                const date = e.value;
+                                const dateString = date
+                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                    : "";
+                                handleInputChange({ target: { name: "joining_date", value: dateString } });
+                            }}
+                            dateFormat="dd M, yy"
+                            placeholder="Select date"
+                            showIcon
+                            className="w-100"
+                            appendTo="self"
+                            readOnlyInput
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -399,6 +488,8 @@ export default function PartnerInformationSection({
                     <input type="text" className="form-control" name="website" placeholder="Enter website" value={formData.website} onChange={handleInputChange} />
                 </div>
             </div>
+
+
 
             {/* Partner Type */}
             <div className="col-lg-6">
@@ -446,7 +537,7 @@ export default function PartnerInformationSection({
                             );
 
                             const options = matchedPlans.map(plan => ({
-                                label: `${plan.enrollment_type} ($${(plan.payment_amount || 0).toLocaleString()})`,
+                                label: `${plan.enrollment_type}`,
                                 value: plan.enrollment_type
                             }));
 

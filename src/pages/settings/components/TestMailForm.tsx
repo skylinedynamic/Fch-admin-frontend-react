@@ -1,45 +1,56 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useSendTestMail } from '../../../modules/settings/queries';
+import { SendTestMailPayload } from '../../../modules/settings/types';
 
-const TestMailForm = () => {
-    const [formData, setFormData] = useState({
+interface FormErrors {
+    email?: string | null;
+    body?: string | null;
+}
+
+const TestMailForm: React.FC = () => {
+    const [formData, setFormData] = useState<SendTestMailPayload>({
         email: '',
         body: ''
     });
-    const [errors, setErrors] = useState({});
+    const [errors, setErrors] = useState<FormErrors>({});
 
     const sendTestMailMutation = useSendTestMail();
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        if (errors[name]) {
+        if (errors[name as keyof FormErrors]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
-    const validate = () => {
-        const newErrors = {};
-        if (!formData.email) newErrors.email = 'Recipient email is required.';
-        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email address.';
+    const validate = (): boolean => {
+        const newErrors: FormErrors = {};
+        if (!formData.email) {
+            newErrors.email = 'Recipient email is required.';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Invalid email address.';
+        }
 
-        if (!formData.body) newErrors.body = 'Message body is required.';
+        if (!formData.body) {
+            newErrors.body = 'Message body is required.';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
 
         sendTestMailMutation.mutate(formData, {
-            onSuccess: (response) => {
+            onSuccess: (response: any) => {
                 toast.success(response.message || 'Test email sent successfully!');
                 setFormData({ email: '', body: '' });
             },
-            onError: (error) => {
+            onError: (error: any) => {
                 console.error('Failed to send test mail:', error);
                 toast.error(error.response?.data?.message || 'Failed to send test email.');
             }
@@ -75,7 +86,7 @@ const TestMailForm = () => {
                             <textarea
                                 name="body"
                                 className={`form-control ${errors.body ? 'is-invalid' : ''}`}
-                                rows="5"
+                                rows={5}
                                 placeholder="Write your test message here..."
                                 value={formData.body}
                                 onChange={handleInputChange}

@@ -14,7 +14,7 @@ import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
-import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 
 export default function ContactDetails() {
     const { id } = useParams();
@@ -290,7 +290,7 @@ export default function ContactDetails() {
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Contact Details</h4>
-                                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/contacts">Contacts</Link></li>

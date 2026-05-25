@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { toast } from 'react-toastify';
-import '../../../assets/css/datepicker.css';
 
 import {
   createEmployee,
@@ -24,7 +23,7 @@ import DepartmentModal from './components/DepartmentModal';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import FormLoader from '../../components/Loader/FormLoader';
-import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import { scrollToFirstError } from '../../utils/formUtils';
 
@@ -612,9 +611,8 @@ export default function EmployeeDetails() {
         // No toast notifications for validation errors - errors shown inline only
         // toast.error for validation errors removed as per requirement
       } else if (error.response?.data?.message) {
-        // Only show general error message in toast (not field-specific)
-        toast.error(error.response.data.message);
-      } else {
+        // No toast here to avoid double messages (handled by global interceptor)
+      } else if (error.response?.status !== 403) {
         toast.error(id ? 'Failed to update employee' : 'Failed to save employee');
       }
     } finally {
@@ -628,24 +626,18 @@ export default function EmployeeDetails() {
         {/* Header */}
         <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Employee Details</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <nav aria-label="breadcrumb">
                   <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item">
-                      <a href="index.html">Dashboard</a>
-                    </li>
-                    <li className="breadcrumb-item">
-                      <a href="employees.html">Employees</a>
-                    </li>
-                    <li className="breadcrumb-item active" aria-current="page">
-                      Employee Details
-                    </li>
+                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
+                    <li className="breadcrumb-item"><Link to="/employees">Employees</Link></li>
+                    <li className="breadcrumb-item active" aria-current="page">Employee Details</li>
                   </ol>
                 </nav>
               </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-0">
+              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                 <Link to="/employees" className="btn btn-outline-secondary w-lg waves-effect">
                   <i className="ri-arrow-left-line align-middle me-1"></i> Back
                 </Link>

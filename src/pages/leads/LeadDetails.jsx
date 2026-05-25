@@ -25,7 +25,8 @@ import {
 import { locationData } from '../../config';
 import { formatPhoneNumber } from '../../utils/formatters';
 import { useSummernote } from '../../hooks/useSummernote';
-import Flatpickr from 'react-flatpickr';
+import { Calendar } from 'primereact/calendar';
+
 import { parseDate as parseDateHelper, normalizeDate } from '../../utils/formatters';
 import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfig';
 import LeadConvertModal from './components/LeadConvertModal';
@@ -253,7 +254,7 @@ export default function LeadDetails() {
                     mappedErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 });
                 setErrors(mappedErrors);
-            } else {
+            } else if (err.response?.status !== 403) {
                 toast.error(err.response?.data?.message || 'Failed to save lead');
             }
         } finally {
@@ -292,7 +293,7 @@ export default function LeadDetails() {
                     flatErrors[key] = Array.isArray(val) ? val[0] : val;
                 });
                 setMissingInfoErrors(flatErrors);
-            } else {
+            } else if (err.response?.status !== 403) {
                 toast.error(err.response?.data?.message || 'Failed to update lead information');
             }
         } finally {
@@ -307,34 +308,14 @@ export default function LeadDetails() {
             const response = await convertLead(id, payload);
 
             if (response.status || response.id) {
-                const bId = response.data?.borrower?.id || response.data?.id || response.id;
-                const invId = response.data?.invoice?.id || null;
-
-                // If it's a borrower and there's an amount to pay, and no payment yet, and user is NOT a host
-                if (!isHost && targetType == ENTITY_TYPE_BORROWER && payload?.amount > 0 && !payload?.payment_intent_id) {
-                    setNewBorrowerId(bId);
-                    setPaymentAmount(payload.amount);
-                    setPaymentInvoiceId(invId);
-                    setShowConvertModal(false);
-                    // Add a small delay for LeadConvertModal to close before showing LeadPaymentModal
-                    setTimeout(() => {
-                        setShowPaymentModal(true);
-                    }, 300);
-                    toast.success(`Lead successfully converted. Please complete the payment.`);
-                    return;
-                }
-
                 toast.success(`Lead successfully converted to ${targetType}`);
                 setShowConvertModal(false);
-                setShowPaymentModal(false);
                 navigate('/leads');
             }
         } catch (err) {
             console.error('Conversion error:', err);
-            // Extract backend validation errors and show them inline in the modal
             const backendFieldErrors = err.response?.data?.errors;
             if (backendFieldErrors && typeof backendFieldErrors === 'object') {
-                // Flatten array values (Laravel returns arrays per field)
                 const flatErrors = {};
                 Object.keys(backendFieldErrors).forEach(key => {
                     const val = backendFieldErrors[key];
@@ -536,7 +517,7 @@ export default function LeadDetails() {
                     {/* Page Title */}
                     <div className="row page-subheader-sticky bg-body">
                         <div className="col-12">
-                            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
                                     <h4 className="fs-20 mb-1">Lead Profile</h4>
                                     <nav aria-label="breadcrumb">
@@ -547,7 +528,7 @@ export default function LeadDetails() {
                                         </ol>
                                     </nav>
                                 </div>
-                                <div className="d-flex gap-2">
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                     <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
@@ -1016,23 +997,24 @@ export default function LeadDetails() {
                                                             <div className="col-lg-6">
                                                                 <div className="mb-3">
                                                                     <label className="form-label">Business Start Date</label>
-                                                                    <Flatpickr
-                                                                        options={{
-                                                                            dateFormat: "Y-m-d",
-                                                                            altInput: true,
-                                                                            altFormat: "d M, Y"
-                                                                        }}
-                                                                        value={parseDateHelper(formData.business_start_date)}
-                                                                        onChange={(dates) => {
-                                                                            const date = dates[0];
-                                                                            const dateString = date
-                                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                                                : "";
-                                                                            handleInputChange({ target: { name: "business_start_date", value: dateString } });
-                                                                        }}
-                                                                        className={`form-control ${errors.business_start_date ? 'is-invalid' : ''}`}
-                                                                        placeholder="Select date"
-                                                                    />
+                                                                    <div className="custom-datepicker">
+                                                                        <Calendar
+                                                                            value={parseDateHelper(formData.business_start_date)}
+                                                                            onChange={(e) => {
+                                                                                const date = e.value;
+                                                                                const dateString = date
+                                                                                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                                    : "";
+                                                                                handleInputChange({ target: { name: "business_start_date", value: dateString } });
+                                                                            }}
+                                                                            dateFormat="dd M, yy"
+                                                                            placeholder="Select date"
+                                                                            showIcon
+                                                                            className="w-100"
+                                                                            appendTo="self"
+                                                                            readOnlyInput
+                                                                        />
+                                                                    </div>
                                                                     {errors.business_start_date && <div className="invalid-feedback d-block">{errors.business_start_date}</div>}
                                                                 </div>
                                                             </div>

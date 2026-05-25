@@ -242,10 +242,10 @@ export default function EditRole() {
       <div className="container-fluid">
         <div className="row pb-1 page-subheader-sticky bg-body">
           <div className="col-12">
-            <div className="d-flex align-items-center justify-content-between flex-row py-2">
+            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
               <div className="flex-grow-1">
                 <h4 className="fs-20 mb-1">Edit Roles &amp; Permissions</h4>
-                <nav aria-label="breadcrumb" className="d-none d-sm-block">
+                <nav aria-label="breadcrumb" className="d-block">
                   <ol className="breadcrumb m-0">
                     <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                     <li className="breadcrumb-item"><Link to="/roles-permissions">Roles &amp; Permissions</Link></li>
@@ -253,7 +253,7 @@ export default function EditRole() {
                   </ol>
                 </nav>
               </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-0">
+              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                 <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
                   <i className="ri-arrow-left-line align-middle me-1"></i> Back
                 </button>
@@ -322,38 +322,51 @@ export default function EditRole() {
                         {permsLoading && <PermissionCardsLoader />}
                         {permsError && !permsLoading && <ErrorState message="Failed to load permissions. Please try again." />}
                         {detailError && !permsLoading && <ErrorState message={detailError} />}
-                        <div className="row g-3 module-grid" style={{ display: permsLoading ? 'none' : undefined }}>
+                        <div className="permissions-list-wrapper mt-2" style={{ display: permsLoading ? 'none' : undefined }}>
                           {!permsLoading && modules.map((mod) => {
                             const allChecked = isModuleAllChecked(mod)
                             return (
-                              <div className="col-xl-3 col-lg-3" key={mod.key}>
-                                <div className={`module-card perm-section module-accent ${expanded[mod.key] ? 'open' : ''}`}>
-                                  <div className="module-header" role="button" aria-expanded={expanded[mod.key] ? 'true' : 'false'} onClick={() => toggleExpand(mod.key)}>
-                                    <div className="title-wrap">
-                                      <div>
-                                        <strong>{mod.name}</strong>
-                                        <div className="desc">{mod.desc}</div>
-                                      </div>
-                                    </div>
-                                    <div className="accordion-actions">
-                                      <div className="form-check form-switch m-0" onClick={(e) => e.stopPropagation()}>
-                                        <input className="form-check-input" type="checkbox" id={`selectAll-${mod.key}`} checked={allChecked} onChange={(e) => toggleModuleAll(mod, e.target.checked)} />
-                                        <label className="form-check-label" htmlFor={`selectAll-${mod.key}`}>Select all</label>
-                                      </div>
-                                      <span className="accordion-caret"><i className="ri-arrow-down-s-line"></i></span>
-                                    </div>
+                              <div className="card shadow-none border mb-3" key={mod.key}>
+                                <div className="card-header bg-light-subtle bg-opacity-75 border-bottom d-flex flex-wrap align-items-center justify-content-between p-3">
+                                  <div className="d-flex align-items-center gap-2">
+                                    <h6 className="card-title mb-0 fs-15 text-dark fw-semibold">
+                                      <i className="ri-folder-shield-2-line text-primary me-2 align-middle fs-16"></i>
+                                      {mod.name}
+                                    </h6>
+                                    {mod.desc && <span className="text-muted fs-13 ms-2 d-none d-sm-inline-block">({mod.desc})</span>}
                                   </div>
-                                  <div className="module-body" style={{ height: expanded[mod.key] ? 'auto' : '0px', opacity: expanded[mod.key] ? 1 : 0 }}>
-                                    <div className="d-block">
-                                      {mod.permissions.map((p) => {
-                                        const checked = !!selected[mod.key]?.[p.key]
-                                        return (
-                                          <label className="checkbox-pill" key={mod.key + '-' + p.key}>
-                                            <input type="checkbox" checked={checked} onChange={(e) => togglePerm(mod, p.key, e.target.checked)} /> <i className={p.icon}></i><span>{p.label}</span>
+                                  <div className="form-check form-switch m-0 d-flex align-items-center">
+                                    <input
+                                      className="form-check-input cursor-pointer"
+                                      type="checkbox"
+                                      id={`selectAll-${mod.key}`}
+                                      role="switch"
+                                      checked={allChecked}
+                                      onChange={(e) => toggleModuleAll(mod, e.target.checked)}
+                                    />
+                                    <label className="form-check-label fs-13 fw-medium text-dark ms-2 cursor-pointer" htmlFor={`selectAll-${mod.key}`}>Select All</label>
+                                  </div>
+                                </div>
+                                <div className="card-body p-3">
+                                  <div className="d-flex flex-wrap gap-3">
+                                    {mod.permissions.map((p) => {
+                                      const checked = !!selected[mod.key]?.[p.key]
+                                      return (
+                                        <div className="form-check form-check-inline m-0 me-4 py-1" key={mod.key + '-' + p.key}>
+                                          <input
+                                            className={`form-check-input cursor-pointer shadow-none ${checked ? 'border-primary' : 'border-secondary-subtle'}`}
+                                            type="checkbox"
+                                            id={`perm-${mod.key}-${p.key}`}
+                                            checked={checked}
+                                            onChange={(e) => togglePerm(mod, p.key, e.target.checked)}
+                                            style={{ width: "1.15em", height: "1.15em", marginTop: "0.15em" }}
+                                          />
+                                          <label className={`form-check-label cursor-pointer ms-1 fs-14 ${checked ? 'text-dark fw-medium' : 'text-muted'}`} htmlFor={`perm-${mod.key}-${p.key}`}>
+                                            {p.label}
                                           </label>
-                                        )
-                                      })}
-                                    </div>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               </div>

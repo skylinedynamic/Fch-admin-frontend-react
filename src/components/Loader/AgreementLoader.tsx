@@ -2,9 +2,8 @@ import React from 'react';
 
 /**
  * Skeleton loader for the Agreement Dashboard (List View)
- * Matches the AgreementDashboard.jsx structure exactly
  */
-export const AgreementDashboardLoader = () => {
+export const AgreementDashboardLoader: React.FC = () => {
     return (
         <div className="fade-panel h-100">
             {/* Header Area Skeleton */}
@@ -57,7 +56,7 @@ export const AgreementDashboardLoader = () => {
 /**
  * Skeleton loader for the Agreement Builder (Editor View)
  */
-export const AgreementBuilderLoader = () => {
+export const AgreementBuilderLoader: React.FC = () => {
     return (
         <div className="ab4-root fade-panel bg-light">
             {/* toolbar skeleton */}
@@ -93,9 +92,9 @@ export const AgreementBuilderLoader = () => {
                         <div className="skeleton-line mb-4 rounded sk-w-50p sk-h-28"></div>
                         <div className="skeleton-line mb-5 rounded sk-w-30p sk-h-14"></div>
                         <div className="skeleton-line mb-5 rounded w-100 sk-h-2"></div>
-                        
+
                         <div className="skeleton-line mb-4 rounded w-100 sk-h-120"></div>
-                        
+
                         <div className="row g-4 mb-5">
                             <div className="col-6"><div className="skeleton-line rounded sk-h-140"></div></div>
                             <div className="col-6"><div className="skeleton-line rounded sk-h-140"></div></div>
@@ -109,7 +108,7 @@ export const AgreementBuilderLoader = () => {
                 {/* property panel skeleton */}
                 <div className="ab4-props bg-white border-left p-3 sk-w-280">
                     <div className="skeleton-line mb-5 rounded sk-w-60p sk-h-20"></div>
-                    
+
                     <div className="mb-4">
                         <div className="skeleton-line mb-2 rounded sk-w-45p sk-h-10"></div>
                         <div className="skeleton-line rounded w-100 sk-h-38"></div>
@@ -123,7 +122,7 @@ export const AgreementBuilderLoader = () => {
                     <div className="mb-4">
                         <div className="skeleton-line mb-3 rounded sk-w-40p sk-h-10"></div>
                         <div className="d-flex gap-2">
-                             {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton-line rounded sk-w-32 sk-h-32"></div>)}
+                            {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton-line rounded sk-w-32 sk-h-32"></div>)}
                         </div>
                     </div>
 
@@ -137,7 +136,7 @@ export const AgreementBuilderLoader = () => {
 /**
  * Skeleton loader for the Agreement Signing Modal
  */
-export const AgreementSignModalLoader = () => {
+export const AgreementSignModalLoader: React.FC = () => {
     return (
         <div className="asm-overlay fade-panel">
             <div className="asm-main-wrapper">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import '../../../assets/css/dropdown-validation.css';
+import "../../../assets/css/dropdown-validation.css";
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import { createPartner, updatePartner, getPartner, allUsers, getSubscription, saveSubscription, fetchPartnerProfileStats, attachPartnerDocuments, getNextPartnerId, fetchPartnerPlans } from '../../modules/partner/services';
@@ -8,7 +8,7 @@ import { locationData, getCountryPhoneInfo } from '../../config/locations';
 import { PARTNER_TYPES, ENROLLMENT_TYPES, SUBSCRIPTION_PARTNER_TYPES, PARTNER_TYPE_OPTIONS, PAYMENT_TYPE_OPTIONS, PARTNER_INFORMATION_TYPE_OPTIONS } from '../../config/partnerTypeOptions';
 import { validateRequired, validateEmail, validatePhone } from '../../components/errors/validation';
 import PartnerForm from './components/PartnerForm';
-import avatarDefault from '../../../assets/images/users/avatar-1.jpg';
+import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
 import ActivityCreateModal from '../../components/Common/Modals/ActivityCreateModal';
 import ActivitySidebar from '../../components/Common/Activity/ActivitySidebar';
@@ -106,7 +106,9 @@ export default function PartnerProfile() {
         subscription_end_date: '',
         expiry_date: '',
         termination_date: '',
-        subscription_status: ''
+        subscription_status: '',
+        partner_domain: '',
+        borrower_domain: '',
     });
 
     // Fetch Partner Plans on mount
@@ -626,6 +628,12 @@ export default function PartnerProfile() {
                     // toast.error(message);
                 });
                 setErrors(prev => ({ ...prev, ...errorObj }));
+                requestAnimationFrame(() => {
+                    const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+                    if (firstErrorField) {
+                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
             } else if (error.response?.data?.message) {
                 toast.error(error.response.data.message);
             } else {
@@ -703,6 +711,18 @@ export default function PartnerProfile() {
                             if (!formDataToSend.has('monthly_platform_fee')) {
                                 formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
                             }
+                        } else if (key === 'partner_domain') {
+                            // Send partner_domain on create (all types) or update (Certified only)
+                            const shouldSend = !id || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+                            if (shouldSend && value && typeof value === 'string') {
+                                const cleanValue = value.trim();
+                                if (cleanValue !== '') {
+                                    const firstPart = cleanValue.split('.')[0];
+                                    formDataToSend.append('partner_domain', firstPart);
+                                }
+                            }
+                        } else if (key === 'borrower_domain') {
+                            // Do not send borrower_domain
                         } else if (value !== '' && value !== null) {
                             formDataToSend.append(key, value);
                         }
@@ -715,7 +735,7 @@ export default function PartnerProfile() {
                     // Force refresh both local form data and global user session
                     await fetchPartnerData(true);
                     await refreshUserData();
-                    
+
                     toast.success('Partner updated successfully');
                     window.dispatchEvent(new Event('refreshActivities'));
 
@@ -739,7 +759,7 @@ export default function PartnerProfile() {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Failed to attach documents');
                     }
-                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription'];
+                    const tabOrder = ['personalDetails', 'statusAgent', 'documents', 'clientList', 'subscription', 'tenantConfig'];
                     const currentIndex = tabOrder.indexOf(activeTab);
                     const nextTab = tabOrder[currentIndex + 1];
 
@@ -795,6 +815,12 @@ export default function PartnerProfile() {
                         newErrors[field] = message;
                     });
                     setErrors(newErrors);
+                    requestAnimationFrame(() => {
+                        const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+                        if (firstErrorField) {
+                            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
                 } else if (error.response?.data?.message) {
                     toast.error(error.response.data.message);
                 } else {
@@ -827,7 +853,9 @@ export default function PartnerProfile() {
                                 <Link to="/partners" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {!['documents', 'clientList', 'subscription', 'agreement'].includes(activeTab) && (
+
+                                {/* Generic Partner Save Button */}
+                                {!['documents', 'clientList', 'subscription', 'agreement', 'tenantConfig'].includes(activeTab) && (
                                     ((id && hasPermission('update partners')) || (!id && hasPermission('create partners'))) && (
                                         <button type="button" onClick={handleSave} className="btn btn-primary w-lg waves-effect" disabled={isSaving || isPartnerLoading}>
                                             {isSaving ? (
@@ -842,6 +870,22 @@ export default function PartnerProfile() {
                                             )}
                                         </button>
                                     )
+                                )}
+
+                                {/* Specific Tenant Config Save Button */}
+                                {activeTab === 'tenantConfig' && id && hasPermission('update partners') && (
+                                    <button type="submit" form="tenant-config-form" className="btn btn-primary w-lg waves-effect" disabled={isSaving}>
+                                        {isSaving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-3-line align-middle me-1"></i> Update
+                                            </>
+                                        )}
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -925,6 +969,18 @@ export default function PartnerProfile() {
                                             <i className="far fa-list-alt"></i> Subscription
                                         </a>
                                     </li>
+                                    {formData.partner_type === PARTNER_TYPES.WHITE_LABEL && Number(formData.is_host) == 0 && (
+                                        <li className="nav-item">
+                                            <a
+                                                className={`nav-link ${activeTab === 'tenantConfig' ? 'active' : ''} ${!id ? 'disabled' : ''}`}
+                                                onClick={() => id && setActiveTab('tenantConfig')}
+                                                role="tab"
+                                                style={{ cursor: id ? 'pointer' : 'not-allowed', opacity: id ? 1 : 0.5 }}
+                                            >
+                                                Tenant Config
+                                            </a>
+                                        </li>
+                                    )}
                                     {formData.has_sign && Number(formData.is_host) == 0 && (
                                         <li className="nav-item">
                                             <a
@@ -952,12 +1008,13 @@ export default function PartnerProfile() {
                                     cities={cities}
                                     users={users}
                                     partnerId={id}
-                                    loading={isPartnerLoading || isSaving}
+                                    loading={isPartnerLoading}
                                     onSelectedFilesChange={setSelectedDocumentsToAttach}
                                     documentsReloadKey={documentsReloadKey}
                                     documentsClearKey={documentsClearKey}
                                     partnerPlans={partnerPlans}
                                     onRefresh={handleRefresh}
+                                    setIsSaving={setIsSaving}
                                 />
                             </div>
                         </div>
@@ -966,7 +1023,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading || isSaving} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} />
                         </div>
                     )}
                 </div>
