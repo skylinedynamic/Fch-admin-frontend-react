@@ -17,6 +17,14 @@ interface TemplateInfo {
   template_html: string
 }
 
+declare global {
+  interface Window {
+    validateDoc?: () => { valid: boolean }
+    getFilledHTML?: () => string
+    extractFieldValues?: () => Record<string, any>
+  }
+}
+
 export default function AgreementSignModal() {
   const [visible, setVisible] = useState(false)
   const [template, setTemplate] = useState<TemplateInfo | null>(null)
@@ -197,13 +205,12 @@ export default function AgreementSignModal() {
   async function handleSubmit() {
     if (!template || !agreed) return
 
-    let filledHTML = null;
+    let filledHTML: string | null = null;
+    let fieldValues: Record<string, any> = {};
 
-    // Reach into iframe to trigger native validation & extract data
     const iframe = iframeRef.current
     if (iframe && (iframe.contentWindow || iframe.contentDocument)) {
       const win = iframe.contentWindow as any
-      // If our custom validation script is ready, use it
       if (win && typeof win.validateDoc === 'function') {
         const result = win.validateDoc()
         if (!result.valid) {
@@ -212,12 +219,14 @@ export default function AgreementSignModal() {
           return
         }
 
-        // Extract filled HTML
         if (typeof win.getFilledHTML === 'function') {
           filledHTML = win.getFilledHTML();
         }
+
+        if (typeof win.extractFieldValues === 'function') {
+          fieldValues = win.extractFieldValues();
+        }
       }
-      // Fallback: Check if there's any required field manually
       else if (iframe.contentDocument) {
         const reqs = iframe.contentDocument.querySelectorAll('[required]') as any
         for (let r of reqs) {
@@ -240,7 +249,8 @@ export default function AgreementSignModal() {
     try {
       const res = await submitAgreementSign({
         agreement_template_id: template.id,
-        content_html: filledHTML
+        content_html: filledHTML,
+        field_values: fieldValues,
       })
       if (res?.status) {
         setSuccess(true)

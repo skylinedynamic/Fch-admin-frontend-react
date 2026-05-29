@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { useAgreement, useSaveAgreement } from '../../../../modules/agreement';
+import { useAuthStore } from '../../../../store/auth/authStore';
+
 import {
     PALETTE,
     makeBlock,
@@ -17,8 +19,12 @@ import { BlockList, InsertZone } from './BlockComponents';
 // @ts-ignore
 import { PropertyPanel } from './PropertyPanel';
 import { AgreementBuilderLoader } from '../../../../components/Loader/AgreementLoader';
+import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
+import type { FileSystemItem } from '../../../../modules/filemanager/types';
 
 const AgreementBuilder: React.FC = () => {
+    const { user } = useAuthStore();
+    const partnerId = user?.partner_id || user?.entity_id || 0;
     const [screen, setScreen] = useState<'dashboard' | 'builder'>('dashboard');
     const [editingType, setEditingType] = useState<'partner' | 'borrower' | null>(null);
     const [agreementId, setAgreementId] = useState<number | null>(null);
@@ -37,8 +43,9 @@ const AgreementBuilder: React.FC = () => {
     const [docBg, setDocBg] = useState<string>('#ffffff');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [fmOpen, setFmOpen] = useState<boolean>(false);
+    const [fmTargetBlockId, setFmTargetBlockId] = useState<string | null>(null);
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const previewRef = useRef<HTMLIFrameElement>(null);
 
     const { data: savedAgreement, isLoading: loadingAgreement } = useAgreement(editingType as any, !!editingType);
@@ -120,19 +127,18 @@ const AgreementBuilder: React.FC = () => {
     const selected = findBlock(selectedId);
     const u = (val: Partial<AgreementBlock>) => onUpdate(selectedId, val);
 
-    // Logo upload handler
-    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !fileInputRef.current) return;
-        const r = new FileReader();
-        const blockId = fileInputRef.current.dataset.blockId;
-        r.onload = ev => {
-            if (blockId && ev.target?.result) {
-                onUpdate(blockId, { logoSrc: ev.target.result as string });
-            }
-        };
-        r.readAsDataURL(file);
-        e.target.value = '';
+    // Logo/image upload via FileManager modal
+    const handleFmSelect = (files: FileSystemItem[]) => {
+        if (fmTargetBlockId && files[0]?.url) {
+            onUpdate(fmTargetBlockId, { logoSrc: files[0].url });
+        }
+        setFmOpen(false);
+        setFmTargetBlockId(null);
+    };
+
+    const openFmForBlock = (blockId: string) => {
+        setFmTargetBlockId(blockId);
+        setFmOpen(true);
     };
 
     const html = useMemo(() => {
@@ -179,7 +185,17 @@ const AgreementBuilder: React.FC = () => {
 
     return (
         <div className="ab4-root fade-panel">
-            <input ref={fileInputRef} type="file" accept="image/*" className="d-none" onChange={onFileChange} />
+<FileManagerModal
+                isOpen={fmOpen}
+                toggle={() => setFmOpen(!fmOpen)}
+                selectionMode
+                section="Agreements"
+                initialPath="/"
+                entityType="agreements"
+                entityId={partnerId || 1}
+                getAll={false}
+                onSelectFiles={handleFmSelect}
+            />
             <div className="ab4-toolbar">
                 <div className="d-flex align-items-center gap-3">
                     <button className="ab4-mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} title="Toggle palette">
@@ -248,7 +264,7 @@ const AgreementBuilder: React.FC = () => {
                                             onUpdate={onUpdate} onDelete={(id: string) => setBlocks(prev => prev.filter(b => b.id !== id))}
                                             onMove={onMove} onInsert={onInsert}
                                             selectedId={selectedId} onSelect={setSelectedId} onFocused={setFocusedId} onBlurred={() => setFocusedId(null)}
-                                            fileInputRef={fileInputRef}
+                                            openFmForBlock={openFmForBlock}
                                             pagePad={pagePad} docBg={docBg} />
                                     )}
                                 </div>

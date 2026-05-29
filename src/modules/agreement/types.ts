@@ -2,7 +2,7 @@ export interface AgreementTemplate {
   id?: number
   partner_id?: number | null
   slug: string
-  template_html: string
+  template_html?: string
   template_json?: string | null
   is_active?: boolean
   created_at?: string

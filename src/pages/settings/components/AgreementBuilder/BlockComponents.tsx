@@ -157,7 +157,7 @@ interface BlockBodyProps {
 
 // ── Single block's inner content ──────────────────────────────────────────────
 function BlockBody({ block, helpers }: BlockBodyProps) {
-    const { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, fileInputRef, selectedId } = helpers;
+    const { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock } = helpers;
     const blockVars = {
         '--bg': block.bgColor,
         '--radius': `${block.borderRadius}px`,
@@ -190,12 +190,12 @@ function BlockBody({ block, helpers }: BlockBodyProps) {
                         // @ts-ignore
                         '--align': block.logoAlign, '--mt': `${block.marginTop}px`, '--mb': `${block.marginBottom}px`
                     }}>
-                        <div className="ab4-logo-ph" onClick={() => { if (fileInputRef.current) { fileInputRef.current.dataset.blockId = block.id; fileInputRef.current.click(); } }}>
+                        <div className="ab4-logo-ph" onClick={() => openFmForBlock && openFmForBlock(block.id)}>
                             {block.logoSrc ? <img src={block.logoSrc} alt="Logo" className="ab4-logo-img" style={{
                                 // @ts-ignore
                                 '--w': block.logoFullWidth ? '100%' : `${block.logoWidth}px`
                             }} />
-                                : <><i className="ri-image-add-line" /><span>Click to upload</span></>}
+                                : <><i className="ri-image-add-line" /><span>Click to browse</span></>}
                         </div>
                     </div>
                 )}
@@ -227,7 +227,7 @@ function BlockBody({ block, helpers }: BlockBodyProps) {
                                             arr.splice(idx, 0, makeBlock(type));
                                             onUpdate(block.id, { [listKey]: arr });
                                         }}
-                                        selectedId={selectedId} onSelect={onSelect} onFocused={onFocused} onBlurred={onBlurred} fileInputRef={fileInputRef} isNested />
+                                        selectedId={selectedId} onSelect={onSelect} onFocused={onFocused} onBlurred={onBlurred} isNested />
                                 </div>
                             );
                         })}
@@ -244,7 +244,7 @@ function BlockBody({ block, helpers }: BlockBodyProps) {
                 {block.type === 'checkbox' && <div className="ab4-field"><div className="ab4-cb-row"><input type="checkbox" readOnly className="ab4-cb" /><div className="ab4-cb-lbl">{block.fieldLabel}{block.fieldRequired ? ' *' : ''}</div></div></div>}
                 {block.type === 'signature' && (
                     <div className="ab4-sig">
-                        <div className="ab4-sig-col ab4-sig-col--drop" onClick={() => { if (fileInputRef.current) { fileInputRef.current.dataset.blockId = block.id; fileInputRef.current.click(); } }}>
+                        <div className="ab4-sig-col ab4-sig-col--drop" onClick={() => openFmForBlock && openFmForBlock(block.id)}>
                             {block.logoSrc ? <img src={block.logoSrc} style={{ maxHeight: 45 }} alt="" /> : <i className="ri-quill-pen-line ab4-sig-icon" />}
                             <div className="ab4-sig-meta">{block.fieldLabel || 'SIGNATURE'}</div>
                         </div>
@@ -269,7 +269,7 @@ interface BlockListProps {
     onSelect: (id: string | null) => void;
     onFocused: (id: string) => void;
     onBlurred: () => void;
-    fileInputRef: React.RefObject<HTMLInputElement>;
+    openFmForBlock?: (blockId: string) => void;
     pagePad?: number;
     docBg?: string;
     isNested?: boolean;
@@ -279,7 +279,7 @@ interface BlockListProps {
 export function BlockList({
     blocks, onUpdate, onDelete, onMove, onInsert,
     selectedId, onSelect, onFocused, onBlurred,
-    fileInputRef, pagePad, docBg, isNested = false,
+    openFmForBlock, pagePad, docBg, isNested = false,
 }: BlockListProps) {
     // pages[i] = array of block indices that belong on page i
     const [pages, setPages] = useState<number[][]>(() => [blocks.map((_, i) => i)]);
@@ -317,7 +317,7 @@ export function BlockList({
         return () => clearTimeout(rafRef.current);
     }, [blocks, distribute, isNested]);
 
-    const helpers = { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, fileInputRef, selectedId };
+    const helpers = { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock };
 
     // ── Nested (inside Parties block) — no pagination ──────────────────────────
     if (isNested) {

@@ -16,7 +16,7 @@ export async function fetchAgreements(): Promise<ApiResponse<AgreementTemplate[]
 export async function saveAgreement(payload: {
   id?: number
   slug: AgreementSlug
-  template_html: string
+  template_html?: string
   template_json?: string
 }): Promise<ApiResponse<AgreementTemplate>> {
   try {
@@ -83,6 +83,7 @@ export async function checkAgreementSign(): Promise<ApiResponse<AgreementSignChe
 export async function submitAgreementSign(payload: {
   agreement_template_id: number
   content_html?: string | null
+  field_values?: Record<string, any> | null
 }): Promise<ApiResponse<null>> {
   const res = await apiClient.post('/common/agreement-sign/submit', payload)
   return res.data

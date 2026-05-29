@@ -290,6 +290,28 @@ export const PREVIEW_JS = `
   attachDropzone();
   if (document.readyState === 'complete') init();
   else window.addEventListener('load', init);
+
+  window.extractFieldValues = function() {
+    var form = document.querySelector('form') || document.getElementById('agreement-form') || document.body;
+    var values = {};
+    var fieldIndex = 0;
+    var inputs = form.querySelectorAll('input, textarea, select');
+    for (var i = 0; i < inputs.length; i++) {
+      var field = inputs[i];
+      if (field.id === 'preview-upload' || field.type === 'file' || field.type === 'hidden' || field.type === 'submit' || field.id === 'hidden-submit') continue;
+      if (field.type === 'checkbox') {
+        values['field_' + fieldIndex] = field.checked;
+        fieldIndex++;
+      } else if (field.classList.contains('p-sig-input') || field.classList.contains('flatpickr')) {
+        values['field_' + fieldIndex] = field.value || '';
+        fieldIndex++;
+      } else if (field.type !== 'file' && window.getComputedStyle(field).display !== 'none') {
+        values['field_' + fieldIndex] = field.value || '';
+        fieldIndex++;
+      }
+    }
+    return values;
+  };
 `;
 
 /* ── HTML Generation Helper ──────────────────────────────────────────────── */
