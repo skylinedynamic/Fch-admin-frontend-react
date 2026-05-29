@@ -628,6 +628,12 @@ export default function PartnerProfile() {
                     // toast.error(message);
                 });
                 setErrors(prev => ({ ...prev, ...errorObj }));
+                requestAnimationFrame(() => {
+                    const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+                    if (firstErrorField) {
+                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
             } else if (error.response?.data?.message) {
                 toast.error(error.response.data.message);
             } else {
@@ -706,13 +712,13 @@ export default function PartnerProfile() {
                                 formDataToSend.append('monthly_platform_fee', formData.monthly_platform_fee || formData.recurring_amount || '');
                             }
                         } else if (key === 'partner_domain') {
-                            if (formData.partner_type === PARTNER_TYPES.CERTIFIED) {
-                                if (value && typeof value === 'string') {
-                                    const cleanValue = value.trim();
-                                    if (cleanValue !== '') {
-                                        const firstPart = cleanValue.split('.')[0];
-                                        formDataToSend.append('partner_domain', firstPart);
-                                    }
+                            // Send partner_domain on create (all types) or update (Certified only)
+                            const shouldSend = !id || formData.partner_type === PARTNER_TYPES.CERTIFIED;
+                            if (shouldSend && value && typeof value === 'string') {
+                                const cleanValue = value.trim();
+                                if (cleanValue !== '') {
+                                    const firstPart = cleanValue.split('.')[0];
+                                    formDataToSend.append('partner_domain', firstPart);
                                 }
                             }
                         } else if (key === 'borrower_domain') {
@@ -809,6 +815,12 @@ export default function PartnerProfile() {
                         newErrors[field] = message;
                     });
                     setErrors(newErrors);
+                    requestAnimationFrame(() => {
+                        const firstErrorField = document.querySelector('.is-invalid, .p-invalid');
+                        if (firstErrorField) {
+                            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
                 } else if (error.response?.data?.message) {
                     toast.error(error.response.data.message);
                 } else {

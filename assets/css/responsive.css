@@ -1,3 +1,35 @@
+/* ============================================================
+   SIDEBAR LOGO — Responsive
+   Desktop defaults + mobile scale-downs
+   ============================================================ */
+
+/* Desktop base sizes */
+.sidebar-logo-lg {
+    width: 200px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.sidebar-logo-sm {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Header topbar desktop logo base */
+header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+    height: 40px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+}
+
+header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
+}
+
 :root {
     --primary-color: var(--primary-color);
     --secondary-color: var(--secondary-color);
@@ -64,11 +96,12 @@
 
     .vertical-sidebar-enable .app-menu .navbar-brand-box {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
-        justify-content: center !important;
-        padding: 20px 15px !important;
-        height: 110px !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding: 12px 16px !important;
+        height: 70px !important;
         background: var(--primary-color) !important;
         position: sticky !important;
         top: 0 !important;
@@ -82,6 +115,7 @@
 
     .app-menu .navbar-brand-box .logo-light {
         display: block !important;
+        text-align: left !important;
     }
 
     .app-menu .navbar-brand-box .logo-light .logo-sm {
@@ -90,18 +124,33 @@
 
     .app-menu .navbar-brand-box .logo-light .logo-lg {
         display: block !important;
+        text-align: left !important;
     }
 
-    .app-menu .navbar-brand-box .logo-lg img {
-        max-width: 180px !important;
+    .vertical-sidebar-enable .app-menu .navbar-brand-box .logo-light {
+        text-align: left !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 220px !important;
+        width: auto !important;
         height: auto !important;
-        max-height: 70px !important;
+        max-height: 60px !important;
         display: block !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
+        object-fit: contain !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 32px !important;
+        width: auto !important;
+        object-fit: contain !important;
     }
 
     #scrollbar {
-        height: calc(100vh - 110px) !important;
+        height: calc(100vh - 70px) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch !important;
@@ -163,6 +212,7 @@
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
+        text-align: left !important;
         padding: 0 10px !important;
         width: auto !important;
         min-width: 150px !important;
@@ -180,13 +230,24 @@
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        text-align: left !important;
     }
 
-    header#page-topbar .navbar-header .logo-lg img {
-        height: 32px !important;
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        height: 36px !important;
         width: auto !important;
         max-width: 160px !important;
         display: block !important;
+        object-fit: contain !important;
+        margin: 0 !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 28px !important;
+        width: auto !important;
+        object-fit: contain !important;
     }
 
     .topbar-user,
@@ -663,6 +724,12 @@
         font-size: 17px !important;
     }
 
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 180px !important;
+        height: 45px !important;
+    }
+
 
     /* ────────────────────────────────────────────────────────
        2. PAGE HEADER (title left, button right)
@@ -926,8 +993,32 @@
         /* FIX: was 80px — caused bottom dead space */
     }
 
+    /* Sidebar logo on small phones */
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 200px !important;
+        max-height: 55px !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 28px !important;
+    }
+
+    /* Header topbar logo on small phones */
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        max-width: 140px !important;
+        height: 32px !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 26px !important;
+    }
+
     #scrollbar {
-        height: calc(100svh - 110px) !important;
+        height: calc(100svh - 70px) !important;
     }
 
 
@@ -994,6 +1085,12 @@
 
     .d-flex.align-items-center.justify-content-between.flex-row h4 {
         font-size: 15px !important;
+    }
+
+    /* Auth page logo */
+    .auth-logo-img {
+        max-width: 150px !important;
+        height: 38px !important;
     }
 
     .btn-group>.btn {
@@ -1068,6 +1165,30 @@
 
     .app-menu.navbar-menu {
         padding-bottom: 0 !important;
+    }
+
+    /* Sidebar logo on tiny phones */
+    .app-menu .navbar-brand-box .logo-lg img,
+    .app-menu .navbar-brand-box .logo-lg .sidebar-logo-lg {
+        max-width: 170px !important;
+        max-height: 48px !important;
+    }
+
+    .app-menu .navbar-brand-box .logo-sm img,
+    .app-menu .navbar-brand-box .logo-sm .sidebar-logo-sm {
+        height: 26px !important;
+    }
+
+    /* Header topbar logo on tiny phones */
+    header#page-topbar .navbar-header .logo-lg img,
+    header#page-topbar .navbar-header .logo-lg .sidebar-logo-lg {
+        max-width: 120px !important;
+        height: 28px !important;
+    }
+
+    header#page-topbar .navbar-header .logo-sm img,
+    header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
+        height: 24px !important;
     }
 
 }

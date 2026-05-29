@@ -19,6 +19,15 @@ File: Custom Css File
   background: var(--primary-color) !important;
 }
 
+/* Auth page logo base */
+.auth-logo-img {
+  max-width: 250px;
+  width: auto;
+  height: 70px;
+  display: block;
+  object-fit: contain;
+}
+
 /* NAVIGATION TEXT (WHITE) */
 .navbar-menu .navbar-nav .nav-link,
 .navbar-menu .navbar-nav .nav-sm .nav-link,
@@ -1367,4 +1376,8 @@ File: Custom Css File
 
 .navbar-menu {
   border-right: 1px solid var(--primary-color) !important;
+}
+
+.logo{
+  line-height: 60px !important;
 }
