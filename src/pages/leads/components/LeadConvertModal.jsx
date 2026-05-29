@@ -315,7 +315,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                                 )}
 
                                                 {/* Partner Invoice row — shown when fixedEnrollmentAmount exists */}
-                                                {fixedEnrollmentAmount > 0 && (
+                                                {!isHost && fixedEnrollmentAmount > 0 && (
                                                     <>
                                                         <div className="d-flex justify-content-between align-items-center mb-1">
                                                             <span style={{ fontWeight: 600 }} className="text-warning">
@@ -460,7 +460,7 @@ export default function LeadConvertModal({ show, onHide, onConfirm, lead, target
                                         )}
 
                                         {/* Partner Fee Summary Card */}
-                                        {selectedPartnerPlan && (
+                                        {!isHost && selectedPartnerPlan && (
                                             <div className="border rounded-3 px-4 py-3 animate__animated animate__fadeInUp">
 
                                                 {/* Partner Invoice row */}
