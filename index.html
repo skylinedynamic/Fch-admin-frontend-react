@@ -20,6 +20,21 @@
             if (secondary && secondary !== 'null') {
               document.documentElement.style.setProperty('--secondary-color', secondary);
             }
+            // Dynamic favicon from cached branding
+            var fav = branding.favicon_full_url || branding.favicon;
+            if (fav && fav !== 'null') {
+              var existing = document.querySelector("link[rel~='icon']");
+              if (existing) { existing.href = fav; }
+              else {
+                var favLink = document.createElement('link');
+                favLink.rel = 'icon';
+                favLink.href = fav;
+                document.head.appendChild(favLink);
+              }
+            }
+            if (branding.site_name) {
+              document.title = branding.site_name;
+            }
           }
         }
       } catch (e) {

@@ -18,6 +18,17 @@ export default function Auth({ header, children, belowCard, colClass = 'col-xl-5
           if (res.data.secondary_color) {
             document.documentElement.style.setProperty('--secondary-color', res.data.secondary_color);
           }
+          const faviconUrl = res.data.favicon_full_url || res.data.favicon;
+          if (faviconUrl && faviconUrl !== 'null') {
+            document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
+            const link = document.createElement('link');
+            link.rel = 'icon';
+            link.href = faviconUrl.includes('?') ? `${faviconUrl}&_t=${Date.now()}` : `${faviconUrl}?_t=${Date.now()}`;
+            document.head.appendChild(link);
+          }
+          if (res.data.site_name) {
+            document.title = res.data.site_name;
+          }
         }
       })
       .catch((err) => {

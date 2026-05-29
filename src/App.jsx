@@ -55,6 +55,7 @@ import SiteSettings from './pages/cms/SiteSettings.tsx';
 import { useSiteSettings } from './modules/cms/queries';
 import { useGlobalConfigurations } from './modules/settings/queries';
 import { useConfigStore } from './store/config';
+import { useQueryClient } from '@tanstack/react-query';
 import Resource from './pages/resources/Resource.tsx';
 import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
@@ -78,21 +79,26 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 // Icon Libraries
 
 export default function App() {
-  useEffect(() => {
-    // Check session immediately on app load
-    checkSession();
-    // Refresh user details to ensure permissions/subscription are up to date
-    refreshSubscription();
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
 
-    // Optional: Set up periodic session validation (every 5 minutes)
+  useEffect(() => {
+    checkSession();
+
     const intervalId = setInterval(() => {
       checkSession();
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
   }, []);
 
-  const user = useAuthStore((state) => state.user);
+  useEffect(() => {
+    if (token) {
+      refreshSubscription();
+      queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
+    }
+  }, [token]);
 
   // Fetch authenticated global configurations (branding + status flags)
   const { data: globalConfigData } = useGlobalConfigurations(!!user);
@@ -115,18 +121,12 @@ export default function App() {
       }
 
       // 2. Dynamic Favicon
-      const currentFavicon = favicon_full_url;
-
-      if (currentFavicon && currentFavicon !== 'null') {
-        const faviconUrl = currentFavicon;
-
-        let link = document.querySelector("link[rel~='icon']");
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.getElementsByTagName('head')[0].appendChild(link);
-        }
-        link.href = faviconUrl;
+      if (favicon_full_url && favicon_full_url !== 'null') {
+        document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
+        const favLink = document.createElement('link');
+        favLink.rel = 'icon';
+        favLink.href = favicon_full_url.includes('?') ? `${favicon_full_url}&_t=${Date.now()}` : `${favicon_full_url}?_t=${Date.now()}`;
+        document.head.appendChild(favLink);
       }
 
       // 3. Dynamic CSS Variables
