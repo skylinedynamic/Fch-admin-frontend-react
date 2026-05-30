@@ -27,6 +27,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     const { hasPermission } = usePermissions();
     const user = useAuthStore((state) => state.user);
+    const [agreementKey, setAgreementKey] = React.useState(0);
 
     const sections: Array<{ id: string; label: string; icon: string }> = [];
     if (hasPermission('update payment settings')) {
@@ -135,7 +136,12 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                                 key={section.id}
                                 type="button"
                                 className={`list-group-item list-group-item-action d-flex align-items-center gap-2 rounded-2 border-0 py-2 px-3 mb-1 fs-14 ${activeSection === section.id ? 'active' : 'text-body'}`}
-                                onClick={() => setActiveSection(section.id)}
+                                onClick={() => {
+                                    setActiveSection(section.id);
+                                    if (section.id === 'agreement') {
+                                        setAgreementKey(k => k + 1);
+                                    }
+                                }}
                             >
                                 <i className={`${section.icon} fs-15 ${activeSection === section.id ? '' : 'text-muted'}`}></i>
                                 <span className="fw-medium">{section.label}</span>
@@ -153,7 +159,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
             <div className="col-lg-9">
                 {activeSection === 'agreement' ? (
                     <div className="card p-0 overflow-hidden">
-                        <AgreementBuilder />
+                        <AgreementBuilder key={agreementKey} />
                     </div>
                 ) : activeSection === 'test_mail' ? (
                     <TestMailForm />

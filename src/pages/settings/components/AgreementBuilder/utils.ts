@@ -4,7 +4,7 @@ export const PREVIEW_CSS = `
   .page-sep{width:210mm;height:15px;background: #e8edf5;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
   .page-sep::before{content:''}
   .page-sep::after{content:'';}
-  .doc{width:210mm;min-height:297mm;background:var(--doc-bg);padding:var(--doc-pad);box-sizing:border-box;border-radius:0}
+  .doc{width:210mm;height:297mm;overflow:hidden;background:var(--doc-bg);padding:var(--doc-pad-top) var(--doc-pad-sides) var(--doc-pad-bot);box-sizing:border-box;border-radius:0}
   .p-text          { white-space: pre-wrap; margin-bottom: 10px; font-size: var(--fs); font-weight: var(--fw); text-align: var(--ta); text-decoration: var(--td); font-style: var(--fst); color: var(--color); font-family: var(--ff); line-height: var(--lh); letter-spacing: var(--ls); background: var(--bg); border-radius: var(--radius); padding: var(--pad); opacity: var(--opacity); }
   .p-field         { margin-bottom: 22px; display: flex; flex-direction: column; gap: 4px; }
   .p-input-wrap    { position: relative; width: 100%; display: flex; align-items: flex-end; gap: 8px; }
@@ -67,18 +67,19 @@ export const PREVIEW_CSS = `
     .doc { 
       box-shadow: none !important; 
       width: 210mm !important; 
+      height: 297mm !important;
       margin: 0 auto !important;
-      padding: var(--doc-pad) !important; 
+      padding: var(--doc-pad-top) var(--doc-pad-sides) var(--doc-pad-bot) !important; 
       border-radius: 0 !important; 
-      min-height: 297mm !important; 
       page-break-after: always !important; 
       break-after: page !important; 
       box-sizing: border-box !important;
       background: var(--doc-bg) !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      overflow: hidden !important;
     }
-    .doc:last-of-type { page-break-after: avoid !important; break-after: avoid !important; }
+    .doc:last-of-type { page-break-after: avoid !important; break-after: avoid !important; height: auto !important; min-height: auto !important; overflow: visible !important; }
   }
   .p-error {
     color: #F06548;
@@ -374,7 +375,7 @@ export const getAgreementHtml = (blocks, { pagePad, docBg } = {}) => `<!DOCTYPE 
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
-    :root { --doc-bg: ${docBg || '#ffffff'}; --doc-pad: ${pagePad || 80}px; }
+    :root { --doc-bg: ${docBg || '#ffffff'}; --doc-pad: ${pagePad || 80}px; --doc-pad-top: ${Math.round((pagePad || 80) * 0.9)}px; --doc-pad-sides: ${pagePad || 80}px; --doc-pad-bot: ${pagePad || 80}px; }
     ${PREVIEW_CSS}
   </style>
 </head>

@@ -6,9 +6,6 @@ import { AgreementBlock } from './types';
 
 // ── A4 at 96 dpi ─────────────────────────────────────────────────────────────
 const A4_H = 1123;  // px  (297mm)
-const PAGE_PAD_TOP = 72;
-const PAGE_PAD_BOTTOM = 96;
-const USABLE_H = A4_H - PAGE_PAD_TOP - PAGE_PAD_BOTTOM; // 955px
 
 interface TextBlockProps {
     block: AgreementBlock;
@@ -287,14 +284,23 @@ export function BlockList({
     const rafRef = useRef<any>(null);
 
     const distribute = useCallback(() => {
-        const usable = USABLE_H; // 955px
+        const padTop = Math.round((pagePad || 80) * 0.9);
+        const padBot = pagePad || 80;
+        const usable = A4_H - padTop - padBot;
         const newPages: number[][] = [[]];
         let h = 0;
 
         blocks.forEach((block, i) => {
             const el = blockRefs.current[block.id];
-            const blockH = el ? el.getBoundingClientRect().height : 0;
-            // if adding this block would overflow and we already have something on this page
+            if (!el) {
+                newPages[newPages.length - 1].push(i);
+                return;
+            }
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            const mt = parseFloat(style.marginTop) || 0;
+            const mb = parseFloat(style.marginBottom) || 0;
+            const blockH = rect.height + mt + mb;
             if (h + blockH > usable && newPages[newPages.length - 1].length > 0) {
                 newPages.push([]);
                 h = 0;
@@ -307,15 +313,15 @@ export function BlockList({
             const sig = (p: number[][]) => p.map(pg => pg.join(',')).join('|');
             return sig(prev) === sig(newPages) ? prev : newPages;
         });
-    }, [blocks]);
+    }, [blocks, pagePad]);
 
-    // Re-run pagination 150ms after blocks change (DOM needs to paint first)
+    // Re-run pagination after blocks or pagePad change
     useEffect(() => {
         if (isNested) return;
         if (rafRef.current) clearTimeout(rafRef.current);
-        rafRef.current = setTimeout(distribute, 500);
+        rafRef.current = setTimeout(distribute, 150);
         return () => clearTimeout(rafRef.current);
-    }, [blocks, distribute, isNested]);
+    }, [blocks, distribute, isNested, pagePad]);
 
     const helpers = { onUpdate, onDelete, onMove, onInsert, onSelect, onFocused, onBlurred, selectedId, openFmForBlock };
 
