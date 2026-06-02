@@ -67,6 +67,8 @@ export default function FundingApplicationDetails() {
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const showPartnerCommission = app?.partner_id !== authPartnerId;
+    const isClosed = app?.status === FUNDING_APPLICATION_STATUS.CLOSED;
+    const isCommissionSet = app?.total_commission !== null && app?.total_commission !== undefined;
 
     // Sync status and commission with fetched data
     useEffect(() => {
@@ -642,6 +644,7 @@ export default function FundingApplicationDetails() {
                                                                         min="0"
                                                                         max="100"
                                                                         step="0.1"
+                                                                        disabled={isClosed}
                                                                     />
                                                                     <span className="input-group-text bg-white text-muted">%</span>
                                                                 </div>
@@ -677,6 +680,7 @@ export default function FundingApplicationDetails() {
                                                                                 min="0"
                                                                                 max="100"
                                                                                 step="0.1"
+                                                                                disabled={isClosed}
                                                                             />
                                                                             <span className="input-group-text bg-white text-muted">%</span>
                                                                         </div>
@@ -712,6 +716,7 @@ export default function FundingApplicationDetails() {
                                                                                 min="0"
                                                                                 max="100"
                                                                                 step="0.1"
+                                                                                disabled={isClosed}
                                                                             />
                                                                             <span className="input-group-text bg-white text-muted">%</span>
                                                                         </div>
@@ -721,7 +726,7 @@ export default function FundingApplicationDetails() {
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            {hasPermission('update commission') && (
+                                                            {hasPermission('update commission') && !isClosed && (
                                                                 <>
                                                                     <div className="mt-4 text-end">
                                                                         <button
@@ -1028,7 +1033,7 @@ export default function FundingApplicationDetails() {
                                                     optionValue="value"
                                                     placeholder="Select status..."
                                                     className="w-100"
-                                                    disabled={!hasPermission("update funding application")}
+                                                    disabled={!hasPermission("update funding application") || isClosed}
                                                 />
                                             </div>
                                             <div className="mb-3">
@@ -1043,11 +1048,11 @@ export default function FundingApplicationDetails() {
                                                         setStatusNote(e.target.value);
                                                         if (notesError) setNotesError('');
                                                     }}
-                                                    disabled={!hasPermission("update funding application")}
+                                                    disabled={!hasPermission("update funding application") || isClosed}
                                                 ></textarea>
                                                 {notesError && <div className="invalid-feedback">{notesError}</div>}
                                             </div>
-                                            {hasPermission("update funding application") && (
+                                            {hasPermission("update funding application") && !isClosed && (
                                                 <div className="d-grid">
                                                     <button
                                                         type="button"
@@ -1123,6 +1128,11 @@ export default function FundingApplicationDetails() {
                 initialAmount={fundedAmount}
                 title="Status Update: Closed (Completed)"
                 message="Since the status is Closed (Completed), please specify the final funded amount for this application."
+                successFeeRate={parseFloat(app.total_commission?.toString() || '0')}
+                adminCommissionRate={parseFloat(app.admin_commission?.toString() || '0')}
+                partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
+                showPartnerCommission={showPartnerCommission}
+                isCommissionSet={isCommissionSet}
             />
         </>
     );

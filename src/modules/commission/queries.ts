@@ -1,5 +1,5 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getCommissions, getCommissionById } from './services';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { getCommissions, getCommissionById, processPayout } from './services';
 import { CommissionFilters } from './types';
 
 export const useCommissions = (filters: CommissionFilters) => {
@@ -16,5 +16,16 @@ export const useCommission = (id: string | number | undefined) => {
         queryKey: ['commission', id],
         queryFn: () => getCommissionById(id!),
         enabled: !!id,
+    });
+};
+
+export const useProcessPayout = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string | number; payload: { partner_payment_method: string } }) => processPayout(id, payload),
+        onSuccess: (_, { id }) => {
+            queryClient.invalidateQueries({ queryKey: ['commission', String(id)] });
+            queryClient.invalidateQueries({ queryKey: ['commissions'] });
+        },
     });
 };

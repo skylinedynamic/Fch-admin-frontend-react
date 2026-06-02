@@ -55,3 +55,13 @@ export const BORROWER_STATUS: StatusOption[] = [
     { label: 'Suspended', value: 'Suspended' },
     { label: 'OnBoarding', value: 'OnBoarding' },
 ];
+
+export const COMMISSION_PAYMENT: StatusOption[] = [
+    { label: 'Card', value: 'Card' },
+    { label: 'Cash', value: 'Cash' },
+    { label: 'Cheque', value: 'Cheque' },
+    { label: 'Paypal', value: 'Paypal' },
+    { label: 'Stripe', value: 'Stripe' },
+    { label: 'Apple Pay', value: 'Apple Pay' },
+    { label: 'Google Pay', value: 'Google Pay' },
+];
