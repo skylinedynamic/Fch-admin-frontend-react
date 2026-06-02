@@ -47,11 +47,10 @@ const TestMailForm: React.FC = () => {
 
         sendTestMailMutation.mutate(formData, {
             onSuccess: (response: any) => {
-                toast.success(response.message || 'Test email sent successfully!');
+                toast.success(response.message);
                 setFormData({ email: '', body: '' });
             },
             onError: (error: any) => {
-                console.error('Failed to send test mail:', error);
                 toast.error(error.response?.data?.message || 'Failed to send test email.');
             }
         });
