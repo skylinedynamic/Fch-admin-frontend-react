@@ -116,6 +116,7 @@ export const PREVIEW_CSS = `
   }
 
   @media (max-width: 793px) {
+    html, body, .ab4-root { height: auto !important; min-height: auto !important; }
     body { padding: 8px !important; background: #fff !important; }
     .page-sep { display: none !important; }
     .doc { 
@@ -127,7 +128,50 @@ export const PREVIEW_CSS = `
       overflow: visible !important; 
     }
     .p-parties-grid, .p-sig-grid { display: block !important; }
+    .ab4-parties, .ab4-sig {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+    .p-party-col, .ab4-party { height: auto !important; }
+    .ab4-field, .p-field, .p-input-wrap, .p-date-wrapper {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
     .p-logo-img { max-width: 100% !important; }
+  }
+
+  /* Force desktop view for pagination right before submission */
+  html.force-desktop, html.force-desktop body {
+    width: 794px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #e8edf5 !important;
+  }
+  html.force-desktop .page-sep {
+    display: flex !important;
+  }
+  html.force-desktop .doc { 
+    width: 794px !important; 
+    height: 1122.5px !important; 
+    min-height: 1122.5px !important; 
+    padding: var(--doc-pad-top) var(--doc-pad-sides) var(--doc-pad-bot) !important; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; 
+    overflow: hidden !important; 
+  }
+  html.force-desktop .p-parties-grid, html.force-desktop .p-sig-grid {
+    display: flex !important;
+  }
+  html.force-desktop .ab4-parties, html.force-desktop .ab4-sig {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+  html.force-desktop .p-party-col, html.force-desktop .ab4-party {
+    height: 100% !important;
+  }
+  html.force-desktop .col-md-6 {
+    width: 50% !important;
+    margin-bottom: 0 !important;
   }
 `;
 
@@ -320,7 +364,7 @@ export const PREVIEW_JS = `
     var formWrapper = document.getElementById('agreement-form');
     if (!formWrapper) return;
 
-    if (window.innerWidth < 794) {
+    if (window.innerWidth < 794 && !document.documentElement.classList.contains('force-desktop')) {
       if (originalHtml) {
         formWrapper.innerHTML = originalHtml;
         originalHtml = null;

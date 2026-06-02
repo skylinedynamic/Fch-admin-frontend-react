@@ -25,7 +25,7 @@ const DownloadAgreement = () => {
                     return;
                 }
 
-                // NUCLEAR FIXES: This handles everything by injecting at the very end of the document
+                const isMobile = window.innerWidth < 794;
                 const styleOverride = `
                 <style>
                     /* Specificity: Target signature/date containers to remove card styling */
@@ -66,7 +66,6 @@ const DownloadAgreement = () => {
                     /* p-input-wrap span styling */
                     .p-input-wrap span {
                         font-size: 13px !important;
-                        font-weight: 600 !important;
                         border-bottom: 1px solid #ddd !important;
                         min-width: 50% !important;
                         display: inline-block !important;
@@ -111,6 +110,64 @@ const DownloadAgreement = () => {
                     /* General page breaks and layout spacing */
                     .page-break, .page-sep { display: block; height: 15px; background: #35434d; }
                     @media print { .page-break { display: none; page-break-before: always; } }
+
+                    /* Responsive styles inside the iframe */
+                    ${isMobile ? `
+                        html, body, .ab4-root {
+                            height: auto !important;
+                            min-height: auto !important;
+                        }
+                        body {
+                            padding: 10px !important;
+                            margin: 0 !important;
+                            background: #fff !important;
+                        }
+                        .ab4-doc, .doc {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            height: auto !important;
+                            min-height: auto !important;
+                            padding: 15px !important;
+                            box-shadow: none !important;
+                            overflow: visible !important;
+                        }
+                        .page-sep, .page-break {
+                            display: none !important;
+                        }
+                        .p-parties-grid, .p-sig-grid {
+                            display: block !important;
+                        }
+                        .ab4-parties, .ab4-sig {
+                            display: grid !important;
+                            grid-template-columns: 1fr !important;
+                            gap: 16px !important;
+                        }
+                        .p-party-col, .ab4-party {
+                            height: auto !important;
+                        }
+                        .col-md-6 {
+                            width: 100% !important;
+                            margin-bottom: 12px !important;
+                        }
+                        .col-md-6:last-child {
+                            margin-bottom: 0 !important;
+                        }
+                        img {
+                            max-width: 100% !important;
+                        }
+                        .ab4-field, .p-field, .p-input-wrap, .p-date-wrapper {
+                            flex-direction: column !important;
+                            align-items: stretch !important;
+                        }
+                        .ab4-finp, .ab4-fta, .ab4-sig-input, .ab4-val-text,
+                        .ab4-field strong, .ab4-field b, .ab4-field-val,
+                        .ab4-field-val strong, .ab4-field-val b,
+                        .p-input-wrap span, .p-sig-box span {
+                            width: 100% !important;
+                            min-width: 100% !important;
+                            display: block !important;
+                        }
+                    ` : ''}
                 </style>
                 <script>
                     (function() {
@@ -209,6 +266,34 @@ const DownloadAgreement = () => {
                     font-size: 14px;
                     letter-spacing: 0.1em;
                     text-transform: uppercase;
+                }
+
+                /* Responsive Toolbar & Sheet overrides on mobile */
+                @media (max-width: 793px) {
+                    .da-toolbar {
+                        padding: 12px 16px !important;
+                        flex-direction: column !important;
+                        gap: 10px !important;
+                        align-items: stretch !important;
+                        text-align: center !important;
+                    }
+                    .da-toolbar-brand {
+                        justify-content: center !important;
+                    }
+                    .da-print-btn {
+                        width: 100% !important;
+                        justify-content: center !important;
+                    }
+                    .da-body {
+                        padding: 10px !important;
+                    }
+                    .da-sheet {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        margin: 0 !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                    }
                 }
             `}</style>
 
