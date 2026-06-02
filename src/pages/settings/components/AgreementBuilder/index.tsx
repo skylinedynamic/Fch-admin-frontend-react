@@ -141,6 +141,14 @@ const AgreementBuilder: React.FC = () => {
         setFmOpen(true);
     };
 
+    useEffect(() => {
+        (window as any).__openFmForBlock = openFmForBlock;
+        return () => {
+            delete (window as any).__openFmForBlock;
+        };
+    }, [openFmForBlock]);
+
+
     const html = useMemo(() => {
         return getAgreementHtml(blocks, { pagePad, docBg });
     }, [blocks, pagePad, docBg]);
@@ -185,14 +193,14 @@ const AgreementBuilder: React.FC = () => {
 
     return (
         <div className="ab4-root fade-panel">
-<FileManagerModal
+            <FileManagerModal
                 isOpen={fmOpen}
                 toggle={() => setFmOpen(!fmOpen)}
                 selectionMode
                 section="Agreements"
                 initialPath="/"
                 entityType="agreements"
-                entityId={partnerId || 1}
+                entityId={(partnerId || 1) as any}
                 getAll={false}
                 onSelectFiles={handleFmSelect}
             />

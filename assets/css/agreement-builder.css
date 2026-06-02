@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700;800&family=Roboto:wght@400;700&display=swap');
 
-/* ─── Agreement Builder v4 ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ Agreement Builder v4 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 :root {
   --primary-color: #001f3f;
@@ -56,7 +56,7 @@
   background: #e8edf5;
 }
 
-/* ── Main toolbar ── */
+/* â”€â”€ Main toolbar â”€â”€ */
 .ab4-toolbar {
   display: flex;
   align-items: center;
@@ -135,7 +135,7 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, .1)
 }
 
-/* ── Font size row in props ── */
+/* â”€â”€ Font size row in props â”€â”€ */
 .ab4-font-size-row {
   display: flex;
   align-items: center;
@@ -426,7 +426,7 @@
 }
 
 .ab4-cs-opt--sel::after {
-  content: '✓';
+  content: '\2713';
   font-size: 10px;
   margin-left: 8px
 }
@@ -470,7 +470,7 @@
 }
 
 .ab4-swatch--on::after {
-  content: '✓';
+  content: '\2713';
   position: absolute;
   inset: 0;
   display: flex;
@@ -505,14 +505,14 @@
   color: #94a3b8
 }
 
-/* ── 3-column layout ── */
+/* â”€â”€ 3-column layout â”€â”€ */
 .ab4-layout {
   display: flex;
   flex: 1;
   overflow: hidden
 }
 
-/* ── Left palette ── */
+/* â”€â”€ Left palette â”€â”€ */
 .ab4-palette {
   width: 185px;
   min-width: 170px;
@@ -596,7 +596,7 @@
   color: #6366f1
 }
 
-/* ── Center / document area ── */
+/* â”€â”€ Center / document area â”€â”€ */
 .ab4-center {
   flex: 1;
   display: flex;
@@ -638,7 +638,7 @@
   border-top: 1px solid #cbd5e1
 }
 
-/* ── Page wrapper — stacks A4 sheets vertically ── */
+/* â”€â”€ Page wrapper â€” stacks A4 sheets vertically â”€â”€ */
 .ab4-pages-container {
   display: flex;
   flex-direction: column;
@@ -650,11 +650,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
-/* ── Page break ── */
+/* â”€â”€ Page break â”€â”€ */
 .ab4-page-sep {
-  width: 754px;
+  width: 794px;
   max-width: 100%;
   height: 10px;
   flex-shrink: 0;
@@ -671,10 +672,10 @@
   background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
 }
 
-/* ── The document — exact A4 at 96 dpi ── */
+/* â”€â”€ The document â€” exact A4 at 96 dpi â”€â”€ */
 .ab4-doc {
-  width: 754px;
-  height: 1123px;
+  width: 794px;
+  height: 1122.5px;
   background: #ffffff;
   padding:
     var(--doc-pad-top, 72px) var(--doc-pad-sides, 80px) var(--doc-pad-bot, 96px);
@@ -689,12 +690,29 @@
 }
 
 .ab4-doc:last-child {
-  min-height: auto;
-  height: auto;
+  min-height: 1122.5px;
+  height: 1122.5px;
   border-bottom: none;
 }
 
-/* ── Empty state ── */
+/* â”€â”€ Split-block clip window â”€â”€ */
+/* When a text block is taller than one page, it is divided into slices.
+   Each slice renders a clip container that shows only the relevant
+   vertical portion of the block content. */
+.ab4-block-clip-window {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ab4-block-clip-window > div {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* top is set inline as -clipTop px to scroll to the correct portion */
+}
+
+/* â”€â”€ Empty state â”€â”€ */
 .ab4-empty {
   display: flex;
   flex-direction: column;
@@ -741,7 +759,7 @@
   align-items: center
 }
 
-/* ── Drag ── */
+/* â”€â”€ Drag â”€â”€ */
 .ab4-drag {
   border-radius: 6px;
   transition: opacity .14s
@@ -758,14 +776,32 @@
   border-radius: 6px
 }
 
-/* ── Insert zone between blocks ── */
+/* â”€â”€ Insert zone between blocks â”€â”€ */
 .ab4-iz {
-  min-height: 14px;
+  height: 0px;
+  min-height: unset;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 -2px
+  margin: 0 -2px;
+  z-index: 10;
+  transition: height 0.15s ease;
+}
+.ab4-iz::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  background: transparent;
+  z-index: 1;
+}
+.ab4-iz:hover,
+.ab4-iz:focus-within,
+.ab4-iz.ab4-iz--active {
+  height: 24px;
 }
 
 .ab4-iz-line {
@@ -869,7 +905,7 @@
   flex-shrink: 0
 }
 
-/* ── Block ── */
+/* â”€â”€ Block â”€â”€ */
 .ab4-block {
   position: relative;
   background-color: var(--bg, transparent);
@@ -884,8 +920,8 @@
 .ab4-ctrl {
   display: none;
   position: absolute;
-  top: -12px;
-  right: 0;
+  top: 4px;
+  right: 4px;
   z-index: 30;
   align-items: center;
   gap: 3px
@@ -953,13 +989,13 @@
 }
 
 .ab4-block-body {
-  padding: 3px 0
+  padding: 0
 }
 
-/* ─── Text editor (contentEditable) ───────────────────────────────────────────
-   No dangerouslySetInnerHTML after mount → no cursor reset → smooth editing.
+/* â”€â”€â”€ Text editor (contentEditable) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   No dangerouslySetInnerHTML after mount â†’ no cursor reset â†’ smooth editing.
    Subtle left-accent on focus instead of a jarring box-shadow.
-─────────────────────────────────────────────────────────────────────────────*/
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€*/
 .ab4-editor {
   outline: none;
   min-height: 28px;
@@ -974,11 +1010,10 @@
   font-family: var(--ff, 'Inter', sans-serif);
   text-align: var(--ta, left);
   color: var(--color, #334155);
-  line-height: var(--lh, 1.78);
+  line-height: var(--lh, 1.6);
   letter-spacing: var(--ls, 0);
-  margin-top: var(--mt, 0);
-  margin-bottom: var(--mb, 10px);
-  padding: 2px 4px;
+  margin: 0;
+  padding: 0;
   border-radius: 3px;
 }
 
@@ -994,70 +1029,80 @@
   font-style: italic
 }
 
-/* Heading & paragraph styles */
+/* Read-only snapshot — used for split-block continuation slices */
+.ab4-editor--readonly {
+  cursor: default;
+  border-left-color: transparent !important;
+  padding-left: 0 !important;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Heading & paragraph styles â€” MUST match preview PREVIEW_CSS */
 .ab4-editor h1 {
-  font-size: 24px;
+  font-size: 2em;
   font-weight: 800;
   color: #0f172a;
-  margin: 4px 0 10px;
-  text-transform: uppercase;
-  letter-spacing: -.5px;
-  line-height: 1.2
+  margin: 0 0 18px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: none;
 }
 
 .ab4-editor h2 {
-  font-size: 18px;
+  font-size: 1.571em;
   font-weight: 700;
   color: #1e293b;
-  margin: 4px 0 10px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #e2e8f0;
-  line-height: 1.25
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  line-height: 1.35;
 }
 
 .ab4-editor h3 {
-  font-size: 15px;
+  font-size: 1.286em;
   font-weight: 700;
   color: #334155;
-  margin: 4px 0 8px
+  margin: 0 0 10px;
+  line-height: 1.4;
 }
 
 .ab4-editor h4 {
-  font-size: 13.5px;
+  font-size: 1.143em;
   font-weight: 700;
   color: #475569;
-  margin: 4px 0 6px
+  margin: 0 0 8px;
 }
 
 .ab4-editor h5 {
-  font-size: 12.5px;
+  font-size: 1em;
   font-weight: 700;
   color: #475569;
-  margin: 4px 0 5px
+  margin: 0 0 6px;
 }
 
 .ab4-editor h6 {
-  font-size: 12px;
+  font-size: 0.9em;
   font-weight: 700;
   color: #64748b;
-  margin: 4px 0 4px
+  margin: 0 0 5px;
 }
 
 .ab4-editor p {
   margin: 0 0 10px;
-  line-height: 1.8
+  line-height: 1.6;
 }
 
 .ab4-editor ul,
 .ab4-editor ol {
   padding-left: 22px;
   margin: 0 0 10px;
-  line-height: 1.8
+  line-height: 1.6;
 }
 
-/* ── Field blocks ── */
+/* â”€â”€ Field blocks â”€â”€ */
 .ab4-field {
-  padding: 4px 0;
+  padding: 0;
   display: flex;
   align-items: flex-end;
   gap: 12px;
@@ -1065,7 +1110,7 @@
 
 .ab4-field-lbl {
   display: block;
-  font-size: var(--fs, 14px);
+  font-size: var(--fs, 15px);
   font-weight: var(--fw, 500);
   color: #1e293b;
   margin-bottom: 0;
@@ -1080,8 +1125,8 @@
   border-bottom: 1px solid #94a3b8;
   border-radius: 0;
   padding: 4px 8px;
-  font-size: var(--fs, 13px);
-  font-weight: var(--fw, 500);
+  font-size: var(--fs, 15px);
+  font-weight: var(--fw, 400);
   color: var(--color, #334155);
   background: transparent;
   outline: none;
@@ -1096,37 +1141,45 @@
   font-size: 12.5px
 }
 
+.ab4-field-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
 .ab4-fta {
-  flex: 1;
+  width: 100%;
   border: none;
-  border-bottom: 1px solid #94a3b8;
+  border-bottom: 1px solid #64748b;
+  padding: 8px;
+  font-size: var(--fs, 15px);
+  font-weight: var(--fw, 400);
+  background: #f5f8ff;
+  box-sizing: border-box;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 40px;
   border-radius: 0;
-  padding: 4px 8px;
-  font-size: var(--fs, 13px);
-  font-weight: var(--fw, 500);
-  color: var(--color, #334155);
-  background: transparent;
-  outline: none;
-  resize: none;
+  margin-top: 5px;
   pointer-events: none;
   font-family: var(--ff, inherit);
-  box-sizing: border-box;
-  text-align: var(--ta, left);
+  outline: none;
 }
 
 .ab4-cb-row {
   display: flex;
-  align-items: flex-start;
-  gap: 8px
+  align-items: center;
+  gap: 10px;
 }
 
 .ab4-cb {
-  width: 15px;
-  height: 15px;
-  margin-top: 2px;
-  accent-color: #6366f1;
+  width: 18px;
+  height: 18px;
+  margin-top: 0px;
+  accent-color: #3b518d;
   pointer-events: none;
-  flex-shrink: 0
+  flex-shrink: 0;
 }
 
 .ab4-cb-lbl {
@@ -1176,6 +1229,21 @@
   color: #6366f1
 }
 
+.ab4-logo-ph.ab4-logo-ph--has-logo {
+  border: none;
+  padding: 0;
+  min-height: unset;
+  min-width: unset;
+  background: transparent;
+  display: inline-block;
+}
+.ab4-logo-ph.ab4-logo-ph--has-logo:hover {
+  background: transparent;
+  border: none;
+  outline: 2px dashed #6366f1;
+  outline-offset: 2px;
+}
+
 .ab4-logo-ph i {
   font-size: 26px
 }
@@ -1202,10 +1270,12 @@
 .ab4-party {
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 14px;
   display: flex;
-  flex-direction: column
+  flex-direction: column;
+  min-height: 150px;
+  min-width: 0;
 }
 
 .ab4-party-lbl {
@@ -1220,7 +1290,13 @@
 }
 
 .ab4-party .ab4-iz {
-  min-height: 8px
+  height: 0px;
+  min-height: unset;
+}
+.ab4-party .ab4-iz:hover,
+.ab4-party .ab4-iz:focus-within,
+.ab4-party .ab4-iz.ab4-iz--active {
+  height: 20px;
 }
 
 .ab4-party .ab4-iz-btn {
@@ -1236,8 +1312,8 @@
 .ab4-sig {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 35px;
-  margin: 25px 0
+  gap: 30px;
+  margin: 0
 }
 
 .ab4-sig-col {
@@ -1310,7 +1386,7 @@
   margin-top: 0
 }
 
-/* ── Properties panel ── */
+/* â”€â”€ Properties panel â”€â”€ */
 .ab4-props {
   width: 210px;
   min-width: 195px;
@@ -1411,7 +1487,7 @@
   font-family: monospace
 }
 
-/* ── Preview ── */
+/* â”€â”€ Preview â”€â”€ */
 .ab4-preview {
   flex: 1;
   display: flex;
@@ -1485,7 +1561,7 @@
   background: #e8edf5
 }
 
-/* ── Dashboard Styles ── */
+/* â”€â”€ Dashboard Styles â”€â”€ */
 .ab4-dash {
   background: #fff;
   min-height: 100%;
@@ -1676,7 +1752,7 @@
   border: none;
 }
 
-/* ── Toggle Switch ── */
+/* â”€â”€ Toggle Switch â”€â”€ */
 .ab4-switch {
   display: flex;
   align-items: center;
@@ -1717,7 +1793,7 @@
 }
 
 
-/* ── Scrollbars ── */
+/* â”€â”€ Scrollbars â”€â”€ */
 .ab4-palette::-webkit-scrollbar,
 .ab4-props::-webkit-scrollbar,
 .ab4-scroll::-webkit-scrollbar {
@@ -1732,7 +1808,7 @@
   border-radius: 10px
 }
 
-/* ── Responsive ── */
+/* â”€â”€ Responsive â”€â”€ */
 @media (max-width:1100px) {
   .ab4-palette {
     width: 165px;
@@ -1761,19 +1837,8 @@
     min-width: unset
   }
 
-  .ab4-doc {
-    width: 100%;
-    padding: 32px 20px
-  }
-
   .ab4-ruler {
     width: 100%
-  }
-
-  .ab4-parties,
-  .ab4-sig {
-    grid-template-columns: 1fr;
-    gap: 14px
   }
 }
 
@@ -1803,7 +1868,7 @@
   margin: 0
 }
 
-/* ── Premium Flatpickr Design (Editor & Preview) ── */
+/* â”€â”€ Premium Flatpickr Design (Editor & Preview) â”€â”€ */
 .flatpickr-calendar {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border-radius: 12px;
@@ -1909,7 +1974,7 @@
   cursor: pointer !important
 }
 
-/* ── Premium Editor Components ── */
+/* â”€â”€ Premium Editor Components â”€â”€ */
 .ab4-date-input-wrapper {
   position: relative;
   max-width: 220px;
@@ -2025,7 +2090,7 @@
   width: 100%;
 }
 
-/* ── Preview Mode Styles ── */
+/* â”€â”€ Preview Mode Styles â”€â”€ */
 .p-field {
   margin-bottom: 15px;
 }
@@ -2150,7 +2215,7 @@
   letter-spacing: 1px;
 }
 
-/* ─── Agreement Signature Modal (asm) - Light Theme & Full Width  */
+/* â”€â”€â”€ Agreement Signature Modal (asm) - Light Theme & Full Width  */
 
 .asm-overlay {
   position: fixed;
@@ -2448,7 +2513,7 @@
   }
 }
 
-/* ── Success Screen ── */
+/* â”€â”€ Success Screen â”€â”€ */
 .asm-success-screen {
   flex: 1;
   display: flex;
@@ -2604,7 +2669,49 @@
   }
 }
 
-/* ─── Download Agreement Preview Page ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .asm-main-wrapper {
+    padding: 0 !important;
+  }
+
+  .asm-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  .asm-content-header {
+    padding: 16px 12px !important;
+  }
+
+  .asm-action-footer {
+    padding: 16px 12px !important;
+  }
+
+  .asm-action-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .asm-checkbox-container {
+    width: 100% !important;
+  }
+
+  .asm-checkbox-label {
+    font-size: 13.5px !important;
+  }
+
+  .asm-btn-submit {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+
+/* â”€â”€â”€ Download Agreement Preview Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .da-page {
   background: #525659;
@@ -2693,7 +2800,7 @@
   min-height: 200px;
 }
 
-/* ─── Agreement Section (Partner Profile) ─────────────────────────────────── */
+/* â”€â”€â”€ Agreement Section (Partner Profile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .as-icon-wrapper {
   background-color: #fcebeb;
@@ -2738,25 +2845,25 @@
   opacity: 0.9;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Agreement Builder v5 — UI Refresh Overrides
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   Agreement Builder v5 â€” UI Refresh Overrides
    No logic changed; only layout, typography, spacing, responsiveness.
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── 1. Root & Toolbar ── */
+/* â”€â”€ 1. Root & Toolbar â”€â”€ */
 .ab4-root {
   background: #f1f5f9;
   border-radius: 12px;
   height: calc(100vh - 220px);
   min-height: 600px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .ab4-toolbar {
   padding: 12px 20px;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   gap: 12px;
 }
 
@@ -2811,10 +2918,10 @@
   background: #fff;
   color: #6366f1;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* ── 2. Layout ── */
+/* â”€â”€ 2. Layout â”€â”€ */
 .ab4-layout {
   display: flex;
   flex: 1;
@@ -2826,7 +2933,7 @@
   display: none;
 }
 
-/* ── 3. Sidebar (Palette) ── */
+/* â”€â”€ 3. Sidebar (Palette) â”€â”€ */
 .ab4-palette {
   width: 220px;
   min-width: 220px;
@@ -2959,7 +3066,7 @@
   margin: 0;
 }
 
-/* ── 4. Center / Document Canvas ── */
+/* â”€â”€ 4. Center / Document Canvas â”€â”€ */
 .ab4-center {
   flex: 1;
   display: flex;
@@ -2974,7 +3081,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 ;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2996,12 +3103,12 @@
   width: 100%;
 }
 
-/* ── 5. A4 Document ── */
+/* â”€â”€ 5. A4 Document â”€â”€ */
 /* Original selectors kept above; see lines ~665 for .ab4-doc and ~656 for .ab4-page-sep */
 
 .ab4-doc {
-  width: 754px;
-  height: 1123px;
+  width: 794px;
+  height: 1122.5px;
   background: var(--doc-bg, #ffffff);
   padding: var(--doc-pad-top, 72px) var(--doc-pad-sides, 80px) var(--doc-pad-bot, 96px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, .04), 0 8px 32px rgba(0, 0, 0, .12);
@@ -3015,12 +3122,12 @@
 }
 
 .ab4-doc:last-child {
-  min-height: auto;
-  height: auto;
+  min-height: 1122.5px;
+  height: 1122.5px;
   border-bottom: none;
 }
 
-/* ── 6. Editor Typography ── */
+/* â”€â”€ 6. Editor Typography â”€â”€ */
 .ab4-editor {
   outline: none;
   min-height: 28px;
@@ -3037,9 +3144,8 @@
   color: var(--color, #334155);
   line-height: var(--lh, 1.75);
   letter-spacing: var(--ls, 0);
-  margin-top: var(--mt, 0);
-  margin-bottom: var(--mb, 12px);
-  padding: 4px 6px;
+  margin: 0;
+  padding: 0;
   border-radius: 4px;
 }
 
@@ -3145,15 +3251,15 @@
   font-style: italic;
 }
 
-/* ── 7. Block & Insert Zone ── */
+/* â”€â”€ 7. Block & Insert Zone â”€â”€ */
 .ab4-block {
   position: relative;
   background-color: var(--bg, transparent);
-  border-radius: var(--radius, 6px);
+  border-radius: var(--radius, 5px);
   padding: var(--pad, 0px);
   opacity: var(--opacity, 1);
   margin-top: var(--mt, 0px);
-  margin-bottom: var(--mb, 8px);
+  margin-bottom: var(--mb, 0px);
   transition: box-shadow 0.15s ease, outline-color 0.15s ease;
 }
 
@@ -3210,7 +3316,7 @@
   cursor: pointer;
   padding: 0;
   transition: all 0.12s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .ab4-act:hover:not(:disabled) {
@@ -3226,12 +3332,30 @@
 }
 
 .ab4-iz {
-  min-height: 14px;
+  height: 0px;
+  min-height: unset;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 -2px;
+  z-index: 10;
+  transition: height 0.15s ease;
+}
+.ab4-iz::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  background: transparent;
+  z-index: 1;
+}
+.ab4-iz:hover,
+.ab4-iz:focus-within,
+.ab4-iz.ab4-iz--active {
+  height: 24px;
 }
 
 .ab4-iz-line::before {
@@ -3259,7 +3383,7 @@
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
 }
 
-/* ── 8. Property Panel ── */
+/* â”€â”€ 8. Property Panel â”€â”€ */
 .ab4-props {
   width: 260px;
   min-width: 260px;
@@ -3337,7 +3461,7 @@
   margin-bottom: 6px;
 }
 
-/* ── 9. Preview ── */
+/* â”€â”€ 9. Preview â”€â”€ */
 .ab4-preview {
   flex: 1;
   display: flex;
@@ -3356,7 +3480,7 @@
   color: #374151;
   flex-shrink: 0;
   height: 56px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .ab4-preview-frame {
@@ -3379,7 +3503,7 @@
   flex-shrink: 0;
 }
 
-/* ── 10. Parties, Signature, Fields ── */
+/* â”€â”€ 10. Parties, Signature, Fields â”€â”€ */
 .ab4-parties {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3390,17 +3514,19 @@
 .ab4-party {
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 14px;
   display: flex;
   flex-direction: column;
+  min-height: 150px;
+  min-width: 0;
 }
 
 .ab4-sig {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
-  margin: 20px 0;
+  margin: 0;
 }
 
 .ab4-sig-col {
@@ -3417,13 +3543,13 @@
 }
 
 .ab4-field {
-  padding: 4px 0;
+  padding: 0;
   display: flex;
   align-items: flex-end;
   gap: 12px;
 }
 
-/* ── 11. Scrollbars ── */
+/* â”€â”€ 11. Scrollbars â”€â”€ */
 .ab4-palette::-webkit-scrollbar,
 .ab4-props::-webkit-scrollbar,
 .ab4-scroll::-webkit-scrollbar {
@@ -3444,10 +3570,12 @@
   background: transparent;
 }
 
-/* ── 12. Utilities ── */
-.cursor-pointer { cursor: pointer; }
+/* â”€â”€ 12. Utilities â”€â”€ */
+.cursor-pointer {
+  cursor: pointer;
+}
 
-/* ── 13. Responsive ── */
+/* â”€â”€ 13. Responsive â”€â”€ */
 .ab4-mobile-toggle {
   display: none;
   width: 36px;
@@ -3511,7 +3639,7 @@
     z-index: 1050;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.08);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
     border-right: none;
   }
 
@@ -3538,38 +3666,11 @@
     align-items: stretch;
   }
 
-  .ab4-doc {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    min-height: auto;
-    padding: 28px 18px;
-    margin-bottom: 0;
-    border-bottom: 1px solid #e2e8f0;
-    overflow: visible;
-  }
-
-  .ab4-doc:last-child {
-    border-bottom: none;
-  }
-
-  .ab4-page-sep {
-    width: 100%;
-    max-width: 100%;
-    height: 0;
-  }
-
   .ab4-props {
     width: 100%;
     min-width: unset;
     border-left: none;
     border-top: 1px solid #e2e8f0;
-  }
-
-  .ab4-parties,
-  .ab4-sig {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
 
   .ab4-preview-bar {
@@ -3596,16 +3697,6 @@
     width: 210px;
     min-width: 210px;
   }
-
-  .ab4-doc {
-    width: 100%;
-    max-width: 794px;
-  }
-
-  .ab4-page-sep {
-    width: 100%;
-    max-width: 794px;
-  }
 }
 
 @media (min-width: 1200px) {
@@ -3623,3 +3714,138 @@
     min-width: 260px;
   }
 }
+
+.ab4-page-break-vis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 24px;
+  margin: 10px 0;
+  width: 100%;
+}
+.ab4-page-break-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1.5px dashed #cbd5e1;
+  pointer-events: none;
+}
+.ab4-page-break-label {
+  position: relative;
+  z-index: 2;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ab4-add-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 0 40px 0;
+  width: 100%;
+}
+
+.ab4-add-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px dashed #6366f1;
+  color: #6366f1;
+  padding: 10px 24px;
+  border-radius: 30px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.08);
+  transition: all 0.2s ease-in-out;
+}
+
+.ab4-add-page-btn:hover {
+  background: #6366f1;
+  color: #ffffff;
+  border-style: solid;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+}
+
+.ab4-add-page-btn:active {
+  transform: translateY(0);
+}
+
+.ab4-add-page-btn i {
+  font-size: 17px;
+}
+
+.ab4-page-sep-manual {
+  width: 794px;
+  max-width: 100%;
+  height: 10px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ab4-page-sep-manual::before {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+  transition: background 0.2s ease;
+}
+
+.ab4-page-sep-manual:hover::before {
+  background: linear-gradient(90deg, transparent, #ef4444, transparent);
+}
+
+.ab4-page-sep-del-btn {
+  position: absolute;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.2);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  padding: 0;
+}
+
+.ab4-page-sep-manual:hover .ab4-page-sep-del-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1.15);
+}
+
+.ab4-page-sep-del-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+
+

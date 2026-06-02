@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { checkAgreementSign, submitAgreementSign } from '../../../modules/agreement/services'
 import { useAuthStore } from '../../../store/auth/authStore'
 import "../../../../assets/css/agreement-builder.css"
 import { AgreementSignModalLoader } from '../../Loader/AgreementLoader'
+import { FileManagerModal } from '../../FileManagerModal/FileManagerModal'
 
 /**
  * AgreementSignModal
@@ -87,6 +88,74 @@ export default function AgreementSignModal() {
 
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
 
+  /* File Manager States & Handlers */
+  const [fmOpen, setFmOpen] = useState(false)
+  const [fmTargetBlockId, setFmTargetBlockId] = useState<string | null>(null)
+
+  const openFmForBlock = useCallback((blockId: string) => {
+    setFmTargetBlockId(blockId)
+    setFmOpen(true)
+  }, [])
+
+  const handleFmSelect = useCallback((files: any[]) => {
+    if (fmTargetBlockId && files[0]?.url && iframeRef.current && iframeRef.current.contentDocument) {
+      const doc = iframeRef.current.contentDocument;
+      const dropzone = doc.querySelector(`[data-block-id="${fmTargetBlockId}"]`);
+      if (dropzone) {
+        let input = dropzone.querySelector('input') as HTMLInputElement | null;
+        if (!input) {
+          input = doc.createElement('input');
+          input.type = 'text';
+          input.className = 'p-input';
+          input.style.position = 'absolute';
+          input.style.left = '0';
+          input.style.top = '0';
+          input.style.width = '0';
+          input.style.height = '0';
+          input.style.opacity = '0';
+          input.style.pointerEvents = 'none';
+          dropzone.appendChild(input);
+        }
+        input.value = files[0].url;
+
+        let child = dropzone.firstChild;
+        while (child) {
+          const next = child.nextSibling;
+          if (child !== input) {
+            dropzone.removeChild(child);
+          }
+          child = next;
+        }
+
+        const img = doc.createElement('img');
+        img.src = files[0].url;
+        img.style.maxHeight = '100%';
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '4px';
+        dropzone.insertBefore(img, input);
+
+        (dropzone as HTMLElement).style.border = 'none';
+        (dropzone as HTMLElement).style.background = 'transparent';
+        (dropzone as HTMLElement).style.padding = '0';
+
+        const event = doc.createEvent('HTMLEvents');
+        event.initEvent('change', true, false);
+        input.dispatchEvent(event);
+      }
+    }
+    setFmOpen(false)
+    setFmTargetBlockId(null)
+  }, [fmTargetBlockId])
+
+  useEffect(() => {
+    if (visible) {
+      (window as any).__openFmForBlock = openFmForBlock;
+    }
+    return () => {
+      delete (window as any).__openFmForBlock;
+    };
+  }, [visible, openFmForBlock]);
+
   /* Hot-patch the iframe with latest high-fidelity validation & styles */
   useEffect(() => {
     if (!template || !visible) return;
@@ -104,6 +173,25 @@ export default function AgreementSignModal() {
              .p-field.is-invalid .p-sig-box { border: none !important; background: transparent !important; }
              .p-error { display: none !important; }
              @keyframes asm-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+             
+             .p-parties-grid, .p-sig-grid { display: flex !important; flex-wrap: wrap !important; }
+             
+             @media (max-width: 793px) {
+               body { padding: 8px !important; background: #fff !important; margin: 0 !important; }
+               .page-sep { display: none !important; }
+               .doc { 
+                 width: 100% !important; 
+                 height: auto !important; 
+                 min-height: auto !important; 
+                 padding: 15px !important; 
+                 box-shadow: none !important; 
+                 overflow: visible !important; 
+               }
+               .p-parties-grid, .p-sig-grid { display: block !important; }
+               .p-logo-img { max-width: 100% !important; }
+               .col-md-6 { width: 100% !important; margin-bottom: 12px !important; }
+               .col-md-6:last-child { margin-bottom: 0 !important; }
+             }
            `;
         head.appendChild(style);
 
@@ -133,8 +221,8 @@ export default function AgreementSignModal() {
           "}" +
           "}" +
           "if (firstInvalid) {" +
-          "var target = (firstInvalid.offsetParent === null && firstInvalid.nextSibling) ? firstInvalid.nextSibling : firstInvalid;" +
-          "if (typeof target.focus === 'function') target.focus();" +
+          "if (typeof firstInvalid.focus === 'function') { try { firstInvalid.focus(); } catch(e) {} }" +
+          "var target = firstInvalid.closest('.p-field') || firstInvalid;" +
           "target.scrollIntoView({ behavior: 'smooth', block: 'center' });" +
           "}" +
           "return { valid: valid };" +
@@ -148,7 +236,7 @@ export default function AgreementSignModal() {
           "var orig = origInputs[idx];" +
           "if (!orig) return;" +
           // Skip hidden fields, file inputs, and internal preview elements
-          "if (orig.type === 'file' || orig.id === 'preview-upload' || window.getComputedStyle(orig).display === 'none') {" +
+          "if (orig.type === 'file' || orig.id === 'preview-upload' || window.getComputedStyle(orig).display === 'none' || (orig.classList.contains('p-input') && orig.closest('.preview-dropzone'))) {" +
           "inp.parentNode.removeChild(inp);" +
           "return;" +
           "}" +
@@ -195,7 +283,69 @@ export default function AgreementSignModal() {
           "var scripts = clone.querySelectorAll('script');" +
           "for(var s=0; s<scripts.length; s++) { scripts[s].parentNode.removeChild(scripts[s]); }" +
           "return clone.outerHTML;" +
-          "};";
+          "};" +
+          "function attachDropzone() {" +
+          "  if (window.__dzAttached) return;" +
+          "  window.__dzAttached = true;" +
+          "  document.addEventListener('click', function(e) {" +
+          "    var dropzone = e.target.closest('.preview-dropzone');" +
+          "    if (dropzone) {" +
+          "      var blockId = dropzone.getAttribute('data-block-id');" +
+          "      if (blockId && window.parent && typeof window.parent.__openFmForBlock === 'function') {" +
+          "        window.parent.__openFmForBlock(blockId);" +
+          "        return;" +
+          "      }" +
+          "      var upld = document.getElementById('preview-upload');" +
+          "      if (!upld) {" +
+          "        upld = document.createElement('input');" +
+          "        upld.type = 'file';" +
+          "        upld.id = 'preview-upload';" +
+          "        upld.style.display = 'none';" +
+          "        upld.accept = 'image/*';" +
+          "        document.body.appendChild(upld);" +
+          "      }" +
+          "      upld.click();" +
+          "      upld.onchange = function(ev) {" +
+          "        var file = ev.target.files[0];" +
+          "        if (file) {" +
+          "          var r = new FileReader();" +
+          "          r.onload = function(rev) {" +
+          "            var input = dropzone.querySelector('input');" +
+          "            if (!input) {" +
+          "              input = document.createElement('input');" +
+          "              input.type = 'text';" +
+          "              input.className = 'p-input';" +
+          "              input.style.position = 'absolute';" +
+          "              input.style.left = '0'; input.style.top = '0'; input.style.width = '0'; input.style.height = '0'; input.style.opacity = '0'; input.style.pointerEvents = 'none';" +
+          "              dropzone.appendChild(input);" +
+          "            }" +
+          "            input.value = rev.target.result;" +
+          "            var child = dropzone.firstChild;" +
+          "            while (child) {" +
+          "              var next = child.nextSibling;" +
+          "              if (child !== input) { dropzone.removeChild(child); }" +
+          "              child = next;" +
+          "            }" +
+          "            var img = document.createElement('img');" +
+          "            img.src = rev.target.result;" +
+          "            img.style.maxHeight = '100%';" +
+          "            img.style.maxWidth = '100%';" +
+          "            img.style.borderRadius = '4px';" +
+          "            dropzone.insertBefore(img, input);" +
+          "            dropzone.style.border = 'none';" +
+          "            dropzone.style.background = 'transparent';" +
+          "            dropzone.style.padding = '0';" +
+          "            var event = document.createEvent('HTMLEvents');" +
+          "            event.initEvent('change', true, false);" +
+          "            input.dispatchEvent(event);" +
+          "          };" +
+          "          r.readAsDataURL(file);" +
+          "        }" +
+          "      };" +
+          "    }" +
+          "  });" +
+          "}" +
+          "attachDropzone();";
         iframe.contentDocument.body.appendChild(script);
       }
     }, 600);
@@ -269,12 +419,33 @@ export default function AgreementSignModal() {
     }
   }
 
+  const srcDoc = React.useMemo(() => {
+    if (!template) return '';
+    let html = template.template_html;
+    if (window.innerWidth < 794) {
+      html = html.replace(/function paginate\(\)\s*\{/, 'function paginate() { return; /* disabled on mobile */');
+    }
+    return html;
+  }, [template]);
+
   if (loading && visible) return <AgreementSignModalLoader />
 
   if (!visible || !template) return null
 
   return (
     <>
+      <FileManagerModal
+        isOpen={fmOpen}
+        toggle={() => setFmOpen(!fmOpen)}
+        selectionMode
+        section="Agreements"
+        initialPath="/"
+        entityType="agreements"
+        entityId={(user?.partner_id || user?.entity_id || 1) as any}
+        getAll={false}
+        onSelectFiles={handleFmSelect}
+        zIndex={11000}
+      />
       <div className="asm-overlay" />
       <div className="asm-main-wrapper" role="dialog" aria-modal="true">
         <div className="asm-modal-card">
@@ -353,7 +524,7 @@ export default function AgreementSignModal() {
                     ref={iframeRef}
                     className="asm-iframe"
                     title="Agreement Content"
-                    srcDoc={template.template_html}
+                    srcDoc={srcDoc}
                   />
                 </div>
 

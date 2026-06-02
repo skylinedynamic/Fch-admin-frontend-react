@@ -15,6 +15,7 @@ interface FileManagerModalProps {
   entityId?: number | string
   getAll?: boolean
   onChanged?: () => void
+  zIndex?: number | string
 }
 
 export const FileManagerModal: React.FC<FileManagerModalProps> = ({
@@ -27,7 +28,8 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   onChanged,
   entityType,
   entityId,
-  getAll = false
+  getAll = false,
+  zIndex
 }) => {
   const context = useMemo(() => ({
     entity_type: entityType,
@@ -66,7 +68,7 @@ export const FileManagerModal: React.FC<FileManagerModalProps> = ({
   }, [entityType]);
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="xl" centered>
+    <Modal isOpen={isOpen} toggle={toggle} size="xl" centered zIndex={zIndex}>
       <ModalHeader toggle={toggle} className="fm-modal-header-main">
         {selectionMode ? 'Select Files' : `File Manager ${section ? `- ${section}` : ''}`}
       </ModalHeader>
