@@ -281,7 +281,7 @@ export default function ClientDetails() {
                 }
 
                 if (isWLOrCP) {
-                    toast.success(`Client created successfully. Partner fee ($${fixedEnrollmentAmount}) charged automatically.`);
+                    toast.success(`Client created successfully.`);
                 } else {
                     toast.success("Client created successfully");
                 }
