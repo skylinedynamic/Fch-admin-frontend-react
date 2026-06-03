@@ -60,6 +60,8 @@ import ManageResources from './pages/resources/ManageResources.tsx';
 import ResourceForm from './pages/resources/ResourceForm.tsx';
 import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
 import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
+import FundingList from './pages/funding/FundingList';
+import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -268,6 +270,9 @@ export default function App() {
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />
+              <Route path="funding" element={<FundingList />} />
+              <Route path="funding/create" element={<FundingSequencingForm />} />
+              <Route path="funding/:id" element={<FundingSequencingForm />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}
