@@ -134,6 +134,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
 
     // Use fullInvoice if available, otherwise fallback to the row-level invoice
     const displayInvoice = fullInvoice || invoice;
+    const isCommissionPayout = displayInvoice?.type === 'commission payout';
 
     // Calculations - only if displayInvoice exists
     const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string'
@@ -183,7 +184,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                     <p className="text-muted mb-0">{displayInvoice.branding?.city}{displayInvoice.branding?.city && ', '}{displayInvoice.branding?.state} {displayInvoice.branding?.postal_code}</p>
                                                 </div>
                                                 <div className="col-6 text-end">
-                                                    <h6 className="text-muted text-uppercase fw-semibold mb-3">Billing Address</h6>
+                                                    <h6 className="text-muted text-uppercase fw-semibold mb-3">{isCommissionPayout ? 'Partner Details' : 'Billing Address'}</h6>
                                                     <p className="fw-medium mb-2" id="billing-name">{displayInvoice.customer_name || displayInvoice.name || ''}</p>
                                                     <p className="text-muted mb-1" id="billing-address-line-1">{displayInvoice.address || ''}</p>
                                                     {displayInvoice.phone && <p className="text-muted mb-1"><span>Phone: </span><span id="billing-phone-no">{displayInvoice.phone}</span></p>}
@@ -223,7 +224,7 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                                 <table className="table table-borderless text-center table-nowrap align-middle mb-0">
                                                     <thead>
                                                         <tr className="table-active">
-                                                            <th scope="col" className="text-start">Enrollment Details</th>
+                                                            <th scope="col" className="text-start">{isCommissionPayout ? 'Payout Description' : 'Enrollment Details'}</th>
                                                             <th scope="col" className="text-end">Amount</th>
                                                         </tr>
                                                     </thead>
@@ -253,18 +254,20 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
                                             </div>
                                             <div className="mt-3">
                                                 <h6 className="text-muted text-uppercase fw-semibold mb-3">Payment Details:</h6>
-                                                <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>
+                                                {!isCommissionPayout && <p className="text-muted mb-1">Payment Method: <span className="fw-medium" id="payment-method">Stripe</span></p>}
                                                 <p className="text-muted mb-1">Payment Status: <span className="fw-medium" id="payment-method">{displayInvoice.status}</span></p>
-                                                <p className="text-muted mb-1">Card Holder: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
+                                                <p className="text-muted mb-1">{isCommissionPayout ? 'Payee Name' : 'Card Holder'}: <span className="fw-medium" id="card-holder-name">{displayInvoice.customer_name || displayInvoice.name}</span></p>
                                                 <p className="text-muted">Total Amount: <span className="fw-medium">$</span><span id="card-total-amount" className="fw-bold">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                                             </div>
                                             <div className="mt-4">
                                                 <div className="alert alert-info">
                                                     <p className="mb-0"><span className="fw-semibold">NOTES:</span>
-                                                        <span id="note"> All accounts are to be paid within 7 days from receipt of invoice. To be paid by Stripe.
-                                                            If account is not paid within 7
-                                                            days the credits details supplied as confirmation of work undertaken
-                                                            will be charged the agreed quoted fee noted above.
+                                                        <span id="note">
+                                                            {isCommissionPayout ? (
+                                                                displayInvoice.note ? ` ${displayInvoice.note}` : ' No additional notes provided.'
+                                                            ) : (
+                                                                ' All accounts are to be paid within 7 days from receipt of invoice. To be paid by Stripe. If account is not paid within 7 days the credits details supplied as confirmation of work undertaken will be charged the agreed quoted fee noted above.'
+                                                            )}
                                                         </span>
                                                     </p>
                                                 </div>

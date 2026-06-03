@@ -6,8 +6,8 @@ import { CommissionDetail } from '../../modules/commission/types';
 import { useAuthStore } from '../../store/auth/authStore';
 import TableLoader from '../../components/Loader/TableLoader';
 import ErrorPage from '../Utility/ErrorPage';
-import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
-import { FUNDING_APPLICATION_STATUS } from '../../config/borrower';
+import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP, PAYMENT_STATUS_OPTIONS } from '../../config/statusOptions';
+import { FUNDING_APPLICATION_STATUS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../config/borrower';
 import { formatCurrency } from '../../utils/helper';
 import PayoutModal from './PayoutModal';
 
@@ -103,21 +103,12 @@ export default function CommissionDetails() {
                                 </nav>
                             </div>
                             <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                                <button 
-                                    onClick={() => navigate(-1)} 
+                                <button
+                                    onClick={() => navigate(-1)}
                                     className="btn btn-soft-secondary waves-effect"
                                 >
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </button>
-                                {!isPartner && commission?.funding_status === FUNDING_APPLICATION_STATUS.CLOSED && commission?.commission_payment_status?.toLowerCase() !== 'paid' && showPartnerCommissionRow && (
-                                    <button
-                                        className="btn waves-effect waves-light"
-                                        style={{ backgroundColor: 'var(--primary-color)', color: '#fff', borderColor: 'var(--primary-color)' }}
-                                        onClick={() => setShowPayoutModal(true)}
-                                    >
-                                        <i className="ri-wallet-3-line align-middle me-1"></i> Process Payout
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -217,7 +208,7 @@ export default function CommissionDetails() {
                                 <div className="row">
                                     <DetailRow label="Requested Amount" value={formatCurrency(commission.funding_requested_amount, commission.currency_symbol, commission.conversion_rate, 0)} />
                                     <DetailRow label="Funded Amount" value={formatCurrency(commission.funded_amount, commission.currency_symbol, commission.conversion_rate, 0)} text-success />
-                                    <DetailRow label="Funding Status" value={<span className={`badge ${COMMISSION_STATUS_CLASS_MAP[commission.funding_status] || 'bg-light text-body'}`}>{commission.funding_status}</span>} />
+                                    <DetailRow label="Funding Status" value={<span className={`badge ${FUNDING_APPLICATION_STATUS_CLASS_MAP[commission.funding_status] || 'bg-light text-body'}`}>{commission.funding_status}</span>} />
                                     <DetailRow label="Funded Date" value={commission.funded_date} />
                                     <div className="col-12"><hr className="my-2 border-dashed" /></div>
                                     <DetailRow label="Industry Type" value={commission.funding_industry_type} />
@@ -280,73 +271,8 @@ export default function CommissionDetails() {
                         </div>
 
 
-                        {/* Commission Breakdown (Admin View Only) */}
-                        {!isPartner && (
-                            <div className="card border-0 shadow-sm mb-4">
-                                <div className="card-header bg-transparent border-bottom">
-                                    <h5 className="card-title mb-0 d-flex align-items-center">
-                                        <i className="ri-pie-chart-line me-2 text-primary"></i>
-                                        Commission Breakdown
-                                    </h5>
-                                </div>
-                                <div className="card-body">
-                                    <div className="table-responsive">
-                                        <table className="table table-borderless table-nowrap mb-0 align-middle">
-                                            <thead className="table-light text-muted">
-                                                <tr>
-                                                    <th scope="col">Type</th>
-                                                    <th scope="col" className="text-end">Percentage</th>
-                                                    <th scope="col" className="text-end">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center">
-                                                            <div className="avatar-xs me-2">
-                                                                <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-16">T</div>
-                                                            </div>
-                                                            <span className="fw-medium">Success Fee</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="text-end">{commission.total_commission}%</td>
-                                                    <td className="text-end fw-bold">{formatCurrency(commission.total_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center">
-                                                            <div className="avatar-xs me-2">
-                                                                <div className="avatar-title bg-success-subtle text-success rounded-circle fs-16">A</div>
-                                                            </div>
-                                                            <span className="fw-medium">Admin Commission</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="text-end">{commission.admin_commission}%</td>
-                                                    <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
-                                                </tr>
-                                                {showPartnerCommissionRow && (
-                                                    <tr>
-                                                        <td>
-                                                            <div className="d-flex align-items-center">
-                                                                <div className="avatar-xs me-2">
-                                                                    <div className="avatar-title bg-info-subtle text-info rounded-circle fs-16">P</div>
-                                                                </div>
-                                                                <span className="fw-medium">Partner Commission</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="text-end">{commission.partner_commission}%</td>
-                                                        <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
-                                                    </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Commission Notes */}
-                        <div className="card border-0 shadow-sm">
+                        <div className="card border-0 shadow-sm mb-4">
                             <div className="card-header bg-transparent border-bottom">
                                 <h5 className="card-title mb-0 d-flex align-items-center">
                                     <i className="ri-sticky-note-line me-2 text-primary"></i>
@@ -371,6 +297,89 @@ export default function CommissionDetails() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Commission Breakdown (Admin View Only) */}
+                        {!isPartner && (
+                            <div className="card border-0 shadow-sm">
+                                <div className="card-header bg-transparent border-bottom">
+                                    <h5 className="card-title mb-0 d-flex align-items-center">
+                                        <i className="ri-pie-chart-line me-2 text-primary"></i>
+                                        Commission Breakdown
+                                    </h5>
+                                </div>
+                                <div className="card-body">
+                                    <div className="table-responsive">
+                                        <table className="table table-borderless table-nowrap mb-0 align-middle">
+                                            <thead className="table-light text-muted">
+                                                <tr>
+                                                    <th scope="col">Type</th>
+                                                    <th scope="col" className="text-end">Percentage</th>
+                                                    <th scope="col" className="text-end">Amount</th>
+                                                    <th scope="col" className="text-end"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar-xs me-2">
+                                                                <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-16">T</div>
+                                                            </div>
+                                                            <span className="fw-medium">Success Fee</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end">{commission.total_commission}%</td>
+                                                    <td className="text-end fw-bold">{formatCurrency(commission.total_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar-xs me-2">
+                                                                <div className="avatar-title bg-success-subtle text-success rounded-circle fs-16">A</div>
+                                                            </div>
+                                                            <span className="fw-medium">Admin Commission</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end">{commission.admin_commission}%</td>
+                                                    <td className="text-end fw-bold text-success">{formatCurrency(commission.admin_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
+                                                    <td></td>
+                                                </tr>
+                                                {showPartnerCommissionRow && (
+                                                    <tr>
+                                                        <td>
+                                                            <div className="d-flex align-items-center">
+                                                                <div className="avatar-xs me-2">
+                                                                    <div className="avatar-title bg-info-subtle text-info rounded-circle fs-16">P</div>
+                                                                </div>
+                                                                <span className="fw-medium me-2">Partner Commission</span>
+                                                                {commission?.commission_payment_status === PAYMENT_STATUS_OPTIONS[0].value && (
+                                                                    <span className="badge bg-success-subtle text-success border border-success border-opacity-25 fs-12 px-2 py-1">
+                                                                        <i className="ri-checkbox-circle-line align-middle me-1"></i> {PAYMENT_STATUS_OPTIONS[0].label}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-end">{commission.partner_commission}%</td>
+                                                        <td className="text-end fw-bold text-info">{formatCurrency(commission.partner_commission_amount, commission.currency_symbol, commission.conversion_rate, 0)}</td>
+                                                        <td className="text-end">
+                                                            {commission?.funding_status === FUNDING_APPLICATION_STATUS.CLOSED && commission?.commission_payment_status !== PAYMENT_STATUS_OPTIONS[0].value && (
+                                                                <button
+                                                                    className="btn btn-primary btn-sm waves-effect waves-light"
+                                                                    onClick={() => setShowPayoutModal(true)}
+                                                                >
+                                                                    <i className="ri-wallet-3-line align-middle me-1"></i> Pay
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -381,9 +390,10 @@ export default function CommissionDetails() {
                     show={showPayoutModal}
                     onHide={() => setShowPayoutModal(false)}
                     loading={processPayoutMutation.isPending}
-                    onConfirm={(partnerMethod) => {
+                    commission={commission}
+                    onConfirm={(partnerMethod, note) => {
                         processPayoutMutation.mutate(
-                            { id: commission.id, payload: { partner_payment_method: partnerMethod } },
+                            { id: commission.id, payload: { partner_payment_method: partnerMethod, note: note } },
                             {
                                 onSuccess: () => {
                                     toast.success('Payout processed successfully');
