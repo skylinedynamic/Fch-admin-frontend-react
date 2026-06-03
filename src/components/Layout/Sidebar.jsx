@@ -71,7 +71,7 @@ const menuItems = [
   {
     to: "/funding",
     icon: "ri-money-dollar-circle-line",
-    label: "Fund Sequence",
+    label: "Funding Sequence",
     isHostOnly: true,
     permission: "",
   },
