@@ -22,8 +22,8 @@ export const PAYMENT_STATUS_OPTIONS: StatusOption[] = [
 
 export const COMMISSION_STATUS_OPTIONS: StatusOption[] = [
     { label: 'Draft', value: 'Draft' },
-    { label: 'Pending', value: 'Pending' },
-    { label: 'Approved', value: 'Approved' },
+    { label: 'Processing', value: 'Processing' },
+    { label: 'Completed', value: 'Completed' },
     { label: 'Declined', value: 'Declined' }
 ];
 
@@ -35,9 +35,9 @@ export const PAYMENT_STATUS_CLASS_MAP: { [key: string]: string } = {
 };
 
 export const COMMISSION_STATUS_CLASS_MAP: { [key: string]: string } = {
-    'Draft': 'bg-warning-subtle text-warning',
-    'Pending': 'bg-warning-subtle text-warning',
-    'Approved': 'bg-success-subtle text-success',
+    'Draft': 'bg-secondary-subtle text-secondary',
+    'Processing': 'bg-warning-subtle text-warning',
+    'Completed': 'bg-success-subtle text-success',
     'Declined': 'bg-danger-subtle text-danger'
 };
 

@@ -627,7 +627,7 @@ export default function FundingApplicationDetails() {
                                                                 <div className="input-group">
                                                                     <input
                                                                         type="number"
-                                                                        className="form-control"
+                                                                        className={`form-control ${isClosed ? 'bg-light text-muted' : ''}`}
                                                                         placeholder="0"
                                                                         value={successFee}
                                                                         onChange={(e) => {
@@ -646,7 +646,7 @@ export default function FundingApplicationDetails() {
                                                                         step="0.1"
                                                                         disabled={isClosed}
                                                                     />
-                                                                    <span className="input-group-text bg-white text-muted">%</span>
+                                                                    <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
                                                                 </div>
                                                             </div>
 
@@ -657,7 +657,7 @@ export default function FundingApplicationDetails() {
                                                                         <div className="input-group">
                                                                             <input
                                                                                 type="number"
-                                                                                className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''}`}
+                                                                                className={`form-control ${commissionErrors.admin_commission ? 'is-invalid border-danger' : ''} ${isClosed ? 'bg-light text-muted' : ''}`}
                                                                                 placeholder="0"
                                                                                 value={adminCommissionRate}
                                                                                 onChange={(e) => {
@@ -682,7 +682,7 @@ export default function FundingApplicationDetails() {
                                                                                 step="0.1"
                                                                                 disabled={isClosed}
                                                                             />
-                                                                            <span className="input-group-text bg-white text-muted">%</span>
+                                                                            <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
                                                                         </div>
                                                                         {commissionErrors.admin_commission && (
                                                                             <div className="text-danger fs-12 mt-1">{commissionErrors.admin_commission}</div>
@@ -693,7 +693,7 @@ export default function FundingApplicationDetails() {
                                                                         <div className="input-group">
                                                                             <input
                                                                                 type="number"
-                                                                                className={`form-control bg-white ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''}`}
+                                                                                className={`form-control ${commissionErrors.partner_commission ? 'is-invalid border-danger' : ''} ${isClosed ? 'bg-light text-muted' : 'bg-white'}`}
                                                                                 placeholder="0"
                                                                                 value={partnerCommissionRate}
                                                                                 onChange={(e) => {
@@ -718,7 +718,7 @@ export default function FundingApplicationDetails() {
                                                                                 step="0.1"
                                                                                 disabled={isClosed}
                                                                             />
-                                                                            <span className="input-group-text bg-white text-muted">%</span>
+                                                                            <span className={`input-group-text ${isClosed ? 'bg-light' : 'bg-white'} text-muted`}>%</span>
                                                                         </div>
                                                                         {commissionErrors.partner_commission && (
                                                                             <div className="text-danger fs-12 mt-1">{commissionErrors.partner_commission}</div>
@@ -769,36 +769,36 @@ export default function FundingApplicationDetails() {
                                                                     </div>
                                                                     {!isEditingRequestedAmount ? (
                                                                         <div
-                                                                            className={`px-2 py-1 rounded transition-all d-flex align-items-center ${hasPermission('update commission') ? 'cursor-pointer bg-hover-light' : ''}`}
+                                                                            className={`px-2 py-1 rounded transition-all d-flex align-items-center ${hasPermission('update commission') && !isClosed ? 'cursor-pointer bg-hover-light' : ''}`}
                                                                             style={{
                                                                                 transition: 'all 0.2s ease',
                                                                                 border: '1px solid transparent'
                                                                             }}
                                                                             onClick={() => {
-                                                                                if (hasPermission('update commission')) {
+                                                                                if (hasPermission('update commission') && !isClosed) {
                                                                                     setTempRequestedAmount(requestedAmountInput);
                                                                                     setIsEditingRequestedAmount(true);
                                                                                 }
                                                                             }}
                                                                             onMouseEnter={(e) => {
-                                                                                if (hasPermission('update commission')) {
+                                                                                if (hasPermission('update commission') && !isClosed) {
                                                                                     e.currentTarget.style.backgroundColor = 'rgba(10, 179, 156, 0.05)';
                                                                                     e.currentTarget.style.borderColor = 'rgba(10, 179, 156, 0.1)';
                                                                                     e.currentTarget.style.transform = 'translateY(-1px)';
                                                                                 }
                                                                             }}
                                                                             onMouseLeave={(e) => {
-                                                                                if (hasPermission('update commission')) {
+                                                                                if (hasPermission('update commission') && !isClosed) {
                                                                                     e.currentTarget.style.backgroundColor = 'transparent';
                                                                                     e.currentTarget.style.borderColor = 'transparent';
                                                                                     e.currentTarget.style.transform = 'translateY(0)';
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <h5 className="mb-0 fw-bold text-primary">
+                                                                            <h5 className={`mb-0 fw-bold ${isClosed ? 'text-muted' : 'text-primary'}`}>
                                                                                 {formatCurrencyValue(requestedAmount)}
                                                                             </h5>
-                                                                            {hasPermission('update commission') && (
+                                                                            {hasPermission('update commission') && !isClosed && (
                                                                                 <i className="ri-edit-2-line ms-2 fs-14"></i>
                                                                             )}
                                                                         </div>
