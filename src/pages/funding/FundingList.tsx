@@ -10,6 +10,7 @@ import { fetchFundingSequencings, deleteFundingSequencing, updateFundingSequenci
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP } from '../../config/funding';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 
 export default function FundingList() {
     const { hasPermission } = usePermissions();
@@ -28,7 +29,7 @@ export default function FundingList() {
 
     // Sorting state
     const [sortField, setSortField] = useState<string>('id');
-    const [sortOrder, setSortOrder] = useState<string>('asc');
+    const [sortOrder, setSortOrder] = useState<string>('desc');
 
     // Filter states
     const [searchText, setSearchText] = useState<string>('');
@@ -38,6 +39,11 @@ export default function FundingList() {
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<string | null>(null);
+
+    // Checkbox selection state
+    const [selectedFundings, setSelectedFundings] = useState<any[]>([]);
+    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+    const [deleteRows, setDeleteRows] = useState<any[]>([]);
 
     // Initialize filters
     const initFilters = () => {
@@ -88,7 +94,6 @@ export default function FundingList() {
             };
             const response = await fetchFundingSequencings(payload);
             if (response.status !== false) {
-                // Handle nested pagination structure
                 const listData = response.data?.data || response.data || [];
                 const total = response.data?.meta?.total || response.meta?.total || response.total || 0;
 
@@ -117,6 +122,8 @@ export default function FundingList() {
     };
 
     const onSort = (event) => {
+        console.log('Sort Event:', event);
+
         setSortField(event.sortField);
         setSortOrder(event.sortOrder === 1 ? 'asc' : 'desc');
         setPage(1);
@@ -139,8 +146,8 @@ export default function FundingList() {
     };
 
     const iconBodyTemplate = (rowData) => {
-        const iconClass = rowData.icon?.startsWith('ri-') 
-            ? rowData.icon 
+        const iconClass = rowData.icon?.startsWith('ri-')
+            ? rowData.icon
             : (FUNDING_ICON_MAP[rowData.icon] ? `ri-${FUNDING_ICON_MAP[rowData.icon]}-line` : (rowData.icon || 'ri-file-list-3-line'));
         const colorName = FUNDING_COLOR_MAP[rowData.icon_color] || rowData.icon_color || 'primary';
 
@@ -156,9 +163,9 @@ export default function FundingList() {
     const nameBodyTemplate = (rowData) => {
         return (
             <div>
-                <Link to={`/funding/${rowData.id}`} className="fw-bold link-primary">
+                <span className="fw-bold text-primary" style={{ cursor: 'pointer' }} onClick={() => navigate(`/funding/${rowData.id}`)}>
                     {rowData.name}
-                </Link>
+                </span>
                 {rowData.subtitle && (
                     <div className="text-muted fs-12 mt-1">{rowData.subtitle}</div>
                 )}
@@ -177,13 +184,12 @@ export default function FundingList() {
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status || FUNDING_STATUS_OPTIONS[0].value;
         const badgeClass = status === FUNDING_STATUS_OPTIONS[0].value ? 'bg-success' : 'bg-danger';
-        // Assuming we use same permission check pattern, but maybe there's no specific update status perm. Let's just use hasPermission('update funding sequencings') if available, or just always allow if they are here.
-        const canUpdate = true; // or hasPermission('update funding sequencings')
+        const canUpdate = true;
 
         return (
             <span
                 className={`badge ${badgeClass} fs-12 ${canUpdate ? 'cursor-pointer' : ''}`}
-                onClick={() => canUpdate && handleStatusChange(rowData.id, status)}
+                onClick={(e) => { e.stopPropagation(); canUpdate && handleStatusChange(rowData.id, status); }}
                 style={{ cursor: canUpdate ? 'pointer' : 'default' }}
                 title={canUpdate ? 'Click to change status' : ''}
             >
@@ -193,8 +199,8 @@ export default function FundingList() {
     };
 
     const handleStatusChange = async (id, currentStatus) => {
-        const newStatus = currentStatus === FUNDING_STATUS_OPTIONS[0].value 
-            ? FUNDING_STATUS_OPTIONS[1].value 
+        const newStatus = currentStatus === FUNDING_STATUS_OPTIONS[0].value
+            ? FUNDING_STATUS_OPTIONS[1].value
             : FUNDING_STATUS_OPTIONS[0].value;
         try {
             await updateFundingSequencingStatus(id, newStatus);
@@ -206,28 +212,30 @@ export default function FundingList() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this funding option?')) return;
-        try {
-            await deleteFundingSequencing(id);
-            toast.success('Funding option deleted successfully');
-            loadData();
-        } catch (err) {
-            toast.error('Failed to delete funding option');
+    // Delete handlers
+    const openDeleteModal = () => {
+        if (!selectedFundings || selectedFundings.length === 0) {
+            toast.warn('Please select at least one funding to delete.');
+            return;
         }
+        setDeleteRows(selectedFundings);
+        setShowDeleteModal(true);
     };
 
-    const actionBodyTemplate = (rowData) => {
-        return (
-            <div className="d-flex gap-2">
-                <Link to={`/funding/${rowData.id}`} className="btn btn-sm btn-soft-primary">
-                    <i className="ri-pencil-line"></i>
-                </Link>
-                <button type="button" className="btn btn-sm btn-soft-danger" onClick={() => handleDelete(rowData.id)}>
-                    <i className="ri-delete-bin-line"></i>
-                </button>
-            </div>
-        );
+    const handleDeleteConfirm = async () => {
+        const ids = deleteRows.map(f => f.id);
+        try {
+            setLoading(true);
+            await Promise.all(ids.map(id => deleteFundingSequencing(id)));
+            toast.success('Funding options deleted successfully');
+            setShowDeleteModal(false);
+            setSelectedFundings([]);
+            loadData();
+        } catch (err) {
+            toast.error('Failed to delete funding options');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -257,9 +265,25 @@ export default function FundingList() {
                             </div>
                             <div className="mt-0">
                                 <div className="btn-group">
-                                    <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                        <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
-                                    </Link>
+                                    {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
+                                        <>
+                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span className="visually-hidden">Toggle Dropdown</span>
+                                            </button>
+                                            <ul className="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </>
+                                    ) : (
+                                        <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -273,11 +297,11 @@ export default function FundingList() {
                                 <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     {loading ? (
                                         <FilterLoader config={[
-                                            { col: "col-xxl-3 col-sm-12" }, // Search
-                                            { col: "col-xxl-2 col-sm-6" },  // Status
-                                            { col: "col-xxl-2 col-sm-6" },  // Group
-                                            { col: "col-xxl-2 col-sm-6" },  // Type
-                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+                                            { col: "col-xxl-3 col-sm-12" },
+                                            { col: "col-xxl-2 col-sm-6" },
+                                            { col: "col-xxl-2 col-sm-6" },
+                                            { col: "col-xxl-2 col-sm-6" },
+                                            { col: "col-xxl-3 col-sm-12", isButton: true }
                                         ]} />
                                     ) : (
                                         <div className="row g-3 mb-3">
@@ -367,12 +391,24 @@ export default function FundingList() {
                                             }}
                                             filters={filters}
                                             filterDisplay="menu"
+                                            sortMode="single"
                                             className="p-datatable-sm custom-datatable"
                                             tableStyle={{ minWidth: '100%' }}
                                             dataKey="id"
                                             scrollable
                                             scrollHeight="flex"
+                                            selectionMode="multiple"
+                                            selection={selectedFundings}
+                                            onSelectionChange={(e) => setSelectedFundings(e.value)}
+                                            onRowClick={(e) => {
+                                                const isCheckbox = e.originalEvent.target.closest('.p-checkbox') ||
+                                                    e.originalEvent.target.closest('.p-selection-column');
+                                                if (!isCheckbox) navigate(`/funding/${e.data.id}`);
+                                            }}
+                                            responsiveLayout="scroll"
+                                            emptyMessage="No funding found"
                                         >
+                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                             <Column header="Icon" body={iconBodyTemplate} style={{ minWidth: '80px' }} />
                                             <Column field="name" header="Name" body={nameBodyTemplate} sortable filter filterPlaceholder="Search" style={{ minWidth: '200px' }} />
                                             <Column field="group.name" header="Group" body={groupBodyTemplate} sortable filter filterPlaceholder="Search" style={{ minWidth: '150px' }} />
@@ -380,7 +416,6 @@ export default function FundingList() {
                                             <Column field="amount_range" header="Amount" sortable filter filterPlaceholder="Search" style={{ minWidth: '120px' }} />
                                             <Column field="terms" header="Terms" sortable filter filterPlaceholder="Search" style={{ minWidth: '120px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '100px' }} />
-                                            {/* <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '100px', textAlign: 'right' }} /> */}
                                         </DataTable>
                                     </div>
                                 )}
@@ -389,6 +424,14 @@ export default function FundingList() {
                     </div>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onConfirm={handleDeleteConfirm}
+                onClose={() => setShowDeleteModal(false)}
+                loading={loading}
+                text="The selected funding options and all associated data will be deleted."
+            />
         </div>
     );
 }
