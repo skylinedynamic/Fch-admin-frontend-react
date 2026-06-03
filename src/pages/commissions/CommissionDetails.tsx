@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useCommission } from '../../modules/commission/queries';
+import { useCommission, useProcessPayout } from '../../modules/commission/queries';
+import { toast } from 'react-toastify';
 import { CommissionDetail } from '../../modules/commission/types';
 import { useAuthStore } from '../../store/auth/authStore';
 import TableLoader from '../../components/Loader/TableLoader';
 import ErrorPage from '../Utility/ErrorPage';
 import { PAYMENT_STATUS_CLASS_MAP, COMMISSION_STATUS_CLASS_MAP } from '../../config/statusOptions';
+import { FUNDING_APPLICATION_STATUS } from '../../config/borrower';
 import { formatCurrency } from '../../utils/helper';
+import PayoutModal from './PayoutModal';
 
 const DetailRow = ({ label, value, className = 'col-md-6 mb-3' }: { label: string; value: React.ReactNode; className?: string }) => (
     <div className={className}>
@@ -39,7 +42,9 @@ export default function CommissionDetails() {
     const navigate = useNavigate();
     const { data: fetchedCommission, isLoading, error } = useCommission(id);
     const [commissionState, setCommissionState] = useState<CommissionDetail | null>(null);
+    const [showPayoutModal, setShowPayoutModal] = useState(false);
     const user = useAuthStore((state) => state.user);
+    const processPayoutMutation = useProcessPayout();
 
     // Update state when data is fetched
     React.useEffect(() => {
@@ -98,16 +103,21 @@ export default function CommissionDetails() {
                                 </nav>
                             </div>
                             <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                                {/* {!isPartner && commission?.commission_payment_status?.toLowerCase() !== 'paid' && (
+                                <button 
+                                    onClick={() => navigate(-1)} 
+                                    className="btn btn-soft-secondary waves-effect"
+                                >
+                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                </button>
+                                {!isPartner && commission?.funding_status === FUNDING_APPLICATION_STATUS.CLOSED && commission?.commission_payment_status?.toLowerCase() !== 'paid' && showPartnerCommissionRow && (
                                     <button
-                                        className="btn btn-success waves-effect waves-light"
+                                        className="btn waves-effect waves-light"
+                                        style={{ backgroundColor: 'var(--primary-color)', color: '#fff', borderColor: 'var(--primary-color)' }}
+                                        onClick={() => setShowPayoutModal(true)}
                                     >
                                         <i className="ri-wallet-3-line align-middle me-1"></i> Process Payout
                                     </button>
-                                )} */}
-                                <button onClick={() => navigate(-1)} className="btn btn-soft-secondary waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -364,6 +374,29 @@ export default function CommissionDetails() {
                     </div>
                 </div>
             </div>
+
+            {/* Payout Modal */}
+            {commission && (
+                <PayoutModal
+                    show={showPayoutModal}
+                    onHide={() => setShowPayoutModal(false)}
+                    loading={processPayoutMutation.isPending}
+                    onConfirm={(partnerMethod) => {
+                        processPayoutMutation.mutate(
+                            { id: commission.id, payload: { partner_payment_method: partnerMethod } },
+                            {
+                                onSuccess: () => {
+                                    toast.success('Payout processed successfully');
+                                    setShowPayoutModal(false);
+                                },
+                                onError: (error: any) => {
+                                    toast.error(error?.response?.data?.message || 'Failed to process payout');
+                                }
+                            }
+                        );
+                    }}
+                />
+            )}
         </div>
     );
 }

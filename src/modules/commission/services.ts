@@ -10,3 +10,8 @@ export const getCommissionById = async (id: string | number): Promise<Commission
     const response = await apiClient.get<{ status: boolean; message: string; data: CommissionDetail }>(`/common/commissions/${id}`);
     return response.data.data;
 };
+
+export const processPayout = async (id: string | number, payload: { partner_payment_method: string }): Promise<any> => {
+    const response = await apiClient.post(`/admin/commission/${id}/payout`, payload);
+    return response.data;
+};
