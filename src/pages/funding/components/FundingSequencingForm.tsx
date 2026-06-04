@@ -40,8 +40,42 @@ export default function FundingSequencingForm() {
         action_url: '',
         description: '',
         icon: '',
-        icon_color: 'blue'
+        icon_color: 'blue',
+        speed_to_funds: '',
+        uses: '',
+        qualify_reasons: [''],
+        missing_documents: [''],
+        readiness_factors: [{ label: '', status: 'Good' }],
+        eligibility_status: 'likely_eligible',
+        eligibility_label: 'Likely Eligible'
     });
+
+    const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
+        setFormData(prev => {
+            const newArray = [...(prev[name as keyof typeof prev] as any[])];
+            if (key) {
+                newArray[index] = { ...newArray[index], [key]: value };
+            } else {
+                newArray[index] = value;
+            }
+            return { ...prev, [name]: newArray };
+        });
+    };
+
+    const addArrayItem = (name: string, defaultItem: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: [...(prev[name as keyof typeof prev] as any[]), defaultItem]
+        }));
+    };
+
+    const removeArrayItem = (name: string, index: number) => {
+        setFormData(prev => {
+            const newArray = [...(prev[name as keyof typeof prev] as any[])];
+            newArray.splice(index, 1);
+            return { ...prev, [name]: newArray };
+        });
+    };
 
     const { editorRef: descriptionRef } = useSummernote('description', formData.description, (e) => {
         setFormData(prev => ({ ...prev, description: e.target.value }));
@@ -113,7 +147,14 @@ export default function FundingSequencingForm() {
                         funding_group_id: data.funding_group_id || null,
                         funding_type_id: data.funding_type_id || null,
                         icon: data.icon || '',
-                        icon_color: data.icon_color || 'blue'
+                        icon_color: data.icon_color || 'blue',
+                        speed_to_funds: data.speed_to_funds || '',
+                        uses: data.uses || '',
+                        qualify_reasons: data.qualify_reasons?.length ? data.qualify_reasons : [''],
+                        missing_documents: data.missing_documents?.length ? data.missing_documents : [''],
+                        readiness_factors: data.readiness_factors?.length ? data.readiness_factors : [{ label: '', status: 'Good' }],
+                        eligibility_status: data.eligibility_status || 'likely_eligible',
+                        eligibility_label: data.eligibility_label || 'Likely Eligible'
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -373,6 +414,110 @@ export default function FundingSequencingForm() {
                                                 </div>
                                             </div>
 
+                                            {/* Details Page Specifics */}
+                                            <div className="col-lg-12 mt-5">
+                                                <h6 className="fw-semibold text-uppercase text-muted border-bottom pb-2 mb-1">Details Page Information</h6>
+                                            </div>
+
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label">Speed to Funds</label>
+                                                    <input type="text" name="speed_to_funds" className={`form-control ${errors.speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1-7 Days" />
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label">Uses</label>
+                                                    <input type="text" name="uses" className={`form-control ${errors.uses ? 'is-invalid' : ''}`} value={formData.uses} onChange={handleChange} placeholder="e.g. Working Capital, Inventory" />
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label">Eligibility Status</label>
+                                                    <select name="eligibility_status" className="form-select" value={formData.eligibility_status} onChange={handleChange}>
+                                                        <option value="likely_eligible">Likely Eligible</option>
+                                                        <option value="eligible">Eligible</option>
+                                                        <option value="review_needed">Review Needed</option>
+                                                        <option value="not_eligible">Not Eligible</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label">Eligibility Label</label>
+                                                    <input type="text" name="eligibility_label" className={`form-control ${errors.eligibility_label ? 'is-invalid' : ''}`} value={formData.eligibility_label} onChange={handleChange} placeholder="e.g. Likely Eligible" />
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-12 mt-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <label className="form-label mb-0">Qualify Reasons</label>
+                                                    <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => addArrayItem('qualify_reasons', '')}>
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Reason
+                                                    </button>
+                                                </div>
+                                                {formData.qualify_reasons.map((reason, index) => (
+                                                    <div key={index} className="d-flex gap-2 mb-2">
+                                                        <input type="text" className="form-control" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', index, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
+                                                        <button type="button" className="btn btn-soft-danger px-3" onClick={() => removeArrayItem('qualify_reasons', index)}>
+                                                            <i className="ri-delete-bin-line"></i>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="col-lg-12 mt-3">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <label className="form-label mb-0">Missing Documents</label>
+                                                    <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => addArrayItem('missing_documents', '')}>
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Document
+                                                    </button>
+                                                </div>
+                                                {formData.missing_documents.map((doc, index) => (
+                                                    <div key={index} className="d-flex gap-2 mb-2">
+                                                        <input type="text" className="form-control" value={doc} onChange={(e) => handleArrayChange('missing_documents', index, e.target.value)} placeholder="e.g. Last 3 months business bank statements" />
+                                                        <button type="button" className="btn btn-soft-danger px-3" onClick={() => removeArrayItem('missing_documents', index)}>
+                                                            <i className="ri-delete-bin-line"></i>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="col-lg-12 mt-3">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <label className="form-label mb-0">Readiness Factors</label>
+                                                    <button type="button" className="btn btn-sm btn-soft-primary" onClick={() => addArrayItem('readiness_factors', { label: '', status: 'Good' })}>
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Factor
+                                                    </button>
+                                                </div>
+                                                {formData.readiness_factors.map((factor, index) => (
+                                                    <div key={index} className="row g-2 mb-2">
+                                                        <div className="col-md-7">
+                                                            <input type="text" className="form-control" value={factor.label} onChange={(e) => handleArrayChange('readiness_factors', index, e.target.value, 'label')} placeholder="e.g. Business Credit" />
+                                                        </div>
+                                                        <div className="col-md-4">
+                                                            <select className="form-select" value={factor.status} onChange={(e) => handleArrayChange('readiness_factors', index, e.target.value, 'status')}>
+                                                                <option value="Good">Good</option>
+                                                                <option value="Strong">Strong</option>
+                                                                <option value="Fair">Fair</option>
+                                                                <option value="Weak">Weak</option>
+                                                                <option value="Missing">Missing</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-1">
+                                                            <button type="button" className="btn btn-soft-danger w-100" onClick={() => removeArrayItem('readiness_factors', index)}>
+                                                                <i className="ri-delete-bin-line"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="col-lg-12 mt-5">
+                                                <h6 className="fw-semibold text-uppercase text-muted border-bottom pb-2 mb-4">Display Configurations</h6>
+                                            </div>
+
                                             {/* Icon Picker */}
                                             <div className="col-lg-6">
                                                 <div>
@@ -392,9 +537,9 @@ export default function FundingSequencingForm() {
                                                                     {iconOptions.filter(ico => !iconSearch || ico.label.toLowerCase().includes(iconSearch.toLowerCase())).map((ico) => {
                                                                         const isSelected = formData.icon === ico.value || (formData.icon && `ri-${FUNDING_ICON_MAP[formData.icon]}-line` === ico.value);
                                                                         return (
-                                                                        <button key={ico.value} type="button" className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 ${isSelected ? `bg-${FUNDING_COLOR_MAP[formData.icon_color] || 'primary'}-subtle text-${FUNDING_COLOR_MAP[formData.icon_color] || 'primary'}` : ''}`} onClick={() => { handleInputChange({ target: { name: 'icon', value: ico.value } }); setShowIconDropdown(false); }}>
-                                                                            <i className={`${ico.icon} fs-16`}></i><span className="fs-13">{ico.label}</span>
-                                                                        </button>
+                                                                            <button key={ico.value} type="button" className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 ${isSelected ? `bg-${FUNDING_COLOR_MAP[formData.icon_color] || 'primary'}-subtle text-${FUNDING_COLOR_MAP[formData.icon_color] || 'primary'}` : ''}`} onClick={() => { handleInputChange({ target: { name: 'icon', value: ico.value } }); setShowIconDropdown(false); }}>
+                                                                                <i className={`${ico.icon} fs-16`}></i><span className="fs-13">{ico.label}</span>
+                                                                            </button>
                                                                         );
                                                                     })}
                                                                 </div>
