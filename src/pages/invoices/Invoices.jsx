@@ -7,8 +7,10 @@ import InvoiceTable from './components/InvoiceTable';
 import { fetchInvoices, fetchInvoiceStats } from '../../modules/invoice';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
 
 export default function Invoices() {
+    const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(true);
     const [invoices, setInvoices] = useState([]);
     const [stats, setStats] = useState(null);
@@ -126,6 +128,7 @@ export default function Invoices() {
             toast.error('Failed to load invoices');
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     };
 
@@ -198,43 +201,49 @@ export default function Invoices() {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <InvoiceStats stats={stats} loading={statsLoading} />
+                {initialLoading ? (
+                    <ListSkeletonLoader />
+                ) : (
+                    <>
+                        {/* Stats Cards */}
+                        <InvoiceStats stats={stats} loading={statsLoading} />
 
-                {/* Filters and Table Section */}
-                <div className="row row-table-fit">
-                    <div className="col-lg-12">
-                        <div className="card">
-                            <div className="card-body list-fluid-card">
-                                <InvoiceFilters
-                                    searchText={searchText} setSearchText={setSearchText}
-                                    selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
-                                    selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
-                                    selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
-                                    dateRange={dateRange} setDateRange={setDateRange}
-                                    onApply={handleApplyFilters}
-                                    onClear={handleClearFilters}
-                                    loading={loading}
-                                />
+                        {/* Filters and Table Section */}
+                        <div className="row row-table-fit">
+                            <div className="col-lg-12">
+                                <div className="card">
+                                    <div className="card-body list-fluid-card">
+                                        <InvoiceFilters
+                                            searchText={searchText} setSearchText={setSearchText}
+                                            selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
+                                            selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
+                                            dateRange={dateRange} setDateRange={setDateRange}
+                                            onApply={handleApplyFilters}
+                                            onClear={handleClearFilters}
+                                            loading={loading}
+                                        />
 
-                                <InvoiceTable
-                                    data={invoices}
-                                    loading={loading}
-                                    totalRecords={totalRecords}
-                                    page={page}
-                                    perPage={perPage}
-                                    onPage={onPage}
-                                    onSort={onSort}
-                                    onFilter={onFilter}
-                                    filters={filters}
-                                    sortField={sortField}
-                                    sortOrder={sortOrder}
-                                    onRefresh={loadData}
-                                />
+                                        <InvoiceTable
+                                            data={invoices}
+                                            loading={loading}
+                                            totalRecords={totalRecords}
+                                            page={page}
+                                            perPage={perPage}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            onFilter={onFilter}
+                                            filters={filters}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder}
+                                            onRefresh={loadData}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );

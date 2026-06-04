@@ -39,7 +39,9 @@ import FundingApplicationDetails from './pages/applications/funding/FundingAppli
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
+import InvoiceDetails from './pages/invoices/InvoiceDetails.jsx';
 import Payments from './pages/payments/Payments.jsx';
+import PaymentDetails from './pages/payments/PaymentDetails.jsx';
 import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
 import Profile from './pages/auth-profile/Profile';
 import CommissionList from './pages/commissions/CommissionList';
@@ -320,11 +322,13 @@ export default function App() {
             {/* Invoices Routes */}
             <Route element={<PermissionRoute permission="view invoices" />}>
               <Route path="invoices" element={<Invoices />} />
+              <Route path="invoices/:id" element={<InvoiceDetails />} />
             </Route>
 
             {/* Payments Routes */}
             <Route element={<PermissionRoute permission="view payments" />}>
               <Route path="payments" element={<Payments />} />
+              <Route path="payments/:id" element={<PaymentDetails />} />
             </Route>
 
             {/* Subscriptions Routes */}

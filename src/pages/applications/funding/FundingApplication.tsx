@@ -237,7 +237,7 @@ export default function FundingApplication() {
                                     handleApplyFilters();
                                 }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -250,7 +250,7 @@ export default function FundingApplication() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-6`}>
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <Dropdown
                                                 value={selectedStatus}
                                                 options={[{ label: 'All Status', value: '' }, ...APPLICATION_STATUS_OPTIONS]}
@@ -261,7 +261,7 @@ export default function FundingApplication() {
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-6`}>
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <Calendar
                                                 value={dateRange}
                                                 onChange={(e: any) => setDateRange(e.value)}
@@ -272,7 +272,7 @@ export default function FundingApplication() {
                                                 showIcon
                                             />
                                         </div>
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters

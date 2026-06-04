@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -23,27 +24,26 @@ export default function InvoiceTable({
     onRefresh // Add onRefresh prop to reload data after payment
 }) {
     const user = useAuthStore((state) => state.user);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const navigate = useNavigate();
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
-
-    const handlePayClick = (invoice) => {
-        setSelectedInvoice(invoice);
-        setShowPaymentModal(true);
-    };
 
     const handlePreviewClick = (invoice) => {
         setSelectedInvoice(invoice);
         setShowPreviewModal(true);
     };
 
-    const handlePaymentSuccess = (paymentId) => {
-        setShowPaymentModal(false);
-        setSelectedInvoice(null);
-        if (onRefresh) {
-            onRefresh();
-        }
+    const handlePayClick = (invoice) => {
+        setSelectedInvoice(invoice);
+        setShowPaymentModal(true);
     };
+
+    const handlePaymentSuccess = () => {
+        setShowPaymentModal(false);
+        if (onRefresh) onRefresh();
+    };
+
     const statusFilterElement = (options) => {
         return (
             <Dropdown
@@ -71,21 +71,16 @@ export default function InvoiceTable({
     };
 
     const amountBodyTemplate = (rowData) => {
-        const amount = typeof rowData.payment_amount === 'string'
-            ? parseFloat(rowData.payment_amount)
-            : rowData.payment_amount;
-        return <span>${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>;
+        return <span>{rowData.payment_amount}</span>;
     };
 
     const actionBodyTemplate = (rowData) => {
-        const isNotPaid = rowData.status != STATUS_PAID;
+        const isNotPaid = rowData.status !== STATUS_PAID;
         const isNotHost = user?.is_host == 0;
-        const isPartnerEntity = rowData.entity_type === 'App\\Models\\Partner\\Partner';
-
         return (
-            <div className="d-flex align-items-center gap-2 invoice-action-btns">
+            <div className="d-flex align-items-center gap-2">
                 <button
-                    className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center btn-invoice-preview"
+                    className="btn btn-soft-danger btn-sm p-1 d-flex align-items-center justify-content-center"
                     style={{ width: '28px', height: '28px' }}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -95,16 +90,16 @@ export default function InvoiceTable({
                 >
                     <i className="ri-file-pdf-line fs-14"></i>
                 </button>
-                {isNotPaid && isNotHost && isPartnerEntity && (
+                {isNotPaid && isNotHost && rowData.entity_type?.includes('Partner') && (
                     <button
-                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0 btn-pay-now"
+                        className="btn btn-primary btn-sm waves-effect waves-light fw-medium border-0"
                         onClick={(e) => {
                             e.stopPropagation();
                             handlePayClick(rowData);
                         }}
                     >
-                        <i className="ri-secure-payment-line align-middle me-1 icon-pay"></i>
-                        <span className="btn-text">Pay Now</span>
+                        <i className="ri-secure-payment-line align-middle me-1"></i>
+                        Pay Now
                     </button>
                 )}
             </div>
@@ -135,6 +130,8 @@ export default function InvoiceTable({
                 className="p-datatable-sm fs-13"
                 responsiveLayout="scroll"
                 emptyMessage="No invoices found."
+                onRowClick={(e) => navigate(`/invoices/${e.data.id}`)}
+                rowClassName={() => 'cursor-pointer'}
             >
                 <Column field="invoice_id" header="Invoice ID" style={{ minWidth: '100px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by ID"></Column>
                 <Column field="customer_name" header="Customer" style={{ minWidth: '180px' }} sortable filter showFilterMatchModes filterPlaceholder="Search by name"></Column>

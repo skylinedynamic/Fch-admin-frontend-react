@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -18,6 +19,8 @@ export default function PaymentTable({
     sortField,
     sortOrder
 }) {
+    const navigate = useNavigate();
+
     const statusBodyTemplate = (rowData) => {
         const status = rowData.status?.toLowerCase();
         const color = PAYMENT_STATUS_COLORS[status] || 'primary';
@@ -40,7 +43,7 @@ export default function PaymentTable({
     };
 
     const amountBodyTemplate = (rowData) => {
-        return `$${Number(rowData.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return rowData.amount;
     };
 
     const nameBodyTemplate = (rowData) => {
@@ -107,25 +110,14 @@ export default function PaymentTable({
                 scrollable
                 scrollHeight="flex"
                 responsiveLayout="scroll"
+                onRowClick={(e) => navigate(`/payments/${e.data.id}`)}
+                rowClassName={() => 'cursor-pointer'}
             >
                 <Column field="transaction_date" header="Date" sortable filter showFilterMatchModes filterPlaceholder="Search by date" style={{ minWidth: '100px' }}></Column>
                 <Column field="invoice_id" header="Invoice ID" sortable filter showFilterMatchModes filterPlaceholder="Search by invoice ID" style={{ minWidth: '100px' }}></Column>
                 <Column field="from" header="Payment Method" sortable filter showFilterMatchModes filterPlaceholder="Search by from" style={{ minWidth: '100px' }}></Column>
 
-                <Column
-                    field="payment_type"
-                    header="Payment Type"
-                    body={(rowData) => {
-                        // const type = rowData.partner_name ? 'Partner' : 'Borrower';
-                        return (
-                            <div>
-                                <div className="fw-medium">{rowData.payment_type}</div>
-                                {/* <div className="text-muted fs-11">{type} Payment</div> */}
-                            </div>
-                        );
-                    }}
-                    sortable filter showFilterMatchModes filterPlaceholder="Search by type" style={{ minWidth: '120px' }}
-                ></Column>
+
                 <Column
                     header="Name"
                     body={nameBodyTemplate}
