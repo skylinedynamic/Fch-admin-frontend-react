@@ -23,6 +23,7 @@ export interface CreditAccount {
     borrower_exposure?: string;
     sequencing_priority?: string;
     image_url?: string;
+    full_image_url?: string;
     reference_url?: string;
     status: string;
     personal_guarantee?: string;
