@@ -7,18 +7,21 @@ import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP } from '../../../config/funding';
+import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import { scrollToFirstError } from '../../../utils/formUtils';
+import '../../../assets/css/funding.css';
 
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
     value: code
 }));
+
+
 
 export default function FundingSequencingForm() {
     const { hasPermission } = usePermissions();
@@ -78,7 +81,12 @@ export default function FundingSequencingForm() {
         require_completed_application: true,
         require_documents_uploaded: true,
         manual_review_allowed: true,
-        exception_allowed: true
+        exception_allowed: true,
+        speed_to_funds: '',
+        uses: [],
+        qualify_reasons: [],
+        readiness_factors: [],
+        missing_documents: []
     });
 
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
@@ -207,7 +215,12 @@ export default function FundingSequencingForm() {
                         require_completed_application: data.require_completed_application || false,
                         require_documents_uploaded: data.require_documents_uploaded || false,
                         manual_review_allowed: data.manual_review_allowed || false,
-                        exception_allowed: data.exception_allowed || false
+                        exception_allowed: data.exception_allowed || false,
+                        speed_to_funds: data.speed_to_funds || '',
+                        uses: Array.isArray(data.uses) ? data.uses : [],
+                        qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
+                        readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors : [],
+                        missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -237,11 +250,15 @@ export default function FundingSequencingForm() {
         setLoading(true);
 
         const cleanData = { ...formData };
-        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries'].forEach(field => {
+        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
                 cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => typeof item === 'string' && item.trim() !== '');
             }
         });
+
+        if (Array.isArray(cleanData.readiness_factors)) {
+            cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'object' && item !== null && item.label && item.label.trim() !== '');
+        }
 
         let payload = cleanData;
 
@@ -261,7 +278,12 @@ export default function FundingSequencingForm() {
                     description: cleanData.description,
                     icon: cleanData.icon,
                     icon_color: cleanData.icon_color,
-                    sort_order: cleanData.sort_order
+                    sort_order: cleanData.sort_order,
+                    speed_to_funds: cleanData.speed_to_funds,
+                    uses: cleanData.uses,
+                    qualify_reasons: cleanData.qualify_reasons,
+                    readiness_factors: cleanData.readiness_factors,
+                    missing_documents: cleanData.missing_documents
                 } as any;
             } else if (activeTab === 'visibility') {
                 payload = {
@@ -519,7 +541,7 @@ export default function FundingSequencingForm() {
                                                                 optionLabel="name"
                                                                 optionValue="id"
                                                                 placeholder="Select group"
-                                                                className={`w-100 rounded-3 ${(errors as any).funding_group_id ? 'p-invalid border-danger' : ''}`}
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_group_id ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                             {(errors as any).funding_group_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_group_id}</small>}
                                                         </div>
@@ -545,7 +567,7 @@ export default function FundingSequencingForm() {
                                                                 optionLabel="name"
                                                                 optionValue="id"
                                                                 placeholder="Select type"
-                                                                className={`w-100 rounded-3 ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                             {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
                                                         </div>
@@ -601,7 +623,7 @@ export default function FundingSequencingForm() {
                                                                 placeholder="Select a color..."
                                                                 valueTemplate={colorValueTemplate}
                                                                 itemTemplate={colorItemTemplate}
-                                                                className="w-100 rounded-3"
+                                                                className="w-100 rounded-3 slim-dropdown"
                                                             />
                                                         </div>
                                                     </div>
@@ -630,12 +652,103 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
                                                                 optionLabel="label"
                                                                 optionValue="value"
-                                                                className={`w-100 rounded-3 ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                         </div>
                                                     </div>
 
-                                                    {/* Full Width Row 6 */}
+                                                    {/* Row 6 */}
+                                                    <div className="col-lg-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
+                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
+                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="col-lg-6">
+                                                        <div className="mt-3 mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Uses</label>
+                                                            <MultiSelect
+                                                                value={formData.uses}
+                                                                options={USES_OPTIONS}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Select uses..."
+                                                                className="w-100 rounded-3 slim-multiselect"
+                                                                display="chip"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6">
+                                                        <div className="mt-3 mb-2">
+                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
+                                                                Why You May Qualify
+                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('qualify_reasons', ''); }}>+ Add Reason</button>
+                                                            </div>
+                                                            {formData.qualify_reasons.map((reason, idx) => (
+                                                                <div key={`qualify-${idx}`} className="d-flex align-items-center gap-2 mb-2">
+                                                                    <input type="text" className="form-control rounded-3 py-2" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', idx, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
+                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('qualify_reasons', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                </div>
+                                                            ))}
+                                                            {formData.qualify_reasons.length === 0 && (
+                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
+                                                                    No reasons added yet. Click "+ Add Reason" to begin.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6">
+                                                        <div className="mt-3 mb-2">
+                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
+                                                                Readiness Factors
+                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('readiness_factors', { label: '', status: 'Good' }); }}>+ Add Factor</button>
+                                                            </div>
+                                                            {formData.readiness_factors.map((factor, idx) => (
+                                                                <div key={`readiness-${idx}`} className="d-flex align-items-center gap-2 mb-2">
+                                                                    <input type="text" className="form-control rounded-3 py-2" value={factor.label || ''} onChange={(e) => handleArrayChange('readiness_factors', idx, e.target.value, 'label')} placeholder="e.g. Business Credit" style={{ flex: 2 }} />
+                                                                    <Dropdown
+                                                                        value={factor.status || 'Good'}
+                                                                        options={READINESS_FACTOR_STATUS_OPTIONS}
+                                                                        onChange={(e) => handleArrayChange('readiness_factors', idx, e.value, 'status')}
+                                                                        optionLabel="label"
+                                                                        optionValue="value"
+                                                                        className="rounded-3 slim-dropdown"
+                                                                        style={{ flex: 1, display: 'flex', alignItems: 'center' }}
+                                                                    />
+                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('readiness_factors', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                </div>
+                                                            ))}
+                                                            {formData.readiness_factors.length === 0 && (
+                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
+                                                                    No readiness factors added yet. Click "+ Add Factor" to begin.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6">
+                                                        <div className="mt-3 mb-2">
+                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
+                                                                Missing Documents
+                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('missing_documents', ''); }}>+ Add Document</button>
+                                                            </div>
+                                                            {formData.missing_documents.map((doc, idx) => (
+                                                                <div key={`missing-${idx}`} className="d-flex align-items-center gap-2 mb-2">
+                                                                    <input type="text" className="form-control rounded-3 py-2" value={doc} onChange={(e) => handleArrayChange('missing_documents', idx, e.target.value)} placeholder="e.g. 3 Months Bank Statements" />
+                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('missing_documents', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                </div>
+                                                            ))}
+                                                            {formData.missing_documents.length === 0 && (
+                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
+                                                                    No missing documents added yet. Click "+ Add Document" to begin.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Full Width Row 8 */}
                                                     <div className="col-lg-12">
                                                         <div className="mt-3 mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Description</label>
@@ -744,7 +857,7 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'allowed_states', value: e.value } })}
                                                                 optionLabel="label"
                                                                 placeholder="Leave empty = all states allowed"
-                                                                className="w-100 rounded-3"
+                                                                className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
                                                                 maxSelectedLabels={100}
                                                                 filter
@@ -759,7 +872,7 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'restricted_states', value: e.value } })}
                                                                 optionLabel="label"
                                                                 placeholder="Hard stop - blocked (e.g. ND)"
-                                                                className="w-100 rounded-3"
+                                                                className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
                                                                 maxSelectedLabels={100}
                                                                 filter
@@ -774,7 +887,7 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'allowed_industries', value: e.value } })}
                                                                 optionLabel="label"
                                                                 placeholder="Leave empty = all industries allowed"
-                                                                className="w-100 rounded-3"
+                                                                className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
                                                                 maxSelectedLabels={100}
                                                                 filter
@@ -789,7 +902,7 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'restricted_industries', value: e.value } })}
                                                                 optionLabel="label"
                                                                 placeholder="Hard stop - blocked (e.g. Real Estate)"
-                                                                className="w-100 rounded-3"
+                                                                className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
                                                                 maxSelectedLabels={100}
                                                                 filter

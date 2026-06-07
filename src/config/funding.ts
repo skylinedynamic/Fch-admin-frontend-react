@@ -70,3 +70,19 @@ export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
     { label: 'Term Loans', value: 'Term Loans' },
     { label: 'Invoice Financing', value: 'Invoice Financing' }
 ];
+
+export const USES_OPTIONS: SelectOption[] = [
+    { label: 'Working Capital', value: 'Working Capital' },
+    { label: 'Inventory', value: 'Inventory' },
+    { label: 'Payroll', value: 'Payroll' },
+    { label: 'Expansion', value: 'Expansion' },
+    { label: 'Equipment', value: 'Equipment' },
+    { label: 'Marketing', value: 'Marketing' },
+    { label: 'Refinance Debt', value: 'Refinance Debt' },
+];
+
+export const READINESS_FACTOR_STATUS_OPTIONS: SelectOption[] = [
+    { label: 'Good', value: 'Good' },
+    { label: 'Strong', value: 'Strong' },
+    { label: 'Missing', value: 'Missing' }
+];
