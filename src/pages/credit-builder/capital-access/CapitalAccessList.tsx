@@ -19,6 +19,7 @@ export default function CapitalAccessList() {
     const [loading, setLoading] = useState<boolean>(true);
     const [accounts, setAccounts] = useState<CapitalAccount[]>([]);
 
+
     // Checkbox selection state
     const [selectedPrograms, setSelectedPrograms] = useState<CapitalAccount[]>([]);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
