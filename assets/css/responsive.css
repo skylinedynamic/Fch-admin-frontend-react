@@ -1821,3 +1821,36 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         justify-content: center !important;
     }
 }
+
+@media (max-width: 767.98px) {
+    .table-filter .btn {
+        width: 100%;
+        margin-top: 5px;
+    }
+    .table-filter .d-flex.gap-2 {
+        flex-direction: column;
+    }
+}
+
+/* Stats Cards Mobile Adjustments */
+@media (max-width: 767.98px) {
+    .funding-section .card-animate .card-body {
+        padding: 12px !important;
+    }
+    .funding-section .card-animate .kpi-title {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .funding-section .card-animate .counter-value {
+        font-size: 15px !important;
+    }
+    .funding-section .card-animate .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    .funding-section .card-animate .avatar-title {
+        font-size: 16px !important;
+    }
+}

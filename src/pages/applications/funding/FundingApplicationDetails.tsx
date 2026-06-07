@@ -988,7 +988,7 @@ export default function FundingApplicationDetails() {
                                                 {step.id}
                                             </div>
                                             <div className="flex-grow-1">
-                                                <div className={`fw-medium ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '13px' }}>
+                                                <div className={`fw-medium fs-13 step-title-text ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '13px' }}>
                                                     {step.title}
                                                 </div>
                                             </div>

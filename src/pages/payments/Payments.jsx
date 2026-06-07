@@ -7,8 +7,10 @@ import PaymentTable from './components/PaymentTable';
 import { fetchPayments, fetchPaymentStats } from '../../modules/payment';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
 
 export default function Payments() {
+    const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(true);
     const [payments, setPayments] = useState([]);
     const [stats, setStats] = useState(null);
@@ -135,6 +137,7 @@ export default function Payments() {
             toast.error('Failed to load payments');
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     };
 
@@ -207,42 +210,48 @@ export default function Payments() {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <PaymentStats stats={stats} loading={statsLoading} />
+                {initialLoading ? (
+                    <ListSkeletonLoader />
+                ) : (
+                    <>
+                        {/* Stats Cards */}
+                        <PaymentStats stats={stats} loading={statsLoading} />
 
-                {/* Filters and Table Section */}
-                <div className="row row-table-fit">
-                    <div className="col-lg-12">
-                        <div className="card">
-                            <div className="card-body list-fluid-card">
-                                <PaymentFilters
-                                    searchText={searchText} setSearchText={setSearchText}
-                                    selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
-                                    selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
-                                    selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
-                                    dateRange={dateRange} setDateRange={setDateRange}
-                                    onApply={handleApplyFilters}
-                                    onClear={handleClearFilters}
-                                    loading={loading}
-                                />
+                        {/* Filters and Table Section */}
+                        <div className="row row-table-fit">
+                            <div className="col-lg-12">
+                                <div className="card">
+                                    <div className="card-body list-fluid-card">
+                                        <PaymentFilters
+                                            searchText={searchText} setSearchText={setSearchText}
+                                            selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+                                            selectedPayee={selectedPayee} setSelectedPayee={setSelectedPayee}
+                                            selectedCycle={selectedCycle} setSelectedCycle={setSelectedCycle}
+                                            dateRange={dateRange} setDateRange={setDateRange}
+                                            onApply={handleApplyFilters}
+                                            onClear={handleClearFilters}
+                                            loading={loading}
+                                        />
 
-                                <PaymentTable
-                                    data={payments}
-                                    loading={loading}
-                                    totalRecords={totalRecords}
-                                    page={page}
-                                    perPage={perPage}
-                                    onPage={onPage}
-                                    onSort={onSort}
-                                    onFilter={onFilter}
-                                    filters={filters}
-                                    sortField={sortField}
-                                    sortOrder={sortOrder}
-                                />
+                                        <PaymentTable
+                                            data={payments}
+                                            loading={loading}
+                                            totalRecords={totalRecords}
+                                            page={page}
+                                            perPage={perPage}
+                                            onPage={onPage}
+                                            onSort={onSort}
+                                            onFilter={onFilter}
+                                            filters={filters}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );
