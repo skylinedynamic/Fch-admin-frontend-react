@@ -3,10 +3,14 @@ export interface StatusOption {
     value: string;
 }
 
+export const STATUS_ACTIVE = 'Active';
+export const STATUS_INACTIVE = 'Inactive';
+export const STATUS_SUSPENDED = 'Suspended';
+
 export const STATUS: StatusOption[] = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' },
-    { label: 'Suspended', value: 'Suspended' },
+    { label: STATUS_ACTIVE, value: STATUS_ACTIVE },
+    { label: STATUS_INACTIVE, value: STATUS_INACTIVE },
+    { label: STATUS_SUSPENDED, value: STATUS_SUSPENDED },
 ];
 
 export const USER_STATUS: StatusOption[] = [

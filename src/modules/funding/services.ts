@@ -36,6 +36,16 @@ export const updateFundingSequencing = async (id: number | string, payload: Fund
     return data;
 };
 
+export const updateFundingSequencingDisplay = async (id: number | string, payload: any) => {
+    const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/display`, payload);
+    return data;
+};
+
+export const updateFundingSequencingVisibility = async (id: number | string, payload: any) => {
+    const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/visibility`, payload);
+    return data;
+};
+
 export const deleteFundingSequencing = async (id: number | string) => {
     const { data } = await apiClient.delete(`/admin/funding-sequencings/${id}`);
     return data;
