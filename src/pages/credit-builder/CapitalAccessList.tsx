@@ -101,43 +101,30 @@ export default function CapitalAccessList() {
     };
 
     const cardsStackBodyTemplate = (rowData: CapitalAccount) => {
-        const list = rowData.accounts || [];
+        const list = rowData.credit_accounts || rowData.accounts || [];
         if (list.length === 0) {
             return <span className="text-muted small italic">No cards added yet</span>;
         }
         return (
-            <div className="d-flex align-items-center">
-                <div className="d-flex align-items-center" style={{ paddingLeft: '8px' }}>
+            <div className="d-flex align-items-center capital-card-stack-wrapper">
+                <div className="d-flex align-items-center capital-card-stack-inner">
                     {list.slice(0, 4).map((acc: CreditAccount, index: number) => {
                         const img = acc.full_image_url || acc.image_url;
                         return (
-                            <div 
-                                key={index} 
-                                className="avatar-group-item" 
-                                style={{ 
-                                    marginLeft: index > 0 ? '-14px' : '0', 
-                                    zIndex: 10 - index,
-                                    position: 'relative'
-                                }}
+                            <div
+                                key={index}
+                                className="avatar-group-item capital-card-item"
                             >
                                 {img ? (
-                                    <img 
-                                        src={buildStorageUrl(img)} 
-                                        alt={acc.card_name} 
-                                        className="rounded border shadow-sm bg-white" 
-                                        style={{ 
-                                            width: '45px', 
-                                            height: '28px', 
-                                            objectFit: 'contain', 
-                                            padding: '1px',
-                                            display: 'block' 
-                                        }} 
+                                    <img
+                                        src={buildStorageUrl(img)}
+                                        alt={acc.card_name}
+                                        className="rounded border shadow-sm bg-white capital-card-img"
                                         title={`${acc.issuer} - ${acc.card_name}`}
                                     />
                                 ) : (
-                                    <div 
-                                        className="rounded border bg-light text-muted d-flex align-items-center justify-content-center" 
-                                        style={{ width: '45px', height: '28px', fontSize: '9px', fontWeight: 'bold' }}
+                                    <div
+                                        className="rounded border bg-light text-muted d-flex align-items-center justify-content-center capital-card-fallback"
                                         title={`${acc.issuer} - ${acc.card_name}`}
                                     >
                                         Card
@@ -165,7 +152,6 @@ export default function CapitalAccessList() {
                     e.stopPropagation(); // Avoid triggering row selection/navigation
                     if (canUpdate && rowData.id !== undefined) handleStatusChange(rowData.id, status);
                 }}
-                style={{ cursor: canUpdate ? 'pointer' : 'default' }}
                 title={canUpdate ? 'Click to change status' : ''}
             >
                 {status}
@@ -346,7 +332,7 @@ export default function CapitalAccessList() {
                                             {hasPermission('delete credit accounts') && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} exportable={false} />}
                                             <Column field="name" header="Program Name" body={nameBodyTemplate} sortable style={{ minWidth: '240px' }} />
                                             <Column header="Included Credit Accounts" body={cardsStackBodyTemplate} style={{ minWidth: '260px' }} />
-                                            <Column header="Total Cards" body={(rowData: CapitalAccount) => rowData.accounts?.length || 0} style={{ minWidth: '120px' }} />
+                                            <Column header="Total Cards" body={(rowData: CapitalAccount) => (rowData.credit_accounts || rowData.accounts)?.length || 0} style={{ minWidth: '120px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '120px' }} />
                                         </DataTable>
                                     </div>

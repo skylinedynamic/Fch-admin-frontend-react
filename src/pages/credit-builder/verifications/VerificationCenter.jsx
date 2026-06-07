@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { toast } from 'react-toastify';
 
-import TableLoader from '../../components/Loader/TableLoader';
-import { useAuthStore } from '../../store/auth/authStore';
-import { fetchVerificationRequests } from '../../modules/verification-center/services';
-import { fetchPartners } from '../../modules/partner/services';
+import TableLoader from '../../../components/Loader/TableLoader';
+import { useAuthStore } from '../../../store/auth/authStore';
+import { fetchVerificationRequests } from '../../../modules/verification-center/services';
+import { fetchPartners } from '../../../modules/partner/services';
 
 export default function VerificationCenter() {
     const { user } = useAuthStore();

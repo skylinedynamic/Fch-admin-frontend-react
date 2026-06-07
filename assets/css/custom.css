@@ -1381,3 +1381,37 @@ File: Custom Css File
 .logo{
   line-height: 60px !important;
 }
+
+/* Capital Access List Card Stack */
+.capital-card-stack-inner {
+  padding-left: 8px;
+}
+
+.capital-card-item {
+  position: relative;
+}
+
+.capital-card-item + .capital-card-item {
+  margin-left: -14px;
+}
+
+.capital-card-item:nth-child(1) { z-index: 10; }
+.capital-card-item:nth-child(2) { z-index: 9; }
+.capital-card-item:nth-child(3) { z-index: 8; }
+.capital-card-item:nth-child(4) { z-index: 7; }
+.capital-card-item:nth-child(5) { z-index: 6; }
+
+.capital-card-img {
+  width: 45px;
+  height: 28px;
+  object-fit: contain;
+  padding: 1px;
+  display: block;
+}
+
+.capital-card-fallback {
+  width: 45px;
+  height: 28px;
+  font-size: 9px;
+  font-weight: bold;
+}

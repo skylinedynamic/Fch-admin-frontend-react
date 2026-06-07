@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import FormLoader from '../../../components/Loader/FormLoader';
-import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../../../modules/credit-accounts/services';
-import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
-import { STATUS_OPTIONS, CREDIT_CATEGORY_OPTIONS } from '../../../config/creditBuilder';
-import { buildStorageUrl } from '../../../utils/imageHelpers';
+import FormLoader from '../../../../components/Loader/FormLoader';
+import { createCreditAccount, updateCreditAccount, getCreditAccount } from '../../../../modules/credit-accounts/services';
+import { usePermissions } from '../../../../lib/auth/usePermissions';
+import { FileManagerModal } from '../../../../components/FileManagerModal/FileManagerModal';
+import { STATUS_OPTIONS, CREDIT_CATEGORY_OPTIONS } from '../../../../config/creditBuilder';
+import { buildStorageUrl } from '../../../../utils/imageHelpers';
 
 
 export default function CreditAccountForm() {

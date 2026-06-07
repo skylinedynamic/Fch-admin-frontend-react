@@ -1,21 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { UncontrolledTooltip } from 'reactstrap';
-import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../modules/verification-center/services'; // Import getBorrowerProfile
+import { fetchBorrowerVerificationRequests, updateVerificationStatus, getBorrowerProfile } from '../../../modules/verification-center/services'; // Import getBorrowerProfile
 import BorrowerProfileModal from './components/BorrowerProfileModal'; // Import Modal
 import VerificationActionModal from './components/VerificationActionModal'; // Import Action Modal
 import ResponseDetailModal from './components/ResponseDetailModal'; // Import Result Modal
 import NoteViewModal from './components/NoteViewModal'; // Import Note Modal
 import { toast } from 'react-toastify';
-import { VERIFICATION_STATUS } from '../../config/creditBuilder'; // Import Constants
-import { useTiers } from '../../modules/tiers/queries';
-import TableLoader from '../../components/Loader/TableLoader';
-import BorrowerProfileBannerSkeleton from '../../components/Loader/BorrowerProfileBannerSkeleton';
+import { VERIFICATION_STATUS } from '../../../config/creditBuilder'; // Import Constants
+import { useTiers } from '../../../modules/tiers/queries';
+import TableLoader from '../../../components/Loader/TableLoader';
+import BorrowerProfileBannerSkeleton from '../../../components/Loader/BorrowerProfileBannerSkeleton';
 
 export default function BorrowerVerificationRequests() {
     const location = useLocation();

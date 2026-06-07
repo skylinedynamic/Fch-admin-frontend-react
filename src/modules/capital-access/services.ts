@@ -20,7 +20,14 @@ export interface CreditAccountSummary {
 export interface CapitalAccount {
     id?: number;
     name: string;
-    description?: string;
+    sub_title?: string;
+    target_exposure_min?: number;
+    target_exposure_max?: number;
+    approval_probability?: number;
+    est_timeline_min?: number;
+    est_timeline_max?: number;
+    what_you_will_get?: string[];
+    pre_flight_checklist?: string[];
     status: string;
     credit_accounts?: CreditAccountSummary[];
     // Legacy alias used in some UI parts
@@ -31,10 +38,24 @@ export interface CapitalAccount {
 
 export interface StoreCapitalAccessPayload {
     name: string;
-    description?: string;
+    sub_title: string;
+    target_exposure_min: number | string;
+    target_exposure_max: number | string;
+    approval_probability: number | string;
+    est_timeline_min: number | string;
+    est_timeline_max: number | string;
+    what_you_will_get: string[];
+    pre_flight_checklist: string[];
     status?: string;
-    /** Ordered array of credit account IDs — index determines sorting_order */
-    credit_account_ids?: number[];
+    credit_accounts?: Array<{
+        id: number;
+        why_this_card: string;
+        est_approval_odds: string;
+        est_limit_min: string;
+        est_limit_max: string;
+        hard_pull: string;
+        what_you_need: string[];
+    }>;
 }
 
 // ─────────────────────────────────────────────
@@ -118,9 +139,10 @@ export const updateCapitalAccountStatus = async (
 /**
  * Fetch all Active credit accounts (unfiltered, no pagination) for use in the builder panel.
  */
-export const fetchAllCreditAccountsForBuilder = async () => {
+export const fetchAllCreditAccountsForBuilder = async (search?: string) => {
     const response = await apiClient.post(
-        '/common/credit-builder/credit-accounts/all'
+        '/common/credit-builder/credit-accounts/all',
+        { search }
     );
     return response.data;
 };

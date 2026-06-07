@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/Table/DataTableWrapper';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import TableLoader from '../../components/Loader/TableLoader';
-import FilterLoader from '../../components/Loader/FilterLoader';
-import { fetchCreditAccounts, deleteCreditAccount, updateCreditAccountStatus } from '../../modules/credit-accounts/services';
+import TableLoader from '../../../components/Loader/TableLoader';
+import FilterLoader from '../../../components/Loader/FilterLoader';
+import { fetchCreditAccounts, deleteCreditAccount, updateCreditAccountStatus } from '../../../modules/credit-accounts/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { usePermissions } from '../../lib/auth/usePermissions';
-import { STATUS_OPTIONS, STATUS_CLASS_MAP, CREDIT_CATEGORY_OPTIONS } from '../../config/creditBuilder';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { STATUS_OPTIONS, STATUS_CLASS_MAP, CREDIT_CATEGORY_OPTIONS } from '../../../config/creditBuilder';
 
 export default function CreditAccountsList() {
     const { hasPermission } = usePermissions();

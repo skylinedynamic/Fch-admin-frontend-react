@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
-import { getBorrowerProfile } from '../../../modules/verification-center/services';
+import { getBorrowerProfile } from '../../../../modules/verification-center/services';
 
 export default function BorrowerProfileModal({ show, onHide, borrowerId, profileData }) {
     const modalRef = useRef(null);

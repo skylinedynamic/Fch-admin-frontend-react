@@ -4,7 +4,7 @@ import type { BorrowerTier } from '../../../modules/client/types';
 import TaskListSkeleton from '../../../components/Loader/TaskListSkeleton';
 import { VERIFICATION_STATUS } from '../../../config/creditBuilder';
 import { toast } from 'react-toastify';
-import VerificationActionModal from '../../credit-builder/components/VerificationActionModal';
+import VerificationActionModal from '../../credit-builder/verifications/components/VerificationActionModal';
 
 interface TaskItem {
     id: string;
