@@ -22,10 +22,12 @@ import Clients from './pages/clients/Clients';
 import ClientDetails from './pages/clients/ClientDetails';
 import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
-import CreditAccountsList from './pages/credit-builder/CreditAccountsList.jsx';
-import CreditAccountForm from './pages/credit-builder/components/CreditAccountForm.jsx';
-import VerificationCenter from './pages/credit-builder/VerificationCenter.jsx';
-import BorrowerVerificationRequests from './pages/credit-builder/BorrowerVerificationRequests.jsx';
+import CreditAccountsList from './pages/credit-builder/credit-accounts/CreditAccountsList.jsx';
+import CreditAccountForm from './pages/credit-builder/credit-accounts/components/CreditAccountForm.jsx';
+import CapitalAccessList from './pages/credit-builder/capital-access/CapitalAccessList.tsx';
+import CapitalAccessForm from './pages/credit-builder/capital-access/components/CapitalAccessForm.tsx';
+import VerificationCenter from './pages/credit-builder/verifications/VerificationCenter.jsx';
+import BorrowerVerificationRequests from './pages/credit-builder/verifications/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
 import Contacts from './pages/contacts/Contacts.jsx';
 import ContactDetails from './pages/contacts/ContactDetails.jsx';
@@ -269,6 +271,9 @@ export default function App() {
               <Route path="credit-accounts" element={<CreditAccountsList />} />
               <Route path="credit-accounts/create" element={<CreditAccountForm />} />
               <Route path="credit-accounts/:id" element={<CreditAccountForm />} />
+              <Route path="capital-access" element={<CapitalAccessList />} />
+              <Route path="capital-access/create" element={<CapitalAccessForm />} />
+              <Route path="capital-access/:id" element={<CapitalAccessForm />} />
               <Route path="verification-center" element={<VerificationCenter />} />
               <Route path="verification-center/borrower-requests" element={<BorrowerVerificationRequests />} />
               <Route path="verification-center/borrower-requests/:borrower_id" element={<BorrowerVerificationRequests />} />

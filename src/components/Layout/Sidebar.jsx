@@ -98,6 +98,12 @@ const menuItems = [
         permission: "view credit accounts", // Temporary permission or add new one
         isHostOnly: true,
       },
+      {
+        to: "/capital-access",
+        label: "Capital Access",
+        permission: "view credit accounts",
+        isHostOnly: true,
+      },
     ],
   },
   {
@@ -538,6 +544,15 @@ export default function Sidebar() {
                                       "/intake-review/funding-review" &&
                                       location.pathname.startsWith(
                                         "/intake-review/funding-review/",
+                                      )
+                                    ) {
+                                      isPathActive = true;
+                                    }
+                                    if (
+                                      subItem.to ===
+                                      "/capital-access" &&
+                                      location.pathname.startsWith(
+                                        "/capital-access/",
                                       )
                                     ) {
                                       isPathActive = true;

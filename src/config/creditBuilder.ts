@@ -24,9 +24,12 @@ export const CREDIT_CATEGORY_OPTIONS: ConfigOption[] = [
     { label: 'Auto / Tire', value: 'Auto / Tire' }
 ];
 
+export const STATUS_ACTIVE = 'Active';
+export const STATUS_INACTIVE = 'Inactive';
+
 export const STATUS_OPTIONS: ConfigOption[] = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' }
+    { label: STATUS_ACTIVE, value: STATUS_ACTIVE },
+    { label: STATUS_INACTIVE, value: STATUS_INACTIVE }
 ];
 
 export const REPORT_TO_OPTIONS: ConfigOption[] = [
