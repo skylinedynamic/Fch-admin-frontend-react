@@ -79,6 +79,11 @@ export const USES_OPTIONS: SelectOption[] = [
     { label: 'Equipment', value: 'Equipment' },
     { label: 'Marketing', value: 'Marketing' },
     { label: 'Refinance Debt', value: 'Refinance Debt' },
+    { label: 'New Construction', value: 'New Construction' },
+    { label: 'Ground-Up Development', value: 'Ground-Up Development' },
+    { label: 'Land Development', value: 'Land Development' },
+    { label: 'Renovation', value: 'Renovation' },
+    { label: 'Commercial Property', value: 'Commercial Property' },
 ];
 
 export const READINESS_FACTOR_STATUS_OPTIONS: SelectOption[] = [
