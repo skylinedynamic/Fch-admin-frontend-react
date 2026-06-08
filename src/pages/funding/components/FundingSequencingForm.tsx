@@ -756,65 +756,65 @@ export default function FundingSequencingForm() {
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Minimum FICO Score <span className="text-danger">*</span></label>
-                                                            <div className="position-relative w-100">
-                                                                <input type="number" name="min_fico" className={`form-control rounded-3 py-2 ps-3 pe-5 ${(errors as any).min_fico ? 'is-invalid border-danger' : ''}`} value={formData.min_fico} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).min_fico ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>FICO</span>
+                                                            <div className="input-group">
+                                                                <input type="number" name="min_fico" className={`form-control rounded-start-3 py-2 ${(errors as any).min_fico ? 'is-invalid border-danger' : ''}`} value={formData.min_fico} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_fico ? 'border-danger text-danger' : ''}`}>FICO</span>
                                                             </div>
                                                             {(errors as any).min_fico && <div className="text-danger mt-1 fs-13">{(errors as any).min_fico}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Minimum Time in Business <span className="text-danger">*</span></label>
-                                                            <div className="position-relative w-100">
-                                                                <input type="number" name="min_tib_months" className={`form-control rounded-3 py-2 ps-3 pe-5 ${(errors as any).min_tib_months ? 'is-invalid border-danger' : ''}`} value={formData.min_tib_months} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).min_tib_months ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>months</span>
+                                                            <div className="input-group">
+                                                                <input type="number" name="min_tib_months" className={`form-control rounded-start-3 py-2 ${(errors as any).min_tib_months ? 'is-invalid border-danger' : ''}`} value={formData.min_tib_months} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_tib_months ? 'border-danger text-danger' : ''}`}>months</span>
                                                             </div>
                                                             {(errors as any).min_tib_months && <div className="text-danger mt-1 fs-13">{(errors as any).min_tib_months}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Revenue <span className="text-danger">*</span></label>
-                                                            <div className="position-relative w-100">
-                                                                <span className={`position-absolute text-muted fs-14 ${(errors as any).min_monthly_revenue ? 'text-danger' : ''}`} style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }}>$</span>
-                                                                <input type="number" name="min_monthly_revenue" className={`form-control rounded-3 py-2 pe-5 ${(errors as any).min_monthly_revenue ? 'is-invalid border-danger' : ''}`} style={{ paddingLeft: '32px' }} value={formData.min_monthly_revenue} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).min_monthly_revenue ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>/ mo</span>
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_monthly_revenue ? 'border-danger text-danger' : ''}`}>$</span>
+                                                                <input type="number" name="min_monthly_revenue" className={`form-control py-2 ps-1 border-start-0 ${(errors as any).min_monthly_revenue ? 'is-invalid border-danger' : ''}`} value={formData.min_monthly_revenue} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_monthly_revenue ? 'border-danger text-danger' : ''}`}>/ mo</span>
                                                             </div>
                                                             {(errors as any).min_monthly_revenue && <div className="text-danger mt-1 fs-13">{(errors as any).min_monthly_revenue}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Deposits <span className="text-danger">*</span></label>
-                                                            <div className="position-relative w-100">
-                                                                <span className={`position-absolute text-muted fs-14 ${(errors as any).min_monthly_deposits ? 'text-danger' : ''}`} style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }}>$</span>
-                                                                <input type="number" name="min_monthly_deposits" className={`form-control rounded-3 py-2 pe-5 ${(errors as any).min_monthly_deposits ? 'is-invalid border-danger' : ''}`} style={{ paddingLeft: '32px' }} value={formData.min_monthly_deposits} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).min_monthly_deposits ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>/ mo</span>
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_monthly_deposits ? 'border-danger text-danger' : ''}`}>$</span>
+                                                                <input type="number" name="min_monthly_deposits" className={`form-control py-2 ps-1 border-start-0 ${(errors as any).min_monthly_deposits ? 'is-invalid border-danger' : ''}`} value={formData.min_monthly_deposits} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_monthly_deposits ? 'border-danger text-danger' : ''}`}>/ mo</span>
                                                             </div>
                                                             {(errors as any).min_monthly_deposits && <div className="text-danger mt-1 fs-13">{(errors as any).min_monthly_deposits}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Minimum Average Daily Balance <span className="text-danger">*</span></label>
-                                                            <div className="position-relative w-100">
-                                                                <span className={`position-absolute text-muted fs-14 ${(errors as any).min_average_daily_balance ? 'text-danger' : ''}`} style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }}>$</span>
-                                                                <input type="number" name="min_average_daily_balance" className={`form-control rounded-3 py-2 ${(errors as any).min_average_daily_balance ? 'is-invalid border-danger' : ''}`} style={{ paddingLeft: '32px' }} value={formData.min_average_daily_balance} onChange={handleChange} placeholder="None" />
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_average_daily_balance ? 'border-danger text-danger' : ''}`}>$</span>
+                                                                <input type="number" name="min_average_daily_balance" className={`form-control rounded-end-3 py-2 ps-1 border-start-0 ${(errors as any).min_average_daily_balance ? 'is-invalid border-danger' : ''}`} value={formData.min_average_daily_balance} onChange={handleChange} placeholder="None" />
                                                             </div>
                                                             {(errors as any).min_average_daily_balance && <div className="text-danger mt-1 fs-13">{(errors as any).min_average_daily_balance}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Maximum NSF Count</label>
-                                                            <div className="position-relative w-100">
-                                                                <input type="number" name="max_nsf_count" className={`form-control rounded-3 py-2 ps-3 pe-5 ${(errors as any).max_nsf_count ? 'is-invalid border-danger' : ''}`} value={formData.max_nsf_count} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).max_nsf_count ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>per period</span>
+                                                            <div className="input-group">
+                                                                <input type="number" name="max_nsf_count" className={`form-control rounded-start-3 py-2 ${(errors as any).max_nsf_count ? 'is-invalid border-danger' : ''}`} value={formData.max_nsf_count} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).max_nsf_count ? 'border-danger text-danger' : ''}`}>per period</span>
                                                             </div>
                                                             {(errors as any).max_nsf_count && <div className="text-danger mt-1 fs-13">{(errors as any).max_nsf_count}</div>}
                                                         </div>
 
                                                         <div className="mb-4">
                                                             <label className="form-label text-dark fw-medium mb-2">Maximum Negative Days</label>
-                                                            <div className="position-relative w-100">
-                                                                <input type="number" name="max_negative_days" className={`form-control rounded-3 py-2 ps-3 pe-5 ${(errors as any).max_negative_days ? 'is-invalid border-danger' : ''}`} value={formData.max_negative_days} onChange={handleChange} placeholder="None" />
-                                                                <span className={`position-absolute text-muted fs-13 bg-light rounded-end px-3 d-flex align-items-center ${(errors as any).max_negative_days ? 'border-danger text-danger' : ''}`} style={{ right: '1px', top: '1px', bottom: '1px', borderLeft: '1px solid #e2e8f0' }}>days</span>
+                                                            <div className="input-group">
+                                                                <input type="number" name="max_negative_days" className={`form-control rounded-start-3 py-2 ${(errors as any).max_negative_days ? 'is-invalid border-danger' : ''}`} value={formData.max_negative_days} onChange={handleChange} placeholder="None" />
+                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).max_negative_days ? 'border-danger text-danger' : ''}`}>days</span>
                                                             </div>
                                                             {(errors as any).max_negative_days && <div className="text-danger mt-1 fs-13">{(errors as any).max_negative_days}</div>}
                                                         </div>
