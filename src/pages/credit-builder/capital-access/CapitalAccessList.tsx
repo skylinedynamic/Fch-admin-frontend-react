@@ -5,8 +5,8 @@ import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
-import FilterLoader from '../../../components/Loader/FilterLoader';
-import { fetchCapitalAccounts, deleteCapitalAccount, updateCapitalAccountStatus, CapitalAccount } from '../../../modules/capital-access/services';
+import { useCapitalAccounts, useDeleteCapitalAccount, useUpdateCapitalAccountStatus } from '../../../modules/capital-access/queries';
+import { CapitalAccount } from '../../../modules/capital-access/services';
 import { CreditAccount } from '../../../modules/credit-accounts/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { STATUS_OPTIONS, STATUS_CLASS_MAP } from '../../../config/creditBuilder';
@@ -16,8 +16,6 @@ import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteCon
 export default function CapitalAccessList() {
     const { hasPermission } = usePermissions();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState<boolean>(true);
-    const [accounts, setAccounts] = useState<CapitalAccount[]>([]);
 
 
     // Checkbox selection state
@@ -28,7 +26,6 @@ export default function CapitalAccessList() {
     // Pagination state
     const [page, setPage] = useState<number>(1);
     const [perPage, setPerPage] = useState<number>(10);
-    const [totalRecords, setTotalRecords] = useState<number>(0);
 
     // Sorting state
     const [sortField, setSortField] = useState<string>('id');
@@ -38,36 +35,24 @@ export default function CapitalAccessList() {
     const [searchText, setSearchText] = useState<string>('');
     const [appliedSearchText, setAppliedSearchText] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    const [appliedStatus, setAppliedStatus] = useState<string | null>(null);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const payload = {
-                page: page,
-                per_page: perPage,
-                sort_field: sortField,
-                sort_order: sortOrder,
-                search: appliedSearchText,
-                status: selectedStatus || undefined,
-            };
-            const response = await fetchCapitalAccounts(payload);
-            if (response.status !== false) {
-                setAccounts(response.data || []);
-                setTotalRecords(response.meta?.total || (response as any).total || 0);
-            } else {
-                toast.error((response as any).message || 'Failed to fetch capital programs');
-            }
-        } catch (err: any) {
-            console.error(err);
-            toast.error('Failed to fetch capital programs');
-        } finally {
-            setLoading(false);
-        }
+    const payload = {
+        page: page,
+        per_page: perPage,
+        sort_field: sortField,
+        sort_order: sortOrder,
+        search: appliedSearchText,
+        status: appliedStatus || undefined,
     };
 
-    useEffect(() => {
-        loadData();
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, selectedStatus]);
+    const { data: qData, isLoading } = useCapitalAccounts(payload);
+    const updateStatusMutation = useUpdateCapitalAccountStatus();
+    const deleteMutation = useDeleteCapitalAccount();
+
+    const accounts = qData?.data || [];
+    const totalRecords = qData?.meta?.total || 0;
+    const loading = isLoading;
 
     const onPage = (event: any) => {
         const nextPerPage = event.rows;
@@ -84,6 +69,7 @@ export default function CapitalAccessList() {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
+        setAppliedStatus(selectedStatus);
         setPage(1);
     };
 
@@ -91,6 +77,7 @@ export default function CapitalAccessList() {
         setSearchText('');
         setAppliedSearchText('');
         setSelectedStatus(null);
+        setAppliedStatus(null);
         setPage(1);
     };
 
@@ -113,6 +100,9 @@ export default function CapitalAccessList() {
     };
 
     const estTimelineBodyTemplate = (rowData: CapitalAccount) => {
+        if (rowData.est_timeline) {
+            return <span>{rowData.est_timeline}</span>;
+        }
         if (!rowData.est_timeline_min && !rowData.est_timeline_max) return <span className="text-muted">-</span>;
         return <span>{rowData.est_timeline_min} - {rowData.est_timeline_max} days</span>;
     };
@@ -184,14 +174,18 @@ export default function CapitalAccessList() {
 
     const handleStatusChange = async (id: number | string, currentStatus: string) => {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-        try {
-            await updateCapitalAccountStatus(id, newStatus);
-            toast.success(`Status updated to ${newStatus}`);
-            loadData();
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to update status');
-        }
+        updateStatusMutation.mutate(
+            { id, status: newStatus },
+            {
+                onSuccess: () => {
+                    toast.success(`Status updated to ${newStatus}`);
+                },
+                onError: (err) => {
+                    console.error(err);
+                    toast.error('Failed to update status');
+                }
+            }
+        );
     };
 
     const handleDeleteConfirm = async () => {
@@ -200,13 +194,12 @@ export default function CapitalAccessList() {
             setIsDeleting(true);
             for (const id of ids) {
                 if (id !== undefined) {
-                    await deleteCapitalAccount(id);
+                    await deleteMutation.mutateAsync(id);
                 }
             }
             toast.success("Capital programs deleted successfully");
             setShowDeleteModal(false);
             setSelectedPrograms([]);
-            loadData();
         } catch (err) {
             console.error(err);
             toast.error('Failed to delete capital programs');
@@ -272,51 +265,57 @@ export default function CapitalAccessList() {
                         <div className="card shadow-sm">
                             <div className="card-body list-fluid-card">
                                 <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
-                                    {loading ? (
-                                        <FilterLoader config={[
-                                            { col: "col-xxl-6 col-sm-12" }, // Search
-                                            { col: "col-xxl-3 col-sm-6" },  // Status
-                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
-                                        ]} />
-                                    ) : (
-                                        <div className="row g-3 mb-3">
-                                            <div className="col-xxl-6 col-sm-12">
-                                                <div className="search-box">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control search bg-light border-light"
-                                                        placeholder="Search capital programs..."
-                                                        value={searchText}
-                                                        onChange={(e) => setSearchText(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
-                                                    />
-                                                    <i className="ri-search-line search-icon"></i>
-                                                </div>
-                                            </div>
-                                            <div className="col-xxl-3 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={[{ label: 'All Status', value: null }, ...STATUS_OPTIONS]}
-                                                    onChange={(e: any) => setSelectedStatus(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="All Status"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    appendTo="self"
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-xxl-6 col-sm-12">
+                                            <div className="search-box">
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    placeholder="Search capital programs..."
+                                                    value={searchText}
+                                                    onChange={(e) => setSearchText(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                 />
-                                            </div>
-                                            <div className="col-xxl-3 col-sm-12">
-                                                <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                    </button>
-                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                    </button>
-                                                </div>
+                                                <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                    )}
+                                        <div className="col-xxl-3 col-sm-6">
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                options={[{ label: 'All Status', value: null }, ...STATUS_OPTIONS]}
+                                                onChange={(e: any) => setSelectedStatus(e.value)}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                placeholder="All Status"
+                                                className="w-100 employee-filter-dropdown"
+                                                appendTo="self"
+                                            />
+                                        </div>
+                                        <div className="col-xxl-3 col-sm-12">
+                                            <div className="d-flex gap-2">
+                                                 <button
+                                                     type="button"
+                                                     className="btn btn-warning flex-grow-1"
+                                                     onClick={handleApplyFilters}
+                                                     disabled={loading}
+                                                 >
+                                                     {loading ? (
+                                                         <>
+                                                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                             Loading...
+                                                         </>
+                                                     ) : (
+                                                         <>
+                                                             <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                         </>
+                                                     )}
+                                                 </button>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </form>
 
                                 {loading ? (
