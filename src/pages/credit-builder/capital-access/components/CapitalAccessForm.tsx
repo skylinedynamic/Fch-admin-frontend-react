@@ -5,12 +5,12 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../../components/Loader/FormLoader';
 import { CreditAccount } from '../../../../modules/credit-accounts/services';
 import {
-    createCapitalAccount,
-    updateCapitalAccount,
-    getCapitalAccount,
-    fetchAllCreditAccountsForBuilder,
-    StoreCapitalAccessPayload,
-} from '../../../../modules/capital-access/services';
+    useCapitalAccount,
+    useAllCreditAccountsForBuilder,
+    useCreateCapitalAccount,
+    useUpdateCapitalAccount
+} from '../../../../modules/capital-access/queries';
+import { StoreCapitalAccessPayload } from '../../../../modules/capital-access/services';
 import EditStepDetailsModal, { EditDetailsForm } from './EditStepDetailsModal';
 import { usePermissions } from '../../../../lib/auth/usePermissions';
 import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../../config/creditBuilder';
@@ -29,8 +29,10 @@ export interface SelectedPlayCard extends CreditAccount {
     play_details?: {
         why_this_card: string;
         est_approval_odds: string;
+        est_approval_odds_for_show?: string;
         est_limit_min: string;
         est_limit_max: string;
+        est_limit_for_show?: string;
         hard_pull: string;
         what_you_need: string[];
     }
@@ -43,10 +45,6 @@ export default function CapitalAccessForm() {
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState<boolean>(false);
-    const [initialLoading, setInitialLoading] = useState<boolean>(isEditMode);
-
-    // Lists state
-    const [availableAccounts, setAvailableAccounts] = useState<CreditAccount[]>([]);
     const [selectedAccounts, setSelectedAccounts] = useState<SelectedPlayCard[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [dragOverList, setDragOverList] = useState<boolean>(false);
@@ -99,74 +97,55 @@ export default function CapitalAccessForm() {
         pre_flight_checklist: [],
     });
 
+    const { data: programRes, isLoading: programLoading } = useCapitalAccount(id!);
+    const { data: cardsRes } = useAllCreditAccountsForBuilder(searchTerm);
+
+    const initialLoading = isEditMode && programLoading;
+    const availableAccounts = cardsRes?.data || [];
+
+    const createMutation = useCreateCapitalAccount();
+    const updateMutation = useUpdateCapitalAccount();
+
     useEffect(() => {
-        const loadData = async () => {
-            // 2. Fetch existing Program if in edit mode
-            if (isEditMode && id) {
-                try {
-                    const programRes = await getCapitalAccount(id);
-                    const programData = programRes.data;
-                    setFormData({
-                        name: programData.name || '',
-                        sub_title: programData.sub_title || '',
-                        status: programData.status || 'Active',
-                        target_exposure_min: programData.target_exposure_min ? String(programData.target_exposure_min).replace(/[^0-9.-]+/g,"") : '',
-                        target_exposure_max: programData.target_exposure_max ? String(programData.target_exposure_max).replace(/[^0-9.-]+/g,"") : '',
-                        approval_probability: programData.approval_probability ? String(programData.approval_probability).replace(/[^0-9.-]+/g,"") : '',
-                        est_timeline_min: programData.est_timeline_min || '',
-                        est_timeline_max: programData.est_timeline_max || '',
-                        what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
-                        pre_flight_checklist: programData.pre_flight_checklist || [],
-                    });
-                    // API returns credit_accounts (sorted by sorting_order via resource)
-                    const loadedAccounts: SelectedPlayCard[] = (programData.credit_accounts || []).map((acc: any) => ({
-                        ...acc,
-                        play_details: acc.pivot ? {
-                            why_this_card: acc.pivot.why_this_card || '',
-                            est_approval_odds: acc.pivot.est_approval_odds || '',
-                            est_limit_min: acc.pivot.est_limit_min || '',
-                            est_limit_max: acc.pivot.est_limit_max || '',
-                            hard_pull: acc.pivot.hard_pull || 'Yes',
-                            what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || [])
-                        } : {
-                            why_this_card: '',
-                            est_approval_odds: '',
-                            est_limit_min: '',
-                            est_limit_max: '',
-                            hard_pull: 'Yes',
-                            what_you_need: []
-                        }
-                    }));
-                    setSelectedAccounts(loadedAccounts);
-                } catch (err) {
-                    toast.error('Failed to load capital program details');
-                    navigate('/capital-access');
+        if (isEditMode && programRes?.data) {
+            const programData = programRes.data;
+            setFormData({
+                name: programData.name || '',
+                sub_title: programData.sub_title || '',
+                status: programData.status || 'Active',
+                target_exposure_min: programData.target_exposure_min ? String(programData.target_exposure_min).replace(/[^0-9.-]+/g, "") : '',
+                target_exposure_max: programData.target_exposure_max ? String(programData.target_exposure_max).replace(/[^0-9.-]+/g, "") : '',
+                approval_probability: programData.approval_probability ? String(programData.approval_probability).replace(/[^0-9.-]+/g, "") : '',
+                est_timeline_min: programData.est_timeline_min !== undefined && programData.est_timeline_min !== null ? String(programData.est_timeline_min) : '',
+                est_timeline_max: programData.est_timeline_max !== undefined && programData.est_timeline_max !== null ? String(programData.est_timeline_max) : '',
+                what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
+                pre_flight_checklist: programData.pre_flight_checklist || [],
+            });
+            const loadedAccounts: SelectedPlayCard[] = (programData.credit_accounts || []).map((acc: any) => ({
+                ...acc,
+                play_details: acc.pivot ? {
+                    why_this_card: acc.pivot.why_this_card || '',
+                    est_approval_odds: String(acc.pivot.est_approval_odds ?? ''),
+                    est_approval_odds_for_show: acc.pivot.est_approval_odds_for_show || '',
+                    est_limit_min: String(acc.pivot.est_limit_min ?? ''),
+                    est_limit_max: String(acc.pivot.est_limit_max ?? ''),
+                    est_limit_for_show: acc.pivot.est_limit_for_show || '',
+                    hard_pull: acc.pivot.hard_pull || 'Yes',
+                    what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || [])
+                } : {
+                    why_this_card: '',
+                    est_approval_odds: '',
+                    est_approval_odds_for_show: '',
+                    est_limit_min: '',
+                    est_limit_max: '',
+                    est_limit_for_show: '',
+                    hard_pull: 'Yes',
+                    what_you_need: []
                 }
-            }
-            setInitialLoading(false);
-        };
-        loadData();
-    }, [id, isEditMode, navigate]);
-
-
-    // Fetch available accounts whenever searchTerm changes
-    useEffect(() => {
-        const fetchCards = async () => {
-            try {
-                const response = await fetchAllCreditAccountsForBuilder(searchTerm);
-                const accounts = response?.data ?? [];
-                setAvailableAccounts(accounts);
-            } catch (err) {
-                console.error('Failed to fetch credit accounts:', err);
-            }
-        };
-
-        const timeoutId = setTimeout(() => {
-            fetchCards();
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm]);
+            }));
+            setSelectedAccounts(loadedAccounts);
+        }
+    }, [programRes, isEditMode]);
 
     // Available cards filtered by search
     const filteredAvailable = availableAccounts.filter(acc => {
@@ -245,7 +224,7 @@ export default function CapitalAccessForm() {
                     toast.warning('This account is already selected.');
                     return;
                 }
-                
+
                 const newAcc: SelectedPlayCard = {
                     ...account,
                     play_details: {
@@ -258,7 +237,7 @@ export default function CapitalAccessForm() {
                     }
                 };
                 setPendingAddCard(newAcc);
-                setEditDetailsForm(newAcc.play_details);
+                if (newAcc.play_details) setEditDetailsForm(newAcc.play_details);
                 setModalValidationErrors({});
                 setIsDetailsModalOpen(true);
             }
@@ -275,7 +254,7 @@ export default function CapitalAccessForm() {
             toast.warning('This account is already selected.');
             return;
         }
-        
+
         const newAcc: SelectedPlayCard = {
             ...account,
             play_details: {
@@ -288,7 +267,7 @@ export default function CapitalAccessForm() {
             }
         };
         setPendingAddCard(newAcc);
-        setEditDetailsForm(newAcc.play_details);
+        if (newAcc.play_details) setEditDetailsForm(newAcc.play_details);
         setModalValidationErrors({});
         setIsDetailsModalOpen(true);
     };
@@ -323,7 +302,7 @@ export default function CapitalAccessForm() {
         if (!editDetailsForm.est_approval_odds) errors.est_approval_odds = "Est. Approval Odds are required.";
         if (!editDetailsForm.est_limit_min) errors.est_limit_min = "Min Limit is required.";
         if (!editDetailsForm.est_limit_max) errors.est_limit_max = "Max Limit is required.";
-        
+
         const cleanRequirements = editDetailsForm.what_you_need.filter(r => r.trim() !== '');
         if (cleanRequirements.length === 0) {
             errors.what_you_need = "Please add at least one requirement.";
@@ -336,8 +315,20 @@ export default function CapitalAccessForm() {
 
         setModalValidationErrors({});
 
+        const est_approval_odds_for_show = editDetailsForm.est_approval_odds ? `${editDetailsForm.est_approval_odds}%` : '';
+        const minNum = Number(editDetailsForm.est_limit_min);
+        const maxNum = Number(editDetailsForm.est_limit_max);
+        const est_limit_for_show = `$${isNaN(minNum) ? editDetailsForm.est_limit_min : minNum.toLocaleString()} - $${isNaN(maxNum) ? editDetailsForm.est_limit_max : maxNum.toLocaleString()}`;
+
+        const newPlayDetails = {
+            ...editDetailsForm,
+            est_approval_odds_for_show,
+            est_limit_for_show,
+            what_you_need: cleanRequirements
+        };
+
         if (pendingAddCard) {
-            const accToAdd = { ...pendingAddCard, play_details: { ...editDetailsForm, what_you_need: cleanRequirements } };
+            const accToAdd = { ...pendingAddCard, play_details: newPlayDetails };
             setSelectedAccounts(prev => [...prev, accToAdd]);
             setPendingAddCard(null);
         } else if (editingCardId) {
@@ -345,7 +336,7 @@ export default function CapitalAccessForm() {
                 if (acc.id === editingCardId) {
                     return {
                         ...acc,
-                        play_details: { ...editDetailsForm, what_you_need: cleanRequirements }
+                        play_details: newPlayDetails
                     };
                 }
                 return acc;
@@ -416,10 +407,10 @@ export default function CapitalAccessForm() {
             };
 
             if (isEditMode && id) {
-                await updateCapitalAccount(id, payload);
+                await updateMutation.mutateAsync({ id, payload });
                 toast.success('Capital Program updated successfully');
             } else {
-                await createCapitalAccount(payload);
+                await createMutation.mutateAsync(payload);
                 toast.success('Capital Program created successfully');
             }
             navigate('/capital-access');
@@ -667,7 +658,7 @@ export default function CapitalAccessForm() {
                                                     {selectedAccounts.map((acc, index) => {
                                                         const img = acc.full_image_url || acc.image_url;
                                                         return (
-                                                             <div
+                                                            <div
                                                                 key={acc.id}
                                                                 draggable="true"
                                                                 onDragStart={(e) => handleDragStartSelected(e, index)}
@@ -693,11 +684,30 @@ export default function CapitalAccessForm() {
                                                                             )}
                                                                         </div>
                                                                         <div>
-                                                                            <h6 className="mb-0 fs-13 fw-semibold text-dark">
+                                                                            <h6 className="mb-0 fs-13 fw-semibold text-dark d-flex align-items-center flex-wrap">
                                                                                 <span className="badge bg-secondary-subtle text-secondary me-2 font-size-10">#{index + 1}</span>
-                                                                                {acc.card_name}
+                                                                                <span>{acc.card_name}</span>
+                                                                                <span className="text-muted fw-normal ms-2 fs-12">({acc.issuer})</span>
                                                                             </h6>
-                                                                            <p className="mb-0 text-muted small">{acc.issuer}</p>
+                                                                            {acc.play_details && (
+                                                                                <div className="d-flex flex-wrap gap-2 mt-2">
+                                                                                    {acc.play_details.est_approval_odds_for_show && (
+                                                                                        <span className="badge bg-success-subtle text-success fs-9">
+                                                                                            <i className="ri-percent-line align-bottom me-1"></i> Odds: {acc.play_details.est_approval_odds_for_show}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {acc.play_details.est_limit_for_show && (
+                                                                                        <span className="badge bg-info-subtle text-info fs-9">
+                                                                                            <i className="ri-money-dollar-circle-line align-bottom me-1"></i> Limit: {acc.play_details.est_limit_for_show}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {acc.play_details.hard_pull && (
+                                                                                        <span className={`badge ${acc.play_details.hard_pull === 'Yes' ? 'bg-danger-subtle text-danger' : 'bg-light text-muted'} fs-9`}>
+                                                                                            <i className="ri-error-warning-line align-bottom me-1"></i> Hard Pull: {acc.play_details.hard_pull}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                     <div className="d-flex align-items-center gap-3">
