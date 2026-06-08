@@ -219,7 +219,7 @@ export default function FundingSequencingForm() {
                         speed_to_funds: data.speed_to_funds || '',
                         uses: Array.isArray(data.uses) ? data.uses : [],
                         qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
-                        readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors : [],
+                        readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : []
                     });
                 } catch (err) {
@@ -257,7 +257,7 @@ export default function FundingSequencingForm() {
         });
 
         if (Array.isArray(cleanData.readiness_factors)) {
-            cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'object' && item !== null && item.label && item.label.trim() !== '');
+            cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'string' && item.trim() !== '');
         }
 
         let payload = cleanData;
@@ -448,13 +448,7 @@ export default function FundingSequencingForm() {
                             <div className="col-lg-12">
                                 <div className="card shadow-sm border-0">
                                     <div className="card-header border-bottom-dashed pt-4 pb-0 bg-white">
-                                        <div className="d-flex justify-content-between align-items-center mb-4">
-                                            <div>
-                                                <h2 className="fw-bold mb-1 text-dark" style={{ fontSize: '24px' }}>
-                                                    Configure display and visibility logic
-                                                </h2>
-                                            </div>
-                                        </div>
+                                        {/* Title removed per user request */}
 
                                         {/* Tabs Navigation */}
                                         <ul className="nav nav-tabs-custom mb-0 border-bottom-0" role="tablist" style={{ gap: '30px' }}>
@@ -643,108 +637,95 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).sort_order && <div className="invalid-feedback">{(errors as any).sort_order}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Status</label>
-                                                            <Dropdown
-                                                                value={formData.status}
-                                                                options={FUNDING_STATUS_OPTIONS}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Row 6 */}
-                                                    <div className="col-lg-6">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
-                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
-                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="col-lg-6">
-                                                        <div className="mt-3 mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                            <MultiSelect
-                                                                value={formData.uses}
-                                                                options={USES_OPTIONS}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Select uses..."
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-lg-6">
-                                                        <div className="mt-3 mb-2">
-                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
-                                                                Why You May Qualify
-                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('qualify_reasons', ''); }}>+ Add Reason</button>
-                                                            </div>
-                                                            {formData.qualify_reasons.map((reason, idx) => (
-                                                                <div key={`qualify-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                    <input type="text" className="form-control rounded-3 py-2" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', idx, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
-                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('qualify_reasons', idx)}><i className="ri-delete-bin-line"></i></button>
-                                                                </div>
-                                                            ))}
-                                                            {formData.qualify_reasons.length === 0 && (
-                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
-                                                                    No reasons added yet. Click "+ Add Reason" to begin.
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-lg-6">
-                                                        <div className="mt-3 mb-2">
-                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
-                                                                Readiness Factors
-                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('readiness_factors', { label: '', status: 'Good' }); }}>+ Add Factor</button>
-                                                            </div>
-                                                            {formData.readiness_factors.map((factor, idx) => (
-                                                                <div key={`readiness-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                    <input type="text" className="form-control rounded-3 py-2" value={factor.label || ''} onChange={(e) => handleArrayChange('readiness_factors', idx, e.target.value, 'label')} placeholder="e.g. Business Credit" style={{ flex: 2 }} />
+                                                    {/* Row 6: Status, Uses, Speed to Funds */}
+                                                    <div className="col-lg-12">
+                                                        <div className="row g-4">
+                                                            <div className="col-lg-4">
+                                                                <div className="mb-2">
+                                                                    <label className="form-label text-dark fw-medium mb-2">Status</label>
                                                                     <Dropdown
-                                                                        value={factor.status || 'Good'}
-                                                                        options={READINESS_FACTOR_STATUS_OPTIONS}
-                                                                        onChange={(e) => handleArrayChange('readiness_factors', idx, e.value, 'status')}
+                                                                        value={formData.status}
+                                                                        options={FUNDING_STATUS_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
                                                                         optionLabel="label"
                                                                         optionValue="value"
-                                                                        className="rounded-3 slim-dropdown"
-                                                                        style={{ flex: 1, display: 'flex', alignItems: 'center' }}
+                                                                        className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
                                                                     />
-                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('readiness_factors', idx)}><i className="ri-delete-bin-line"></i></button>
                                                                 </div>
-                                                            ))}
-                                                            {formData.readiness_factors.length === 0 && (
-                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
-                                                                    No readiness factors added yet. Click "+ Add Factor" to begin.
+                                                            </div>
+                                                            <div className="col-lg-4">
+                                                                <div className="mb-2">
+                                                                    <label className="form-label text-dark fw-medium mb-2">Uses</label>
+                                                                    <MultiSelect
+                                                                        value={formData.uses}
+                                                                        options={USES_OPTIONS}
+                                                                        onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                        optionLabel="label"
+                                                                        optionValue="value"
+                                                                        placeholder="Select uses..."
+                                                                        className="w-100 rounded-3 slim-multiselect"
+                                                                        display="chip"
+                                                                    />
                                                                 </div>
-                                                            )}
+                                                            </div>
+                                                            <div className="col-lg-4">
+                                                                <div className="mb-2">
+                                                                    <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
+                                                                    <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
+                                                                    {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
-                                                        <div className="mt-3 mb-2">
-                                                            <div className="form-label text-dark fw-medium mb-2 d-flex justify-content-between align-items-center">
-                                                                Missing Documents
-                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('missing_documents', ''); }}>+ Add Document</button>
+
+                                                    {/* Row 7: Why You May Qualify & Readiness Factors */}
+                                                    <div className="col-lg-12">
+                                                        <div className="card shadow-sm border rounded-3 mt-4 mb-2">
+                                                            <div className="card-header bg-light border-bottom py-3">
+                                                                <h6 className="card-title mb-0 fw-bold text-dark">Qualification & Readiness Factors</h6>
                                                             </div>
-                                                            {formData.missing_documents.map((doc, idx) => (
-                                                                <div key={`missing-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                    <input type="text" className="form-control rounded-3 py-2" value={doc} onChange={(e) => handleArrayChange('missing_documents', idx, e.target.value)} placeholder="e.g. 3 Months Bank Statements" />
-                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('missing_documents', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                            <div className="card-body p-4">
+                                                                <div className="row g-4">
+                                                                    <div className="col-lg-6">
+                                                                        <div className="pe-lg-2">
+                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                                <label className="form-label text-dark fw-medium mb-0">Why You May Qualify</label>
+                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('qualify_reasons', ''); }}>+ Add Reason</button>
+                                                                            </div>
+                                                                            {formData.qualify_reasons.map((reason, idx) => (
+                                                                                <div key={`qualify-${idx}`} className="d-flex align-items-center gap-2 mb-2">
+                                                                                    <input type="text" className="form-control rounded-3 py-2" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', idx, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
+                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('qualify_reasons', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                                </div>
+                                                                            ))}
+                                                                            {formData.qualify_reasons.length === 0 && (
+                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
+                                                                                    No reasons added yet. Click "+ Add Reason" to begin.
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="col-lg-6">
+                                                                        <div className="ps-lg-2 border-start-lg">
+                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                                <label className="form-label text-dark fw-medium mb-0">Readiness Factors</label>
+                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('readiness_factors', ''); }}>+ Add Factor</button>
+                                                                            </div>
+                                                                            {formData.readiness_factors.map((factor, idx) => (
+                                                                                <div key={`readiness-${idx}`} className="d-flex align-items-center gap-2 mb-2">
+                                                                                    <input type="text" className="form-control rounded-3 py-2" value={typeof factor === 'string' ? factor : ((factor as any)?.label || '')} onChange={(e) => handleArrayChange('readiness_factors', idx, e.target.value)} placeholder="e.g. Business Credit" style={{ flex: 2 }} />
+                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('readiness_factors', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                                </div>
+                                                                            ))}
+                                                                            {formData.readiness_factors.length === 0 && (
+                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
+                                                                                    No readiness factors added yet. Click "+ Add Factor" to begin.
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                            ))}
-                                                            {formData.missing_documents.length === 0 && (
-                                                                <div className="text-muted fs-13 py-2 px-3 bg-light rounded border text-center border-dashed">
-                                                                    No missing documents added yet. Click "+ Add Document" to begin.
-                                                                </div>
-                                                            )}
+                                                            </div>
                                                         </div>
                                                     </div>
 

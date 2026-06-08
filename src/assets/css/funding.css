@@ -1,0 +1,25 @@
+.slim-multiselect.p-multiselect {
+    min-height: 40.6px;
+    height: auto;
+}
+
+/* Allow the chip container to wrap to multiple lines so all chips are visible */
+.slim-multiselect.p-multiselect .p-multiselect-label {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0.25rem 0.5rem; 
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Ensure chips look clean when wrapping and make the text smaller */
+.slim-multiselect.p-multiselect .p-multiselect-token {
+    margin: 0; /* Use gap for spacing instead */
+    padding: 0.15rem 0.5rem; /* Smaller padding */
+    border-radius: 4px;
+}
+
+/* Make the chip text smaller as requested */
+.slim-multiselect.p-multiselect .p-multiselect-token .p-multiselect-token-label {
+    font-size: 0.85rem;
+}
