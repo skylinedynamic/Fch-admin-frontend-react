@@ -837,6 +837,7 @@ export default function FundingSequencingForm() {
                                                                 options={stateOptions}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'allowed_states', value: e.value } })}
                                                                 optionLabel="label"
+                                                                optionValue="value"
                                                                 placeholder="Leave empty = all states allowed"
                                                                 className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
@@ -852,6 +853,7 @@ export default function FundingSequencingForm() {
                                                                 options={stateOptions}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'restricted_states', value: e.value } })}
                                                                 optionLabel="label"
+                                                                optionValue="value"
                                                                 placeholder="Hard stop - blocked (e.g. ND)"
                                                                 className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
@@ -867,6 +869,7 @@ export default function FundingSequencingForm() {
                                                                 options={industryTypes}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'allowed_industries', value: e.value } })}
                                                                 optionLabel="label"
+                                                                optionValue="value"
                                                                 placeholder="Leave empty = all industries allowed"
                                                                 className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
@@ -882,6 +885,7 @@ export default function FundingSequencingForm() {
                                                                 options={industryTypes}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'restricted_industries', value: e.value } })}
                                                                 optionLabel="label"
+                                                                optionValue="value"
                                                                 placeholder="Hard stop - blocked (e.g. Real Estate)"
                                                                 className="w-100 rounded-3 slim-multiselect"
                                                                 display="chip"
