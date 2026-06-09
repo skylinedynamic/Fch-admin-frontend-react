@@ -69,6 +69,7 @@ export type Client = {
     enrollment_amount?: string | number;
     entity_type?: string;
     is_partner_paying?: boolean;
+    credit_profile?: any;
 
     [key: string]: any;
 };

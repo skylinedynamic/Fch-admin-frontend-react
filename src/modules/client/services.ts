@@ -160,3 +160,27 @@ export const updateTaskVerificationStatus = async (payload: {
     const { data } = await apiClient.post(`/admin/credit-builder/tasks/update-status`, payload);
     return data;
 };
+
+// Parse Credit Profile PDF
+export const parseCreditProfilePDF = async (borrowerId: string | number, file: File) => {
+    const formData = new FormData();
+    formData.append('borrower_id', String(borrowerId));
+    formData.append('pdf', file);
+
+    const { data } = await apiClient.post('/common/borrowers/parse-credit-profile', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+};
+
+// Save Credit Profile Data
+export const saveCreditProfile = async (borrowerId: string | number, profileData: any) => {
+    const payload = {
+        borrower_id: Number(borrowerId),
+        ...profileData
+    };
+    const { data } = await apiClient.post('/common/borrowers/save-credit-profile', payload);
+    return data;
+};

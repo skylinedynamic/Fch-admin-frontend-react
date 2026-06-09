@@ -79,3 +79,9 @@ export interface ThemeConfigurations {
     site_name: string | null;
     site_slogan: string | null;
 }
+
+export interface CreditProfileConfig {
+    credit_profile_parser_mode: string;
+    credit_profile_openai_api_key: string;
+    credit_profile_openai_model: string;
+}

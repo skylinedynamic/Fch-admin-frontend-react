@@ -4,6 +4,7 @@ import BusinessFinancialsSection, { BusinessFinancialsSectionRef } from './Busin
 import DocumentChecklistSection, { DocumentChecklistSectionRef } from './DocumentChecklistSection';
 import ClientDocumentsSection from './ClientDocumentsSection';
 import TaskListSection from './TaskListSection';
+import CreditProfileSection from './CreditProfileSection';
 // @ts-ignore
 import AgreementSection from '../../partners/components/AgreementSection';
 import { ENROLLMENT_TABS } from '../../../modules/client';
@@ -134,6 +135,21 @@ export default function ClientForm({
             {activeTab === ENROLLMENT_TABS.DOCUMENTS && (
                 <div className="tab-pane active show" role="tabpanel">
                     <ClientDocumentsSection isLoading={isLoading} />
+                </div>
+            )}
+
+            {/* Credit Profile Tab */}
+            {activeTab === ENROLLMENT_TABS.CREDIT_PROFILE && (
+                <div className="tab-pane active show" role="tabpanel">
+                    {clientId ? (
+                        <CreditProfileSection
+                            clientId={clientId}
+                            initialCreditProfile={formData?.credit_profile}
+                            onRefresh={onRefresh}
+                        />
+                    ) : (
+                        <div>Please create the client first to view Credit Profile.</div>
+                    )}
                 </div>
             )}
 
