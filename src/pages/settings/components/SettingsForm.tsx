@@ -10,6 +10,7 @@ import MicroBiltConfigForm from './MicroBiltConfigForm';
 import StripeConfigForm from './StripeConfigForm';
 import EmailConfigurationForm from './EmailConfigurationForm';
 import BrandingForm from './BrandingForm';
+import CreditProfileConfigForm from './CreditProfileConfigForm';
 // @ts-ignore
 import TenantDomainConfig from './TenantDomainConfig';
 
@@ -59,6 +60,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     if (user && (user.is_host == 1 || user.is_host == true)) {
         sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
+    }
+
+    if (hasPermission('update branding settings') || (user && (user.is_host == 1 || user.is_host == true))) {
+        sections.push({ id: 'credit_profile', label: 'Credit Profile', icon: 'ri-file-chart-line' });
     }
 
     // Test Mail — only for host partners or white-label partners
@@ -159,6 +164,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <TestMailForm />
                 ) : activeSection === 'microbilt' ? (
                     <MicroBiltConfigForm />
+                ) : activeSection === 'credit_profile' ? (
+                    <CreditProfileConfigForm />
                 ) : activeSection === 'email_configuration' ? (
                     <EmailConfigurationForm />
                 ) : activeSection === 'branding' ? (

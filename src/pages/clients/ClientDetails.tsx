@@ -298,6 +298,8 @@ export default function ClientDetails() {
                     updateSuccess = true;
                 } else if (activeTab === ENROLLMENT_TABS.DOCUMENTS) {
                     toast.info("Please upload documents using the specific upload buttons.");
+                } else if (activeTab === ENROLLMENT_TABS.CREDIT_PROFILE) {
+                    toast.info("Please use the 'Save Credit Profile' button in the validation panel.");
                 } else {
                     // Fallback
                     toast.warn("No handler for this tab.");
@@ -369,7 +371,7 @@ export default function ClientDetails() {
                                 <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS].includes(activeTab as any) && (
+                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE].includes(activeTab as any) && (
                                     <button
                                         type="button"
                                         className="btn btn-primary w-lg waves-effect"
@@ -461,7 +463,7 @@ export default function ClientDetails() {
                 )}
 
                 <div className="row">
-                    <div className={id ? "col-xxl-8" : "col-12"}>
+                    <div className={id && activeTab !== ENROLLMENT_TABS.CREDIT_PROFILE ? "col-xxl-8" : "col-12"}>
                         <div className="card">
                             <div className="card-header">
                                 <ul className="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
@@ -506,6 +508,17 @@ export default function ClientDetails() {
                                             disabled={!id}
                                         >
                                             <i className="far fa-envelope"></i> Documents
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CREDIT_PROFILE ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CREDIT_PROFILE)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            <i className="far fa-credit-card"></i> Credit Profile
                                         </button>
                                     </li>
                                     {isHost && (
@@ -561,7 +574,7 @@ export default function ClientDetails() {
                     </div>
 
                     {/* Activity Sidebar */}
-                    {id && (
+                    {id && activeTab !== ENROLLMENT_TABS.CREDIT_PROFILE && (
                         <div className="col-xxl-4">
                             <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} />
                         </div>
