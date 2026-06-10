@@ -11,6 +11,7 @@ import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIO
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
+import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import { scrollToFirstError } from '../../../utils/formUtils';
@@ -54,6 +55,8 @@ export default function FundingSequencingForm() {
     const [groups, setGroups] = useState([]);
     const [types, setTypes] = useState([]);
     const [errors, setErrors] = useState({});
+    const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{label: string, value: string}[]>([]);
+    const [groupModalOpen, setGroupModalOpen] = useState(false);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showTypeModal, setShowTypeModal] = useState(false);
 
@@ -95,7 +98,8 @@ export default function FundingSequencingForm() {
         uses: [],
         qualify_reasons: [],
         readiness_factors: [],
-        missing_documents: []
+        missing_documents: [],
+        allowed_documents: []
     });
 
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
@@ -163,22 +167,42 @@ export default function FundingSequencingForm() {
     }, []);
 
     useEffect(() => {
-        const fetchDependencies = async () => {
+        const loadGroups = async () => {
             try {
-                const [groupsRes, typesRes] = await Promise.all([
-                    getFundingGroups(),
-                    getFundingTypes()
-                ]);
-                setGroups(groupsRes.data || []);
-                setTypes(typesRes.data || []);
-            } catch (err) {
-                console.error('Failed to fetch dependencies', err);
+                const res = await getFundingGroups();
+                setGroups(res.data || []);
+            } catch (error) {
+                console.error('Failed to load groups', error);
             }
         };
-        fetchDependencies();
-    }, []);
 
-    useEffect(() => {
+        const loadTypes = async () => {
+            try {
+                const res = await getFundingTypes();
+                if (res?.data) {
+                    setTypes(res.data);
+                }
+            } catch (error) {
+                console.error('Failed to load types', error);
+            }
+        };
+
+        const loadDocTypes = async () => {
+            try {
+                const res = await fetchBorrowerDocumentTypes();
+                if (res?.data) {
+                    const formatted = res.data.map((item: any) => ({ label: item.name, value: item.name }));
+                    setAllowedDocumentOptions(formatted);
+                }
+            } catch (error) {
+                console.error('Failed to load document types', error);
+            }
+        };
+
+        loadGroups();
+        loadTypes();
+        loadDocTypes();
+        
         if (isEditMode) {
             const loadAccount = async () => {
                 try {
@@ -229,7 +253,8 @@ export default function FundingSequencingForm() {
                         uses: Array.isArray(data.uses) ? data.uses : [],
                         qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
-                        missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : []
+                        missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
+                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -259,7 +284,7 @@ export default function FundingSequencingForm() {
         setLoading(true);
 
         const cleanData = { ...formData };
-        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents'].forEach(field => {
+        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
                 cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => typeof item === 'string' && item.trim() !== '');
             }
@@ -310,6 +335,7 @@ export default function FundingSequencingForm() {
                     restricted_industries: cleanData.restricted_industries,
                     require_completed_application: cleanData.require_completed_application,
                     require_documents_uploaded: cleanData.require_documents_uploaded,
+                    allowed_documents: cleanData.allowed_documents,
                     manual_review_allowed: cleanData.manual_review_allowed,
                     exception_allowed: cleanData.exception_allowed
                 } as any;
@@ -923,9 +949,31 @@ export default function FundingSequencingForm() {
                                                                 <p className="text-muted fs-13 mb-0">Documents must be uploaded before sequence is active</p>
                                                             </div>
                                                             <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={handleInputChange} />
+                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={(e) => {
+                                                                    handleInputChange(e);
+                                                                    if (!e.target.checked) {
+                                                                        setFormData(prev => ({ ...prev, allowed_documents: [] }));
+                                                                    }
+                                                                }} />
                                                             </div>
                                                         </div>
+
+                                                        {formData.require_documents_uploaded && (
+                                                            <div className="mb-4">
+                                                                <label className="form-label text-dark fw-medium mb-2">Allowed Documents <span className="text-danger">*</span></label>
+                                                                <MultiSelect
+                                                                    value={formData.allowed_documents}
+                                                                    options={allowedDocumentOptions}
+                                                                    onChange={(e) => handleInputChange({ target: { name: 'allowed_documents', value: e.value } })}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    display="chip"
+                                                                    placeholder="Select required documents"
+                                                                    className={`w-100 rounded-3 slim-multiselect ${(errors as any).allowed_documents ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {(errors as any).allowed_documents && <small className="text-danger mt-1 d-block">{(errors as any).allowed_documents}</small>}
+                                                            </div>
+                                                        )}
 
                                                         <div className="d-flex align-items-center justify-content-between mb-4">
                                                             <div>
