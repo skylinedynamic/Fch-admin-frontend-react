@@ -106,10 +106,6 @@ export default function CapitalAccessList() {
         return <span>{rowData.est_timeline_min} - {rowData.est_timeline_max} days</span>;
     };
 
-    const approvalProbabilityBodyTemplate = (rowData: CapitalAccount) => {
-        return rowData.approval_probability ? <span>{rowData.approval_probability}</span> : <span className="text-muted">-</span>;
-    };
-
     const cardsStackBodyTemplate = (rowData: CapitalAccount) => {
         const list = rowData.credit_accounts || rowData.accounts || [];
         if (list.length === 0) {
@@ -352,7 +348,6 @@ export default function CapitalAccessList() {
                                             <Column field="name" header="Program Name" body={nameBodyTemplate} sortable style={{ minWidth: '240px' }} />
                                             <Column field="target_exposure_min" header="Target Exposure" body={targetExposureBodyTemplate} sortable style={{ minWidth: '160px' }} />
                                             <Column field="est_timeline_min" header="Est. Time" body={estTimelineBodyTemplate} sortable style={{ minWidth: '130px' }} />
-                                            <Column field="approval_probability" header="Approval Prob." body={approvalProbabilityBodyTemplate} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Included Cards" body={cardsStackBodyTemplate} style={{ minWidth: '220px' }} />
                                             <Column header="Total" body={(rowData: CapitalAccount) => (rowData.credit_accounts || rowData.accounts)?.length || 0} style={{ minWidth: '80px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '120px' }} />

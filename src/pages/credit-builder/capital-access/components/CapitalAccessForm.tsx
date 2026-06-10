@@ -28,8 +28,6 @@ const PRE_FLIGHT_TASKS = [
 export interface SelectedPlayCard extends CreditAccount {
     play_details?: {
         why_this_card: string;
-        est_approval_odds: string;
-        est_approval_odds_for_show?: string;
         est_limit_min: string;
         est_limit_max: string;
         est_limit_for_show?: string;
@@ -57,14 +55,12 @@ export default function CapitalAccessForm() {
     const [modalValidationErrors, setModalValidationErrors] = useState<Record<string, string>>({});
     const [editDetailsForm, setEditDetailsForm] = useState<{
         why_this_card: string;
-        est_approval_odds: string;
         est_limit_min: string;
         est_limit_max: string;
         hard_pull: string;
         what_you_need: string[];
     }>({
         why_this_card: '',
-        est_approval_odds: '',
         est_limit_min: '',
         est_limit_max: '',
         hard_pull: 'Yes',
@@ -79,7 +75,6 @@ export default function CapitalAccessForm() {
         status: string;
         target_exposure_min: string;
         target_exposure_max: string;
-        approval_probability: string;
         est_timeline_min: string;
         est_timeline_max: string;
         what_you_will_get: string[];
@@ -90,7 +85,7 @@ export default function CapitalAccessForm() {
         status: STATUS_ACTIVE,
         target_exposure_min: '',
         target_exposure_max: '',
-        approval_probability: '',
+
         est_timeline_min: '',
         est_timeline_max: '',
         what_you_will_get: [''],
@@ -115,7 +110,7 @@ export default function CapitalAccessForm() {
                 status: programData.status || 'Active',
                 target_exposure_min: programData.target_exposure_min ? String(programData.target_exposure_min).replace(/[^0-9.-]+/g, "") : '',
                 target_exposure_max: programData.target_exposure_max ? String(programData.target_exposure_max).replace(/[^0-9.-]+/g, "") : '',
-                approval_probability: programData.approval_probability ? String(programData.approval_probability).replace(/[^0-9.-]+/g, "") : '',
+
                 est_timeline_min: programData.est_timeline_min !== undefined && programData.est_timeline_min !== null ? String(programData.est_timeline_min) : '',
                 est_timeline_max: programData.est_timeline_max !== undefined && programData.est_timeline_max !== null ? String(programData.est_timeline_max) : '',
                 what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
@@ -125,8 +120,7 @@ export default function CapitalAccessForm() {
                 ...acc,
                 play_details: acc.pivot ? {
                     why_this_card: acc.pivot.why_this_card || '',
-                    est_approval_odds: String(acc.pivot.est_approval_odds ?? ''),
-                    est_approval_odds_for_show: acc.pivot.est_approval_odds_for_show || '',
+
                     est_limit_min: String(acc.pivot.est_limit_min ?? ''),
                     est_limit_max: String(acc.pivot.est_limit_max ?? ''),
                     est_limit_for_show: acc.pivot.est_limit_for_show || '',
@@ -134,8 +128,7 @@ export default function CapitalAccessForm() {
                     what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || [])
                 } : {
                     why_this_card: '',
-                    est_approval_odds: '',
-                    est_approval_odds_for_show: '',
+
                     est_limit_min: '',
                     est_limit_max: '',
                     est_limit_for_show: '',
@@ -229,7 +222,6 @@ export default function CapitalAccessForm() {
                     ...account,
                     play_details: {
                         why_this_card: '',
-                        est_approval_odds: '',
                         est_limit_min: '',
                         est_limit_max: '',
                         hard_pull: 'Yes',
@@ -259,8 +251,7 @@ export default function CapitalAccessForm() {
             ...account,
             play_details: {
                 why_this_card: '',
-                est_approval_odds: '',
-                est_limit_min: '',
+                        est_limit_min: '',
                 est_limit_max: '',
                 hard_pull: 'Yes',
                 what_you_need: ['']
@@ -285,7 +276,7 @@ export default function CapitalAccessForm() {
         setEditingCardId(account.id);
         setEditDetailsForm({
             why_this_card: account.play_details?.why_this_card || '',
-            est_approval_odds: account.play_details?.est_approval_odds || '',
+
             est_limit_min: account.play_details?.est_limit_min || '',
             est_limit_max: account.play_details?.est_limit_max || '',
             hard_pull: account.play_details?.hard_pull || 'Yes',
@@ -299,7 +290,7 @@ export default function CapitalAccessForm() {
         // Validation
         const errors: Record<string, string> = {};
         if (!editDetailsForm.why_this_card.trim()) errors.why_this_card = "Why This Card is required.";
-        if (!editDetailsForm.est_approval_odds) errors.est_approval_odds = "Est. Approval Odds are required.";
+
         if (!editDetailsForm.est_limit_min) errors.est_limit_min = "Min Limit is required.";
         if (!editDetailsForm.est_limit_max) errors.est_limit_max = "Max Limit is required.";
 
@@ -315,14 +306,12 @@ export default function CapitalAccessForm() {
 
         setModalValidationErrors({});
 
-        const est_approval_odds_for_show = editDetailsForm.est_approval_odds ? `${editDetailsForm.est_approval_odds}%` : '';
         const minNum = Number(editDetailsForm.est_limit_min);
         const maxNum = Number(editDetailsForm.est_limit_max);
         const est_limit_for_show = `$${isNaN(minNum) ? editDetailsForm.est_limit_min : minNum.toLocaleString()} - $${isNaN(maxNum) ? editDetailsForm.est_limit_max : maxNum.toLocaleString()}`;
 
         const newPlayDetails = {
             ...editDetailsForm,
-            est_approval_odds_for_show,
             est_limit_for_show,
             what_you_need: cleanRequirements
         };
@@ -387,7 +376,7 @@ export default function CapitalAccessForm() {
                 sub_title: formData.sub_title,
                 target_exposure_min: formData.target_exposure_min === '' ? '' : Number(formData.target_exposure_min),
                 target_exposure_max: formData.target_exposure_max === '' ? '' : Number(formData.target_exposure_max),
-                approval_probability: formData.approval_probability === '' ? '' : Number(formData.approval_probability),
+
                 est_timeline_min: formData.est_timeline_min === '' ? '' : Number(formData.est_timeline_min),
                 est_timeline_max: formData.est_timeline_max === '' ? '' : Number(formData.est_timeline_max),
                 what_you_will_get: formData.what_you_will_get.filter(item => item.trim() !== ''),
@@ -398,7 +387,7 @@ export default function CapitalAccessForm() {
                     .map(acc => ({
                         id: acc.id as number,
                         why_this_card: acc.play_details?.why_this_card || '',
-                        est_approval_odds: acc.play_details?.est_approval_odds || '',
+
                         est_limit_min: acc.play_details?.est_limit_min || '',
                         est_limit_max: acc.play_details?.est_limit_max || '',
                         hard_pull: acc.play_details?.hard_pull || 'Yes',
@@ -518,17 +507,6 @@ export default function CapitalAccessForm() {
                                                         <input type="number" className={`form-control ${validationErrors.target_exposure_max ? 'is-invalid' : ''}`} placeholder="Max (e.g. 150000)" value={formData.target_exposure_max} onChange={(e) => setFormData(prev => ({ ...prev, target_exposure_max: e.target.value }))} />
                                                     </div>
                                                     {(validationErrors.target_exposure_min || validationErrors.target_exposure_max) && <div className="text-danger small mt-1">{validationErrors.target_exposure_min || validationErrors.target_exposure_max}</div>}
-                                                </div>
-                                            </div>
-
-                                            <div className="col-lg-6">
-                                                <div>
-                                                    <label className="form-label">Approval Probability (%) <span className="text-danger">*</span></label>
-                                                    <div className="input-group">
-                                                        <span className="input-group-text bg-light text-muted"><i className="ri-percent-line"></i></span>
-                                                        <input type="number" min="0" max="100" className={`form-control ${validationErrors.approval_probability ? 'is-invalid' : ''}`} placeholder="e.g. 82" value={formData.approval_probability} onChange={(e) => setFormData(prev => ({ ...prev, approval_probability: e.target.value }))} />
-                                                    </div>
-                                                    {validationErrors.approval_probability && <div className="text-danger small mt-1">{validationErrors.approval_probability}</div>}
                                                 </div>
                                             </div>
 
@@ -691,11 +669,6 @@ export default function CapitalAccessForm() {
                                                                             </h6>
                                                                             {acc.play_details && (
                                                                                 <div className="d-flex flex-wrap gap-2 mt-2">
-                                                                                    {acc.play_details.est_approval_odds_for_show && (
-                                                                                        <span className="badge bg-success-subtle text-success fs-9">
-                                                                                            <i className="ri-percent-line align-bottom me-1"></i> Odds: {acc.play_details.est_approval_odds_for_show}
-                                                                                        </span>
-                                                                                    )}
                                                                                     {acc.play_details.est_limit_for_show && (
                                                                                         <span className="badge bg-info-subtle text-info fs-9">
                                                                                             <i className="ri-money-dollar-circle-line align-bottom me-1"></i> Limit: {acc.play_details.est_limit_for_show}

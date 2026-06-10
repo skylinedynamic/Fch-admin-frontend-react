@@ -184,3 +184,10 @@ export const saveCreditProfile = async (borrowerId: string | number, profileData
     const { data } = await apiClient.post('/common/borrowers/save-credit-profile', payload);
     return data;
 };
+
+// Fetch Credit Profile Data
+export const fetchCreditProfile = async (borrowerId: string | number) => {
+    const { data } = await apiClient.get(`/common/borrowers/get-credit-profile/${borrowerId}`);
+    return data;
+};
+

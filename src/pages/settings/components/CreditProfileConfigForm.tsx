@@ -149,8 +149,8 @@ const CreditProfileConfigForm: React.FC = () => {
                             <div className="d-flex align-items-center bg-success-subtle rounded-3 p-3 mb-4">
                                 <div className="flex-shrink-0 me-4">
                                     <div className="avatar-md">
-                                        <div className="avatar-title bg-white rounded fs-24 text-success">
-                                            <i className="ri-file-chart-line"></i>
+                                        <div className="avatar-title bg-white rounded fs-24 text-danger">
+                                            <i className="ri-file-pdf-line"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -238,21 +238,27 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <span className="input-group-text bg-light text-muted" style={{ minWidth: '120px', justifyContent: 'center' }}>
                                                                     <i className="ri-cpu-line me-1"></i> Model
                                                                 </span>
-                                                                <select
-                                                                    name="openai_model"
-                                                                    className={`form-select fs-14 ${errors.openai_model ? 'is-invalid border-danger' : ''}`}
+                                                                <Dropdown
                                                                     value={formData.openai_model || 'gpt-4o-mini'}
-                                                                    onChange={handleInputChange}
+                                                                    options={[
+                                                                        { label: 'GPT-4o Mini (Cost-effective)', value: 'gpt-4o-mini' },
+                                                                        { label: 'GPT-4o (Recommended)', value: 'gpt-4o' },
+                                                                        { label: 'GPT-4 Turbo', value: 'gpt-4-turbo' },
+                                                                        { label: 'GPT-3.5 Turbo (Fastest)', value: 'gpt-3.5-turbo' }
+                                                                    ]}
+                                                                    onChange={(e: DropdownChangeEvent) => {
+                                                                        setFormData(prev => ({ ...prev, openai_model: e.value }));
+                                                                        if (errors.openai_model) {
+                                                                            setErrors(prev => ({ ...prev, openai_model: null }));
+                                                                        }
+                                                                    }}
+                                                                    placeholder="Select Model"
+                                                                    className={`flex-grow-1 ${errors.openai_model ? 'p-invalid' : ''}`}
+                                                                    style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
                                                                     disabled={loading}
-                                                                    style={{ boxShadow: 'none' }}
-                                                                >
-                                                                    <option value="gpt-4o-mini">GPT-4o Mini (Cost-effective)</option>
-                                                                    <option value="gpt-4o">GPT-4o (Recommended)</option>
-                                                                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                                                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fastest)</option>
-                                                                </select>
+                                                                />
                                                                 {errors.openai_model && (
-                                                                    <div className="invalid-feedback ps-3 pb-2">
+                                                                    <div className="text-danger small mt-1 ps-3 pt-1 w-100">
                                                                         <i className="ri-error-warning-line me-1"></i>{errors.openai_model}
                                                                     </div>
                                                                 )}
@@ -310,7 +316,7 @@ const CreditProfileConfigForm: React.FC = () => {
                     : 'bg-info-subtle border-start border-3 border-info'
                 }
                 confirmText={`Yes, Change to ${pendingMode === 'openai' ? 'OpenAI Parsing' : 'Manual Parsing'}`}
-                confirmBtnClass={pendingMode === 'openai' ? 'btn-warning' : 'btn-primary'}
+                confirmBtnClass="btn-primary"
                 onClose={cancelModeChange}
                 onConfirm={confirmModeChange}
             />

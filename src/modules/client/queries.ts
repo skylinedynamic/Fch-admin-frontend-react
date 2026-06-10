@@ -15,7 +15,8 @@ import {
     fetchNonHostBorrowerPlans,
     fetchBorrowerTierWiseTaskList,
     fetchBorrowerProgress,
-    updateTaskVerificationStatus
+    updateTaskVerificationStatus,
+    fetchCreditProfile
 } from './services';
 import type { BorrowerTier, BorrowerProgress } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
@@ -31,6 +32,7 @@ export const clientKeys = {
     detail: (id: string | number) => [...clientKeys.details(), id] as const,
     checklist: (id: string | number) => [...clientKeys.detail(id), 'checklist'] as const,
     stats: (id: string | number) => [...clientKeys.detail(id), 'stats'] as const,
+    creditProfile: (id: string | number) => [...clientKeys.detail(id), 'creditProfile'] as const,
     listStats: (partnerId?: string | number) => [...clientKeys.lists(), 'stats', partnerId] as const,
     partners: () => ['partners'] as const,
     users: () => ['users'] as const,
@@ -131,6 +133,14 @@ export const useClientProfileStats = (id: string | number, enabled: boolean = tr
     return useQuery({
         queryKey: clientKeys.stats(id),
         queryFn: () => fetchBorrowerProfileStats(id),
+        enabled: enabled && !!id,
+    });
+};
+
+export const useClientCreditProfile = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.creditProfile(id),
+        queryFn: () => fetchCreditProfile(id),
         enabled: enabled && !!id,
     });
 };
