@@ -191,7 +191,7 @@ export default function FundingSequencingForm() {
             try {
                 const res = await fetchBorrowerDocumentTypes();
                 if (res?.data) {
-                    const formatted = res.data.map((item: any) => ({ label: item.name, value: item.name }));
+                    const formatted = res.data.map((item: any) => ({ label: item.name, value: item.id }));
                     setAllowedDocumentOptions(formatted);
                 }
             } catch (error) {
@@ -286,7 +286,9 @@ export default function FundingSequencingForm() {
         const cleanData = { ...formData };
         ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
-                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => typeof item === 'string' && item.trim() !== '');
+                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => 
+                    (typeof item === 'string' && item.trim() !== '') || typeof item === 'number'
+                );
             }
         });
 
