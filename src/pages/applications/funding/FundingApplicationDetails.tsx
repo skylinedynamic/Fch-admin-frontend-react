@@ -109,7 +109,7 @@ export default function FundingApplicationDetails() {
     useEffect(() => {
         if (error || (!isLoading && !apiResponse)) {
             toast.error('Failed to load application details');
-            navigate('/intake-review/funding-review');
+            navigate('/intake-review/funding-application');
         }
     }, [error, apiResponse, isLoading, navigate]);
 
@@ -544,13 +544,13 @@ export default function FundingApplicationDetails() {
                                     <nav aria-label="breadcrumb">
                                         <ol className="breadcrumb m-0">
                                             <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-review">Funding Applications</Link></li>
+                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
                                             <li className="breadcrumb-item active" aria-current="page">Details</li>
                                         </ol>
                                     </nav>
                                 </div>
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/intake-review/funding-review" className="btn btn-outline-secondary w-lg waves-effect">
+                                    <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
                                 </div>

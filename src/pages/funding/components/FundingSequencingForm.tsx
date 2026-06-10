@@ -16,6 +16,15 @@ import FundingTypeModal from './FundingTypeModal';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../assets/css/funding.css';
 
+const READINESS_FACTORS_OPTIONS = [
+    "Business Credit",
+    "Revenue",
+    "Time in Business",
+    "Banking Activity",
+    "Existing Debt",
+    "Documents"
+];
+
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
     value: code
@@ -678,48 +687,50 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Row 7: Why You May Qualify & Readiness Factors */}
+                                                    {/* Row 7: Readiness Factors */}
                                                     <div className="col-lg-12">
                                                         <div className="card shadow-sm border rounded-3 mt-4 mb-2">
                                                             <div className="card-header bg-light border-bottom py-3">
-                                                                <h6 className="card-title mb-0 fw-bold text-dark">Qualification & Readiness Factors</h6>
+                                                                <h6 className="card-title mb-0 fw-bold text-dark">Readiness Factors <span className="text-danger">*</span></h6>
                                                             </div>
                                                             <div className="card-body p-4">
                                                                 <div className="row g-4">
-                                                                    <div className="col-lg-6">
-                                                                        <div className="pe-lg-2">
-                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                                                <label className="form-label text-dark fw-medium mb-0">Why You May Qualify</label>
-                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('qualify_reasons', ''); }}>+ Add Reason</button>
-                                                                            </div>
-                                                                            {formData.qualify_reasons.map((reason, idx) => (
-                                                                                <div key={`qualify-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                                    <input type="text" className="form-control rounded-3 py-2" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', idx, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
-                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('qualify_reasons', idx)}><i className="ri-delete-bin-line"></i></button>
-                                                                                </div>
-                                                                            ))}
-                                                                            {formData.qualify_reasons.length === 0 && (
-                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
-                                                                                    No reasons added yet. Click "+ Add Reason" to begin.
-                                                                                </div>
-                                                                            )}
+                                                                    <div className="col-lg-12">
+                                                                        <div className="mb-3">
+                                                                            <Dropdown
+                                                                                options={READINESS_FACTORS_OPTIONS.filter(t => !formData.readiness_factors.includes(t)).map(t => ({ label: t, value: t }))}
+                                                                                onChange={(e) => {
+                                                                                    if (e.value) {
+                                                                                        setFormData(prev => ({
+                                                                                            ...prev,
+                                                                                            readiness_factors: [...prev.readiness_factors, e.value]
+                                                                                        }));
+                                                                                    }
+                                                                                }}
+                                                                                placeholder="Select Requirement to Add"
+                                                                                className="w-100"
+                                                                                value={null}
+                                                                                emptyMessage="All requirements added"
+                                                                            />
+                                                                            {(errors as any).readiness_factors && <div className="text-danger small mt-1">{(errors as any).readiness_factors}</div>}
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="col-lg-6">
-                                                                        <div className="ps-lg-2 border-start-lg">
-                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                                                <label className="form-label text-dark fw-medium mb-0">Readiness Factors</label>
-                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('readiness_factors', ''); }}>+ Add Factor</button>
-                                                                            </div>
-                                                                            {formData.readiness_factors.map((factor, idx) => (
-                                                                                <div key={`readiness-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                                    <input type="text" className="form-control rounded-3 py-2" value={typeof factor === 'string' ? factor : ((factor as any)?.label || '')} onChange={(e) => handleArrayChange('readiness_factors', idx, e.target.value)} placeholder="e.g. Business Credit" style={{ flex: 2 }} />
-                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('readiness_factors', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                        <div className="d-flex flex-column gap-2 mb-3">
+                                                                            {formData.readiness_factors.map((item, index) => (
+                                                                                <div key={index} className="d-flex align-items-center justify-content-between p-2 border border-light-subtle rounded bg-white shadow-sm transition">
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <i className="ri-checkbox-circle-line text-primary fs-18"></i>
+                                                                                        <span className="fw-medium text-dark fs-13">{typeof item === 'string' ? item : ((item as any)?.label || '')}</span>
+                                                                                    </div>
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <button type="button" className="btn btn-sm btn-ghost-danger p-1 lh-1 rounded" onClick={() => removeArrayItem('readiness_factors', index)}>
+                                                                                            <i className="ri-close-line fs-16"></i>
+                                                                                        </button>
+                                                                                    </div>
                                                                                 </div>
                                                                             ))}
                                                                             {formData.readiness_factors.length === 0 && (
                                                                                 <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
-                                                                                    No readiness factors added yet. Click "+ Add Factor" to begin.
+                                                                                    No readiness factors added yet. Select from the dropdown above to begin.
                                                                                 </div>
                                                                             )}
                                                                         </div>

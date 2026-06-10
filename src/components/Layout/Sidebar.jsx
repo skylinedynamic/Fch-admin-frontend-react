@@ -51,9 +51,14 @@ const menuItems = [
         permission: 'view pre qualification',
       },
       {
+        to: '/intake-review/funding-application',
+        label: 'Funding Application',
+        permission: 'view funding application',
+      },
+      {
         to: '/intake-review/funding-review',
         label: 'Funding Review',
-        permission: 'view funding application',
+        permission: 'view funding application', // Reusing permission unless specified otherwise
       },
       {
         to: '/intake-review/change-requests',
@@ -232,10 +237,16 @@ export default function Sidebar() {
           )
             return true;
 
-          // Special case for Funding Review details
+          // Special case for Funding Review/Application details
+          if (
+            sub.to === "/intake-review/funding-application" &&
+            location.pathname.includes("/intake-review/funding-applications/")
+          )
+            return true;
+          
           if (
             sub.to === "/intake-review/funding-review" &&
-            location.pathname.includes("/intake-review/funding-applications/")
+            location.pathname.includes("/intake-review/funding-reviews/")
           )
             return true;
 
@@ -477,7 +488,13 @@ export default function Sidebar() {
                   )
                     return true;
 
-                  // Special case for Funding Review details
+                  // Special case for Funding Application and Review details
+                  if (
+                    sub.to === "/intake-review/funding-application" &&
+                    location.pathname.includes("/intake-review/funding-application/")
+                  )
+                    return true;
+
                   if (
                     sub.to === "/intake-review/funding-review" &&
                     location.pathname.includes("/intake-review/funding-review/")
@@ -535,6 +552,15 @@ export default function Sidebar() {
                                       "/intake-review/pre-qualification" &&
                                       location.pathname.startsWith(
                                         "/intake-review/pre-qualification/",
+                                      )
+                                    ) {
+                                      isPathActive = true;
+                                    }
+                                    if (
+                                      subItem.to ===
+                                      "/intake-review/funding-application" &&
+                                      location.pathname.startsWith(
+                                        "/intake-review/funding-application/",
                                       )
                                     ) {
                                       isPathActive = true;

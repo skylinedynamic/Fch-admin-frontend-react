@@ -310,7 +310,7 @@ export default function FundingApplication() {
                                             dataKey="id"
                                             rowClassName={() => 'cursor-pointer'}
                                             onRowClick={(e: any) => {
-                                                navigate(`/intake-review/funding-review/${e.data.id}`);
+                                                navigate(`/intake-review/funding-application/${e.data.id}`);
                                             }}
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm"
