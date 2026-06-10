@@ -11,10 +11,20 @@ import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIO
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
+import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../assets/css/funding.css';
+
+const READINESS_FACTORS_OPTIONS = [
+    "Business Credit",
+    "Revenue",
+    "Time in Business",
+    "Banking Activity",
+    "Existing Debt",
+    "Documents"
+];
 
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
@@ -45,6 +55,8 @@ export default function FundingSequencingForm() {
     const [groups, setGroups] = useState([]);
     const [types, setTypes] = useState([]);
     const [errors, setErrors] = useState({});
+    const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{label: string, value: string}[]>([]);
+    const [groupModalOpen, setGroupModalOpen] = useState(false);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showTypeModal, setShowTypeModal] = useState(false);
 
@@ -86,7 +98,8 @@ export default function FundingSequencingForm() {
         uses: [],
         qualify_reasons: [],
         readiness_factors: [],
-        missing_documents: []
+        missing_documents: [],
+        allowed_documents: []
     });
 
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
@@ -154,22 +167,42 @@ export default function FundingSequencingForm() {
     }, []);
 
     useEffect(() => {
-        const fetchDependencies = async () => {
+        const loadGroups = async () => {
             try {
-                const [groupsRes, typesRes] = await Promise.all([
-                    getFundingGroups(),
-                    getFundingTypes()
-                ]);
-                setGroups(groupsRes.data || []);
-                setTypes(typesRes.data || []);
-            } catch (err) {
-                console.error('Failed to fetch dependencies', err);
+                const res = await getFundingGroups();
+                setGroups(res.data || []);
+            } catch (error) {
+                console.error('Failed to load groups', error);
             }
         };
-        fetchDependencies();
-    }, []);
 
-    useEffect(() => {
+        const loadTypes = async () => {
+            try {
+                const res = await getFundingTypes();
+                if (res?.data) {
+                    setTypes(res.data);
+                }
+            } catch (error) {
+                console.error('Failed to load types', error);
+            }
+        };
+
+        const loadDocTypes = async () => {
+            try {
+                const res = await fetchBorrowerDocumentTypes();
+                if (res?.data) {
+                    const formatted = res.data.map((item: any) => ({ label: item.name, value: item.id }));
+                    setAllowedDocumentOptions(formatted);
+                }
+            } catch (error) {
+                console.error('Failed to load document types', error);
+            }
+        };
+
+        loadGroups();
+        loadTypes();
+        loadDocTypes();
+        
         if (isEditMode) {
             const loadAccount = async () => {
                 try {
@@ -220,7 +253,8 @@ export default function FundingSequencingForm() {
                         uses: Array.isArray(data.uses) ? data.uses : [],
                         qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
-                        missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : []
+                        missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
+                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -250,9 +284,11 @@ export default function FundingSequencingForm() {
         setLoading(true);
 
         const cleanData = { ...formData };
-        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents'].forEach(field => {
+        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
-                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => typeof item === 'string' && item.trim() !== '');
+                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => 
+                    (typeof item === 'string' && item.trim() !== '') || typeof item === 'number'
+                );
             }
         });
 
@@ -301,6 +337,7 @@ export default function FundingSequencingForm() {
                     restricted_industries: cleanData.restricted_industries,
                     require_completed_application: cleanData.require_completed_application,
                     require_documents_uploaded: cleanData.require_documents_uploaded,
+                    allowed_documents: cleanData.allowed_documents,
                     manual_review_allowed: cleanData.manual_review_allowed,
                     exception_allowed: cleanData.exception_allowed
                 } as any;
@@ -678,48 +715,50 @@ export default function FundingSequencingForm() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Row 7: Why You May Qualify & Readiness Factors */}
+                                                    {/* Row 7: Readiness Factors */}
                                                     <div className="col-lg-12">
                                                         <div className="card shadow-sm border rounded-3 mt-4 mb-2">
                                                             <div className="card-header bg-light border-bottom py-3">
-                                                                <h6 className="card-title mb-0 fw-bold text-dark">Qualification & Readiness Factors</h6>
+                                                                <h6 className="card-title mb-0 fw-bold text-dark">Readiness Factors <span className="text-danger">*</span></h6>
                                                             </div>
                                                             <div className="card-body p-4">
                                                                 <div className="row g-4">
-                                                                    <div className="col-lg-6">
-                                                                        <div className="pe-lg-2">
-                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                                                <label className="form-label text-dark fw-medium mb-0">Why You May Qualify</label>
-                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('qualify_reasons', ''); }}>+ Add Reason</button>
-                                                                            </div>
-                                                                            {formData.qualify_reasons.map((reason, idx) => (
-                                                                                <div key={`qualify-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                                    <input type="text" className="form-control rounded-3 py-2" value={reason} onChange={(e) => handleArrayChange('qualify_reasons', idx, e.target.value)} placeholder="e.g. Revenue exceeds minimum threshold" />
-                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('qualify_reasons', idx)}><i className="ri-delete-bin-line"></i></button>
-                                                                                </div>
-                                                                            ))}
-                                                                            {formData.qualify_reasons.length === 0 && (
-                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
-                                                                                    No reasons added yet. Click "+ Add Reason" to begin.
-                                                                                </div>
-                                                                            )}
+                                                                    <div className="col-lg-12">
+                                                                        <div className="mb-3">
+                                                                            <Dropdown
+                                                                                options={READINESS_FACTORS_OPTIONS.filter(t => !formData.readiness_factors.includes(t)).map(t => ({ label: t, value: t }))}
+                                                                                onChange={(e) => {
+                                                                                    if (e.value) {
+                                                                                        setFormData(prev => ({
+                                                                                            ...prev,
+                                                                                            readiness_factors: [...prev.readiness_factors, e.value]
+                                                                                        }));
+                                                                                    }
+                                                                                }}
+                                                                                placeholder="Select Requirement to Add"
+                                                                                className="w-100"
+                                                                                value={null}
+                                                                                emptyMessage="All requirements added"
+                                                                            />
+                                                                            {(errors as any).readiness_factors && <div className="text-danger small mt-1">{(errors as any).readiness_factors}</div>}
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="col-lg-6">
-                                                                        <div className="ps-lg-2 border-start-lg">
-                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                                                <label className="form-label text-dark fw-medium mb-0">Readiness Factors</label>
-                                                                                <button type="button" className="btn btn-sm btn-soft-primary" onClick={(e) => { e.preventDefault(); addArrayItem('readiness_factors', ''); }}>+ Add Factor</button>
-                                                                            </div>
-                                                                            {formData.readiness_factors.map((factor, idx) => (
-                                                                                <div key={`readiness-${idx}`} className="d-flex align-items-center gap-2 mb-2">
-                                                                                    <input type="text" className="form-control rounded-3 py-2" value={typeof factor === 'string' ? factor : ((factor as any)?.label || '')} onChange={(e) => handleArrayChange('readiness_factors', idx, e.target.value)} placeholder="e.g. Business Credit" style={{ flex: 2 }} />
-                                                                                    <button type="button" className="btn btn-danger btn-icon" onClick={() => removeArrayItem('readiness_factors', idx)}><i className="ri-delete-bin-line"></i></button>
+                                                                        <div className="d-flex flex-column gap-2 mb-3">
+                                                                            {formData.readiness_factors.map((item, index) => (
+                                                                                <div key={index} className="d-flex align-items-center justify-content-between p-2 border border-light-subtle rounded bg-white shadow-sm transition">
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <i className="ri-checkbox-circle-line text-primary fs-18"></i>
+                                                                                        <span className="fw-medium text-dark fs-13">{typeof item === 'string' ? item : ((item as any)?.label || '')}</span>
+                                                                                    </div>
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <button type="button" className="btn btn-sm btn-ghost-danger p-1 lh-1 rounded" onClick={() => removeArrayItem('readiness_factors', index)}>
+                                                                                            <i className="ri-close-line fs-16"></i>
+                                                                                        </button>
+                                                                                    </div>
                                                                                 </div>
                                                                             ))}
                                                                             {formData.readiness_factors.length === 0 && (
                                                                                 <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
-                                                                                    No readiness factors added yet. Click "+ Add Factor" to begin.
+                                                                                    No readiness factors added yet. Select from the dropdown above to begin.
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -912,9 +951,31 @@ export default function FundingSequencingForm() {
                                                                 <p className="text-muted fs-13 mb-0">Documents must be uploaded before sequence is active</p>
                                                             </div>
                                                             <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={handleInputChange} />
+                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={(e) => {
+                                                                    handleInputChange(e);
+                                                                    if (!e.target.checked) {
+                                                                        setFormData(prev => ({ ...prev, allowed_documents: [] }));
+                                                                    }
+                                                                }} />
                                                             </div>
                                                         </div>
+
+                                                        {formData.require_documents_uploaded && (
+                                                            <div className="mb-4">
+                                                                <label className="form-label text-dark fw-medium mb-2">Allowed Documents <span className="text-danger">*</span></label>
+                                                                <MultiSelect
+                                                                    value={formData.allowed_documents}
+                                                                    options={allowedDocumentOptions}
+                                                                    onChange={(e) => handleInputChange({ target: { name: 'allowed_documents', value: e.value } })}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    display="chip"
+                                                                    placeholder="Select required documents"
+                                                                    className={`w-100 rounded-3 slim-multiselect ${(errors as any).allowed_documents ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {(errors as any).allowed_documents && <small className="text-danger mt-1 d-block">{(errors as any).allowed_documents}</small>}
+                                                            </div>
+                                                        )}
 
                                                         <div className="d-flex align-items-center justify-content-between mb-4">
                                                             <div>

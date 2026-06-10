@@ -35,9 +35,10 @@ import ErrorPage from './pages/Utility/ErrorPage.tsx';
 import Leads from './pages/leads/Leads.jsx';
 import LeadDetails from './pages/leads/LeadDetails.jsx';
 import PreQualificationApplication from './pages/applications/pre-qualification/PreQualificationApplication.tsx';
-import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
+import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
+import FundingReview from './pages/applications/funding-review/FundingReview.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
@@ -315,8 +316,9 @@ export default function App() {
               </Route>
 
               <Route element={<PermissionRoute permission="view funding application" />}>
-                <Route path="funding-review" element={<FundingApplication />} />
-                <Route path="funding-review/:id" element={<FundingApplicationDetails />} />
+                <Route path="funding-application" element={<FundingApplication />} />
+                <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
+                <Route path="funding-review" element={<FundingReview />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view change requests" />}>
