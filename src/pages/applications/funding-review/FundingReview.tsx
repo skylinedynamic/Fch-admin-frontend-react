@@ -349,17 +349,18 @@ export default function FundingReview() {
                                     <div className="mb-3">
                                         <label className="form-label fw-medium">Decision <span className="text-danger">*</span></label>
                                         <div className="d-flex gap-2">
-                                            {['Pending', 'Approved', 'Rejected'].map(s => (
+                                            {['Approved', 'Rejected'].map(s => (
                                                 <button
                                                     key={s}
                                                     type="button"
                                                     className={`btn flex-grow-1 ${newStatus === s
-                                                        ? s === 'Approved' ? 'btn-success' : s === 'Rejected' ? 'btn-danger' : 'btn-warning'
+                                                        ? s === 'Approved' ? 'btn-success' : 'btn-danger'
                                                         : 'btn-light'
                                                         }`}
+                                                    disabled={selectedReview.status !== 'Pending'}
                                                     onClick={() => setNewStatus(s)}
                                                 >
-                                                    <i className={`${s === 'Approved' ? 'ri-checkbox-circle-line' : s === 'Rejected' ? 'ri-close-circle-line' : 'ri-time-line'} me-1`}></i>
+                                                    <i className={`${s === 'Approved' ? 'ri-checkbox-circle-line' : 'ri-close-circle-line'} me-1`}></i>
                                                     {s}
                                                 </button>
                                             ))}
@@ -377,6 +378,7 @@ export default function FundingReview() {
                                                 rows={3}
                                                 placeholder="Please provide a reason for rejection…"
                                                 value={rejectReason}
+                                                disabled={selectedReview.status !== 'Pending'}
                                                 onChange={e => setRejectReason(e.target.value)}
                                             />
                                         </div>
@@ -396,20 +398,22 @@ export default function FundingReview() {
 
                                 <div className="modal-footer border-top-0 pt-0">
                                     <button type="button" className="btn btn-light" onClick={() => setShowStatusModal(false)}>
-                                        Cancel
+                                        {selectedReview.status === 'Pending' ? 'Cancel' : 'Close'}
                                     </button>
-                                    <button
-                                        type="button"
-                                        className={`btn px-4 ${newStatus === 'Approved' ? 'btn-success' : newStatus === 'Rejected' ? 'btn-danger' : 'btn-warning'}`}
-                                        disabled={updateStatusMutation.isPending || !newStatus || (newStatus === 'Rejected' && !rejectReason.trim())}
-                                        onClick={handleStatusUpdate}
-                                    >
-                                        {updateStatusMutation.isPending ? (
-                                            <><span className="spinner-border spinner-border-sm me-1" role="status" /> Processing…</>
-                                        ) : (
-                                            <><i className={`${newStatus === 'Approved' ? 'ri-checkbox-circle-line' : newStatus === 'Rejected' ? 'ri-close-circle-line' : 'ri-time-line'} me-1`}></i> Confirm {newStatus}</>
-                                        )}
-                                    </button>
+                                    {selectedReview.status === 'Pending' && (
+                                        <button
+                                            type="button"
+                                            className={`btn px-4 ${newStatus === 'Approved' ? 'btn-success' : newStatus === 'Rejected' ? 'btn-danger' : 'btn-primary'}`}
+                                            disabled={updateStatusMutation.isPending || !newStatus || newStatus === 'Pending' || (newStatus === 'Rejected' && !rejectReason.trim())}
+                                            onClick={handleStatusUpdate}
+                                        >
+                                            {updateStatusMutation.isPending ? (
+                                                <><span className="spinner-border spinner-border-sm me-1" role="status" /> Processing…</>
+                                            ) : (
+                                                <><i className={`${newStatus === 'Approved' ? 'ri-checkbox-circle-line' : newStatus === 'Rejected' ? 'ri-close-circle-line' : 'ri-check-line'} me-1`}></i> Confirm {newStatus === 'Pending' ? 'Decision' : newStatus}</>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
