@@ -92,4 +92,11 @@ export const READINESS_FACTOR_STATUS_OPTIONS: SelectOption[] = [
     { label: 'Missing', value: 'Missing' }
 ];
 
-
+export const READINESS_FACTORS_OPTIONS = [
+    "Business Credit",
+    "Revenue",
+    "Time in Business",
+    "Banking Activity",
+    "Existing Debt",
+    "Documents"
+];

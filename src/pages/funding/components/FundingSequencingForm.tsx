@@ -8,7 +8,7 @@ import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { getAllLenders } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS } from '../../../config/funding';
+import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -17,15 +17,6 @@ import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../assets/css/funding.css';
-
-const READINESS_FACTORS_OPTIONS = [
-    "Business Credit",
-    "Revenue",
-    "Time in Business",
-    "Banking Activity",
-    "Existing Debt",
-    "Documents"
-];
 
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
