@@ -256,10 +256,10 @@ export default function FundingList() {
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">Funding</h4>
-                                <nav aria-label="breadcrumb">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active">Funding</li>
+                                        <li className="breadcrumb-item active" aria-current="page">Funding</li>
                                     </ol>
                                 </nav>
                             </div>
@@ -292,9 +292,9 @@ export default function FundingList() {
 
                 <div className="row row-table-fit credit-account-section">
                     <div className="col-12">
-                        <div className="card">
-                            <div className="card-body list-fluid-card">
-                                <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
+                        <div className="card shadow-sm border-0">
+                            <div className="card-body">
+                                <form className="table-filter mb-4" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     {loading ? (
                                         <FilterLoader config={[
                                             { col: "col-xxl-3 col-sm-12" },

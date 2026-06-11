@@ -60,6 +60,11 @@ export const BORROWER_STATUS: StatusOption[] = [
     { label: 'OnBoarding', value: 'OnBoarding' },
 ];
 
+export const LENDER_STATUS: StatusOption[] = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' }
+];
+
 export const COMMISSION_PAYMENT: StatusOption[] = [
     { label: 'Card', value: 'Card' },
     { label: 'Cash', value: 'Cash' },

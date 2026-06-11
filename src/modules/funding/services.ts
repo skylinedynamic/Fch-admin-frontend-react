@@ -1,22 +1,7 @@
 import { apiClient } from '../../lib/http/apiClient';
+import { FundingSequencing, FundingFilterParams } from './types';
 
-export interface FundingSequencing {
-    id?: number;
-    funding_group_id?: number | null;
-    funding_type_id?: number | null;
-    name: string;
-    subtitle?: string;
-    description?: string;
-    amount_range?: string;
-    terms?: string;
-    icon?: string;
-    icon_color?: string;
-    status: string;
-    sort_order?: number;
-    action_url?: string;
-}
-
-export const fetchFundingSequencings = async (payload: any = {}) => {
+export const fetchFundingSequencings = async (payload: FundingFilterParams = {}) => {
     const response = await apiClient.post('/admin/funding-sequencings/fetch', payload);
     return response.data;
 };
@@ -95,3 +80,5 @@ export const deleteFundingType = async (id: number | string) => {
     const { data } = await apiClient.delete(`/admin/funding-types/${id}`);
     return data;
 };
+
+

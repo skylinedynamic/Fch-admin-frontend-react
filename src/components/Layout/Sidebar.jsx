@@ -78,7 +78,14 @@ const menuItems = [
     icon: "ri-money-dollar-circle-line",
     label: "Funding Sequence",
     isHostOnly: true,
-    permission: "",
+    permission: "view funding",
+  },
+  {
+    to: "/lenders",
+    icon: "ri-money-dollar-box-line",
+    label: "Lenders",
+    isHostOnly: true,
+    permission: "view lenders",
   },
   {
     label: "Credit Builder",
@@ -243,7 +250,7 @@ export default function Sidebar() {
             location.pathname.includes("/intake-review/funding-applications/")
           )
             return true;
-          
+
           if (
             sub.to === "/intake-review/funding-review" &&
             location.pathname.includes("/intake-review/funding-reviews/")

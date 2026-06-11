@@ -68,6 +68,8 @@ import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
 import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
 import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
+import LendersList from './pages/lenders/LendersList';
+import LenderForm from './pages/lenders/LenderForm';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -281,6 +283,9 @@ export default function App() {
               <Route path="funding" element={<FundingList />} />
               <Route path="funding/create" element={<FundingSequencingForm />} />
               <Route path="funding/:id" element={<FundingSequencingForm />} />
+              <Route path="lenders" element={<LendersList />} />
+              <Route path="lenders/create" element={<LenderForm />} />
+              <Route path="lenders/:id" element={<LenderForm />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}

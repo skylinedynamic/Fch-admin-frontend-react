@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { getAllLenders } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
@@ -54,6 +55,7 @@ export default function FundingSequencingForm() {
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [groups, setGroups] = useState([]);
     const [types, setTypes] = useState([]);
+    const [lendersList, setLendersList] = useState([]);
     const [errors, setErrors] = useState({});
     const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{label: string, value: string}[]>([]);
     const [groupModalOpen, setGroupModalOpen] = useState(false);
@@ -69,6 +71,7 @@ export default function FundingSequencingForm() {
         subtitle: '',
         funding_group_id: null,
         funding_type_id: null,
+        lender_id: null,
         min_amount: '',
         max_amount: '',
         terms: '',
@@ -199,9 +202,19 @@ export default function FundingSequencingForm() {
             }
         };
 
+        const loadLenders = async () => {
+            try {
+                const res = await getAllLenders();
+                setLendersList(res.data || res);
+            } catch (error) {
+                console.error('Failed to load lenders', error);
+            }
+        };
+
         loadGroups();
         loadTypes();
         loadDocTypes();
+        loadLenders();
         
         if (isEditMode) {
             const loadAccount = async () => {
@@ -230,31 +243,32 @@ export default function FundingSequencingForm() {
                         description: data.description || '',
                         funding_group_id: data.funding_group_id || null,
                         funding_type_id: data.funding_type_id || null,
+                        lender_id: data.lenders && data.lenders.length > 0 ? data.lenders[0].lender_id : null,
                         icon: data.icon || '',
                         icon_color: data.icon_color || 'blue',
-                        min_fico: data.min_fico || '',
-                        min_tib_months: data.min_tib_months || '',
-                        min_monthly_revenue: data.min_monthly_revenue || '',
-                        min_monthly_deposits: data.min_monthly_deposits || '',
-                        min_average_daily_balance: data.min_average_daily_balance || '',
-                        max_nsf_count: data.max_nsf_count || '',
-                        max_negative_days: data.max_negative_days || '',
-                        min_dscr: data.min_dscr || '',
+                        min_fico: data.lenders?.[0]?.min_fico || '',
+                        min_tib_months: data.lenders?.[0]?.min_tib_months || '',
+                        min_monthly_revenue: data.lenders?.[0]?.min_monthly_revenue || '',
+                        min_monthly_deposits: data.lenders?.[0]?.min_monthly_deposits || '',
+                        min_average_daily_balance: data.lenders?.[0]?.min_average_daily_balance || '',
+                        max_nsf_count: data.lenders?.[0]?.max_nsf_count || '',
+                        max_negative_days: data.lenders?.[0]?.max_negative_days || '',
+                        min_dscr: data.lenders?.[0]?.min_dscr || '',
                         sort_order: data.sort_order || '',
-                        allowed_states: data.allowed_states?.length && data.allowed_states[0] !== '' ? data.allowed_states : [],
-                        restricted_states: data.restricted_states?.length && data.restricted_states[0] !== '' ? data.restricted_states : [],
-                        allowed_industries: data.allowed_industries?.length && data.allowed_industries[0] !== '' ? data.allowed_industries : [],
-                        restricted_industries: data.restricted_industries?.length && data.restricted_industries[0] !== '' ? data.restricted_industries : [],
-                        require_completed_application: data.require_completed_application || false,
-                        require_documents_uploaded: data.require_documents_uploaded || false,
-                        manual_review_allowed: data.manual_review_allowed || false,
-                        exception_allowed: data.exception_allowed || false,
+                        allowed_states: data.lenders?.[0]?.allowed_states?.length && data.lenders[0].allowed_states[0] !== '' ? data.lenders[0].allowed_states : [],
+                        restricted_states: data.lenders?.[0]?.restricted_states?.length && data.lenders[0].restricted_states[0] !== '' ? data.lenders[0].restricted_states : [],
+                        allowed_industries: data.lenders?.[0]?.allowed_industries?.length && data.lenders[0].allowed_industries[0] !== '' ? data.lenders[0].allowed_industries : [],
+                        restricted_industries: data.lenders?.[0]?.restricted_industries?.length && data.lenders[0].restricted_industries[0] !== '' ? data.lenders[0].restricted_industries : [],
+                        require_completed_application: data.lenders?.[0]?.require_completed_application || false,
+                        require_documents_uploaded: data.lenders?.[0]?.require_documents_uploaded || false,
+                        manual_review_allowed: data.lenders?.[0]?.manual_review_allowed || false,
+                        exception_allowed: data.lenders?.[0]?.exception_allowed || false,
                         speed_to_funds: data.speed_to_funds || '',
                         uses: Array.isArray(data.uses) ? data.uses : [],
                         qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
-                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : []
+                        allowed_documents: Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -296,33 +310,29 @@ export default function FundingSequencingForm() {
             cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'string' && item.trim() !== '');
         }
 
-        let payload = cleanData;
-
-        // If in edit mode, only send the fields for the active tab to separate APIs logically
-        if (isEditMode) {
-            if (activeTab === 'display') {
-                payload = {
-                    name: cleanData.name,
-                    subtitle: cleanData.subtitle,
-                    funding_group_id: cleanData.funding_group_id,
-                    funding_type_id: cleanData.funding_type_id,
-                    min_amount: cleanData.min_amount,
-                    max_amount: cleanData.max_amount,
-                    terms: cleanData.terms,
-                    status: cleanData.status,
-                    action_url: cleanData.action_url,
-                    description: cleanData.description,
-                    icon: cleanData.icon,
-                    icon_color: cleanData.icon_color,
-                    sort_order: cleanData.sort_order,
-                    speed_to_funds: cleanData.speed_to_funds,
-                    uses: cleanData.uses,
-                    qualify_reasons: cleanData.qualify_reasons,
-                    readiness_factors: cleanData.readiness_factors,
-                    missing_documents: cleanData.missing_documents
-                } as any;
-            } else if (activeTab === 'visibility') {
-                payload = {
+        const unifiedPayload = {
+            name: cleanData.name.trim(),
+            subtitle: cleanData.subtitle.trim(),
+            funding_group_id: cleanData.funding_group_id,
+            funding_type_id: cleanData.funding_type_id,
+            lender_id: cleanData.lender_id,
+            min_amount: cleanData.min_amount,
+            max_amount: cleanData.max_amount,
+            terms: cleanData.terms.trim(),
+            status: cleanData.status,
+            action_url: cleanData.action_url.trim(),
+            icon: cleanData.icon,
+            icon_color: cleanData.icon_color,
+            sort_order: cleanData.sort_order ? Number(cleanData.sort_order) : 0,
+            description: cleanData.description,
+            speed_to_funds: cleanData.speed_to_funds,
+            uses: cleanData.uses,
+            qualify_reasons: cleanData.qualify_reasons,
+            readiness_factors: cleanData.readiness_factors,
+            missing_documents: cleanData.missing_documents,
+            lenders: [
+                {
+                    lender_id: cleanData.lender_id,
                     min_fico: cleanData.min_fico,
                     min_tib_months: cleanData.min_tib_months,
                     min_monthly_revenue: cleanData.min_monthly_revenue,
@@ -340,37 +350,47 @@ export default function FundingSequencingForm() {
                     allowed_documents: cleanData.allowed_documents,
                     manual_review_allowed: cleanData.manual_review_allowed,
                     exception_allowed: cleanData.exception_allowed
-                } as any;
-            }
-        }
+                }
+            ]
+        };
 
         try {
-            if (isEditMode) {
-                if (activeTab === 'display') {
-                    await updateFundingSequencingDisplay(id, payload);
-                    toast.success('Display settings updated successfully');
-                    setActiveTab('visibility'); // redirect to visibility tab
-                } else {
-                    await updateFundingSequencingVisibility(id, payload);
-                    toast.success('Visibility logic updated successfully');
-                    navigate('/funding');
-                }
+            if (isEditMode && id) {
+                await updateFundingSequencing(id, unifiedPayload);
+                toast.success('Funding sequence updated successfully!');
+                navigate('/funding');
             } else {
-                const res = await createFundingSequencing(payload);
-                toast.success('Funding created successfully. Please configure visibility logic.');
-                const newId = res?.data?.id || res?.id;
-                if (newId) {
-                    navigate(`/funding/${newId}?tab=visibility`);
-                } else {
-                    navigate('/funding');
-                }
+                await createFundingSequencing(unifiedPayload);
+                toast.success('Funding sequence created successfully!');
+                navigate('/funding');
             }
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 422) {
-                const mappedErrors = err.response.data.errors || {};
+                // Clone the object to ensure React triggers a state update
+                const mappedErrors = { ...(err.response?.data?.errors || {}) };
+                
+                // Map all lenders.0.* errors to their base keys
+                Object.keys(mappedErrors).forEach(key => {
+                    if (key.startsWith('lenders.0.')) {
+                        const baseKey = key.replace('lenders.0.', '');
+                        mappedErrors[baseKey] = Array.isArray(mappedErrors[key]) ? mappedErrors[key][0] : mappedErrors[key];
+                    }
+                });
+
+                // Switch to the correct tab based on where the error occurred
+                const visibilityKeys = ['min_fico', 'min_tib_months', 'min_monthly_revenue', 'min_monthly_deposits', 'min_average_daily_balance', 'max_nsf_count', 'max_negative_days', 'min_dscr', 'allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'allowed_documents'];
+                const hasVisibilityError = Object.keys(mappedErrors).some(key => visibilityKeys.includes(key));
+                const displayKeys = ['name', 'subtitle', 'funding_group_id', 'funding_type_id', 'lender_id', 'min_amount', 'max_amount', 'terms', 'icon', 'icon_color', 'sort_order', 'readiness_factors'];
+                const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
+
+                if (hasVisibilityError && !hasDisplayError && activeTab === 'display') {
+                    setActiveTab('visibility');
+                } else if (hasDisplayError && activeTab === 'visibility') {
+                    setActiveTab('display');
+                }
                 setErrors(mappedErrors);
-                scrollToFirstError(mappedErrors);
+                setTimeout(() => scrollToFirstError(mappedErrors), 100);
             } else {
                 const errorMsg = err.response?.data?.message || 'Failed to save funding';
                 toast.error(errorMsg);
@@ -500,12 +520,12 @@ export default function FundingSequencingForm() {
                                             </li>
                                             <li className="nav-item">
                                                 <a
-                                                    className={`nav-link fw-semibold fs-15 px-0 py-2 ${activeTab === 'visibility' ? 'active text-primary border-primary' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
-                                                    onClick={() => { if (isEditMode) { setActiveTab('visibility'); setErrors({}); } }}
-                                                    style={{ cursor: isEditMode ? 'pointer' : 'not-allowed', borderBottom: activeTab === 'visibility' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'visibility' ? '#2563eb' : '#64748b' }}
-                                                    title={!isEditMode ? 'Please save the display configuration first' : ''}
+                                                    className={`nav-link fw-semibold fs-15 px-0 py-2 ${activeTab === 'visibility' ? 'active text-primary border-primary' : 'text-muted border-transparent'} ${!formData.lender_id ? 'opacity-50' : ''}`}
+                                                    onClick={() => { if (formData.lender_id) { setActiveTab('visibility'); setErrors({}); } }}
+                                                    style={{ cursor: formData.lender_id ? 'pointer' : 'not-allowed', borderBottom: activeTab === 'visibility' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'visibility' ? '#2563eb' : '#64748b' }}
+                                                    title={!formData.lender_id ? 'Please select a lender first' : ''}
                                                 >
-                                                    Visibility Logic {!isEditMode && <i className="ri-lock-line ms-1 fs-12"></i>}
+                                                    Visibility Logic {!formData.lender_id && <i className="ri-lock-line ms-1 fs-12"></i>}
                                                 </a>
                                             </li>
                                         </ul>
@@ -527,17 +547,16 @@ export default function FundingSequencingForm() {
 
                                                 <div className="row g-4 align-items-start">
                                                     {/* Row 1 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Funding Sequence Name <span className="text-danger">*</span></label>
                                                             <input type="text" name="name" className={`form-control rounded-3 py-2 ${(errors as any).name ? 'is-invalid' : ''}`} value={formData.name} onChange={handleChange} placeholder="Borrower-facing display name" />
                                                             {(errors as any).name && <div className="invalid-feedback">{(errors as any).name}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Amount Range <span className="text-danger">*</span></label>
-                                                            {/* <p className="text-muted fs-13 mb-2 opacity-0">Placeholder</p> */}
                                                             <div className="d-flex gap-2 align-items-start">
                                                                 <div className="w-50">
                                                                     <div className="input-group">
@@ -559,7 +578,7 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 2 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Group <span className="text-danger">*</span></label>
@@ -571,13 +590,14 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'funding_group_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
+                                                                filter
                                                                 placeholder="Select group"
                                                                 className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_group_id ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                             {(errors as any).funding_group_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_group_id}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Terms</label>
                                                             <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
@@ -585,27 +605,25 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 3 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
-                                                                <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowTypeModal(true)}>Add New</button>
-                                                            </div>
+                                                            <label className="form-label text-dark fw-medium mb-2">Lender <span className="text-danger">*</span></label>
                                                             <Dropdown
-                                                                value={formData.funding_type_id}
-                                                                options={types}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
+                                                                value={formData.lender_id}
+                                                                options={lendersList.filter((l: any) => l.status === STATUS_ACTIVE || l.id === formData.lender_id)}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'lender_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
-                                                                placeholder="Select type"
-                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
+                                                                filter
+                                                                placeholder="Select lender"
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).lender_id ? 'p-invalid border-danger' : ''}`}
                                                             />
-                                                            {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
+                                                            {(errors as any).lender_id && <small className="text-danger mt-1 d-block">{(errors as any).lender_id}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Display Icon</label>
+                                                            <label className="form-label text-dark fw-medium mb-2">Display Icon <span className="text-danger">*</span></label>
                                                             <div className="position-relative" ref={dropdownRef}>
                                                                 <button type="button" className={`display-icon-btn form-control d-flex align-items-center gap-2 text-start ${(errors as any).icon ? 'is-invalid border-danger' : ''}`} onClick={() => { setShowIconDropdown(p => !p); setIconSearch(''); }}>
                                                                     {formData.icon ? <i className={`${formData.icon?.startsWith('ri-') ? formData.icon : (FUNDING_ICON_MAP[formData.icon as keyof typeof FUNDING_ICON_MAP] ? `ri-${FUNDING_ICON_MAP[formData.icon as keyof typeof FUNDING_ICON_MAP]}-line` : formData.icon)} fs-16 text-${FUNDING_COLOR_MAP[formData.icon_color as keyof typeof FUNDING_COLOR_MAP] || 'primary'}`}></i> : <i className="ri-image-line text-muted"></i>}
@@ -635,14 +653,25 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 4 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
-                                                            <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
-                                                            {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
+                                                                <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowTypeModal(true)}>Add New</button>
+                                                            </div>
+                                                            <Dropdown
+                                                                value={formData.funding_type_id}
+                                                                options={types}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
+                                                                optionLabel="name"
+                                                                optionValue="id"
+                                                                placeholder="Select type"
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Color</label>
                                                             <Dropdown
@@ -660,58 +689,64 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 5 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Action URL</label>
-                                                            <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
-                                                            {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
+                                                            <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
+                                                            <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
+                                                            {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Order</label>
                                                             <input type="number" name="sort_order" className={`form-control rounded-3 py-2 ${(errors as any).sort_order ? 'is-invalid' : ''}`} value={formData.sort_order} onChange={handleChange} placeholder="e.g. 1" />
                                                             {(errors as any).sort_order && <div className="invalid-feedback">{(errors as any).sort_order}</div>}
                                                         </div>
                                                     </div>
-                                                    {/* Row 6: Status, Uses, Speed to Funds */}
-                                                    <div className="col-lg-12">
-                                                        <div className="row g-4">
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Status</label>
-                                                                    <Dropdown
-                                                                        value={formData.status}
-                                                                        options={FUNDING_STATUS_OPTIONS}
-                                                                        onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
-                                                                        optionLabel="label"
-                                                                        optionValue="value"
-                                                                        className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                                    <MultiSelect
-                                                                        value={formData.uses}
-                                                                        options={USES_OPTIONS}
-                                                                        onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
-                                                                        optionLabel="label"
-                                                                        optionValue="value"
-                                                                        placeholder="Select uses..."
-                                                                        className="w-100 rounded-3 slim-multiselect"
-                                                                        display="chip"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
-                                                                    <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
-                                                                    {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
-                                                                </div>
-                                                            </div>
+
+                                                    {/* Row 6 */}
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Action URL</label>
+                                                            <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
+                                                            {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Uses</label>
+                                                            <MultiSelect
+                                                                value={formData.uses}
+                                                                options={USES_OPTIONS}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Select uses..."
+                                                                className="w-100 rounded-3 slim-multiselect"
+                                                                display="chip"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Row 7 */}
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Status</label>
+                                                            <Dropdown
+                                                                value={formData.status}
+                                                                options={FUNDING_STATUS_OPTIONS}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
+                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
+                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
                                                         </div>
                                                     </div>
 
@@ -736,11 +771,11 @@ export default function FundingSequencingForm() {
                                                                                     }
                                                                                 }}
                                                                                 placeholder="Select Requirement to Add"
-                                                                                className="w-100"
+                                                                                className={`w-100 ${(errors as any).readiness_factors ? 'p-invalid border-danger' : ''}`}
                                                                                 value={null}
                                                                                 emptyMessage="All requirements added"
                                                                             />
-                                                                            {(errors as any).readiness_factors && <div className="text-danger small mt-1">{(errors as any).readiness_factors}</div>}
+                                                                            {(errors as any).readiness_factors && <div className="text-danger mt-1 fs-13">{(errors as any).readiness_factors}</div>}
                                                                         </div>
                                                                         <div className="d-flex flex-column gap-2 mb-3">
                                                                             {formData.readiness_factors.map((item, index) => (
@@ -757,7 +792,7 @@ export default function FundingSequencingForm() {
                                                                                 </div>
                                                                             ))}
                                                                             {formData.readiness_factors.length === 0 && (
-                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
+                                                                                <div className={`fs-13 py-3 px-3 rounded border text-center border-dashed mt-2 ${(errors as any).readiness_factors ? 'border-danger bg-danger-subtle text-danger' : 'text-muted bg-light'}`}>
                                                                                     No readiness factors added yet. Select from the dropdown above to begin.
                                                                                 </div>
                                                                             )}
@@ -940,7 +975,7 @@ export default function FundingSequencingForm() {
                                                                 <label className="form-label text-dark fw-medium mb-0">Require Completed Fund Application</label>
                                                                 <p className="text-muted fs-13 mb-0">Funding sequence only shown after application is complete</p>
                                                             </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                            <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
                                                                 <input className="form-check-input" type="checkbox" role="switch" name="require_completed_application" checked={formData.require_completed_application} onChange={handleInputChange} />
                                                             </div>
                                                         </div>
@@ -950,7 +985,7 @@ export default function FundingSequencingForm() {
                                                                 <label className="form-label text-dark fw-medium mb-0">Require Documents Uploaded</label>
                                                                 <p className="text-muted fs-13 mb-0">Documents must be uploaded before sequence is active</p>
                                                             </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                            <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
                                                                 <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={(e) => {
                                                                     handleInputChange(e);
                                                                     if (!e.target.checked) {
