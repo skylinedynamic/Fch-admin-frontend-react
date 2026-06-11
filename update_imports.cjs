@@ -1,9 +1,9 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 
 const files = [
     'src/pages/credit-builder/verifications/BorrowerVerificationRequests.jsx',
     'src/pages/credit-builder/verifications/VerificationCenter.jsx',
-    'src/pages/credit-builder/capital-access/CapitalAccessList.tsx',
+    'src/pages/capital-access/CapitalAccessList.tsx',
     'src/pages/credit-builder/credit-accounts/CreditAccountsList.jsx',
 ];
 
@@ -20,7 +20,7 @@ const components = [
     'src/pages/credit-builder/verifications/components/NoteViewModal.jsx',
     'src/pages/credit-builder/verifications/components/ResponseDetailModal.jsx',
     'src/pages/credit-builder/verifications/components/VerificationActionModal.jsx',
-    'src/pages/credit-builder/capital-access/components/CapitalAccessForm.tsx',
+    'src/pages/capital-access/components/CapitalAccessForm.tsx',
     'src/pages/credit-builder/credit-accounts/components/CreditAccountForm.jsx',
 ];
 

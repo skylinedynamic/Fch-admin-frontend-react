@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DataTable } from '../../../components/Table/DataTableWrapper';
+import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import TableLoader from '../../../components/Loader/TableLoader';
-import { useCapitalAccounts, useDeleteCapitalAccount, useUpdateCapitalAccountStatus } from '../../../modules/capital-access/queries';
-import { CapitalAccount } from '../../../modules/capital-access/services';
-import { CreditAccount } from '../../../modules/credit-accounts/services';
-import { usePermissions } from '../../../lib/auth/usePermissions';
-import { STATUS_OPTIONS, STATUS_CLASS_MAP } from '../../../config/creditBuilder';
-import { buildStorageUrl } from '../../../utils/imageHelpers';
-import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
+import TableLoader from '../../components/Loader/TableLoader';
+import { useCapitalAccounts, useDeleteCapitalAccount, useUpdateCapitalAccountStatus } from '../../modules/capital-access/queries';
+import { CapitalAccount } from '../../modules/capital-access/services';
+import { CreditAccount } from '../../modules/credit-accounts/services';
+import { usePermissions } from '../../lib/auth/usePermissions';
+import { STATUS_OPTIONS, STATUS_CLASS_MAP } from '../../config/creditBuilder';
+import { buildStorageUrl } from '../../utils/imageHelpers';
+import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
 
 export default function CapitalAccessList() {
     const { hasPermission } = usePermissions();

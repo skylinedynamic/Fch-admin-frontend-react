@@ -8,9 +8,11 @@ import {
     saveEmailConfiguration,
     toggleEmailConfigStatus,
     fetchAppConfigurations,
-    saveAppConfigurations
+    saveAppConfigurations,
+    fetchScoreConfigurations,
+    updateScoreConfigurations,
 } from './services';
-import type { SendTestMailPayload, SendTestMailResponse, SettingsResponse, SettingsData, UpdateSettingsPayload } from './types';
+import type { SendTestMailPayload, SendTestMailResponse, SettingsResponse, SettingsData, UpdateSettingsPayload, ScoreConfigurationResponse } from './types';
 
 /**
  * Hook to send a test notification/system email.
@@ -118,6 +120,25 @@ export const useSaveAppConfigurations = () => {
         onSuccess: (res, variables) => {
             qc.invalidateQueries({ queryKey: ['appConfigurations', variables.module] });
             qc.invalidateQueries({ queryKey: ['globalConfigurations'] });
+        },
+    });
+};
+
+export const useScoreConfigurations = (enabled = true) => {
+    return useQuery<ScoreConfigurationResponse, Error>({
+        queryKey: ['scoreConfigurations'],
+        queryFn: fetchScoreConfigurations,
+        enabled,
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useUpdateScoreConfigurations = () => {
+    const qc = useQueryClient();
+    return useMutation<any, Error, Record<string, any>>({
+        mutationFn: updateScoreConfigurations,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['scoreConfigurations'] });
         },
     });
 };

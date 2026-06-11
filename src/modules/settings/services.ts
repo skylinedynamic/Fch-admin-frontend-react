@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { apiClient } from '../../lib/http/apiClient';
-import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations } from './types';
+import type { SettingsData, UpdateSettingsPayload, SettingsResponse, SendTestMailPayload, SendTestMailResponse, AppConfigResponse, ThemeConfigurations, ScoreConfigurationResponse } from './types';
 
 // Base API path
 
@@ -67,6 +67,16 @@ export const fetchThemeConfigurations = async (): Promise<AppConfigResponse<Them
 
 export const saveAppConfigurations = async (module: string, settings: object): Promise<any> => {
     const { data } = await apiClient.post('/common/app-configurations/save', { module, ...settings });
+    return data;
+};
+
+export const fetchScoreConfigurations = async (): Promise<ScoreConfigurationResponse> => {
+    const { data } = await apiClient.get('/admin/app-configuration/score');
+    return data;
+};
+
+export const updateScoreConfigurations = async (payload: Record<string, any>): Promise<any> => {
+    const { data } = await apiClient.put('/admin/app-configuration/score', payload);
     return data;
 };
 

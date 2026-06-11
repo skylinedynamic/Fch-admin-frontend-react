@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import FormLoader from '../../../../components/Loader/FormLoader';
-import { CreditAccount } from '../../../../modules/credit-accounts/services';
+import FormLoader from '../../../components/Loader/FormLoader';
+import { CreditAccount } from '../../../modules/credit-accounts/services';
 import {
     useCapitalAccount,
     useAllCreditAccountsForBuilder,
     useCreateCapitalAccount,
     useUpdateCapitalAccount
-} from '../../../../modules/capital-access/queries';
-import { StoreCapitalAccessPayload } from '../../../../modules/capital-access/services';
+} from '../../../modules/capital-access/queries';
+import { StoreCapitalAccessPayload } from '../../../modules/capital-access/services';
 import EditStepDetailsModal, { EditDetailsForm } from './EditStepDetailsModal';
-import { usePermissions } from '../../../../lib/auth/usePermissions';
-import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../../config/creditBuilder';
-import { buildStorageUrl } from '../../../../utils/imageHelpers';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../config/creditBuilder';
+import { buildStorageUrl } from '../../../utils/imageHelpers';
 
 const PRE_FLIGHT_TASKS = [
     "Business Information",
