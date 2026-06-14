@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
+import { TIB_OPTIONS } from '../../../config/funding';
 
 interface LenderVisibilityGridProps {
     visibilities: any[];
@@ -22,18 +23,12 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     onRemove
 }) => {
 
-    const TIB_OPTIONS = [
-        { label: 'None', value: 0 },
-        { label: '3 months', value: 3 },
-        { label: '6 months', value: 6 },
-        { label: '12 months', value: 12 },
-        { label: '24 months', value: 24 }
-    ];
+
 
     const renderError = (field: string, i: number) => {
         const errorMsg = errors?.[`lender_visibilities.${i}.${field}`];
         if (errorMsg) {
-            return <div className="text-danger mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{errorMsg}</div>;
+            return <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errorMsg}</div>;
         }
         return null;
     };
@@ -108,14 +103,14 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             placeholder="Select Lender"
                                             className={`w-100 slim-dropdown shadow-none ${(errors as any)[`lender_visibilities.${i}.lender_id`] ? 'p-invalid border-danger' : ''}`}
                                         />
-                                        {errors?.[`lender_visibilities.${i}.lender_id`] && <div className="text-danger mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{errors[`lender_visibilities.${i}.lender_id`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.lender_id`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.lender_id`]}</div>}
                                     </div>
                                 </td>
                                 <td>
                                     <div className="position-relative">
                                         <input
                                             type="number"
-                                            className={`form-control text-center shadow-none ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
+                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
                                             placeholder="650"
                                             value={row.min_fico || ''}
                                             onChange={(e) => onChange(i, 'min_fico', e.target.value)}
@@ -131,7 +126,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             onChange={(e) => onChange(i, 'min_tib_months', e.value)}
                                             optionLabel="label"
                                             optionValue="value"
-                                            placeholder="3 months"
+                                            placeholder="Select One"
                                             className={`w-100 slim-dropdown shadow-none ${(errors as any)[`lender_visibilities.${i}.min_tib_months`] ? 'p-invalid border-danger' : ''}`}
                                         />
                                         {renderError('min_tib_months', i)}
@@ -140,52 +135,52 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <td>
                                     <div className="position-relative">
                                         <div className="input-group flex-nowrap">
-                                            <span className="input-group-text bg-light border-end-0 text-muted">$</span>
+                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
                                             <input
                                                 type="number"
-                                                className={`form-control text-end border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
+                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
                                                 placeholder="10000"
                                                 value={row.min_monthly_revenue || ''}
                                                 onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
                                             />
                                         </div>
-                                        {errors?.[`lender_visibilities.${i}.min_monthly_revenue`] && <div className="text-danger mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{errors[`lender_visibilities.${i}.min_monthly_revenue`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.min_monthly_revenue`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_monthly_revenue`]}</div>}
                                     </div>
                                 </td>
                                 <td>
                                     <div className="position-relative">
                                         <div className="input-group flex-nowrap">
-                                            <span className="input-group-text bg-light border-end-0 text-muted">$</span>
+                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
                                             <input
                                                 type="number"
-                                                className={`form-control text-end border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : ''}`}
+                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : ''}`}
                                                 placeholder="5000"
                                                 value={row.min_monthly_deposits || ''}
                                                 onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
                                             />
                                         </div>
-                                        {errors?.[`lender_visibilities.${i}.min_monthly_deposits`] && <div className="text-danger mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{errors[`lender_visibilities.${i}.min_monthly_deposits`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.min_monthly_deposits`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_monthly_deposits`]}</div>}
                                     </div>
                                 </td>
                                 <td>
                                     <div className="position-relative">
                                         <div className="input-group flex-nowrap">
-                                            <span className="input-group-text bg-light border-end-0 text-muted">$</span>
+                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
                                             <input
                                                 type="number"
-                                                className={`form-control text-end border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
+                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
                                                 placeholder="2000"
                                                 value={row.min_average_daily_balance || ''}
                                                 onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
                                             />
                                         </div>
-                                        {errors?.[`lender_visibilities.${i}.min_average_daily_balance`] && <div className="text-danger mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{errors[`lender_visibilities.${i}.min_average_daily_balance`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.min_average_daily_balance`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_average_daily_balance`]}</div>}
                                     </div>
                                 </td>
                                 <td>
                                     <input
                                         type="number"
-                                        className={`form-control text-center shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
+                                        className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
                                         placeholder="3"
                                         value={row.max_nsf_count || ''}
                                         onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
@@ -195,7 +190,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     <div className="input-group flex-nowrap">
                                         <input
                                             type="number"
-                                            className={`form-control text-center shadow-none ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
+                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
                                             placeholder="7"
                                             value={row.max_negative_days || ''}
                                             onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
@@ -206,7 +201,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     <input
                                         type="number"
                                         step="0.01"
-                                        className={`form-control text-center shadow-none ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
+                                        className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
                                         placeholder="1.25"
                                         value={row.min_dscr || ''}
                                         onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
