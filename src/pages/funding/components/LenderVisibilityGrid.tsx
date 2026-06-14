@@ -80,11 +80,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     <thead className="table-light text-muted fs-12 text-uppercase">
                         <tr>
                             <th style={{ width: '250px' }}>Lender <span className="text-danger">*</span></th>
-                            <th style={{ width: '120px' }}>Min FICO <span className="text-danger">*</span></th>
-                            <th style={{ width: '150px' }}>Min TIB <span className="text-danger">*</span></th>
-                            <th style={{ width: '220px' }}>Min Avg Bal <span className="text-danger">*</span></th>
-                            <th style={{ width: '220px' }}>Min Deposits <span className="text-danger">*</span></th>
-                            <th style={{ width: '220px' }}>Min Revenue <span className="text-danger">*</span></th>
+                            <th style={{ width: '120px' }}>Minimum FICO<span className="text-danger">*</span></th>
+                            <th style={{ width: '150px' }}>Minimum Time In Business<span className="text-danger">*</span></th>
+                            <th style={{ width: '220px' }}>Minimum Monthly Revenue<span className="text-danger">*</span></th>
+                            <th style={{ width: '220px' }}>Minimum Monthly Deposits<span className="text-danger">*</span></th>
+                            <th style={{ width: '220px' }}>Minimum Average Balance<span className="text-danger">*</span></th>
                             <th style={{ width: '150px' }}>Max NSF</th>
                             <th style={{ width: '150px' }}>Max Days</th>
                             <th style={{ width: '120px' }}>Min DSCR</th>
@@ -142,16 +142,16 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <td>
                                     <div className="position-relative">
                                         <div className="input-group flex-nowrap">
-                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
                                             <input
                                                 type="number"
-                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
-                                                placeholder="2000"
-                                                value={row.min_average_daily_balance || ''}
-                                                onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
+                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
+                                                placeholder="10000"
+                                                value={row.min_monthly_revenue || ''}
+                                                onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
                                             />
                                         </div>
-                                        {errors?.[`lender_visibilities.${i}.min_average_daily_balance`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_average_daily_balance`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.min_monthly_revenue`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_monthly_revenue`]}</div>}
                                     </div>
                                 </td>
                                 <td>
@@ -172,18 +172,19 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <td>
                                     <div className="position-relative">
                                         <div className="input-group flex-nowrap">
-                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                            <span className={`input-group-text bg-light border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
                                             <input
                                                 type="number"
-                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : ''}`}
-                                                placeholder="10000"
-                                                value={row.min_monthly_revenue || ''}
-                                                onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
+                                                className={`form-control border-start-0 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : ''}`}
+                                                placeholder="2000"
+                                                value={row.min_average_daily_balance || ''}
+                                                onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
                                             />
                                         </div>
-                                        {errors?.[`lender_visibilities.${i}.min_monthly_revenue`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_monthly_revenue`]}</div>}
+                                        {errors?.[`lender_visibilities.${i}.min_average_daily_balance`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_average_daily_balance`]}</div>}
                                     </div>
                                 </td>
+
                                 <td>
                                     <input
                                         type="number"
