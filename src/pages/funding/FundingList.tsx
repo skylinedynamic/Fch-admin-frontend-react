@@ -294,7 +294,7 @@ export default function FundingList() {
                     <div className="col-12">
                         <div className="card shadow-sm border-0">
                             <div className="card-body">
-                                <form className="table-filter mb-4" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
+                                <form className="table-filter mb-1" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     {loading ? (
                                         <FilterLoader config={[
                                             { col: "col-xxl-3 col-sm-12" },
@@ -304,7 +304,7 @@ export default function FundingList() {
                                             { col: "col-xxl-3 col-sm-12", isButton: true }
                                         ]} />
                                     ) : (
-                                        <div className="row g-3 mb-3">
+                                        <div className="row g-3 mb-2">
                                             <div className="col-xxl-3 col-sm-12">
                                                 <div className="search-box">
                                                     <input
