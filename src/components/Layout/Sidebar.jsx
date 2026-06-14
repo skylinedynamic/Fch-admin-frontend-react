@@ -74,18 +74,18 @@ const menuItems = [
     permission: "view clients",
   },
   {
-    to: "/funding",
-    icon: "ri-money-dollar-circle-line",
-    label: "Funding Sequence",
-    isHostOnly: true,
-    permission: "view funding",
-  },
-  {
     to: "/lenders",
     icon: "ri-money-dollar-box-line",
     label: "Lenders",
     isHostOnly: true,
     permission: "view lenders",
+  },
+  {
+    to: "/funding",
+    icon: "ri-money-dollar-circle-line",
+    label: "Funding Sequence",
+    isHostOnly: true,
+    permission: "view funding",
   },
   {
     label: "Credit Builder",

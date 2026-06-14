@@ -97,6 +97,5 @@ export const READINESS_FACTORS_OPTIONS = [
     "Revenue",
     "Time in Business",
     "Banking Activity",
-    "Existing Debt",
     "Documents"
 ];
