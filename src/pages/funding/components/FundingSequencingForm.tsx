@@ -551,7 +551,7 @@ export default function FundingSequencingForm() {
                                             </li>
                                         </ul>
                                     </div>
-                                    <div className="card-body pt-4">
+                                    <div className="card-body pt-3">
                                         <div className="tab-content text-muted">
                                             {/* ── Display Tab ─────────────────────────────────────────────────── */}
                                             <div className={`tab-pane ${activeTab === 'display' ? 'active' : ''}`} id="display">
@@ -916,46 +916,7 @@ export default function FundingSequencingForm() {
                                             </div>
 
                                             {/* ── Visibility Logic Tab ────────────────────────────────────────── */}
-                                            <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility">
-                                                <div className="mb-3 d-flex justify-content-between align-items-center">
-                                                    <p className="text-muted mb-0">Add multiple lenders to map out a clear funding sequence timeline for your borrowers.</p>
-                                                    <button type="button" className="btn btn-outline-primary" onClick={() => {
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            lender_visibilities: [
-                                                                ...prev.lender_visibilities,
-                                                                {
-                                                                    lender_id: null,
-                                                                    min_fico: '',
-                                                                    min_tib_months: '',
-                                                                    min_monthly_revenue: '',
-                                                                    min_monthly_deposits: '',
-                                                                    min_average_daily_balance: '',
-                                                                    max_nsf_count: '',
-                                                                    max_negative_days: '',
-                                                                    min_dscr: '',
-                                                                    allowed_states: [],
-                                                                    restricted_states: [],
-                                                                    allowed_industries: [],
-                                                                    restricted_industries: []
-                                                                }
-                                                            ]
-                                                        }));
-                                                        // Clear all visibility errors on structural change
-                                                        setErrors(prev => {
-                                                            const newErrors = { ...prev };
-                                                            Object.keys(newErrors).forEach(key => {
-                                                                if (key.startsWith('lender_visibilities.')) {
-                                                                    delete newErrors[key];
-                                                                }
-                                                            });
-                                                            return newErrors;
-                                                        });
-                                                    }}>
-                                                        <i className="ri-add-line me-1"></i> Add New Visibility Logic
-                                                    </button>
-                                                </div>
-
+                                            <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility" style={{ marginTop: '-1rem' }}>
                                                 <LenderVisibilityGrid
                                                     visibilities={formData.lender_visibilities}
                                                     lenders={lendersList}
@@ -980,6 +941,39 @@ export default function FundingSequencingForm() {
                                                             newVisibilities.splice(index, 1);
                                                             return { ...prev, lender_visibilities: newVisibilities };
                                                         });
+                                                        // Clear all visibility errors on structural change
+                                                        setErrors(prev => {
+                                                            const newErrors = { ...prev };
+                                                            Object.keys(newErrors).forEach(key => {
+                                                                if (key.startsWith('lender_visibilities.')) {
+                                                                    delete newErrors[key];
+                                                                }
+                                                            });
+                                                            return newErrors;
+                                                        });
+                                                    }}
+                                                    onAdd={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            lender_visibilities: [
+                                                                ...prev.lender_visibilities,
+                                                                {
+                                                                    lender_id: null,
+                                                                    min_fico: '',
+                                                                    min_tib_months: '',
+                                                                    min_monthly_revenue: '',
+                                                                    min_monthly_deposits: '',
+                                                                    min_average_daily_balance: '',
+                                                                    max_nsf_count: '',
+                                                                    max_negative_days: '',
+                                                                    min_dscr: '',
+                                                                    allowed_states: [],
+                                                                    restricted_states: [],
+                                                                    allowed_industries: [],
+                                                                    restricted_industries: []
+                                                                }
+                                                            ]
+                                                        }));
                                                         // Clear all visibility errors on structural change
                                                         setErrors(prev => {
                                                             const newErrors = { ...prev };
