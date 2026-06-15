@@ -285,7 +285,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
             <div className="card-footer bg-light border-top border-warning-subtle py-2 d-flex align-items-center gap-2" style={{ backgroundColor: '#fff9e6' }}>
                 <i className="ri-information-line text-warning fs-15"></i>
-                <span className="fs-13 text-muted">The order in this list determines the funding sequence priority.</span>
+                <span className="fs-13 text-muted">The order of these visibility rules determines borrower qualification for each lender.</span>
             </div>
         </div>
     );
