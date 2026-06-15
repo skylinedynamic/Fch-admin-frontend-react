@@ -111,54 +111,76 @@ export default function FundingReviewDetail() {
 
                 <div className="row mt-3">
                     <div className="col-lg-8">
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-white border-bottom py-3">
-                                <h5 className="card-title mb-0 fs-16">Borrower & Funding Information</h5>
+                        <div className="card shadow-sm border-0 mb-4 rounded-3">
+                            <div className="card-header bg-white border-0 pt-4 pb-0">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-xs me-3">
+                                        <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
+                                            <i className="ri-user-3-line"></i>
+                                        </span>
+                                    </div>
+                                    <h5 className="card-title mb-0 fs-16 fw-bold">Borrower & Funding Information</h5>
+                                </div>
                             </div>
-                            <div className="card-body">
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Borrower Name</label>
-                                        <div className="fs-14 fw-medium">{`${review.borrower?.first_name || ''} ${review.borrower?.last_name || ''}`}</div>
+                            <div className="card-body p-4">
+                                <div className="row g-4">
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Borrower Name</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{`${review.borrower?.first_name || ''} ${review.borrower?.last_name || ''}`}</h5>
                                     </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Company Name</label>
-                                        <div className="fs-14">{review.borrower?.company_name || '-'}</div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Company Name</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{review.borrower?.company_name || '-'}</h5>
                                     </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Funding Sequence</label>
-                                        <div className="fs-14">{review.funding_sequence?.name || '-'}</div>
+                                    <div className="col-12"><hr className="border-light m-0" /></div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Funding Sequence</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{review.funding_sequence?.name || '-'}</h5>
                                     </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Funding Type</label>
-                                        <div className="fs-14">{review.funding_type || '-'}</div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Funding Type</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{review.funding_type || '-'}</h5>
                                     </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Purpose of Funds</label>
-                                        <div className="fs-14">{review.use_of_funds || '-'}</div>
+                                    <div className="col-12"><hr className="border-light m-0" /></div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Purpose of Funds</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{review.use_of_funds || '-'}</h5>
                                     </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Requested Amount</label>
-                                        <div className="fs-14 fw-bold">{review.requested_amount || '-'}</div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Requested Amount</p>
+                                        <h5 className="fs-15 fw-bold mb-0">
+                                            {review.requested_amount 
+                                                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(review.requested_amount)
+                                                : '-'}
+                                        </h5>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-white border-bottom py-3">
-                                <h5 className="card-title mb-0 fs-16">Review Status</h5>
+                        <div className="card shadow-sm border-0 rounded-3">
+                            <div className="card-header bg-white border-0 pt-4 pb-0">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-xs me-3">
+                                        <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
+                                            <i className="ri-clipboard-line"></i>
+                                        </span>
+                                    </div>
+                                    <h5 className="card-title mb-0 fs-16 fw-bold">Review Status</h5>
+                                </div>
                             </div>
-                            <div className="card-body">
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label fs-13 text-muted">Current Status</label>
+                            <div className="card-body p-4">
+                                <div className="row g-4">
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-2 fs-13">Current Status</p>
                                         <div>{getStatusBadge(review.status)}</div>
                                     </div>
                                     {review.status === 'Rejected' && (
-                                        <div className="col-md-12 mb-3">
-                                            <label className="form-label fs-13 text-muted">Rejection Reason</label>
-                                            <div className="fs-14 p-3 bg-light rounded text-danger border border-danger-subtle">{review.reject_reason || 'No reason provided'}</div>
+                                        <div className="col-md-12">
+                                            <p className="text-muted mb-2 fs-13">Rejection Reason</p>
+                                            <div className="fs-14 p-3 bg-danger-subtle rounded text-danger border border-danger-subtle">
+                                                {review.reject_reason || 'No reason provided'}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -167,19 +189,26 @@ export default function FundingReviewDetail() {
                     </div>
 
                     <div className="col-lg-4">
-                        <div className="card shadow-sm border-0 position-sticky" style={{ top: '90px' }}>
-                            <div className="card-header bg-white border-bottom py-3">
-                                <h5 className="card-title mb-0 fs-16">Actions</h5>
+                        <div className="card shadow-sm border-0 position-sticky rounded-3" style={{ top: '90px' }}>
+                            <div className="card-header bg-white border-0 pt-4 pb-0">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar-xs me-3">
+                                        <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
+                                            <i className="ri-shield-check-line"></i>
+                                        </span>
+                                    </div>
+                                    <h5 className="card-title mb-0 fs-16 fw-bold">Review Actions</h5>
+                                </div>
                             </div>
-                            <div className="card-body">
-                                <p className="text-muted fs-13 mb-3">Review the details and make a decision to approve or reject this funding sequence step.</p>
+                            <div className="card-body p-4">
+                                <p className="text-muted fs-13 mb-4">Review the details and make a decision to approve or reject this funding sequence step.</p>
                                 
                                 {review.status === 'Pending' && isRejecting && (
-                                    <div className="mb-3">
-                                        <label className="form-label fs-13">Reason / Note <span className="text-danger">*</span></label>
+                                    <div className="mb-4">
+                                        <label className="form-label fs-13 fw-medium">Reason / Note <span className="text-danger">*</span></label>
                                         <textarea 
                                             className={`form-control bg-light border-light ${validationErrors.reject_reason ? 'is-invalid' : ''}`} 
-                                            rows={3} 
+                                            rows={4} 
                                             value={rejectReason}
                                             onChange={(e) => {
                                                 setRejectReason(e.target.value);
@@ -198,25 +227,50 @@ export default function FundingReviewDetail() {
                                     </div>
                                 )}
                                 
-                                <div className="d-grid gap-2">
+                                <div className="d-flex flex-column gap-3">
                                     {review.status === 'Pending' && !isRejecting && (
                                         <>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-success" 
-                                                onClick={handleApprove}
-                                                disabled={updateStatusMutation.isPending}
+                                            <div 
+                                                className={`card mb-0 border shadow-none ${updateStatusMutation.isPending ? 'opacity-50' : 'border-success-subtle'}`} 
+                                                style={{ cursor: updateStatusMutation.isPending ? 'default' : 'pointer' }}
+                                                onClick={!updateStatusMutation.isPending ? handleApprove : undefined}
                                             >
-                                                {updateStatusMutation.isPending ? 'Processing...' : 'Approve Application'}
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-outline-danger" 
-                                                onClick={handleReject}
-                                                disabled={updateStatusMutation.isPending}
+                                                <div className="card-body p-3 d-flex align-items-center">
+                                                    <div className="avatar-sm flex-shrink-0 me-3">
+                                                        <span className="avatar-title bg-success-subtle text-success rounded-circle fs-20">
+                                                            <i className="ri-check-line"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <h6 className="mb-1 text-success fs-15 fw-bold">Approve Application</h6>
+                                                        <p className="text-muted mb-0 fs-12">Approve this application and move forward.</p>
+                                                    </div>
+                                                    <div className="flex-shrink-0">
+                                                        <i className="ri-arrow-right-line text-dark fs-18"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div 
+                                                className={`card mb-0 border shadow-none ${updateStatusMutation.isPending ? 'opacity-50' : 'border-danger-subtle'}`} 
+                                                style={{ cursor: updateStatusMutation.isPending ? 'default' : 'pointer' }}
+                                                onClick={!updateStatusMutation.isPending ? handleReject : undefined}
                                             >
-                                                Reject Application
-                                            </button>
+                                                <div className="card-body p-3 d-flex align-items-center">
+                                                    <div className="avatar-sm flex-shrink-0 me-3">
+                                                        <span className="avatar-title bg-danger-subtle text-danger rounded-circle fs-20">
+                                                            <i className="ri-close-line"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <h6 className="mb-1 text-danger fs-15 fw-bold">Reject Application</h6>
+                                                        <p className="text-muted mb-0 fs-12">Reject this application and provide feedback.</p>
+                                                    </div>
+                                                    <div className="flex-shrink-0">
+                                                        <i className="ri-arrow-right-line text-dark fs-18"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </>
                                     )}
 
@@ -224,7 +278,7 @@ export default function FundingReviewDetail() {
                                         <>
                                             <button 
                                                 type="button" 
-                                                className="btn btn-danger" 
+                                                className="btn btn-danger py-2 fs-15 fw-medium shadow-sm" 
                                                 onClick={handleReject}
                                                 disabled={updateStatusMutation.isPending}
                                             >
@@ -232,7 +286,7 @@ export default function FundingReviewDetail() {
                                             </button>
                                             <button 
                                                 type="button" 
-                                                className="btn btn-light" 
+                                                className="btn btn-light py-2 fs-15 fw-medium" 
                                                 onClick={() => {
                                                     setIsRejecting(false);
                                                     setRejectReason('');
