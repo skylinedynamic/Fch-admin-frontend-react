@@ -264,16 +264,16 @@ export default function FundingSequencingForm() {
                         restricted_states: data.lenders?.[0]?.restricted_states?.length && data.lenders[0].restricted_states[0] !== '' ? data.lenders[0].restricted_states : [],
                         allowed_industries: data.lenders?.[0]?.allowed_industries?.length && data.lenders[0].allowed_industries[0] !== '' ? data.lenders[0].allowed_industries : [],
                         restricted_industries: data.lenders?.[0]?.restricted_industries?.length && data.lenders[0].restricted_industries[0] !== '' ? data.lenders[0].restricted_industries : [],
-                        require_completed_application: data.lenders?.[0]?.require_completed_application || false,
-                        require_documents_uploaded: data.lenders?.[0]?.require_documents_uploaded || false,
-                        manual_review_allowed: data.lenders?.[0]?.manual_review_allowed || false,
-                        exception_allowed: data.lenders?.[0]?.exception_allowed || false,
+                        require_completed_application: data.require_completed_application ?? (data.lenders?.[0]?.require_completed_application || false),
+                        require_documents_uploaded: data.require_documents_uploaded ?? (data.lenders?.[0]?.require_documents_uploaded || false),
+                        manual_review_allowed: data.manual_review_allowed ?? (data.lenders?.[0]?.manual_review_allowed || false),
+                        exception_allowed: data.exception_allowed ?? (data.lenders?.[0]?.exception_allowed || false),
                         speed_to_funds: data.speed_to_funds || '',
                         uses: Array.isArray(data.uses) ? data.uses : [],
                         qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
-                        allowed_documents: Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : [],
+                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
                         lender_visibilities: Array.isArray(data.lender_visibilities) && data.lender_visibilities.length > 0
                             ? data.lender_visibilities
                             : [{
