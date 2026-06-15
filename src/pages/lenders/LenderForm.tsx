@@ -245,10 +245,32 @@ export default function LenderForm() {
 
                                         <h5 className="mb-3 mt-4 border-bottom pb-2">Contact Information</h5>
                                         <div className="row">
-                                            {renderInput('contact_name', 'Contact Name', 'text', '', 'col-md-6', true)}
-                                            {renderInput('contact_title', 'Contact Title', 'text', '', 'col-md-6', true)}
-
                                             <div className="mb-4 col-md-6">
+                                                <label className="form-label text-dark fw-medium mb-2">Contact Name <span className="text-danger">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    name="contact_name"
+                                                    className={`form-control rounded-3 py-2 ${errors.contact_name ? 'is-invalid' : ''}`}
+                                                    value={formData.contact_name || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter contact name"
+                                                />
+                                                {errors.contact_name && <div className="invalid-feedback">{errors.contact_name}</div>}
+                                            </div>
+                                            <div className="mb-4 col-md-6">
+                                                <label className="form-label text-dark fw-medium mb-2">Contact Title <span className="text-danger">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    name="contact_title"
+                                                    className={`form-control rounded-3 py-2 ${errors.contact_title ? 'is-invalid' : ''}`}
+                                                    value={formData.contact_title || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter contact title"
+                                                />
+                                                {errors.contact_title && <div className="invalid-feedback">{errors.contact_title}</div>}
+                                            </div>
+
+                                            <div className="mb-4 col-md-4">
                                                 <label className="form-label text-dark fw-medium mb-2">Contact Phone <span className="text-danger">*</span></label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-light border">
@@ -268,8 +290,30 @@ export default function LenderForm() {
                                                     {errors.contact_phone && <div className="invalid-feedback">{errors.contact_phone}</div>}
                                                 </div>
                                             </div>
-                                            {renderInput('contact_email', 'Contact Email', 'email', '', 'col-md-6', true)}
-                                            {renderInput('website', 'Website', 'url', 'https://...', 'col-md-12', false)}
+                                            <div className="mb-4 col-md-4">
+                                                <label className="form-label text-dark fw-medium mb-2">Contact Email <span className="text-danger">*</span></label>
+                                                <input
+                                                    type="email"
+                                                    name="contact_email"
+                                                    className={`form-control rounded-3 py-2 ${errors.contact_email ? 'is-invalid' : ''}`}
+                                                    value={formData.contact_email || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter email address"
+                                                />
+                                                {errors.contact_email && <div className="invalid-feedback">{errors.contact_email}</div>}
+                                            </div>
+                                            <div className="mb-4 col-md-4">
+                                                <label className="form-label text-dark fw-medium mb-2">Website</label>
+                                                <input
+                                                    type="text"
+                                                    name="website"
+                                                    className={`form-control rounded-3 py-2 ${errors.website ? 'is-invalid' : ''}`}
+                                                    value={formData.website || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="https://..."
+                                                />
+                                                {errors.website && <div className="invalid-feedback">{errors.website}</div>}
+                                            </div>
                                         </div>
 
                                         <h5 className="mb-3 mt-4 border-bottom pb-2">Submission Details</h5>
@@ -289,9 +333,31 @@ export default function LenderForm() {
                                                 />
                                                 {errors.submission_method && <small className="p-error">{errors.submission_method}</small>}
                                             </div>
-                                            {renderInput('submission_email', 'Submission Email', 'email', '', 'col-md-6', false)}
+                                            <div className="mb-4 col-md-6">
+                                                <label className="form-label text-dark fw-medium mb-2">Submission Email</label>
+                                                <input
+                                                    type="email"
+                                                    name="submission_email"
+                                                    className={`form-control rounded-3 py-2 ${errors.submission_email ? 'is-invalid' : ''}`}
+                                                    value={formData.submission_email || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter submission email"
+                                                />
+                                                {errors.submission_email && <div className="invalid-feedback">{errors.submission_email}</div>}
+                                            </div>
 
-                                            {renderInput('submission_portal_link', 'Submission Portal URL', 'url', 'https://...', 'col-md-6', false)}
+                                            <div className="mb-4 col-md-6">
+                                                <label className="form-label text-dark fw-medium mb-2">Submission Portal URL</label>
+                                                <input
+                                                    type="url"
+                                                    name="submission_portal_link"
+                                                    className={`form-control rounded-3 py-2 ${errors.submission_portal_link ? 'is-invalid' : ''}`}
+                                                    value={formData.submission_portal_link || ''}
+                                                    onChange={handleChange}
+                                                    placeholder="https://..."
+                                                />
+                                                {errors.submission_portal_link && <div className="invalid-feedback">{errors.submission_portal_link}</div>}
+                                            </div>
 
                                             <div className="mb-4 col-md-6">
                                                 <label className="form-label text-dark fw-medium mb-2">Last Verified Date <span className="text-danger">*</span></label>
