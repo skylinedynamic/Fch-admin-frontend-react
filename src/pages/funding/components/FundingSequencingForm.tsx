@@ -699,22 +699,29 @@ export default function FundingSequencingForm() {
                                                             <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6 col-md-6">
+                                                    {/* Row 4 */}
+                                                    <div className="col-lg-4 col-md-4">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Order</label>
                                                             <input type="number" name="sort_order" className={`form-control rounded-3 py-2 ${(errors as any).sort_order ? 'is-invalid' : ''}`} value={formData.sort_order} onChange={handleChange} placeholder="e.g. 1" />
                                                             {(errors as any).sort_order && <div className="invalid-feedback">{(errors as any).sort_order}</div>}
                                                         </div>
                                                     </div>
-
-                                                    {/* Row 6 */}
-                                                    <div className="col-lg-6 col-md-6">
+                                                    <div className="col-lg-4 col-md-4">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Action URL</label>
                                                             <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
                                                             {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
                                                         </div>
                                                     </div>
+                                                    <div className="col-lg-4 col-md-4">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
+                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
+                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
+                                                        </div>
+                                                    </div>
+
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Uses</label>
@@ -745,14 +752,6 @@ export default function FundingSequencingForm() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6 col-md-6">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
-                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
-                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
-                                                        </div>
-                                                    </div>
-
                                                     {/* Row 7: Readiness Factors */}
                                                     <div className="col-lg-12">
                                                         <div className="card shadow-sm border rounded-3 mt-4 mb-2">
