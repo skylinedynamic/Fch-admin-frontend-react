@@ -348,14 +348,14 @@ const CreditProfileConfigForm: React.FC = () => {
                 return factor?.subscore_tiers || [];
             };
 
-            const getCond = (slug: string, index: number, field: string, fallback: string): string => {
+            const getCond = (slug: string, index: number, field: string, fallback: string, valIndex: number = 0): string => {
                 const tiers = getTiers(slug);
                 const tier = tiers[index];
                 if (!tier?.conditions) return fallback;
                 const conditions = typeof tier.conditions === 'string' ? JSON.parse(tier.conditions) : tier.conditions;
                 const list = conditions?.any || conditions?.all || [];
                 const found = list.find((c: any) => c.field === field);
-                if (Array.isArray(found?.value)) return sv(found.value[0], fallback);
+                if (Array.isArray(found?.value)) return sv(found.value[valIndex], fallback);
                 return sv(found?.value, fallback);
             };
 
@@ -485,8 +485,8 @@ const CreditProfileConfigForm: React.FC = () => {
                 trade_rule_good_accounts: getCond('tradeline_depth', 1, 'open_accounts', '3'),
                 trade_rule_good_high_limit_count: getCond('tradeline_depth', 1, 'high_limit_accounts', '1'),
                 trade_rule_good_high_limit_amount: getCond('tradeline_depth', 1, 'avg_high_limit', '10000'),
-                trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2'),
-                trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3'),
+                trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2', 0),
+                trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3', 1),
 
                 bank_rule_strong_years: getCond('banking_relationships', 0, 'checking_years', '3'),
                 bank_rule_established_months: getCond('banking_relationships', 1, 'checking_months', '12'),
@@ -532,19 +532,6 @@ const CreditProfileConfigForm: React.FC = () => {
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
 
-        if (!formData.parser_mode) {
-            newErrors.parser_mode = 'Please select a parsing mode.';
-        }
-
-        if (formData.parser_mode === 'openai') {
-            if (!formData.openai_api_key.trim()) {
-                newErrors.openai_api_key = 'OpenAI API Key is required when OpenAI parsing is selected.';
-            }
-            if (!formData.openai_model.trim()) {
-                newErrors.openai_model = 'Please select a model.';
-            }
-        }
-
         const sum = (Number(formData.weight_fico) || 0) +
             (Number(formData.weight_utilization) || 0) +
             (Number(formData.weight_time_in_business) || 0) +
@@ -568,45 +555,238 @@ const CreditProfileConfigForm: React.FC = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const findModelId = (slug: string): number | null => {
-        return scoreDataRef.current?.models?.find((m: any) => m.slug === slug)?.id ?? null;
-    };
-
-    const findFactorId = (slug: string): number | null => {
-        return scoreDataRef.current?.factors?.find((f: any) => f.slug === slug)?.id ?? null;
-    };
-
+    const findModel = (slug: string) => scoreDataRef.current?.models?.find((m: any) => m.slug === slug) ?? null;
+    const findFactor = (slug: string) => scoreDataRef.current?.factors?.find((f: any) => f.slug === slug) ?? null;
     const findTierId = (factorSlug: string, index: number): number | null => {
-        const factor = scoreDataRef.current?.factors?.find((f: any) => f.slug === factorSlug);
+        const factor = findFactor(factorSlug);
         return factor?.subscore_tiers?.[index]?.id ?? null;
     };
 
-    const buildModelFactor = (modelSlug: string, factorSlug: string, weightStr: string, sortOrder: number) => {
-        const mid = findModelId(modelSlug);
-        const fid = findFactorId(factorSlug);
-        if (!mid || !fid) return null;
-        return { score_model_id: mid, score_factor_id: fid, weight: Number(weightStr) || 0, sort_order: sortOrder };
+    const buildFactorWeight = (modelSlug: string, factorSlug: string, weightStr: string, sortOrder: number) => {
+        const model = findModel(modelSlug);
+        const factor = findFactor(factorSlug);
+        if (!model || !factor) return null;
+        return { id: factor.id, slug: factor.slug, weight: Number(weightStr) || 0, sort_order: sortOrder };
     };
+
+    const getTierValue = (key: keyof FormData): number => Number(formData[key] as any) || 0;
 
     const buildTierUpdate = (factorSlug: string, index: number, overrides: Record<string, any>) => {
         const id = findTierId(factorSlug, index);
-        if (!id) return null;
-        return { id, ...overrides };
+        if (!id) {
+            console.warn(`[Score Save] No tier ID found for ${factorSlug}[${index}] — sending update without ID`);
+        }
+        return id ? { id, ...overrides } : overrides;
     };
 
-    const buildConditions = (slug: string, index: number, rules: Array<{ field: string; operator: string; valueKey: string }>): any => {
-        const tier = scoreDataRef.current?.factors?.find((f: any) => f.slug === slug)?.subscore_tiers?.[index];
+    const buildConditions = (
+        factorSlug: string,
+        tierIndex: number,
+        rules: Array<{ field: string; operator: string; valueKey: string; transform?: (val: number) => any }>
+    ): any => {
+        const tier = findFactor(factorSlug)?.subscore_tiers?.[tierIndex];
         const existing = tier?.conditions;
         const base = existing && typeof existing === 'object' ? JSON.parse(JSON.stringify(existing)) : { any: [] };
-        const isAll = !!base.all;
-        const list = isAll ? base.all : base.any;
+        const container = base.all ?? base.any;
+        if (!container) return base;
         for (const rule of rules) {
             if (!rule.valueKey) continue;
-            const idx = list.findIndex((c: any) => c.field === rule.field);
-            const entry = { field: rule.field, operator: rule.operator, value: Number((formData as any)[rule.valueKey]) || 0 };
-            if (idx >= 0) list[idx] = entry; else list.push(entry);
+            const idx = container.findIndex((c: any) => c.field === rule.field);
+            let value = getTierValue(rule.valueKey as keyof FormData);
+            if (rule.transform) value = rule.transform(value);
+            const entry = { field: rule.field, operator: rule.operator, value };
+            if (idx >= 0) container[idx] = entry;
+            else container.push(entry);
         }
         return base;
+    };
+
+    const TIER_DEFINITIONS: Record<string, Array<{
+        i: number;
+        min?: keyof FormData;
+        max?: keyof FormData;
+        sub: keyof FormData;
+        rules?: Array<{ field: string; operator: string; valueKey: keyof FormData; transform?: (val: number) => any }>;
+    }>> = {
+        fico: [
+            { i: 0, min: 'fico_rule_t1' as any, sub: 'fico_subscore_780_plus' as any },
+            { i: 1, min: 'fico_rule_t2' as any, sub: 'fico_subscore_760_779' as any },
+            { i: 2, min: 'fico_rule_t3' as any, sub: 'fico_subscore_740_759' as any },
+            { i: 3, min: 'fico_rule_t4' as any, sub: 'fico_subscore_720_739' as any },
+            { i: 4, min: 'fico_rule_t5' as any, sub: 'fico_subscore_700_719' as any },
+            { i: 5, min: 'fico_rule_t6' as any, sub: 'fico_subscore_680_699' as any },
+            { i: 6, min: 'fico_rule_t7' as any, sub: 'fico_subscore_660_679' as any },
+            { i: 7, sub: 'fico_subscore_below_660' as any },
+        ],
+        utilization: [
+            { i: 0, max: 'util_rule_t1' as any, sub: 'util_subscore_0_5' as any },
+            { i: 1, max: 'util_rule_t2' as any, sub: 'util_subscore_5_10' as any },
+            { i: 2, max: 'util_rule_t3' as any, sub: 'util_subscore_10_20' as any },
+            { i: 3, max: 'util_rule_t4' as any, sub: 'util_subscore_20_30' as any },
+            { i: 4, max: 'util_rule_t5' as any, sub: 'util_subscore_30_40' as any },
+            { i: 5, sub: 'util_subscore_above_40' as any },
+        ],
+        time_in_business: [
+            { i: 0, min: 'time_rule_t1' as any, sub: 'time_subscore_36_plus' as any },
+            { i: 1, min: 'time_rule_t2' as any, sub: 'time_subscore_24_35' as any },
+            { i: 2, min: 'time_rule_t3' as any, sub: 'time_subscore_12_23' as any },
+            { i: 3, min: 'time_rule_t4' as any, sub: 'time_subscore_6_11' as any },
+            { i: 4, sub: 'time_subscore_below_6' as any },
+        ],
+        revenue_strength: [
+            { i: 0, sub: 'rev_subscore_strong' as any, rules: [
+                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_strong_bus' as any },
+                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_strong_pers' as any },
+            ]},
+            { i: 1, sub: 'rev_subscore_moderate' as any, rules: [
+                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_mod_bus' as any },
+                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_mod_pers' as any },
+            ]},
+            { i: 2, sub: 'rev_subscore_limited' as any, rules: [
+                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_lim_bus' as any },
+                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_lim_pers' as any },
+            ]},
+            { i: 3, sub: 'rev_subscore_weak' as any },
+        ],
+        tradeline_depth: [
+            { i: 0, sub: 'trade_subscore_multiple_high' as any, rules: [
+                { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_multi_accounts' as any },
+                { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_multi_high_limit_count' as any },
+                { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_multi_high_limit_amount' as any },
+            ]},
+            { i: 1, sub: 'trade_subscore_good_depth' as any, rules: [
+                { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_good_accounts' as any },
+                { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_good_high_limit_count' as any },
+                { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_good_high_limit_amount' as any },
+            ]},
+            { i: 2, sub: 'trade_subscore_moderate' as any, rules: [
+                {
+                    field: 'open_accounts', operator: 'between', valueKey: 'trade_rule_mod_accounts_min' as any,
+                    transform: () => [
+                        getTierValue('trade_rule_mod_accounts_min' as any) || 2,
+                        getTierValue('trade_rule_mod_accounts_max' as any) || 3,
+                    ],
+                },
+            ]},
+            { i: 3, sub: 'trade_subscore_thin' as any },
+        ],
+        banking_relationships: [
+            { i: 0, sub: 'bank_subscore_strong' as any, rules: [
+                { field: 'checking_years', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
+                { field: 'has_savings_or_loc', operator: '=', valueKey: '' as any },
+            ]},
+            { i: 1, sub: 'bank_subscore_established' as any, rules: [
+                { field: 'checking_months', operator: '>=', valueKey: 'bank_rule_established_months' as any },
+            ]},
+            { i: 2, sub: 'bank_subscore_basic' as any, rules: [
+                { field: 'checking_months', operator: '<', valueKey: 'bank_rule_basic_months' as any },
+            ]},
+            { i: 3, sub: 'bank_subscore_weak' as any },
+        ],
+    };
+
+    const buildModelSection = () => {
+        const models = scoreDataRef.current?.models ?? [];
+        if (!models.length) return [];
+
+        return models.map(model => {
+            const factorWeights: Record<string, { weightField: keyof FormData; sortOrder: number }> = {
+                funding_readiness: {
+                    fico: { weightField: 'weight_fico' as any, sortOrder: 1 },
+                    utilization: { weightField: 'weight_utilization' as any, sortOrder: 2 },
+                    time_in_business: { weightField: 'weight_time_in_business' as any, sortOrder: 3 },
+                    revenue_strength: { weightField: 'weight_revenue_strength' as any, sortOrder: 4 },
+                    tradeline_depth: { weightField: 'weight_tradeline_depth' as any, sortOrder: 5 },
+                    banking_relationships: { weightField: 'weight_banking_relationships' as any, sortOrder: 6 },
+                },
+                card_approval_odds: {
+                    fico: { weightField: 'weight_fico_card' as any, sortOrder: 1 },
+                    utilization: { weightField: 'weight_utilization_card' as any, sortOrder: 2 },
+                    recent_inquiries: { weightField: 'weight_inquiries_card' as any, sortOrder: 3 },
+                    time_in_business: { weightField: 'weight_tib_card' as any, sortOrder: 4 },
+                    revenue_strength: { weightField: 'weight_revenue_card' as any, sortOrder: 5 },
+                },
+            };
+
+            const factorConfigs = factorWeights[model.slug];
+            if (!factorConfigs) return null;
+
+            const factors = Object.entries(factorConfigs)
+                .map(([factorSlug, cfg]) => {
+                    const factor = findFactor(factorSlug);
+                    if (!factor) return null;
+                    return {
+                        id: factor.id,
+                        slug: factor.slug,
+                        weight: getTierValue(cfg.weightField),
+                        sort_order: cfg.sortOrder,
+                    };
+                })
+                .filter(Boolean);
+
+            return { id: model.id, slug: model.slug, factors };
+        }).filter(Boolean);
+    };
+
+    const buildFactorsSection = () => {
+        const factors: any[] = [];
+        for (const [slug, tiers] of Object.entries(TIER_DEFINITIONS)) {
+            const factor = findFactor(slug);
+            if (!factor) continue;
+            const factorTiers: any[] = [];
+            for (const t of tiers) {
+                const tierUpdate: any = {};
+                if (t.min) tierUpdate.min_value = getTierValue(t.min);
+                if (t.max) tierUpdate.max_value = getTierValue(t.max);
+                tierUpdate.numeric_value = getTierValue(t.sub);
+                if (t.rules) {
+                    tierUpdate.conditions = buildConditions(slug, t.i, t.rules);
+                }
+                const result = buildTierUpdate(slug, t.i, tierUpdate);
+                if (result) factorTiers.push(result);
+            }
+            if (factorTiers.length) {
+                factors.push({ id: factor.id, slug: factor.slug, tiers: factorTiers });
+            }
+        }
+        return factors;
+    };
+
+    const buildBandSection = (key: 'band_mappings' | 'readiness_bands' | 'play_eligibility') => {
+        const items = (scoreDataRef.current as any)?.[key] ?? [];
+        const configs: Record<string, Array<{ i: number; valKey?: string; minKey?: string }>> = {
+            band_mappings: [
+                { i: 0, valKey: 'odds_90_plus', minKey: 'odds_band_t1' },
+                { i: 1, valKey: 'odds_80_89', minKey: 'odds_band_t2' },
+                { i: 2, valKey: 'odds_70_79', minKey: 'odds_band_t3' },
+                { i: 3, valKey: 'odds_60_69', minKey: 'odds_band_t4' },
+                { i: 4, valKey: 'odds_50_59', minKey: 'odds_band_t5' },
+                { i: 5, valKey: 'odds_under_50' },
+            ],
+            readiness_bands: [
+                { i: 0, minKey: 'readiness_band_t1' },
+                { i: 1, minKey: 'readiness_band_t2' },
+                { i: 2, minKey: 'readiness_band_t3' },
+                { i: 3, minKey: 'readiness_band_t4' },
+            ],
+            play_eligibility: [
+                { i: 0, valKey: 'play_min_fico_recovery' },
+                { i: 1, valKey: 'play_min_fico_foundation' },
+                { i: 2, valKey: 'play_min_fico_startup' },
+                { i: 3, valKey: 'play_min_fico_zerocost' },
+                { i: 4, valKey: 'play_min_fico_relationship' },
+                { i: 5, valKey: 'play_min_fico_investor' },
+                { i: 6, valKey: 'play_min_fico_executive' },
+                { i: 7, valKey: 'play_min_fico_acquisition' },
+                { i: 8, valKey: 'play_min_fico_elite' },
+            ],
+        };
+        const defs = configs[key] ?? [];
+        return defs.map(b => ({
+            id: items[b.i]?.id,
+            ...(b.valKey ? { numeric_value: getTierValue(b.valKey as any) } : {}),
+            ...(b.minKey ? { min_value: getTierValue(b.minKey as any) || null } : {}),
+        })).filter(b => b.id);
     };
 
     const validateParsing = (): boolean => {
@@ -660,204 +840,22 @@ const CreditProfileConfigForm: React.FC = () => {
 
         setLoading(true);
         try {
-            const scorePayload: Record<string, any> = {};
+            const scorePayload: Record<string, any> = {
+                models: buildModelSection(),
+                factors: buildFactorsSection(),
+                band_mappings: buildBandSection('band_mappings'),
+                readiness_bands: buildBandSection('readiness_bands'),
+                play_eligibility: buildBandSection('play_eligibility'),
+            };
 
-            // Funding Readiness factors
-            const frFactors = [
-                buildModelFactor('funding_readiness', 'fico', formData.weight_fico, 1),
-                buildModelFactor('funding_readiness', 'utilization', formData.weight_utilization, 2),
-                buildModelFactor('funding_readiness', 'time_in_business', formData.weight_time_in_business, 3),
-                buildModelFactor('funding_readiness', 'revenue_strength', formData.weight_revenue_strength, 4),
-                buildModelFactor('funding_readiness', 'tradeline_depth', formData.weight_tradeline_depth, 5),
-                buildModelFactor('funding_readiness', 'banking_relationships', formData.weight_banking_relationships, 6),
-            ].filter(Boolean);
-
-            // Card Approval Odds factors
-            const caFactors = [
-                buildModelFactor('card_approval_odds', 'fico', formData.weight_fico_card, 1),
-                buildModelFactor('card_approval_odds', 'utilization', formData.weight_utilization_card, 2),
-                buildModelFactor('card_approval_odds', 'recent_inquiries', formData.weight_inquiries_card, 3),
-                buildModelFactor('card_approval_odds', 'time_in_business', formData.weight_tib_card, 4),
-                buildModelFactor('card_approval_odds', 'revenue_strength', formData.weight_revenue_card, 5),
-            ].filter(Boolean);
-
-            scorePayload.model_factors = [...frFactors, ...caFactors];
-
-            // Subscore tiers
-            const subscoreTiers: any[] = [];
-
-            const ficoSubscores = [
-                { i: 0, min: 'fico_rule_t1', sub: 'fico_subscore_780_plus' },
-                { i: 1, min: 'fico_rule_t2', sub: 'fico_subscore_760_779' },
-                { i: 2, min: 'fico_rule_t3', sub: 'fico_subscore_740_759' },
-                { i: 3, min: 'fico_rule_t4', sub: 'fico_subscore_720_739' },
-                { i: 4, min: 'fico_rule_t5', sub: 'fico_subscore_700_719' },
-                { i: 5, min: 'fico_rule_t6', sub: 'fico_subscore_680_699' },
-                { i: 6, min: 'fico_rule_t7', sub: 'fico_subscore_660_679' },
-                { i: 7, sub: 'fico_subscore_below_660' },
-            ];
-            for (const s of ficoSubscores) {
-                const t = buildTierUpdate('fico', s.i, {
-                    min_value: s.min ? Number(formData[s.min as keyof FormData]) || null : null,
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                });
-                if (t) subscoreTiers.push(t);
+            const saveResp = await updateScoreConfigurations(scorePayload);
+            if (saveResp?.status === false) {
+                toast.error(saveResp?.message || 'Failed to save score configuration.');
+                return;
             }
-
-            const utilSubscores = [
-                { i: 0, max: 'util_rule_t1', sub: 'util_subscore_0_5' },
-                { i: 1, max: 'util_rule_t2', sub: 'util_subscore_5_10' },
-                { i: 2, max: 'util_rule_t3', sub: 'util_subscore_10_20' },
-                { i: 3, max: 'util_rule_t4', sub: 'util_subscore_20_30' },
-                { i: 4, max: 'util_rule_t5', sub: 'util_subscore_30_40' },
-                { i: 5, sub: 'util_subscore_above_40' },
-            ];
-            for (const s of utilSubscores) {
-                const t = buildTierUpdate('utilization', s.i, {
-                    max_value: s.max ? Number(formData[s.max as keyof FormData]) || null : null,
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                });
-                if (t) subscoreTiers.push(t);
-            }
-
-            const timeSubscores = [
-                { i: 0, min: 'time_rule_t1', sub: 'time_subscore_36_plus' },
-                { i: 1, min: 'time_rule_t2', sub: 'time_subscore_24_35' },
-                { i: 2, min: 'time_rule_t3', sub: 'time_subscore_12_23' },
-                { i: 3, min: 'time_rule_t4', sub: 'time_subscore_6_11' },
-                { i: 4, sub: 'time_subscore_below_6' },
-            ];
-            for (const s of timeSubscores) {
-                const t = buildTierUpdate('time_in_business', s.i, {
-                    min_value: s.min ? Number(formData[s.min as keyof FormData]) || null : null,
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                });
-                if (t) subscoreTiers.push(t);
-            }
-
-            const revSubscores = [
-                { i: 0, sub: 'rev_subscore_strong', rules: [
-                    { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_strong_bus' },
-                    { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_strong_pers' },
-                ]},
-                { i: 1, sub: 'rev_subscore_moderate', rules: [
-                    { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_mod_bus' },
-                    { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_mod_pers' },
-                ]},
-                { i: 2, sub: 'rev_subscore_limited', rules: [
-                    { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_lim_bus' },
-                    { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_lim_pers' },
-                ]},
-                { i: 3, sub: 'rev_subscore_weak' },
-            ];
-            for (const s of revSubscores) {
-                const t = buildTierUpdate('revenue_strength', s.i, {
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                    conditions: s.rules ? buildConditions('revenue_strength', s.i, s.rules) : undefined,
-                });
-                if (t) subscoreTiers.push(t);
-            }
-
-            const tradeSubscores = [
-                { i: 0, sub: 'trade_subscore_multiple_high', rules: [
-                    { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_multi_accounts' },
-                    { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_multi_high_limit_count' },
-                    { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_multi_high_limit_amount' },
-                ]},
-                { i: 1, sub: 'trade_subscore_good_depth', rules: [
-                    { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_good_accounts' },
-                    { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_good_high_limit_count' },
-                    { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_good_high_limit_amount' },
-                ]},
-                { i: 2, sub: 'trade_subscore_moderate', rules: [
-                    { field: 'open_accounts', operator: 'between', valueKey: 'trade_rule_mod_accounts_min' },
-                ]},
-                { i: 3, sub: 'trade_subscore_thin' },
-            ];
-            for (const s of tradeSubscores) {
-                const conditions = s.rules ? buildConditions('tradeline_depth', s.i, s.rules) : undefined;
-                if (conditions && conditions.any?.[0]?.field === 'open_accounts' && conditions.any?.[0]?.operator === 'between') {
-                    conditions.any[0].value = [Number(formData.trade_rule_mod_accounts_min) || 2, Number(formData.trade_rule_mod_accounts_max) || 3];
-                }
-                const t = buildTierUpdate('tradeline_depth', s.i, {
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                    conditions: conditions,
-                });
-                if (t) subscoreTiers.push(t);
-            }
-
-            const bankSubscores = [
-                { i: 0, sub: 'bank_subscore_strong', rules: [
-                    { field: 'checking_years', operator: '>=', valueKey: 'bank_rule_strong_years' },
-                    { field: 'has_savings_or_loc', operator: '=', valueKey: '' },
-                ]},
-                { i: 1, sub: 'bank_subscore_established', rules: [
-                    { field: 'checking_months', operator: '>=', valueKey: 'bank_rule_established_months' },
-                ]},
-                { i: 2, sub: 'bank_subscore_basic', rules: [
-                    { field: 'checking_months', operator: '<', valueKey: 'bank_rule_basic_months' },
-                ]},
-                { i: 3, sub: 'bank_subscore_weak' },
-            ];
-            for (const s of bankSubscores) {
-                const t = buildTierUpdate('banking_relationships', s.i, {
-                    numeric_value: Number(formData[s.sub as keyof FormData]) || 0,
-                    conditions: s.rules ? buildConditions('banking_relationships', s.i, s.rules) : undefined,
-                });
-                if (t) subscoreTiers.push(t);
-            }
-
-            scorePayload.subscore_tiers = subscoreTiers;
-
-            // Band mappings (card approval odds)
-            const bands = scoreDataRef.current?.band_mappings || [];
-            const bandUpdates = [
-                { i: 0, oddsVal: 'odds_90_plus', oddsMin: 'odds_band_t1' },
-                { i: 1, oddsVal: 'odds_80_89', oddsMin: 'odds_band_t2' },
-                { i: 2, oddsVal: 'odds_70_79', oddsMin: 'odds_band_t3' },
-                { i: 3, oddsVal: 'odds_60_69', oddsMin: 'odds_band_t4' },
-                { i: 4, oddsVal: 'odds_50_59', oddsMin: 'odds_band_t5' },
-                { i: 5, oddsVal: 'odds_under_50' },
-            ];
-            scorePayload.band_mappings = bandUpdates.map(b => ({
-                id: bands[b.i]?.id,
-                numeric_value: Number(formData[b.oddsVal as keyof FormData]) || 0,
-                min_value: b.oddsMin ? Number(formData[b.oddsMin as keyof FormData]) || null : null,
-            })).filter(b => b.id);
-
-            // Readiness bands
-            const readinessItems = scoreDataRef.current?.readiness_bands || [];
-            const readinessUpdates = [
-                { i: 0, minVal: 'readiness_band_t1' },
-                { i: 1, minVal: 'readiness_band_t2' },
-                { i: 2, minVal: 'readiness_band_t3' },
-                { i: 3, minVal: 'readiness_band_t4' },
-            ];
-            scorePayload.readiness_bands = readinessUpdates.map(b => ({
-                id: readinessItems[b.i]?.id,
-                min_value: Number(formData[b.minVal as keyof FormData]) || null,
-            })).filter(b => b.id);
-
-            // Play eligibility
-            const playItems = scoreDataRef.current?.play_eligibility || [];
-            const playUpdates = [
-                { i: 0, ficoVal: 'play_min_fico_recovery' },
-                { i: 1, ficoVal: 'play_min_fico_foundation' },
-                { i: 2, ficoVal: 'play_min_fico_startup' },
-                { i: 3, ficoVal: 'play_min_fico_zerocost' },
-                { i: 4, ficoVal: 'play_min_fico_relationship' },
-                { i: 5, ficoVal: 'play_min_fico_investor' },
-                { i: 6, ficoVal: 'play_min_fico_executive' },
-                { i: 7, ficoVal: 'play_min_fico_acquisition' },
-                { i: 8, ficoVal: 'play_min_fico_elite' },
-            ];
-            scorePayload.play_eligibility = playUpdates.map(b => ({
-                id: playItems[b.i]?.id,
-                numeric_value: Number(formData[b.ficoVal as keyof FormData]) || 0,
-            })).filter(b => b.id);
-
-            await updateScoreConfigurations(scorePayload);
             toast.success('Score configuration saved successfully!');
+            setScoreLoaded(false);
+            await loadScoreConfig();
         } catch (error: any) {
             console.error('Failed to save score configuration:', error);
             toast.error(error?.response?.data?.message || 'Failed to save score configuration.');
