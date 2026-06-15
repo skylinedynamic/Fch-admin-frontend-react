@@ -136,13 +136,14 @@ export default function FundingReview() {
     const actionBodyTemplate = (rowData: any) => {
         return (
             <button 
-                className="btn btn-sm btn-soft-primary"
+                className="btn btn-sm btn-primary d-flex align-items-center justify-content-center px-3 rounded shadow-sm"
                 onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/intake-review/funding-review/${rowData.id}`);
                 }}
             >
-                Review
+                <i className="ri-eye-line me-1 fs-15 align-middle"></i>
+                <span className="fw-medium">Review</span>
             </button>
         );
     };
@@ -239,8 +240,10 @@ export default function FundingReview() {
                                             onSort={onSort}
                                             dataKey="id"
                                             responsiveLayout="scroll"
-                                            className="p-datatable-sm"
+                                            className="p-datatable-sm p-datatable-hoverable-rows"
                                             emptyMessage="No funding reviews found"
+                                            onRowClick={(e) => navigate(`/intake-review/funding-review/${e.data.id}`)}
+                                            rowClassName={() => 'cursor-pointer'}
                                         >
                                             <Column header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} style={{ minWidth: '160px' }} />
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />

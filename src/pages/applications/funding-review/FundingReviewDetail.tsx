@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFundingReviewDetails, useUpdateFundingReviewStatus } from '../../../modules/application';
 import { toast } from 'react-toastify';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 
@@ -11,6 +12,8 @@ export default function FundingReviewDetail() {
 
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
     const [validationErrors, setValidationErrors] = useState<any>({});
 
     const { data: apiResponse, isLoading, error } = useFundingReviewDetails(id || '');
@@ -38,6 +41,7 @@ export default function FundingReviewDetail() {
             {
                 onSuccess: () => {
                     toast.success('Funding review approved successfully');
+                    setShowApproveModal(false);
                 },
                 onError: (err: any) => {
                     if (err?.response?.status === 422) {
@@ -51,12 +55,6 @@ export default function FundingReviewDetail() {
     };
 
     const handleReject = () => {
-        if (!isRejecting) {
-            setIsRejecting(true);
-            setValidationErrors({});
-            return;
-        }
-
         setValidationErrors({});
 
         updateStatusMutation.mutate(
@@ -64,7 +62,8 @@ export default function FundingReviewDetail() {
             {
                 onSuccess: () => {
                     toast.success('Funding review rejected successfully');
-                    setIsRejecting(false);
+                    setShowRejectModal(false);
+                    setRejectReason('');
                 },
                 onError: (err: any) => {
                     if (err?.response?.status === 422) {
@@ -84,6 +83,7 @@ export default function FundingReviewDetail() {
     };
 
     return (
+        <>
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
@@ -149,10 +149,29 @@ export default function FundingReviewDetail() {
                                     <div className="col-md-6">
                                         <p className="text-muted mb-1 fs-13">Requested Amount</p>
                                         <h5 className="fs-15 fw-bold mb-0">
-                                            {review.requested_amount 
+                                            {review.requested_amount
                                                 ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(review.requested_amount)
                                                 : '-'}
                                         </h5>
+                                    </div>
+                                    <div className="col-12"><hr className="border-light m-0" /></div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Estimated Speed</p>
+                                        <h5 className="fs-15 fw-bold mb-0">{review.estimated_speed || '-'}</h5>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <p className="text-muted mb-1 fs-13">Documents Uploaded</p>
+                                        <div className="d-flex flex-wrap gap-2 mt-2">
+                                            {Array.isArray(review.documents_uploaded) && review.documents_uploaded.length > 0 ? (
+                                                review.documents_uploaded.map((doc: string, idx: number) => (
+                                                    <span key={idx} className="bg-light text-dark border border-light-subtle rounded px-2 py-1 fs-13 fw-medium">
+                                                        {doc.replace(/_/g, ' ')}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <h5 className="fs-15 fw-bold mb-0">-</h5>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -202,38 +221,39 @@ export default function FundingReviewDetail() {
                             </div>
                             <div className="card-body p-4">
                                 <p className="text-muted fs-13 mb-4">Review the details and make a decision to approve or reject this funding sequence step.</p>
-                                
+
                                 {review.status === 'Pending' && isRejecting && (
                                     <div className="mb-4">
-                                        <label className="form-label fs-13 fw-medium">Reason / Note <span className="text-danger">*</span></label>
-                                        <textarea 
-                                            className={`form-control bg-light border-light ${validationErrors.reject_reason ? 'is-invalid' : ''}`} 
-                                            rows={4} 
+                                        <label className="form-label fs-14 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
+                                        <textarea
+                                            className={`form-control bg-light border-0 rounded ${validationErrors.reject_reason ? 'is-invalid' : ''}`}
+                                            rows={4}
                                             value={rejectReason}
                                             onChange={(e) => {
                                                 setRejectReason(e.target.value);
                                                 if (validationErrors.reject_reason) {
-                                                    setValidationErrors({...validationErrors, reject_reason: null});
+                                                    setValidationErrors({ ...validationErrors, reject_reason: null });
                                                 }
                                             }}
                                             placeholder="Please provide a reason for rejection..."
                                             autoFocus
+                                            style={{ resize: 'none' }}
                                         ></textarea>
                                         {validationErrors.reject_reason && (
-                                            <div className="invalid-feedback d-block">
+                                            <div className="invalid-feedback d-block mt-2">
                                                 {validationErrors.reject_reason[0]}
                                             </div>
                                         )}
                                     </div>
                                 )}
-                                
+
                                 <div className="d-flex flex-column gap-3">
                                     {review.status === 'Pending' && !isRejecting && (
                                         <>
-                                            <div 
-                                                className={`card mb-0 border shadow-none ${updateStatusMutation.isPending ? 'opacity-50' : 'border-success-subtle'}`} 
-                                                style={{ cursor: updateStatusMutation.isPending ? 'default' : 'pointer' }}
-                                                onClick={!updateStatusMutation.isPending ? handleApprove : undefined}
+                                            <div
+                                                className="card mb-0 border shadow-none border-success-subtle"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => setShowApproveModal(true)}
                                             >
                                                 <div className="card-body p-3 d-flex align-items-center">
                                                     <div className="avatar-sm flex-shrink-0 me-3">
@@ -251,10 +271,10 @@ export default function FundingReviewDetail() {
                                                 </div>
                                             </div>
 
-                                            <div 
-                                                className={`card mb-0 border shadow-none ${updateStatusMutation.isPending ? 'opacity-50' : 'border-danger-subtle'}`} 
-                                                style={{ cursor: updateStatusMutation.isPending ? 'default' : 'pointer' }}
-                                                onClick={!updateStatusMutation.isPending ? handleReject : undefined}
+                                            <div
+                                                className="card mb-0 border shadow-none border-danger-subtle"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => setIsRejecting(true)}
                                             >
                                                 <div className="card-body p-3 d-flex align-items-center">
                                                     <div className="avatar-sm flex-shrink-0 me-3">
@@ -276,22 +296,27 @@ export default function FundingReviewDetail() {
 
                                     {review.status === 'Pending' && isRejecting && (
                                         <>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-danger py-2 fs-15 fw-medium shadow-sm" 
-                                                onClick={handleReject}
-                                                disabled={updateStatusMutation.isPending}
+                                            <button
+                                                type="button"
+                                                className="btn btn-danger py-2 fs-15 border-0 rounded fw-bold"
+                                                onClick={() => {
+                                                    if (!rejectReason.trim()) {
+                                                        setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
+                                                        return;
+                                                    }
+                                                    setShowRejectModal(true);
+                                                }}
                                             >
-                                                {updateStatusMutation.isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                                                Confirm Rejection
                                             </button>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-light py-2 fs-15 fw-medium" 
+                                            <button
+                                                type="button"
+                                                className="btn btn-light py-2 fs-15 border-0 rounded text-dark fw-bold"
                                                 onClick={() => {
                                                     setIsRejecting(false);
                                                     setRejectReason('');
+                                                    setValidationErrors({});
                                                 }}
-                                                disabled={updateStatusMutation.isPending}
                                             >
                                                 Cancel
                                             </button>
@@ -303,6 +328,81 @@ export default function FundingReviewDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* Approve Modal */}
+            <Modal isOpen={showApproveModal} toggle={() => setShowApproveModal(false)} centered>
+                <ModalBody className="p-4">
+                    <div className="text-center mb-4 mt-2">
+                        <div className="avatar-md mx-auto mb-3">
+                            <span className="avatar-title bg-success-subtle text-success rounded-circle fs-24">
+                                <i className="ri-check-line"></i>
+                            </span>
+                        </div>
+                        <h4 className="fw-bold">Approve Application</h4>
+                        <p className="text-muted fs-14 mb-0">Are you sure you want to approve this application? This action will move the application forward.</p>
+                    </div>
+                    <div className="d-flex flex-column gap-2">
+                        <button 
+                            type="button" 
+                            className="btn btn-success py-2 fs-15 border-0 rounded fw-bold" 
+                            onClick={handleApprove}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            {updateStatusMutation.isPending ? 'Approving...' : 'Confirm Approve'}
+                        </button>
+                        <button 
+                            type="button" 
+                            className="btn btn-light py-2 fs-15 border-0 rounded text-dark fw-bold" 
+                            onClick={() => setShowApproveModal(false)}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </ModalBody>
+            </Modal>
+
+            {/* Reject Modal */}
+            <Modal isOpen={showRejectModal} toggle={() => setShowRejectModal(false)} centered>
+                <ModalBody className="p-4">
+                    <div className="text-center mb-4 mt-2">
+                        <div className="avatar-md mx-auto mb-3">
+                            <span className="avatar-title bg-danger-subtle text-danger rounded-circle fs-24">
+                                <i className="ri-close-line"></i>
+                            </span>
+                        </div>
+                        <h4 className="fw-bold">Confirm Rejection</h4>
+                        <p className="text-muted fs-14 mb-0">Are you sure you want to reject this application? The borrower will be notified with your feedback.</p>
+                    </div>
+
+                    <div className="mb-4 text-start">
+                        <p className="fs-13 fw-semibold text-muted mb-2">Your Reason / Note:</p>
+                        <div className="p-3 bg-light rounded text-dark fs-14 border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
+                            {rejectReason}
+                        </div>
+                    </div>
+                    
+                    <div className="d-flex flex-column gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-danger py-2 fs-15 border-0 rounded fw-bold"
+                            onClick={handleReject}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            {updateStatusMutation.isPending ? 'Rejecting...' : 'Yes, Reject Application'}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-light py-2 fs-15 border-0 rounded text-dark fw-bold"
+                            onClick={() => setShowRejectModal(false)}
+                            disabled={updateStatusMutation.isPending}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </ModalBody>
+            </Modal>
         </div>
+        </>
     );
 }
