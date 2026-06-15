@@ -197,7 +197,7 @@ export default function FundingReviewDetail() {
                                     {review.status === 'Rejected' && (
                                         <div className="col-md-12">
                                             <p className="text-muted mb-2 fs-13">Rejection Reason</p>
-                                            <div className="fs-14 p-3 bg-danger-subtle rounded text-danger border border-danger-subtle">
+                                            <div className="fs-14 p-3 bg-light rounded text-dark border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
                                                 {review.reject_reason || 'No reason provided'}
                                             </div>
                                         </div>
