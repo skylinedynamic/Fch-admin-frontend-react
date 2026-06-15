@@ -618,10 +618,23 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).funding_group_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_group_id}</small>}
                                                         </div>
                                                     </div>
+                                                    {/* Row 4 */}
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Terms</label>
-                                                            <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
+                                                                <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowTypeModal(true)}>Add New</button>
+                                                            </div>
+                                                            <Dropdown
+                                                                value={formData.funding_type_id}
+                                                                options={types}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
+                                                                optionLabel="name"
+                                                                optionValue="id"
+                                                                placeholder="Select type"
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
                                                         </div>
                                                     </div>
 
@@ -656,26 +669,6 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).icon && <small className="text-danger mt-1 d-block">{(errors as any).icon}</small>}
                                                         </div>
                                                     </div>
-
-                                                    {/* Row 4 */}
-                                                    <div className="col-lg-6 col-md-6">
-                                                        <div className="mb-2">
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
-                                                                <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowTypeModal(true)}>Add New</button>
-                                                            </div>
-                                                            <Dropdown
-                                                                value={formData.funding_type_id}
-                                                                options={types}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
-                                                                optionLabel="name"
-                                                                optionValue="id"
-                                                                placeholder="Select type"
-                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_type_id ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
-                                                        </div>
-                                                    </div>
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Color</label>
@@ -692,13 +685,18 @@ export default function FundingSequencingForm() {
                                                             />
                                                         </div>
                                                     </div>
-
                                                     {/* Row 5 */}
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
                                                             <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
                                                             {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Terms</label>
+                                                            <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
                                                         </div>
                                                     </div>
                                                     <div className="col-lg-6 col-md-6">
@@ -900,18 +898,6 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).description && <div className="invalid-feedback">{(errors as any).description}</div>}
                                                         </div>
                                                     </div>
-                                                    {/* Next Step Button */}
-                                                    {isEditMode && (
-                                                        <div className="col-lg-12 mt-4 pt-3 border-top d-flex justify-content-end">
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-primary px-4 py-2 fw-medium waves-effect"
-                                                                onClick={() => { setActiveTab('visibility'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                                            >
-                                                                Next: Visibility Logic <i className="ri-arrow-right-line ms-2 align-middle"></i>
-                                                            </button>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
 
