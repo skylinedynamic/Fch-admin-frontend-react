@@ -10,6 +10,8 @@ export default function FundingReviewDetail() {
     const navigate = useNavigate();
 
     const [rejectReason, setRejectReason] = useState('');
+    const [isRejecting, setIsRejecting] = useState(false);
+    const [validationErrors, setValidationErrors] = useState<any>({});
 
     const { data: apiResponse, isLoading, error } = useFundingReviewDetails(id || '');
     const updateStatusMutation = useUpdateFundingReviewStatus();
@@ -30,33 +32,46 @@ export default function FundingReviewDetail() {
     if (!review) return null;
 
     const handleApprove = () => {
+        setValidationErrors({});
         updateStatusMutation.mutate(
             { id: review.id, status: 'Approved' },
             {
                 onSuccess: () => {
                     toast.success('Funding review approved successfully');
                 },
-                onError: () => {
-                    toast.error('Failed to update status');
+                onError: (err: any) => {
+                    if (err?.response?.status === 422) {
+                        setValidationErrors(err.response.data.errors || {});
+                    } else {
+                        toast.error(err?.response?.data?.message || 'Failed to update status');
+                    }
                 }
             }
         );
     };
 
     const handleReject = () => {
-        if (!rejectReason.trim()) {
-            toast.error('Please provide a rejection reason');
+        if (!isRejecting) {
+            setIsRejecting(true);
+            setValidationErrors({});
             return;
         }
+
+        setValidationErrors({});
 
         updateStatusMutation.mutate(
             { id: review.id, status: 'Rejected', reject_reason: rejectReason },
             {
                 onSuccess: () => {
                     toast.success('Funding review rejected successfully');
+                    setIsRejecting(false);
                 },
-                onError: () => {
-                    toast.error('Failed to update status');
+                onError: (err: any) => {
+                    if (err?.response?.status === 422) {
+                        setValidationErrors(err.response.data.errors || {});
+                    } else {
+                        toast.error(err?.response?.data?.message || 'Failed to update status');
+                    }
                 }
             }
         );
@@ -159,36 +174,75 @@ export default function FundingReviewDetail() {
                             <div className="card-body">
                                 <p className="text-muted fs-13 mb-3">Review the details and make a decision to approve or reject this funding sequence step.</p>
                                 
-                                {review.status === 'Pending' && (
+                                {review.status === 'Pending' && isRejecting && (
                                     <div className="mb-3">
                                         <label className="form-label fs-13">Reason / Note <span className="text-danger">*</span></label>
                                         <textarea 
-                                            className="form-control bg-light border-light" 
+                                            className={`form-control bg-light border-light ${validationErrors.reject_reason ? 'is-invalid' : ''}`} 
                                             rows={3} 
                                             value={rejectReason}
-                                            onChange={(e) => setRejectReason(e.target.value)}
-                                            placeholder="Required if rejecting..."
+                                            onChange={(e) => {
+                                                setRejectReason(e.target.value);
+                                                if (validationErrors.reject_reason) {
+                                                    setValidationErrors({...validationErrors, reject_reason: null});
+                                                }
+                                            }}
+                                            placeholder="Please provide a reason for rejection..."
+                                            autoFocus
                                         ></textarea>
+                                        {validationErrors.reject_reason && (
+                                            <div className="invalid-feedback d-block">
+                                                {validationErrors.reject_reason[0]}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 
                                 <div className="d-grid gap-2">
-                                    <button 
-                                        type="button" 
-                                        className="btn btn-success" 
-                                        onClick={handleApprove}
-                                        disabled={review.status === 'Approved' || updateStatusMutation.isPending}
-                                    >
-                                        {updateStatusMutation.isPending && review.status !== 'Approved' ? 'Processing...' : 'Approve Application'}
-                                    </button>
-                                    <button 
-                                        type="button" 
-                                        className="btn btn-outline-danger" 
-                                        onClick={handleReject}
-                                        disabled={review.status === 'Rejected' || updateStatusMutation.isPending}
-                                    >
-                                        {updateStatusMutation.isPending && review.status === 'Rejected' ? 'Rejecting...' : 'Reject Application'}
-                                    </button>
+                                    {review.status === 'Pending' && !isRejecting && (
+                                        <>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-success" 
+                                                onClick={handleApprove}
+                                                disabled={updateStatusMutation.isPending}
+                                            >
+                                                {updateStatusMutation.isPending ? 'Processing...' : 'Approve Application'}
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-outline-danger" 
+                                                onClick={handleReject}
+                                                disabled={updateStatusMutation.isPending}
+                                            >
+                                                Reject Application
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {review.status === 'Pending' && isRejecting && (
+                                        <>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-danger" 
+                                                onClick={handleReject}
+                                                disabled={updateStatusMutation.isPending}
+                                            >
+                                                {updateStatusMutation.isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-light" 
+                                                onClick={() => {
+                                                    setIsRejecting(false);
+                                                    setRejectReason('');
+                                                }}
+                                                disabled={updateStatusMutation.isPending}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
