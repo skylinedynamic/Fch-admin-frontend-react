@@ -59,6 +59,11 @@ const menuItems = [
         to: '/intake-review/change-requests',
         label: 'Change Requests',
         permission: 'view change requests',
+      },
+      {
+        to: '/intake-review/credit-profile-requests',
+        label: 'Request Credit Profile',
+        permission: '',
       }
     ]
   },

@@ -40,6 +40,8 @@ import PreQualificationDetails from './pages/applications/pre-qualification/PreQ
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
+import CreditProfileRequests from './pages/applications/credit-profile-requests/CreditProfileRequests.tsx';
+import CreditProfileRequestDetails from './pages/applications/credit-profile-requests/CreditProfileRequestDetails.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import Payments from './pages/payments/Payments.jsx';
 import Subscriptions from './pages/subscriptions/Subscriptions.jsx';
@@ -315,6 +317,9 @@ export default function App() {
               <Route element={<PermissionRoute permission="view change requests" />}>
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
+
+              <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
+              <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
 
             </Route>
 
