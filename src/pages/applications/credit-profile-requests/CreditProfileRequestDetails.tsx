@@ -13,7 +13,7 @@ interface DetailItemProps {
 
 const DetailItem = ({ label, value, icon, copyValue }: DetailItemProps) => {
     const [copied, setCopied] = useState(false);
-    
+
     const textToCopy = copyValue || (typeof value === 'string' ? value : '');
 
     const handleCopy = () => {
@@ -24,28 +24,27 @@ const DetailItem = ({ label, value, icon, copyValue }: DetailItemProps) => {
     };
 
     return (
-        <div className="d-flex align-items-start gap-3 py-2 border-bottom h-100">
+        <div className="d-flex align-items-start gap-3 py-2">
             {icon && (
-                <div className="flex-shrink-0 text-primary mt-1">
+                <div className="flex-shrink-0 text-muted">
                     <i className={`${icon} fs-16`}></i>
                 </div>
             )}
             <div className="flex-grow-1 min-w-0">
-                <div className="text-muted fs-12 text-uppercase fw-medium mb-1" style={{ letterSpacing: '0.5px' }}>
+                <div className="text-muted fs-12 text-uppercase fw-medium mb-1 detail-label">
                     {label}
                 </div>
-                <div className="fw-semibold text-dark fs-14 d-flex align-items-center gap-2 flex-wrap justify-content-between">
-                    <div>{value || <span className="text-muted fst-italic">—</span>}</div>
-                    {textToCopy ? (
-                        <button 
-                            onClick={handleCopy} 
-                            className="btn btn-sm p-0 flex-shrink-0"
-                            style={{ color: copied ? '#198754' : '#adb5bd', transition: 'color 0.2s', lineHeight: 1 }}
-                            title="Copy to clipboard"
+                <div className="fw-semibold text-dark fs-14 d-flex align-items-center gap-2">
+                    <span>{value || <span className="text-muted fst-italic">—</span>}</span>
+                    {textToCopy && (
+                        <button
+                            onClick={handleCopy}
+                            className="btn btn-sm p-0 border-0 bg-transparent flex-shrink-0 fw-normal detail-copy-btn"
+                            title="Copy"
                         >
-                            <i className={copied ? "ri-check-line fs-15" : "ri-file-copy-line fs-14"}></i>
+                            <i className={`ri-${copied ? 'check-line' : 'file-copy-line'} detail-copy-icon${copied ? ' copied' : ''}`}></i>
                         </button>
-                    ) : null}
+                    )}
                 </div>
             </div>
         </div>
@@ -87,7 +86,7 @@ export default function CreditProfileRequestDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
@@ -109,32 +108,29 @@ export default function CreditProfileRequestDetails() {
                     </div>
                 </div>
 
-                <div className="row">
-                    <div className="col-lg-12">
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-transparent border-bottom py-3">
-                                <h5 className="card-title mb-0 fs-16 fw-semibold">Credit Profile Submission Details</h5>
-                            </div>
-                            <div className="card-body p-4">
-                                
-                                {/* Personal Information Section */}
-                                <div className="d-flex align-items-center gap-2 mb-3">
+                <div className="row g-4">
+                    {/* ── Left column (8) ── */}
+                    <div className="col-lg-8 d-flex flex-column">
+                        {/* Combined Personal + Contact card */}
+                        <div className="card shadow-sm">
+                            <div className="card-header bg-transparent py-3">
+                                <div className="d-flex align-items-center gap-2">
                                     <div className="rounded bg-primary-subtle p-2">
                                         <i className="ri-user-3-line text-primary fs-16"></i>
                                     </div>
                                     <div>
-                                        <div className="fw-semibold text-dark fs-14">Personal Information</div>
-                                        <div className="text-muted fs-12">Applicant identity details</div>
+                                        <div className="fw-semibold text-dark fs-14">Applicant Details</div>
+                                        <div className="text-muted fs-12">Personal and contact information</div>
                                     </div>
                                 </div>
-                                <div className="row g-4 mb-5">
-                                    <div className="col-lg-4 col-md-6">
-                                        <DetailItem label="Full Name" icon="ri-account-circle-line" value={fullName} copyValue={fullName} />
-                                    </div>
-                                    <div className="col-lg-4 col-md-6">
+                            </div>
+                            <div className="card-body px-4 py-3">
+                                <div className="row g-0">
+                                    <div className="col-6">
+                                        <DetailItem label="First Name" icon="ri-account-circle-line" value={request.first_name} copyValue={request.first_name} />
+                                        <DetailItem label="Middle Name" icon="ri-account-circle-line" value={request.middle_name || '-'} copyValue={request.middle_name || undefined} />
+                                        <DetailItem label="Last Name" icon="ri-account-circle-line" value={request.last_name} copyValue={request.last_name} />
                                         <DetailItem label="Date of Birth" icon="ri-cake-2-line" value={formatDate(request.date_of_birth)} />
-                                    </div>
-                                    <div className="col-lg-4 col-md-6">
                                         <DetailItem
                                             label="Social Security Number"
                                             icon="ri-lock-line"
@@ -146,7 +142,7 @@ export default function CreditProfileRequestDetails() {
                                                     </span>
                                                     <button
                                                         type="button"
-                                                        className="btn btn-sm btn-soft-secondary py-0 px-2 fs-12"
+                                                        className="btn btn-sm btn-reveal-ssn py-0 px-2 fs-12"
                                                         onClick={() => setShowFullSSN(s => !s)}
                                                     >
                                                         <i className={`${showFullSSN ? 'ri-eye-off-line' : 'ri-eye-line'} align-middle me-1`}></i>
@@ -156,29 +152,18 @@ export default function CreditProfileRequestDetails() {
                                             }
                                         />
                                     </div>
-                                </div>
-
-                                {/* Contact Information Section */}
-                                <div className="d-flex align-items-center gap-2 mb-3">
-                                    <div className="rounded bg-info-subtle p-2">
-                                        <i className="ri-contacts-line text-info fs-16"></i>
-                                    </div>
-                                    <div>
-                                        <div className="fw-semibold text-dark fs-14">Contact Information</div>
-                                        <div className="text-muted fs-12">Reach and communication details</div>
-                                    </div>
-                                </div>
-                                <div className="row g-4 mb-5">
-                                    <div className="col-md-6">
+                                    <div className="col-6">
                                         <DetailItem label="Email Address" icon="ri-mail-line" value={<a href={`mailto:${request.email}`} className="text-primary text-decoration-none">{request.email}</a>} copyValue={request.email} />
-                                    </div>
-                                    <div className="col-md-6">
                                         <DetailItem label="Phone Number" icon="ri-phone-line" value={<a href={`tel:${request.phone}`} className="text-dark text-decoration-none">{request.phone}</a>} copyValue={request.phone} />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* Address Details Section */}
-                                <div className="d-flex align-items-center gap-2 mb-3">
+                        {/* Address Details */}
+                        <div className="card shadow-sm">
+                            <div className="card-header bg-transparent  py-3">
+                                <div className="d-flex align-items-center gap-2">
                                     <div className="rounded bg-warning-subtle p-2">
                                         <i className="ri-map-pin-2-line text-warning fs-16"></i>
                                     </div>
@@ -187,11 +172,13 @@ export default function CreditProfileRequestDetails() {
                                         <div className="text-muted fs-12">Residential address for credit verification</div>
                                     </div>
                                 </div>
-                                <div className="row g-4 mb-5">
-                                    <div className="col-md-6">
-                                        <DetailItem 
-                                            label="Street Address" 
-                                            icon="ri-road-map-line" 
+                            </div>
+                            <div className="card-body px-4 py-3">
+                                <div className="row g-0">
+                                    <div className="col-md-4">
+                                        <DetailItem
+                                            label="Street Address"
+                                            icon="ri-road-map-line"
                                             value={
                                                 <>
                                                     {request.address}
@@ -199,23 +186,29 @@ export default function CreditProfileRequestDetails() {
                                                         <span className="text-muted ms-2 fs-13">({request.apt_suite_other})</span>
                                                     )}
                                                 </>
-                                            } 
-                                            copyValue={request.address} 
+                                            }
+                                            copyValue={request.address}
                                         />
                                     </div>
-                                    <div className="col-md-2">
+                                    <div className="col-md-3">
                                         <DetailItem label="City" icon="ri-building-2-line" value={request.city} copyValue={request.city} />
                                     </div>
-                                    <div className="col-md-2">
+                                    <div className="col-md-3">
                                         <DetailItem label="State" icon="ri-map-2-line" value={request.state} copyValue={request.state} />
                                     </div>
                                     <div className="col-md-2">
                                         <DetailItem label="Zip Code" icon="ri-mail-send-line" value={request.zip} copyValue={request.zip} />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                {/* Borrower Account Section */}
-                                <div className="d-flex align-items-center gap-2 mb-3">
+                    {/* ── Right column (4) ── */}
+                    <div className="col-lg-4">
+                        <div className="card shadow-sm">
+                            <div className="card-header bg-transparent  py-3">
+                                <div className="d-flex align-items-center gap-2">
                                     <div className="rounded bg-success-subtle p-2">
                                         <i className="ri-bank-card-line text-success fs-16"></i>
                                     </div>
@@ -224,33 +217,28 @@ export default function CreditProfileRequestDetails() {
                                         <div className="text-muted fs-12">Associated business and borrower details</div>
                                     </div>
                                 </div>
-                                <div className="row g-4">
-                                    <div className="col-md-12">
-                                        <DetailItem label="Business Name" icon="ri-building-line" value={borrowerName} />
-                                    </div>
-                                    {request.borrower && (
-                                        <>
-                                            <div className="col-md-6">
-                                                <DetailItem label="Account Email" icon="ri-mail-send-line" value={<a href={`mailto:${request.borrower.email}`} className="text-primary text-decoration-none">{request.borrower.email}</a>} copyValue={request.borrower.email} />
-                                            </div>
-                                            <div className="col-md-6">
-                                                <DetailItem label="Account Phone" icon="ri-phone-fill" value={<a href={`tel:${request.borrower.phone_number}`} className="text-dark text-decoration-none">{request.borrower.phone_number}</a>} copyValue={request.borrower.phone_number} />
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                                
-                                {/* Submission timestamp */}
-                                {request.created_at && (
-                                    <div className="mt-4 pt-3 border-top d-flex align-items-center gap-2 text-muted fs-12 justify-content-end">
-                                        <i className="ri-time-line"></i>
-                                        Submitted on {new Date(request.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                                    </div>
+                            </div>
+                            <div className="card-body px-4 py-3">
+                                <DetailItem label="Business Name" icon="ri-building-line" value={<span>{borrowerName}</span>} />
+                                {request.borrower && (
+                                    <>
+                                        <DetailItem label="Account Email" icon="ri-mail-send-line" value={<a href={`mailto:${request.borrower.email}`} className="text-primary text-decoration-none">{request.borrower.email}</a>} />
+                                        <DetailItem label="Account Phone" icon="ri-phone-fill" value={<a href={`tel:${request.borrower.phone_number}`} className="text-dark text-decoration-none">{request.borrower.phone_number}</a>} />
+                                    </>
                                 )}
-
                             </div>
                         </div>
                     </div>
+
+                    {/* Submission timestamp */}
+                    {request.created_at && (
+                        <div className="col-12">
+                            <div className="d-flex align-items-center gap-2 text-muted fs-12 justify-content-end">
+                                <i className="ri-time-line"></i>
+                                Submitted on {new Date(request.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

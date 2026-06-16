@@ -1481,6 +1481,42 @@ File: Custom Css File
 
 
 
+/* ── Detail Item ──────────────────────────────────────────────────────────── */
+.detail-label {
+  letter-spacing: 0.5px;
+}
+
+.detail-copy-btn {
+  line-height: 1;
+}
+
+.detail-copy-icon {
+  color: #adb5bd !important;
+  font-size: 15px;
+}
+
+.detail-copy-icon:hover {
+  color: #6c757d !important;
+}
+
+.detail-copy-icon.copied {
+  color: #10b981 !important;
+}
+
+/* ── Reveal SSN Button ────────────────────────────────────────────────────── */
+.btn-reveal-ssn {
+  background-color: var(--secondary-color) !important;
+  border-color: var(--secondary-color) !important;
+  color: #fff !important;
+}
+
+.btn-reveal-ssn:hover,
+.btn-reveal-ssn:active,
+.btn-reveal-ssn:focus {
+  filter: brightness(90%);
+  color: #fff !important;
+}
+
 /* Credit Profile Loading Skeleton Styles */
 .credit-profile-skeleton-card {
   height: calc(100vh - 360px) !important;
