@@ -1462,19 +1462,23 @@ File: Custom Css File
   height: 34px !important;
   font-size: 11px !important;
 }
+
 .p-dropdown.table-dropdown .p-dropdown-label {
   font-size: 11px !important;
   padding: 3px 8px !important;
   line-height: 1.4 !important;
 }
+
 .p-dropdown.table-dropdown .p-dropdown-trigger {
   width: 24px !important;
 }
+
 .credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
   font-size: 11px !important;
   padding-top: 4px !important;
   padding-bottom: 4px !important;
 }
+
 .credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-item-label {
   font-size: 11px !important;
 }
@@ -1607,4 +1611,79 @@ File: Custom Css File
 .skeleton-border-container {
   border: 1px solid #e9e9e9 !important;
   border-radius: 4px !important;
+}
+
+/* Score Configuration Form */
+#score-config-form input.form-control,
+#score-config-form input.form-control-sm,
+#score-config-form input.form-control-xs {
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+.config-input-xs {
+  width: 40px !important;
+}
+
+.config-input-sm {
+  width: 45px !important;
+}
+
+.config-input-md {
+  width: 60px !important;
+}
+
+.config-input-lg {
+  width: 65px !important;
+}
+
+.config-input-xl {
+  width: 80px !important;
+}
+
+.config-input-xxl {
+  width: 100px !important;
+}
+
+.config-input-no-shadow {
+  box-shadow: none !important;
+}
+
+.config-label-span {
+  min-width: 120px !important;
+  justify-content: center !important;
+}
+
+.config-progress {
+  height: 8px !important;
+}
+
+.config-dropdown-radius {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.config-th {
+  width: 120px !important;
+}
+
+.config-th-lg {
+  width: 65% !important;
+}
+
+.config-th-sm {
+  width: 35% !important;
+}
+
+.config-th-quarter {
+  width: 25% !important;
+}
+
+.config-th-half {
+  width: 60% !important;
+}
+
+.config-th-subscore {
+  width: 15% !important;
+  min-width: 120px !important;
 }

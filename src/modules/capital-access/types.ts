@@ -19,6 +19,9 @@ export interface CreditAccountSummary {
         est_limit_for_show?: string;
         hard_pull?: string;
         what_you_need?: string[] | string;
+        access_time?: string;
+        access_day?: number;
+        access_day_time?: string;
     };
 }
 
@@ -47,7 +50,7 @@ export interface StoreCapitalAccessPayload {
     sub_title: string;
     target_exposure_min: number | string;
     target_exposure_max: number | string;
-    approval_probability: number | string;
+    approval_probability?: number | string;
     est_timeline_min: number | string;
     est_timeline_max: number | string;
     what_you_will_get: string[];
@@ -56,11 +59,14 @@ export interface StoreCapitalAccessPayload {
     credit_accounts?: Array<{
         id: number;
         why_this_card: string;
-        est_approval_odds: string;
+        est_approval_odds?: string;
         est_limit_min: string;
         est_limit_max: string;
         hard_pull: string;
         what_you_need: string[];
+        access_time?: string;
+        access_day?: number;
+        access_day_time?: string;
     }>;
 }
 

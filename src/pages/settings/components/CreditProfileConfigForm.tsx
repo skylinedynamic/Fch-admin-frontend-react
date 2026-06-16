@@ -120,12 +120,9 @@ interface FormData {
     time_rule_t3: string;
     time_rule_t4: string;
 
-    rev_rule_strong_bus: string;
-    rev_rule_strong_pers: string;
-    rev_rule_mod_bus: string;
-    rev_rule_mod_pers: string;
-    rev_rule_lim_bus: string;
-    rev_rule_lim_pers: string;
+    rev_rule_t1: string;
+    rev_rule_t2: string;
+    rev_rule_t3: string;
 
     trade_rule_multi_accounts: string;
     trade_rule_multi_high_limit_count: string;
@@ -259,12 +256,9 @@ const CreditProfileConfigForm: React.FC = () => {
         time_rule_t3: '12',
         time_rule_t4: '6',
 
-        rev_rule_strong_bus: '25000',
-        rev_rule_strong_pers: '150000',
-        rev_rule_mod_bus: '10000',
-        rev_rule_mod_pers: '75000',
-        rev_rule_lim_bus: '1000',
-        rev_rule_lim_pers: '40000',
+        rev_rule_t1: '500000',
+        rev_rule_t2: '150000',
+        rev_rule_t3: '50000',
 
         trade_rule_multi_accounts: '5',
         trade_rule_multi_high_limit_count: '2',
@@ -472,12 +466,9 @@ const CreditProfileConfigForm: React.FC = () => {
                 time_rule_t3: buildTierValue('time_in_business', 2, 'min', '12'),
                 time_rule_t4: buildTierValue('time_in_business', 3, 'min', '6'),
 
-                rev_rule_strong_bus: getCond('revenue_strength', 0, 'business_revenue_monthly', '25000'),
-                rev_rule_strong_pers: getCond('revenue_strength', 0, 'personal_income_annual', '150000'),
-                rev_rule_mod_bus: getCond('revenue_strength', 1, 'business_revenue_monthly', '10000'),
-                rev_rule_mod_pers: getCond('revenue_strength', 1, 'personal_income_annual', '75000'),
-                rev_rule_lim_bus: getCond('revenue_strength', 2, 'business_revenue_monthly', '1000'),
-                rev_rule_lim_pers: getCond('revenue_strength', 2, 'personal_income_annual', '40000'),
+                rev_rule_t1: buildTierValue('revenue_strength', 0, 'min', '500000'),
+                rev_rule_t2: buildTierValue('revenue_strength', 1, 'min', '150000'),
+                rev_rule_t3: buildTierValue('revenue_strength', 2, 'min', '50000'),
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
@@ -582,7 +573,7 @@ const CreditProfileConfigForm: React.FC = () => {
     const buildConditions = (
         factorSlug: string,
         tierIndex: number,
-        rules: Array<{ field: string; operator: string; valueKey: string; transform?: (val: number) => any }>
+        rules: Array<{ field: string; operator: string; valueKey?: string; value?: any; transform?: (val: number) => any }>
     ): any => {
         const tier = findFactor(factorSlug)?.subscore_tiers?.[tierIndex];
         const existing = tier?.conditions;
@@ -590,10 +581,16 @@ const CreditProfileConfigForm: React.FC = () => {
         const container = base.all ?? base.any;
         if (!container) return base;
         for (const rule of rules) {
-            if (!rule.valueKey) continue;
             const idx = container.findIndex((c: any) => c.field === rule.field);
-            let value = getTierValue(rule.valueKey as keyof FormData);
-            if (rule.transform) value = rule.transform(value);
+            let value: any;
+            if (rule.value !== undefined) {
+                value = rule.value;
+            } else if (rule.valueKey) {
+                value = getTierValue(rule.valueKey as keyof FormData);
+                if (rule.transform) value = rule.transform(value);
+            } else {
+                continue;
+            }
             const entry = { field: rule.field, operator: rule.operator, value };
             if (idx >= 0) container[idx] = entry;
             else container.push(entry);
@@ -634,53 +631,65 @@ const CreditProfileConfigForm: React.FC = () => {
             { i: 4, sub: 'time_subscore_below_6' as any },
         ],
         revenue_strength: [
-            { i: 0, sub: 'rev_subscore_strong' as any, rules: [
-                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_strong_bus' as any },
-                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_strong_pers' as any },
-            ]},
-            { i: 1, sub: 'rev_subscore_moderate' as any, rules: [
-                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_mod_bus' as any },
-                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_mod_pers' as any },
-            ]},
-            { i: 2, sub: 'rev_subscore_limited' as any, rules: [
-                { field: 'business_revenue_monthly', operator: '>=', valueKey: 'rev_rule_lim_bus' as any },
-                { field: 'personal_income_annual', operator: '>=', valueKey: 'rev_rule_lim_pers' as any },
-            ]},
-            { i: 3, sub: 'rev_subscore_weak' as any },
+            { i: 0, min: 'rev_rule_t1' as any, sub: 'rev_subscore_strong' as any },
+            { i: 1, min: 'rev_rule_t2' as any, max: 'rev_rule_t1' as any, maxOffset: -1, sub: 'rev_subscore_moderate' as any },
+            { i: 2, min: 'rev_rule_t3' as any, max: 'rev_rule_t2' as any, maxOffset: -1, sub: 'rev_subscore_limited' as any },
+            { i: 3, max: 'rev_rule_t3' as any, maxOffset: -1, sub: 'rev_subscore_weak' as any },
         ],
         tradeline_depth: [
-            { i: 0, sub: 'trade_subscore_multiple_high' as any, rules: [
-                { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_multi_accounts' as any },
-                { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_multi_high_limit_count' as any },
-                { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_multi_high_limit_amount' as any },
-            ]},
-            { i: 1, sub: 'trade_subscore_good_depth' as any, rules: [
-                { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_good_accounts' as any },
-                { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_good_high_limit_count' as any },
-                { field: 'avg_high_limit', operator: '>=', valueKey: 'trade_rule_good_high_limit_amount' as any },
-            ]},
-            { i: 2, sub: 'trade_subscore_moderate' as any, rules: [
-                {
-                    field: 'open_accounts', operator: 'between', valueKey: 'trade_rule_mod_accounts_min' as any,
-                    transform: () => [
-                        getTierValue('trade_rule_mod_accounts_min' as any) || 2,
-                        getTierValue('trade_rule_mod_accounts_max' as any) || 3,
-                    ],
-                },
-            ]},
-            { i: 3, sub: 'trade_subscore_thin' as any },
+            {
+                i: 0, sub: 'trade_subscore_multiple_high' as any, rules: [
+                    { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_multi_accounts' as any },
+                    { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_multi_high_limit_count' as any },
+                    { field: 'limit', operator: '>=', valueKey: 'trade_rule_multi_high_limit_amount' as any },
+                ]
+            },
+            {
+                i: 1, sub: 'trade_subscore_good_depth' as any, rules: [
+                    { field: 'open_accounts', operator: '>=', valueKey: 'trade_rule_good_accounts' as any },
+                    { field: 'high_limit_accounts', operator: '>=', valueKey: 'trade_rule_good_high_limit_count' as any },
+                    { field: 'limit', operator: '>=', valueKey: 'trade_rule_good_high_limit_amount' as any },
+                ]
+            },
+            {
+                i: 2, sub: 'trade_subscore_moderate' as any, rules: [
+                    {
+                        field: 'open_accounts', operator: 'between', valueKey: 'trade_rule_mod_accounts_min' as any,
+                        transform: () => [
+                            getTierValue('trade_rule_mod_accounts_min' as any) || 2,
+                            getTierValue('trade_rule_mod_accounts_max' as any) || 3,
+                        ],
+                    },
+                ]
+            },
+            {
+                i: 3, sub: 'trade_subscore_thin' as any, rules: [
+                    {
+                        field: 'open_accounts', operator: 'between', valueKey: 'trade_rule_mod_accounts_min' as any,
+                        transform: () => [0, Math.max(0, (getTierValue('trade_rule_mod_accounts_min') || 2) - 1)],
+                    },
+                    { field: 'high_limit_accounts', operator: '=', value: 0 },
+                    { field: 'limit', operator: '=', value: 0 },
+                ]
+            },
         ],
         banking_relationships: [
-            { i: 0, sub: 'bank_subscore_strong' as any, rules: [
-                { field: 'checking_years', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
-                { field: 'has_savings_or_loc', operator: '=', valueKey: '' as any },
-            ]},
-            { i: 1, sub: 'bank_subscore_established' as any, rules: [
-                { field: 'checking_months', operator: '>=', valueKey: 'bank_rule_established_months' as any },
-            ]},
-            { i: 2, sub: 'bank_subscore_basic' as any, rules: [
-                { field: 'checking_months', operator: '<', valueKey: 'bank_rule_basic_months' as any },
-            ]},
+            {
+                i: 0, sub: 'bank_subscore_strong' as any, rules: [
+                    { field: 'checking_years', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
+                    { field: 'has_savings_or_loc', operator: '=', valueKey: '' as any },
+                ]
+            },
+            {
+                i: 1, sub: 'bank_subscore_established' as any, rules: [
+                    { field: 'checking_months', operator: '>=', valueKey: 'bank_rule_established_months' as any },
+                ]
+            },
+            {
+                i: 2, sub: 'bank_subscore_basic' as any, rules: [
+                    { field: 'checking_months', operator: '<', valueKey: 'bank_rule_basic_months' as any },
+                ]
+            },
             { i: 3, sub: 'bank_subscore_weak' as any },
         ],
     };
@@ -737,10 +746,16 @@ const CreditProfileConfigForm: React.FC = () => {
             for (const t of tiers) {
                 const tierUpdate: any = {};
                 if (t.min) tierUpdate.min_value = getTierValue(t.min);
-                if (t.max) tierUpdate.max_value = getTierValue(t.max);
+                if (t.max) {
+                    let maxVal = getTierValue(t.max);
+                    if (t.maxOffset !== undefined) maxVal += t.maxOffset;
+                    tierUpdate.max_value = maxVal;
+                }
                 tierUpdate.numeric_value = getTierValue(t.sub);
                 if (t.rules) {
                     tierUpdate.conditions = buildConditions(slug, t.i, t.rules);
+                } else {
+                    tierUpdate.conditions = null;
                 }
                 const result = buildTierUpdate(slug, t.i, tierUpdate);
                 if (result) factorTiers.push(result);
@@ -931,7 +946,7 @@ const CreditProfileConfigForm: React.FC = () => {
                     {fetching ? (
                         <MicroBiltConfigSkeleton />
                     ) : (
-                        <form onSubmit={handleSubmit}>
+                        <form id="score-config-form" onSubmit={handleSubmit}>
                             {activeTab === 'parsing' ? (
                                 <div className="animate__animated animate__fadeIn">
                                     <div className="d-flex align-items-center bg-success-subtle rounded-3 p-3 mb-4">
@@ -989,17 +1004,16 @@ const CreditProfileConfigForm: React.FC = () => {
                                                         <div className="col-12">
                                                             <label className="form-label fw-medium">API Key</label>
                                                             <div className="input-group">
-                                                                <span className="input-group-text bg-light text-muted" style={{ minWidth: '120px', justifyContent: 'center' }}>
+                                                                <span className="input-group-text bg-light text-muted config-label-span">
                                                                     <i className="ri-key-2-line me-1"></i> API Key
                                                                 </span>
                                                                 <input
                                                                     type={showApiKey ? 'text' : 'password'}
-                                                                    className={`form-control fs-14 ${errors.openai_api_key ? 'is-invalid border-danger' : ''}`}
+                                                                    className={`form-control fs-14 config-input-no-shadow ${errors.openai_api_key ? 'is-invalid border-danger' : ''}`}
                                                                     name="openai_api_key"
                                                                     value={formData.openai_api_key}
                                                                     onChange={handleInputChange}
                                                                     placeholder="sk-..."
-                                                                    style={{ boxShadow: 'none' }}
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -1021,7 +1035,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                         <div className="col-12">
                                                             <label className="form-label fw-medium">Model</label>
                                                             <div className="input-group">
-                                                                <span className="input-group-text bg-light text-muted" style={{ minWidth: '120px', justifyContent: 'center' }}>
+                                                                <span className="input-group-text bg-light text-muted config-label-span">
                                                                     <i className="ri-cpu-line me-1"></i> Model
                                                                 </span>
                                                                 <Dropdown
@@ -1039,8 +1053,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                         }
                                                                     }}
                                                                     placeholder="Select Model"
-                                                                    className={`flex-grow-1 ${errors.openai_model ? 'p-invalid' : ''}`}
-                                                                    style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                                                                    className={`flex-grow-1 config-dropdown-radius ${errors.openai_model ? 'p-invalid' : ''}`}
                                                                     disabled={loading}
                                                                 />
                                                                 {errors.openai_model && (
@@ -1086,8 +1099,8 @@ const CreditProfileConfigForm: React.FC = () => {
                                                 <table className="table table-nowrap table-hover mb-0 align-middle">
                                                     <thead className="table-light">
                                                         <tr>
-                                                            <th scope="col" style={{ width: '65%' }}>Factor</th>
-                                                            <th scope="col" style={{ width: '35%' }}>Weight (%)</th>
+                                                            <th scope="col config-th-lg">Factor</th>
+                                                            <th scope="col config-th-sm">Weight (%)</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -1286,7 +1299,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                             </div>
 
                                             <div className="mt-3">
-                                                <div className="progress rounded-pill mb-2" style={{ height: '8px' }}>
+                                                <div className="progress rounded-pill mb-2 config-progress">
                                                     <div
                                                         className={`progress-bar progress-bar-striped progress-bar-animated ${getProgressBarColor()}`}
                                                         role="progressbar"
@@ -1347,14 +1360,14 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start ps-3">FICO Range</th>
-                                                                        <th style={{ width: '120px' }}>Subscore</th>
+                                                                        <th className="config-th">Subscore</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t1" value={formData.fico_rule_t1} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t1" value={formData.fico_rule_t1} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11 ms-1">or more</span>
                                                                             </div>
                                                                         </td>
@@ -1365,9 +1378,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t2" value={formData.fico_rule_t2} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t2" value={formData.fico_rule_t2} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t1) - 1) || 779} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t1) - 1) || 779} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1377,9 +1390,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t3" value={formData.fico_rule_t3} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t3" value={formData.fico_rule_t3} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t2) - 1) || 759} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t2) - 1) || 759} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1389,9 +1402,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t4" value={formData.fico_rule_t4} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t4" value={formData.fico_rule_t4} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t3) - 1) || 739} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t3) - 1) || 739} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1401,9 +1414,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t5" value={formData.fico_rule_t5} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t5" value={formData.fico_rule_t5} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t4) - 1) || 719} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t4) - 1) || 719} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1413,9 +1426,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t6" value={formData.fico_rule_t6} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t6" value={formData.fico_rule_t6} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t5) - 1) || 699} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t5) - 1) || 699} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1425,9 +1438,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} name="fico_rule_t7" value={formData.fico_rule_t7} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t7" value={formData.fico_rule_t7} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={(Number(formData.fico_rule_t6) - 1) || 679} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t6) - 1) || 679} disabled />
                                                                             </div>
                                                                         </td>
                                                                         <td>
@@ -1437,7 +1450,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '65px', height: '24px', fontSize: '12px' }} value={formData.fico_rule_t7 ? (Number(formData.fico_rule_t7) - 1).toString() : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={formData.fico_rule_t7 ? (Number(formData.fico_rule_t7) - 1).toString() : ''} disabled />
                                                                                 <span className="text-muted fs-11 ms-1">or less</span>
                                                                             </div>
                                                                         </td>
@@ -1464,16 +1477,16 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start ps-3">Credit Utilization</th>
-                                                                        <th style={{ width: '120px' }}>Subscore</th>
+                                                                        <th className="config-th">Subscore</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value="0" disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="0" disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="util_rule_t1" value={formData.util_rule_t1} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t1" value={formData.util_rule_t1} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1484,9 +1497,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value={formData.util_rule_t1 ? (Number(formData.util_rule_t1) + 0.01).toFixed(2) : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t1 ? (Number(formData.util_rule_t1) + 0.01).toFixed(2) : ''} disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="util_rule_t2" value={formData.util_rule_t2} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t2" value={formData.util_rule_t2} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1497,9 +1510,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value={formData.util_rule_t2 ? (Number(formData.util_rule_t2) + 0.01).toFixed(2) : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t2 ? (Number(formData.util_rule_t2) + 0.01).toFixed(2) : ''} disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="util_rule_t3" value={formData.util_rule_t3} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t3" value={formData.util_rule_t3} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1510,9 +1523,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value={formData.util_rule_t3 ? (Number(formData.util_rule_t3) + 0.01).toFixed(2) : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t3 ? (Number(formData.util_rule_t3) + 0.01).toFixed(2) : ''} disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="util_rule_t4" value={formData.util_rule_t4} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t4" value={formData.util_rule_t4} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1523,9 +1536,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value={formData.util_rule_t4 ? (Number(formData.util_rule_t4) + 0.01).toFixed(2) : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t4 ? (Number(formData.util_rule_t4) + 0.01).toFixed(2) : ''} disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="util_rule_t5" value={formData.util_rule_t5} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t5" value={formData.util_rule_t5} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1536,9 +1549,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value={formData.util_rule_t5 ? (Number(formData.util_rule_t5) + 0.01).toFixed(2) : ''} disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t5 ? (Number(formData.util_rule_t5) + 0.01).toFixed(2) : ''} disabled />
                                                                                 <span className="text-muted fs-11">% to</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} value="100" disabled />
+                                                                                <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="100" disabled />
                                                                                 <span className="text-muted fs-11">%</span>
                                                                             </div>
                                                                         </td>
@@ -1573,84 +1586,68 @@ const CreditProfileConfigForm: React.FC = () => {
                                                     <table className="table table-sm table-bordered mb-0 align-middle text-center">
                                                         <thead className="table-light text-uppercase fs-11">
                                                             <tr>
-                                                                <th className="text-start ps-3" style={{ width: '25%' }}>Revenue Category</th>
-                                                                <th className="text-start ps-3" style={{ width: '60%' }}>Suggested Rule</th>
-                                                                <th style={{ width: '15%', minWidth: '120px' }}>Subscore</th>
+                                                                <th className="text-start ps-3 config-th-quarter">Revenue Category</th>
+                                                                <th className="text-start ps-3 config-th-half">Suggested Rule</th>
+                                                                <th className="config-th-subscore">Subscore</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="fs-13">
                                                             <tr>
                                                                 <td className="text-start ps-3">
                                                                     <span className="fw-semibold text-body">Strong</span>
-                                                                    <small className="text-muted d-block fs-11">Strong documented revenue and/or high personal income</small>
+                                                                    <small className="text-muted d-block fs-11">Annual Revenue ≥ $500,000</small>
                                                                 </td>
                                                                 <td className="text-start ps-3 fw-medium">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span>Business revenue ≥ $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '85px', height: '24px', fontSize: '12px' }} name="rev_rule_strong_bus" value={formData.rev_rule_strong_bus} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>/month <strong className="text-primary mx-1">OR</strong> personal income ≥ $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '95px', height: '24px', fontSize: '12px' }} name="rev_rule_strong_pers" value={formData.rev_rule_strong_pers} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>/year</span>
-                                                                    </div>
+                                                                    <span>Annual Revenue ≥ $</span>
+                                                                    <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t1" value={formData.rev_rule_t1} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                                 <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
+                                                                    <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="text-start ps-3">
                                                                     <span className="fw-semibold text-body">Moderate</span>
-                                                                    <small className="text-muted d-block fs-11">Moderate revenue or stable income</small>
+                                                                    <small className="text-muted d-block fs-11">Annual Revenue $150,000–$499,999</small>
                                                                 </td>
                                                                 <td className="text-start ps-3 fw-medium">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span>Business revenue $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '85px', height: '24px', fontSize: '12px' }} name="rev_rule_mod_bus" value={formData.rev_rule_mod_bus} onChange={handleInputChange} disabled={loading} />
-                                                                        <span> – $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '85px', height: '24px', fontSize: '12px' }} value={formData.rev_rule_strong_bus ? (Number(formData.rev_rule_strong_bus) - 1).toString() : ''} onChange={(e) => setFormData(prev => ({ ...prev, rev_rule_strong_bus: (Number(e.target.value) + 1).toString() }))} disabled={loading} />
-                                                                        <span>/month <strong className="text-primary mx-1">OR</strong> personal income $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '95px', height: '24px', fontSize: '12px' }} name="rev_rule_mod_pers" value={formData.rev_rule_mod_pers} onChange={handleInputChange} disabled={loading} />
-                                                                        <span> – $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '95px', height: '24px', fontSize: '12px' }} value={formData.rev_rule_strong_pers ? (Number(formData.rev_rule_strong_pers) - 1).toString() : ''} onChange={(e) => setFormData(prev => ({ ...prev, rev_rule_strong_pers: (Number(e.target.value) + 1).toString() }))} disabled={loading} />
-                                                                        <span>/year</span>
-                                                                    </div>
+                                                                    <span>$</span>
+                                                                    <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t2" value={formData.rev_rule_t2} onChange={handleInputChange} disabled={loading} />
+                                                                    <span> – $</span>
+                                                                    <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t1) - 1) || 499999} disabled />
+                                                                    <span> / year</span>
                                                                 </td>
                                                                 <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
+                                                                    <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="text-start ps-3">
                                                                     <span className="fw-semibold text-body">Limited</span>
-                                                                    <small className="text-muted d-block fs-11">Limited revenue but documented income</small>
+                                                                    <small className="text-muted d-block fs-11">Annual Revenue $50,000–$149,999</small>
                                                                 </td>
                                                                 <td className="text-start ps-3 fw-medium">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span>Business revenue $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '85px', height: '24px', fontSize: '12px' }} name="rev_rule_lim_bus" value={formData.rev_rule_lim_bus} onChange={handleInputChange} disabled={loading} />
-                                                                        <span> – $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '85px', height: '24px', fontSize: '12px' }} value={formData.rev_rule_mod_bus ? (Number(formData.rev_rule_mod_bus) - 1).toString() : ''} onChange={(e) => setFormData(prev => ({ ...prev, rev_rule_mod_bus: (Number(e.target.value) + 1).toString() }))} disabled={loading} />
-                                                                        <span>/month <strong className="text-primary mx-1">OR</strong> personal income $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '95px', height: '24px', fontSize: '12px' }} name="rev_rule_lim_pers" value={formData.rev_rule_lim_pers} onChange={handleInputChange} disabled={loading} />
-                                                                        <span> – $</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '95px', height: '24px', fontSize: '12px' }} value={formData.rev_rule_mod_pers ? (Number(formData.rev_rule_mod_pers) - 1).toString() : ''} onChange={(e) => setFormData(prev => ({ ...prev, rev_rule_mod_pers: (Number(e.target.value) + 1).toString() }))} disabled={loading} />
-                                                                        <span>/year</span>
-                                                                    </div>
+                                                                    <span>$</span>
+                                                                    <input type="number" min="0" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t3" value={formData.rev_rule_t3} onChange={handleInputChange} disabled={loading} />
+                                                                    <span> – $</span>
+                                                                    <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t2) - 1) || 149999} disabled />
+                                                                    <span> / year</span>
                                                                 </td>
                                                                 <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
+                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="text-start ps-3">
                                                                     <span className="fw-semibold text-body">Weak</span>
-                                                                    <small className="text-muted d-block fs-11">No revenue and weak income documentation</small>
+                                                                    <small className="text-muted d-block fs-11">Annual Revenue below $50,000</small>
                                                                 </td>
                                                                 <td className="text-start ps-3 fw-medium">
-                                                                    <span>Business revenue below ${(Number(formData.rev_rule_lim_bus)).toLocaleString() || '1,000'}/month and personal income below ${(Number(formData.rev_rule_lim_pers)).toLocaleString() || '40,000'}/year</span>
+                                                                    <span>Annual Revenue below $</span>
+                                                                    <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t3) - 1) || 49999} disabled />
                                                                 </td>
                                                                 <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
+                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
                                                         </tbody>
@@ -1682,14 +1679,14 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start ps-3">Time in Business</th>
-                                                                        <th style={{ width: '120px' }}>Subscore</th>
+                                                                        <th className="config-th">Subscore</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="time_rule_t1" value={formData.time_rule_t1} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t1" value={formData.time_rule_t1} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11 ms-1">or more Months</span>
                                                                                 <span className="text-muted fs-11 ms-1">({formData.time_rule_t1 ? Math.round(Number(formData.time_rule_t1) / 12) : 0}+ Years)</span>
                                                                             </div>
@@ -1701,7 +1698,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="time_rule_t2" value={formData.time_rule_t2} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t2" value={formData.time_rule_t2} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <span className="fw-semibold text-muted">{(Number(formData.time_rule_t1) - 1) || 35}</span>
                                                                                 <span className="text-muted fs-11">Months</span>
@@ -1714,7 +1711,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="time_rule_t3" value={formData.time_rule_t3} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t3" value={formData.time_rule_t3} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <span className="fw-semibold text-muted">{(Number(formData.time_rule_t2) - 1) || 23}</span>
                                                                                 <span className="text-muted fs-11">Months</span>
@@ -1727,7 +1724,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     <tr>
                                                                         <td>
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1" style={{ width: '60px', height: '24px', fontSize: '12px' }} name="time_rule_t4" value={formData.time_rule_t4} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t4" value={formData.time_rule_t4} onChange={handleInputChange} disabled={loading} />
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <span className="fw-semibold text-muted">{(Number(formData.time_rule_t3) - 1) || 11}</span>
                                                                                 <span className="text-muted fs-11">Months</span>
@@ -1766,9 +1763,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                             <table className="table table-sm table-bordered mb-0 align-middle text-center">
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
-                                                                        <th className="text-start ps-3" style={{ width: '25%' }}>Relationship Category</th>
-                                                                        <th className="text-start ps-3" style={{ width: '60%' }}>Suggested Rule</th>
-                                                                        <th style={{ width: '15%', minWidth: '120px' }}>Subscore</th>
+                                                                        <th className="text-start ps-3 config-th-quarter">Relationship Category</th>
+                                                                        <th className="text-start ps-3 config-th-half">Suggested Rule</th>
+                                                                        <th className="config-th-subscore">Subscore</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
@@ -1778,12 +1775,12 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                         </td>
                                                                         <td className="text-start ps-3 fw-medium text-muted">
                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '24px', fontSize: '12px' }} name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>or more years checking, consistent deposits, savings/LOC products</span>
                                                                             </div>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="bank_subscore_strong" value={formData.bank_subscore_strong} onChange={handleInputChange} disabled={loading} />
+                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_strong" value={formData.bank_subscore_strong} onChange={handleInputChange} disabled={loading} />
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
@@ -1792,12 +1789,12 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                         </td>
                                                                         <td className="text-start ps-3 fw-medium text-muted">
                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '24px', fontSize: '12px' }} name="bank_rule_established_months" value={formData.bank_rule_established_months} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_rule_established_months" value={formData.bank_rule_established_months} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>or more months checking account and regular deposits</span>
                                                                             </div>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="bank_subscore_established" value={formData.bank_subscore_established} onChange={handleInputChange} disabled={loading} />
+                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_established" value={formData.bank_subscore_established} onChange={handleInputChange} disabled={loading} />
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
@@ -1807,12 +1804,12 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                         <td className="text-start ps-3 fw-medium text-muted">
                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
                                                                                 <span>Business account open but less than</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '24px', fontSize: '12px' }} name="bank_rule_basic_months" value={formData.bank_rule_basic_months} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_rule_basic_months" value={formData.bank_rule_basic_months} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>months or limited activity</span>
                                                                             </div>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="bank_subscore_basic" value={formData.bank_subscore_basic} onChange={handleInputChange} disabled={loading} />
+                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_basic" value={formData.bank_subscore_basic} onChange={handleInputChange} disabled={loading} />
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
@@ -1823,7 +1820,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                             <span>No business account or recently opened with inconsistent activity</span>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto" style={{ width: '80px' }} name="bank_subscore_weak" value={formData.bank_subscore_weak} onChange={handleInputChange} disabled={loading} />
+                                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_weak" value={formData.bank_subscore_weak} onChange={handleInputChange} disabled={loading} />
                                                                         </td>
                                                                     </tr>
                                                                 </tbody>
@@ -1856,7 +1853,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start">Category & Rule</th>
-                                                                        <th style={{ width: '120px' }}>Subscore</th>
+                                                                        <th className="config-th">Subscore</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
@@ -1865,15 +1862,15 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                             <span className="fw-semibold d-block">Multiple High-Limit & Installment Depth</span>
                                                                             <small className="text-muted d-flex align-items-center flex-wrap gap-1 mt-1">
                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_multi_accounts" value={formData.trade_rule_multi_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_multi_accounts" value={formData.trade_rule_multi_accounts} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>open accounts</span>
                                                                                 <span className="fw-semibold text-primary mx-1">AND</span>
                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_multi_high_limit_count" value={formData.trade_rule_multi_high_limit_count} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_multi_high_limit_count" value={formData.trade_rule_multi_high_limit_count} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>accounts with</span>
                                                                                 <span className="fw-semibold text-primary">≥</span>
                                                                                 <span>$</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '65px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_multi_high_limit_amount" value={formData.trade_rule_multi_high_limit_amount} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-lg" name="trade_rule_multi_high_limit_amount" value={formData.trade_rule_multi_high_limit_amount} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>limits</span>
                                                                             </small>
                                                                         </td>
@@ -1886,15 +1883,15 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                             <span className="fw-semibold d-block">Good Depth with High-Limit account</span>
                                                                             <small className="text-muted d-flex align-items-center flex-wrap gap-1 mt-1">
                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_good_accounts" value={formData.trade_rule_good_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_good_accounts" value={formData.trade_rule_good_accounts} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>open accounts</span>
                                                                                 <span className="fw-semibold text-primary mx-1">AND</span>
                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '45px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_good_high_limit_count" value={formData.trade_rule_good_high_limit_count} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_good_high_limit_count" value={formData.trade_rule_good_high_limit_count} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>account with</span>
                                                                                 <span className="fw-semibold text-primary">≥</span>
                                                                                 <span>$</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '65px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_good_high_limit_amount" value={formData.trade_rule_good_high_limit_amount} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-lg" name="trade_rule_good_high_limit_amount" value={formData.trade_rule_good_high_limit_amount} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>limit</span>
                                                                             </small>
                                                                         </td>
@@ -1906,9 +1903,9 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                         <td className="text-start fw-medium">
                                                                             <span className="fw-semibold d-block">Moderate Depth</span>
                                                                             <small className="text-muted d-flex align-items-center flex-wrap gap-1 mt-1">
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '40px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_mod_accounts_min" value={formData.trade_rule_mod_accounts_min} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="trade_rule_mod_accounts_min" value={formData.trade_rule_mod_accounts_min} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>-</span>
-                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1" style={{ width: '40px', height: '20px', fontSize: '11px', padding: '0px' }} name="trade_rule_mod_accounts_max" value={formData.trade_rule_mod_accounts_max} onChange={handleInputChange} disabled={loading} />
+                                                                                <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="trade_rule_mod_accounts_max" value={formData.trade_rule_mod_accounts_max} onChange={handleInputChange} disabled={loading} />
                                                                                 <span>accounts with moderate limits & no delinquencies</span>
                                                                             </small>
                                                                         </td>
@@ -1956,7 +1953,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start">Credit Play Strategy</th>
-                                                                        <th style={{ width: '120px' }}>Min FICO</th>
+                                                                        <th className="config-th">Min FICO</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
@@ -2044,8 +2041,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="readiness_band_t1"
                                                                                     value={formData.readiness_band_t1}
                                                                                     onChange={handleInputChange}
@@ -2063,8 +2059,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="readiness_band_t2"
                                                                                     value={formData.readiness_band_t2}
                                                                                     onChange={handleInputChange}
@@ -2073,8 +2068,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">-</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.readiness_band_t1) - 1) || 89}
                                                                                     disabled
                                                                                 />
@@ -2089,8 +2083,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="readiness_band_t3"
                                                                                     value={formData.readiness_band_t3}
                                                                                     onChange={handleInputChange}
@@ -2099,8 +2092,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">-</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.readiness_band_t2) - 1) || 79}
                                                                                     disabled
                                                                                 />
@@ -2115,8 +2107,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="readiness_band_t4"
                                                                                     value={formData.readiness_band_t4}
                                                                                     onChange={handleInputChange}
@@ -2125,8 +2116,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">-</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.readiness_band_t3) - 1) || 69}
                                                                                     disabled
                                                                                 />
@@ -2139,8 +2129,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                             <div className="d-flex align-items-center gap-1">
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={formData.readiness_band_t4 ? (Number(formData.readiness_band_t4) - 1).toString() : ''}
                                                                                     disabled
                                                                                 />
@@ -2183,7 +2172,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start ps-3">Factor</th>
-                                                                        <th style={{ width: '120px' }}>Weight</th>
+                                                                        <th className="config-th">Weight</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
@@ -2319,7 +2308,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                 <thead className="table-light text-uppercase fs-11">
                                                                     <tr>
                                                                         <th className="text-start ps-3">Score Range</th>
-                                                                        <th style={{ width: '120px' }}>Odds</th>
+                                                                        <th className="config-th">Odds</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="fs-13">
@@ -2330,8 +2319,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="odds_band_t1"
                                                                                     value={formData.odds_band_t1}
                                                                                     onChange={handleInputChange}
@@ -2363,8 +2351,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="odds_band_t2"
                                                                                     value={formData.odds_band_t2}
                                                                                     onChange={handleInputChange}
@@ -2373,8 +2360,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.odds_band_t1) - 1) || 89}
                                                                                     disabled
                                                                                 />
@@ -2403,8 +2389,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="odds_band_t3"
                                                                                     value={formData.odds_band_t3}
                                                                                     onChange={handleInputChange}
@@ -2413,8 +2398,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.odds_band_t2) - 1) || 79}
                                                                                     disabled
                                                                                 />
@@ -2443,8 +2427,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="odds_band_t4"
                                                                                     value={formData.odds_band_t4}
                                                                                     onChange={handleInputChange}
@@ -2453,8 +2436,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.odds_band_t3) - 1) || 69}
                                                                                     disabled
                                                                                 />
@@ -2483,8 +2465,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                     type="number"
                                                                                     min="0"
                                                                                     max="100"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     name="odds_band_t5"
                                                                                     value={formData.odds_band_t5}
                                                                                     onChange={handleInputChange}
@@ -2493,8 +2474,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                                 <span className="text-muted fs-11">to</span>
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={(Number(formData.odds_band_t4) - 1) || 59}
                                                                                     disabled
                                                                                 />
@@ -2521,8 +2501,7 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                             <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
                                                                                 <input
                                                                                     type="number"
-                                                                                    className="form-control form-control-sm text-center px-1"
-                                                                                    style={{ width: '65px', height: '24px', fontSize: '12px' }}
+                                                                                    className="form-control form-control-sm text-center px-1 config-input config-input-lg"
                                                                                     value={formData.odds_band_t5 ? (Number(formData.odds_band_t5) - 1).toString() : ''}
                                                                                     disabled
                                                                                 />

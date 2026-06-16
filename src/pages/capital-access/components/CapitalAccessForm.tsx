@@ -33,6 +33,9 @@ export interface SelectedPlayCard extends CreditAccount {
         est_limit_for_show?: string;
         hard_pull: string;
         what_you_need: string[];
+        access_time: string;
+        access_day: string;
+        access_day_time: string;
     }
 }
 
@@ -59,12 +62,18 @@ export default function CapitalAccessForm() {
         est_limit_max: string;
         hard_pull: string;
         what_you_need: string[];
+        access_time: string;
+        access_day: string;
+        access_day_time: string;
     }>({
         why_this_card: '',
         est_limit_min: '',
         est_limit_max: '',
         hard_pull: 'Yes',
-        what_you_need: []
+        what_you_need: [],
+        access_time: 'Morning',
+        access_day: '',
+        access_day_time: '',
     });
 
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -125,7 +134,10 @@ export default function CapitalAccessForm() {
                     est_limit_max: String(acc.pivot.est_limit_max ?? ''),
                     est_limit_for_show: acc.pivot.est_limit_for_show || '',
                     hard_pull: acc.pivot.hard_pull || 'Yes',
-                    what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || [])
+                    what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || []),
+                    access_time: acc.pivot.access_time || 'Morning',
+                    access_day: acc.pivot.access_day ? String(acc.pivot.access_day) : '',
+                    access_day_time: acc.pivot.access_day_time || '',
                 } : {
                     why_this_card: '',
 
@@ -133,7 +145,10 @@ export default function CapitalAccessForm() {
                     est_limit_max: '',
                     est_limit_for_show: '',
                     hard_pull: 'Yes',
-                    what_you_need: []
+                    what_you_need: [],
+                    access_time: 'Morning',
+                    access_day: '',
+                    access_day_time: '',
                 }
             }));
             setSelectedAccounts(loadedAccounts);
@@ -225,7 +240,10 @@ export default function CapitalAccessForm() {
                         est_limit_min: '',
                         est_limit_max: '',
                         hard_pull: 'Yes',
-                        what_you_need: ['']
+                        what_you_need: [''],
+                        access_time: 'Morning',
+                        access_day: '',
+                        access_day_time: '',
                     }
                 };
                 setPendingAddCard(newAcc);
@@ -252,9 +270,12 @@ export default function CapitalAccessForm() {
             play_details: {
                 why_this_card: '',
                         est_limit_min: '',
-                est_limit_max: '',
-                hard_pull: 'Yes',
-                what_you_need: ['']
+                        est_limit_max: '',
+                        hard_pull: 'Yes',
+                        what_you_need: [''],
+                        access_time: 'Morning',
+                        access_day: '',
+                        access_day_time: '',
             }
         };
         setPendingAddCard(newAcc);
@@ -280,7 +301,10 @@ export default function CapitalAccessForm() {
             est_limit_min: account.play_details?.est_limit_min || '',
             est_limit_max: account.play_details?.est_limit_max || '',
             hard_pull: account.play_details?.hard_pull || 'Yes',
-            what_you_need: account.play_details?.what_you_need?.length ? [...account.play_details.what_you_need] : []
+            what_you_need: account.play_details?.what_you_need?.length ? [...account.play_details.what_you_need] : [],
+            access_time: account.play_details?.access_time || 'Morning',
+            access_day: account.play_details?.access_day ? String(account.play_details.access_day) : '',
+            access_day_time: account.play_details?.access_day_time || '',
         });
         setModalValidationErrors({});
         setIsDetailsModalOpen(true);
@@ -391,7 +415,12 @@ export default function CapitalAccessForm() {
                         est_limit_min: acc.play_details?.est_limit_min || '',
                         est_limit_max: acc.play_details?.est_limit_max || '',
                         hard_pull: acc.play_details?.hard_pull || 'Yes',
-                        what_you_need: acc.play_details?.what_you_need || []
+                        what_you_need: acc.play_details?.what_you_need || [],
+                        access_time: acc.play_details?.access_time || 'Morning',
+                        access_day: acc.play_details?.access_time === 'Day' && acc.play_details?.access_day
+                            ? Number(acc.play_details.access_day)
+                            : undefined,
+                        access_day_time: acc.play_details?.access_time === 'Day' ? (acc.play_details?.access_day_time || 'Morning') : undefined,
                     })),
             };
 
@@ -677,6 +706,11 @@ export default function CapitalAccessForm() {
                                                                                     {acc.play_details.hard_pull && (
                                                                                         <span className={`badge ${acc.play_details.hard_pull === 'Yes' ? 'bg-danger-subtle text-danger' : 'bg-light text-muted'} fs-9`}>
                                                                                             <i className="ri-error-warning-line align-bottom me-1"></i> Hard Pull: {acc.play_details.hard_pull}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {acc.play_details.access_time && (
+                                                                                        <span className="badge bg-primary-subtle text-primary fs-9">
+                                                                                            <i className="ri-time-line align-bottom me-1"></i> {acc.play_details.access_time}{acc.play_details.access_time === 'Day' && acc.play_details.access_day ? ` Day ${acc.play_details.access_day}` : ''}{acc.play_details.access_time === 'Day' && acc.play_details.access_day_time ? ` (${acc.play_details.access_day_time})` : ''}
                                                                                         </span>
                                                                                     )}
                                                                                 </div>

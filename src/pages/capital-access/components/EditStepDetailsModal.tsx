@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
+import { ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS } from '../../../config';
 
 export interface EditDetailsForm {
     why_this_card: string;
@@ -8,6 +9,9 @@ export interface EditDetailsForm {
     est_limit_max: string;
     hard_pull: string;
     what_you_need: string[];
+    access_time: string;
+    access_day: string;
+    access_day_time: string;
 }
 
 interface EditStepDetailsModalProps {
@@ -27,6 +31,8 @@ export default function EditStepDetailsModal({
     setEditDetailsForm,
     modalValidationErrors
 }: EditStepDetailsModalProps) {
+    const isDay = editDetailsForm.access_time === 'Day';
+
     return (
         <Modal
             isOpen={isOpen}
@@ -84,6 +90,50 @@ export default function EditStepDetailsModal({
                             className="w-100"
                             appendTo="self"
                         />
+                    </div>
+
+                    <div className="col-12">
+                        <div className="row g-3">
+                            <div className="col-md-4">
+                                <label className="form-label">Access Time</label>
+                                <Dropdown
+                                    value={editDetailsForm.access_time}
+                                    options={ACCESS_TIME_OPTIONS}
+                                    onChange={(e: any) => setEditDetailsForm(prev => ({
+                                        ...prev,
+                                        access_time: e.value,
+                                        access_day: e.value === 'Day' ? (prev.access_day || '1') : '',
+                                        access_day_time: e.value === 'Day' ? (prev.access_day_time || 'Morning') : '',
+                                    }))}
+                                    className="w-100"
+                                    appendTo="self"
+                                />
+                            </div>
+                            {isDay && (
+                                <>
+                                    <div className="col-md-4">
+                                        <label className="form-label">Select Day <span className="text-danger">*</span></label>
+                                        <Dropdown
+                                            value={editDetailsForm.access_day}
+                                            options={DAY_OPTIONS}
+                                            onChange={(e: any) => setEditDetailsForm(prev => ({ ...prev, access_day: e.value }))}
+                                            className="w-100"
+                                            appendTo="self"
+                                        />
+                                    </div>
+                                    <div className="col-md-4">
+                                        <label className="form-label">Time <span className="text-danger">*</span></label>
+                                        <Dropdown
+                                            value={editDetailsForm.access_day_time}
+                                            options={DAY_TIME_OPTIONS}
+                                            onChange={(e: any) => setEditDetailsForm(prev => ({ ...prev, access_day_time: e.value }))}
+                                            className="w-100"
+                                            appendTo="self"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <div className="col-12 mt-4">
