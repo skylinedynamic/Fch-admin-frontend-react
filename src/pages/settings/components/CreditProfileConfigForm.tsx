@@ -61,6 +61,14 @@ interface FormData {
     bank_subscore_basic: string;
     bank_subscore_weak: string;
 
+    // Banking Relationship rule fields (per tier)
+    bank_strong_accounts: string;
+    bank_strong_months: string;
+    bank_established_accounts: string;
+    bank_established_months: string;
+    bank_basic_accounts: string;
+    bank_weak_accounts: string;
+
     // Card Approval Odds weights
     weight_fico_card: string;
     weight_utilization_card: string;
@@ -133,9 +141,12 @@ interface FormData {
     trade_rule_mod_accounts_min: string;
     trade_rule_mod_accounts_max: string;
 
-    bank_rule_strong_years: string;
-    bank_rule_established_months: string;
-    bank_rule_basic_months: string;
+    bank_strong_accounts: string;
+    bank_strong_months: string;
+    bank_established_accounts: string;
+    bank_established_months: string;
+    bank_basic_accounts: string;
+    bank_weak_accounts: string;
 }
 
 interface FormErrors {
@@ -268,9 +279,12 @@ const CreditProfileConfigForm: React.FC = () => {
         trade_rule_good_high_limit_amount: '10000',
         trade_rule_mod_accounts_min: '2',
 
-        bank_rule_strong_years: '2',
-        bank_rule_established_months: '12',
-        bank_rule_basic_months: '0',
+        bank_strong_accounts: '2',
+        bank_strong_months: '12',
+        bank_established_accounts: '1',
+        bank_established_months: '12',
+        bank_basic_accounts: '1',
+        bank_weak_accounts: '0',
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const scoreDataRef = useRef<ScoreConfiguration | null>(null);
@@ -352,9 +366,9 @@ const CreditProfileConfigForm: React.FC = () => {
                 } else {
                     list = conditions?.any || conditions?.all || [];
                 }
-                const found = list.find((c: any) => c.field === field);
-                if (Array.isArray(found?.value)) return sv(found.value[valIndex], fallback);
-                return sv(found?.value, fallback);
+                const found = list.find((c: any) => c[field] !== undefined);
+                if (!found) return fallback;
+                return sv(found[field]?.value, fallback);
             };
 
             const buildBandVal = (items: ScoreConfigItem[], index: number, key: string, fallback: string): string => {
@@ -476,15 +490,19 @@ const CreditProfileConfigForm: React.FC = () => {
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
-                trade_rule_multi_high_limit_amount: getCond('tradeline_depth', 0, 'avg_high_limit', '15000'),
+                trade_rule_multi_high_limit_amount: getCond('tradeline_depth', 0, 'limit', '15000'),
                 trade_rule_good_accounts: getCond('tradeline_depth', 1, 'open_accounts', '3'),
                 trade_rule_good_high_limit_count: getCond('tradeline_depth', 1, 'high_limit_accounts', '1'),
-                trade_rule_good_high_limit_amount: getCond('tradeline_depth', 1, 'avg_high_limit', '10000'),
+                trade_rule_good_high_limit_amount: getCond('tradeline_depth', 1, 'limit', '10000'),
                 trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2'),
                 trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3', 1),
 
-                bank_rule_strong_years: getCond('banking_relationships', 0, 'accounts', '2'),
-                bank_rule_established_months: getCond('banking_relationships', 0, 'checking_months', '12'),
+                bank_strong_accounts: getCond('banking_relationships', 0, 'accounts', '2'),
+                bank_strong_months: getCond('banking_relationships', 0, 'checking_months', '12'),
+                bank_established_accounts: getCond('banking_relationships', 1, 'accounts', '1'),
+                bank_established_months: getCond('banking_relationships', 1, 'checking_months', '12'),
+                bank_basic_accounts: getCond('banking_relationships', 2, 'accounts', '1'),
+                bank_weak_accounts: getCond('banking_relationships', 3, 'accounts', '0'),
             }));
         } catch (error) {
             console.error('Failed to load score configuration:', error);
@@ -600,8 +618,8 @@ const CreditProfileConfigForm: React.FC = () => {
             } else {
                 continue;
             }
-            const entry = { field: rule.field, operator: rule.operator, value };
-            const idx = container.findIndex((c: any) => c.field === rule.field);
+            const entry = { [rule.field]: { operator: rule.operator, value } };
+            const idx = container.findIndex((c: any) => c[rule.field] !== undefined);
             if (idx >= 0) container[idx] = entry;
             else container.push(entry);
         }
@@ -675,24 +693,24 @@ const CreditProfileConfigForm: React.FC = () => {
         banking_relationships: [
             {
                 i: 0, sub: 'bank_subscore_strong' as any, rules: [
-                    { field: 'accounts', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
-                    { field: 'checking_months', operator: '>', valueKey: 'bank_rule_established_months' as any },
+                    { field: 'accounts', operator: '>=', valueKey: 'bank_strong_accounts' as any },
+                    { field: 'checking_months', operator: '>', valueKey: 'bank_strong_months' as any },
                 ]
             },
             {
                 i: 1, sub: 'bank_subscore_established' as any, rules: [
-                    { field: 'accounts', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
-                    { field: 'checking_months', operator: '>', valueKey: 'bank_rule_established_months' as any },
+                    { field: 'accounts', operator: '>=', valueKey: 'bank_established_accounts' as any },
+                    { field: 'checking_months', operator: '>', valueKey: 'bank_established_months' as any },
                 ]
             },
             {
                 i: 2, sub: 'bank_subscore_basic' as any, rules: [
-                    { field: 'accounts', operator: '>=', valueKey: 'bank_rule_strong_years' as any },
+                    { field: 'accounts', operator: '>=', valueKey: 'bank_basic_accounts' as any },
                 ]
             },
             {
                 i: 3, sub: 'bank_subscore_weak' as any, rules: [
-                    { field: 'accounts', operator: '=', valueKey: 'bank_rule_strong_years' as any },
+                    { field: 'accounts', operator: '=', valueKey: 'bank_weak_accounts' as any },
                 ]
             },
         ],
@@ -1772,58 +1790,58 @@ const CreditProfileConfigForm: React.FC = () => {
                                                                     </tr>
                                                                 </thead>
                                                                  <tbody className="fs-13">
-                                                                     <tr>
-                                                                         <td className="text-start ps-3 fw-medium text-muted py-2">
+                                                                      <tr>
+                                                                          <td className="text-start ps-3 fw-medium text-muted py-2">
+                                                                               <div className="d-flex align-items-center flex-wrap gap-1">
+                                                                                   <span className="fw-semibold text-primary">≥</span>
+                                                                                   <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_strong_accounts" value={formData.bank_strong_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                   <span>active business banking relationships, each &gt;</span>
+                                                                                   <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_strong_months" value={formData.bank_strong_months} onChange={handleInputChange} disabled={loading} />
+                                                                                   <span>months</span>
+                                                                               </div>
+                                                                          </td>
+                                                                          <td>
+                                                                              <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_strong" value={formData.bank_subscore_strong} onChange={handleInputChange} disabled={loading} />
+                                                                          </td>
+                                                                      </tr>
+                                                                      <tr>
+                                                                          <td className="text-start ps-3 fw-medium text-muted py-2">
                                                                               <div className="d-flex align-items-center flex-wrap gap-1">
                                                                                   <span className="fw-semibold text-primary">≥</span>
-                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
-                                                                                  <span>active business banking relationships, each &gt;</span>
-                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_rule_established_months" value={formData.bank_rule_established_months} onChange={handleInputChange} disabled={loading} />
+                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_established_accounts" value={formData.bank_established_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                  <span>active business banking relationship &gt;</span>
+                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_established_months" value={formData.bank_established_months} onChange={handleInputChange} disabled={loading} />
                                                                                   <span>months</span>
                                                                               </div>
-                                                                         </td>
-                                                                         <td>
-                                                                             <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_strong" value={formData.bank_subscore_strong} onChange={handleInputChange} disabled={loading} />
-                                                                         </td>
-                                                                     </tr>
-                                                                     <tr>
-                                                                         <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                 <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
-                                                                                 <span>active business banking relationship &gt;</span>
-                                                                                 <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_rule_established_months" value={formData.bank_rule_established_months} onChange={handleInputChange} disabled={loading} />
-                                                                                 <span>months</span>
-                                                                             </div>
-                                                                         </td>
-                                                                         <td>
-                                                                             <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_established" value={formData.bank_subscore_established} onChange={handleInputChange} disabled={loading} />
-                                                                         </td>
-                                                                     </tr>
-                                                                     <tr>
-                                                                         <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                                 <span className="fw-semibold text-primary">≥</span>
-                                                                                 <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
-                                                                                 <span>banking relationship only</span>
-                                                                             </div>
-                                                                         </td>
-                                                                         <td>
-                                                                             <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_basic" value={formData.bank_subscore_basic} onChange={handleInputChange} disabled={loading} />
-                                                                         </td>
-                                                                     </tr>
-                                                                     <tr>
-                                                                         <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                             <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                                 <span className="fw-semibold text-primary">=</span>
-                                                                                 <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_rule_strong_years" value={formData.bank_rule_strong_years} onChange={handleInputChange} disabled={loading} />
-                                                                                 <span>No meaningful banking relationship</span>
-                                                                             </div>
-                                                                         </td>
-                                                                         <td>
-                                                                             <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_weak" value={formData.bank_subscore_weak} onChange={handleInputChange} disabled={loading} />
-                                                                         </td>
-                                                                     </tr>
+                                                                          </td>
+                                                                          <td>
+                                                                              <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_established" value={formData.bank_subscore_established} onChange={handleInputChange} disabled={loading} />
+                                                                          </td>
+                                                                      </tr>
+                                                                      <tr>
+                                                                          <td className="text-start ps-3 fw-medium text-muted py-2">
+                                                                              <div className="d-flex align-items-center flex-wrap gap-1">
+                                                                                  <span className="fw-semibold text-primary">≥</span>
+                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_basic_accounts" value={formData.bank_basic_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                  <span>banking relationship only</span>
+                                                                              </div>
+                                                                          </td>
+                                                                          <td>
+                                                                              <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_basic" value={formData.bank_subscore_basic} onChange={handleInputChange} disabled={loading} />
+                                                                          </td>
+                                                                      </tr>
+                                                                      <tr>
+                                                                          <td className="text-start ps-3 fw-medium text-muted py-2">
+                                                                              <div className="d-flex align-items-center flex-wrap gap-1">
+                                                                                  <span className="fw-semibold text-primary">=</span>
+                                                                                  <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_weak_accounts" value={formData.bank_weak_accounts} onChange={handleInputChange} disabled={loading} />
+                                                                                  <span>No meaningful banking relationship</span>
+                                                                              </div>
+                                                                          </td>
+                                                                          <td>
+                                                                              <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_weak" value={formData.bank_subscore_weak} onChange={handleInputChange} disabled={loading} />
+                                                                          </td>
+                                                                      </tr>
                                                                  </tbody>
                                                             </table>
                                                         </div>
