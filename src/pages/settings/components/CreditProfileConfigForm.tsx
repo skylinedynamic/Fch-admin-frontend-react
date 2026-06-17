@@ -377,6 +377,25 @@ const CreditProfileConfigForm: React.FC = () => {
                 trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2'),
                 trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3', 1),
 
+                fund_readiness_bucket_a_label: sv(scoreConfig?.readiness_bands?.[0]?.label, 'Premium'),
+                fund_readiness_bucket_a_min_score: sv(scoreConfig?.readiness_bands?.[0]?.min_value, '720'),
+                fund_readiness_bucket_a_color: sv(scoreConfig?.readiness_bands?.[0]?.color, '#198754'),
+
+                fund_readiness_bucket_b_label: sv(scoreConfig?.readiness_bands?.[1]?.label, 'Prime'),
+                fund_readiness_bucket_b_min_score: sv(scoreConfig?.readiness_bands?.[1]?.min_value, '680'),
+                fund_readiness_bucket_b_color: sv(scoreConfig?.readiness_bands?.[1]?.color, '#0d6efd'),
+
+                fund_readiness_bucket_c_label: sv(scoreConfig?.readiness_bands?.[2]?.label, 'Near Prime'),
+                fund_readiness_bucket_c_min_score: sv(scoreConfig?.readiness_bands?.[2]?.min_value, '640'),
+                fund_readiness_bucket_c_color: sv(scoreConfig?.readiness_bands?.[2]?.color, '#ffc107'),
+
+                fund_readiness_bucket_d_label: sv(scoreConfig?.readiness_bands?.[3]?.label, 'Subprime'),
+                fund_readiness_bucket_d_min_score: sv(scoreConfig?.readiness_bands?.[3]?.min_value, '580'),
+                fund_readiness_bucket_d_color: sv(scoreConfig?.readiness_bands?.[3]?.color, '#fd7e14'),
+
+                fund_readiness_bucket_e_label: sv(scoreConfig?.readiness_bands?.[4]?.label, 'Deep Subprime'),
+                fund_readiness_bucket_e_color: sv(scoreConfig?.readiness_bands?.[4]?.color, '#dc3545'),
+
                 bank_strong_accounts: getCond('banking_relationships', 0, 'accounts', '2'),
                 bank_strong_months: getCond('banking_relationships', 0, 'checking_months', '12'),
                 bank_established_accounts: getCond('banking_relationships', 1, 'accounts', '1'),
@@ -660,6 +679,17 @@ const CreditProfileConfigForm: React.FC = () => {
         setLoading(true);
         try {
             const scorePayload = buildFundingReadinessPayload();
+
+            const bucketIds = ['a', 'b', 'c', 'd', 'e'];
+            const readinessBands = bucketIds.map((bucket, i) => ({
+                sort_order: i + 1,
+                label: formData[`fund_readiness_bucket_${bucket}_label` as keyof FormData] || '',
+                color: formData[`fund_readiness_bucket_${bucket}_color` as keyof FormData] || '',
+                min_value: formData[`fund_readiness_bucket_${bucket}_min_score` as keyof FormData]
+                    ? Number(formData[`fund_readiness_bucket_${bucket}_min_score` as keyof FormData])
+                    : null,
+            }));
+            scorePayload.readiness_bands = readinessBands;
 
             const saveResp = await updateScoreConfigurations(scorePayload);
             if (saveResp?.status === false) {
@@ -1722,6 +1752,75 @@ const CreditProfileConfigForm: React.FC = () => {
 
                                 </div>
 
+                                {/* 5. Funding Readiness Bands Section */}
+                                    <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
+                                        <div className="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+                                            <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">5</span>
+                                            <div>
+                                                <h5 className="fs-14 fw-bold text-dark mb-0">Funding Readiness Bands</h5>
+                                                <p className="text-muted fs-12 mb-0">Configure score ranges and readiness labels.</p>
+                                            </div>
+                                        </div>
+                                        <div className="row g-4">
+                                            <div className="col-12">
+                                                <div className="card shadow-none border mb-0">
+                                                    <div className="card-header bg-light-subtle py-2">
+                                                        <h6 className="card-title mb-0 fs-13 fw-semibold">Readiness Score Ranges</h6>
+                                                    </div>
+                                                    <div className="card-body p-3">
+                                                        <div className="table-responsive">
+                                                            <table className="table table-sm table-bordered mb-0 align-middle text-center">
+                                                                <thead className="table-light text-uppercase fs-11">
+                                                                    <tr>
+                                                                        <th className="text-start ps-3">Score Range</th>
+                                                                        <th className="config-th">Label</th>
+                                                                        <th className="config-th">Color</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="fs-13">
+                                                                    {['a','b','c','d','e'].map((bucket, i) => {
+                                                                        const prevMin = i > 0 ? Number(formData[`fund_readiness_bucket_${['a','b','c','d','e'][i - 1]}_min_score`]) : null;
+                                                                        const computedMax = prevMin ? prevMin - 1 : 0;
+                                                                        const isFirst = i === 0;
+                                                                        const isLast = i === 4;
+                                                                        return (
+                                                                        <tr key={bucket}>
+                                                                            <td>
+                                                                                {isFirst ? (
+                                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
+                                                                                        <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name={`fund_readiness_bucket_${bucket}_min_score`} value={formData[`fund_readiness_bucket_${bucket}_min_score`] || ''} onChange={handleInputChange} disabled={loading} />
+                                                                                        <span className="text-muted fs-11 ms-1">or more</span>
+                                                                                    </div>
+                                                                                ) : isLast ? (
+                                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
+                                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={computedMax || 0} disabled />
+                                                                                        <span className="text-muted fs-11 ms-1">or less</span>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
+                                                                                        <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name={`fund_readiness_bucket_${bucket}_min_score`} value={formData[`fund_readiness_bucket_${bucket}_min_score`] || ''} onChange={handleInputChange} disabled={loading} />
+                                                                                        <span className="text-muted fs-11">to</span>
+                                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={computedMax || 0} disabled />
+                                                                                    </div>
+                                                                                )}
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="text" className="form-control form-control-sm" name={`fund_readiness_bucket_${bucket}_label`} value={formData[`fund_readiness_bucket_${bucket}_label`] || ''} onChange={handleInputChange} disabled={loading} placeholder="e.g. Premium" />
+                                                                            </td>
+                                                                            <td className="text-center">
+                                                                                <input type="color" className="form-control form-control-color form-control-sm mx-auto" name={`fund_readiness_bucket_${bucket}_color`} value={formData[`fund_readiness_bucket_${bucket}_color`] || '#000000'} onChange={handleInputChange} disabled={loading} />
+                                                                            </td>
+                                                                        </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                 </div>
                             )}
