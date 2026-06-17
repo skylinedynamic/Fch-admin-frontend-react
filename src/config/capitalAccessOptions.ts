@@ -11,6 +11,7 @@ export interface DayOption {
 export const ACCESS_TIME_OPTIONS: AccessTimeOption[] = [
     { label: 'Morning', value: 'Morning' },
     { label: 'Evening', value: 'Evening' },
+    { label: 'Anytime', value: 'Anytime' },
     { label: 'Day', value: 'Day' },
 ];
 
@@ -22,4 +23,5 @@ export const DAY_OPTIONS: DayOption[] = Array.from({ length: 60 }, (_, i) => ({
 export const DAY_TIME_OPTIONS: AccessTimeOption[] = [
     { label: 'Morning', value: 'Morning' },
     { label: 'Evening', value: 'Evening' },
+    { label: 'Anytime', value: 'Anytime' },
 ];
