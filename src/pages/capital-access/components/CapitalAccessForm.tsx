@@ -86,6 +86,9 @@ export default function CapitalAccessForm() {
         target_exposure_max: string;
         est_timeline_min: string;
         est_timeline_max: string;
+        minimum_fico_requirement: string;
+        maximum_utilization_threshold: string;
+        difficulty_modifier: string;
         what_you_will_get: string[];
         pre_flight_checklist: string[];
     }>({
@@ -97,6 +100,9 @@ export default function CapitalAccessForm() {
 
         est_timeline_min: '',
         est_timeline_max: '',
+        minimum_fico_requirement: '',
+        maximum_utilization_threshold: '',
+        difficulty_modifier: '',
         what_you_will_get: [''],
         pre_flight_checklist: [],
     });
@@ -122,6 +128,9 @@ export default function CapitalAccessForm() {
 
                 est_timeline_min: programData.est_timeline_min !== undefined && programData.est_timeline_min !== null ? String(programData.est_timeline_min) : '',
                 est_timeline_max: programData.est_timeline_max !== undefined && programData.est_timeline_max !== null ? String(programData.est_timeline_max) : '',
+                minimum_fico_requirement: programData.minimum_fico_requirement !== null && programData.minimum_fico_requirement !== undefined ? String(programData.minimum_fico_requirement) : '',
+                maximum_utilization_threshold: programData.maximum_utilization_threshold !== null && programData.maximum_utilization_threshold !== undefined ? String(programData.maximum_utilization_threshold) : '',
+                difficulty_modifier: programData.difficulty_modifier !== null && programData.difficulty_modifier !== undefined ? String(programData.difficulty_modifier) : '',
                 what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
                 pre_flight_checklist: programData.pre_flight_checklist || [],
             });
@@ -403,6 +412,9 @@ export default function CapitalAccessForm() {
 
                 est_timeline_min: formData.est_timeline_min === '' ? '' : Number(formData.est_timeline_min),
                 est_timeline_max: formData.est_timeline_max === '' ? '' : Number(formData.est_timeline_max),
+                minimum_fico_requirement: formData.minimum_fico_requirement === '' ? null : Number(formData.minimum_fico_requirement),
+                maximum_utilization_threshold: formData.maximum_utilization_threshold === '' ? null : Number(formData.maximum_utilization_threshold),
+                difficulty_modifier: formData.difficulty_modifier === '' ? null : Number(formData.difficulty_modifier),
                 what_you_will_get: formData.what_you_will_get.filter(item => item.trim() !== ''),
                 pre_flight_checklist: formData.pre_flight_checklist,
                 status: formData.status,
@@ -549,6 +561,28 @@ export default function CapitalAccessForm() {
                                                         <input type="number" min="0" className={`form-control ${validationErrors.est_timeline_max ? 'is-invalid' : ''}`} placeholder="Max (e.g. 10)" value={formData.est_timeline_max} onChange={(e) => setFormData(prev => ({ ...prev, est_timeline_max: e.target.value }))} />
                                                     </div>
                                                     {(validationErrors.est_timeline_min || validationErrors.est_timeline_max) && <div className="text-danger small mt-1">{validationErrors.est_timeline_min || validationErrors.est_timeline_max}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label" htmlFor="minFico">Minimum FICO Requirement</label>
+                                                    <input type="number" id="minFico" className={`form-control ${validationErrors.minimum_fico_requirement ? 'is-invalid' : ''}`} placeholder="e.g. 680" value={formData.minimum_fico_requirement} onChange={(e) => setFormData(prev => ({ ...prev, minimum_fico_requirement: e.target.value }))} />
+                                                    {validationErrors.minimum_fico_requirement && <div className="invalid-feedback">{validationErrors.minimum_fico_requirement}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label" htmlFor="maxUtilization">Maximum Utilization Threshold (%)</label>
+                                                    <input type="number" id="maxUtilization" min="0" max="100" className={`form-control ${validationErrors.maximum_utilization_threshold ? 'is-invalid' : ''}`} placeholder="e.g. 30" value={formData.maximum_utilization_threshold} onChange={(e) => setFormData(prev => ({ ...prev, maximum_utilization_threshold: e.target.value }))} />
+                                                    {validationErrors.maximum_utilization_threshold && <div className="invalid-feedback">{validationErrors.maximum_utilization_threshold}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-6">
+                                                <div>
+                                                    <label className="form-label" htmlFor="difficultyModifier">Difficulty Modifier</label>
+                                                    <input type="number" id="difficultyModifier" className={`form-control ${validationErrors.difficulty_modifier ? 'is-invalid' : ''}`} placeholder="e.g. 5" value={formData.difficulty_modifier} onChange={(e) => setFormData(prev => ({ ...prev, difficulty_modifier: e.target.value }))} />
+                                                    {validationErrors.difficulty_modifier && <div className="invalid-feedback">{validationErrors.difficulty_modifier}</div>}
                                                 </div>
                                             </div>
 

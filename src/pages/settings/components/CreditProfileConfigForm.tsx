@@ -461,6 +461,7 @@ const CreditProfileConfigForm: React.FC = () => {
 
     const TIER_DEFINITIONS: Record<string, Array<{
         i: number;
+        each?: boolean;
         min?: keyof FormData;
         max?: keyof FormData;
         sub: keyof FormData;
@@ -526,24 +527,24 @@ const CreditProfileConfigForm: React.FC = () => {
         ],
         banking_relationships: [
             {
-                i: 0, sub: 'bank_subscore_strong' as any, rules: [
+                i: 0, each: true, sub: 'bank_subscore_strong' as any, rules: [
                     { field: 'accounts', operator: '>=', valueKey: 'bank_strong_accounts' as any },
                     { field: 'checking_months', operator: '>', valueKey: 'bank_strong_months' as any },
                 ]
             },
             {
-                i: 1, sub: 'bank_subscore_established' as any, rules: [
+                i: 1, each: false, sub: 'bank_subscore_established' as any, rules: [
                     { field: 'accounts', operator: '>=', valueKey: 'bank_established_accounts' as any },
                     { field: 'checking_months', operator: '>', valueKey: 'bank_established_months' as any },
                 ]
             },
             {
-                i: 2, sub: 'bank_subscore_basic' as any, rules: [
+                i: 2, each: false, sub: 'bank_subscore_basic' as any, rules: [
                     { field: 'accounts', operator: '>=', valueKey: 'bank_basic_accounts' as any },
                 ]
             },
             {
-                i: 3, sub: 'bank_subscore_weak' as any, rules: [
+                i: 3, each: false, sub: 'bank_subscore_weak' as any, rules: [
                     { field: 'accounts', operator: '=', valueKey: 'bank_weak_accounts' as any },
                 ]
             },
@@ -601,8 +602,10 @@ const CreditProfileConfigForm: React.FC = () => {
                                 value = getTierValue(rule.valueKey as keyof FormData);
                                 if (rule.transform) value = rule.transform(value);
                             }
-                            const fieldName = rule.field === 'checking_months' ? 'month_check' : rule.field;
-                            condition[fieldName] = { value, operator: rule.operator };
+                            condition[rule.field] = { value, operator: rule.operator };
+                        }
+                        if (t.each !== undefined) {
+                            condition.each = t.each;
                         }
                         tierEntry.condition = condition;
                     }

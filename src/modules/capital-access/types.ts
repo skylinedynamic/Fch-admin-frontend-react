@@ -38,6 +38,9 @@ export interface CapitalAccount {
     what_you_will_get?: string[];
     pre_flight_checklist?: string[];
     status: string;
+    minimum_fico_requirement?: number | null;
+    maximum_utilization_threshold?: number | null;
+    difficulty_modifier?: number | null;
     credit_accounts?: CreditAccountSummary[];
     // Legacy alias used in some UI parts
     accounts?: CreditAccountSummary[];
@@ -56,6 +59,9 @@ export interface StoreCapitalAccessPayload {
     what_you_will_get: string[];
     pre_flight_checklist: string[];
     status?: string;
+    minimum_fico_requirement?: number | null;
+    maximum_utilization_threshold?: number | null;
+    difficulty_modifier?: number | null;
     credit_accounts?: Array<{
         id: number;
         why_this_card: string;
