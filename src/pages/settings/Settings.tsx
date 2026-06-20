@@ -18,6 +18,7 @@ const Settings: React.FC = () => {
             case 'domain_configuration': return 'Custom Domain';
             case 'microbilt': return 'MicroBilt Config';
             case 'credit_profile': return 'Credit Profile';
+            case 'score_calculation': return 'Score Calculation';
             case 'test_mail': return 'Test Mail';
             default: return 'Settings';
         }

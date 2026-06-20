@@ -89,6 +89,8 @@ export default function CapitalAccessForm() {
         minimum_fico_requirement: string;
         maximum_utilization_threshold: string;
         difficulty_modifier: string;
+        allow_recent_late_payment: boolean;
+        late_payment_lookback_months: string;
         what_you_will_get: string[];
         pre_flight_checklist: string[];
     }>({
@@ -103,6 +105,8 @@ export default function CapitalAccessForm() {
         minimum_fico_requirement: '',
         maximum_utilization_threshold: '',
         difficulty_modifier: '',
+        allow_recent_late_payment: true,
+        late_payment_lookback_months: '',
         what_you_will_get: [''],
         pre_flight_checklist: [],
     });
@@ -131,6 +135,8 @@ export default function CapitalAccessForm() {
                 minimum_fico_requirement: programData.minimum_fico_requirement !== null && programData.minimum_fico_requirement !== undefined ? String(programData.minimum_fico_requirement) : '',
                 maximum_utilization_threshold: programData.maximum_utilization_threshold !== null && programData.maximum_utilization_threshold !== undefined ? String(programData.maximum_utilization_threshold) : '',
                 difficulty_modifier: programData.difficulty_modifier !== null && programData.difficulty_modifier !== undefined ? String(programData.difficulty_modifier) : '',
+                allow_recent_late_payment: programData.allow_recent_late_payment !== undefined && programData.allow_recent_late_payment !== null ? !!programData.allow_recent_late_payment : true,
+                late_payment_lookback_months: programData.late_payment_lookback_months !== undefined && programData.late_payment_lookback_months !== null ? String(programData.late_payment_lookback_months) : '',
                 what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
                 pre_flight_checklist: programData.pre_flight_checklist || [],
             });
@@ -278,13 +284,13 @@ export default function CapitalAccessForm() {
             ...account,
             play_details: {
                 why_this_card: '',
-                        est_limit_min: '',
-                        est_limit_max: '',
-                        hard_pull: 'Yes',
-                        what_you_need: [''],
-                        access_time: 'Morning',
-                        access_day: '',
-                        access_day_time: '',
+                est_limit_min: '',
+                est_limit_max: '',
+                hard_pull: 'Yes',
+                what_you_need: [''],
+                access_time: 'Morning',
+                access_day: '',
+                access_day_time: '',
             }
         };
         setPendingAddCard(newAcc);
@@ -415,6 +421,8 @@ export default function CapitalAccessForm() {
                 minimum_fico_requirement: formData.minimum_fico_requirement === '' ? null : Number(formData.minimum_fico_requirement),
                 maximum_utilization_threshold: formData.maximum_utilization_threshold === '' ? null : Number(formData.maximum_utilization_threshold),
                 difficulty_modifier: formData.difficulty_modifier === '' ? null : Number(formData.difficulty_modifier),
+                allow_recent_late_payment: formData.allow_recent_late_payment,
+                late_payment_lookback_months: formData.late_payment_lookback_months === '' ? null : Number(formData.late_payment_lookback_months),
                 what_you_will_get: formData.what_you_will_get.filter(item => item.trim() !== ''),
                 pre_flight_checklist: formData.pre_flight_checklist,
                 status: formData.status,
@@ -564,21 +572,50 @@ export default function CapitalAccessForm() {
                                                 </div>
                                             </div>
 
-                                            <div className="col-lg-6">
+                                            <div className="col-lg-3">
                                                 <div>
                                                     <label className="form-label" htmlFor="minFico">Minimum FICO Requirement</label>
                                                     <input type="number" id="minFico" className={`form-control ${validationErrors.minimum_fico_requirement ? 'is-invalid' : ''}`} placeholder="e.g. 680" value={formData.minimum_fico_requirement} onChange={(e) => setFormData(prev => ({ ...prev, minimum_fico_requirement: e.target.value }))} />
                                                     {validationErrors.minimum_fico_requirement && <div className="invalid-feedback">{validationErrors.minimum_fico_requirement}</div>}
                                                 </div>
                                             </div>
-                                            <div className="col-lg-6">
+                                            <div className="col-lg-3">
                                                 <div>
                                                     <label className="form-label" htmlFor="maxUtilization">Maximum Utilization Threshold (%)</label>
                                                     <input type="number" id="maxUtilization" min="0" max="100" className={`form-control ${validationErrors.maximum_utilization_threshold ? 'is-invalid' : ''}`} placeholder="e.g. 30" value={formData.maximum_utilization_threshold} onChange={(e) => setFormData(prev => ({ ...prev, maximum_utilization_threshold: e.target.value }))} />
                                                     {validationErrors.maximum_utilization_threshold && <div className="invalid-feedback">{validationErrors.maximum_utilization_threshold}</div>}
                                                 </div>
                                             </div>
-                                            <div className="col-lg-6">
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="allowRecentLatePayment">Allow Recent Late Payment</label>
+                                                    <Dropdown
+                                                        id="allowRecentLatePayment"
+                                                        value={formData.allow_recent_late_payment ? 'Yes' : 'No'}
+                                                        options={[{ label: 'Yes', value: 'Yes' }, { label: 'No', value: 'No' }]}
+                                                        onChange={(e: any) => setFormData(prev => ({ ...prev, allow_recent_late_payment: e.value === 'Yes' }))}
+                                                        className="w-100"
+                                                        appendTo="self"
+                                                    />
+                                                    {validationErrors.allow_recent_late_payment && <div className="text-danger small mt-1">{validationErrors.allow_recent_late_payment}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="latePaymentLookbackMonths">Late Payment Lookback Months</label>
+                                                    <input
+                                                        type="number"
+                                                        id="latePaymentLookbackMonths"
+                                                        min="0"
+                                                        className={`form-control ${validationErrors.late_payment_lookback_months ? 'is-invalid' : ''}`}
+                                                        placeholder="e.g. 12"
+                                                        value={formData.late_payment_lookback_months}
+                                                        onChange={(e) => setFormData(prev => ({ ...prev, late_payment_lookback_months: e.target.value }))}
+                                                    />
+                                                    {validationErrors.late_payment_lookback_months && <div className="invalid-feedback">{validationErrors.late_payment_lookback_months}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
                                                 <div>
                                                     <label className="form-label" htmlFor="difficultyModifier">Difficulty Modifier</label>
                                                     <input type="number" id="difficultyModifier" className={`form-control ${validationErrors.difficulty_modifier ? 'is-invalid' : ''}`} placeholder="e.g. 5" value={formData.difficulty_modifier} onChange={(e) => setFormData(prev => ({ ...prev, difficulty_modifier: e.target.value }))} />
@@ -586,7 +623,7 @@ export default function CapitalAccessForm() {
                                                 </div>
                                             </div>
 
-                                            <div className="col-lg-6">
+                                            <div className="col-lg-3">
                                                 <div>
                                                     <label className="form-label" htmlFor="programStatus">Status</label>
                                                     <Dropdown id="programStatus" value={formData.status} options={STATUS_OPTIONS} onChange={(e: any) => setFormData(prev => ({ ...prev, status: e.value }))} optionLabel="label" optionValue="value" className="w-100" appendTo="self" />

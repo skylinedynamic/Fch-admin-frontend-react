@@ -11,6 +11,7 @@ import StripeConfigForm from './StripeConfigForm';
 import EmailConfigurationForm from './EmailConfigurationForm';
 import BrandingForm from './BrandingForm';
 import CreditProfileConfigForm from './CreditProfileConfigForm';
+import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
 // @ts-ignore
 import TenantDomainConfig from './TenantDomainConfig';
 
@@ -64,6 +65,10 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
 
     if (hasPermission('update branding settings') || (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'credit_profile', label: 'Credit Profile', icon: 'ri-file-chart-line' });
+    }
+
+    if (user && (user.is_host == 1 || user.is_host == true)) {
+        sections.push({ id: 'score_calculation', label: 'Score Calculation', icon: 'ri-percent-line' });
     }
 
     // Test Mail — only for host partners or white-label partners
@@ -166,6 +171,8 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <MicroBiltConfigForm />
                 ) : activeSection === 'credit_profile' ? (
                     <CreditProfileConfigForm />
+                ) : activeSection === 'score_calculation' ? (
+                    <ScoreCalculationConfigForm />
                 ) : activeSection === 'email_configuration' ? (
                     <EmailConfigurationForm />
                 ) : activeSection === 'branding' ? (

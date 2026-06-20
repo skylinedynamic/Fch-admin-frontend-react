@@ -41,6 +41,8 @@ export interface CapitalAccount {
     minimum_fico_requirement?: number | null;
     maximum_utilization_threshold?: number | null;
     difficulty_modifier?: number | null;
+    allow_recent_late_payment?: boolean;
+    late_payment_lookback_months?: number | null;
     credit_accounts?: CreditAccountSummary[];
     // Legacy alias used in some UI parts
     accounts?: CreditAccountSummary[];
@@ -62,6 +64,8 @@ export interface StoreCapitalAccessPayload {
     minimum_fico_requirement?: number | null;
     maximum_utilization_threshold?: number | null;
     difficulty_modifier?: number | null;
+    allow_recent_late_payment?: boolean;
+    late_payment_lookback_months?: number | null;
     credit_accounts?: Array<{
         id: number;
         why_this_card: string;
