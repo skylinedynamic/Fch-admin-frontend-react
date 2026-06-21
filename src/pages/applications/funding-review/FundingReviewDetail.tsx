@@ -198,16 +198,17 @@ export default function FundingReviewDetail() {
                                                 >
                                                     View Documents <i className="ri-arrow-right-line align-middle ms-1"></i>
                                                 </Link>
-                                            )} */}
+                                                )} */}
                                             </div>
                                             <div className="table-responsive mt-3 border rounded border-light-subtle bg-white">
                                                 <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
                                                     <thead className="bg-light">
                                                         <tr>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '40%' }}>File Name</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Document Type</th>
+                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '30%' }}>File Name</th>
+                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Document Type</th>
+                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Uploaded On</th>
                                                             <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '15%' }}>Status</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 text-end px-4" style={{ width: '20%' }}>Action</th>
+                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 text-end px-4" style={{ width: '15%' }}>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -244,6 +245,7 @@ export default function FundingReviewDetail() {
                                                                                 {doc.document_type || doc.name.replace(/_/g, ' ')}
                                                                             </span>
                                                                         </td>
+                                                                        <td className="py-3 text-muted">{doc.uploaded_on || '-'}</td>
                                                                         <td className="py-3">
                                                                             {getDocStatusBadge(doc.status)}
                                                                         </td>
