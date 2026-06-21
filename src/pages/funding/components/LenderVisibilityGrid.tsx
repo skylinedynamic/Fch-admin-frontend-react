@@ -77,7 +77,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
             `}</style>
             <div className="card-body p-0 table-responsive custom-scrollbar-wrapper">
                 <table className="table table-hover table-nowrap align-middle mb-0" style={{ minWidth: '2400px' }}>
-                    <thead className="table-light text-muted fs-12 text-uppercase">
+                    <thead className="table-light text-muted fs-12">
                         <tr>
                             <th style={{ width: '250px' }}>Lender <span className="text-danger">*</span></th>
                             <th style={{ width: '120px' }}>Minimum FICO<span className="text-danger">*</span></th>
@@ -92,7 +92,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             <th style={{ width: '220px' }}>Restricted States</th>
                             <th style={{ width: '220px' }}>Allowed Industries</th>
                             <th style={{ width: '220px' }}>Restricted Industries</th>
-                            <th style={{ width: '120px', textAlign: 'center' }}>Remove</th>
+                            <th style={{ width: '120px', textAlign: 'center' }}>Action</th>
                         </tr>
                     </thead>
                     <tbody>
