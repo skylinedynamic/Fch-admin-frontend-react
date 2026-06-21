@@ -90,7 +90,6 @@ export default function FundingSequencingForm() {
         exception_allowed: true,
         speed_to_funds: '',
         uses: [],
-        qualify_reasons: [],
         readiness_factors: [],
         missing_documents: [],
         allowed_documents: [],
@@ -270,7 +269,6 @@ export default function FundingSequencingForm() {
                         exception_allowed: data.exception_allowed ?? (data.lenders?.[0]?.exception_allowed || false),
                         speed_to_funds: data.speed_to_funds || '',
                         uses: Array.isArray(data.uses) ? data.uses : [],
-                        qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
                         allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
@@ -310,7 +308,7 @@ export default function FundingSequencingForm() {
         setLoading(true);
 
         const cleanData = { ...formData };
-        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents', 'allowed_documents'].forEach(field => {
+        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
                 cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item =>
                     (typeof item === 'string' && item.trim() !== '') || typeof item === 'number'
@@ -339,7 +337,6 @@ export default function FundingSequencingForm() {
             description: cleanData.description,
             speed_to_funds: cleanData.speed_to_funds,
             uses: cleanData.uses,
-            qualify_reasons: cleanData.qualify_reasons,
             readiness_factors: cleanData.readiness_factors,
             missing_documents: cleanData.missing_documents,
             require_completed_application: cleanData.require_completed_application,
