@@ -133,6 +133,12 @@ interface FormData {
     late_90_2_plus_qty: string;
     late_90_2_plus_val: string;
     late_90_2_plus_lbl: string;
+    late_120_1_qty: string;
+    late_120_1_val: string;
+    late_120_1_lbl: string;
+    late_120_2_plus_qty: string;
+    late_120_2_plus_val: string;
+    late_120_2_plus_lbl: string;
 
     // Approval Probability Tiers
     prob_fico_above_40: string;
@@ -151,9 +157,11 @@ interface FormData {
 
     prob_banking_strong: string;
     prob_banking_moderate: string;
+    prob_banking_limited: string;
     prob_banking_none: string;
 
-    prob_trade_high_limit: string;
+    prob_trade_multiple_high: string;
+    prob_trade_good_depth: string;
     prob_trade_moderate: string;
     prob_trade_thin: string;
 
@@ -269,19 +277,19 @@ const ScoreCalculationConfigForm: React.FC = () => {
         bank_weak_accounts: '0',
 
         // Readiness Bands Defaults
-        fund_readiness_bucket_a_label: 'Premium',
-        fund_readiness_bucket_a_min_score: '720',
+        fund_readiness_bucket_a_label: 'Elite Ready',
+        fund_readiness_bucket_a_min_score: '90',
         fund_readiness_bucket_a_color: '#198754',
-        fund_readiness_bucket_b_label: 'Prime',
-        fund_readiness_bucket_b_min_score: '680',
+        fund_readiness_bucket_b_label: 'Executive Ready',
+        fund_readiness_bucket_b_min_score: '80',
         fund_readiness_bucket_b_color: '#0d6efd',
-        fund_readiness_bucket_c_label: 'Near Prime',
-        fund_readiness_bucket_c_min_score: '640',
+        fund_readiness_bucket_c_label: 'Foundation Ready',
+        fund_readiness_bucket_c_min_score: '70',
         fund_readiness_bucket_c_color: '#ffc107',
-        fund_readiness_bucket_d_label: 'Subprime',
-        fund_readiness_bucket_d_min_score: '580',
+        fund_readiness_bucket_d_label: 'Conditional',
+        fund_readiness_bucket_d_min_score: '60',
         fund_readiness_bucket_d_color: '#fd7e14',
-        fund_readiness_bucket_e_label: 'Deep Subprime',
+        fund_readiness_bucket_e_label: 'Not Ready',
         fund_readiness_bucket_e_color: '#dc3545',
 
         // Late Payment Modifiers defaults
@@ -303,6 +311,12 @@ const ScoreCalculationConfigForm: React.FC = () => {
         late_90_2_plus_qty: '2',
         late_90_2_plus_val: '-50',
         late_90_2_plus_lbl: '2+ x 90-day lates',
+        late_120_1_qty: '1',
+        late_120_1_val: '-40',
+        late_120_1_lbl: '1 x 120-day late',
+        late_120_2_plus_qty: '2',
+        late_120_2_plus_val: '-60',
+        late_120_2_plus_lbl: '2+ x 120-day lates',
 
         // Approval Probability defaults
         prob_fico_above_40: '7',
@@ -321,9 +335,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         prob_banking_strong: '5',
         prob_banking_moderate: '2',
+        prob_banking_limited: '0',
         prob_banking_none: '0',
 
-        prob_trade_high_limit: '5',
+        prob_trade_multiple_high: '5',
+        prob_trade_good_depth: '3',
         prob_trade_moderate: '0',
         prob_trade_thin: '-10',
 
@@ -509,23 +525,23 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2'),
                 trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3', 1),
 
-                fund_readiness_bucket_a_label: sv(scoreConfig?.readiness_bands?.[0]?.label, 'Premium'),
-                fund_readiness_bucket_a_min_score: sv(scoreConfig?.readiness_bands?.[0]?.min_value, '720'),
+                fund_readiness_bucket_a_label: sv(scoreConfig?.readiness_bands?.[0]?.label, 'Elite Ready'),
+                fund_readiness_bucket_a_min_score: sv(scoreConfig?.readiness_bands?.[0]?.min_value, '90'),
                 fund_readiness_bucket_a_color: sv((scoreConfig?.readiness_bands?.[0] as any)?.color, '#198754'),
 
-                fund_readiness_bucket_b_label: sv(scoreConfig?.readiness_bands?.[1]?.label, 'Prime'),
-                fund_readiness_bucket_b_min_score: sv(scoreConfig?.readiness_bands?.[1]?.min_value, '680'),
+                fund_readiness_bucket_b_label: sv(scoreConfig?.readiness_bands?.[1]?.label, 'Executive Ready'),
+                fund_readiness_bucket_b_min_score: sv(scoreConfig?.readiness_bands?.[1]?.min_value, '80'),
                 fund_readiness_bucket_b_color: sv((scoreConfig?.readiness_bands?.[1] as any)?.color, '#0d6efd'),
 
-                fund_readiness_bucket_c_label: sv(scoreConfig?.readiness_bands?.[2]?.label, 'Near Prime'),
-                fund_readiness_bucket_c_min_score: sv(scoreConfig?.readiness_bands?.[2]?.min_value, '640'),
+                fund_readiness_bucket_c_label: sv(scoreConfig?.readiness_bands?.[2]?.label, 'Foundation Ready'),
+                fund_readiness_bucket_c_min_score: sv(scoreConfig?.readiness_bands?.[2]?.min_value, '70'),
                 fund_readiness_bucket_c_color: sv((scoreConfig?.readiness_bands?.[2] as any)?.color, '#ffc107'),
 
-                fund_readiness_bucket_d_label: sv(scoreConfig?.readiness_bands?.[3]?.label, 'Subprime'),
-                fund_readiness_bucket_d_min_score: sv(scoreConfig?.readiness_bands?.[3]?.min_value, '580'),
+                fund_readiness_bucket_d_label: sv(scoreConfig?.readiness_bands?.[3]?.label, 'Conditional'),
+                fund_readiness_bucket_d_min_score: sv(scoreConfig?.readiness_bands?.[3]?.min_value, '60'),
                 fund_readiness_bucket_d_color: sv((scoreConfig?.readiness_bands?.[3] as any)?.color, '#fd7e14'),
 
-                fund_readiness_bucket_e_label: sv(scoreConfig?.readiness_bands?.[4]?.label, 'Deep Subprime'),
+                fund_readiness_bucket_e_label: sv(scoreConfig?.readiness_bands?.[4]?.label, 'Not Ready'),
                 fund_readiness_bucket_e_color: sv((scoreConfig?.readiness_bands?.[4] as any)?.color, '#dc3545'),
 
                 bank_strong_accounts: getCond('banking_relationships', 0, 'accounts', '2'),
@@ -556,6 +572,13 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 late_90_2_plus_val: buildLatePaymentModifier('late_90_2_plus', 'val', '-50'),
                 late_90_2_plus_lbl: buildLatePaymentModifier('late_90_2_plus', 'label', '2+ x 90-day lates'),
 
+                late_120_1_qty: buildLatePaymentModifier('late_120_1', 'qty', '1'),
+                late_120_1_val: buildLatePaymentModifier('late_120_1', 'val', '-40'),
+                late_120_1_lbl: buildLatePaymentModifier('late_120_1', 'label', '1 x 120-day late'),
+                late_120_2_plus_qty: buildLatePaymentModifier('late_120_2_plus', 'qty', '2'),
+                late_120_2_plus_val: buildLatePaymentModifier('late_120_2_plus', 'val', '-60'),
+                late_120_2_plus_lbl: buildLatePaymentModifier('late_120_2_plus', 'label', '2+ x 120-day lates'),
+
                 // Map Approval Probability fields
                 prob_fico_above_40: buildProbTierValue('fico_above_minimum', 0, 'points', '7'),
                 prob_fico_above_20_39: buildProbTierValue('fico_above_minimum', 1, 'points', '4'),
@@ -573,11 +596,13 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
                 prob_banking_strong: buildProbTierValue('banking_relationship', 0, 'points', '5'),
                 prob_banking_moderate: buildProbTierValue('banking_relationship', 1, 'points', '2'),
-                prob_banking_none: buildProbTierValue('banking_relationship', 2, 'points', '0'),
+                prob_banking_limited: buildProbTierValue('banking_relationship', 2, 'points', '0'),
+                prob_banking_none: buildProbTierValue('banking_relationship', 3, 'points', '0'),
 
-                prob_trade_high_limit: buildProbTierValue('tradeline_depth', 0, 'points', '5'),
-                prob_trade_moderate: buildProbTierValue('tradeline_depth', 1, 'points', '0'),
-                prob_trade_thin: buildProbTierValue('tradeline_depth', 2, 'points', '-10'),
+                prob_trade_multiple_high: buildProbTierValue('tradeline_depth', 0, 'points', '5'),
+                prob_trade_good_depth: buildProbTierValue('tradeline_depth', 1, 'points', '3'),
+                prob_trade_moderate: buildProbTierValue('tradeline_depth', 2, 'points', '0'),
+                prob_trade_thin: buildProbTierValue('tradeline_depth', 3, 'points', '-10'),
 
                 prob_revenue_strong: buildProbTierValue('revenue_income', 0, 'points', '5'),
                 prob_revenue_moderate: buildProbTierValue('revenue_income', 1, 'points', '2'),
@@ -840,14 +865,16 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 factors: [
                     { sort_order: 1, sub_score: Number(formData.prob_banking_strong) || 0, label: 'Strong business banking relationship' },
                     { sort_order: 2, sub_score: Number(formData.prob_banking_moderate) || 0, label: 'Moderate banking relationship' },
-                    { sort_order: 3, sub_score: Number(formData.prob_banking_none) || 0, label: 'No meaningful banking relationship' },
+                    { sort_order: 3, sub_score: Number(formData.prob_banking_limited) || 0, label: 'Limited banking relationship' },
+                    { sort_order: 4, sub_score: Number(formData.prob_banking_none) || 0, label: 'No meaningful banking relationship' },
                 ]
             },
             tradeline_depth: {
                 factors: [
-                    { sort_order: 1, sub_score: Number(formData.prob_trade_high_limit) || 0, label: 'Existing high-limit tradeline' },
-                    { sort_order: 2, sub_score: Number(formData.prob_trade_moderate) || 0, label: 'Moderate tradeline depth' },
-                    { sort_order: 3, sub_score: Number(formData.prob_trade_thin) || 0, label: 'Thin file' },
+                    { sort_order: 1, sub_score: Number(formData.prob_trade_multiple_high) || 0, label: 'Multiple High-Limit & Installment Depth' },
+                    { sort_order: 2, sub_score: Number(formData.prob_trade_good_depth) || 0, label: 'Good Depth with High-Limit account' },
+                    { sort_order: 3, sub_score: Number(formData.prob_trade_moderate) || 0, label: 'Moderate tradeline depth' },
+                    { sort_order: 4, sub_score: Number(formData.prob_trade_thin) || 0, label: 'Thin file' },
                 ]
             },
             revenue_income: {
@@ -892,6 +919,8 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 { factor_slug: 'late_60_2_plus', label: formData.late_60_2_plus_lbl, min_value: Number(formData.late_60_2_plus_qty), numeric_value: Number(formData.late_60_2_plus_val), sort_order: 4 },
                 { factor_slug: 'late_90_1', label: formData.late_90_1_lbl, min_value: Number(formData.late_90_1_qty), numeric_value: Number(formData.late_90_1_val), sort_order: 5 },
                 { factor_slug: 'late_90_2_plus', label: formData.late_90_2_plus_lbl, min_value: Number(formData.late_90_2_plus_qty), numeric_value: Number(formData.late_90_2_plus_val), sort_order: 6 },
+                { factor_slug: 'late_120_1', label: formData.late_120_1_lbl, min_value: Number(formData.late_120_1_qty), numeric_value: Number(formData.late_120_1_val), sort_order: 7 },
+                { factor_slug: 'late_120_2_plus', label: formData.late_120_2_plus_lbl, min_value: Number(formData.late_120_2_plus_qty), numeric_value: Number(formData.late_120_2_plus_val), sort_order: 8 },
             ];
             scorePayload.late_payment_modifiers = latePaymentModifiers;
 
@@ -1981,6 +2010,18 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                                                     <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_90_2_plus_val" value={formData.late_90_2_plus_val} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
+                                                            <tr>
+                                                                <td className="text-start ps-3 fw-semibold">{formData.late_120_1_lbl}</td>
+                                                                <td>
+                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_120_1_val" value={formData.late_120_1_val} onChange={handleInputChange} disabled={loading} />
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="text-start ps-3 fw-semibold">{formData.late_120_2_plus_lbl}</td>
+                                                                <td>
+                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_120_2_plus_val" value={formData.late_120_2_plus_val} onChange={handleInputChange} disabled={loading} />
+                                                                </td>
+                                                            </tr>
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -2229,6 +2270,14 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                                             </tr>
                                                             <tr>
                                                                 <td className="text-start ps-3 fw-semibold text-body">
+                                                                    {factorTierLabel('banking_relationships', 3)}
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_banking_limited" value={formData.prob_banking_limited} onChange={handleInputChange} disabled={loading} />
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="text-start ps-3 fw-semibold text-body">
                                                                     {factorTierLabel('banking_relationships', 4)}
                                                                 </td>
                                                                 <td>
@@ -2260,10 +2309,18 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                                         <tbody className="fs-13">
                                                             <tr>
                                                                 <td className="text-start ps-3 fw-semibold text-body">
+                                                                    {factorTierLabel('tradeline_depth', 1)}
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_multiple_high" value={formData.prob_trade_multiple_high} onChange={handleInputChange} disabled={loading} />
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="text-start ps-3 fw-semibold text-body">
                                                                     {factorTierLabel('tradeline_depth', 2)}
                                                                 </td>
                                                                 <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_high_limit" value={formData.prob_trade_high_limit} onChange={handleInputChange} disabled={loading} />
+                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_good_depth" value={formData.prob_trade_good_depth} onChange={handleInputChange} disabled={loading} />
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -2377,3 +2434,4 @@ const ScoreCalculationConfigForm: React.FC = () => {
 };
 
 export default ScoreCalculationConfigForm;
+
