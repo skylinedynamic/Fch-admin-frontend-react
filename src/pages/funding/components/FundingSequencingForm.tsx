@@ -17,7 +17,7 @@ import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
 import LenderVisibilityGrid from './LenderVisibilityGrid';
 import { scrollToFirstError } from '../../../utils/formUtils';
-import '../../../assets/css/funding.css';
+import '../../../../assets/css/funding.css';
 
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
