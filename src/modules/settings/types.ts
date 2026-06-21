@@ -106,6 +106,8 @@ export interface ScoreConfiguration {
     band_mappings: ScoreConfigItem[];
     readiness_bands: ScoreConfigItem[];
     play_eligibility: ScoreConfigItem[];
+    late_payment_modifiers?: ScoreConfigItem[];
+    probability_factors?: ScoreFactor[];
 }
 
 export interface ScoreConfigurationResponse {

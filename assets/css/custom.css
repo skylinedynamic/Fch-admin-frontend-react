@@ -1687,3 +1687,15 @@ File: Custom Css File
   width: 15% !important;
   min-width: 120px !important;
 }
+
+.config-th-qty {
+  width: 240px !important;
+}
+
+.config-th-val {
+  width: 160px !important;
+}
+
+.config-th-status {
+  width: 280px !important;
+}
