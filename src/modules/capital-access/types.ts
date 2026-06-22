@@ -22,6 +22,9 @@ export interface CreditAccountSummary {
         access_time?: string;
         access_day?: number;
         access_day_time?: string;
+        minimum_fico_requirement?: number;
+        maximum_utilization_threshold?: number;
+        difficulty_modifier?: number;
     };
 }
 
@@ -77,6 +80,9 @@ export interface StoreCapitalAccessPayload {
         access_time?: string;
         access_day?: number;
         access_day_time?: string;
+        minimum_fico_requirement?: number | null;
+        maximum_utilization_threshold?: number | null;
+        difficulty_modifier?: number | null;
     }>;
 }
 

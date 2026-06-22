@@ -1699,3 +1699,7 @@ File: Custom Css File
 .config-th-status {
   width: 280px !important;
 }
+
+.config-th-label {
+  width: 240px !important;
+}

@@ -5,8 +5,11 @@ import type { ScoreConfiguration, ScoreFactorTier } from '../../../modules/setti
 import { STATIC_TIER_LABELS } from '../../../config/scoreCalculation';
 
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
+import FundingReadinessTab from './ScoreCalculation/FundingReadinessTab';
+import ApprovalProbabilityTab from './ScoreCalculation/ApprovalProbabilityTab';
+import ApprovalOddsTab from './ScoreCalculation/ApprovalOddsTab';
 
-interface FormData {
+export interface FormData {
     weight_fico: string;
     weight_utilization: string;
     weight_time_in_business: string;
@@ -181,15 +184,58 @@ interface FormData {
 
     prob_inquiries_rule_t1: string;
     prob_inquiries_rule_t2: string;
+
+    // Approval Odds Tiers
+    odds_fico_above_40: string;
+    odds_fico_above_20_39: string;
+    odds_fico_above_0_19: string;
+
+    odds_util_0_5: string;
+    odds_util_5_10: string;
+    odds_util_10_20: string;
+    odds_util_20_25: string;
+    odds_util_above_25: string;
+
+    odds_inquiries_0_2: string;
+    odds_inquiries_3_4: string;
+    odds_inquiries_above_5: string;
+
+    odds_banking_strong: string;
+    odds_banking_moderate: string;
+    odds_banking_limited: string;
+    odds_banking_none: string;
+
+    odds_trade_multiple_high: string;
+    odds_trade_good_depth: string;
+    odds_trade_moderate: string;
+    odds_trade_thin: string;
+
+    odds_revenue_strong: string;
+    odds_revenue_moderate: string;
+    odds_revenue_limited: string;
+    odds_revenue_startup: string;
+
+    // Approval Odds Range Thresholds
+    odds_fico_rule_t1: string;
+    odds_fico_rule_t2: string;
+
+    odds_util_rule_t1: string;
+    odds_util_rule_t2: string;
+    odds_util_rule_t3: string;
+    odds_util_rule_t4: string;
+
+    odds_inquiries_rule_t1: string;
+    odds_inquiries_rule_t2: string;
 }
 
-interface FormErrors {
+export interface FormErrors {
     [key: string]: string | null;
 }
 
 const ScoreCalculationConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
+    const [activeTab, setActiveTab] = useState<'readiness' | 'probability' | 'odds'>('readiness');
     const [formData, setFormData] = useState<FormData>({
         weight_fico: '35',
         weight_utilization: '25',
@@ -359,6 +405,48 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         prob_inquiries_rule_t1: '5',
         prob_inquiries_rule_t2: '3',
+
+        // Approval Odds defaults
+        odds_fico_above_40: '7',
+        odds_fico_above_20_39: '4',
+        odds_fico_above_0_19: '0',
+
+        odds_util_0_5: '5',
+        odds_util_5_10: '3',
+        odds_util_10_20: '0',
+        odds_util_20_25: '-5',
+        odds_util_above_25: '-10',
+
+        odds_inquiries_0_2: '3',
+        odds_inquiries_3_4: '0',
+        odds_inquiries_above_5: '-8',
+
+        odds_banking_strong: '5',
+        odds_banking_moderate: '2',
+        odds_banking_limited: '0',
+        odds_banking_none: '0',
+
+        odds_trade_multiple_high: '5',
+        odds_trade_good_depth: '3',
+        odds_trade_moderate: '0',
+        odds_trade_thin: '-10',
+
+        odds_revenue_strong: '5',
+        odds_revenue_moderate: '2',
+        odds_revenue_limited: '0',
+        odds_revenue_startup: '-5',
+
+        // Approval Odds Range Thresholds Defaults
+        odds_fico_rule_t1: '40',
+        odds_fico_rule_t2: '20',
+
+        odds_util_rule_t1: '5',
+        odds_util_rule_t2: '10',
+        odds_util_rule_t3: '20',
+        odds_util_rule_t4: '25',
+
+        odds_inquiries_rule_t1: '5',
+        odds_inquiries_rule_t2: '3',
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const scoreDataRef = useRef<ScoreConfiguration | null>(null);
@@ -398,6 +486,17 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
             const buildProbTierValue = (factorSlug: string, index: number, key: string, fallback: string): string => {
                 const factor = scoreConfig?.probability_factors?.find((f: any) => f.slug === factorSlug);
+                const tier = factor?.subscore_tiers?.[index];
+                if (!tier) return fallback;
+                let val: any;
+                if (key === 'points') val = tier.numeric_value;
+                else if (key === 'min') val = tier.min_value;
+                else if (key === 'max') val = tier.max_value;
+                return sv(val, fallback);
+            };
+
+            const buildOddsTierValue = (factorSlug: string, index: number, key: string, fallback: string): string => {
+                const factor = scoreConfig?.odds_factors?.find((f: any) => f.slug === factorSlug);
                 const tier = factor?.subscore_tiers?.[index];
                 if (!tier) return fallback;
                 let val: any;
@@ -620,6 +719,48 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
                 prob_inquiries_rule_t1: buildProbTierValue('recent_inquiries', 2, 'min', '5'),
                 prob_inquiries_rule_t2: buildProbTierValue('recent_inquiries', 1, 'min', '3'),
+
+                // Map Approval Odds fields
+                odds_fico_above_40: buildOddsTierValue('fico_above_minimum', 0, 'points', '7'),
+                odds_fico_above_20_39: buildOddsTierValue('fico_above_minimum', 1, 'points', '4'),
+                odds_fico_above_0_19: buildOddsTierValue('fico_above_minimum', 2, 'points', '0'),
+
+                odds_util_0_5: buildOddsTierValue('utilization', 0, 'points', '5'),
+                odds_util_5_10: buildOddsTierValue('utilization', 1, 'points', '3'),
+                odds_util_10_20: buildOddsTierValue('utilization', 2, 'points', '0'),
+                odds_util_20_25: buildOddsTierValue('utilization', 3, 'points', '-5'),
+                odds_util_above_25: buildOddsTierValue('utilization', 4, 'points', '-10'),
+
+                odds_inquiries_0_2: buildOddsTierValue('recent_inquiries', 0, 'points', '3'),
+                odds_inquiries_3_4: buildOddsTierValue('recent_inquiries', 1, 'points', '0'),
+                odds_inquiries_above_5: buildOddsTierValue('recent_inquiries', 2, 'points', '-8'),
+
+                odds_banking_strong: buildOddsTierValue('banking_relationship', 0, 'points', '5'),
+                odds_banking_moderate: buildOddsTierValue('banking_relationship', 1, 'points', '2'),
+                odds_banking_limited: buildOddsTierValue('banking_relationship', 2, 'points', '0'),
+                odds_banking_none: buildOddsTierValue('banking_relationship', 3, 'points', '0'),
+
+                odds_trade_multiple_high: buildOddsTierValue('tradeline_depth', 0, 'points', '5'),
+                odds_trade_good_depth: buildOddsTierValue('tradeline_depth', 1, 'points', '3'),
+                odds_trade_moderate: buildOddsTierValue('tradeline_depth', 2, 'points', '0'),
+                odds_trade_thin: buildOddsTierValue('tradeline_depth', 3, 'points', '-10'),
+
+                odds_revenue_strong: buildOddsTierValue('revenue_income', 0, 'points', '5'),
+                odds_revenue_moderate: buildOddsTierValue('revenue_income', 1, 'points', '2'),
+                odds_revenue_limited: buildOddsTierValue('revenue_income', 2, 'points', '0'),
+                odds_revenue_startup: buildOddsTierValue('revenue_income', 3, 'points', '-5'),
+
+                // Map Odds Range Rules Thresholds
+                odds_fico_rule_t1: buildOddsTierValue('fico_above_minimum', 0, 'min', '40'),
+                odds_fico_rule_t2: buildOddsTierValue('fico_above_minimum', 1, 'min', '20'),
+
+                odds_util_rule_t1: buildOddsTierValue('utilization', 0, 'max', '5'),
+                odds_util_rule_t2: buildOddsTierValue('utilization', 1, 'max', '10'),
+                odds_util_rule_t3: buildOddsTierValue('utilization', 2, 'max', '20'),
+                odds_util_rule_t4: buildOddsTierValue('utilization', 3, 'max', '25'),
+
+                odds_inquiries_rule_t1: buildOddsTierValue('recent_inquiries', 2, 'min', '5'),
+                odds_inquiries_rule_t2: buildOddsTierValue('recent_inquiries', 1, 'min', '3'),
             }));
         } catch (error) {
             console.error('Failed to load score configuration:', error);
@@ -888,6 +1029,69 @@ const ScoreCalculationConfigForm: React.FC = () => {
         };
     };
 
+    const buildApprovalOddsPayload = () => {
+        const ficoT1 = Number(formData.odds_fico_rule_t1) || 40;
+        const ficoT2 = Number(formData.odds_fico_rule_t2) || 20;
+
+        const utilT1 = Number(formData.odds_util_rule_t1) || 5;
+        const utilT2 = Number(formData.odds_util_rule_t2) || 10;
+        const utilT3 = Number(formData.odds_util_rule_t3) || 20;
+        const utilT4 = Number(formData.odds_util_rule_t4) || 25;
+
+        const inqT1 = Number(formData.odds_inquiries_rule_t1) || 5;
+        const inqT2 = Number(formData.odds_inquiries_rule_t2) || 3;
+
+        return {
+            fico_above_minimum: {
+                factors: [
+                    { sort_order: 1, min_value: ficoT1, max_value: null, sub_score: Number(formData.odds_fico_above_40) || 0, label: `${ficoT1}+ points above minimum` },
+                    { sort_order: 2, min_value: ficoT2, max_value: ficoT1 - 1, sub_score: Number(formData.odds_fico_above_20_39) || 0, label: `${ficoT2}–${ficoT1 - 1} points above minimum` },
+                    { sort_order: 3, min_value: 0, max_value: ficoT2 - 1, sub_score: Number(formData.odds_fico_above_0_19) || 0, label: `0–${ficoT2 - 1} points above minimum` },
+                ]
+            },
+            utilization: {
+                factors: [
+                    { sort_order: 1, min_value: 0, max_value: utilT1, sub_score: Number(formData.odds_util_0_5) || 0, label: `0–${utilT1}%` },
+                    { sort_order: 2, min_value: Number((utilT1 + 0.01).toFixed(2)), max_value: utilT2, sub_score: Number(formData.odds_util_5_10) || 0, label: `${(utilT1 + 0.01).toFixed(2)}–${utilT2}%` },
+                    { sort_order: 3, min_value: Number((utilT2 + 0.01).toFixed(2)), max_value: utilT3, sub_score: Number(formData.odds_util_10_20) || 0, label: `${(utilT2 + 0.01).toFixed(2)}–${utilT3}%` },
+                    { sort_order: 4, min_value: Number((utilT3 + 0.01).toFixed(2)), max_value: utilT4, sub_score: Number(formData.odds_util_20_25) || 0, label: `${(utilT3 + 0.01).toFixed(2)}–${utilT4}%` },
+                    { sort_order: 5, min_value: Number((utilT4 + 0.01).toFixed(2)), max_value: null, sub_score: Number(formData.odds_util_above_25) || 0, label: `${(utilT4 + 0.01).toFixed(2)}%+` },
+                ]
+            },
+            recent_inquiries: {
+                factors: [
+                    { sort_order: 1, min_value: 0, max_value: inqT2 - 1, sub_score: Number(formData.odds_inquiries_0_2) || 0, label: `0–${inqT2 - 1} inquiries` },
+                    { sort_order: 2, min_value: inqT2, max_value: inqT1 - 1, sub_score: Number(formData.odds_inquiries_3_4) || 0, label: `${inqT2}–${inqT1 - 1} inquiries` },
+                    { sort_order: 3, min_value: inqT1, max_value: null, sub_score: Number(formData.odds_inquiries_above_5) || 0, label: `${inqT1}+ inquiries` },
+                ]
+            },
+            banking_relationship: {
+                factors: [
+                    { sort_order: 1, sub_score: Number(formData.odds_banking_strong) || 0, label: 'Strong business banking relationship' },
+                    { sort_order: 2, sub_score: Number(formData.odds_banking_moderate) || 0, label: 'Moderate banking relationship' },
+                    { sort_order: 3, sub_score: Number(formData.odds_banking_limited) || 0, label: 'Limited banking relationship' },
+                    { sort_order: 4, sub_score: Number(formData.odds_banking_none) || 0, label: 'No meaningful banking relationship' },
+                ]
+            },
+            tradeline_depth: {
+                factors: [
+                    { sort_order: 1, sub_score: Number(formData.odds_trade_multiple_high) || 0, label: 'Multiple High-Limit & Installment Depth' },
+                    { sort_order: 2, sub_score: Number(formData.odds_trade_good_depth) || 0, label: 'Good Depth with High-Limit account' },
+                    { sort_order: 3, sub_score: Number(formData.odds_trade_moderate) || 0, label: 'Moderate tradeline depth' },
+                    { sort_order: 4, sub_score: Number(formData.odds_trade_thin) || 0, label: 'Thin file' },
+                ]
+            },
+            revenue_income: {
+                factors: [
+                    { sort_order: 1, sub_score: Number(formData.odds_revenue_strong) || 0, label: 'Strong revenue or strong documented income' },
+                    { sort_order: 2, sub_score: Number(formData.odds_revenue_moderate) || 0, label: 'Moderate revenue/income' },
+                    { sort_order: 3, sub_score: Number(formData.odds_revenue_limited) || 0, label: 'Limited revenue/income' },
+                    { sort_order: 4, sub_score: Number(formData.odds_revenue_startup) || 0, label: 'Startup with no revenue' },
+                ]
+            }
+        };
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -900,6 +1104,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
         try {
             const scorePayload: any = buildFundingReadinessPayload();
             scorePayload.approval_probability = buildApprovalProbabilityPayload();
+            scorePayload.approval_odds = buildApprovalOddsPayload();
 
             const bucketIds = ['a', 'b', 'c', 'd', 'e'];
             const readinessBands = bucketIds.map((bucket, i) => ({
@@ -973,1437 +1178,69 @@ const ScoreCalculationConfigForm: React.FC = () => {
                     <MicroBiltConfigSkeleton />
                 ) : (
                     <form id="score-config-form" onSubmit={handleSubmit}>
-                        <div className="animate__animated animate__fadeIn">
-                            <div className="d-flex align-items-center bg-primary-subtle rounded-3 p-3 mb-4">
-                                <div className="flex-shrink-0 me-4">
-                                    <div className="avatar-md">
-                                        <div className="avatar-title bg-white rounded fs-24 text-primary">
-                                            <i className="ri-shield-check-line"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <h6 className="mb-1 text-dark fw-semibold fs-14">Funding Readiness Score Rules</h6>
-                                    <p className="text-muted mb-0 fs-13">
-                                        Define weight configuration for the funding readiness evaluation.
-                                        The sum of all factor weights must equal exactly <strong>100%</strong>.
-                                    </p>
-                                </div>
-                            </div>
+                        {/* Tab List */}
+                        <ul className="nav nav-tabs nav-tabs-custom nav-primary mb-4 border-bottom" role="tablist">
+                            <li className="nav-item">
+                                <button
+                                    type="button"
+                                    className={`nav-link fw-semibold ${activeTab === 'readiness' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('readiness')}
+                                    role="tab"
+                                >
+                                    Funding Readiness
+                                </button>
+                            </li>
+                            <li className="nav-item">
+                                <button
+                                    type="button"
+                                    className={`nav-link fw-semibold ${activeTab === 'probability' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('probability')}
+                                    role="tab"
+                                >
+                                    Approval Probability
+                                </button>
+                            </li>
+                            <li className="nav-item">
+                                <button
+                                    type="button"
+                                    className={`nav-link fw-semibold ${activeTab === 'odds' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('odds')}
+                                    role="tab"
+                                >
+                                    Approval Odds
+                                </button>
+                            </li>
+                        </ul>
 
-                            <div className="row g-4">
-                                {/* Left: Factor weights */}
-                                <div className="col-12">
-                                    <h6 className="fw-semibold fs-14 mb-3">
-                                        <i className="ri-scales-3-line me-1 text-primary align-middle"></i> Weight Configuration
-                                    </h6>
-                                    <div className="table-responsive border rounded-3">
-                                        <table className="table table-nowrap table-hover mb-0 align-middle">
-                                            <thead className="table-light">
-                                                <tr>
-                                                    <th scope="col config-th-lg">Factor</th>
-                                                    <th scope="col config-th-sm">Weight (%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-user-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Personal FICO</span>
-                                                                <small className="text-muted d-block fs-11">Measures credit strength and issuer approval baseline.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_fico"
-                                                                value={formData.weight_fico}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-donut-chart-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Utilization</span>
-                                                                <small className="text-muted d-block fs-11">Measures existing revolving burden and score-risk exposure.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_utilization"
-                                                                value={formData.weight_utilization}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-calendar-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Time in Business</span>
-                                                                <small className="text-muted d-block fs-11">Measures business maturity.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_time_in_business"
-                                                                value={formData.weight_time_in_business}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-money-dollar-circle-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Revenue / Income Strength</span>
-                                                                <small className="text-muted d-block fs-11">Measures repayment capacity and limit potential.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_revenue_strength"
-                                                                value={formData.weight_revenue_strength}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-links-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Tradeline Depth</span>
-                                                                <small className="text-muted d-block fs-11">Measures bureau depth and exposure history.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_tradeline_depth"
-                                                                value={formData.weight_tradeline_depth}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div className="avatar-xs flex-shrink-0">
-                                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                                    <i className="ri-bank-line"></i>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span className="fw-semibold text-body fs-13">Banking Relationships</span>
-                                                                <small className="text-muted d-block fs-11">Measures relationship-based approval leverage.</small>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="input-group input-group-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                max="100"
-                                                                className="form-control"
-                                                                name="weight_banking_relationships"
-                                                                value={formData.weight_banking_relationships}
-                                                                onChange={handleInputChange}
-                                                                disabled={loading}
-                                                            />
-                                                            <span className="input-group-text">%</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <tr className="table-light fw-bold">
-                                                    <td>
-                                                        <div className="ps-2 fs-13">Total Weight</div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`fs-13 px-2 py-1 rounded ${totalWeight === 100 ? 'text-success bg-success-subtle' : 'text-danger bg-danger-subtle'}`}>
-                                                            {totalWeight}%
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                        {activeTab === 'readiness' && (
+                            <FundingReadinessTab
+                                formData={formData}
+                                errors={errors}
+                                loading={loading}
+                                handleInputChange={handleInputChange}
+                                factorTierLabel={factorTierLabel}
+                                totalWeight={totalWeight}
+                                getProgressBarColor={getProgressBarColor}
+                            />
+                        )}
 
-                                    <div className="mt-3">
-                                        <div className="progress rounded-pill mb-2 config-progress">
-                                            <div
-                                                className={`progress-bar progress-bar-striped progress-bar-animated ${getProgressBarColor()}`}
-                                                role="progressbar"
-                                                style={{ width: `${Math.min(totalWeight, 100)}%` }}
-                                                aria-valuenow={totalWeight}
-                                                aria-valuemin={0}
-                                                aria-valuemax={100}
-                                            ></div>
-                                        </div>
+                        {activeTab === 'probability' && (
+                            <ApprovalProbabilityTab
+                                formData={formData}
+                                loading={loading}
+                                handleInputChange={handleInputChange}
+                                factorTierLabel={factorTierLabel}
+                            />
+                        )}
 
-                                        {totalWeight !== 100 ? (
-                                            <div className="text-danger small d-flex align-items-center gap-1">
-                                                <i className="ri-error-warning-line"></i>
-                                                <span>Weights must sum to exactly 100% (currently {totalWeight}%).</span>
-                                            </div>
-                                        ) : (
-                                            <div className="text-success small d-flex align-items-center gap-1">
-                                                <i className="ri-checkbox-circle-line"></i>
-                                                <span>Weight distribution is valid (exactly 100%).</span>
-                                            </div>
-                                        )}
-                                        {errors.weights_sum && (
-                                            <div className="text-danger small mt-1">
-                                                <i className="ri-error-warning-line me-1"></i>{errors.weights_sum}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Metric subscores config tables section */}
-                            <div className="border-top pt-4 mt-5">
-                                <h5 className="fs-14 fw-semibold text-primary mb-4">
-                                    <i className="ri-grid-fill me-2 align-middle"></i>
-                                    Subscore Metric Tables
-                                </h5>
-                            </div>
-
-                            {/* 1. Core Credit Strength Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-                                <div className="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
-                                    <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">1</span>
-                                    <div>
-                                        <h5 className="fs-14 fw-bold text-dark mb-0">Core Credit Strength</h5>
-                                        <p className="text-muted fs-12 mb-0">Configure baseline qualifications for Personal FICO score ranges and Credit Utilization ratios.</p>
-                                    </div>
-                                </div>
-                                <div className="row g-4">
-                                    {/* FICO Range Subscores */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">FICO Range Subscores</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">FICO Range</th>
-                                                                <th className="config-th">Subscore</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t1" value={formData.fico_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11 ms-1">or more</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_780_plus" value={formData.fico_subscore_780_plus} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t2" value={formData.fico_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t1) - 1) || 779} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_760_779" value={formData.fico_subscore_760_779} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t3" value={formData.fico_rule_t3} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t2) - 1) || 759} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_740_759" value={formData.fico_subscore_740_759} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t4" value={formData.fico_rule_t4} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t3) - 1) || 739} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_720_739" value={formData.fico_subscore_720_739} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t5" value={formData.fico_rule_t5} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t4) - 1) || 719} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_700_719" value={formData.fico_subscore_700_719} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t6" value={formData.fico_rule_t6} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t5) - 1) || 699} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_680_699" value={formData.fico_subscore_680_699} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="300" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="fico_rule_t7" value={formData.fico_rule_t7} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.fico_rule_t6) - 1) || 679} disabled />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_660_679" value={formData.fico_subscore_660_679} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={formData.fico_rule_t7 ? (Number(formData.fico_rule_t7) - 1).toString() : ''} disabled />
-                                                                        <span className="text-muted fs-11 ms-1">or less</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="fico_subscore_below_660" value={formData.fico_subscore_below_660} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Utilization Subscores */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Utilization Subscores</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Credit Utilization</th>
-                                                                <th className="config-th">Subscore</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="0" disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t1" value={formData.util_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_0_5" value={formData.util_subscore_0_5} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t1 ? (Number(formData.util_rule_t1) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t2" value={formData.util_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_5_10" value={formData.util_subscore_5_10} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t2 ? (Number(formData.util_rule_t2) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t3" value={formData.util_rule_t3} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_10_20" value={formData.util_subscore_10_20} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t3 ? (Number(formData.util_rule_t3) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t4" value={formData.util_rule_t4} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_20_30" value={formData.util_subscore_20_30} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t4 ? (Number(formData.util_rule_t4) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="util_rule_t5" value={formData.util_rule_t5} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_30_40" value={formData.util_subscore_30_40} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.util_rule_t5 ? (Number(formData.util_rule_t5) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="100" disabled />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="util_subscore_above_40" value={formData.util_subscore_above_40} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 2. Financial Capacity Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-                                <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">2</span>
-                                        <div>
-                                            <h5 className="fs-14 fw-bold text-dark mb-0">Financial Capacity</h5>
-                                            <p className="text-muted fs-12 mb-0">Configure rules and subscores for Revenue / Income Strength.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="row g-4">
-                                    <div className="col-12">
-                                        <div className="table-responsive border rounded-3">
-                                            <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                <thead className="table-light text-uppercase fs-11">
-                                                    <tr>
-                                                        <th className="text-start ps-3 config-th-quarter">Revenue Category</th>
-                                                        <th className="text-start ps-3 config-th-half">Suggested Rule</th>
-                                                        <th className="config-th-subscore">Subscore</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="fs-13">
-                                                    <tr>
-                                                        <td className="text-start ps-3">
-                                                            <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 1)}</span>
-                                                            <small className="text-muted d-block fs-11">Annual Revenue ≥ ${Number(formData.rev_rule_t1).toLocaleString()}</small>
-                                                        </td>
-                                                        <td className="text-start ps-3 fw-medium">
-                                                            <span>Annual Revenue ≥ $</span>
-                                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t1" value={formData.rev_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="text-start ps-3">
-                                                            <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 2)}</span>
-                                                            <small className="text-muted d-block fs-11">Annual Revenue ${Number(formData.rev_rule_t2).toLocaleString()} – ${(Number(formData.rev_rule_t1) - 1).toLocaleString()}</small>
-                                                        </td>
-                                                        <td className="text-start ps-3 fw-medium">
-                                                            <span>$</span>
-                                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t2" value={formData.rev_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                            <span> – $</span>
-                                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t1) - 1) || 499999} disabled />
-                                                            <span> / year</span>
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="text-start ps-3">
-                                                            <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 3)}</span>
-                                                            <small className="text-muted d-block fs-11">Annual Revenue ${Number(formData.rev_rule_t3).toLocaleString()} – ${(Number(formData.rev_rule_t2) - 1).toLocaleString()}</small>
-                                                        </td>
-                                                        <td className="text-start ps-3 fw-medium">
-                                                            <span>$</span>
-                                                            <input type="number" min="0" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t3" value={formData.rev_rule_t3} onChange={handleInputChange} disabled={loading} />
-                                                            <span> – $</span>
-                                                            <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t2) - 1) || 149999} disabled />
-                                                            <span> / year</span>
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="text-start ps-3">
-                                                            <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 4)}</span>
-                                                            <small className="text-muted d-block fs-11">Annual Revenue below ${(Number(formData.rev_rule_t3) - 1).toLocaleString()}</small>
-                                                        </td>
-                                                        <td className="text-start ps-3 fw-medium">
-                                                            <span>Annual Revenue below $</span>
-                                                            <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t3) - 1) || 49999} disabled />
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3. Business Maturity & Banking Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-                                <div className="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
-                                    <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">3</span>
-                                    <div>
-                                        <h5 className="fs-14 fw-bold text-dark mb-0">Business Maturity & Banking</h5>
-                                        <p className="text-muted fs-12 mb-0">Configure weights and subscores for Business age and Bank account longevity.</p>
-                                    </div>
-                                </div>
-                                <div className="row g-4">
-                                    {/* Time in Business Subscores */}
-                                    <div className="col-12">
-                                        <div className="card shadow-none border mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Time in Business Subscores</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="config-th-status text-start ps-3">Status</th>
-                                                                <th className="text-start ps-3">Time in Business</th>
-                                                                <th className="config-th">Subscore</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('time_in_business', 1)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1">
-                                                                        <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t1" value={formData.time_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11 ms-1">or more Months</span>
-                                                                        <span className="text-muted fs-11 ms-1">({formData.time_rule_t1 ? Math.round(Number(formData.time_rule_t1) / 12) : 0}+ Years)</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="time_subscore_36_plus" value={formData.time_subscore_36_plus} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('time_in_business', 2)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1">
-                                                                        <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t2" value={formData.time_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <span className="fw-semibold text-muted">{(Number(formData.time_rule_t1) - 1) || 35}</span>
-                                                                        <span className="text-muted fs-11">Months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="time_subscore_24_35" value={formData.time_subscore_24_35} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('time_in_business', 3)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1">
-                                                                        <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t3" value={formData.time_rule_t3} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <span className="fw-semibold text-muted">{(Number(formData.time_rule_t2) - 1) || 23}</span>
-                                                                        <span className="text-muted fs-11">Months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="time_subscore_12_23" value={formData.time_subscore_12_23} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('time_in_business', 4)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1">
-                                                                        <input type="number" min="0" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="time_rule_t4" value={formData.time_rule_t4} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <span className="fw-semibold text-muted">{(Number(formData.time_rule_t3) - 1) || 11}</span>
-                                                                        <span className="text-muted fs-11">Months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="time_subscore_6_11" value={formData.time_subscore_6_11} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('time_in_business', 5)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1">
-                                                                        <span className="fw-semibold text-muted">{(Number(formData.time_rule_t4) - 1) || 5}</span>
-                                                                        <span className="text-muted fs-11 ms-1">or less Months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="time_subscore_below_6" value={formData.time_subscore_below_6} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Banking Relationships Subscores */}
-                                    <div className="col-12 mt-4">
-                                        <div className="card shadow-none border mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Banking Relationships Subscores</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="config-th-status text-start ps-3">Status</th>
-                                                                <th className="text-start ps-3">Relationship Category</th>
-                                                                <th className="config-th-subscore">Subscore</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 1)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_strong_accounts" value={formData.bank_strong_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>active business banking relationships, each &gt;</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_strong_months" value={formData.bank_strong_months} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_strong" value={formData.bank_subscore_strong} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 2)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_established_accounts" value={formData.bank_established_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>active business banking relationship &gt;</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="bank_established_months" value={formData.bank_established_months} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>months</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_established" value={formData.bank_subscore_established} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 3)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_basic_accounts" value={formData.bank_basic_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>banking relationship only</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_basic" value={formData.bank_subscore_basic} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 4)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">=</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="bank_weak_accounts" value={formData.bank_weak_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>No meaningful banking relationship</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="bank_subscore_weak" value={formData.bank_subscore_weak} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 4. Bureau Depth Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-                                <div className="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
-                                    <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">4</span>
-                                    <div>
-                                        <h5 className="fs-14 fw-bold text-dark mb-0">Bureau Depth</h5>
-                                        <p className="text-muted fs-12 mb-0">Configure criteria for credit history depth, high credit limits, and account counts.</p>
-                                    </div>
-                                </div>
-                                <div className="row g-4">
-                                    <div className="col-12">
-                                        <div className="card shadow-none border mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Tradeline Depth Subscores</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="config-th-status text-start ps-3">Status</th>
-                                                                <th className="text-start ps-3">Rule</th>
-                                                                <th className="config-th">Subscore</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 1)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_multi_accounts" value={formData.trade_rule_multi_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>open accounts</span>
-                                                                        <span className="fw-semibold text-primary mx-1">AND</span>
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_multi_high_limit_count" value={formData.trade_rule_multi_high_limit_count} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>accounts with</span>
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <span>$</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-lg" name="trade_rule_multi_high_limit_amount" value={formData.trade_rule_multi_high_limit_amount} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>limits</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="trade_subscore_multiple_high" value={formData.trade_subscore_multiple_high} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 2)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_good_accounts" value={formData.trade_rule_good_accounts} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>open accounts</span>
-                                                                        <span className="fw-semibold text-primary mx-1">AND</span>
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-sm" name="trade_rule_good_high_limit_count" value={formData.trade_rule_good_high_limit_count} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>account with</span>
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <span>$</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-lg" name="trade_rule_good_high_limit_amount" value={formData.trade_rule_good_high_limit_amount} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>limit</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="trade_subscore_good_depth" value={formData.trade_subscore_good_depth} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 3)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span className="fw-semibold text-primary">≥</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xs" name="trade_rule_mod_accounts_min" value={formData.trade_rule_mod_accounts_min} onChange={handleInputChange} disabled={loading} />
-                                                                        <span>open accounts</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="trade_subscore_moderate" value={formData.trade_subscore_moderate} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 4)}
-                                                                </td>
-                                                                <td className="text-start ps-3 fw-medium text-muted py-2">
-                                                                    <div className="d-flex align-items-center flex-wrap gap-1">
-                                                                        <span>0 - {(Number(formData.trade_rule_mod_accounts_min) - 1) || 1} open accounts</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" min="0" max="100" className="form-control" name="trade_subscore_thin" value={formData.trade_subscore_thin} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 5. Funding Readiness Bands Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-                                <div className="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
-                                    <span className="badge bg-primary-subtle text-primary fs-12 px-2.5 py-1.5 rounded-pill fw-semibold">5</span>
-                                    <div>
-                                        <h5 className="fs-14 fw-bold text-dark mb-0">Funding Readiness Bands</h5>
-                                        <p className="text-muted fs-12 mb-0">Configure score ranges and readiness labels.</p>
-                                    </div>
-                                </div>
-                                <div className="row g-4">
-                                    <div className="col-12">
-                                        <div className="card shadow-none border mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Readiness Score Ranges</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Score Range</th>
-                                                                <th className="config-th">Label</th>
-                                                                <th className="config-th">Color</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            {['a', 'b', 'c', 'd', 'e'].map((bucket, i) => {
-                                                                const prevMin = i > 0 ? Number(formData[`fund_readiness_bucket_${['a', 'b', 'c', 'd', 'e'][i - 1]}_min_score` as keyof FormData]) : null;
-                                                                const computedMax = prevMin ? prevMin - 1 : 0;
-                                                                const isFirst = i === 0;
-                                                                const isLast = i === 4;
-                                                                return (
-                                                                    <tr key={bucket}>
-                                                                        <td>
-                                                                            {isFirst ? (
-                                                                                <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                    <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name={`fund_readiness_bucket_${bucket}_min_score`} value={formData[`fund_readiness_bucket_${bucket}_min_score` as keyof FormData] || ''} onChange={handleInputChange} disabled={loading} />
-                                                                                    <span className="text-muted fs-11 ms-1">or more</span>
-                                                                                </div>
-                                                                            ) : isLast ? (
-                                                                                <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                    <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={computedMax || 0} disabled />
-                                                                                    <span className="text-muted fs-11 ms-1">or less</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                                    <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name={`fund_readiness_bucket_${bucket}_min_score`} value={formData[`fund_readiness_bucket_${bucket}_min_score` as keyof FormData] || ''} onChange={handleInputChange} disabled={loading} />
-                                                                                    <span className="text-muted fs-11">to</span>
-                                                                                    <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={computedMax || 0} disabled />
-                                                                                </div>
-                                                                            )}
-                                                                        </td>
-                                                                        <td>
-                                                                            <input type="text" className="form-control form-control-sm" name={`fund_readiness_bucket_${bucket}_label`} value={formData[`fund_readiness_bucket_${bucket}_label` as keyof FormData] || ''} onChange={handleInputChange} disabled={loading} placeholder="e.g. Premium" />
-                                                                        </td>
-                                                                        <td className="text-center">
-                                                                            <input type="color" className="form-control form-control-color form-control-sm mx-auto" name={`fund_readiness_bucket_${bucket}_color`} value={formData[`fund_readiness_bucket_${bucket}_color` as keyof FormData] || '#000000'} onChange={handleInputChange} disabled={loading} />
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 6. Approval Probability Calculation Section */}
-                            <div className="border rounded-3 p-4 mb-4 bg-white shadow-sm">
-
-
-                                <div className="d-flex align-items-center bg-primary-subtle rounded-3 p-3 mb-4">
-                                    <div className="flex-shrink-0 me-4">
-                                        <div className="avatar-md">
-                                            <div className="avatar-title bg-white rounded fs-24 text-primary">
-                                                <i className="ri-shield-check-line"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow-1">
-                                        <h6 className="mb-1 text-dark fw-semibold fs-14">Approval Probability Calculation</h6>
-                                        <p className="text-muted mb-0 fs-13">
-                                            Configure late payment quantity thresholds and their probability score adjustments (modifiers).
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="row g-4">
-                                    <div className="col-12">
-                                        <div className="card shadow-none border mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Late Payment Modifier Rules</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Late Payment Delinquency Rule</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_30_1_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_30_1_val" value={formData.late_30_1_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_30_2_plus_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_30_2_plus_val" value={formData.late_30_2_plus_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_60_1_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_60_1_val" value={formData.late_60_1_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_60_2_plus_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_60_2_plus_val" value={formData.late_60_2_plus_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_90_1_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_90_1_val" value={formData.late_90_1_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_90_2_plus_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_90_2_plus_val" value={formData.late_90_2_plus_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_120_1_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_120_1_val" value={formData.late_120_1_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold">{formData.late_120_2_plus_lbl}</td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="late_120_2_plus_val" value={formData.late_120_2_plus_val} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* FICO Above Play Minimum */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">FICO Above Play Minimum</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">FICO Range</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="prob_fico_rule_t1" value={formData.prob_fico_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11 ms-1">or more points</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_fico_above_40" value={formData.prob_fico_above_40} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="0" max="850" className="form-control form-control-sm text-center px-1 config-input config-input-lg" name="prob_fico_rule_t2" value={formData.prob_fico_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.prob_fico_rule_t1) - 1) || 39} disabled />
-                                                                        <span className="text-muted fs-11 ms-1">points</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_fico_above_20_39" value={formData.prob_fico_above_20_39} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value="0" disabled />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-lg" value={(Number(formData.prob_fico_rule_t2) - 1) || 19} disabled />
-                                                                        <span className="text-muted fs-11 ms-1">points</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_fico_above_0_19" value={formData.prob_fico_above_0_19} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Utilization */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Utilization</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Utilization Range</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="0" disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_util_rule_t1" value={formData.prob_util_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_util_0_5" value={formData.prob_util_0_5} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.prob_util_rule_t1 ? (Number(formData.prob_util_rule_t1) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_util_rule_t2" value={formData.prob_util_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_util_5_10" value={formData.prob_util_5_10} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.prob_util_rule_t2 ? (Number(formData.prob_util_rule_t2) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_util_rule_t3" value={formData.prob_util_rule_t3} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_util_10_20" value={formData.prob_util_10_20} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.prob_util_rule_t3 ? (Number(formData.prob_util_rule_t3) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% to</span>
-                                                                        <input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_util_rule_t4" value={formData.prob_util_rule_t4} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_util_20_25" value={formData.prob_util_20_25} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={formData.prob_util_rule_t4 ? (Number(formData.prob_util_rule_t4) + 0.01).toFixed(2) : ''} disabled />
-                                                                        <span className="text-muted fs-11">% or more</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_util_above_25" value={formData.prob_util_above_25} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Recent Inquiries */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Recent Inquiries</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Inquiries Range</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value="0" disabled />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={(Number(formData.prob_inquiries_rule_t2) - 1) || 2} disabled />
-                                                                        <span className="text-muted fs-11 ms-1">inquiries</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_inquiries_0_2" value={formData.prob_inquiries_0_2} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="0" max="50" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_inquiries_rule_t2" value={formData.prob_inquiries_rule_t2} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11">to</span>
-                                                                        <input type="number" className="form-control form-control-sm text-center px-1 config-input config-input-md" value={(Number(formData.prob_inquiries_rule_t1) - 1) || 4} disabled />
-                                                                        <span className="text-muted fs-11 ms-1">inquiries</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_inquiries_3_4" value={formData.prob_inquiries_3_4} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center justify-content-start gap-1 ps-3">
-                                                                        <input type="number" min="0" max="50" className="form-control form-control-sm text-center px-1 config-input config-input-md" name="prob_inquiries_rule_t1" value={formData.prob_inquiries_rule_t1} onChange={handleInputChange} disabled={loading} />
-                                                                        <span className="text-muted fs-11 ms-1">or more inquiries</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_inquiries_above_5" value={formData.prob_inquiries_above_5} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                    {/* Banking Relationship */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Banking Relationship</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Status</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 1)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_banking_strong" value={formData.prob_banking_strong} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 2)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_banking_moderate" value={formData.prob_banking_moderate} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 3)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_banking_limited" value={formData.prob_banking_limited} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('banking_relationships', 4)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_banking_none" value={formData.prob_banking_none} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Tradeline Depth */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Tradeline Depth</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Status</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 1)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_multiple_high" value={formData.prob_trade_multiple_high} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 2)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_good_depth" value={formData.prob_trade_good_depth} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 3)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_moderate" value={formData.prob_trade_moderate} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('tradeline_depth', 4)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_trade_thin" value={formData.prob_trade_thin} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Revenue / Income */}
-                                    <div className="col-lg-6">
-                                        <div className="card shadow-none border h-100 mb-0">
-                                            <div className="card-header bg-light-subtle py-2">
-                                                <h6 className="card-title mb-0 fs-13 fw-semibold">Revenue / Income</h6>
-                                            </div>
-                                            <div className="card-body p-3">
-                                                <div className="table-responsive">
-                                                    <table className="table table-sm table-bordered mb-0 align-middle text-center">
-                                                        <thead className="table-light text-uppercase fs-11">
-                                                            <tr>
-                                                                <th className="text-start ps-3">Status</th>
-                                                                <th className="config-th-val">Modifier Value (Points)</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="fs-13">
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('revenue_strength', 1)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_revenue_strong" value={formData.prob_revenue_strong} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('revenue_strength', 2)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_revenue_moderate" value={formData.prob_revenue_moderate} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('revenue_strength', 3)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_revenue_limited" value={formData.prob_revenue_limited} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="text-start ps-3 fw-semibold text-body">
-                                                                    {factorTierLabel('revenue_strength', 4)}
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" className="form-control form-control-sm text-center mx-auto config-input config-input-md" name="prob_revenue_startup" value={formData.prob_revenue_startup} onChange={handleInputChange} disabled={loading} />
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
+                        {activeTab === 'odds' && (
+                            <ApprovalOddsTab
+                                formData={formData}
+                                loading={loading}
+                                handleInputChange={handleInputChange}
+                                factorTierLabel={factorTierLabel}
+                            />
+                        )}
 
                         <div className="col-12 mt-5 pt-3 border-top">
                             <div className="d-flex justify-content-end">
@@ -2434,4 +1271,3 @@ const ScoreCalculationConfigForm: React.FC = () => {
 };
 
 export default ScoreCalculationConfigForm;
-

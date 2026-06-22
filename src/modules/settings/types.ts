@@ -108,6 +108,7 @@ export interface ScoreConfiguration {
     play_eligibility: ScoreConfigItem[];
     late_payment_modifiers?: ScoreConfigItem[];
     probability_factors?: ScoreFactor[];
+    odds_factors?: ScoreFactor[];
 }
 
 export interface ScoreConfigurationResponse {

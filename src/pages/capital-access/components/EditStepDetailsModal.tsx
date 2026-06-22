@@ -7,11 +7,15 @@ export interface EditDetailsForm {
     why_this_card: string;
     est_limit_min: string;
     est_limit_max: string;
+    est_limit_for_show?: string;
     hard_pull: string;
     what_you_need: string[];
     access_time: string;
     access_day: string;
     access_day_time: string;
+    minimum_fico_requirement?: string;
+    maximum_utilization_threshold?: string;
+    difficulty_modifier?: string;
 }
 
 interface EditStepDetailsModalProps {
@@ -92,6 +96,44 @@ export default function EditStepDetailsModal({
                         />
                     </div>
 
+                    <div className="col-md-6">
+                        <label className="form-label">Minimum FICO Requirement</label>
+                        <input
+                            type="number"
+                            className={`form-control ${modalValidationErrors.minimum_fico_requirement ? 'is-invalid' : ''}`}
+                            placeholder="e.g. 680"
+                            value={editDetailsForm.minimum_fico_requirement || ''}
+                            onChange={(e) => setEditDetailsForm(prev => ({ ...prev, minimum_fico_requirement: e.target.value }))}
+                        />
+                        {modalValidationErrors.minimum_fico_requirement && <div className="invalid-feedback">{modalValidationErrors.minimum_fico_requirement}</div>}
+                    </div>
+
+                    <div className="col-md-6">
+                        <label className="form-label">Maximum Utilization Threshold (%)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            className={`form-control ${modalValidationErrors.maximum_utilization_threshold ? 'is-invalid' : ''}`}
+                            placeholder="e.g. 30"
+                            value={editDetailsForm.maximum_utilization_threshold || ''}
+                            onChange={(e) => setEditDetailsForm(prev => ({ ...prev, maximum_utilization_threshold: e.target.value }))}
+                        />
+                        {modalValidationErrors.maximum_utilization_threshold && <div className="invalid-feedback">{modalValidationErrors.maximum_utilization_threshold}</div>}
+                    </div>
+
+                    <div className="col-md-6">
+                        <label className="form-label">Difficulty Modifier</label>
+                        <input
+                            type="number"
+                            className={`form-control ${modalValidationErrors.difficulty_modifier ? 'is-invalid' : ''}`}
+                            placeholder="e.g. 5"
+                            value={editDetailsForm.difficulty_modifier || ''}
+                            onChange={(e) => setEditDetailsForm(prev => ({ ...prev, difficulty_modifier: e.target.value }))}
+                        />
+                        {modalValidationErrors.difficulty_modifier && <div className="invalid-feedback">{modalValidationErrors.difficulty_modifier}</div>}
+                    </div>
+
                     <div className="col-12">
                         <div className="row g-3">
                             <div className="col-md-4">
@@ -143,7 +185,7 @@ export default function EditStepDetailsModal({
                                 <div key={idx} className="d-flex align-items-center gap-2">
                                     <input
                                         type="text"
-                                        className={`form-control form-control-sm ${modalValidationErrors.what_you_need && editDetailsForm.what_you_need.length === 1 && !req ? 'is-invalid' : ''}`}
+                                        className={`form-control form-control-md ${modalValidationErrors.what_you_need && editDetailsForm.what_you_need.length === 1 && !req ? 'is-invalid' : ''}`}
                                         value={req}
                                         placeholder="e.g. Good personal credit"
                                         onChange={(e) => {

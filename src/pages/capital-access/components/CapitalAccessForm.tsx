@@ -26,17 +26,7 @@ const PRE_FLIGHT_TASKS = [
 ];
 
 export interface SelectedPlayCard extends CreditAccount {
-    play_details?: {
-        why_this_card: string;
-        est_limit_min: string;
-        est_limit_max: string;
-        est_limit_for_show?: string;
-        hard_pull: string;
-        what_you_need: string[];
-        access_time: string;
-        access_day: string;
-        access_day_time: string;
-    }
+    play_details?: EditDetailsForm;
 }
 
 export default function CapitalAccessForm() {
@@ -56,16 +46,7 @@ export default function CapitalAccessForm() {
     const [editingCardId, setEditingCardId] = useState<number | null>(null);
     const [pendingAddCard, setPendingAddCard] = useState<SelectedPlayCard | null>(null);
     const [modalValidationErrors, setModalValidationErrors] = useState<Record<string, string>>({});
-    const [editDetailsForm, setEditDetailsForm] = useState<{
-        why_this_card: string;
-        est_limit_min: string;
-        est_limit_max: string;
-        hard_pull: string;
-        what_you_need: string[];
-        access_time: string;
-        access_day: string;
-        access_day_time: string;
-    }>({
+    const [editDetailsForm, setEditDetailsForm] = useState<EditDetailsForm>({
         why_this_card: '',
         est_limit_min: '',
         est_limit_max: '',
@@ -74,6 +55,9 @@ export default function CapitalAccessForm() {
         access_time: 'Morning',
         access_day: '',
         access_day_time: '',
+        minimum_fico_requirement: '',
+        maximum_utilization_threshold: '',
+        difficulty_modifier: '',
     });
 
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -153,6 +137,9 @@ export default function CapitalAccessForm() {
                     access_time: acc.pivot.access_time || 'Morning',
                     access_day: acc.pivot.access_day ? String(acc.pivot.access_day) : '',
                     access_day_time: acc.pivot.access_day_time || '',
+                    minimum_fico_requirement: acc.pivot.minimum_fico_requirement !== null && acc.pivot.minimum_fico_requirement !== undefined ? String(acc.pivot.minimum_fico_requirement) : '',
+                    maximum_utilization_threshold: acc.pivot.maximum_utilization_threshold !== null && acc.pivot.maximum_utilization_threshold !== undefined ? String(acc.pivot.maximum_utilization_threshold) : '',
+                    difficulty_modifier: acc.pivot.difficulty_modifier !== null && acc.pivot.difficulty_modifier !== undefined ? String(acc.pivot.difficulty_modifier) : '',
                 } : {
                     why_this_card: '',
 
@@ -164,6 +151,9 @@ export default function CapitalAccessForm() {
                     access_time: 'Morning',
                     access_day: '',
                     access_day_time: '',
+                    minimum_fico_requirement: '',
+                    maximum_utilization_threshold: '',
+                    difficulty_modifier: '',
                 }
             }));
             setSelectedAccounts(loadedAccounts);
@@ -259,6 +249,9 @@ export default function CapitalAccessForm() {
                         access_time: 'Morning',
                         access_day: '',
                         access_day_time: '',
+                        minimum_fico_requirement: '',
+                        maximum_utilization_threshold: '',
+                        difficulty_modifier: '',
                     }
                 };
                 setPendingAddCard(newAcc);
@@ -291,6 +284,9 @@ export default function CapitalAccessForm() {
                 access_time: 'Morning',
                 access_day: '',
                 access_day_time: '',
+                minimum_fico_requirement: '',
+                maximum_utilization_threshold: '',
+                difficulty_modifier: '',
             }
         };
         setPendingAddCard(newAcc);
@@ -320,6 +316,9 @@ export default function CapitalAccessForm() {
             access_time: account.play_details?.access_time || 'Morning',
             access_day: account.play_details?.access_day ? String(account.play_details.access_day) : '',
             access_day_time: account.play_details?.access_day_time || '',
+            minimum_fico_requirement: account.play_details?.minimum_fico_requirement || '',
+            maximum_utilization_threshold: account.play_details?.maximum_utilization_threshold || '',
+            difficulty_modifier: account.play_details?.difficulty_modifier || '',
         });
         setModalValidationErrors({});
         setIsDetailsModalOpen(true);
@@ -336,6 +335,27 @@ export default function CapitalAccessForm() {
         const cleanRequirements = editDetailsForm.what_you_need.filter(r => r.trim() !== '');
         if (cleanRequirements.length === 0) {
             errors.what_you_need = "Please add at least one requirement.";
+        }
+
+        if (editDetailsForm.minimum_fico_requirement) {
+            const fico = Number(editDetailsForm.minimum_fico_requirement);
+            if (isNaN(fico) || fico < 300 || fico > 850) {
+                errors.minimum_fico_requirement = "FICO must be between 300 and 850.";
+            }
+        }
+
+        if (editDetailsForm.maximum_utilization_threshold) {
+            const util = Number(editDetailsForm.maximum_utilization_threshold);
+            if (isNaN(util) || util < 0 || util > 100) {
+                errors.maximum_utilization_threshold = "Utilization must be between 0 and 100%.";
+            }
+        }
+
+        if (editDetailsForm.difficulty_modifier) {
+            const diff = Number(editDetailsForm.difficulty_modifier);
+            if (isNaN(diff)) {
+                errors.difficulty_modifier = "Difficulty modifier must be a number.";
+            }
         }
 
         if (Object.keys(errors).length > 0) {
@@ -441,6 +461,9 @@ export default function CapitalAccessForm() {
                             ? Number(acc.play_details.access_day)
                             : undefined,
                         access_day_time: acc.play_details?.access_time === 'Day' ? (acc.play_details?.access_day_time || 'Morning') : undefined,
+                        minimum_fico_requirement: acc.play_details?.minimum_fico_requirement === '' || acc.play_details?.minimum_fico_requirement === undefined ? null : Number(acc.play_details.minimum_fico_requirement),
+                        maximum_utilization_threshold: acc.play_details?.maximum_utilization_threshold === '' || acc.play_details?.maximum_utilization_threshold === undefined ? null : Number(acc.play_details.maximum_utilization_threshold),
+                        difficulty_modifier: acc.play_details?.difficulty_modifier === '' || acc.play_details?.difficulty_modifier === undefined ? null : Number(acc.play_details.difficulty_modifier),
                     })),
             };
 
