@@ -203,9 +203,10 @@ export default function FundingReviewDetail() {
                                             <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
                                                 <thead className="bg-light">
                                                     <tr>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '40%' }}>Lender Name</th>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '35%' }}>Email</th>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Phone</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '30%' }}>Lender Name</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Legal Name</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Email</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Phone</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -216,6 +217,9 @@ export default function FundingReviewDetail() {
                                                                 {lender.contact_name && (
                                                                     <small className="text-muted d-block mt-1">Contact: {lender.contact_name}</small>
                                                                 )}
+                                                            </td>
+                                                            <td className="py-3 text-body">
+                                                                {lender.legal_name || '-'}
                                                             </td>
                                                             <td className="py-3 text-truncate">
                                                                 {lender.email || '-'}
