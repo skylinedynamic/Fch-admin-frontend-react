@@ -157,23 +157,19 @@ export default function FundingReviewDetail() {
                                             <h5 className="fs-15 fw-bold mb-0">{`${review.borrower?.first_name || ''} ${review.borrower?.last_name || ''}`}</h5>
                                         </div>
                                         <div className="col-md-6">
-                                            <p className="text-muted mb-1 fs-13">Company Name</p>
-                                            <h5 className="fs-15 fw-bold mb-0">{review.borrower?.company_name || '-'}</h5>
-                                        </div>
-                                        <div className="col-12"><hr className="border-light m-0" /></div>
-                                        <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Funding Sequence</p>
                                             <h5 className="fs-15 fw-bold mb-0">{review.funding_sequence?.name || '-'}</h5>
                                         </div>
+                                        <div className="col-12"><hr className="border-light m-0" /></div>
                                         <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Funding Type</p>
                                             <h5 className="fs-15 fw-bold mb-0">{review.funding_type || '-'}</h5>
                                         </div>
-                                        <div className="col-12"><hr className="border-light m-0" /></div>
                                         <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Purpose of Funds</p>
                                             <h5 className="fs-15 fw-bold mb-0">{review.use_of_funds || '-'}</h5>
                                         </div>
+                                        <div className="col-12"><hr className="border-light m-0" /></div>
                                         <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Requested Amount</p>
                                             <h5 className="fs-15 fw-bold mb-0">
@@ -182,124 +178,9 @@ export default function FundingReviewDetail() {
                                                     : '-'}
                                             </h5>
                                         </div>
-                                        <div className="col-12"><hr className="border-light m-0" /></div>
                                         <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Estimated Speed</p>
                                             <h5 className="fs-15 fw-bold mb-0">{review.estimated_speed || '-'}</h5>
-                                        </div>
-                                        <div className="col-12 mt-4">
-                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <p className="fs-15 fw-bold mb-0">Documents Uploaded</p>
-                                                {/* {review.borrower?.id && (
-                                                <Link 
-                                                    to={`/clients/${review.borrower.id}`} 
-                                                    state={{ activeTab: 'documents' }}
-                                                    className="fs-12 text-primary text-decoration-none bg-primary-subtle px-2 py-1 rounded"
-                                                >
-                                                    View Documents <i className="ri-arrow-right-line align-middle ms-1"></i>
-                                                </Link>
-                                                )} */}
-                                            </div>
-                                            <div className="table-responsive mt-3 border rounded border-light-subtle bg-white">
-                                                <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
-                                                    <thead className="bg-light">
-                                                        <tr>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '30%' }}>File Name</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Document Type</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Uploaded On</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '15%' }}>Status</th>
-                                                            <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 text-end px-4" style={{ width: '15%' }}>Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {Array.isArray(review.documents_with_urls) && review.documents_with_urls.length > 0 ? (
-                                                            review.documents_with_urls.map((doc: any, idx: number) => {
-                                                                const displayFileName = doc.file_name ? doc.file_name : doc.name.replace(/_/g, ' ');
-                                                                const config = getFileConfig(doc.url || doc.file_name || displayFileName || '');
-                                                                return (
-                                                                    <tr key={idx}>
-                                                                        <td className="px-4 py-3">
-                                                                            <div className="d-flex align-items-center">
-                                                                                <div className="avatar-sm flex-shrink-0">
-                                                                                    <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
-                                                                                        <i className={config.icon}></i>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="ms-3 flex-grow-1 overflow-hidden" style={{ minWidth: 0 }}>
-                                                                                    <h6 className="fs-14 mb-0 text-truncate" title={displayFileName}>
-                                                                                        {doc.url ? (
-                                                                                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-body fw-medium d-block text-truncate">
-                                                                                                {displayFileName}
-                                                                                            </a>
-                                                                                        ) : (
-                                                                                            <span className="text-body fw-medium d-block text-truncate">
-                                                                                                {displayFileName}
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </h6>
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="py-3">
-                                                                            <span className="text-muted d-block text-truncate" title={doc.document_type || doc.name.replace(/_/g, ' ')}>
-                                                                                {doc.document_type || doc.name.replace(/_/g, ' ')}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="py-3 text-muted">{doc.uploaded_on || '-'}</td>
-                                                                        <td className="py-3">
-                                                                            {getDocStatusBadge(doc.status)}
-                                                                        </td>
-                                                                        <td className="text-end px-4 py-3">
-                                                                            <div className="d-flex justify-content-end align-items-center gap-2">
-                                                                                {doc.url ? (
-                                                                                    <>
-                                                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="View Document">
-                                                                                            <i className="ri-eye-line"></i>
-                                                                                        </a>
-                                                                                        <a href="#" onClick={(e) => {
-                                                                                            e.preventDefault();
-                                                                                            if (doc.document_id) {
-                                                                                                handleFileDownload(
-                                                                                                    () => downloadBorrowerDocument(doc.document_id),
-                                                                                                    displayFileName,
-                                                                                                    doc.url
-                                                                                                );
-                                                                                            } else {
-                                                                                                window.open(doc.url, '_blank');
-                                                                                            }
-                                                                                        }} className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="Download Document">
-                                                                                            <i className="ri-download-2-line"></i>
-                                                                                        </a>
-                                                                                    </>
-                                                                                ) : null}
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={3} className="text-center text-muted fs-13 py-4">
-                                                                    <div className="d-flex flex-column align-items-center">
-                                                                        <i className="ri-folder-open-line fs-24 text-muted mb-2"></i>
-                                                                        No documents found
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div className="d-flex justify-content-between align-items-center mt-3">
-                                                <span className="text-muted fs-13">
-                                                    Showing {review.documents_with_urls?.length > 0 ? 1 : 0} to {review.documents_with_urls?.length || 0} of {review.documents_with_urls?.length || 0} documents
-                                                </span>
-                                                <ul className="pagination pagination-sm mb-0">
-                                                    <li className="page-item disabled"><span className="page-link"><i className="ri-arrow-left-s-line"></i></span></li>
-                                                    <li className="page-item active"><span className="page-link">1</span></li>
-                                                    <li className="page-item disabled"><span className="page-link"><i className="ri-arrow-right-s-line"></i></span></li>
-                                                </ul>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -314,7 +195,7 @@ export default function FundingReviewDetail() {
                                                     <i className="ri-bank-line"></i>
                                                 </span>
                                             </div>
-                                            <h5 className="card-title mb-0 fs-16 fw-bold">Matched Lenders</h5>
+                                            <h5 className="card-title mb-0 fs-16 fw-bold">Lenders Information</h5>
                                         </div>
                                     </div>
                                     <div className="card-body p-4">
@@ -337,18 +218,10 @@ export default function FundingReviewDetail() {
                                                                 )}
                                                             </td>
                                                             <td className="py-3 text-truncate">
-                                                                {lender.email ? (
-                                                                    <a href={`mailto:${lender.email}`} className="text-primary text-decoration-none">
-                                                                        {lender.email}
-                                                                    </a>
-                                                                ) : '-'}
+                                                                {lender.email || '-'}
                                                             </td>
                                                             <td className="py-3 text-truncate">
-                                                                {lender.phone ? (
-                                                                    <a href={`tel:${lender.phone}`} className="text-body text-decoration-none">
-                                                                        {lender.phone}
-                                                                    </a>
-                                                                ) : '-'}
+                                                                {lender.phone || '-'}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -358,6 +231,122 @@ export default function FundingReviewDetail() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Documents Uploaded Card */}
+                            <div className="card shadow-sm border-0 mb-4 rounded-3">
+                                <div className="card-header bg-white border-0 pt-4 pb-0">
+                                    <div className="d-flex align-items-center">
+                                        <div className="avatar-xs me-3">
+                                            <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
+                                                <i className="ri-file-text-line"></i>
+                                            </span>
+                                        </div>
+                                        <h5 className="card-title mb-0 fs-16 fw-bold">Documents Uploaded</h5>
+                                    </div>
+                                </div>
+                                <div className="card-body p-4">
+                                    <div className="table-responsive border rounded border-light-subtle bg-white">
+                                        <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
+                                            <thead className="bg-light">
+                                                <tr>
+                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '30%' }}>File Name</th>
+                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Document Type</th>
+                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Uploaded On</th>
+                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '15%' }}>Status</th>
+                                                    <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 text-end px-4" style={{ width: '15%' }}>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Array.isArray(review.documents_with_urls) && review.documents_with_urls.length > 0 ? (
+                                                    review.documents_with_urls.map((doc: any, idx: number) => {
+                                                        const displayFileName = doc.file_name ? doc.file_name : doc.name.replace(/_/g, ' ');
+                                                        const config = getFileConfig(doc.url || doc.file_name || displayFileName || '');
+                                                        return (
+                                                            <tr key={idx}>
+                                                                <td className="px-4 py-3">
+                                                                    <div className="d-flex align-items-center">
+                                                                        <div className="avatar-sm flex-shrink-0">
+                                                                            <div className={`avatar-title ${config.bg} ${config.color} rounded fs-20 material-shadow`}>
+                                                                                <i className={config.icon}></i>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="ms-3 flex-grow-1 overflow-hidden" style={{ minWidth: 0 }}>
+                                                                            <h6 className="fs-14 mb-0 text-truncate" title={displayFileName}>
+                                                                                {doc.url ? (
+                                                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-body fw-medium d-block text-truncate">
+                                                                                        {displayFileName}
+                                                                                    </a>
+                                                                                ) : (
+                                                                                    <span className="text-body fw-medium d-block text-truncate">
+                                                                                        {displayFileName}
+                                                                                    </span>
+                                                                                )}
+                                                                            </h6>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-3">
+                                                                    <span className="text-muted d-block text-truncate" title={doc.document_type || doc.name.replace(/_/g, ' ')}>
+                                                                        {doc.document_type || doc.name.replace(/_/g, ' ')}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-3 text-muted">{doc.uploaded_on || '-'}</td>
+                                                                <td className="py-3">
+                                                                    {getDocStatusBadge(doc.status)}
+                                                                </td>
+                                                                <td className="text-end px-4 py-3">
+                                                                    <div className="d-flex justify-content-end align-items-center gap-2">
+                                                                        {doc.url ? (
+                                                                            <>
+                                                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="View Document">
+                                                                                    <i className="ri-eye-line"></i>
+                                                                                </a>
+                                                                                <a href="#" onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    if (doc.document_id) {
+                                                                                        handleFileDownload(
+                                                                                            () => downloadBorrowerDocument(doc.document_id),
+                                                                                            displayFileName,
+                                                                                            doc.url
+                                                                                        );
+                                                                                    } else {
+                                                                                        window.open(doc.url, '_blank');
+                                                                                    }
+                                                                                }} className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="Download Document">
+                                                                                    <i className="ri-download-2-line"></i>
+                                                                                </a>
+                                                                            </>
+                                                                        ) : null}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={5} className="text-center text-muted fs-13 py-4">
+                                                            <div className="d-flex flex-column align-items-center">
+                                                                <i className="ri-folder-open-line fs-24 text-muted mb-2"></i>
+                                                                No documents found
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center mt-3">
+                                        <span className="text-muted fs-13">
+                                            Showing {review.documents_with_urls?.length > 0 ? 1 : 0} to {review.documents_with_urls?.length || 0} of {review.documents_with_urls?.length || 0} documents
+                                        </span>
+                                        <ul className="pagination pagination-sm mb-0">
+                                            <li className="page-item disabled"><span className="page-link"><i className="ri-arrow-left-s-line"></i></span></li>
+                                            <li className="page-item active"><span className="page-link">1</span></li>
+                                            <li className="page-item disabled"><span className="page-link"><i className="ri-arrow-right-s-line"></i></span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div className="card shadow-sm border-0 rounded-3">
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
