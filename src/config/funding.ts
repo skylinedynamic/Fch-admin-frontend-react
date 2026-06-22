@@ -97,7 +97,8 @@ export const READINESS_FACTORS_OPTIONS = [
     "Revenue",
     "Time in Business",
     "Banking Activity",
-    "Documents"
+    "Minimum Monthly Deposits",
+    "Minimum Average Balance",
 ];
 
 export const TIB_OPTIONS = [
