@@ -305,6 +305,60 @@ export default function FundingReviewDetail() {
                                 </div>
                             </div>
 
+                            {review.matched_lenders && review.matched_lenders.length > 0 && (
+                                <div className="card shadow-sm border-0 mb-4 rounded-3">
+                                    <div className="card-header bg-white border-0 pt-4 pb-0">
+                                        <div className="d-flex align-items-center">
+                                            <div className="avatar-xs me-3">
+                                                <span className="avatar-title bg-info-subtle text-info rounded fs-18">
+                                                    <i className="ri-bank-line"></i>
+                                                </span>
+                                            </div>
+                                            <h5 className="card-title mb-0 fs-16 fw-bold">Matched Lenders</h5>
+                                        </div>
+                                    </div>
+                                    <div className="card-body p-4">
+                                        <div className="table-responsive border rounded border-light-subtle bg-white">
+                                            <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
+                                                <thead className="bg-light">
+                                                    <tr>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '40%' }}>Lender Name</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '35%' }}>Email</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Phone</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {review.matched_lenders.map((lender: any, idx: number) => (
+                                                        <tr key={lender.id || idx}>
+                                                            <td className="px-4 py-3 text-body">
+                                                                <div className="fw-semibold">{lender.name || '-'}</div>
+                                                                {lender.contact_name && (
+                                                                    <small className="text-muted d-block mt-1">Contact: {lender.contact_name}</small>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-3 text-truncate">
+                                                                {lender.email ? (
+                                                                    <a href={`mailto:${lender.email}`} className="text-primary text-decoration-none">
+                                                                        {lender.email}
+                                                                    </a>
+                                                                ) : '-'}
+                                                            </td>
+                                                            <td className="py-3 text-truncate">
+                                                                {lender.phone ? (
+                                                                    <a href={`tel:${lender.phone}`} className="text-body text-decoration-none">
+                                                                        {lender.phone}
+                                                                    </a>
+                                                                ) : '-'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="card shadow-sm border-0 rounded-3">
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
                                     <div className="d-flex align-items-center">
