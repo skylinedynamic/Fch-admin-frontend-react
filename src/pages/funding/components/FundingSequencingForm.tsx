@@ -837,7 +837,7 @@ export default function FundingSequencingForm() {
                                                                 <div style={{ minHeight: '90px', transition: 'all 0.3s ease-in-out' }}>
                                                                     {formData.require_documents_uploaded && (
                                                                         <div className="mb-4">
-                                                                            <label className="form-label text-dark fw-medium mb-2">Allowed Documents <span className="text-danger">*</span></label>
+                                                                            <label className="form-label text-dark fw-medium mb-2">Required Documents <span className="text-danger">*</span></label>
                                                                             <MultiSelect
                                                                                 value={formData.allowed_documents || []}
                                                                                 options={allowedDocumentOptions}
