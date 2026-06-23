@@ -34,12 +34,12 @@ const menuItems = [
     label: "Leads",
     permission: "view leads",
   },
-  // {
-  //   to: '/contacts',
-  //   icon: 'las la-clipboard-list',
-  //   label: 'Contacts',
-  //   permission: 'view contacts',
-  // },
+  {
+    to: "/clients",
+    icon: "las la-user-friends",
+    label: "Clients",
+    permission: "view clients",
+  },
   {
     label: "Intake & Review",
     icon: "ri-file-list-3-line",
@@ -64,14 +64,21 @@ const menuItems = [
         to: '/intake-review/change-requests',
         label: 'Change Requests',
         permission: 'view change requests',
+      },
+      {
+        to: '/intake-review/credit-profile-requests',
+        label: 'Request Credit Profile',
+        permission: '',
       }
     ]
   },
+
   {
-    to: "/clients",
-    icon: "las la-user-friends",
-    label: "Clients",
-    permission: "view clients",
+    to: "/capital-access",
+    icon: "ri-funds-line",
+    label: "Capital Access",
+    permission: "view credit accounts",
+    isHostOnly: true,
   },
   {
     to: "/funding",
@@ -101,12 +108,6 @@ const menuItems = [
         to: "/credit-accounts",
         label: "Credit Accounts",
         permission: "view credit accounts", // Temporary permission or add new one
-        isHostOnly: true,
-      },
-      {
-        to: "/capital-access",
-        label: "Capital Access",
-        permission: "view credit accounts",
         isHostOnly: true,
       },
     ],
@@ -574,15 +575,7 @@ export default function Sidebar() {
                                     ) {
                                       isPathActive = true;
                                     }
-                                    if (
-                                      subItem.to ===
-                                      "/capital-access" &&
-                                      location.pathname.startsWith(
-                                        "/capital-access/",
-                                      )
-                                    ) {
-                                      isPathActive = true;
-                                    }
+
 
                                     return isPathActive
                                       ? "nav-link active"

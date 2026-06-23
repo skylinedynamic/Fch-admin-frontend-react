@@ -1321,7 +1321,7 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 /* ================================================================
    PARTNERS & CLIENTS PAGES — Mobile margin-top fix
    Ensures statistics cards don't get hidden behind the sticky header.
-   ================================================================ */
+   ================================================================= */
 
 @media (max-width: 991px) {
 

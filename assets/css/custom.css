@@ -1661,6 +1661,42 @@ File: Custom Css File
 
 
 
+/* ── Detail Item ──────────────────────────────────────────────────────────── */
+.detail-label {
+  letter-spacing: 0.5px;
+}
+
+.detail-copy-btn {
+  line-height: 1;
+}
+
+.detail-copy-icon {
+  color: #adb5bd !important;
+  font-size: 15px;
+}
+
+.detail-copy-icon:hover {
+  color: #6c757d !important;
+}
+
+.detail-copy-icon.copied {
+  color: #10b981 !important;
+}
+
+/* ── Reveal SSN Button ────────────────────────────────────────────────────── */
+.btn-reveal-ssn {
+  background-color: var(--secondary-color) !important;
+  border-color: var(--secondary-color) !important;
+  color: #fff !important;
+}
+
+.btn-reveal-ssn:hover,
+.btn-reveal-ssn:active,
+.btn-reveal-ssn:focus {
+  filter: brightness(90%);
+  color: #fff !important;
+}
+
 /* Credit Profile Loading Skeleton Styles */
 .credit-profile-skeleton-card {
   height: calc(100vh - 360px) !important;
@@ -1751,4 +1787,95 @@ File: Custom Css File
 .skeleton-border-container {
   border: 1px solid #e9e9e9 !important;
   border-radius: 4px !important;
+}
+
+/* Score Configuration Form */
+#score-config-form input.form-control,
+#score-config-form input.form-control-sm,
+#score-config-form input.form-control-xs {
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+.config-input-xs {
+  width: 40px !important;
+}
+
+.config-input-sm {
+  width: 45px !important;
+}
+
+.config-input-md {
+  width: 60px !important;
+}
+
+.config-input-lg {
+  width: 65px !important;
+}
+
+.config-input-xl {
+  width: 80px !important;
+}
+
+.config-input-xxl {
+  width: 100px !important;
+}
+
+.config-input-no-shadow {
+  box-shadow: none !important;
+}
+
+.config-label-span {
+  min-width: 120px !important;
+  justify-content: center !important;
+}
+
+.config-progress {
+  height: 8px !important;
+}
+
+.config-dropdown-radius {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.config-th {
+  width: 120px !important;
+}
+
+.config-th-lg {
+  width: 65% !important;
+}
+
+.config-th-sm {
+  width: 35% !important;
+}
+
+.config-th-quarter {
+  width: 25% !important;
+}
+
+.config-th-half {
+  width: 60% !important;
+}
+
+.config-th-subscore {
+  width: 15% !important;
+  min-width: 120px !important;
+}
+
+.config-th-qty {
+  width: 240px !important;
+}
+
+.config-th-val {
+  width: 160px !important;
+}
+
+.config-th-status {
+  width: 280px !important;
+}
+
+.config-th-label {
+  width: 240px !important;
 }

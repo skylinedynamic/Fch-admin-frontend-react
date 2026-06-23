@@ -18,7 +18,7 @@ export * from './types';
  */
 export const fetchCapitalAccounts = async (payload: any = {}): Promise<CapitalAccessListResponse> => {
     const response = await apiClient.post<CapitalAccessListResponse>(
-        '/common/credit-builder/capital-accesses/fetch-all',
+        '/common/capital-accesses/fetch-all',
         payload
     );
     return response.data;
@@ -29,7 +29,7 @@ export const fetchCapitalAccounts = async (payload: any = {}): Promise<CapitalAc
  */
 export const getCapitalAccount = async (id: number | string): Promise<CapitalAccessSingleResponse> => {
     const { data } = await apiClient.get<CapitalAccessSingleResponse>(
-        `/common/credit-builder/capital-accesses/${id}`
+        `/common/capital-accesses/${id}`
     );
     return data;
 };
@@ -39,7 +39,7 @@ export const getCapitalAccount = async (id: number | string): Promise<CapitalAcc
  */
 export const createCapitalAccount = async (payload: StoreCapitalAccessPayload): Promise<CapitalAccessSingleResponse> => {
     const { data } = await apiClient.post<CapitalAccessSingleResponse>(
-        '/common/credit-builder/capital-accesses',
+        '/common/capital-accesses',
         payload
     );
     return data;
@@ -53,7 +53,7 @@ export const updateCapitalAccount = async (
     payload: StoreCapitalAccessPayload
 ): Promise<CapitalAccessSingleResponse> => {
     const { data } = await apiClient.put<CapitalAccessSingleResponse>(
-        `/common/credit-builder/capital-accesses/${id}`,
+        `/common/capital-accesses/${id}`,
         payload
     );
     return data;
@@ -64,7 +64,7 @@ export const updateCapitalAccount = async (
  */
 export const deleteCapitalAccount = async (id: number | string): Promise<CapitalAccessMutationResponse> => {
     const { data } = await apiClient.delete<CapitalAccessMutationResponse>(
-        `/common/credit-builder/capital-accesses/${id}`
+        `/common/capital-accesses/${id}`
     );
     return data;
 };
@@ -77,7 +77,7 @@ export const updateCapitalAccountStatus = async (
     status: string
 ): Promise<CapitalAccessSingleResponse> => {
     const { data } = await apiClient.patch<CapitalAccessSingleResponse>(
-        `/common/credit-builder/capital-accesses/${id}/status`,
+        `/common/capital-accesses/${id}/status`,
         { status }
     );
     return data;

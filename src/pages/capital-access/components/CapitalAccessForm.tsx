@@ -2,38 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
-import FormLoader from '../../../../components/Loader/FormLoader';
-import { CreditAccount } from '../../../../modules/credit-accounts/services';
+import FormLoader from '../../../components/Loader/FormLoader';
+import { CreditAccount } from '../../../modules/credit-accounts/services';
 import {
     useCapitalAccount,
     useAllCreditAccountsForBuilder,
     useCreateCapitalAccount,
     useUpdateCapitalAccount
-} from '../../../../modules/capital-access/queries';
-import { StoreCapitalAccessPayload } from '../../../../modules/capital-access/services';
+} from '../../../modules/capital-access/queries';
+import { StoreCapitalAccessPayload } from '../../../modules/capital-access/services';
 import EditStepDetailsModal, { EditDetailsForm } from './EditStepDetailsModal';
-import { usePermissions } from '../../../../lib/auth/usePermissions';
-import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../../config/creditBuilder';
-import { buildStorageUrl } from '../../../../utils/imageHelpers';
+import { usePermissions } from '../../../lib/auth/usePermissions';
+import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../config/creditBuilder';
+import { buildStorageUrl } from '../../../utils/imageHelpers';
+import { PRE_FLIGHT_TASKS } from '../../../config/capitalAccessOptions';
 
-const PRE_FLIGHT_TASKS = [
-    "Business Information",
-    "EIN Verified",
-    "Personal Credit Pulled",
-    "Business Bank Account",
-    "Identity Verified",
-    "No Recent Derogatories"
-];
 
 export interface SelectedPlayCard extends CreditAccount {
-    play_details?: {
-        why_this_card: string;
-        est_limit_min: string;
-        est_limit_max: string;
-        est_limit_for_show?: string;
-        hard_pull: string;
-        what_you_need: string[];
-    }
+    play_details?: EditDetailsForm;
 }
 
 export default function CapitalAccessForm() {
@@ -53,18 +39,18 @@ export default function CapitalAccessForm() {
     const [editingCardId, setEditingCardId] = useState<number | null>(null);
     const [pendingAddCard, setPendingAddCard] = useState<SelectedPlayCard | null>(null);
     const [modalValidationErrors, setModalValidationErrors] = useState<Record<string, string>>({});
-    const [editDetailsForm, setEditDetailsForm] = useState<{
-        why_this_card: string;
-        est_limit_min: string;
-        est_limit_max: string;
-        hard_pull: string;
-        what_you_need: string[];
-    }>({
+    const [editDetailsForm, setEditDetailsForm] = useState<EditDetailsForm>({
         why_this_card: '',
         est_limit_min: '',
         est_limit_max: '',
         hard_pull: 'Yes',
-        what_you_need: []
+        what_you_need: [],
+        access_time: 'Morning',
+        access_day: '',
+        access_day_time: '',
+        minimum_fico_requirement: '',
+        maximum_utilization_threshold: '',
+        difficulty_modifier: '',
     });
 
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -77,6 +63,11 @@ export default function CapitalAccessForm() {
         target_exposure_max: string;
         est_timeline_min: string;
         est_timeline_max: string;
+        minimum_fico_requirement: string;
+        maximum_utilization_threshold: string;
+        difficulty_modifier: string;
+        allow_recent_late_payment: boolean;
+        late_payment_lookback_months: string;
         what_you_will_get: string[];
         pre_flight_checklist: string[];
     }>({
@@ -88,6 +79,11 @@ export default function CapitalAccessForm() {
 
         est_timeline_min: '',
         est_timeline_max: '',
+        minimum_fico_requirement: '',
+        maximum_utilization_threshold: '',
+        difficulty_modifier: '',
+        allow_recent_late_payment: true,
+        late_payment_lookback_months: '',
         what_you_will_get: [''],
         pre_flight_checklist: [],
     });
@@ -113,6 +109,11 @@ export default function CapitalAccessForm() {
 
                 est_timeline_min: programData.est_timeline_min !== undefined && programData.est_timeline_min !== null ? String(programData.est_timeline_min) : '',
                 est_timeline_max: programData.est_timeline_max !== undefined && programData.est_timeline_max !== null ? String(programData.est_timeline_max) : '',
+                minimum_fico_requirement: programData.minimum_fico_requirement !== null && programData.minimum_fico_requirement !== undefined ? String(programData.minimum_fico_requirement) : '',
+                maximum_utilization_threshold: programData.maximum_utilization_threshold !== null && programData.maximum_utilization_threshold !== undefined ? String(programData.maximum_utilization_threshold) : '',
+                difficulty_modifier: programData.difficulty_modifier !== null && programData.difficulty_modifier !== undefined ? String(programData.difficulty_modifier) : '',
+                allow_recent_late_payment: programData.allow_recent_late_payment !== undefined && programData.allow_recent_late_payment !== null ? !!programData.allow_recent_late_payment : true,
+                late_payment_lookback_months: programData.late_payment_lookback_months !== undefined && programData.late_payment_lookback_months !== null ? String(programData.late_payment_lookback_months) : '',
                 what_you_will_get: programData.what_you_will_get?.length ? programData.what_you_will_get : [''],
                 pre_flight_checklist: programData.pre_flight_checklist || [],
             });
@@ -125,7 +126,13 @@ export default function CapitalAccessForm() {
                     est_limit_max: String(acc.pivot.est_limit_max ?? ''),
                     est_limit_for_show: acc.pivot.est_limit_for_show || '',
                     hard_pull: acc.pivot.hard_pull || 'Yes',
-                    what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || [])
+                    what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || []),
+                    access_time: acc.pivot.access_time || 'Morning',
+                    access_day: acc.pivot.access_day ? String(acc.pivot.access_day) : '',
+                    access_day_time: acc.pivot.access_day_time || '',
+                    minimum_fico_requirement: acc.pivot.minimum_fico_requirement !== null && acc.pivot.minimum_fico_requirement !== undefined ? String(acc.pivot.minimum_fico_requirement) : '',
+                    maximum_utilization_threshold: acc.pivot.maximum_utilization_threshold !== null && acc.pivot.maximum_utilization_threshold !== undefined ? String(acc.pivot.maximum_utilization_threshold) : '',
+                    difficulty_modifier: acc.pivot.difficulty_modifier !== null && acc.pivot.difficulty_modifier !== undefined ? String(acc.pivot.difficulty_modifier) : '',
                 } : {
                     why_this_card: '',
 
@@ -133,7 +140,13 @@ export default function CapitalAccessForm() {
                     est_limit_max: '',
                     est_limit_for_show: '',
                     hard_pull: 'Yes',
-                    what_you_need: []
+                    what_you_need: [],
+                    access_time: 'Morning',
+                    access_day: '',
+                    access_day_time: '',
+                    minimum_fico_requirement: '',
+                    maximum_utilization_threshold: '',
+                    difficulty_modifier: '',
                 }
             }));
             setSelectedAccounts(loadedAccounts);
@@ -225,7 +238,13 @@ export default function CapitalAccessForm() {
                         est_limit_min: '',
                         est_limit_max: '',
                         hard_pull: 'Yes',
-                        what_you_need: ['']
+                        what_you_need: [''],
+                        access_time: 'Morning',
+                        access_day: '',
+                        access_day_time: '',
+                        minimum_fico_requirement: '',
+                        maximum_utilization_threshold: '',
+                        difficulty_modifier: '',
                     }
                 };
                 setPendingAddCard(newAcc);
@@ -251,10 +270,16 @@ export default function CapitalAccessForm() {
             ...account,
             play_details: {
                 why_this_card: '',
-                        est_limit_min: '',
+                est_limit_min: '',
                 est_limit_max: '',
                 hard_pull: 'Yes',
-                what_you_need: ['']
+                what_you_need: [''],
+                access_time: 'Morning',
+                access_day: '',
+                access_day_time: '',
+                minimum_fico_requirement: '',
+                maximum_utilization_threshold: '',
+                difficulty_modifier: '',
             }
         };
         setPendingAddCard(newAcc);
@@ -280,7 +305,13 @@ export default function CapitalAccessForm() {
             est_limit_min: account.play_details?.est_limit_min || '',
             est_limit_max: account.play_details?.est_limit_max || '',
             hard_pull: account.play_details?.hard_pull || 'Yes',
-            what_you_need: account.play_details?.what_you_need?.length ? [...account.play_details.what_you_need] : []
+            what_you_need: account.play_details?.what_you_need?.length ? [...account.play_details.what_you_need] : [],
+            access_time: account.play_details?.access_time || 'Morning',
+            access_day: account.play_details?.access_day ? String(account.play_details.access_day) : '',
+            access_day_time: account.play_details?.access_day_time || '',
+            minimum_fico_requirement: account.play_details?.minimum_fico_requirement || '',
+            maximum_utilization_threshold: account.play_details?.maximum_utilization_threshold || '',
+            difficulty_modifier: account.play_details?.difficulty_modifier || '',
         });
         setModalValidationErrors({});
         setIsDetailsModalOpen(true);
@@ -297,6 +328,27 @@ export default function CapitalAccessForm() {
         const cleanRequirements = editDetailsForm.what_you_need.filter(r => r.trim() !== '');
         if (cleanRequirements.length === 0) {
             errors.what_you_need = "Please add at least one requirement.";
+        }
+
+        if (editDetailsForm.minimum_fico_requirement) {
+            const fico = Number(editDetailsForm.minimum_fico_requirement);
+            if (isNaN(fico) || fico < 300 || fico > 850) {
+                errors.minimum_fico_requirement = "FICO must be between 300 and 850.";
+            }
+        }
+
+        if (editDetailsForm.maximum_utilization_threshold) {
+            const util = Number(editDetailsForm.maximum_utilization_threshold);
+            if (isNaN(util) || util < 0 || util > 100) {
+                errors.maximum_utilization_threshold = "Utilization must be between 0 and 100%.";
+            }
+        }
+
+        if (editDetailsForm.difficulty_modifier) {
+            const diff = Number(editDetailsForm.difficulty_modifier);
+            if (isNaN(diff)) {
+                errors.difficulty_modifier = "Difficulty modifier must be a number.";
+            }
         }
 
         if (Object.keys(errors).length > 0) {
@@ -379,6 +431,11 @@ export default function CapitalAccessForm() {
 
                 est_timeline_min: formData.est_timeline_min === '' ? '' : Number(formData.est_timeline_min),
                 est_timeline_max: formData.est_timeline_max === '' ? '' : Number(formData.est_timeline_max),
+                minimum_fico_requirement: formData.minimum_fico_requirement === '' ? null : Number(formData.minimum_fico_requirement),
+                maximum_utilization_threshold: formData.maximum_utilization_threshold === '' ? null : Number(formData.maximum_utilization_threshold),
+                difficulty_modifier: formData.difficulty_modifier === '' ? null : Number(formData.difficulty_modifier),
+                allow_recent_late_payment: formData.allow_recent_late_payment,
+                late_payment_lookback_months: formData.late_payment_lookback_months === '' ? null : Number(formData.late_payment_lookback_months),
                 what_you_will_get: formData.what_you_will_get.filter(item => item.trim() !== ''),
                 pre_flight_checklist: formData.pre_flight_checklist,
                 status: formData.status,
@@ -391,7 +448,15 @@ export default function CapitalAccessForm() {
                         est_limit_min: acc.play_details?.est_limit_min || '',
                         est_limit_max: acc.play_details?.est_limit_max || '',
                         hard_pull: acc.play_details?.hard_pull || 'Yes',
-                        what_you_need: acc.play_details?.what_you_need || []
+                        what_you_need: acc.play_details?.what_you_need || [],
+                        access_time: acc.play_details?.access_time || 'Morning',
+                        access_day: acc.play_details?.access_time === 'Day' && acc.play_details?.access_day
+                            ? Number(acc.play_details.access_day)
+                            : undefined,
+                        access_day_time: acc.play_details?.access_time === 'Day' ? (acc.play_details?.access_day_time || 'Morning') : undefined,
+                        minimum_fico_requirement: acc.play_details?.minimum_fico_requirement === '' || acc.play_details?.minimum_fico_requirement === undefined ? null : Number(acc.play_details.minimum_fico_requirement),
+                        maximum_utilization_threshold: acc.play_details?.maximum_utilization_threshold === '' || acc.play_details?.maximum_utilization_threshold === undefined ? null : Number(acc.play_details.maximum_utilization_threshold),
+                        difficulty_modifier: acc.play_details?.difficulty_modifier === '' || acc.play_details?.difficulty_modifier === undefined ? null : Number(acc.play_details.difficulty_modifier),
                     })),
             };
 
@@ -523,7 +588,58 @@ export default function CapitalAccessForm() {
                                                 </div>
                                             </div>
 
-                                            <div className="col-lg-6">
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="minFico">Minimum FICO Requirement</label>
+                                                    <input type="number" id="minFico" className={`form-control ${validationErrors.minimum_fico_requirement ? 'is-invalid' : ''}`} placeholder="e.g. 680" value={formData.minimum_fico_requirement} onChange={(e) => setFormData(prev => ({ ...prev, minimum_fico_requirement: e.target.value }))} />
+                                                    {validationErrors.minimum_fico_requirement && <div className="invalid-feedback">{validationErrors.minimum_fico_requirement}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="maxUtilization">Maximum Utilization Threshold (%)</label>
+                                                    <input type="number" id="maxUtilization" min="0" max="100" className={`form-control ${validationErrors.maximum_utilization_threshold ? 'is-invalid' : ''}`} placeholder="e.g. 30" value={formData.maximum_utilization_threshold} onChange={(e) => setFormData(prev => ({ ...prev, maximum_utilization_threshold: e.target.value }))} />
+                                                    {validationErrors.maximum_utilization_threshold && <div className="invalid-feedback">{validationErrors.maximum_utilization_threshold}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="allowRecentLatePayment">Allow Recent Late Payment</label>
+                                                    <Dropdown
+                                                        id="allowRecentLatePayment"
+                                                        value={formData.allow_recent_late_payment ? 'Yes' : 'No'}
+                                                        options={[{ label: 'Yes', value: 'Yes' }, { label: 'No', value: 'No' }]}
+                                                        onChange={(e: any) => setFormData(prev => ({ ...prev, allow_recent_late_payment: e.value === 'Yes' }))}
+                                                        className="w-100"
+                                                        appendTo="self"
+                                                    />
+                                                    {validationErrors.allow_recent_late_payment && <div className="text-danger small mt-1">{validationErrors.allow_recent_late_payment}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="latePaymentLookbackMonths">Late Payment Lookback Months</label>
+                                                    <input
+                                                        type="number"
+                                                        id="latePaymentLookbackMonths"
+                                                        min="0"
+                                                        className={`form-control ${validationErrors.late_payment_lookback_months ? 'is-invalid' : ''}`}
+                                                        placeholder="e.g. 12"
+                                                        value={formData.late_payment_lookback_months}
+                                                        onChange={(e) => setFormData(prev => ({ ...prev, late_payment_lookback_months: e.target.value }))}
+                                                    />
+                                                    {validationErrors.late_payment_lookback_months && <div className="invalid-feedback">{validationErrors.late_payment_lookback_months}</div>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-3">
+                                                <div>
+                                                    <label className="form-label" htmlFor="difficultyModifier">Difficulty Modifier</label>
+                                                    <input type="number" id="difficultyModifier" className={`form-control ${validationErrors.difficulty_modifier ? 'is-invalid' : ''}`} placeholder="e.g. 5" value={formData.difficulty_modifier} onChange={(e) => setFormData(prev => ({ ...prev, difficulty_modifier: e.target.value }))} />
+                                                    {validationErrors.difficulty_modifier && <div className="invalid-feedback">{validationErrors.difficulty_modifier}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="col-lg-3">
                                                 <div>
                                                     <label className="form-label" htmlFor="programStatus">Status</label>
                                                     <Dropdown id="programStatus" value={formData.status} options={STATUS_OPTIONS} onChange={(e: any) => setFormData(prev => ({ ...prev, status: e.value }))} optionLabel="label" optionValue="value" className="w-100" appendTo="self" />
@@ -677,6 +793,11 @@ export default function CapitalAccessForm() {
                                                                                     {acc.play_details.hard_pull && (
                                                                                         <span className={`badge ${acc.play_details.hard_pull === 'Yes' ? 'bg-danger-subtle text-danger' : 'bg-light text-muted'} fs-9`}>
                                                                                             <i className="ri-error-warning-line align-bottom me-1"></i> Hard Pull: {acc.play_details.hard_pull}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {acc.play_details.access_time && (
+                                                                                        <span className="badge bg-primary-subtle text-primary fs-9">
+                                                                                            <i className="ri-time-line align-bottom me-1"></i> {acc.play_details.access_time}{acc.play_details.access_time === 'Day' && acc.play_details.access_day ? ` Day ${acc.play_details.access_day}` : ''}{acc.play_details.access_time === 'Day' && acc.play_details.access_day_time ? ` (${acc.play_details.access_day_time})` : ''}
                                                                                         </span>
                                                                                     )}
                                                                                 </div>

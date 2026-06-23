@@ -24,8 +24,8 @@ import TiersList from './pages/tiers/TiersList.jsx';
 import TierForm from './pages/tiers/TierForm.jsx';
 import CreditAccountsList from './pages/credit-builder/credit-accounts/CreditAccountsList.jsx';
 import CreditAccountForm from './pages/credit-builder/credit-accounts/components/CreditAccountForm.jsx';
-import CapitalAccessList from './pages/credit-builder/capital-access/CapitalAccessList.tsx';
-import CapitalAccessForm from './pages/credit-builder/capital-access/components/CapitalAccessForm.tsx';
+import CapitalAccessList from './pages/capital-access/CapitalAccessList.tsx';
+import CapitalAccessForm from './pages/capital-access/components/CapitalAccessForm.tsx';
 import VerificationCenter from './pages/credit-builder/verifications/VerificationCenter.jsx';
 import BorrowerVerificationRequests from './pages/credit-builder/verifications/BorrowerVerificationRequests.jsx';
 import Appointments from './pages/appointments/Appointments.jsx';
@@ -41,6 +41,8 @@ import FundingApplicationDetails from './pages/applications/funding/FundingAppli
 import FundingReview from './pages/applications/funding-review/FundingReview.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
+import CreditProfileRequests from './pages/applications/credit-profile-requests/CreditProfileRequests.tsx';
+import CreditProfileRequestDetails from './pages/applications/credit-profile-requests/CreditProfileRequestDetails.tsx';
 import Invoices from './pages/invoices/Invoices.jsx';
 import InvoiceDetails from './pages/invoices/InvoiceDetails.jsx';
 import Payments from './pages/payments/Payments.jsx';
@@ -324,6 +326,9 @@ export default function App() {
               <Route element={<PermissionRoute permission="view change requests" />}>
                 <Route path="change-requests" element={<ChangeRequests />} />
               </Route>
+
+              <Route path="credit-profile-requests" element={<CreditProfileRequests />} />
+              <Route path="credit-profile-requests/:id" element={<CreditProfileRequestDetails />} />
 
             </Route>
 

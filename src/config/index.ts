@@ -31,6 +31,12 @@ export { TIMEZONE_OPTIONS } from './timezoneOptions';
 // Credit Builder related configurations
 export { CATEGORY_OPTIONS, STATUS_OPTIONS, REPORT_TO_OPTIONS,VENDOR_STATUS_OPTIONS, type ConfigOption } from './creditBuilder';
 
+// Capital Access options
+export { ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS, type AccessTimeOption, type DayOption } from './capitalAccessOptions';
+
 // App configuration
 export { APP_CONFIG } from './appConfig';
+
+// Score Calculation labels
+export { STATIC_TIER_LABELS, type ScoreTierLabel } from './scoreCalculation';
 

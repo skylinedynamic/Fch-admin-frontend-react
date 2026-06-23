@@ -106,3 +106,33 @@ export const formatBusinessEIN = (value) => {
     }
     return `${cleanValue.slice(0, 2)}-${cleanValue.slice(2)}`;
 };
+
+/**
+ * Masks or reveals an SSN string in ###-##-#### format.
+ * @param value Raw SSN digits
+ * @param reveal Whether to reveal the full SSN
+ */
+export const formatSSN = (value, reveal = false) => {
+    if (!value) return '—';
+    const digits = value.replace(/\D/g, '');
+    if (reveal) {
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`;
+    }
+    const last4 = digits.slice(-4).padStart(4, '*');
+    return `***-**-${last4}`;
+};
+
+/**
+ * Formats a date string into a human-readable format.
+ * @param dateStr ISO or YYYY-MM-DD string
+ */
+export const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+        return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+        return dateStr;
+    }
+};
