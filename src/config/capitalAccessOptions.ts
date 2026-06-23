@@ -25,3 +25,12 @@ export const DAY_TIME_OPTIONS: AccessTimeOption[] = [
     { label: 'Evening', value: 'Evening' },
     { label: 'Anytime', value: 'Anytime' },
 ];
+
+export const PRE_FLIGHT_TASKS = [
+    "Business Information",
+    "EIN Verified",
+    "Personal Credit Pulled",
+    "Business Bank Account",
+    "Identity Verified",
+    "No Recent Derogatories"
+];

@@ -15,15 +15,8 @@ import EditStepDetailsModal, { EditDetailsForm } from './EditStepDetailsModal';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../config/creditBuilder';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
+import { PRE_FLIGHT_TASKS } from '../../../config/capitalAccessOptions';
 
-const PRE_FLIGHT_TASKS = [
-    "Business Information",
-    "EIN Verified",
-    "Personal Credit Pulled",
-    "Business Bank Account",
-    "Identity Verified",
-    "No Recent Derogatories"
-];
 
 export interface SelectedPlayCard extends CreditAccount {
     play_details?: EditDetailsForm;
