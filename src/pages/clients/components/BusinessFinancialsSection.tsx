@@ -367,17 +367,32 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
                 <div className="col-lg-6">
                     <div className="">
-                        <label htmlFor="nsf_days" className="form-label">NSF/Negative Days (Last 90 Days)</label>
+                        <label htmlFor="nsf_count" className="form-label">NSF Count (Last 90 Days)</label>
                         <input
                             type="number"
-                            className={`form-control ${errors.nsf_days ? 'is-invalid' : ''}`}
-                            id="nsf_days"
-                            name="nsf_days"
+                            className={`form-control ${errors.nsf_count ? 'is-invalid' : ''}`}
+                            id="nsf_count"
+                            name="nsf_count"
                             placeholder="0"
-                            value={formData.nsf_days || ''}
+                            value={formData.nsf_count || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.nsf_days && <div className="invalid-feedback">{errors.nsf_days}</div>}
+                        {errors.nsf_count && <div className="invalid-feedback">{errors.nsf_count}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="">
+                        <label htmlFor="negative_days" className="form-label">Negative Days (Last 90 Days)</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.negative_days ? 'is-invalid' : ''}`}
+                            id="negative_days"
+                            name="negative_days"
+                            placeholder="0"
+                            value={formData.negative_days || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.negative_days && <div className="invalid-feedback">{errors.negative_days}</div>}
                     </div>
                 </div>
 

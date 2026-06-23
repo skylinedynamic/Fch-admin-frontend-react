@@ -56,7 +56,8 @@ export type Client = {
     paydex_score?: string | number;
     years_in_business?: string | number;
     number_of_employees?: string | number;
-    nsf_days?: string | number;
+    nsf_count?: string | number;
+    negative_days?: string | number;
     funding_urgency?: string;
 
     // Metadata
