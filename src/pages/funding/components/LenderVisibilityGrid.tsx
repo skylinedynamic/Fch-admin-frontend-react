@@ -85,7 +85,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             <th style={{ width: '220px' }}>Minimum Monthly Revenue<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Monthly Deposits<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Average Daily Balance<span className="text-danger">*</span></th>
-                            <th style={{ width: '200px' }}>Max NSF / Negative Days</th>
+                            <th style={{ width: '150px' }}>Max NSF Count<span className="text-danger">*</span></th>
+                            <th style={{ width: '150px' }}>Max Negative Days<span className="text-danger">*</span></th>
                             <th style={{ width: '120px' }}>Min DSCR</th>
                             <th style={{ width: '220px' }}>Allowed States</th>
                             <th style={{ width: '220px' }}>Restricted States</th>
@@ -185,13 +186,28 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 </td>
 
                                 <td>
-                                    <input
-                                        type="number"
-                                        className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_negative_days`] ? 'is-invalid' : ''}`}
-                                        placeholder="3"
-                                        value={row.max_nsf_negative_days || ''}
-                                        onChange={(e) => onChange(i, 'max_nsf_negative_days', e.target.value)}
-                                    />
+                                    <div className="position-relative">
+                                        <input
+                                            type="number"
+                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
+                                            placeholder="10"
+                                            value={row.max_nsf_count || ''}
+                                            onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
+                                        />
+                                        {renderError('max_nsf_count', i)}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="position-relative">
+                                        <input
+                                            type="number"
+                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
+                                            placeholder="10"
+                                            value={row.max_negative_days || ''}
+                                            onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
+                                        />
+                                        {renderError('max_negative_days', i)}
+                                    </div>
                                 </td>
                                 <td>
                                     <input
