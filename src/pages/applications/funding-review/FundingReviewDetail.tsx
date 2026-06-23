@@ -523,7 +523,11 @@ export default function FundingReviewDetail() {
                                 onClick={handleApprove}
                                 disabled={updateStatusMutation.isPending}
                             >
-                                {updateStatusMutation.isPending ? 'Approving...' : 'Confirm Approve'}
+                                {updateStatusMutation.isPending ? (
+                                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Approving...</>
+                                ) : (
+                                    'Confirm Approve'
+                                )}
                             </button>
                             <button
                                 type="button"
@@ -564,7 +568,11 @@ export default function FundingReviewDetail() {
                                 onClick={handleReject}
                                 disabled={updateStatusMutation.isPending}
                             >
-                                {updateStatusMutation.isPending ? 'Rejecting...' : 'Yes, Reject Application'}
+                                {updateStatusMutation.isPending ? (
+                                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Rejecting...</>
+                                ) : (
+                                    'Yes, Reject Application'
+                                )}
                             </button>
                             <button
                                 type="button"
