@@ -106,6 +106,15 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
+                            <label className="form-label text-dark fw-medium mb-2">Minimum Deposit Count <span className="text-danger">*</span></label>
+                            <div className="input-group">
+                                <input type="number" name="min_deposit_count" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.min_deposit_count`] ? 'is-invalid border-danger' : ''}`} value={visibility.min_deposit_count || ''} onChange={handleChange} placeholder="None" />
+                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.min_deposit_count`] ? 'border-danger text-danger' : ''}`}>/ mo</span>
+                            </div>
+                            {(errors as any)[`lender_visibilities.${index}.min_deposit_count`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.min_deposit_count`]}</div>}
+                        </div>
+
+                        <div className="mb-4">
                             <label className="form-label text-dark fw-medium mb-2">Minimum Average Daily Balance <span className="text-danger">*</span></label>
                             <div className="input-group">
                                 <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any)[`lender_visibilities.${index}.min_average_daily_balance`] ? 'border-danger text-danger' : ''}`}>$</span>

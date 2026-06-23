@@ -99,6 +99,7 @@ export default function FundingSequencingForm() {
             min_monthly_revenue: '',
             min_monthly_deposits: '',
             min_average_daily_balance: '',
+            min_deposit_count: '',
             max_nsf_negative_days: '',
             min_dscr: '',
             allowed_states: [],
@@ -253,6 +254,7 @@ export default function FundingSequencingForm() {
                         min_monthly_revenue: data.lenders?.[0]?.min_monthly_revenue || '',
                         min_monthly_deposits: data.lenders?.[0]?.min_monthly_deposits || '',
                         min_average_daily_balance: data.lenders?.[0]?.min_average_daily_balance || '',
+                        min_deposit_count: data.lenders?.[0]?.min_deposit_count || '',
                         max_nsf_negative_days: data.lenders?.[0]?.max_nsf_negative_days || '',
                         min_dscr: data.lenders?.[0]?.min_dscr || '',
                         sort_order: data.sort_order || '',
@@ -273,7 +275,7 @@ export default function FundingSequencingForm() {
                             ? data.lender_visibilities
                             : [{
                                 lender_id: null, min_fico: '', min_tib_months: '', min_monthly_revenue: '', min_monthly_deposits: '',
-                                min_average_daily_balance: '', max_nsf_negative_days: '', min_dscr: '',
+                                min_average_daily_balance: '', min_deposit_count: '', max_nsf_negative_days: '', min_dscr: '',
                                 allowed_states: [], restricted_states: [], allowed_industries: [], restricted_industries: []
                             }]
                     });
