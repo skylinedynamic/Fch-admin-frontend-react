@@ -18,10 +18,10 @@ const formatNumber = (val: any) => {
     // Remove all non-numeric characters except decimal point
     const strVal = String(val).replace(/[^0-9.]/g, '');
     if (strVal === '') return '';
-    
+
     const parts = strVal.split('.');
     // Limit to one decimal point
-    if (parts.length > 2) return val; 
+    if (parts.length > 2) return val;
 
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return parts.join('.');
@@ -68,7 +68,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
         if (fetchedData) {
             // @ts-ignore
             const dataToSet = { ...(fetchedData.data || fetchedData) };
-            
+
             // Format existing values
             CURRENCY_FIELDS.forEach(field => {
                 if (dataToSet[field]) {
@@ -101,7 +101,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     useImperativeHandle(ref, () => ({
         save: async () => {
             console.log('[BusinessFinancialsSection] Starting save...', { clientId, formData });
-            
+
             // Unformat values before sending to API
             const apiData = { ...formData };
             CURRENCY_FIELDS.forEach(field => {
@@ -265,7 +265,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4">
+                <div className="col-lg-6">
                     <div className="">
                         <label htmlFor="profit_margin" className="form-label">Profit Margin (%)</label>
                         <div className="input-group">
@@ -284,7 +284,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4">
+                <div className="col-lg-6">
                     <div className="">
                         <label htmlFor="current_business_debt" className="form-label">Current Business Debt</label>
                         <div className="input-group">
