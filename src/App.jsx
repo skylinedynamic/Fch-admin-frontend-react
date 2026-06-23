@@ -39,6 +39,7 @@ import PreQualificationDetails from './pages/applications/pre-qualification/PreQ
 import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
 import FundingReview from './pages/applications/funding-review/FundingReview.tsx';
+import FundingReviewDetail from './pages/applications/funding-review/FundingReviewDetail.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import CreditProfileRequests from './pages/applications/credit-profile-requests/CreditProfileRequests.tsx';
@@ -70,6 +71,8 @@ import ResourceServiceDetail from './pages/resources/ResourceServiceDetail.tsx';
 import ConfigurationGuardModal from './components/Common/ConfigurationGuardModal';
 import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
+import LendersList from './pages/lenders/LendersList';
+import LenderForm from './pages/lenders/LenderForm';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -283,6 +286,9 @@ export default function App() {
               <Route path="funding" element={<FundingList />} />
               <Route path="funding/create" element={<FundingSequencingForm />} />
               <Route path="funding/:id" element={<FundingSequencingForm />} />
+              <Route path="lenders" element={<LendersList />} />
+              <Route path="lenders/create" element={<LenderForm />} />
+              <Route path="lenders/:id" element={<LenderForm />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}
@@ -321,6 +327,7 @@ export default function App() {
                 <Route path="funding-application" element={<FundingApplication />} />
                 <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
                 <Route path="funding-review" element={<FundingReview />} />
+                <Route path="funding-review/:id" element={<FundingReviewDetail />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view change requests" />}>

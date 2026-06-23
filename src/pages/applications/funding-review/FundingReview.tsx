@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -18,6 +18,7 @@ export default function FundingReview() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state: any) => state.user)
     const isHost = currentUser?.is_host == 1;
+    const navigate = useNavigate();
 
     // Pagination state
     const [page, setPage] = useState<number>(1);
@@ -32,13 +33,7 @@ export default function FundingReview() {
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [filters, setFilters] = useState<any>({});
 
-    // Modal state
-    const [showStatusModal, setShowStatusModal] = useState(false);
-    const [selectedReview, setSelectedReview] = useState<any>(null);
-    const [newStatus, setNewStatus] = useState('');
-    const [rejectReason, setRejectReason] = useState('');
-
-    const updateStatusMutation = useUpdateFundingReviewStatus();
+    // Removed modal state
 
     // Applied Filters
     const [appliedFilters, setAppliedFilters] = useState<{
@@ -128,22 +123,7 @@ export default function FundingReview() {
         setPage(1);
     };
 
-    const handleStatusUpdate = () => {
-        if (!newStatus) return;
 
-        updateStatusMutation.mutate(
-            { id: selectedReview.id, status: newStatus, reject_reason: rejectReason },
-            {
-                onSuccess: () => {
-                    toast.success('Status updated successfully');
-                    setShowStatusModal(false);
-                },
-                onError: () => {
-                    toast.error('Failed to update status');
-                }
-            }
-        );
-    };
 
     const statusBodyTemplate = (rowData: any) => {
         let className = 'bg-light text-body';
@@ -156,16 +136,14 @@ export default function FundingReview() {
     const actionBodyTemplate = (rowData: any) => {
         return (
             <button 
-                className="btn btn-sm btn-soft-primary"
+                className="btn btn-sm btn-primary d-flex align-items-center justify-content-center px-3 rounded shadow-sm"
                 onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedReview(rowData);
-                    setNewStatus(rowData.status);
-                    setRejectReason(rowData.reject_reason || '');
-                    setShowStatusModal(true);
+                    navigate(`/intake-review/funding-review/${rowData.id}`);
                 }}
             >
-                Review
+                <i className="ri-eye-line me-1 fs-15 align-middle"></i>
+                <span className="fw-medium">Review</span>
             </button>
         );
     };
@@ -262,12 +240,13 @@ export default function FundingReview() {
                                             onSort={onSort}
                                             dataKey="id"
                                             responsiveLayout="scroll"
-                                            className="p-datatable-sm"
+                                            className="p-datatable-sm p-datatable-hoverable-rows"
                                             emptyMessage="No funding reviews found"
+                                            onRowClick={(e) => navigate(`/intake-review/funding-review/${e.data.id}`)}
+                                            rowClassName={() => 'cursor-pointer'}
                                         >
-                                            <Column field="id" header="App No" sortable style={{ minWidth: '100px' }} />
                                             <Column header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} style={{ minWidth: '160px' }} />
-                                            <Column header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} style={{ minWidth: '160px' }} />
+                                            <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
                                             <Column field="use_of_funds" header="Purpose" sortable style={{ minWidth: '160px' }} />
                                             <Column header="Requested Amount" field="requested_amount" sortable style={{ minWidth: '150px' }} />
@@ -281,146 +260,7 @@ export default function FundingReview() {
                     </div>
                 </div>
 
-            {/* ── Review Modal ──────────────────────────────────────────── */}
-            {showStatusModal && selectedReview && (
-                <>
-                    <div className={`modal fade flip show d-block`} tabIndex={-1} role="dialog" aria-modal="true">
-                        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 520 }}>
-                            <div className="modal-content border-0 shadow-lg">
-                                <div className="modal-header border-bottom-0 pb-0">
-                                    <div>
-                                        <h5 className="modal-title fw-semibold">Review Funding Request</h5>
-                                        <p className="text-muted fs-13 mb-0">
-                                            <code>{selectedReview.funding_type || 'Funding Request'}</code>
-                                            {' — '}
-                                            {`${selectedReview.borrower?.first_name || ''} ${selectedReview.borrower?.last_name || ''}`.trim() || 'Unknown Borrower'}
-                                        </p>
-                                        {selectedReview.status !== 'Pending' && (
-                                            <div className="mt-1">
-                                                <span className={`badge ${selectedReview.status === 'Approved' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fs-11`}>
-                                                    {selectedReview.status}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button type="button" className="btn-close" onClick={() => setShowStatusModal(false)} />
-                                </div>
-                                <div className="modal-body pt-3">
-                                    {selectedReview.status !== 'Pending' && (
-                                        <div className="alert alert-light border-0 shadow-sm mb-4 d-flex align-items-center">
-                                            <div className="flex-grow-1">
-                                                <div className="text-muted fs-11 text-uppercase fw-semibold mb-1" style={{ letterSpacing: '0.05em' }}>Review Summary</div>
-                                                <div className="fs-13 fw-medium text-primary">
-                                                    Processed by <span className="text-muted">{selectedReview.approved_by_name || 'System'}</span>
-                                                </div>
-                                                <div className="text-muted fs-12 mt-1">
-                                                    <i className="ri-calendar-event-line me-1"></i>
-                                                    {selectedReview.approved_at ? new Date(selectedReview.approved_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown date'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
 
-                                    {/* Summary */}
-                                    <div className="row g-3 mb-4">
-                                        <div className="col-6">
-                                            <div className="p-3 rounded bg-light">
-                                                <p className="text-muted fs-11 mb-1 text-uppercase fw-semibold" style={{ letterSpacing: '0.08em' }}>
-                                                    Requested Amount
-                                                </p>
-                                                <p className="mb-0 fw-medium text-dark">
-                                                    ${selectedReview.requested_amount || '0.00'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="col-6">
-                                            <div className="p-3 rounded bg-light">
-                                                <p className="text-muted fs-11 mb-1 text-uppercase fw-semibold" style={{ letterSpacing: '0.08em' }}>
-                                                    Use of Funds
-                                                </p>
-                                                <p className="mb-0 fw-semibold text-dark">
-                                                    {selectedReview.use_of_funds || 'Unknown'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Decision */}
-                                    <div className="mb-3">
-                                        <label className="form-label fw-medium">Decision <span className="text-danger">*</span></label>
-                                        <div className="d-flex gap-2">
-                                            {['Approved', 'Rejected'].map(s => (
-                                                <button
-                                                    key={s}
-                                                    type="button"
-                                                    className={`btn flex-grow-1 ${newStatus === s
-                                                        ? s === 'Approved' ? 'btn-success' : 'btn-danger'
-                                                        : 'btn-light'
-                                                        }`}
-                                                    disabled={selectedReview.status !== 'Pending'}
-                                                    onClick={() => setNewStatus(s)}
-                                                >
-                                                    <i className={`${s === 'Approved' ? 'ri-checkbox-circle-line' : 'ri-close-circle-line'} me-1`}></i>
-                                                    {s}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Note */}
-                                    {newStatus === 'Rejected' && (
-                                        <div className="mb-1">
-                                            <label className="form-label fw-medium">
-                                                Rejection Reason <span className="text-danger">*</span>
-                                            </label>
-                                            <textarea
-                                                className="form-control"
-                                                rows={3}
-                                                placeholder="Please provide a reason for rejection…"
-                                                value={rejectReason}
-                                                disabled={selectedReview.status !== 'Pending'}
-                                                onChange={e => setRejectReason(e.target.value)}
-                                            />
-                                        </div>
-                                    )}
-                                    {selectedReview.status !== 'Pending' && newStatus !== 'Rejected' && selectedReview.reject_reason && (
-                                        <div className="mb-1">
-                                            <label className="form-label fw-medium">Previous Rejection Reason</label>
-                                            <textarea
-                                                className="form-control bg-light"
-                                                rows={3}
-                                                value={selectedReview.reject_reason}
-                                                disabled
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="modal-footer border-top-0 pt-0">
-                                    <button type="button" className="btn btn-light" onClick={() => setShowStatusModal(false)}>
-                                        {selectedReview.status === 'Pending' ? 'Cancel' : 'Close'}
-                                    </button>
-                                    {selectedReview.status === 'Pending' && (
-                                        <button
-                                            type="button"
-                                            className={`btn px-4 ${newStatus === 'Approved' ? 'btn-success' : newStatus === 'Rejected' ? 'btn-danger' : 'btn-primary'}`}
-                                            disabled={updateStatusMutation.isPending || !newStatus || newStatus === 'Pending' || (newStatus === 'Rejected' && !rejectReason.trim())}
-                                            onClick={handleStatusUpdate}
-                                        >
-                                            {updateStatusMutation.isPending ? (
-                                                <><span className="spinner-border spinner-border-sm me-1" role="status" /> Processing…</>
-                                            ) : (
-                                                <><i className={`${newStatus === 'Approved' ? 'ri-checkbox-circle-line' : newStatus === 'Rejected' ? 'ri-close-circle-line' : 'ri-check-line'} me-1`}></i> Confirm {newStatus === 'Pending' ? 'Decision' : newStatus}</>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="modal-backdrop fade show" onClick={() => setShowStatusModal(false)} />
-                </>
-            )}
 
             </div>
         </div>

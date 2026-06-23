@@ -6,25 +6,18 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { getAllLenders } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS } from '../../../config/funding';
+import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { fetchBorrowerDocumentTypes } from '../../../modules/client/services';
 import FundingGroupModal from './FundingGroupModal';
 import FundingTypeModal from './FundingTypeModal';
+import LenderVisibilityGrid from './LenderVisibilityGrid';
 import { scrollToFirstError } from '../../../utils/formUtils';
-import '../../../assets/css/funding.css';
-
-const READINESS_FACTORS_OPTIONS = [
-    "Business Credit",
-    "Revenue",
-    "Time in Business",
-    "Banking Activity",
-    "Existing Debt",
-    "Documents"
-];
+import '../../../../assets/css/funding.css';
 
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
     label: `${state.name} (${code})`,
@@ -54,9 +47,9 @@ export default function FundingSequencingForm() {
     const [initialLoading, setInitialLoading] = useState(isEditMode);
     const [groups, setGroups] = useState([]);
     const [types, setTypes] = useState([]);
+    const [lendersList, setLendersList] = useState([]);
     const [errors, setErrors] = useState({});
-    const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{label: string, value: string}[]>([]);
-    const [groupModalOpen, setGroupModalOpen] = useState(false);
+    const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{ label: string, value: string }[]>([]);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showTypeModal, setShowTypeModal] = useState(false);
 
@@ -69,6 +62,7 @@ export default function FundingSequencingForm() {
         subtitle: '',
         funding_group_id: null,
         funding_type_id: null,
+        lender_id: null,
         min_amount: '',
         max_amount: '',
         terms: '',
@@ -82,8 +76,7 @@ export default function FundingSequencingForm() {
         min_monthly_revenue: '',
         min_monthly_deposits: '',
         min_average_daily_balance: '',
-        max_nsf_count: '',
-        max_negative_days: '',
+        max_nsf_negative_days: '',
         min_dscr: '',
         sort_order: '',
         allowed_states: [],
@@ -96,12 +89,24 @@ export default function FundingSequencingForm() {
         exception_allowed: true,
         speed_to_funds: '',
         uses: [],
-        qualify_reasons: [],
         readiness_factors: [],
         missing_documents: [],
-        allowed_documents: []
+        allowed_documents: [],
+        lender_visibilities: [{
+            lender_id: null,
+            min_fico: '',
+            min_tib_months: '',
+            min_monthly_revenue: '',
+            min_monthly_deposits: '',
+            min_average_daily_balance: '',
+            max_nsf_negative_days: '',
+            min_dscr: '',
+            allowed_states: [],
+            restricted_states: [],
+            allowed_industries: [],
+            restricted_industries: []
+        }]
     });
-
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
         setFormData(prev => {
             const newArray = [...(prev[name as keyof typeof prev] as any[])];
@@ -199,10 +204,20 @@ export default function FundingSequencingForm() {
             }
         };
 
+        const loadLenders = async () => {
+            try {
+                const res = await getAllLenders();
+                setLendersList(res.data || res);
+            } catch (error) {
+                console.error('Failed to load lenders', error);
+            }
+        };
+
         loadGroups();
         loadTypes();
         loadDocTypes();
-        
+        loadLenders();
+
         if (isEditMode) {
             const loadAccount = async () => {
                 try {
@@ -230,31 +245,37 @@ export default function FundingSequencingForm() {
                         description: data.description || '',
                         funding_group_id: data.funding_group_id || null,
                         funding_type_id: data.funding_type_id || null,
+                        lender_id: data.lenders && data.lenders.length > 0 ? data.lenders[0].lender_id : null,
                         icon: data.icon || '',
                         icon_color: data.icon_color || 'blue',
-                        min_fico: data.min_fico || '',
-                        min_tib_months: data.min_tib_months || '',
-                        min_monthly_revenue: data.min_monthly_revenue || '',
-                        min_monthly_deposits: data.min_monthly_deposits || '',
-                        min_average_daily_balance: data.min_average_daily_balance || '',
-                        max_nsf_count: data.max_nsf_count || '',
-                        max_negative_days: data.max_negative_days || '',
-                        min_dscr: data.min_dscr || '',
+                        min_fico: data.lenders?.[0]?.min_fico || '',
+                        min_tib_months: data.lenders?.[0]?.min_tib_months || '',
+                        min_monthly_revenue: data.lenders?.[0]?.min_monthly_revenue || '',
+                        min_monthly_deposits: data.lenders?.[0]?.min_monthly_deposits || '',
+                        min_average_daily_balance: data.lenders?.[0]?.min_average_daily_balance || '',
+                        max_nsf_negative_days: data.lenders?.[0]?.max_nsf_negative_days || '',
+                        min_dscr: data.lenders?.[0]?.min_dscr || '',
                         sort_order: data.sort_order || '',
-                        allowed_states: data.allowed_states?.length && data.allowed_states[0] !== '' ? data.allowed_states : [],
-                        restricted_states: data.restricted_states?.length && data.restricted_states[0] !== '' ? data.restricted_states : [],
-                        allowed_industries: data.allowed_industries?.length && data.allowed_industries[0] !== '' ? data.allowed_industries : [],
-                        restricted_industries: data.restricted_industries?.length && data.restricted_industries[0] !== '' ? data.restricted_industries : [],
-                        require_completed_application: data.require_completed_application || false,
-                        require_documents_uploaded: data.require_documents_uploaded || false,
-                        manual_review_allowed: data.manual_review_allowed || false,
-                        exception_allowed: data.exception_allowed || false,
+                        allowed_states: data.lenders?.[0]?.allowed_states?.length && data.lenders[0].allowed_states[0] !== '' ? data.lenders[0].allowed_states : [],
+                        restricted_states: data.lenders?.[0]?.restricted_states?.length && data.lenders[0].restricted_states[0] !== '' ? data.lenders[0].restricted_states : [],
+                        allowed_industries: data.lenders?.[0]?.allowed_industries?.length && data.lenders[0].allowed_industries[0] !== '' ? data.lenders[0].allowed_industries : [],
+                        restricted_industries: data.lenders?.[0]?.restricted_industries?.length && data.lenders[0].restricted_industries[0] !== '' ? data.lenders[0].restricted_industries : [],
+                        require_completed_application: data.require_completed_application ?? (data.lenders?.[0]?.require_completed_application || false),
+                        require_documents_uploaded: data.require_documents_uploaded ?? (data.lenders?.[0]?.require_documents_uploaded || false),
+                        manual_review_allowed: data.manual_review_allowed ?? (data.lenders?.[0]?.manual_review_allowed || false),
+                        exception_allowed: data.exception_allowed ?? (data.lenders?.[0]?.exception_allowed || false),
                         speed_to_funds: data.speed_to_funds || '',
                         uses: Array.isArray(data.uses) ? data.uses : [],
-                        qualify_reasons: Array.isArray(data.qualify_reasons) ? data.qualify_reasons : [],
                         readiness_factors: Array.isArray(data.readiness_factors) ? data.readiness_factors.map((f: any) => typeof f === 'object' ? f.label : f) : [],
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
-                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : []
+                        allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
+                        lender_visibilities: Array.isArray(data.lender_visibilities) && data.lender_visibilities.length > 0
+                            ? data.lender_visibilities
+                            : [{
+                                lender_id: null, min_fico: '', min_tib_months: '', min_monthly_revenue: '', min_monthly_deposits: '',
+                                min_average_daily_balance: '', max_nsf_negative_days: '', min_dscr: '',
+                                allowed_states: [], restricted_states: [], allowed_industries: [], restricted_industries: []
+                            }]
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -284,9 +305,9 @@ export default function FundingSequencingForm() {
         setLoading(true);
 
         const cleanData = { ...formData };
-        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'qualify_reasons', 'missing_documents', 'allowed_documents'].forEach(field => {
+        ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
-                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item => 
+                cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item =>
                     (typeof item === 'string' && item.trim() !== '') || typeof item === 'number'
                 );
             }
@@ -296,70 +317,52 @@ export default function FundingSequencingForm() {
             cleanData.readiness_factors = cleanData.readiness_factors.filter(item => typeof item === 'string' && item.trim() !== '');
         }
 
-        let payload = cleanData;
-
-        // If in edit mode, only send the fields for the active tab to separate APIs logically
-        if (isEditMode) {
-            if (activeTab === 'display') {
-                payload = {
-                    name: cleanData.name,
-                    subtitle: cleanData.subtitle,
-                    funding_group_id: cleanData.funding_group_id,
-                    funding_type_id: cleanData.funding_type_id,
-                    min_amount: cleanData.min_amount,
-                    max_amount: cleanData.max_amount,
-                    terms: cleanData.terms,
-                    status: cleanData.status,
-                    action_url: cleanData.action_url,
-                    description: cleanData.description,
-                    icon: cleanData.icon,
-                    icon_color: cleanData.icon_color,
-                    sort_order: cleanData.sort_order,
-                    speed_to_funds: cleanData.speed_to_funds,
-                    uses: cleanData.uses,
-                    qualify_reasons: cleanData.qualify_reasons,
-                    readiness_factors: cleanData.readiness_factors,
-                    missing_documents: cleanData.missing_documents
-                } as any;
-            } else if (activeTab === 'visibility') {
-                payload = {
-                    min_fico: cleanData.min_fico,
-                    min_tib_months: cleanData.min_tib_months,
-                    min_monthly_revenue: cleanData.min_monthly_revenue,
-                    min_monthly_deposits: cleanData.min_monthly_deposits,
-                    min_average_daily_balance: cleanData.min_average_daily_balance,
-                    max_nsf_count: cleanData.max_nsf_count,
-                    max_negative_days: cleanData.max_negative_days,
-                    min_dscr: cleanData.min_dscr,
-                    allowed_states: cleanData.allowed_states,
-                    restricted_states: cleanData.restricted_states,
-                    allowed_industries: cleanData.allowed_industries,
-                    restricted_industries: cleanData.restricted_industries,
-                    require_completed_application: cleanData.require_completed_application,
-                    require_documents_uploaded: cleanData.require_documents_uploaded,
-                    allowed_documents: cleanData.allowed_documents,
-                    manual_review_allowed: cleanData.manual_review_allowed,
-                    exception_allowed: cleanData.exception_allowed
-                } as any;
-            }
-        }
+        const unifiedPayload = {
+            name: cleanData.name.trim(),
+            subtitle: cleanData.subtitle.trim(),
+            funding_group_id: cleanData.funding_group_id,
+            funding_type_id: cleanData.funding_type_id,
+            lender_id: cleanData.lender_id,
+            min_amount: cleanData.min_amount,
+            max_amount: cleanData.max_amount,
+            terms: cleanData.terms.trim(),
+            status: cleanData.status,
+            action_url: cleanData.action_url.trim(),
+            icon: cleanData.icon,
+            icon_color: cleanData.icon_color,
+            sort_order: cleanData.sort_order ? Number(cleanData.sort_order) : 0,
+            description: cleanData.description,
+            speed_to_funds: cleanData.speed_to_funds,
+            uses: cleanData.uses,
+            readiness_factors: cleanData.readiness_factors,
+            missing_documents: cleanData.missing_documents,
+            require_completed_application: cleanData.require_completed_application,
+            require_documents_uploaded: cleanData.require_documents_uploaded,
+            allowed_documents: cleanData.allowed_documents,
+            manual_review_allowed: cleanData.manual_review_allowed,
+            exception_allowed: cleanData.exception_allowed,
+            lender_visibilities: activeTab === 'display'
+                ? cleanData.lender_visibilities.filter((v: any) => v.lender_id !== null && v.lender_id !== '')
+                : cleanData.lender_visibilities
+        };
 
         try {
-            if (isEditMode) {
+            if (isEditMode && id) {
                 if (activeTab === 'display') {
-                    await updateFundingSequencingDisplay(id, payload);
-                    toast.success('Display settings updated successfully');
-                    setActiveTab('visibility'); // redirect to visibility tab
+                    await updateFundingSequencingDisplay(id, unifiedPayload);
+                    toast.success('Display settings updated successfully!');
+                    setActiveTab('visibility');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
-                    await updateFundingSequencingVisibility(id, payload);
-                    toast.success('Visibility logic updated successfully');
+                    await updateFundingSequencingVisibility(id, { lender_visibilities: unifiedPayload.lender_visibilities });
+                    toast.success('Visibility rules updated successfully!');
                     navigate('/funding');
                 }
             } else {
-                const res = await createFundingSequencing(payload);
-                toast.success('Funding created successfully. Please configure visibility logic.');
-                const newId = res?.data?.id || res?.id;
-                if (newId) {
+                const response = await createFundingSequencing(unifiedPayload);
+                toast.success('Funding sequence created successfully!');
+                const newId = response?.data?.id || response?.id;
+                if (newId && activeTab === 'display') {
                     navigate(`/funding/${newId}?tab=visibility`);
                 } else {
                     navigate('/funding');
@@ -368,9 +371,33 @@ export default function FundingSequencingForm() {
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 422) {
-                const mappedErrors = err.response.data.errors || {};
+                // Clone the object to ensure React triggers a state update
+                const mappedErrors = { ...(err.response?.data?.errors || {}) };
+
+                // Map all lenders.0.* errors to their base keys (if any still exist)
+                Object.keys(mappedErrors).forEach(key => {
+                    if (Array.isArray(mappedErrors[key])) {
+                        mappedErrors[key] = mappedErrors[key][0];
+                    }
+                    if (key.startsWith('lenders.0.')) {
+                        const baseKey = key.replace('lenders.0.', '');
+                        mappedErrors[baseKey] = mappedErrors[key];
+                    }
+                });
+
+                // Switch to the correct tab based on where the error occurred
+                const visibilityKeys = ['lender_visibilities'];
+                const hasVisibilityError = Object.keys(mappedErrors).some(key => key.startsWith('lender_visibilities'));
+                const displayKeys = ['name', 'subtitle', 'funding_group_id', 'funding_type_id', 'lender_id', 'min_amount', 'max_amount', 'terms', 'icon', 'icon_color', 'sort_order', 'readiness_factors', 'allowed_documents'];
+                const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
+
+                if (hasVisibilityError && !hasDisplayError && activeTab === 'display') {
+                    setActiveTab('visibility');
+                } else if (hasDisplayError && activeTab === 'visibility') {
+                    setActiveTab('display');
+                }
                 setErrors(mappedErrors);
-                scrollToFirstError(mappedErrors);
+                setTimeout(() => scrollToFirstError(mappedErrors), 100);
             } else {
                 const errorMsg = err.response?.data?.message || 'Failed to save funding';
                 toast.error(errorMsg);
@@ -501,16 +528,24 @@ export default function FundingSequencingForm() {
                                             <li className="nav-item">
                                                 <a
                                                     className={`nav-link fw-semibold fs-15 px-0 py-2 ${activeTab === 'visibility' ? 'active text-primary border-primary' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
-                                                    onClick={() => { if (isEditMode) { setActiveTab('visibility'); setErrors({}); } }}
-                                                    style={{ cursor: isEditMode ? 'pointer' : 'not-allowed', borderBottom: activeTab === 'visibility' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'visibility' ? '#2563eb' : '#64748b' }}
-                                                    title={!isEditMode ? 'Please save the display configuration first' : ''}
+                                                    onClick={(e) => {
+                                                        if (!isEditMode) {
+                                                            e.preventDefault();
+                                                            return;
+                                                        }
+                                                        setActiveTab('visibility');
+                                                        setErrors({});
+                                                    }}
+                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', borderBottom: activeTab === 'visibility' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'visibility' ? '#2563eb' : '#64748b' }}
+                                                    title={!isEditMode ? "Please save the sequence first to unlock visibility logic" : ""}
                                                 >
-                                                    Visibility Logic {!isEditMode && <i className="ri-lock-line ms-1 fs-12"></i>}
+                                                    {!isEditMode && <i className="ri-lock-line align-middle me-1"></i>}
+                                                    Visibility Logic
                                                 </a>
                                             </li>
                                         </ul>
                                     </div>
-                                    <div className="card-body pt-4">
+                                    <div className="card-body pt-3">
                                         <div className="tab-content text-muted">
                                             {/* ── Display Tab ─────────────────────────────────────────────────── */}
                                             <div className={`tab-pane ${activeTab === 'display' ? 'active' : ''}`} id="display">
@@ -527,17 +562,16 @@ export default function FundingSequencingForm() {
 
                                                 <div className="row g-4 align-items-start">
                                                     {/* Row 1 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Funding Sequence Name <span className="text-danger">*</span></label>
                                                             <input type="text" name="name" className={`form-control rounded-3 py-2 ${(errors as any).name ? 'is-invalid' : ''}`} value={formData.name} onChange={handleChange} placeholder="Borrower-facing display name" />
                                                             {(errors as any).name && <div className="invalid-feedback">{(errors as any).name}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Amount Range <span className="text-danger">*</span></label>
-                                                            {/* <p className="text-muted fs-13 mb-2 opacity-0">Placeholder</p> */}
                                                             <div className="d-flex gap-2 align-items-start">
                                                                 <div className="w-50">
                                                                     <div className="input-group">
@@ -559,7 +593,7 @@ export default function FundingSequencingForm() {
                                                     </div>
 
                                                     {/* Row 2 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Group <span className="text-danger">*</span></label>
@@ -571,21 +605,15 @@ export default function FundingSequencingForm() {
                                                                 onChange={(e) => handleInputChange({ target: { name: 'funding_group_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
+                                                                filter
                                                                 placeholder="Select group"
                                                                 className={`w-100 rounded-3 slim-dropdown ${(errors as any).funding_group_id ? 'p-invalid border-danger' : ''}`}
                                                             />
                                                             {(errors as any).funding_group_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_group_id}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Terms</label>
-                                                            <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Row 3 */}
-                                                    <div className="col-lg-6">
+                                                    {/* Row 4 */}
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
@@ -603,9 +631,11 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).funding_type_id && <small className="text-danger mt-1 d-block">{(errors as any).funding_type_id}</small>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+
+                                                    {/* Row 3 */}
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Display Icon</label>
+                                                            <label className="form-label text-dark fw-medium mb-2">Display Icon <span className="text-danger">*</span></label>
                                                             <div className="position-relative" ref={dropdownRef}>
                                                                 <button type="button" className={`display-icon-btn form-control d-flex align-items-center gap-2 text-start ${(errors as any).icon ? 'is-invalid border-danger' : ''}`} onClick={() => { setShowIconDropdown(p => !p); setIconSearch(''); }}>
                                                                     {formData.icon ? <i className={`${formData.icon?.startsWith('ri-') ? formData.icon : (FUNDING_ICON_MAP[formData.icon as keyof typeof FUNDING_ICON_MAP] ? `ri-${FUNDING_ICON_MAP[formData.icon as keyof typeof FUNDING_ICON_MAP]}-line` : formData.icon)} fs-16 text-${FUNDING_COLOR_MAP[formData.icon_color as keyof typeof FUNDING_COLOR_MAP] || 'primary'}`}></i> : <i className="ri-image-line text-muted"></i>}
@@ -633,16 +663,7 @@ export default function FundingSequencingForm() {
                                                             {(errors as any).icon && <small className="text-danger mt-1 d-block">{(errors as any).icon}</small>}
                                                         </div>
                                                     </div>
-
-                                                    {/* Row 4 */}
-                                                    <div className="col-lg-6">
-                                                        <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
-                                                            <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
-                                                            {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Color</label>
                                                             <Dropdown
@@ -658,63 +679,73 @@ export default function FundingSequencingForm() {
                                                             />
                                                         </div>
                                                     </div>
-
                                                     {/* Row 5 */}
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Action URL</label>
-                                                            <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
-                                                            {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
+                                                            <label className="form-label text-dark fw-medium mb-2">Subtitle <span className="text-danger">*</span></label>
+                                                            <input type="text" name="subtitle" className={`form-control rounded-3 py-2 ${(errors as any).subtitle ? 'is-invalid' : ''}`} value={formData.subtitle} onChange={handleChange} placeholder="e.g. Revolving access to working capital" />
+                                                            {(errors as any).subtitle && <div className="invalid-feedback">{(errors as any).subtitle}</div>}
                                                         </div>
                                                     </div>
-                                                    <div className="col-lg-6">
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Terms</label>
+                                                            <input type="text" name="terms" className={`form-control rounded-3 py-2 ${(errors as any).terms ? 'is-invalid' : ''}`} value={formData.terms} onChange={handleChange} placeholder="e.g. 3–24 months, 12–60 months" />
+                                                        </div>
+                                                    </div>
+                                                    {/* Row 4 */}
+                                                    <div className="col-lg-4 col-md-4">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Display Order</label>
                                                             <input type="number" name="sort_order" className={`form-control rounded-3 py-2 ${(errors as any).sort_order ? 'is-invalid' : ''}`} value={formData.sort_order} onChange={handleChange} placeholder="e.g. 1" />
                                                             {(errors as any).sort_order && <div className="invalid-feedback">{(errors as any).sort_order}</div>}
                                                         </div>
                                                     </div>
-                                                    {/* Row 6: Status, Uses, Speed to Funds */}
-                                                    <div className="col-lg-12">
-                                                        <div className="row g-4">
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Status</label>
-                                                                    <Dropdown
-                                                                        value={formData.status}
-                                                                        options={FUNDING_STATUS_OPTIONS}
-                                                                        onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
-                                                                        optionLabel="label"
-                                                                        optionValue="value"
-                                                                        className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                                    <MultiSelect
-                                                                        value={formData.uses}
-                                                                        options={USES_OPTIONS}
-                                                                        onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
-                                                                        optionLabel="label"
-                                                                        optionValue="value"
-                                                                        placeholder="Select uses..."
-                                                                        className="w-100 rounded-3 slim-multiselect"
-                                                                        display="chip"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-lg-4">
-                                                                <div className="mb-2">
-                                                                    <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
-                                                                    <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
-                                                                    {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
-                                                                </div>
-                                                            </div>
+                                                    <div className="col-lg-4 col-md-4">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Action URL</label>
+                                                            <input type="text" name="action_url" className={`form-control rounded-3 py-2 ${(errors as any).action_url ? 'is-invalid' : ''}`} value={formData.action_url} onChange={handleChange} placeholder="e.g. https://example.com/apply" />
+                                                            {(errors as any).action_url && <div className="invalid-feedback">{(errors as any).action_url}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-lg-4 col-md-4">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Speed to Funds</label>
+                                                            <input type="text" name="speed_to_funds" className={`form-control rounded-3 py-2 ${(errors as any).speed_to_funds ? 'is-invalid' : ''}`} value={formData.speed_to_funds} onChange={handleChange} placeholder="e.g. 1 - 7 Days" />
+                                                            {(errors as any).speed_to_funds && <div className="invalid-feedback">{(errors as any).speed_to_funds}</div>}
                                                         </div>
                                                     </div>
 
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Uses</label>
+                                                            <MultiSelect
+                                                                value={formData.uses}
+                                                                options={USES_OPTIONS}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Select uses..."
+                                                                className="w-100 rounded-3 slim-multiselect"
+                                                                display="chip"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Row 7 */}
+                                                    <div className="col-lg-6 col-md-6">
+                                                        <div className="mb-2">
+                                                            <label className="form-label text-dark fw-medium mb-2">Status</label>
+                                                            <Dropdown
+                                                                value={formData.status}
+                                                                options={FUNDING_STATUS_OPTIONS}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'status', value: e.value } })}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                className={`w-100 rounded-3 slim-dropdown ${(errors as any).status ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                     {/* Row 7: Readiness Factors */}
                                                     <div className="col-lg-12">
                                                         <div className="card shadow-sm border rounded-3 mt-4 mb-2">
@@ -736,11 +767,11 @@ export default function FundingSequencingForm() {
                                                                                     }
                                                                                 }}
                                                                                 placeholder="Select Requirement to Add"
-                                                                                className="w-100"
+                                                                                className={`w-100 ${(errors as any).readiness_factors ? 'p-invalid border-danger' : ''}`}
                                                                                 value={null}
                                                                                 emptyMessage="All requirements added"
                                                                             />
-                                                                            {(errors as any).readiness_factors && <div className="text-danger small mt-1">{(errors as any).readiness_factors}</div>}
+                                                                            {(errors as any).readiness_factors && <div className="text-danger mt-1 fs-13">{(errors as any).readiness_factors}</div>}
                                                                         </div>
                                                                         <div className="d-flex flex-column gap-2 mb-3">
                                                                             {formData.readiness_factors.map((item, index) => (
@@ -757,11 +788,88 @@ export default function FundingSequencingForm() {
                                                                                 </div>
                                                                             ))}
                                                                             {formData.readiness_factors.length === 0 && (
-                                                                                <div className="text-muted fs-13 py-3 px-3 bg-light rounded border text-center border-dashed mt-2">
+                                                                                <div className={`fs-13 py-3 px-3 rounded border text-center border-dashed mt-2 ${(errors as any).readiness_factors ? 'border-danger bg-danger-subtle text-danger' : 'text-muted bg-light'}`}>
                                                                                     No readiness factors added yet. Select from the dropdown above to begin.
                                                                                 </div>
                                                                             )}
                                                                         </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Review Settings */}
+                                                    <div className="col-lg-12 mt-4">
+                                                        <hr className="my-2 border-dashed" />
+                                                        <h6 className="fw-bold fs-14 mt-3 mb-4 text-uppercase" style={{ letterSpacing: '0.05em', color: '#0f172a' }}>REVIEW SETTINGS</h6>
+
+                                                        <div className="row g-4">
+                                                            <div className="col-lg-6">
+                                                                <div className="d-flex align-items-center justify-content-between mb-4">
+                                                                    <div>
+                                                                        <label className="form-label text-dark fw-medium mb-0">Require Completed Fund Application</label>
+                                                                        <p className="text-muted fs-13 mb-0">Funding sequence only shown after application is complete</p>
+                                                                    </div>
+                                                                    <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                                        <input className="form-check-input" type="checkbox" role="switch" name="require_completed_application" checked={formData.require_completed_application || false} onChange={handleInputChange} />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="d-flex align-items-center justify-content-between mb-4">
+                                                                    <div>
+                                                                        <label className="form-label text-dark fw-medium mb-0">Require Documents Uploaded</label>
+                                                                        <p className="text-muted fs-13 mb-0">Documents must be uploaded before sequence is active</p>
+                                                                    </div>
+                                                                    <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                                        <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded || false} onChange={(e) => {
+                                                                            handleInputChange(e);
+                                                                            if (!e.target.checked) {
+                                                                                handleInputChange({ target: { name: 'allowed_documents', value: [] } });
+                                                                            }
+                                                                        }} />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div style={{ minHeight: '90px', transition: 'all 0.3s ease-in-out' }}>
+                                                                    {formData.require_documents_uploaded && (
+                                                                        <div className="mb-4">
+                                                                            <label className="form-label text-dark fw-medium mb-2">Required Documents <span className="text-danger">*</span></label>
+                                                                            <MultiSelect
+                                                                                value={formData.allowed_documents || []}
+                                                                                options={allowedDocumentOptions}
+                                                                                onChange={(e) => handleInputChange({ target: { name: 'allowed_documents', value: e.value } })}
+                                                                                optionLabel="label"
+                                                                                optionValue="value"
+                                                                                display="chip"
+                                                                                appendTo="self"
+                                                                                placeholder="Select required documents"
+                                                                                className={`w-100 rounded-3 slim-multiselect ${(errors as any).allowed_documents ? 'p-invalid border-danger' : ''}`}
+                                                                            />
+                                                                            {(errors as any).allowed_documents && <small className="text-danger mt-1 d-block">{(errors as any).allowed_documents}</small>}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="col-lg-6">
+                                                                <div className="d-flex align-items-center justify-content-between mb-4">
+                                                                    <div>
+                                                                        <label className="form-label text-dark fw-medium mb-0">Manual Review Allowed</label>
+                                                                        <p className="text-muted fs-13 mb-0">Soft misses can be escalated to manual review</p>
+                                                                    </div>
+                                                                    <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                                        <input className="form-check-input" type="checkbox" role="switch" name="manual_review_allowed" checked={formData.manual_review_allowed || false} onChange={handleInputChange} />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="d-flex align-items-center justify-content-between mb-4">
+                                                                    <div>
+                                                                        <label className="form-label text-dark fw-medium mb-0">Exception Allowed</label>
+                                                                        <p className="text-muted fs-13 mb-0">Compensating factors can upgrade a soft fail</p>
+                                                                    </div>
+                                                                    <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                                                                        <input className="form-check-input" type="checkbox" role="switch" name="exception_allowed" checked={formData.exception_allowed || false} onChange={handleInputChange} />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -787,221 +895,78 @@ export default function FundingSequencingForm() {
                                             </div>
 
                                             {/* ── Visibility Logic Tab ────────────────────────────────────────── */}
-                                            <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility">
-                                                <div className="row g-5">
-                                                    {/* Left Column: Financial Thresholds */}
-                                                    <div className="col-lg-6">
-                                                        <h6 className="fw-bold fs-14 mb-4 text-uppercase" style={{ letterSpacing: '0.05em', color: '#0f172a' }}>FINANCIAL THRESHOLDS</h6>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Minimum FICO Score <span className="text-danger">*</span></label>
-                                                            <div className="input-group">
-                                                                <input type="number" name="min_fico" className={`form-control rounded-start-3 py-2 ${(errors as any).min_fico ? 'is-invalid border-danger' : ''}`} value={formData.min_fico} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_fico ? 'border-danger text-danger' : ''}`}>FICO</span>
-                                                            </div>
-                                                            {(errors as any).min_fico && <div className="text-danger mt-1 fs-13">{(errors as any).min_fico}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Minimum Time in Business <span className="text-danger">*</span></label>
-                                                            <div className="input-group">
-                                                                <input type="number" name="min_tib_months" className={`form-control rounded-start-3 py-2 ${(errors as any).min_tib_months ? 'is-invalid border-danger' : ''}`} value={formData.min_tib_months} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_tib_months ? 'border-danger text-danger' : ''}`}>months</span>
-                                                            </div>
-                                                            {(errors as any).min_tib_months && <div className="text-danger mt-1 fs-13">{(errors as any).min_tib_months}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Revenue <span className="text-danger">*</span></label>
-                                                            <div className="input-group">
-                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_monthly_revenue ? 'border-danger text-danger' : ''}`}>$</span>
-                                                                <input type="number" name="min_monthly_revenue" className={`form-control py-2 ps-1 border-start-0 ${(errors as any).min_monthly_revenue ? 'is-invalid border-danger' : ''}`} value={formData.min_monthly_revenue} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_monthly_revenue ? 'border-danger text-danger' : ''}`}>/ mo</span>
-                                                            </div>
-                                                            {(errors as any).min_monthly_revenue && <div className="text-danger mt-1 fs-13">{(errors as any).min_monthly_revenue}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Deposits <span className="text-danger">*</span></label>
-                                                            <div className="input-group">
-                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_monthly_deposits ? 'border-danger text-danger' : ''}`}>$</span>
-                                                                <input type="number" name="min_monthly_deposits" className={`form-control py-2 ps-1 border-start-0 ${(errors as any).min_monthly_deposits ? 'is-invalid border-danger' : ''}`} value={formData.min_monthly_deposits} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).min_monthly_deposits ? 'border-danger text-danger' : ''}`}>/ mo</span>
-                                                            </div>
-                                                            {(errors as any).min_monthly_deposits && <div className="text-danger mt-1 fs-13">{(errors as any).min_monthly_deposits}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Minimum Average Daily Balance <span className="text-danger">*</span></label>
-                                                            <div className="input-group">
-                                                                <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any).min_average_daily_balance ? 'border-danger text-danger' : ''}`}>$</span>
-                                                                <input type="number" name="min_average_daily_balance" className={`form-control rounded-end-3 py-2 ps-1 border-start-0 ${(errors as any).min_average_daily_balance ? 'is-invalid border-danger' : ''}`} value={formData.min_average_daily_balance} onChange={handleChange} placeholder="None" />
-                                                            </div>
-                                                            {(errors as any).min_average_daily_balance && <div className="text-danger mt-1 fs-13">{(errors as any).min_average_daily_balance}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Maximum NSF Count</label>
-                                                            <div className="input-group">
-                                                                <input type="number" name="max_nsf_count" className={`form-control rounded-start-3 py-2 ${(errors as any).max_nsf_count ? 'is-invalid border-danger' : ''}`} value={formData.max_nsf_count} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).max_nsf_count ? 'border-danger text-danger' : ''}`}>per period</span>
-                                                            </div>
-                                                            {(errors as any).max_nsf_count && <div className="text-danger mt-1 fs-13">{(errors as any).max_nsf_count}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-2">Maximum Negative Days</label>
-                                                            <div className="input-group">
-                                                                <input type="number" name="max_negative_days" className={`form-control rounded-start-3 py-2 ${(errors as any).max_negative_days ? 'is-invalid border-danger' : ''}`} value={formData.max_negative_days} onChange={handleChange} placeholder="None" />
-                                                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any).max_negative_days ? 'border-danger text-danger' : ''}`}>days</span>
-                                                            </div>
-                                                            {(errors as any).max_negative_days && <div className="text-danger mt-1 fs-13">{(errors as any).max_negative_days}</div>}
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-1">Minimum DSCR</label>
-                                                            <input type="number" name="min_dscr" className={`form-control rounded-3 py-2 ${(errors as any).min_dscr ? 'is-invalid border-danger' : ''}`} value={formData.min_dscr} onChange={handleChange} placeholder="For amortized / SBA products (e.g. 1.25)" />
-                                                            {(errors as any).min_dscr && <div className="text-danger mt-1 fs-13">{(errors as any).min_dscr}</div>}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Right Column: Geography & Industry + Review Settings */}
-                                                    <div className="col-lg-6">
-                                                        <h6 className="fw-bold fs-14 mb-4 text-uppercase" style={{ letterSpacing: '0.05em', color: '#0f172a' }}>GEOGRAPHY & INDUSTRY</h6>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-1">Allowed States</label>
-                                                            <MultiSelect
-                                                                value={formData.allowed_states}
-                                                                options={stateOptions}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'allowed_states', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Leave empty = all states allowed"
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
-                                                                maxSelectedLabels={100}
-                                                                filter
-                                                            />
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-1">Restricted States</label>
-                                                            <MultiSelect
-                                                                value={formData.restricted_states}
-                                                                options={stateOptions}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'restricted_states', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Hard stop - blocked (e.g. ND)"
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
-                                                                maxSelectedLabels={100}
-                                                                filter
-                                                            />
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label className="form-label text-dark fw-medium mb-1">Allowed Industries</label>
-                                                            <MultiSelect
-                                                                value={formData.allowed_industries}
-                                                                options={industryTypes}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'allowed_industries', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Leave empty = all industries allowed"
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
-                                                                maxSelectedLabels={100}
-                                                                filter
-                                                            />
-                                                        </div>
-
-                                                        <div className="mb-5">
-                                                            <label className="form-label text-dark fw-medium mb-1">Restricted Industries</label>
-                                                            <MultiSelect
-                                                                value={formData.restricted_industries}
-                                                                options={industryTypes}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'restricted_industries', value: e.value } })}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Hard stop - blocked (e.g. Real Estate)"
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
-                                                                maxSelectedLabels={100}
-                                                                filter
-                                                            />
-                                                        </div>
-
-                                                        <h6 className="fw-bold fs-14 mb-4 text-uppercase" style={{ letterSpacing: '0.05em', color: '#0f172a' }}>REVIEW SETTINGS</h6>
-
-                                                        <div className="d-flex align-items-center justify-content-between mb-4">
-                                                            <div>
-                                                                <label className="form-label text-dark fw-medium mb-0">Require Completed Fund Application</label>
-                                                                <p className="text-muted fs-13 mb-0">Funding sequence only shown after application is complete</p>
-                                                            </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_completed_application" checked={formData.require_completed_application} onChange={handleInputChange} />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="d-flex align-items-center justify-content-between mb-4">
-                                                            <div>
-                                                                <label className="form-label text-dark fw-medium mb-0">Require Documents Uploaded</label>
-                                                                <p className="text-muted fs-13 mb-0">Documents must be uploaded before sequence is active</p>
-                                                            </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-success ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="require_documents_uploaded" checked={formData.require_documents_uploaded} onChange={(e) => {
-                                                                    handleInputChange(e);
-                                                                    if (!e.target.checked) {
-                                                                        setFormData(prev => ({ ...prev, allowed_documents: [] }));
-                                                                    }
-                                                                }} />
-                                                            </div>
-                                                        </div>
-
-                                                        {formData.require_documents_uploaded && (
-                                                            <div className="mb-4">
-                                                                <label className="form-label text-dark fw-medium mb-2">Allowed Documents <span className="text-danger">*</span></label>
-                                                                <MultiSelect
-                                                                    value={formData.allowed_documents}
-                                                                    options={allowedDocumentOptions}
-                                                                    onChange={(e) => handleInputChange({ target: { name: 'allowed_documents', value: e.value } })}
-                                                                    optionLabel="label"
-                                                                    optionValue="value"
-                                                                    display="chip"
-                                                                    placeholder="Select required documents"
-                                                                    className={`w-100 rounded-3 slim-multiselect ${(errors as any).allowed_documents ? 'p-invalid border-danger' : ''}`}
-                                                                />
-                                                                {(errors as any).allowed_documents && <small className="text-danger mt-1 d-block">{(errors as any).allowed_documents}</small>}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="d-flex align-items-center justify-content-between mb-4">
-                                                            <div>
-                                                                <label className="form-label text-dark fw-medium mb-0">Manual Review Allowed</label>
-                                                                <p className="text-muted fs-13 mb-0">Soft misses can be escalated to manual review</p>
-                                                            </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="manual_review_allowed" checked={formData.manual_review_allowed} onChange={handleInputChange} />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="d-flex align-items-center justify-content-between mb-4">
-                                                            <div>
-                                                                <label className="form-label text-dark fw-medium mb-0">Exception Allowed</label>
-                                                                <p className="text-muted fs-13 mb-0">Compensating factors can upgrade a soft fail</p>
-                                                            </div>
-                                                            <div className="form-check form-switch form-switch-md form-switch-primary ms-3" style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
-                                                                <input className="form-check-input" type="checkbox" role="switch" name="exception_allowed" checked={formData.exception_allowed} onChange={handleInputChange} />
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
+                                            <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility" style={{ marginTop: '-1rem' }}>
+                                                <LenderVisibilityGrid
+                                                    visibilities={formData.lender_visibilities}
+                                                    lenders={lendersList}
+                                                    errors={errors}
+                                                    onChange={(index, field, value) => {
+                                                        setFormData(prev => {
+                                                            const newVisibilities = [...prev.lender_visibilities];
+                                                            newVisibilities[index] = { ...newVisibilities[index], [field]: value };
+                                                            return { ...prev, lender_visibilities: newVisibilities };
+                                                        });
+                                                        if (errors[`lender_visibilities.${index}.${field}`]) {
+                                                            setErrors(prev => {
+                                                                const newErrors = { ...prev };
+                                                                delete newErrors[`lender_visibilities.${index}.${field}`];
+                                                                return newErrors;
+                                                            });
+                                                        }
+                                                    }}
+                                                    onRemove={(index) => {
+                                                        setFormData(prev => {
+                                                            const newVisibilities = [...prev.lender_visibilities];
+                                                            newVisibilities.splice(index, 1);
+                                                            return { ...prev, lender_visibilities: newVisibilities };
+                                                        });
+                                                        // Clear all visibility errors on structural change
+                                                        setErrors(prev => {
+                                                            const newErrors = { ...prev };
+                                                            Object.keys(newErrors).forEach(key => {
+                                                                if (key.startsWith('lender_visibilities.')) {
+                                                                    delete newErrors[key];
+                                                                }
+                                                            });
+                                                            return newErrors;
+                                                        });
+                                                    }}
+                                                    onAdd={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            lender_visibilities: [
+                                                                ...prev.lender_visibilities,
+                                                                {
+                                                                    lender_id: null,
+                                                                    min_fico: '',
+                                                                    min_tib_months: '',
+                                                                    min_monthly_revenue: '',
+                                                                    min_monthly_deposits: '',
+                                                                    min_average_daily_balance: '',
+                                                                    max_nsf_negative_days: '',
+                                                                    min_dscr: '',
+                                                                    allowed_states: [],
+                                                                    restricted_states: [],
+                                                                    allowed_industries: [],
+                                                                    restricted_industries: []
+                                                                }
+                                                            ]
+                                                        }));
+                                                        // Clear all visibility errors on structural change
+                                                        setErrors(prev => {
+                                                            const newErrors = { ...prev };
+                                                            Object.keys(newErrors).forEach(key => {
+                                                                if (key.startsWith('lender_visibilities.')) {
+                                                                    delete newErrors[key];
+                                                                }
+                                                            });
+                                                            return newErrors;
+                                                        });
+                                                    }}
+                                                    stateOptions={stateOptions}
+                                                    industryTypes={industryTypes}
+                                                />
                                             </div>
-
-                                            {/* Preview Tab Removed */}
                                         </div>
                                     </div>
                                 </div>

@@ -55,12 +55,17 @@ export const saveFundingApplicationCommission = async (payload: { funding_applic
 };
 
 export const getFundingReviews = async (payload: any = {}): Promise<PaginatedApiResponse<any>> => {
-  const response = await apiClient.post('/common/request-application/funding-review', payload);
+  const response = await apiClient.post('/common/funding-review', payload);
+  return response.data;
+};
+
+export const getFundingReviewDetails = async (id: string | number): Promise<SingleApiResponse<any>> => {
+  const response = await apiClient.get(`/common/funding-review/${id}`);
   return response.data;
 };
 
 export const updateFundingReviewStatus = async (payload: { id: number | string; status: string; reject_reason?: string }): Promise<SingleApiResponse<any>> => {
-  const response = await apiClient.post('/common/request-application/funding-review/status-update', payload);
+  const response = await apiClient.post('/common/funding-review/status-update', payload);
   return response.data;
 };
 

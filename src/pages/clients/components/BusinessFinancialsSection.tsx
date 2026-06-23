@@ -18,10 +18,10 @@ const formatNumber = (val: any) => {
     // Remove all non-numeric characters except decimal point
     const strVal = String(val).replace(/[^0-9.]/g, '');
     if (strVal === '') return '';
-    
+
     const parts = strVal.split('.');
     // Limit to one decimal point
-    if (parts.length > 2) return val; 
+    if (parts.length > 2) return val;
 
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return parts.join('.');
@@ -32,7 +32,7 @@ const unformatNumber = (val: any) => {
     return String(val).replace(/,/g, '');
 };
 
-const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'annual_revenue', 'current_business_debt'];
+const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'current_business_debt'];
 
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
@@ -68,7 +68,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
         if (fetchedData) {
             // @ts-ignore
             const dataToSet = { ...(fetchedData.data || fetchedData) };
-            
+
             // Format existing values
             CURRENCY_FIELDS.forEach(field => {
                 if (dataToSet[field]) {
@@ -101,7 +101,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
     useImperativeHandle(ref, () => ({
         save: async () => {
             console.log('[BusinessFinancialsSection] Starting save...', { clientId, formData });
-            
+
             // Unformat values before sending to API
             const apiData = { ...formData };
             CURRENCY_FIELDS.forEach(field => {
@@ -214,6 +214,41 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
                 <div className="col-lg-4">
                     <div className="">
+                        <label htmlFor="average_monthly_deposits" className="form-label">Average Monthly Deposits</label>
+                        <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.average_monthly_deposits ? 'is-invalid' : ''}`}
+                                id="average_monthly_deposits"
+                                name="average_monthly_deposits"
+                                placeholder="0.00"
+                                value={formData.average_monthly_deposits || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.average_monthly_deposits && <div className="invalid-feedback">{errors.average_monthly_deposits}</div>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-lg-4">
+                    <div className="">
+                        <label htmlFor="monthly_deposit_count" className="form-label">Monthly Deposit Count</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.monthly_deposit_count ? 'is-invalid' : ''}`}
+                            id="monthly_deposit_count"
+                            name="monthly_deposit_count"
+                            placeholder="0"
+                            value={formData.monthly_deposit_count || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.monthly_deposit_count && <div className="invalid-feedback">{errors.monthly_deposit_count}</div>}
+                    </div>
+                </div>
+
+                <div className="col-lg-4">
+                    <div className="">
                         <label htmlFor="annual_revenue" className="form-label">Annual Revenue</label>
                         <div className="input-group">
                             <span className="input-group-text">$</span>
@@ -230,7 +265,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4">
+                <div className="col-lg-6">
                     <div className="">
                         <label htmlFor="profit_margin" className="form-label">Profit Margin (%)</label>
                         <div className="input-group">
@@ -249,7 +284,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4">
+                <div className="col-lg-6">
                     <div className="">
                         <label htmlFor="current_business_debt" className="form-label">Current Business Debt</label>
                         <div className="input-group">
@@ -332,17 +367,32 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
 
                 <div className="col-lg-6">
                     <div className="">
-                        <label htmlFor="nsf_days" className="form-label">NSF/Negative Days (Last 90 Days)</label>
+                        <label htmlFor="nsf_count" className="form-label">NSF Count (Last 90 Days)</label>
                         <input
                             type="number"
-                            className={`form-control ${errors.nsf_days ? 'is-invalid' : ''}`}
-                            id="nsf_days"
-                            name="nsf_days"
+                            className={`form-control ${errors.nsf_count ? 'is-invalid' : ''}`}
+                            id="nsf_count"
+                            name="nsf_count"
                             placeholder="0"
-                            value={formData.nsf_days || ''}
+                            value={formData.nsf_count || ''}
                             onChange={handleInputChange}
                         />
-                        {errors.nsf_days && <div className="invalid-feedback">{errors.nsf_days}</div>}
+                        {errors.nsf_count && <div className="invalid-feedback">{errors.nsf_count}</div>}
+                    </div>
+                </div>
+                <div className="col-lg-6">
+                    <div className="">
+                        <label htmlFor="negative_days" className="form-label">Negative Days (Last 90 Days)</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.negative_days ? 'is-invalid' : ''}`}
+                            id="negative_days"
+                            name="negative_days"
+                            placeholder="0"
+                            value={formData.negative_days || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.negative_days && <div className="invalid-feedback">{errors.negative_days}</div>}
                     </div>
                 </div>
 
