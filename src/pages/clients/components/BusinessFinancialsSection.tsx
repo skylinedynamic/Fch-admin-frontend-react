@@ -32,7 +32,7 @@ const unformatNumber = (val: any) => {
     return String(val).replace(/,/g, '');
 };
 
-const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'annual_revenue', 'current_business_debt'];
+const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'current_business_debt'];
 
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
@@ -209,6 +209,41 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                             />
                             {errors.avg_bank_balance && <div className="invalid-feedback">{errors.avg_bank_balance}</div>}
                         </div>
+                    </div>
+                </div>
+
+                <div className="col-lg-4">
+                    <div className="">
+                        <label htmlFor="average_monthly_deposits" className="form-label">Average Monthly Deposits</label>
+                        <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.average_monthly_deposits ? 'is-invalid' : ''}`}
+                                id="average_monthly_deposits"
+                                name="average_monthly_deposits"
+                                placeholder="0.00"
+                                value={formData.average_monthly_deposits || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.average_monthly_deposits && <div className="invalid-feedback">{errors.average_monthly_deposits}</div>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-lg-4">
+                    <div className="">
+                        <label htmlFor="monthly_deposit_count" className="form-label">Monthly Deposit Count</label>
+                        <input
+                            type="number"
+                            className={`form-control ${errors.monthly_deposit_count ? 'is-invalid' : ''}`}
+                            id="monthly_deposit_count"
+                            name="monthly_deposit_count"
+                            placeholder="0"
+                            value={formData.monthly_deposit_count || ''}
+                            onChange={handleInputChange}
+                        />
+                        {errors.monthly_deposit_count && <div className="invalid-feedback">{errors.monthly_deposit_count}</div>}
                     </div>
                 </div>
 

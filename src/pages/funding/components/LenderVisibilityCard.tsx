@@ -115,21 +115,12 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Maximum NSF Count</label>
+                            <label className="form-label text-dark fw-medium mb-2">Max NSF / Negative Days</label>
                             <div className="input-group">
-                                <input type="number" name="max_nsf_count" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_nsf_count`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_nsf_count || ''} onChange={handleChange} placeholder="None" />
-                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.max_nsf_count`] ? 'border-danger text-danger' : ''}`}>per period</span>
+                                <input type="number" name="max_nsf_negative_days" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_nsf_negative_days || ''} onChange={handleChange} placeholder="None" />
+                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] ? 'border-danger text-danger' : ''}`}>per period</span>
                             </div>
-                            {(errors as any)[`lender_visibilities.${index}.max_nsf_count`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_nsf_count`]}</div>}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Maximum Negative Days</label>
-                            <div className="input-group">
-                                <input type="number" name="max_negative_days" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_negative_days`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_negative_days || ''} onChange={handleChange} placeholder="None" />
-                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.max_negative_days`] ? 'border-danger text-danger' : ''}`}>days</span>
-                            </div>
-                            {(errors as any)[`lender_visibilities.${index}.max_negative_days`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_negative_days`]}</div>}
+                            {(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`]}</div>}
                         </div>
 
                         <div className="mb-4">

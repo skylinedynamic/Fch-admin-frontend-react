@@ -85,8 +85,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             <th style={{ width: '220px' }}>Minimum Monthly Revenue<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Monthly Deposits<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Average Daily Balance<span className="text-danger">*</span></th>
-                            <th style={{ width: '150px' }}>Max NSF</th>
-                            <th style={{ width: '150px' }}>Max Days</th>
+                            <th style={{ width: '200px' }}>Max NSF / Negative Days</th>
                             <th style={{ width: '120px' }}>Min DSCR</th>
                             <th style={{ width: '220px' }}>Allowed States</th>
                             <th style={{ width: '220px' }}>Restricted States</th>
@@ -188,22 +187,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <td>
                                     <input
                                         type="number"
-                                        className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
+                                        className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_negative_days`] ? 'is-invalid' : ''}`}
                                         placeholder="3"
-                                        value={row.max_nsf_count || ''}
-                                        onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
+                                        value={row.max_nsf_negative_days || ''}
+                                        onChange={(e) => onChange(i, 'max_nsf_negative_days', e.target.value)}
                                     />
-                                </td>
-                                <td>
-                                    <div className="input-group flex-nowrap">
-                                        <input
-                                            type="number"
-                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
-                                            placeholder="7"
-                                            value={row.max_negative_days || ''}
-                                            onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
-                                        />
-                                    </div>
                                 </td>
                                 <td>
                                     <input

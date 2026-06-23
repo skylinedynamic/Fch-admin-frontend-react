@@ -47,6 +47,8 @@ export type Client = {
     currency?: string;
     monthly_revenue?: string | number;
     avg_bank_balance?: string | number;
+    average_monthly_deposits?: string | number;
+    monthly_deposit_count?: string | number;
     annual_revenue?: string | number;
     profit_margin?: string | number;
     current_business_debt?: string | number;

@@ -98,7 +98,9 @@ export const READINESS_FACTORS_OPTIONS = [
     "Time in Business",
     "Banking Activity",
     "Minimum Monthly Deposits",
+    "Monthly Deposit Count",
     "Minimum Average Daily Balance",
+    "Max NSF / Negative Days",
 ];
 
 export const TIB_OPTIONS = [
