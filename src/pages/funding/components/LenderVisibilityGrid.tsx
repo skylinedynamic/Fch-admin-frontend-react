@@ -84,6 +84,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             <th style={{ width: '150px' }}>Minimum Time In Business<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Monthly Revenue<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Monthly Deposits<span className="text-danger">*</span></th>
+                            <th style={{ width: '150px' }}>Min Deposit Count<span className="text-danger">*</span></th>
                             <th style={{ width: '220px' }}>Minimum Average Daily Balance<span className="text-danger">*</span></th>
                             <th style={{ width: '150px' }}>Max NSF Count<span className="text-danger">*</span></th>
                             <th style={{ width: '150px' }}>Max Negative Days<span className="text-danger">*</span></th>
@@ -167,6 +168,18 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             />
                                         </div>
                                         {errors?.[`lender_visibilities.${i}.min_monthly_deposits`] && <div className="text-danger mt-1" style={{ fontSize: '11px' }}>{errors[`lender_visibilities.${i}.min_monthly_deposits`]}</div>}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="position-relative">
+                                        <input
+                                            type="number"
+                                            className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
+                                            placeholder="5"
+                                            value={row.min_deposit_count || ''}
+                                            onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
+                                        />
+                                        {renderError('min_deposit_count', i)}
                                     </div>
                                 </td>
                                 <td>
