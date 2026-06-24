@@ -204,8 +204,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             type="number"
                                             className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
                                             placeholder="10"
-                                            value={row.max_nsf_count || ''}
+                                            value={row.max_nsf_count ?? ''}
                                             onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
+                                            min={0}
+                                            max={99999}
                                         />
                                         {renderError('max_nsf_count', i)}
                                     </div>
@@ -216,8 +218,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             type="number"
                                             className={`form-control shadow-none ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
                                             placeholder="10"
-                                            value={row.max_negative_days || ''}
+                                            value={row.max_negative_days ?? ''}
                                             onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
+                                            min={0}
+                                            max={99999}
                                         />
                                         {renderError('max_negative_days', i)}
                                     </div>
