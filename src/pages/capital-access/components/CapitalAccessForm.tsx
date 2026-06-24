@@ -296,7 +296,7 @@ export default function CapitalAccessForm() {
     // ----------------------------------------------------
     // Modal Edit Details Handlers
     // ----------------------------------------------------
-    const openEditModal = (account: SelectedPlayCard) => {
+    const openEditModal = (account: SelectedPlayCard, index: number) => {
         if (!account.id) return;
         setEditingCardId(account.id);
         setEditDetailsForm({
@@ -313,50 +313,22 @@ export default function CapitalAccessForm() {
             maximum_utilization_threshold: account.play_details?.maximum_utilization_threshold || '',
             difficulty_modifier: account.play_details?.difficulty_modifier || '',
         });
-        setModalValidationErrors({});
+
+        // Map server-side validation errors for this card index to the modalValidationErrors state
+        const cardErrors: Record<string, string> = {};
+        const prefix = `credit_accounts.${index}.`;
+        Object.keys(validationErrors).forEach(key => {
+            if (key.startsWith(prefix)) {
+                const fieldName = key.replace(prefix, '');
+                cardErrors[fieldName] = validationErrors[key];
+            }
+        });
+        setModalValidationErrors(cardErrors);
         setIsDetailsModalOpen(true);
     };
 
     const saveEditModal = () => {
-        // Validation
-        const errors: Record<string, string> = {};
-        if (!editDetailsForm.why_this_card.trim()) errors.why_this_card = "Why This Card is required.";
-
-        if (!editDetailsForm.est_limit_min) errors.est_limit_min = "Min Limit is required.";
-        if (!editDetailsForm.est_limit_max) errors.est_limit_max = "Max Limit is required.";
-
         const cleanRequirements = editDetailsForm.what_you_need.filter(r => r.trim() !== '');
-        if (cleanRequirements.length === 0) {
-            errors.what_you_need = "Please add at least one requirement.";
-        }
-
-        if (editDetailsForm.minimum_fico_requirement) {
-            const fico = Number(editDetailsForm.minimum_fico_requirement);
-            if (isNaN(fico) || fico < 300 || fico > 850) {
-                errors.minimum_fico_requirement = "FICO must be between 300 and 850.";
-            }
-        }
-
-        if (editDetailsForm.maximum_utilization_threshold) {
-            const util = Number(editDetailsForm.maximum_utilization_threshold);
-            if (isNaN(util) || util < 0 || util > 100) {
-                errors.maximum_utilization_threshold = "Utilization must be between 0 and 100%.";
-            }
-        }
-
-        if (editDetailsForm.difficulty_modifier) {
-            const diff = Number(editDetailsForm.difficulty_modifier);
-            if (isNaN(diff)) {
-                errors.difficulty_modifier = "Difficulty modifier must be a number.";
-            }
-        }
-
-        if (Object.keys(errors).length > 0) {
-            setModalValidationErrors(errors);
-            return;
-        }
-
-        setModalValidationErrors({});
 
         const minNum = Number(editDetailsForm.est_limit_min);
         const maxNum = Number(editDetailsForm.est_limit_max);
@@ -802,13 +774,29 @@ export default function CapitalAccessForm() {
                                                                                     )}
                                                                                 </div>
                                                                             )}
+                                                                            {Object.keys(validationErrors).some(k => k.startsWith(`credit_accounts.${index}.`)) && (
+                                                                                <div className="text-danger small mt-2">
+                                                                                    {Object.keys(validationErrors)
+                                                                                        .filter(k => k.startsWith(`credit_accounts.${index}.`))
+                                                                                        .map(k => {
+                                                                                            const fieldName = k.split('.').pop() || '';
+                                                                                            const friendlyName = fieldName.replace(/_/g, ' ');
+                                                                                            return (
+                                                                                                <div key={k} className="d-flex align-items-center gap-1">
+                                                                                                    <i className="ri-error-warning-line text-danger"></i>
+                                                                                                    <span className="text-capitalize">{friendlyName}: {validationErrors[k]}</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                     <div className="d-flex align-items-center gap-3">
                                                                         <button
                                                                             type="button"
                                                                             className="btn btn-link text-primary p-0 border-0 fw-semibold fs-13 text-decoration-none"
-                                                                            onClick={() => openEditModal(acc)}
+                                                                            onClick={() => openEditModal(acc, index)}
                                                                         >
                                                                             Edit
                                                                         </button>
