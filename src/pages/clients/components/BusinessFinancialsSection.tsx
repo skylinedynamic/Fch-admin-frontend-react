@@ -240,7 +240,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                             id="monthly_deposit_count"
                             name="monthly_deposit_count"
                             placeholder="0"
-                            value={formData.monthly_deposit_count || ''}
+                            value={formData.monthly_deposit_count ?? ''}
                             onChange={handleInputChange}
                         />
                         {errors.monthly_deposit_count && <div className="invalid-feedback">{errors.monthly_deposit_count}</div>}
@@ -374,8 +374,9 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                             id="nsf_count"
                             name="nsf_count"
                             placeholder="0"
-                            value={formData.nsf_count || ''}
+                            value={formData.nsf_count ?? ''}
                             onChange={handleInputChange}
+                            min={0}
                         />
                         {errors.nsf_count && <div className="invalid-feedback">{errors.nsf_count}</div>}
                     </div>
@@ -389,8 +390,9 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                             id="negative_days"
                             name="negative_days"
                             placeholder="0"
-                            value={formData.negative_days || ''}
+                            value={formData.negative_days ?? ''}
                             onChange={handleInputChange}
+                            min={0}
                         />
                         {errors.negative_days && <div className="invalid-feedback">{errors.negative_days}</div>}
                     </div>
