@@ -11,6 +11,8 @@ import {
     saveAppConfigurations,
     fetchScoreConfigurations,
     updateScoreConfigurations,
+    fetchTimeSettings,
+    updateTimeSettings,
 } from './services';
 import type { SendTestMailPayload, SendTestMailResponse, SettingsResponse, SettingsData, UpdateSettingsPayload, ScoreConfigurationResponse } from './types';
 
@@ -139,6 +141,25 @@ export const useUpdateScoreConfigurations = () => {
         mutationFn: updateScoreConfigurations,
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['scoreConfigurations'] });
+        },
+    });
+};
+
+export const useTimeSettings = (enabled = true) => {
+    return useQuery({
+        queryKey: ['timeSettings'],
+        queryFn: fetchTimeSettings,
+        enabled,
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useUpdateTimeSettings = () => {
+    const qc = useQueryClient();
+    return useMutation<any, Error, { time_settings: any[] }>({
+        mutationFn: updateTimeSettings,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['timeSettings'] });
         },
     });
 };

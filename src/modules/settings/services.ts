@@ -80,4 +80,14 @@ export const updateScoreConfigurations = async (payload: Record<string, any>): P
     return data;
 };
 
+export const fetchTimeSettings = async (): Promise<any> => {
+    const { data } = await apiClient.get('/admin/app-configuration/time');
+    return data;
+};
+
+export const updateTimeSettings = async (payload: { time_settings: any[] }): Promise<any> => {
+    const { data } = await apiClient.put('/admin/app-configuration/time', payload);
+    return data;
+};
+
 

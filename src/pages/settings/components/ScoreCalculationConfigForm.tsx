@@ -8,6 +8,7 @@ import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkel
 import FundingReadinessTab from './ScoreCalculation/FundingReadinessTab';
 import ApprovalProbabilityTab from './ScoreCalculation/ApprovalProbabilityTab';
 import ApprovalOddsTab from './ScoreCalculation/ApprovalOddsTab';
+import GeneralSettingTab from './ScoreCalculation/GeneralSettingTab';
 
 export interface FormData {
     weight_fico: string;
@@ -232,10 +233,21 @@ export interface FormErrors {
     [key: string]: string | null;
 }
 
+interface TimeRange {
+    start: string;
+    end: string;
+}
+
+interface TimeSettings {
+    morning: TimeRange;
+    midday: TimeRange;
+    evening: TimeRange;
+}
+
 const ScoreCalculationConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
-    const [activeTab, setActiveTab] = useState<'readiness' | 'probability' | 'odds'>('readiness');
+    const [activeTab, setActiveTab] = useState<'readiness' | 'probability' | 'odds' | 'general'>('readiness');
     const [formData, setFormData] = useState<FormData>({
         weight_fico: '35',
         weight_utilization: '25',
@@ -447,6 +459,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         odds_inquiries_rule_t1: '5',
         odds_inquiries_rule_t2: '3',
+    });
+    const [timeSettings, setTimeSettings] = useState<TimeSettings>({
+        morning: { start: '06:00', end: '12:00' },
+        midday: { start: '12:00', end: '17:00' },
+        evening: { start: '17:00', end: '22:00' },
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const scoreDataRef = useRef<ScoreConfiguration | null>(null);
@@ -762,6 +779,30 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 odds_inquiries_rule_t1: buildOddsTierValue('recent_inquiries', 2, 'min', '5'),
                 odds_inquiries_rule_t2: buildOddsTierValue('recent_inquiries', 1, 'min', '3'),
             }));
+
+            const decimalToTime = (d: number): string => {
+                const h = Math.floor(d);
+                const m = Math.round((d - h) * 60);
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            };
+            const ts = scoreConfig?.time_settings;
+            if (ts && Array.isArray(ts)) {
+                const st: Record<string, TimeRange> = {};
+                ts.forEach((s: any) => {
+                    const key = s.label?.toLowerCase().replace(' ', '');
+                    if (key) {
+                        st[key] = {
+                            start: s.start != null ? decimalToTime(s.start) : '00:00',
+                            end: s.end != null ? decimalToTime(s.end) : '00:00',
+                        };
+                    }
+                });
+                setTimeSettings({
+                    morning: st.morning || { start: '06:00', end: '12:00' },
+                    midday: st.midday || { start: '12:00', end: '17:00' },
+                    evening: st.evening || { start: '17:00', end: '22:00' },
+                });
+            }
         } catch (error) {
             console.error('Failed to load score configuration:', error);
             toast.error('Failed to load score configuration.');
@@ -1129,6 +1170,16 @@ const ScoreCalculationConfigForm: React.FC = () => {
             ];
             scorePayload.late_payment_modifiers = latePaymentModifiers;
 
+            const timeToDecimal = (t: string): number => {
+                const [h, m] = t.split(':');
+                return parseInt(h) + parseInt(m) / 60;
+            };
+            scorePayload.time_settings = [
+                { label: 'Morning', start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
+                { label: 'Mid Day', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
+                { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 3 },
+            ];
+
             const saveResp = await updateScoreConfigurations(scorePayload);
             if (saveResp?.status === false) {
                 toast.error(saveResp?.message || 'Failed to save score configuration.');
@@ -1210,6 +1261,16 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                     Approval Odds
                                 </button>
                             </li>
+                            <li className="nav-item">
+                                <button
+                                    type="button"
+                                    className={`nav-link fw-semibold ${activeTab === 'general' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('general')}
+                                    role="tab"
+                                >
+                                    General setting
+                                </button>
+                            </li>
                         </ul>
 
                         {activeTab === 'readiness' && (
@@ -1239,6 +1300,13 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                 loading={loading}
                                 handleInputChange={handleInputChange}
                                 factorTierLabel={factorTierLabel}
+                            />
+                        )}
+
+                        {activeTab === 'general' && (
+                            <GeneralSettingTab
+                                timeSettings={timeSettings}
+                                onChange={setTimeSettings}
                             />
                         )}
 
