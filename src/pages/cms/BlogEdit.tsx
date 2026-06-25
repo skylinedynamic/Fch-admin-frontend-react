@@ -6,11 +6,16 @@ import { MultiSelect } from 'primereact/multiselect';
 import { cmsService } from '../../modules/cms/services';
 import { useBlog, useSaveBlog, useCategories, useTags, useCreateCategory, useCreateTag } from '../../modules/cms/queries';
 import { toast } from 'react-toastify';
-import { useSummernote } from '../../hooks/useSummernote';
 import { BlogFormData, Blog } from '../../modules/cms/types';
 import CmsFormLoader from '../../components/Loader/CmsFormLoader';
 import { FileManagerModal } from '../../components/FileManagerModal/FileManagerModal';
 import type { FileSystemItem } from '../../modules/filemanager/types';
+
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import { ClassicEditor } from 'ckeditor5';
+import { editorConfig } from '../../config/ckeditorConfig';
+
+import 'ckeditor5/ckeditor5.css';
 
 const BASE_URL = import.meta.env.VITE_BASE_API_URL || '';
 const WEBSITE_URL = import.meta.env.VITE_WEBSITE_URL?.replace(/\/$/, '') || '';
@@ -19,9 +24,9 @@ export default function BlogEdit() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { data: blogData, isLoading: blogLoading } = useBlog(id);
+    const saveBlogMutation = useSaveBlog();
     const { data: categoriesData, refetch: refetchCategories } = useCategories();
     const { data: tagsData, refetch: refetchTags } = useTags();
-    const saveBlogMutation = useSaveBlog();
     const createCategoryMutation = useCreateCategory();
     const createTagMutation = useCreateTag();
 
@@ -51,15 +56,6 @@ export default function BlogEdit() {
         keywords: '',
         blog_tag_id: [],
     });
-
-    const { editorRef: summernoteRef } = useSummernote('content', formData.content, (e: any) => {
-        setFormData(prev => ({ ...prev, content: e.target.value }));
-    }, {
-        height: 400,
-        placeholder: 'Write your post content...'
-    });
-
-
 
     useEffect(() => {
         if (blogData?.data) {
@@ -316,17 +312,27 @@ export default function BlogEdit() {
                                                     <label className="form-label">Main Content <span className="text-danger">*</span></label>
                                                     {errors.content && (
                                                         <style>{`
-                                                        .summernote-error-wrapper .note-editor {
+                                                        .ckeditor-error-wrapper .ck.ck-toolbar,
+                                                        .ckeditor-error-wrapper .ck.ck-editor__main > .ck-editor__editable {
                                                             border-color: #f06548 !important;
                                                         }
                                                     `}</style>
                                                     )}
-                                                    <div className={errors.content ? 'summernote-error-wrapper' : ''}>
-                                                        <textarea
-                                                            ref={summernoteRef}
-                                                            name="content"
-                                                            className="d-none"
-                                                        ></textarea>
+                                                    <style>{`
+                                                        .ck-powered-by-balloon, .ck-powered-by {
+                                                            display: none !important;
+                                                        }
+                                                    `}</style>
+                                                    <div className={errors.content ? 'ckeditor-error-wrapper' : ''}>
+                                                        <CKEditor
+                                                            editor={ClassicEditor}
+                                                            data={formData.content || ''}
+                                                            onChange={(event, editor) => {
+                                                                const data = editor.getData();
+                                                                setFormData(prev => ({ ...prev, content: data }));
+                                                            }}
+                                                            config={editorConfig}
+                                                        />
                                                     </div>
                                                     {errors.content && <div className="invalid-feedback d-block">{errors.content}</div>}
                                                 </div>
