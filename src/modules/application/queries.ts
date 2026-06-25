@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingReviews, getFundingReviewDetails, updateFundingReviewStatus } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -82,26 +82,26 @@ export const useSaveFundingApplicationCommission = () => {
   });
 };
 
-export const useFundingReviews = (params: any = {}) => {
+export const useFundingRequests = (params: any = {}) => {
   return useQuery({
-    queryKey: [...queryKeys.application.list(), 'funding-reviews', params],
-    queryFn: () => getFundingReviews(params),
+    queryKey: [...queryKeys.application.list(), 'funding-requests', params],
+    queryFn: () => getFundingRequests(params),
     placeholderData: (previousData) => previousData,
   });
 };
 
-export const useFundingReviewDetails = (id: string | number) => {
+export const useFundingRequestDetails = (id: string | number) => {
   return useQuery({
     queryKey: queryKeys.application.detail(id),
-    queryFn: () => getFundingReviewDetails(id),
+    queryFn: () => getFundingRequestDetails(id),
     enabled: !!id,
   });
 };
 
-export const useUpdateFundingReviewStatus = () => {
+export const useUpdateFundingRequestStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateFundingReviewStatus,
+    mutationFn: updateFundingRequestStatus,
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
     },

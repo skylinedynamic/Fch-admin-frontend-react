@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useFundingReviewDetails, useUpdateFundingReviewStatus } from '../../../modules/application';
+import { useFundingRequestDetails, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 // @ts-ignore
@@ -34,7 +34,7 @@ const getFileTypeBadge = (type: string) => {
     return <span className={`badge bg-${color}-subtle text-${color} fs-11 px-2 py-1`}>{type}</span>;
 };
 
-export default function FundingReviewDetail() {
+export default function FundingRequestDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -44,15 +44,15 @@ export default function FundingReviewDetail() {
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [validationErrors, setValidationErrors] = useState<any>({});
 
-    const { data: apiResponse, isLoading, error } = useFundingReviewDetails(id || '');
-    const updateStatusMutation = useUpdateFundingReviewStatus();
+    const { data: apiResponse, isLoading, error } = useFundingRequestDetails(id || '');
+    const updateStatusMutation = useUpdateFundingRequestStatus();
 
     const review = apiResponse?.data;
 
     useEffect(() => {
         if (error || (!isLoading && !review)) {
             toast.error('Failed to load review details');
-            navigate('/intake-review/funding-review');
+            navigate('/intake-review/funding-request');
         }
     }, [error, review, isLoading, navigate]);
 
@@ -68,7 +68,7 @@ export default function FundingReviewDetail() {
             { id: review.id, status: 'Approved' },
             {
                 onSuccess: () => {
-                    toast.success('Funding review approved successfully');
+                    toast.success('funding request approved successfully');
                     setShowApproveModal(false);
                 },
                 onError: (err: any) => {
@@ -89,7 +89,7 @@ export default function FundingReviewDetail() {
             { id: review.id, status: 'Rejected', reject_reason: rejectReason },
             {
                 onSuccess: () => {
-                    toast.success('Funding review rejected successfully');
+                    toast.success('funding request rejected successfully');
                     setShowRejectModal(false);
                     setRejectReason('');
                 },
@@ -119,17 +119,17 @@ export default function FundingReviewDetail() {
                         <div className="col-12">
                             <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                                 <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Funding Review Details</h4>
+                                    <h4 className="fs-20 mb-1">Funding Request Details</h4>
                                     <nav aria-label="breadcrumb">
                                         <ol className="breadcrumb m-0">
                                             <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-review">Funding Reviews</Link></li>
+                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-request">Funding Requests</Link></li>
                                             <li className="breadcrumb-item active" aria-current="page">Review Details</li>
                                         </ol>
                                     </nav>
                                 </div>
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/intake-review/funding-review" className="btn btn-outline-secondary w-lg waves-effect">
+                                    <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
                                 </div>

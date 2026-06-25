@@ -4,7 +4,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { useFundingReviews, useUpdateFundingReviewStatus } from '../../../modules/application';
+import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { Dialog } from 'primereact/dialog';
@@ -14,7 +14,7 @@ import { toast } from 'react-toastify';
 
 import TableLoader from '../../../components/Loader/TableLoader';
 
-export default function FundingReview() {
+export default function FundingRequest() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state: any) => state.user)
     const isHost = currentUser?.is_host == 1;
@@ -56,7 +56,7 @@ export default function FundingReview() {
         sort_order: sortOrder,
     };
 
-    const { data: apiResponse, isLoading, isFetching } = useFundingReviews(queryParams);
+    const { data: apiResponse, isLoading, isFetching } = useFundingRequests(queryParams);
     const reviews = apiResponse?.data || [];
     const totalRecords = apiResponse?.meta?.total || 0;
     const loading = isLoading || isFetching;
@@ -139,7 +139,7 @@ export default function FundingReview() {
                 className="btn btn-sm btn-primary d-flex align-items-center justify-content-center px-3 rounded shadow-sm"
                 onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/intake-review/funding-review/${rowData.id}`);
+                    navigate(`/intake-review/funding-request/${rowData.id}`);
                 }}
             >
                 <i className="ri-eye-line me-1 fs-15 align-middle"></i>
@@ -161,11 +161,11 @@ export default function FundingReview() {
                     <div className="col-12">
                         <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding Reviews</h4>
+                                <h4 className="fs-20 mb-1">Funding Requests</h4>
                                 <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding Reviews</li>
+                                        <li className="breadcrumb-item active" aria-current="page">Funding Requests</li>
                                     </ol>
                                 </nav>
                             </div>
@@ -241,8 +241,8 @@ export default function FundingReview() {
                                             dataKey="id"
                                             responsiveLayout="scroll"
                                             className="p-datatable-sm p-datatable-hoverable-rows"
-                                            emptyMessage="No funding reviews found"
-                                            onRowClick={(e) => navigate(`/intake-review/funding-review/${e.data.id}`)}
+                                            emptyMessage="No funding requests found"
+                                            onRowClick={(e) => navigate(`/intake-review/funding-request/${e.data.id}`)}
                                             rowClassName={() => 'cursor-pointer'}
                                         >
                                             <Column header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} style={{ minWidth: '160px' }} />
