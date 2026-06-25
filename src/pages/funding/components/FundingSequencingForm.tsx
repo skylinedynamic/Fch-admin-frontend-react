@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
-import { getAllLenders } from '../../../modules/lender/services';
+import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
@@ -45,10 +45,11 @@ export default function FundingSequencingForm() {
 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
-    const [groups, setGroups] = useState([]);
-    const [types, setTypes] = useState([]);
-    const [lendersList, setLendersList] = useState([]);
-    const [errors, setErrors] = useState({});
+    const [groups, setGroups] = useState<any[]>([]);
+    const [types, setTypes] = useState<any[]>([]);
+    const [lendersList, setLendersList] = useState<any[]>([]);
+    const [productCategories, setProductCategories] = useState<any[]>([]);
+    const [errors, setErrors] = useState<any>({});
     const [allowedDocumentOptions, setAllowedDocumentOptions] = useState<{ label: string, value: string }[]>([]);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showTypeModal, setShowTypeModal] = useState(false);
@@ -214,10 +215,20 @@ export default function FundingSequencingForm() {
             }
         };
 
+        const loadProductCategories = async () => {
+            try {
+                const res = await getLenderProductCategories();
+                setProductCategories(res.data || []);
+            } catch (error) {
+                console.error('Failed to load product categories', error);
+            }
+        };
+
         loadGroups();
         loadTypes();
         loadDocTypes();
         loadLenders();
+        loadProductCategories();
 
         if (isEditMode) {
             const loadAccount = async () => {
@@ -902,71 +913,13 @@ export default function FundingSequencingForm() {
                                                     visibilities={formData.lender_visibilities}
                                                     lenders={lendersList}
                                                     errors={errors}
-                                                    onChange={(index, field, value) => {
-                                                        setFormData(prev => {
-                                                            const newVisibilities = [...prev.lender_visibilities];
-                                                            newVisibilities[index] = { ...newVisibilities[index], [field]: value };
-                                                            return { ...prev, lender_visibilities: newVisibilities };
-                                                        });
-                                                        if (errors[`lender_visibilities.${index}.${field}`]) {
-                                                            setErrors(prev => {
-                                                                const newErrors = { ...prev };
-                                                                delete newErrors[`lender_visibilities.${index}.${field}`];
-                                                                return newErrors;
-                                                            });
-                                                        }
+                                                    setVisibilities={(newVisibilities: any[]) => {
+                                                        setFormData(prev => ({ ...prev, lender_visibilities: newVisibilities }));
                                                     }}
-                                                    onRemove={(index) => {
-                                                        setFormData(prev => {
-                                                            const newVisibilities = [...prev.lender_visibilities];
-                                                            newVisibilities.splice(index, 1);
-                                                            return { ...prev, lender_visibilities: newVisibilities };
-                                                        });
-                                                        // Clear all visibility errors on structural change
-                                                        setErrors(prev => {
-                                                            const newErrors = { ...prev };
-                                                            Object.keys(newErrors).forEach(key => {
-                                                                if (key.startsWith('lender_visibilities.')) {
-                                                                    delete newErrors[key];
-                                                                }
-                                                            });
-                                                            return newErrors;
-                                                        });
-                                                    }}
-                                                    onAdd={() => {
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            lender_visibilities: [
-                                                                ...prev.lender_visibilities,
-                                                                {
-                                                                    lender_id: null,
-                                                                    min_fico: '',
-                                                                    min_tib_months: '',
-                                                                    min_monthly_revenue: '',
-                                                                    min_monthly_deposits: '',
-                                                                    min_average_daily_balance: '',
-                                                                    max_nsf_negative_days: '',
-                                                                    min_dscr: '',
-                                                                    allowed_states: [],
-                                                                    restricted_states: [],
-                                                                    allowed_industries: [],
-                                                                    restricted_industries: []
-                                                                }
-                                                            ]
-                                                        }));
-                                                        // Clear all visibility errors on structural change
-                                                        setErrors(prev => {
-                                                            const newErrors = { ...prev };
-                                                            Object.keys(newErrors).forEach(key => {
-                                                                if (key.startsWith('lender_visibilities.')) {
-                                                                    delete newErrors[key];
-                                                                }
-                                                            });
-                                                            return newErrors;
-                                                        });
-                                                    }}
+                                                    setErrors={setErrors}
                                                     stateOptions={stateOptions}
                                                     industryTypes={industryTypes}
+                                                    productCategories={productCategories}
                                                 />
                                             </div>
                                         </div>
