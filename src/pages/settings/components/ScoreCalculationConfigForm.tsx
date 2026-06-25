@@ -953,61 +953,81 @@ const ScoreCalculationConfigForm: React.FC = () => {
             banking_relationships: 'weight_banking_relationships',
         };
 
+        const buildTierEntry = (t: any) => {
+            const tierEntry: Record<string, any> = {};
+
+            if (t.min) {
+                tierEntry.min_value = getTierValue(t.min);
+            } else {
+                tierEntry.min_value = null;
+            }
+
+            if (t.max) {
+                let maxVal = getTierValue(t.max);
+                if (t.maxOffset !== undefined) maxVal += t.maxOffset;
+                tierEntry.max_value = maxVal;
+            } else {
+                tierEntry.max_value = null;
+            }
+
+            tierEntry.sub_score = getTierValue(t.sub);
+            tierEntry.sort_order = t.i + 1;
+
+            if (t.rules) {
+                const condition: Record<string, any> = {};
+                for (const rule of t.rules) {
+                    let value: any;
+                    if (rule.value !== undefined) {
+                        value = rule.value;
+                    } else if (rule.valueKey) {
+                        value = getTierValue(rule.valueKey as keyof FormData);
+                        if (rule.transform) value = rule.transform(value);
+                    }
+                    condition[rule.field] = { value, operator: rule.operator };
+                }
+                if (t.each !== undefined) {
+                    condition.each = t.each;
+                }
+                tierEntry.condition = condition;
+            }
+
+            const staticLabels = STATIC_TIER_LABELS['revenue_strength'];
+            if (staticLabels) {
+                const found = staticLabels.find(sl => sl.sortOrder === t.i + 1);
+                if (found) {
+                    tierEntry.label = found.label;
+                }
+            }
+
+            return tierEntry;
+        };
+
         for (const [slug, tiers] of Object.entries(TIER_DEFINITIONS)) {
-            const factorEntry: Record<string, any> = {
+            if (slug === 'revenue_strength') {
+                const businessTiers = tiers.map(t => buildTierEntry(t));
+                const personalTierDefs = [
+                    { i: 0, min: 'rev_rule_personal_t1' as keyof FormData, sub: 'rev_subscore_strong' as keyof FormData },
+                    { i: 1, min: 'rev_rule_personal_t2' as keyof FormData, max: 'rev_rule_personal_t1' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_moderate' as keyof FormData },
+                    { i: 2, min: 'rev_rule_personal_t3' as keyof FormData, max: 'rev_rule_personal_t2' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_limited' as keyof FormData },
+                    { i: 3, max: 'rev_rule_personal_t3' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_weak' as keyof FormData },
+                ];
+                const personalTiers = personalTierDefs.map(t => buildTierEntry(t));
+                payload[slug] = {
+                    weight: getTierValue(weightMap[slug] as keyof FormData),
+                    order_sort: orderMap[slug],
+                    factors: {
+                        business_revenue: businessTiers,
+                        personal_revenue: personalTiers,
+                    },
+                };
+                continue;
+            }
+
+            payload[slug] = {
                 weight: getTierValue(weightMap[slug] as keyof FormData),
                 order_sort: orderMap[slug],
-                factors: tiers.map(t => {
-                    const tierEntry: Record<string, any> = {};
-
-                    if (t.min) {
-                        tierEntry.min_value = getTierValue(t.min);
-                    } else {
-                        tierEntry.min_value = null;
-                    }
-
-                    if (t.max) {
-                        let maxVal = getTierValue(t.max);
-                        if (t.maxOffset !== undefined) maxVal += t.maxOffset;
-                        tierEntry.max_value = maxVal;
-                    } else {
-                        tierEntry.max_value = null;
-                    }
-
-                    tierEntry.sub_score = getTierValue(t.sub);
-                    tierEntry.sort_order = t.i + 1;
-
-                    if (t.rules) {
-                        const condition: Record<string, any> = {};
-                        for (const rule of t.rules) {
-                            let value: any;
-                            if (rule.value !== undefined) {
-                                value = rule.value;
-                            } else if (rule.valueKey) {
-                                value = getTierValue(rule.valueKey as keyof FormData);
-                                if (rule.transform) value = rule.transform(value);
-                            }
-                            condition[rule.field] = { value, operator: rule.operator };
-                        }
-                        if (t.each !== undefined) {
-                            condition.each = t.each;
-                        }
-                        tierEntry.condition = condition;
-                    }
-
-                    const staticLabels = STATIC_TIER_LABELS[slug];
-                    if (staticLabels) {
-                        const found = staticLabels.find(sl => sl.sortOrder === t.i + 1);
-                        if (found) {
-                            tierEntry.label = found.label;
-                        }
-                    }
-
-                    return tierEntry;
-                }),
+                factors: tiers.map(t => buildTierEntry(t)),
             };
-
-            payload[slug] = factorEntry;
         }
 
         return { funding_readiness: payload };
