@@ -92,6 +92,9 @@ export interface FormData {
     rev_rule_t1: string;
     rev_rule_t2: string;
     rev_rule_t3: string;
+    rev_rule_personal_t1: string;
+    rev_rule_personal_t2: string;
+    rev_rule_personal_t3: string;
 
     trade_rule_multi_accounts: string;
     trade_rule_multi_high_limit_count: string;
@@ -317,6 +320,9 @@ const ScoreCalculationConfigForm: React.FC = () => {
         rev_rule_t1: '500000',
         rev_rule_t2: '150000',
         rev_rule_t3: '50000',
+        rev_rule_personal_t1: '150000',
+        rev_rule_personal_t2: '75000',
+        rev_rule_personal_t3: '40000',
 
         trade_rule_multi_accounts: '5',
         trade_rule_multi_high_limit_count: '2',

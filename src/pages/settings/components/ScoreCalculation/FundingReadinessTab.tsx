@@ -171,39 +171,9 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                                 disabled={loading}
                                             />
                                             <span className="input-group-text">%</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div className="d-flex align-items-center gap-2">
-                                            <div className="avatar-xs flex-shrink-0">
-                                                <div className="avatar-title bg-light text-muted rounded-circle fs-13">
-                                                    <i className="ri-links-line"></i>
-                                                </div>
                                             </div>
-                                            <div>
-                                                <span className="fw-semibold text-body fs-13">Tradeline Depth</span>
-                                                <small className="text-muted d-block fs-11">Measures bureau depth and exposure history.</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="input-group input-group-sm">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                className="form-control"
-                                                name="weight_tradeline_depth"
-                                                value={formData.weight_tradeline_depth}
-                                                onChange={handleInputChange}
-                                                disabled={loading}
-                                            />
-                                            <span className="input-group-text">%</span>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
                                 <tr>
                                     <td>
                                         <div className="d-flex align-items-center gap-2">
@@ -536,67 +506,86 @@ const FundingReadinessTab: React.FC<FundingReadinessTabProps> = ({
                                 <thead className="table-light text-uppercase fs-11">
                                     <tr>
                                         <th className="text-start ps-3 config-th-quarter">Revenue Category</th>
-                                        <th className="text-start ps-3 config-th-half">Suggested Rule</th>
+                                        <th className="text-start ps-3 config-th-half">Business Revenue</th>
+                                        <th className="text-start ps-3 config-th-half">Personal Income</th>
                                         <th className="config-th-subscore">Subscore</th>
                                     </tr>
                                 </thead>
                                 <tbody className="fs-13">
+                                    {/* Strong */}
                                     <tr>
                                         <td className="text-start ps-3">
                                             <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 1)}</span>
-                                            <small className="text-muted d-block fs-11">Annual Revenue ≥ ${Number(formData.rev_rule_t1).toLocaleString()}</small>
                                         </td>
-                                        <td className="text-start ps-3 fw-medium">
-                                            <span>Annual Revenue ≥ $</span>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Business Revenue ≥ $</span>
                                             <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t1" value={formData.rev_rule_t1} onChange={handleInputChange} disabled={loading} />
                                         </td>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Personal Income ≥ $</span>
+                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_personal_t1" value={formData.rev_rule_personal_t1} onChange={handleInputChange} disabled={loading} />
+                                        </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_strong" value={formData.rev_subscore_strong} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
+                                    {/* Moderate */}
                                     <tr>
                                         <td className="text-start ps-3">
                                             <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 2)}</span>
-                                            <small className="text-muted d-block fs-11">Annual Revenue ${Number(formData.rev_rule_t2).toLocaleString()} – ${(Number(formData.rev_rule_t1) - 1).toLocaleString()}</small>
                                         </td>
-                                        <td className="text-start ps-3 fw-medium">
-                                            <span>$</span>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Business Revenue $</span>
                                             <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t2" value={formData.rev_rule_t2} onChange={handleInputChange} disabled={loading} />
                                             <span> – $</span>
-                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t1) - 1) || 499999} disabled />
-                                            <span> / year</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t1) - 1) || 0} disabled />
+                                        </td>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Personal Income $</span>
+                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_personal_t2" value={formData.rev_rule_personal_t2} onChange={handleInputChange} disabled={loading} />
+                                            <span> – $</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t1) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto config-input config-input-xl" name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_moderate" value={formData.rev_subscore_moderate} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
+                                    {/* Limited */}
                                     <tr>
                                         <td className="text-start ps-3">
                                             <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 3)}</span>
-                                            <small className="text-muted d-block fs-11">Annual Revenue ${Number(formData.rev_rule_t3).toLocaleString()} – ${(Number(formData.rev_rule_t2) - 1).toLocaleString()}</small>
                                         </td>
-                                        <td className="text-start ps-3 fw-medium">
-                                            <span>$</span>
-                                            <input type="number" min="0" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t3" value={formData.rev_rule_t3} onChange={handleInputChange} disabled={loading} />
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Business Revenue $</span>
+                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_t3" value={formData.rev_rule_t3} onChange={handleInputChange} disabled={loading} />
                                             <span> – $</span>
-                                            <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t2) - 1) || 149999} disabled />
-                                            <span> / year</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t2) - 1) || 0} disabled />
+                                        </td>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Personal Income $</span>
+                                            <input type="number" min="0" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" name="rev_rule_personal_t3" value={formData.rev_rule_personal_t3} onChange={handleInputChange} disabled={loading} />
+                                            <span> – $</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t2) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_limited" value={formData.rev_subscore_limited} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
+                                    {/* Weak */}
                                     <tr>
                                         <td className="text-start ps-3">
                                             <span className="fw-semibold text-body">{factorTierLabel('revenue_strength', 4)}</span>
-                                            <small className="text-muted d-block fs-11">Annual Revenue below ${(Number(formData.rev_rule_t3) - 1).toLocaleString()}</small>
                                         </td>
-                                        <td className="text-start ps-3 fw-medium">
-                                            <span>Annual Revenue below $</span>
-                                            <input type="number" className="form-control form-control-sm text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t3) - 1) || 49999} disabled />
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Below $</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_t3) - 1) || 0} disabled />
+                                        </td>
+                                        <td className="text-start ps-3 fw-medium text-nowrap">
+                                            <span>Below $</span>
+                                            <input type="number" className="form-control form-control-xs text-center d-inline-block px-1 config-input config-input-xxl" value={(Number(formData.rev_rule_personal_t3) - 1) || 0} disabled />
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" className="form-control form-control-sm text-center mx-auto config-input config-input-xl" name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
+                                            <input type="number" min="0" max="100" className="form-control form-control-xs text-center mx-auto" style={{width: '80px'}} name="rev_subscore_weak" value={formData.rev_subscore_weak} onChange={handleInputChange} disabled={loading} />
                                         </td>
                                     </tr>
                                 </tbody>
