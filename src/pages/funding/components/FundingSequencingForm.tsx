@@ -33,15 +33,30 @@ export default function FundingSequencingForm() {
     const isEditMode = !!id;
 
     const location = useLocation();
-    const [activeTab, setActiveTab] = useState('display');
+    const queryParams = new URLSearchParams(location.search);
+    const isVisibilityRoute = location.pathname.includes('/visibility-logic-details') || queryParams.get('tab') === 'visibility';
+    const [activeTab, setActiveTab] = useState(isVisibilityRoute ? 'visibility' : 'display');
+    const isMasterList = activeTab === 'visibility' && !queryParams.get('lenderId');
 
     useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        const tab = queryParams.get('tab');
-        if (tab === 'visibility' || tab === 'display') {
-            setActiveTab(tab);
+        if (isVisibilityRoute) {
+            setActiveTab('visibility');
+        } else {
+            setActiveTab('display');
         }
-    }, [location.search]);
+    }, [location.pathname, location.search, isVisibilityRoute]);
+
+    const handleTabClick = (tabId: string) => {
+        if (!isEditMode) return;
+        
+        if (tabId === 'visibility') {
+            window.history.pushState({}, '', `/funding/visibility-logic-details/${id}${location.search}`);
+            setActiveTab('visibility');
+        } else {
+            window.history.pushState({}, '', `/funding/${id}`);
+            setActiveTab('display');
+        }
+    };
 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
@@ -93,21 +108,7 @@ export default function FundingSequencingForm() {
         readiness_factors: [],
         missing_documents: [],
         allowed_documents: [],
-        lender_visibilities: [{
-            lender_id: null,
-            min_fico: '',
-            min_tib_months: '',
-            min_monthly_revenue: '',
-            min_monthly_deposits: '',
-            min_average_daily_balance: '',
-            min_deposit_count: '',
-            max_nsf_negative_days: '',
-            min_dscr: '',
-            allowed_states: [],
-            restricted_states: [],
-            allowed_industries: [],
-            restricted_industries: []
-        }]
+        lender_visibilities: []
     });
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
         setFormData(prev => {
@@ -284,11 +285,7 @@ export default function FundingSequencingForm() {
                         allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
                         lender_visibilities: Array.isArray(data.lender_visibilities) && data.lender_visibilities.length > 0
                             ? data.lender_visibilities
-                            : [{
-                                lender_id: null, min_fico: '', min_tib_months: '', min_monthly_revenue: '', min_monthly_deposits: '',
-                                min_average_daily_balance: '', min_deposit_count: '', max_nsf_negative_days: '', min_dscr: '',
-                                allowed_states: [], restricted_states: [], allowed_industries: [], restricted_industries: []
-                            }]
+                            : []
                     });
                 } catch (err) {
                     toast.error('Failed to load funding details');
@@ -354,9 +351,27 @@ export default function FundingSequencingForm() {
             allowed_documents: cleanData.allowed_documents,
             manual_review_allowed: cleanData.manual_review_allowed,
             exception_allowed: cleanData.exception_allowed,
-            lender_visibilities: activeTab === 'display'
-                ? cleanData.lender_visibilities.filter((v: any) => v.lender_id !== null && v.lender_id !== '')
-                : cleanData.lender_visibilities
+            lender_visibilities: Array.isArray(cleanData.lender_visibilities)
+                ? cleanData.lender_visibilities
+                    .filter((v: any) => v.lender_id !== null && v.lender_id !== '')
+                    .map((v: any) => ({
+                        lender_id: v.lender_id,
+                        lender_product_category_id: v.lender_product_category_id || null,
+                        min_fico: v.min_fico || null,
+                        min_tib_months: v.min_tib_months || null,
+                        min_monthly_revenue: v.min_monthly_revenue || null,
+                        min_monthly_deposits: v.min_monthly_deposits || null,
+                        min_average_daily_balance: v.min_average_daily_balance || null,
+                        min_deposit_count: v.min_deposit_count || null,
+                        max_nsf_count: v.max_nsf_count || null,
+                        max_negative_days: v.max_negative_days || null,
+                        min_dscr: v.min_dscr || null,
+                        allowed_states: v.allowed_states || [],
+                        restricted_states: v.restricted_states || [],
+                        allowed_industries: v.allowed_industries || [],
+                        restricted_industries: v.restricted_industries || [],
+                    }))
+                : []
         };
 
         try {
@@ -369,7 +384,7 @@ export default function FundingSequencingForm() {
                 } else {
                     await updateFundingSequencingVisibility(id, { lender_visibilities: unifiedPayload.lender_visibilities });
                     toast.success('Visibility rules updated successfully!');
-                    navigate('/funding');
+                    navigate(`/funding/visibility-logic-details/${id}`);
                 }
             } else {
                 const response = await createFundingSequencing(unifiedPayload);
@@ -404,8 +419,23 @@ export default function FundingSequencingForm() {
                 const displayKeys = ['name', 'subtitle', 'funding_group_id', 'funding_type_id', 'lender_id', 'min_amount', 'max_amount', 'terms', 'icon', 'icon_color', 'sort_order', 'readiness_factors', 'allowed_documents'];
                 const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
 
-                if (hasVisibilityError && !hasDisplayError && activeTab === 'display') {
-                    setActiveTab('visibility');
+                if (hasVisibilityError) {
+                    if (!hasDisplayError && activeTab === 'display') {
+                        setActiveTab('visibility');
+                    }
+                    
+                    // Automatically switch to the lender that has the error
+                    const firstErrorKey = Object.keys(mappedErrors).find(key => key.startsWith('lender_visibilities.'));
+                    if (firstErrorKey) {
+                        const parts = firstErrorKey.split('.');
+                        const index = parseInt(parts[1], 10);
+                        if (!isNaN(index) && unifiedPayload.lender_visibilities[index]) {
+                            const errorLenderId = unifiedPayload.lender_visibilities[index].lender_id;
+                            if (errorLenderId) {
+                                navigate(`/funding/visibility-logic-details/${id}?lenderId=${errorLenderId}`);
+                            }
+                        }
+                    }
                 } else if (hasDisplayError && activeTab === 'visibility') {
                     setActiveTab('display');
                 }
@@ -493,23 +523,25 @@ export default function FundingSequencingForm() {
                                 <Link to="/funding" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                <button
-                                    type="submit"
-                                    form="funding-sequencing-form"
-                                    className="btn btn-primary waves-effect"
-                                    disabled={loading || initialLoading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            {isEditMode ? 'Updating...' : 'Saving...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Save Configuration'}
-                                        </>
-                                    )}
-                                </button>
+                                {!isMasterList && (
+                                    <button
+                                        type="submit"
+                                        form="funding-sequencing-form"
+                                        className="btn btn-primary waves-effect"
+                                        disabled={loading || initialLoading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                {isEditMode ? 'Updating...' : 'Saving...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Save Configuration'}
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -530,31 +562,26 @@ export default function FundingSequencingForm() {
                                         {/* Tabs Navigation */}
                                         <ul className="nav nav-tabs-custom mb-0 border-bottom-0" role="tablist" style={{ gap: '30px' }}>
                                             <li className="nav-item">
-                                                <a
-                                                    className={`nav-link fw-semibold fs-15 px-0 py-2 ${activeTab === 'display' ? 'active text-primary border-primary' : 'text-muted border-transparent'}`}
-                                                    onClick={() => { setActiveTab('display'); setErrors({}); }}
-                                                    style={{ cursor: 'pointer', borderBottom: activeTab === 'display' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'display' ? '#2563eb' : '#64748b' }}
+                                                <button
+                                                    type="button"
+                                                    className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'display' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'}`}
+                                                    onClick={() => handleTabClick('display')}
+                                                    style={{ backgroundColor: 'transparent', transition: 'all 0.2s', border: 'none' }}
                                                 >
                                                     Display
-                                                </a>
+                                                </button>
                                             </li>
                                             <li className="nav-item">
-                                                <a
-                                                    className={`nav-link fw-semibold fs-15 px-0 py-2 ${activeTab === 'visibility' ? 'active text-primary border-primary' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
-                                                    onClick={(e) => {
-                                                        if (!isEditMode) {
-                                                            e.preventDefault();
-                                                            return;
-                                                        }
-                                                        setActiveTab('visibility');
-                                                        setErrors({});
-                                                    }}
-                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', borderBottom: activeTab === 'visibility' ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === 'visibility' ? '#2563eb' : '#64748b' }}
+                                                <button
+                                                    type="button"
+                                                    className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'visibility' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
+                                                    onClick={() => handleTabClick('visibility')}
+                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', transition: 'all 0.2s', border: 'none' }}
                                                     title={!isEditMode ? "Please save the sequence first to unlock visibility logic" : ""}
                                                 >
                                                     {!isEditMode && <i className="ri-lock-line align-middle me-1"></i>}
                                                     Visibility Logic
-                                                </a>
+                                                </button>
                                             </li>
                                         </ul>
                                     </div>
@@ -828,6 +855,7 @@ export default function FundingSequencingForm() {
                                                                         <input className="form-check-input" type="checkbox" role="switch" name="require_completed_application" checked={formData.require_completed_application || false} onChange={handleInputChange} />
                                                                     </div>
                                                                 </div>
+                                                                {(errors as any).require_completed_application && <small className="text-danger mb-4 d-block" style={{ marginTop: '-20px' }}>{(errors as any).require_completed_application}</small>}
 
                                                                 <div className="d-flex align-items-center justify-content-between mb-4">
                                                                     <div>
@@ -843,6 +871,7 @@ export default function FundingSequencingForm() {
                                                                         }} />
                                                                     </div>
                                                                 </div>
+                                                                {(errors as any).require_documents_uploaded && <small className="text-danger mb-4 d-block" style={{ marginTop: '-20px' }}>{(errors as any).require_documents_uploaded}</small>}
 
                                                                 <div style={{ minHeight: '90px', transition: 'all 0.3s ease-in-out' }}>
                                                                     {formData.require_documents_uploaded && (
