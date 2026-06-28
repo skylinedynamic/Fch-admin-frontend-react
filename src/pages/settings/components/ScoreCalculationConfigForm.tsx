@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { fetchScoreConfigurations, updateScoreConfigurations } from '../../../modules/settings/services';
 import type { ScoreConfiguration, ScoreFactorTier } from '../../../modules/settings/types';
-import { STATIC_TIER_LABELS } from '../../../config/scoreCalculation';
+import { STATIC_TIER_LABELS } from '../../../config/capitalAccessOptions';
 
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import FundingReadinessTab from './ScoreCalculation/FundingReadinessTab';
@@ -634,9 +634,12 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 time_rule_t3: buildTierValue('time_in_business', 2, 'min', '12'),
                 time_rule_t4: buildTierValue('time_in_business', 3, 'min', '6'),
 
-                rev_rule_t1: buildTierValue('revenue_strength', 0, 'min', '500000'),
-                rev_rule_t2: buildTierValue('revenue_strength', 1, 'min', '150000'),
-                rev_rule_t3: buildTierValue('revenue_strength', 2, 'min', '50000'),
+                rev_rule_t1: getCond('revenue_strength', 0, 'business_revenue', '500000'),
+                rev_rule_t2: getCond('revenue_strength', 1, 'business_revenue', '150000'),
+                rev_rule_t3: getCond('revenue_strength', 2, 'business_revenue', '50000'),
+                rev_rule_personal_t1: getCond('revenue_strength', 0, 'personal_income', '150000'),
+                rev_rule_personal_t2: getCond('revenue_strength', 1, 'personal_income', '50000'),
+                rev_rule_personal_t3: getCond('revenue_strength', 2, 'personal_income', '25000'),
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
@@ -879,10 +882,30 @@ const ScoreCalculationConfigForm: React.FC = () => {
             { i: 4, sub: 'time_subscore_below_6' },
         ],
         revenue_strength: [
-            { i: 0, min: 'rev_rule_t1', sub: 'rev_subscore_strong' },
-            { i: 1, min: 'rev_rule_t2', max: 'rev_rule_t1', maxOffset: -1, sub: 'rev_subscore_moderate' },
-            { i: 2, min: 'rev_rule_t3', max: 'rev_rule_t2', maxOffset: -1, sub: 'rev_subscore_limited' },
-            { i: 3, max: 'rev_rule_t3', maxOffset: -1, sub: 'rev_subscore_weak' },
+            {
+                i: 0, sub: 'rev_subscore_strong', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t1' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t1' },
+                ]
+            },
+            {
+                i: 1, sub: 'rev_subscore_moderate', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t2' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t2' },
+                ]
+            },
+            {
+                i: 2, sub: 'rev_subscore_limited', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t3' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t3' },
+                ]
+            },
+            {
+                i: 3, sub: 'rev_subscore_weak', rules: [
+                    { field: 'business_revenue', operator: '<', valueKey: 'rev_rule_t3' },
+                    { field: 'personal_income', operator: '<', valueKey: 'rev_rule_personal_t3' },
+                ]
+            },
         ],
         tradeline_depth: [
             {
@@ -1003,25 +1026,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
         };
 
         for (const [slug, tiers] of Object.entries(TIER_DEFINITIONS)) {
-            if (slug === 'revenue_strength') {
-                const businessTiers = tiers.map(t => buildTierEntry(t));
-                const personalTierDefs = [
-                    { i: 0, min: 'rev_rule_personal_t1' as keyof FormData, sub: 'rev_subscore_strong' as keyof FormData },
-                    { i: 1, min: 'rev_rule_personal_t2' as keyof FormData, max: 'rev_rule_personal_t1' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_moderate' as keyof FormData },
-                    { i: 2, min: 'rev_rule_personal_t3' as keyof FormData, max: 'rev_rule_personal_t2' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_limited' as keyof FormData },
-                    { i: 3, max: 'rev_rule_personal_t3' as keyof FormData, maxOffset: -1, sub: 'rev_subscore_weak' as keyof FormData },
-                ];
-                const personalTiers = personalTierDefs.map(t => buildTierEntry(t));
-                payload[slug] = {
-                    weight: getTierValue(weightMap[slug] as keyof FormData),
-                    order_sort: orderMap[slug],
-                    factors: {
-                        business_revenue: businessTiers,
-                        personal_revenue: personalTiers,
-                    },
-                };
-                continue;
-            }
+
 
             payload[slug] = {
                 weight: getTierValue(weightMap[slug] as keyof FormData),
@@ -1184,17 +1189,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             }));
             scorePayload.readiness_bands = readinessBands;
 
-            const latePaymentModifiers = [
-                { factor_slug: 'late_30_1', label: formData.late_30_1_lbl, min_value: Number(formData.late_30_1_qty), numeric_value: Number(formData.late_30_1_val), sort_order: 1 },
-                { factor_slug: 'late_30_2_plus', label: formData.late_30_2_plus_lbl, min_value: Number(formData.late_30_2_plus_qty), numeric_value: Number(formData.late_30_2_plus_val), sort_order: 2 },
-                { factor_slug: 'late_60_1', label: formData.late_60_1_lbl, min_value: Number(formData.late_60_1_qty), numeric_value: Number(formData.late_60_1_val), sort_order: 3 },
-                { factor_slug: 'late_60_2_plus', label: formData.late_60_2_plus_lbl, min_value: Number(formData.late_60_2_plus_qty), numeric_value: Number(formData.late_60_2_plus_val), sort_order: 4 },
-                { factor_slug: 'late_90_1', label: formData.late_90_1_lbl, min_value: Number(formData.late_90_1_qty), numeric_value: Number(formData.late_90_1_val), sort_order: 5 },
-                { factor_slug: 'late_90_2_plus', label: formData.late_90_2_plus_lbl, min_value: Number(formData.late_90_2_plus_qty), numeric_value: Number(formData.late_90_2_plus_val), sort_order: 6 },
-                { factor_slug: 'late_120_1', label: formData.late_120_1_lbl, min_value: Number(formData.late_120_1_qty), numeric_value: Number(formData.late_120_1_val), sort_order: 7 },
-                { factor_slug: 'late_120_2_plus', label: formData.late_120_2_plus_lbl, min_value: Number(formData.late_120_2_plus_qty), numeric_value: Number(formData.late_120_2_plus_val), sort_order: 8 },
-            ];
-            scorePayload.late_payment_modifiers = latePaymentModifiers;
+            scorePayload.late_payment_modifiers = [];
 
             const timeToDecimal = (t: string): number => {
                 const [h, m] = t.split(':');

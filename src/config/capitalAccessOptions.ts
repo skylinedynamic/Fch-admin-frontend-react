@@ -34,3 +34,64 @@ export const PRE_FLIGHT_TASKS = [
     "Identity Verified",
     "No Recent Derogatories"
 ];
+
+export interface ScoreTierLabel {
+    sortOrder: number;
+    label: string;
+}
+
+export const SCORE_CATEGORIES = {
+    MODEL_WEIGHT: 'model_weight',
+    SUBSCORE_TIER: 'subscore_tier',
+    READINESS_BAND: 'readiness_band',
+    LATE_PAYMENT_MODIFIER: 'late_payment_modifier',
+    TIME: 'time',
+} as const;
+
+export const SCORE_MODELS = {
+    FUNDING_READINESS: 'funding_readiness',
+    APPROVAL_PROBABILITY: 'approval_probability',
+    APPROVAL_ODDS: 'approval_odds',
+    GENERAL_SETTING: 'general_setting',
+} as const;
+
+export const SCORE_FACTORS = {
+    FICO: 'fico',
+    UTILIZATION: 'utilization',
+    TIME_IN_BUSINESS: 'time_in_business',
+    REVENUE_STRENGTH: 'revenue_strength',
+    TRADELINE_DEPTH: 'tradeline_depth',
+    BANKING_RELATIONSHIPS: 'banking_relationships',
+    FICO_ABOVE_MINIMUM: 'fico_above_minimum',
+    RECENT_INQUIRIES: 'recent_inquiries',
+    BANKING_RELATIONSHIP: 'banking_relationship',
+    REVENUE_INCOME: 'revenue_income',
+} as const;
+
+export const STATIC_TIER_LABELS: Record<string, ScoreTierLabel[]> = {
+    [SCORE_FACTORS.REVENUE_STRENGTH]: [
+        { sortOrder: 1, label: 'Strong' },
+        { sortOrder: 2, label: 'Moderate' },
+        { sortOrder: 3, label: 'Limited' },
+        { sortOrder: 4, label: 'Weak' },
+    ],
+    [SCORE_FACTORS.TRADELINE_DEPTH]: [
+        { sortOrder: 1, label: 'Multiple High-Limit & Installment Depth' },
+        { sortOrder: 2, label: 'Good Depth with High-Limit account' },
+        { sortOrder: 3, label: 'Moderate Depth' },
+        { sortOrder: 4, label: 'Thin File' },
+    ],
+    [SCORE_FACTORS.BANKING_RELATIONSHIPS]: [
+        { sortOrder: 1, label: 'Strong' },
+        { sortOrder: 2, label: 'Moderate' },
+        { sortOrder: 3, label: 'Limited' },
+        { sortOrder: 4, label: 'None' },
+    ],
+    [SCORE_FACTORS.TIME_IN_BUSINESS]: [
+        { sortOrder: 1, label: 'Established' },
+        { sortOrder: 2, label: 'Mature' },
+        { sortOrder: 3, label: 'Young' },
+        { sortOrder: 4, label: 'Early Stage' },
+        { sortOrder: 5, label: 'Startup' },
+    ],
+};

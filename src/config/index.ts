@@ -38,5 +38,5 @@ export { ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS, type AccessTimeOpti
 export { APP_CONFIG } from './appConfig';
 
 // Score Calculation labels
-export { STATIC_TIER_LABELS, type ScoreTierLabel } from './scoreCalculation';
+export { STATIC_TIER_LABELS, SCORE_CATEGORIES, SCORE_MODELS, SCORE_FACTORS, type ScoreTierLabel } from './capitalAccessOptions';
 
