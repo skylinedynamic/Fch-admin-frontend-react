@@ -9,6 +9,8 @@ export type Client = {
     email: string;
     signup_id?: string;
     business_website?: string;
+    is_free_trail?: boolean;
+    free_trail_end_date?: string;
 
     // Business Info
     business_name?: string;

@@ -252,6 +252,7 @@ export default function ClientDetails() {
         setErrors({}); // Clear previous errors
         setIsSaving(true);
 
+
         try {
             if (!id) {
                 // CREATE NEW CLIENT - Use centralized mapping logic

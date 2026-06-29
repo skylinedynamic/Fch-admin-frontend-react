@@ -25,6 +25,7 @@ import { allUsers } from '../../../modules/partner/services';
 import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS, STRIPE_BILLING_LABELS, ENROLLMENT_INSTALLMENTS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
+import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
 
 
 interface ClientInfoSectionProps {
@@ -76,6 +77,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const updateMutation = useUpdateClient();
 
     const currentUser = useAuthStore((state) => state.user);
+    const userSubscription = useAuthStore((state) => state.userSubscription);
+    const isPartnerOnFreeTrial = currentUser?.entity_type === ENTITY_TYPE_PARTNER && !!userSubscription?.is_free_trail;
 
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
@@ -187,6 +190,12 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             setIsSynced(true);
         } else if (!clientId && !hasSyncedData.current) {
             // If creating new client (no ID), we are synced immediately
+            if (isPartnerOnFreeTrial) {
+                setFormData(prev => ({ ...prev, is_free_trail: true }));
+                if (handleLocationChange) {
+                    handleLocationChange('is_free_trail', true);
+                }
+            }
             setIsSynced(true);
             hasSyncedData.current = true;
         }
@@ -722,6 +731,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
+
+
                 <div className="col-12 mt-4 mb-2">
                     <h5 className="text-primary fs-16 mb-1">Business Information</h5>
                     <hr className="mt-1" />
@@ -1080,256 +1091,338 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {/* Enrollment Type Dropdown (Now for both Host and Non-Host) */}
-                <div className="col-lg-6">
-                    <div className="mb-3">
-                        <label htmlFor="enrollment_type" className="form-label">
-                            Enrollment Type <span className="text-danger">*</span>
-                        </label>
-                        <Dropdown
-                            inputId="plan_id"
-                            value={formData.plan_id}
-                            options={enrollmentOptions}
-                            onChange={(e) => {
-                                const selectedVal = e.value;
-                                const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
+                {/* Free Trial Section */}
+                <div className="col-12 mt-4">
+                    <div className="card border-0 bg-light-subtle shadow-sm mb-4">
+                        <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
+                            <div className="d-flex align-items-center mb-3">
+                                <i className="ri-gift-line text-warning fs-3 me-2"></i>
+                                <h5 className="mb-0 text-primary fw-semibold">Free Trial Option</h5>
+                            </div>
 
-                                const updates: any = {
-                                    plan_id: selectedVal,
-                                    enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
-                                    enrollment_payment: selectedOption ? selectedOption.payment_amount : '',
-                                    payment_amount: selectedOption ? selectedOption.payment_amount : '',
-                                    amount: selectedOption ? selectedOption.payment_amount : ''
-                                };
+                            <p className="text-muted fs-13 mb-4">
+                                Enable a free trial period for this client. During the trial period, they will have access to the platform without regular billing restrictions.
+                            </p>
+                            <div className="row align-items-center g-3">
+                                <div className="col-md-6">
+                                    <div className="form-check form-switch form-switch-md">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            id="is_free_trail"
+                                            name="is_free_trail"
+                                            checked={!!formData.is_free_trail}
+                                            style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
+                                            onChange={(e) => {
+                                                if (isPartnerOnFreeTrial) return;
+                                                handleInputChange({
+                                                    target: {
+                                                        name: 'is_free_trail',
+                                                        value: e.target.checked
+                                                    }
+                                                });
+                                                if (!e.target.checked) {
+                                                    handleInputChange({
+                                                        target: {
+                                                            name: 'free_trail_end_date',
+                                                            value: ''
+                                                        }
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                        <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
+                                            Activate Free Trial
+                                        </label>
+                                    </div>
+                                </div>
 
-                                setFormData(prev => ({
-                                    ...prev,
-                                    ...updates
-                                }));
-
-                                // Propagate changes to parent
-                                if (handleLocationChange) {
-                                    Object.entries(updates).forEach(([name, value]) => {
-                                        handleLocationChange(name, value);
-                                    });
-                                }
-
-                                // Clear error if present
-                                if (setErrors && errors.plan_id) {
-                                    const newErrors = { ...errors };
-                                    delete newErrors.plan_id;
-                                    setErrors(newErrors);
-                                }
-                            }}
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Select Enrollment Type"
-                            className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
-                            disabled={!!clientId}
-                            appendTo="self"
-                        />
-                        {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
-                    </div>
-                </div>
-
-                {/* Custom Override Inputs for isHost, White-Label or Certified Partner */}
-                {(isHost || currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED) && (formData.plan_id || formData.enrollment_type) && (
-                    <>
-                        <div className="col-lg-6">
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Enrollment Payment ($) <span className="text-danger">*</span>
-                                </label>
-                                <InputText
-                                    type="number"
-                                    className={`form-control ${errors.enrollment_payment || errors.payment_amount || errors.amount ? 'is-invalid' : ''}`}
-                                    name="enrollment_payment"
-                                    placeholder="Enter amount"
-                                    value={formData.enrollment_payment !== undefined && formData.enrollment_payment !== null && formData.enrollment_payment !== '' ? formData.enrollment_payment : (formData.enrollment_payment === 0 || formData.enrollment_payment === '0' ? 0 : '')}
-                                    onChange={handleInputChange}
-                                    disabled={!!clientId}
-                                />
-                                {(errors.enrollment_payment || errors.payment_amount || errors.amount) && (
-                                    <div className="invalid-feedback">{errors.enrollment_payment || errors.payment_amount || errors.amount}</div>
+                                {formData.is_free_trail && (
+                                    <div className="col-md-6">
+                                        <div className="mb-0">
+                                            <label htmlFor="free_trail_end_date" className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
+                                            <div className="custom-datepicker">
+                                                <Calendar
+                                                    id="free_trail_end_date"
+                                                    value={parseDate(formData.free_trail_end_date)}
+                                                    onChange={(e) => {
+                                                        const date = e.value as Date;
+                                                        const dateString = date
+                                                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                            : "";
+                                                        handleInputChange({ target: { name: 'free_trail_end_date', value: dateString } });
+                                                    }}
+                                                    dateFormat="dd M, yy"
+                                                    placeholder="Select trial end date"
+                                                    showIcon
+                                                    className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
+                                                    appendTo="self"
+                                                    readOnlyInput
+                                                />
+                                            </div>
+                                            {errors.free_trail_end_date && <div className="text-danger mt-1 small">{errors.free_trail_end_date}</div>}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
-                    </>
-                )}
+                    </div>
+                </div>
 
-                {/* Enrollment Amount - Dynamic Display */}
-                {(formData.plan_id || formData.enrollment_type) && (
-                    <div className="col-lg-12">
-                        <div className="mb-3">
-                            <label className="form-label">Enrollment Amount</label>
-                            <div className="enrollment-base-alert">
-                                <div className="card-body">
-                                    {(() => {
-                                        if (!selectedOption && !formData.enrollment_type) return null;
+                {!formData.is_free_trail && (
+                    <>
+                        {/* Enrollment Type Dropdown (Now for both Host and Non-Host) */}
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label htmlFor="enrollment_type" className="form-label">
+                                    Enrollment Type <span className="text-danger">*</span>
+                                </label>
+                                <Dropdown
+                                    inputId="plan_id"
+                                    value={formData.plan_id}
+                                    options={enrollmentOptions}
+                                    onChange={(e) => {
+                                        const selectedVal = e.value;
+                                        const selectedOption = enrollmentOptions.find((opt: any) => String(opt.value) === String(selectedVal));
 
-                                        const { installments, totalAmount, price } = selectedOption
-                                            ? calculateEnrollmentDetails({
-                                                ...selectedOption,
-                                                payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
-                                            }, isHost)
-                                            : {
-                                                installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
-                                                    (formData.enrollment_type === ENROLLMENT_TYPES.SIX_MONTH_STR ? ENROLLMENT_INSTALLMENTS.SIX_MONTHS : (isHost ? ENROLLMENT_INSTALLMENTS.DEFAULT_HOST : ENROLLMENT_INSTALLMENTS.DEFAULT_NON_HOST)),
-                                                totalAmount: formData.payment_amount || formData.amount || 0,
-                                                price: formData.payment_amount || formData.amount || 0
-                                            };
+                                        const updates: any = {
+                                            plan_id: selectedVal,
+                                            enrollment_type: selectedOption?.enrollment_type || formData.enrollment_type || '',
+                                            enrollment_payment: selectedOption ? selectedOption.payment_amount : '',
+                                            payment_amount: selectedOption ? selectedOption.payment_amount : '',
+                                            amount: selectedOption ? selectedOption.payment_amount : ''
+                                        };
 
-                                        const hasCustomEnrollment = formData.enrollment_payment !== undefined && formData.enrollment_payment !== '';
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            ...updates
+                                        }));
 
-                                        const currentPaymentAmount = hasCustomEnrollment ? formData.enrollment_payment : price;
-
-                                        // Final total calculation
-                                        const displayTotal = (installments > 1)
-                                            ? Number(currentPaymentAmount) * installments
-                                            : Number(currentPaymentAmount);
-                                        const partnerType = formData.partner_type || currentUser?.partner_type;
-                                        const isWL = partnerType === PARTNER_TYPES.WHITE_LABEL;
-                                        const isCP = partnerType === PARTNER_TYPES.CERTIFIED;
-                                        const isWLOrCP = (isWL || isCP) && !isHost;
-
-                                        if (isWLOrCP) {
-                                            const customAmount = currentPaymentAmount;
-                                            const clientTypeLabel = isCP ? CLIENT_TYPE_LABELS.CERTIFIED : CLIENT_TYPE_LABELS.WHITE_LABEL;
-                                            const stripeLabel = isCP ? STRIPE_BILLING_LABELS.CERTIFIED : STRIPE_BILLING_LABELS.WHITE_LABEL;
-
-                                            return (
-                                                <>
-                                                    <input type="hidden" name="is_partner_paying" value="false" />
-
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="info-label">
-                                                            <i className="ri-user-settings-line"></i> Client Type:
-                                                        </span>
-                                                        <span className="info-value text-info" style={{ fontWeight: 'bold' }}>
-                                                            {clientTypeLabel}
-                                                        </span>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="info-label">
-                                                            <i className="ri-bank-card-line"></i> Payment Plan:
-                                                        </span>
-                                                        <span className="info-value text-muted">
-                                                            {selectedOption?.enrollment_type || formData.enrollment_type}
-                                                        </span>
-                                                    </div>
-                                                    <hr />
-
-                                                    {/* Borrower Invoice Section */}
-                                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                                        <span className="info-label text-primary" style={{ fontWeight: 600 }}>
-                                                            <i className="ri-file-list-3-line text-primary me-1"></i> Borrower Invoice:
-                                                        </span>
-                                                        <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                            ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    {installments > 1 && (
-                                                        <div className="d-flex justify-content-between align-items-center mb-1">
-                                                            <span className="info-label text-primary" style={{ fontWeight: 600 }}>
-                                                                <i className="ri-calendar-line text-primary me-1"></i> Duration:
-                                                            </span>
-                                                            <span className="info-value text-muted">{installments} months</span>
-                                                        </div>
-                                                    )}
-                                                    {installments > 1 && (
-                                                        <div className="d-flex justify-content-between align-items-center mb-1">
-                                                            <span className="info-label text-primary" style={{ fontWeight: 600 }}>
-                                                                <i className="ri-calculator-line text-primary me-1"></i> Total Amount:
-                                                            </span>
-                                                            <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                                ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                                        <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                            {stripeLabel}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Partner Invoice Section */}
-                                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                                        <span className="info-label text-warning" style={{ fontWeight: 600 }}>
-                                                            <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
-                                                        </span>
-                                                        <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                            ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
-                                                            Charged automatically on Partner's card.
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
-                                                        <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                                                            <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
-                                                            Two completely separate invoices are created. The Borrower pays ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
-                                                        </p>
-                                                    </div>
-                                                </>
-                                            );
+                                        // Propagate changes to parent
+                                        if (handleLocationChange) {
+                                            Object.entries(updates).forEach(([name, value]) => {
+                                                handleLocationChange(name, value);
+                                            });
                                         }
 
-                                        return (
-                                            <>
-                                                {!isHost && (
-                                                    <input type="hidden" name="is_partner_paying" value="true" />
-                                                )}
-
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="info-label">
-                                                        <i className="ri-user-settings-line"></i> Client Type:
-                                                    </span>
-                                                    <span className={`info-value ${isHost ? 'text-primary' : 'text-success'}`}>
-                                                        {isHost ? 'Host Client' : 'Partner Client'}
-                                                    </span>
-                                                </div>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="info-label">
-                                                        <i className="ri-bank-card-line"></i> Payment Plan:
-                                                    </span>
-                                                    <span className="info-value text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
-                                                </div>
-                                                <hr />
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="info-label">
-                                                        <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i>
-                                                        {selectedOption?.enrollment_type || formData.enrollment_type}:
-                                                    </span>
-                                                    <span className="amount-value text-success">
-                                                        ${Number(currentPaymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                                {installments > 1 && (
-                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        <span className="info-label">
-                                                            <i className="ri-calendar-line"></i> Duration:
-                                                        </span>
-                                                        <span className="info-value text-muted">{installments} months</span>
-                                                    </div>
-                                                )}
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="info-label">
-                                                        <i className="ri-calculator-line"></i> Total Amount:
-                                                    </span>
-                                                    <span className="amount-value text-success">
-                                                        ${Number(displayTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
+                                        // Clear error if present
+                                        if (setErrors && errors.plan_id) {
+                                            const newErrors = { ...errors };
+                                            delete newErrors.plan_id;
+                                            setErrors(newErrors);
+                                        }
+                                    }}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Select Enrollment Type"
+                                    className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
+                                    disabled={!!clientId}
+                                    appendTo="self"
+                                />
+                                {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
                             </div>
                         </div>
-                    </div>
+
+                        {/* Custom Override Inputs for isHost, White-Label or Certified Partner */}
+                        {(isHost || currentUser?.partner_type === PARTNER_TYPES.WHITE_LABEL || currentUser?.partner_type === PARTNER_TYPES.CERTIFIED) && (formData.plan_id || formData.enrollment_type) && (
+                            <>
+                                <div className="col-lg-6">
+                                    <div className="mb-3">
+                                        <label className="form-label">
+                                            Enrollment Payment ($) <span className="text-danger">*</span>
+                                        </label>
+                                        <InputText
+                                            type="number"
+                                            className={`form-control ${errors.enrollment_payment || errors.payment_amount || errors.amount ? 'is-invalid' : ''}`}
+                                            name="enrollment_payment"
+                                            placeholder="Enter amount"
+                                            value={formData.enrollment_payment !== undefined && formData.enrollment_payment !== null && formData.enrollment_payment !== '' ? formData.enrollment_payment : (formData.enrollment_payment === 0 || formData.enrollment_payment === '0' ? 0 : '')}
+                                            onChange={handleInputChange}
+                                            disabled={!!clientId}
+                                        />
+                                        {(errors.enrollment_payment || errors.payment_amount || errors.amount) && (
+                                            <div className="invalid-feedback">{errors.enrollment_payment || errors.payment_amount || errors.amount}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Enrollment Amount - Dynamic Display */}
+                        {(formData.plan_id || formData.enrollment_type) && (
+                            <div className="col-lg-12">
+                                <div className="mb-3">
+                                    <label className="form-label">Enrollment Amount</label>
+                                    <div className="enrollment-base-alert">
+                                        <div className="card-body">
+                                            {(() => {
+                                                if (!selectedOption && !formData.enrollment_type) return null;
+
+                                                const { installments, totalAmount, price } = selectedOption
+                                                    ? calculateEnrollmentDetails({
+                                                        ...selectedOption,
+                                                        payment_amount: (selectedOption as any).payment_amount || formData.payment_amount || formData.amount || 0
+                                                    }, isHost)
+                                                    : {
+                                                        installments: formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR ? ENROLLMENT_INSTALLMENTS.ONE_TIME :
+                                                            (formData.enrollment_type === ENROLLMENT_TYPES.SIX_MONTH_STR ? ENROLLMENT_INSTALLMENTS.SIX_MONTHS : (isHost ? ENROLLMENT_INSTALLMENTS.DEFAULT_HOST : ENROLLMENT_INSTALLMENTS.DEFAULT_NON_HOST)),
+                                                        totalAmount: formData.payment_amount || formData.amount || 0,
+                                                        price: formData.payment_amount || formData.amount || 0
+                                                    };
+
+                                                const hasCustomEnrollment = formData.enrollment_payment !== undefined && formData.enrollment_payment !== '';
+
+                                                const currentPaymentAmount = hasCustomEnrollment ? formData.enrollment_payment : price;
+
+                                                // Final total calculation
+                                                const displayTotal = (installments > 1)
+                                                    ? Number(currentPaymentAmount) * installments
+                                                    : Number(currentPaymentAmount);
+                                                const partnerType = formData.partner_type || currentUser?.partner_type;
+                                                const isWL = partnerType === PARTNER_TYPES.WHITE_LABEL;
+                                                const isCP = partnerType === PARTNER_TYPES.CERTIFIED;
+                                                const isWLOrCP = (isWL || isCP) && !isHost;
+
+                                                if (isWLOrCP) {
+                                                    const customAmount = currentPaymentAmount;
+                                                    const clientTypeLabel = isCP ? CLIENT_TYPE_LABELS.CERTIFIED : CLIENT_TYPE_LABELS.WHITE_LABEL;
+                                                    const stripeLabel = isCP ? STRIPE_BILLING_LABELS.CERTIFIED : STRIPE_BILLING_LABELS.WHITE_LABEL;
+
+                                                    return (
+                                                        <>
+                                                            <input type="hidden" name="is_partner_paying" value="false" />
+
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="info-label">
+                                                                    <i className="ri-user-settings-line"></i> Client Type:
+                                                                </span>
+                                                                <span className="info-value text-info" style={{ fontWeight: 'bold' }}>
+                                                                    {clientTypeLabel}
+                                                                </span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="info-label">
+                                                                    <i className="ri-bank-card-line"></i> Payment Plan:
+                                                                </span>
+                                                                <span className="info-value text-muted">
+                                                                    {selectedOption?.enrollment_type || formData.enrollment_type}
+                                                                </span>
+                                                            </div>
+                                                            <hr />
+
+                                                            {/* Borrower Invoice Section */}
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <span className="info-label text-primary" style={{ fontWeight: 600 }}>
+                                                                    <i className="ri-file-list-3-line text-primary me-1"></i> Borrower Invoice:
+                                                                </span>
+                                                                <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
+                                                                    ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                            {installments > 1 && (
+                                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span className="info-label text-primary" style={{ fontWeight: 600 }}>
+                                                                        <i className="ri-calendar-line text-primary me-1"></i> Duration:
+                                                                    </span>
+                                                                    <span className="info-value text-muted">{installments} months</span>
+                                                                </div>
+                                                            )}
+                                                            {installments > 1 && (
+                                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span className="info-label text-primary" style={{ fontWeight: 600 }}>
+                                                                        <i className="ri-calculator-line text-primary me-1"></i> Total Amount:
+                                                                    </span>
+                                                                    <span className="amount-value text-primary" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
+                                                                        ${displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
+                                                                    {stripeLabel}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Partner Invoice Section */}
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <span className="info-label text-warning" style={{ fontWeight: 600 }}>
+                                                                    <i className="ri-shield-user-line text-warning me-1"></i> Partner Invoice:
+                                                                </span>
+                                                                <span className="amount-value text-warning" style={{ fontWeight: 'bold', fontSize: '1.05rem' }}>
+                                                                    ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="text-muted" style={{ fontSize: '0.75rem', paddingLeft: '1.25rem' }}>
+                                                                    Charged automatically on Partner's card.
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="mt-3 p-2 rounded text-center" style={{ backgroundColor: 'rgba(23, 162, 184, 0.1)', border: '1px dashed rgba(23, 162, 184, 0.3)' }}>
+                                                                <p className="mb-0 text-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                                                                    <i className="ri-information-line me-1" style={{ verticalAlign: 'middle' }}></i>
+                                                                    Two completely separate invoices are created. The Borrower pays ${Number(customAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, and upon successful payment, ${fixedEnrollmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is automatically charged to the Partner account immediately.
+                                                                </p>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <>
+                                                        {!isHost && (
+                                                            <input type="hidden" name="is_partner_paying" value="true" />
+                                                        )}
+
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="info-label">
+                                                                <i className="ri-user-settings-line"></i> Client Type:
+                                                            </span>
+                                                            <span className={`info-value ${isHost ? 'text-primary' : 'text-success'}`}>
+                                                                {isHost ? 'Host Client' : 'Partner Client'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="info-label">
+                                                                <i className="ri-bank-card-line"></i> Payment Plan:
+                                                            </span>
+                                                            <span className="info-value text-muted">{selectedOption?.enrollment_type || formData.enrollment_type}</span>
+                                                        </div>
+                                                        <hr />
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="info-label">
+                                                                <i className={installments > 1 ? 'ri-money-dollar-circle-line' : 'ri-hand-coin-line'}></i>
+                                                                {selectedOption?.enrollment_type || formData.enrollment_type}:
+                                                            </span>
+                                                            <span className="amount-value text-success">
+                                                                ${Number(currentPaymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                        {installments > 1 && (
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="info-label">
+                                                                    <i className="ri-calendar-line"></i> Duration:
+                                                                </span>
+                                                                <span className="info-value text-muted">{installments} months</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="info-label">
+                                                                <i className="ri-calculator-line"></i> Total Amount:
+                                                            </span>
+                                                            <span className="amount-value text-success">
+                                                                ${Number(displayTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 <div className="col-lg-12">

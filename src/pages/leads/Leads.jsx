@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
@@ -20,17 +20,20 @@ import { ENTITY_TYPE_PARTNER, ENTITY_TYPE_BORROWER } from '../../config/appConfi
 import LeadConvertModal from './components/LeadConvertModal';
 import LeadMissingInfoModal from './components/LeadMissingInfoModal';
 import LeadPaymentModal from './components/LeadPaymentModal';
+import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
 
 export default function Leads() {
     const navigate = useNavigate();
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state) => state.user);
+    const userSubscription = useAuthStore((state) => state.userSubscription);
     const isHost = currentUser?.is_host == 1;
 
     // State for leads
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showPaidOnlyModal, setShowPaidOnlyModal] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -297,6 +300,15 @@ export default function Leads() {
     };
 
     const openConvertModal = (rowData) => {
+        // If logged-in user is a Partner and on a Free Trial, show Paid Version restriction modal
+        const isPartner = currentUser?.entity_type === 'Partner' || currentUser?.entity_type === ENTITY_TYPE_PARTNER;
+        const isFreeTrial = !!userSubscription?.is_free_trail;
+        
+        if (isPartner && isFreeTrial) {
+            setShowPaidOnlyModal(true);
+            return;
+        }
+
         setTargetLead(rowData);
         const hasName = rowData.contact_person || rowData.contact_person;
         const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
@@ -680,6 +692,18 @@ export default function Leads() {
                     loading={loading}
                     text="The selected leads and all associated data will be deleted."
                 />
+
+                <PaidVersionOnlyModal
+                    show={showPaidOnlyModal}
+                    onHide={() => setShowPaidOnlyModal(false)}
+                    message={
+                        <>
+                            This feature is only available in the <strong>Paid Version</strong>.
+                            Please upgrade your plan to use this feature.
+                        </>
+                    }
+                />
+
             </div>
         </div>
     );

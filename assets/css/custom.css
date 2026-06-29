@@ -1378,6 +1378,168 @@ File: Custom Css File
   border-right: 1px solid var(--primary-color) !important;
 }
 
-.logo{
+.logo {
   line-height: 60px !important;
 }
+
+.custom-datepicker .p-calendar .p-inputtext:focus {
+  border-color: none !important;
+  box-shadow: none !important;
+}
+
+.p-calendar.p-invalid .p-inputtext {
+  border-color: #f06548 !important;
+}
+
+/* ================================================
+   Sidebar Free Trial Panel — Absolute Bottom
+   ================================================ */
+
+/* Add bottom padding to scrollbar so items never hide behind trial panel */
+.navbar-menu #scrollbar .simplebar-content,
+.navbar-menu #scrollbar {
+  padding-bottom: 76px !important;
+}
+
+/* Trial panel: always pinned to bottom 0, never scrolls */
+.sidebar-trial-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 10px 14px;
+  z-index: 10;
+  /* Match the sidebar background so it covers scrolled content */
+  background: var(--vz-sidebar-bg, #1a1d21);
+}
+
+.trial-panel-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.13) 0%, rgba(220, 38, 38, 0.07) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s;
+}
+
+/* Red gradient top accent bar */
+.trial-panel-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+  border-radius: 10px 10px 0 0;
+}
+
+/* Icon box */
+.trial-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+.trial-icon-wrap i {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.trial-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trial-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #fca5a5;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trial-expires {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trial-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+/* Light sidebar overrides */
+[data-sidebar="light"] .trial-label,
+.light-sidebar .trial-label {
+  color: #dc2626;
+}
+
+[data-sidebar="light"] .trial-expires,
+.light-sidebar .trial-expires {
+  color: #64748b;
+}
+
+[data-sidebar="light"] .trial-panel-inner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06) 0%, rgba(249, 115, 22, 0.04) 100%);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+[data-sidebar="light"] .trial-badge,
+.light-sidebar .trial-badge {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Collapsed icon-only sidebar */
+[data-sidebar-size="sm"] .trial-text-wrap,
+[data-sidebar-size="sm"] .trial-badge {
+  display: none;
+}
+
+[data-sidebar-size="sm"] .sidebar-trial-panel {
+  padding: 0 6px 12px;
+}
+
+[data-sidebar-size="sm"] .trial-panel-inner {
+  justify-content: center;
+  padding: 10px;
+}
+
+/* Light sidebar — override background */
+[data-sidebar="light"] .sidebar-trial-panel,
+.light-sidebar .sidebar-trial-panel {
+  background: var(--vz-sidebar-bg, #f3f6f9);
+}
+
+

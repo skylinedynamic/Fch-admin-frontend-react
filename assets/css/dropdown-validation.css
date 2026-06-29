@@ -13,7 +13,6 @@
 .p-dropdown.p-invalid:not(.p-disabled).p-focus,
 .p-dropdown.p-invalid:not(.p-disabled):focus {
     border-color: #f06548 !important;
-    box-shadow: 0 0 0 0.2rem rgba(240, 101, 72, 0.25) !important;
 }
 
 /* Ensure the dropdown trigger icon area also has red border */

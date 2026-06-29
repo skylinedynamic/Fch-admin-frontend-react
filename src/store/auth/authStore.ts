@@ -25,6 +25,8 @@ export type UserSubscription = {
   subscription_end_date?: string | null
   phase?: string
   is_host?: boolean
+  is_free_trail?: boolean
+  free_trail_end_date?: string | null
   [key: string]: unknown
 }
 

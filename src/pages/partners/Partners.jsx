@@ -41,10 +41,12 @@ export default function Partners() {
     const [selectedPartner, setSelectedPartner] = useState('');
     const [selectedAssignedUser, setSelectedAssignedUser] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [selectedFreeTrial, setSelectedFreeTrial] = useState('');
     const [appliedSearchText, setAppliedSearchText] = useState('');
     const [appliedPartner, setAppliedPartner] = useState('');
     const [appliedAssignedUser, setAppliedAssignedUser] = useState('');
     const [appliedStatus, setAppliedStatus] = useState('');
+    const [appliedFreeTrial, setAppliedFreeTrial] = useState('');
     const [appliedFilters, setAppliedFilters] = useState({});
 
 
@@ -147,6 +149,7 @@ export default function Partners() {
                     partner_id: appliedPartner || '',
                     assigned_user_id: appliedAssignedUser || '',
                     status: appliedStatus || '',
+                    is_free_trail: appliedFreeTrial || '',
                     filters: appliedFilters,
 
                     page,
@@ -184,7 +187,7 @@ export default function Partners() {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedFilters, page, perPage, sortField, sortOrder]);
+    }, [appliedSearchText, appliedPartner, appliedAssignedUser, appliedFreeTrial, appliedFilters, page, perPage, sortField, sortOrder]);
 
     // Filter handlers
     const handleApplyFilters = () => {
@@ -192,6 +195,7 @@ export default function Partners() {
         setAppliedPartner(selectedPartner);
         setAppliedAssignedUser(selectedAssignedUser);
         setAppliedStatus(selectedStatus);
+        setAppliedFreeTrial(selectedFreeTrial);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -202,10 +206,12 @@ export default function Partners() {
         setSelectedPartner('');
         setSelectedAssignedUser('');
         setSelectedStatus('');
+        setSelectedFreeTrial('');
         setAppliedSearchText('');
         setAppliedPartner('');
         setAppliedAssignedUser('');
         setAppliedStatus('');
+        setAppliedFreeTrial('');
         initFilters();
         setPage(1);
     };
@@ -237,9 +243,16 @@ export default function Partners() {
     // Body templates
     const companyNameBody = (rowData) => {
         return (
-            <span className="fw-medium">
-                {rowData.company_name}
-            </span>
+            <div className="d-flex align-items-center gap-2">
+                <span className="fw-medium">
+                    {rowData.company_name}
+                </span>
+                {rowData.is_free_trail && (
+                    <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
+                        Free Trial
+                    </span>
+                )}
+            </div>
         );
     };
 
@@ -351,14 +364,15 @@ export default function Partners() {
                                 }}>
                                     {loading ? (
                                         <FilterLoader config={[
-                                            { col: "col-xxl-4 col-sm-12" }, // Search
-                                            { col: "col-xxl-3 col-sm-4" },  // Partners
-                                            { col: "col-xxl-2 col-sm-4" },  // Assigned Users
-                                            { col: "col-xxl-3 col-sm-12", isButton: true } // Buttons
+                                            { col: "col-xxl-3 col-sm-6" }, // Search
+                                            { col: "col-xxl-2 col-sm-6" }, // Partners
+                                            { col: "col-xxl-2 col-sm-4" }, // Assigned Users
+                                            { col: "col-xxl-2 col-sm-4" }, // Free Trial
+                                            { col: "col-xxl-3 col-sm-4", isButton: true } // Buttons
                                         ]} />
                                     ) : (
                                         <div className="row g-3 mb-3">
-                                            <div className="col-xxl-4 col-sm-12">
+                                            <div className="col-xxl-3 col-sm-6">
                                                 <div className="search-box">
                                                     <input
                                                         type="text"
@@ -371,7 +385,7 @@ export default function Partners() {
                                                     <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
-                                            <div className="col-xxl-3 col-sm-4">
+                                            <div className="col-xxl-2 col-sm-6">
                                                 <Dropdown
                                                     value={selectedPartner}
                                                     options={[{ label: 'All Partners', value: '' }, ...partnersList]}
@@ -389,7 +403,20 @@ export default function Partners() {
                                                     className="w-100 employee-filter-dropdown"
                                                 />
                                             </div>
-                                            <div className="col-xxl-3 col-sm-12">
+                                            <div className="col-xxl-2 col-sm-4">
+                                                <Dropdown
+                                                    value={selectedFreeTrial}
+                                                    options={[
+                                                        { label: 'All Trial Status', value: '' },
+                                                        { label: 'Free Trial Only', value: '1' },
+                                                        { label: 'Regular Only', value: '0' }
+                                                    ]}
+                                                    onChange={(e) => setSelectedFreeTrial(e.value)}
+                                                    placeholder="All Trial Status"
+                                                    className="w-100 employee-filter-dropdown"
+                                                />
+                                            </div>
+                                            <div className="col-xxl-3 col-sm-4">
                                                 <div className="d-flex gap-2">
                                                     <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                         <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters

@@ -49,6 +49,9 @@ export const DEFAULT_CLIENT_STATE: Client = {
     other_city: '',
     postal_code: '',
 
+    is_free_trail: false,
+    free_trail_end_date: '',
+
     enrollment_type: '',
     plan_id: '',
     status: 'OnBoarding',

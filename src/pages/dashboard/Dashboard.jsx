@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions'
 import { Button } from 'primereact/button'
@@ -6,12 +6,44 @@ import { useAuthStore } from '../../store/auth/authStore';
 import { useDashboardData } from '../../modules/dashboard';
 import { formatCurrency } from '../../utils/helper';
 import TableLoader from '../../components/Loader/TableLoader';
+import { logout, clearAuth } from '../../lib/auth';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isRestricted } = usePermissions();
   const currentUser = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
   const isHost = currentUser?.is_host == 1;
+
+  const isFreeTrial = !!userSubscription?.is_free_trail;
+  const trialEndDate = userSubscription?.free_trail_end_date;
+
+  let isTrialExpired = false;
+  if (isFreeTrial && trialEndDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(trialEndDate);
+    end.setHours(0, 0, 0, 0);
+    isTrialExpired = today > end;
+  }
+
+  useEffect(() => {
+    if (isFreeTrial && isTrialExpired) {
+      const performLogout = async () => {
+        try {
+          await logout();
+        } catch (err) {
+          console.error('Trial expiration logout failed', err);
+        } finally {
+          clearAuth();
+          navigate('/login', { replace: true });
+        }
+      };
+      performLogout();
+    }
+  }, [isFreeTrial, isTrialExpired, navigate]);
+
+  const showRestriction = isRestricted && !isFreeTrial;
 
   const { data: dashboardResponse, isLoading } = useDashboardData();
   const dashboardData = dashboardResponse?.data;
@@ -65,7 +97,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {isRestricted && (
+          {showRestriction && (
             <div className="row mb-4">
               <div className="col-12">
                 <div className="card bg-danger-subtle border-0 shadow-sm border-start border-danger border-3">

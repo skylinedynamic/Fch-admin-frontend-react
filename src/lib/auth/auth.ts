@@ -112,7 +112,9 @@ export async function refreshSubscription(): Promise<void> {
         subscription_start_date: user.subscription_start_date,
         subscription_end_date: user.subscription_end_date,
         phase: user.phase,
-        is_host: user.is_host
+        is_host: user.is_host,
+        is_free_trail: user.is_free_trail,
+        free_trail_end_date: user.free_trail_end_date
       })
 
       // Sync configurations if flags are set or cache is missing

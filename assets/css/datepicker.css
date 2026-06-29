@@ -34,8 +34,6 @@
 }
 
 .custom-datepicker .p-calendar .p-inputtext:focus {
-    border-color: #80bdff !important;
-    box-shadow: 0 0 0 0.15rem rgba(64, 81, 137, 0.15) !important;
     outline: 0 !important;
 }
 
@@ -67,7 +65,8 @@
 
 /* Replace PrimeIcon calendar with modern RemixIcon calendar via CSS */
 .custom-datepicker .p-calendar .p-datepicker-trigger .p-button-icon.pi-calendar::before {
-    content: "\eb27" !important; /* Code for ri-calendar-line */
+    content: "\eb27" !important;
+    /* Code for ri-calendar-line */
     font-family: "remixicon" !important;
     font-style: normal;
     -webkit-font-smoothing: antialiased;
@@ -80,12 +79,12 @@
 }
 
 /* For validation styling */
-.custom-datepicker .is-invalid ~ .p-calendar .p-inputtext,
+.custom-datepicker .is-invalid~.p-calendar .p-inputtext,
 .custom-datepicker .p-calendar.is-invalid .p-inputtext {
     border-color: #f1734f !important;
 }
 
-.custom-datepicker .is-invalid ~ .p-calendar .p-datepicker-trigger,
+.custom-datepicker .is-invalid~.p-calendar .p-datepicker-trigger,
 .custom-datepicker .p-calendar.is-invalid .p-datepicker-trigger {
     border-color: #f1734f !important;
     background-color: rgba(241, 115, 79, 0.05) !important;
@@ -105,7 +104,8 @@
 }
 
 .custom-datepicker .p-datepicker-header {
-    background-color: #405189; /* Modern primary dark indigo */
+    background-color: #405189;
+    /* Modern primary dark indigo */
     color: #ffffff;
     padding: 0.9rem 1.2rem;
     border-bottom: none;
@@ -151,7 +151,7 @@
     padding: 0.1rem;
 }
 
-.custom-datepicker table td > span {
+.custom-datepicker table td>span {
     width: 2.2rem;
     height: 2.2rem;
     border-radius: 6px;
@@ -163,16 +163,16 @@
     transition: background-color 0.15s, color 0.15s;
 }
 
-.custom-datepicker table td > span:hover {
+.custom-datepicker table td>span:hover {
     background-color: #f3f6f9;
 }
 
-.custom-datepicker table td > span.p-highlight {
+.custom-datepicker table td>span.p-highlight {
     background-color: #405189 !important;
     color: #ffffff !important;
 }
 
-.custom-datepicker .p-datepicker-today > span {
+.custom-datepicker .p-datepicker-today>span {
     background-color: #eef1f6;
     color: #405189;
     font-weight: 600;
