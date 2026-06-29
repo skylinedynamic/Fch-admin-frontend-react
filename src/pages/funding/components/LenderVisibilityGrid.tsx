@@ -140,6 +140,22 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setSelectedMasterLenders([]);
     }, [urlLenderId, id]);
 
+    // Clear all visibility validation errors when switching to a different lender
+    React.useEffect(() => {
+        if (setErrors) {
+            setErrors((prev: any) => {
+                if (!prev) return prev;
+                const hasVisibilityErrors = Object.keys(prev).some(k => k.startsWith('lender_visibilities.'));
+                if (!hasVisibilityErrors) return prev;
+                const newErrors = { ...prev };
+                Object.keys(newErrors).forEach(key => {
+                    if (key.startsWith('lender_visibilities.')) delete newErrors[key];
+                });
+                return newErrors;
+            });
+        }
+    }, [activeLenderId]);
+
 
     const validVisibilities = visibilities.filter(v => v.lender_id != null);
 
@@ -499,7 +515,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const renderError = (field: string, i: number) => {
         const errorMsg = errors?.[`lender_visibilities.${i}.${field}`];
         if (errorMsg) {
-            return <div className="text-danger mt-1 text-wrap" style={{ fontSize: '11px', lineHeight: '1.3' }}>{errorMsg}</div>;
+            return <div className="text-danger mt-1 text-wrap visibility-error-text" style={{ fontSize: '11px', lineHeight: '1.3' }}>{errorMsg}</div>;
         }
         return null;
     };
@@ -633,7 +649,18 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     setVisibilities(cleanedVisibilities);
                                     setLocalActiveLenderId(nextLenderId);
                                     setLocalActiveCategoryId(null);
-                                    syncUrlQuietly(nextLenderId, null);
+                                    // Clear all visibility errors when switching lender
+                                    if (setErrors) {
+                                        setErrors((prev: any) => {
+                                            if (!prev) return prev;
+                                            const newErrors = { ...prev };
+                                            Object.keys(newErrors).forEach(key => {
+                                                if (key.startsWith('lender_visibilities.')) delete newErrors[key];
+                                            });
+                                            return newErrors;
+                                        });
+                                    }
+                                    setActiveLenderIdAndCategory(nextLenderId, null);
                                 }}
                                 optionLabel="name"
                                 optionValue="id"

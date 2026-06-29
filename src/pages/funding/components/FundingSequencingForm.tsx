@@ -468,32 +468,42 @@ export default function FundingSequencingForm() {
                 const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
 
                 if (activeLenderId !== null && hasVisibilityError) {
-                    const originalIndices = unifiedPayload.lender_visibilities
-                        .map((v: any, idx: number) => {
-                            if (String(v.lender_id) !== String(activeLenderId)) return -1;
-                            if (activeCategoryId !== null) {
-                                const vCatId = v.lender_product_category_id;
-                                if (activeCategoryId === 'general') {
-                                    if (vCatId !== null && vCatId !== '') return -1;
-                                } else {
-                                    if (String(vCatId) !== String(activeCategoryId)) return -1;
-                                }
+                    // Build a list of original visibilities indices that were sent to the backend.
+                    // We must iterate the UNFILTERED array so that `i` equals the same index
+                    // used by renderError in LenderVisibilityGrid's visibilities.map().
+                    const sentPayloadIndices: number[] = [];
+                    (cleanData.lender_visibilities as any[]).forEach((v: any, i: number) => {
+                        // Skip rows with no lender assigned (they are excluded from the sent payload)
+                        if (v.lender_id === null || v.lender_id === '') return;
+                        // Only include rows for the currently-active lender
+                        if (String(v.lender_id) !== String(activeLenderId)) return;
+                        // Apply category filter if a specific category is active
+                        if (activeCategoryId !== null) {
+                            const vCatId = v.lender_product_category_id;
+                            if (activeCategoryId === 'general') {
+                                if (vCatId !== null && vCatId !== '') return;
+                            } else {
+                                if (String(vCatId) !== String(activeCategoryId)) return;
                             }
-                            return idx;
-                        })
-                        .filter((idx: number) => idx !== -1);
+                        }
+                        sentPayloadIndices.push(i); // `i` matches visibilities.map index used by renderError
+                    });
 
+                    const newMappedErrors: any = {};
                     Object.keys(mappedErrors).forEach(key => {
                         const match = key.match(/^lender_visibilities\.(\d+)\.(.*)$/);
                         if (match) {
                             const backendIndex = parseInt(match[1], 10);
-                            const originalIndex = originalIndices[backendIndex];
-                            if (originalIndex !== undefined) {
-                                mappedErrors[`lender_visibilities.${originalIndex}.${match[2]}`] = mappedErrors[key];
-                                delete mappedErrors[key];
+                            const globalIndex = sentPayloadIndices[backendIndex];
+                            if (globalIndex !== undefined) {
+                                newMappedErrors[`lender_visibilities.${globalIndex}.${match[2]}`] = mappedErrors[key];
+                                delete mappedErrors[key]; // Remove the old key
                             }
                         }
                     });
+                    
+                    // Merge the remapped errors back into mappedErrors
+                    Object.assign(mappedErrors, newMappedErrors);
                 }
 
                 if (hasVisibilityError) {
