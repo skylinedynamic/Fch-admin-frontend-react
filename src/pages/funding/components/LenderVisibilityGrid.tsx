@@ -98,7 +98,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 newUrl += `/category/${categoryId}`;
             }
         }
-        window.history.replaceState(null, '', newUrl);
+        navigate(newUrl, { replace: true, preventScrollReset: true });
     };
 
     // Sync local state when URL changes (e.g. direct URL load or Back navigation)
