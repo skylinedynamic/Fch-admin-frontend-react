@@ -5,7 +5,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
-import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, updateFundingSequencingSingleCategoryVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
@@ -37,15 +37,21 @@ export default function FundingSequencingForm() {
     const isVisibilityRoute = location.pathname.includes('/visibility-rules') || queryParams.get('tab') === 'visibility';
     const [activeTab, setActiveTab] = useState(isVisibilityRoute ? 'visibility' : 'display');
 
-    const urlMatch = location.pathname.match(/\/lender\/(\d+)\/?$/);
-    const urlLenderId = urlMatch ? urlMatch[1] : null;
+    const lenderMatch = location.pathname.match(/\/lender\/(\d+)/);
+    const categoryMatch = location.pathname.match(/\/category\/(\w+)/);
+
+    const urlLenderId = lenderMatch ? lenderMatch[1] : null;
     const activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
 
-    const setActiveLenderId = (newLenderId: number | null) => {
+    const urlCategoryId = categoryMatch ? categoryMatch[1] : null;
+    const activeCategoryId = urlCategoryId === 'general' ? 'general' : (urlCategoryId ? parseInt(urlCategoryId, 10) : null);
+
+    const setActiveLenderIdAndCategory = (newLenderId: number | null, newCategoryId: string | number | null = null) => {
         if (newLenderId === null) {
             navigate(`/funding/visibility-rules/${id}`);
         } else {
-            navigate(`/funding/visibility-rules/${id}/lender/${newLenderId}`);
+            const catPath = newCategoryId !== null ? `/category/${newCategoryId}` : '';
+            navigate(`/funding/visibility-rules/${id}/lender/${newLenderId}${catPath}`);
         }
     };
 
@@ -390,7 +396,6 @@ export default function FundingSequencingForm() {
                     }))
                 : []
         };
-
         try {
             if (isEditMode && id) {
                 if (activeTab === 'display') {
@@ -399,7 +404,22 @@ export default function FundingSequencingForm() {
                     setActiveTab('visibility');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else if (id && activeTab === 'visibility') {
-                    if (activeLenderId) {
+                    if (activeLenderId && activeCategoryId !== null) {
+                        // Save ONLY the active category's visibility rule
+                        const singleCategoryPayload = {
+                            ...unifiedPayload,
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => {
+                                if (String(v.lender_id) !== String(activeLenderId)) return false;
+                                const vCatId = v.lender_product_category_id;
+                                if (activeCategoryId === 'general') {
+                                    return vCatId === null || vCatId === '';
+                                } else {
+                                    return String(vCatId) === String(activeCategoryId);
+                                }
+                            })
+                        };
+                        await updateFundingSequencingSingleCategoryVisibility(id, activeLenderId, activeCategoryId, singleCategoryPayload);
+                    } else if (activeLenderId) {
                         // Save ONLY the active lender's visibility rules
                         const singleLenderPayload = {
                             ...unifiedPayload,

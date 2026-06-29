@@ -41,6 +41,11 @@ export const updateFundingSequencingSingleLenderVisibility = async (id: number |
     return data;
 };
 
+export const updateFundingSequencingSingleCategoryVisibility = async (id: number | string, lenderId: number | string, categoryId: number | string, payload: SingleLenderVisibilityPayload) => {
+    const { data } = await apiClient.post(`/admin/funding-sequencings/${id}/lender/${lenderId}/category/${categoryId}/visibility`, payload);
+    return data;
+};
+
 export const deleteFundingSequencingVisibilities = async (id: number | string, payload: DeleteVisibilityPayload) => {
     const { data } = await apiClient.delete(`/admin/funding-sequencings/${id}/visibilities`, { data: payload });
     return data;

@@ -59,9 +59,37 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { id } = useParams();
-    const urlMatch = location.pathname.match(/\/lender\/(\d+)\/?$/);
-    const urlLenderId = urlMatch ? urlMatch[1] : null;
-    let activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
+    
+    const lenderMatch = location.pathname.match(/\/lender\/(\d+)/);
+    const categoryMatch = location.pathname.match(/\/category\/(\w+)/);
+
+    const urlLenderId = lenderMatch ? lenderMatch[1] : null;
+    const activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
+
+    const urlCategoryId = categoryMatch ? categoryMatch[1] : null;
+    const activeCategoryId = urlCategoryId === 'general' ? 'general' : (urlCategoryId ? parseInt(urlCategoryId, 10) : null);
+
+    // Local states
+    const [localActiveLenderId, setLocalActiveLenderId] = React.useState<number | null>(activeLenderId);
+    const [localActiveCategoryId, setLocalActiveCategoryId] = React.useState<string | number | null>(activeCategoryId);
+
+    const syncUrlQuietly = (lenderId: number | null, categoryId: string | number | null) => {
+        const visibilityUrl = `/funding/visibility-rules/${id}`;
+        let newUrl = visibilityUrl;
+        if (lenderId !== null) {
+            newUrl += `/lender/${lenderId}`;
+            if (categoryId !== null) {
+                newUrl += `/category/${categoryId}`;
+            }
+        }
+        navigate(newUrl, { replace: true });
+    };
+
+    // Sync local state when URL changes (e.g. direct URL load or Back navigation)
+    React.useEffect(() => {
+        setLocalActiveLenderId(activeLenderId);
+        setLocalActiveCategoryId(activeCategoryId);
+    }, [activeLenderId, activeCategoryId]);
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
@@ -116,33 +144,25 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     const visibilityUrl = `/funding/visibility-rules/${id}`;
 
-    const setActiveLenderId = (lenderId: number | null) => {
+    const setActiveLenderIdAndCategory = (lenderId: number | null, categoryId: string | number | null = null) => {
         if (lenderId === null) {
             navigate(visibilityUrl);
         } else {
-            navigate(`${visibilityUrl}/lender/${lenderId}`);
+            const catPath = categoryId !== null ? `/category/${categoryId}` : '';
+            navigate(`${visibilityUrl}/lender/${lenderId}${catPath}`);
         }
     };
 
-    // Fetch details when a lender is selected
+    // Show skeleton loader when lender changes in form view
     React.useEffect(() => {
-        if (activeLenderId !== null && id) {
-            const fetchDetails = async () => {
-                setDetailsLoading(true);
-                try {
-                    // Make the POST request for funding sequence wise and lender wise details
-                    // Assuming they want us to fetch or save details. For now we just simulate fetch
-                    // if there's no explicit fetch details API, we might just be setting the active ID.
-                    console.log("Fetching details for lender:", activeLenderId);
-                } catch (error) {
-                    console.error("Failed to fetch visibility details", error);
-                } finally {
-                    setDetailsLoading(false);
-                }
-            };
-            fetchDetails();
+        if (localActiveLenderId !== null) {
+            setDetailsLoading(true);
+            const timer = setTimeout(() => {
+                setDetailsLoading(false);
+            }, 400);
+            return () => clearTimeout(timer);
         }
-    }, [activeLenderId, id]);
+    }, [localActiveLenderId]);
     const blocks: { lenderId: number | null, nullId: number, rows: { item: any, index: number }[] }[] = [];
     let nullCounter = 0;
 
@@ -212,13 +232,119 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     };
 
     React.useEffect(() => {
-        if (activeLenderId !== null && id && lenders.length > 0) {
-            const hasLender = visibilities.some(v => v.lender_id && String(v.lender_id) === String(activeLenderId));
-            if (!hasLender) {
-                onAddLenderBlock(activeLenderId);
+        if (localActiveLenderId !== null && id && lenders.length > 0) {
+            const lender = lenders.find(l => String(l.id) === String(localActiveLenderId));
+            if (!lender) return;
+
+            if (localActiveCategoryId !== null) {
+                // Single category edit mode: ensure only this specific category rule exists
+                const targetCatId = localActiveCategoryId === 'general' ? null : localActiveCategoryId;
+                const hasRule = visibilities.some(v => {
+                    if (String(v.lender_id) !== String(localActiveLenderId)) return false;
+                    const vCatId = v.lender_product_category_id;
+                    if (targetCatId === null) {
+                        return vCatId === null || vCatId === '';
+                    } else {
+                        return String(vCatId) === String(targetCatId);
+                    }
+                });
+
+                if (!hasRule) {
+                    let catName = '';
+                    if (targetCatId !== null) {
+                        const catObj = productCategories.find((c: any) => String(c.id) === String(targetCatId));
+                        catName = catObj ? catObj.name : String(targetCatId);
+                    }
+                    const newRow = {
+                        lender_id: localActiveLenderId,
+                        lender_product_category_id: targetCatId || '',
+                        product_category: catName,
+                        min_fico: '',
+                        min_tib_months: '',
+                        min_monthly_revenue: '',
+                        min_monthly_deposits: '',
+                        min_deposit_count: '',
+                        min_average_daily_balance: '',
+                        max_nsf_count: '',
+                        max_negative_days: '',
+                        min_dscr: '',
+                        allowed_states: [],
+                        restricted_states: [],
+                        allowed_industries: [],
+                        restricted_industries: []
+                    };
+                    setVisibilities([...visibilities, newRow]);
+                }
+            } else {
+                // Lender-wide edit mode (from dropdown): ensure rules for ALL categories of this lender exist
+                const categories = lender.product_categories || [];
+                const newRows: any[] = [];
+
+                if (categories.length > 0) {
+                    categories.forEach((catName: string) => {
+                        const catObj = productCategories.find((c: any) => c.name === catName);
+                        const catId = catObj ? catObj.id : catName;
+                        
+                        const hasRule = visibilities.some(v => {
+                            if (String(v.lender_id) !== String(localActiveLenderId)) return false;
+                            return String(v.lender_product_category_id) === String(catId);
+                        });
+
+                        if (!hasRule) {
+                            newRows.push({
+                                lender_id: localActiveLenderId,
+                                lender_product_category_id: catId,
+                                product_category: catName,
+                                min_fico: '',
+                                min_tib_months: '',
+                                min_monthly_revenue: '',
+                                min_monthly_deposits: '',
+                                min_deposit_count: '',
+                                min_average_daily_balance: '',
+                                max_nsf_count: '',
+                                max_negative_days: '',
+                                min_dscr: '',
+                                allowed_states: [],
+                                restricted_states: [],
+                                allowed_industries: [],
+                                restricted_industries: []
+                            });
+                        }
+                    });
+                } else {
+                    const hasGeneral = visibilities.some(v => {
+                        if (String(v.lender_id) !== String(localActiveLenderId)) return false;
+                        return v.lender_product_category_id === null || v.lender_product_category_id === '';
+                    });
+
+                    if (!hasGeneral) {
+                        newRows.push({
+                            lender_id: localActiveLenderId,
+                            lender_product_category_id: '',
+                            product_category: '',
+                            min_fico: '',
+                            min_tib_months: '',
+                            min_monthly_revenue: '',
+                            min_monthly_deposits: '',
+                            min_deposit_count: '',
+                            min_average_daily_balance: '',
+                            max_nsf_count: '',
+                            max_negative_days: '',
+                            min_dscr: '',
+                            allowed_states: [],
+                            restricted_states: [],
+                            allowed_industries: [],
+                            restricted_industries: []
+                        });
+                    }
+                }
+
+                if (newRows.length > 0) {
+                    setVisibilities([...visibilities, ...newRows]);
+                }
             }
         }
-    }, [activeLenderId, visibilities, lenders, id]);
+    }, [localActiveLenderId, localActiveCategoryId, visibilities, lenders, productCategories, id]);
 
 
     const onRemoveBlock = (lenderId: number) => {
@@ -473,13 +599,16 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     <div className="d-flex align-items-center gap-3">
                         <div className="d-flex align-items-center gap-2">
                             <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
-                                {activeLenderId !== null ? 'Lender:' : 'Select lender:'}
+                                {localActiveLenderId !== null ? 'Lender:' : 'Select lender:'}
                             </label>
                             <Dropdown
-                                value={activeLenderId}
+                                value={localActiveLenderId}
                                 options={lenders}
                                 onChange={(e) => {
-                                    setActiveLenderId(e.value);
+                                    const nextLenderId = e.value;
+                                    setLocalActiveLenderId(nextLenderId);
+                                    setLocalActiveCategoryId(null);
+                                    syncUrlQuietly(nextLenderId, null);
                                 }}
                                 optionLabel="name"
                                 optionValue="id"
@@ -487,6 +616,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 filter
                                 filterBy="name"
                                 className="w-100 employee-filter-dropdown"
+                                style={{ minWidth: '200px' }}
                                 itemTemplate={lenderOptionTemplate}
                             />
                         </div>
@@ -636,7 +766,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     onRowClick={(e: any) => {
                                         const target = e.originalEvent.target as HTMLElement;
                                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
-                                            setActiveLenderId(e.data.lender_id);
+                                            const catId = e.data.lender_product_category_id || 'general';
+                                            setActiveLenderIdAndCategory(e.data.lender_id, catId);
                                             if (setErrors) setErrors({});
                                             setSelectedMasterLenders([]);
                                         }
@@ -669,7 +800,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 {isFormView && (
                     <div className="card border border-light-subtle rounded-3 mb-0 bg-white shadow-sm">
                         <div className="card-body p-4">
-                            {activeLenderId === null ? (
+                            {localActiveLenderId === null ? (
                                 <div className="text-center py-5">
                                     <div className="d-flex flex-column align-items-center justify-content-center">
                                         <i className="ri-error-warning-line text-muted mb-3" style={{ fontSize: '48px' }}></i>
@@ -677,6 +808,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its visibility rules.</p>
                                     </div>
                                 </div>
+                            ) : detailsLoading ? (
+                                <TableLoader rows={6} />
                             ) : (
                                 <div className="table-responsive custom-scrollbar-wrapper pb-3">
                                     <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
@@ -703,7 +836,16 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         <tbody>
                                             {visibilities.map((v, i) => {
                                                 if (v.lender_id == null) return null;
-                                                if (activeLenderId !== null && String(v.lender_id) !== String(activeLenderId)) return null;
+                                                if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
+                                                
+                                                if (localActiveCategoryId !== null) {
+                                                    const vCatId = v.lender_product_category_id;
+                                                    if (localActiveCategoryId === 'general') {
+                                                        if (vCatId !== null && vCatId !== '') return null;
+                                                    } else {
+                                                        if (String(vCatId) !== String(localActiveCategoryId)) return null;
+                                                    }
+                                                }
                                                 const lender = lenders.find(l => l.id === v.lender_id);
                                                 const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
                                                 const badgeClass = getCategoryBadgeClass(categoryName || '');
