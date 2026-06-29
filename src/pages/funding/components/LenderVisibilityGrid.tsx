@@ -153,9 +153,15 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         }
     };
 
+    const isInitialMount = React.useRef(true);
+
     // Show skeleton loader when lender changes in form view
     React.useEffect(() => {
         if (localActiveLenderId !== null) {
+            if (isInitialMount.current) {
+                isInitialMount.current = false;
+                return;
+            }
             setDetailsLoading(true);
             const timer = setTimeout(() => {
                 setDetailsLoading(false);
