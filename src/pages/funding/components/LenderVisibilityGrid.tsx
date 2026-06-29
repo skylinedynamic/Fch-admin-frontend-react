@@ -600,7 +600,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     <div className="d-flex align-items-center gap-3">
                         <div className="d-flex align-items-center gap-2">
                             <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
-                                {localActiveLenderId !== null ? 'Lender:' : 'Select lender:'}
+                                {localActiveLenderId !== null ? 'Lender:' : 'Please select a lender:'}
                             </label>
                             <Dropdown
                                 value={localActiveLenderId}
@@ -613,7 +613,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 }}
                                 optionLabel="name"
                                 optionValue="id"
-                                placeholder="Please select lender"
+                                placeholder="Please select a lender"
                                 filter
                                 filterBy="name"
                                 className="w-100 employee-filter-dropdown"
@@ -624,7 +624,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     </div>
                     <div className="d-flex align-items-center gap-2">
                         <Link to={visibilityUrl} className="btn btn-outline-secondary waves-effect">
-                            <i className="ri-arrow-left-line align-middle me-1"></i> Back to visibility logic
+                            <i className="ri-arrow-left-line align-middle me-1"></i>  Back to visibility logic List
                         </Link>
                     </div>
                 </div>
@@ -843,7 +843,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                             {visibilities.map((v, i) => {
                                                 if (v.lender_id == null) return null;
                                                 if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
-                                                
+
                                                 if (localActiveCategoryId !== null) {
                                                     const vCatId = v.lender_product_category_id;
                                                     if (localActiveCategoryId === 'general') {
