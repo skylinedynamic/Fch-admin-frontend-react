@@ -591,11 +591,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         <div className="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden" style={{ maxWidth: '100%' }}>
             {!isFormView ? null : (
                 <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center gap-2">
-                        <Link to={visibilityUrl} className="btn btn-outline-secondary waves-effect">
-                            <i className="ri-arrow-left-line align-middle me-1"></i> Back to visibility logic
-                        </Link>
-                    </div>
                     <div className="d-flex align-items-center gap-3">
                         <div className="d-flex align-items-center gap-2">
                             <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
@@ -620,6 +615,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 itemTemplate={lenderOptionTemplate}
                             />
                         </div>
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                        <Link to={visibilityUrl} className="btn btn-outline-secondary waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back to visibility logic
+                        </Link>
                     </div>
                 </div>
             )}

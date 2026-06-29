@@ -469,7 +469,18 @@ export default function FundingSequencingForm() {
 
                 if (activeLenderId !== null && hasVisibilityError) {
                     const originalIndices = unifiedPayload.lender_visibilities
-                        .map((v: any, idx: number) => String(v.lender_id) === String(activeLenderId) ? idx : -1)
+                        .map((v: any, idx: number) => {
+                            if (String(v.lender_id) !== String(activeLenderId)) return -1;
+                            if (activeCategoryId !== null) {
+                                const vCatId = v.lender_product_category_id;
+                                if (activeCategoryId === 'general') {
+                                    if (vCatId !== null && vCatId !== '') return -1;
+                                } else {
+                                    if (String(vCatId) !== String(activeCategoryId)) return -1;
+                                }
+                            }
+                            return idx;
+                        })
                         .filter((idx: number) => idx !== -1);
 
                     Object.keys(mappedErrors).forEach(key => {
