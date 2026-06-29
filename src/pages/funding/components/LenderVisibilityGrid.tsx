@@ -2,10 +2,11 @@ import React from 'react';
 import { useSearchParams, Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
-import { DataTable } from '../../../components/Table/DataTableWrapper';
+import { DataTable } from 'primereact/datatable';
+import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS } from '../../../config/funding';
-import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities } from '../../../modules/funding/services';
+import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
 
@@ -18,6 +19,10 @@ interface LenderVisibilityGridProps {
     stateOptions: any[];
     industryTypes: any[];
     productCategories?: any[];
+    onSelectionChange?: (count: number) => void;
+    onBulkDelete?: () => void;
+    externalBulkDelete?: boolean;
+    onExternalBulkDeleteHandled?: () => void;
 }
 
 const getCategoryBadgeClass = (category: string) => {
@@ -45,6 +50,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     stateOptions = [],
     industryTypes = [],
     productCategories = [],
+    onSelectionChange,
+    onBulkDelete,
+    externalBulkDelete,
+    onExternalBulkDeleteHandled,
 }) => {
 
     const location = useLocation();
@@ -54,9 +63,23 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const urlLenderId = urlMatch ? urlMatch[1] : null;
     let activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
     const [detailsLoading, setDetailsLoading] = React.useState(false);
+    const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
     const [selectedMasterLenders, setSelectedMasterLenders] = React.useState<any[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = React.useState(false);
+
+    // Notify parent of selection count changes
+    React.useEffect(() => {
+        onSelectionChange?.(selectedMasterLenders.length);
+    }, [selectedMasterLenders.length]);
+
+    // Open bulk delete modal when parent triggers it
+    React.useEffect(() => {
+        if (externalBulkDelete) {
+            setShowBulkDeleteModal(true);
+            onExternalBulkDeleteHandled?.();
+        }
+    }, [externalBulkDelete]);
     const [globalFilter, setGlobalFilter] = React.useState('');
 
     const isAddingUrl = location.pathname.includes('/configuration');
@@ -209,15 +232,17 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         let deletedIds: string[] = [];
 
         if (lenderToDelete !== null) {
-            // Delete whole lender block
             deletedIds = [String(lenderToDelete)];
             newVisibilities = visibilities.filter(v => String(v.lender_id) !== String(lenderToDelete));
         } else {
-            // Delete selected visibility rules
-            const tmpIdsToRemove = selectedMasterLenders.map(l => l._tmpId);
-            newVisibilities = visibilities.filter((v, idx) => !tmpIdsToRemove.includes(idx));
-
-            // If all rules for a lender are removed, we should consider that lender "removed" from the active view
+            newVisibilities = visibilities.filter((v) => {
+                const isSelected = selectedMasterLenders.some(selected => {
+                    if (v.id && selected.id) return String(v.id) === String(selected.id);
+                    return String(v.lender_id) === String(selected.lender_id) &&
+                        String(v.lender_product_category_id) === String(selected.lender_product_category_id);
+                });
+                return !isSelected;
+            });
             const remainingLenderIds = newVisibilities.map(v => String(v.lender_id));
             selectedMasterLenders.forEach(l => {
                 if (!remainingLenderIds.includes(String(l.lender_id))) {
@@ -226,27 +251,49 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
             });
         }
 
+        // Backend API delete (edit mode only)
+        if (id && !isFormView) {
+            let visibilityIdsToDelete: (string | number)[] = [];
+            if (lenderToDelete !== null) {
+                visibilityIdsToDelete = visibilities.filter(v => String(v.lender_id) === String(lenderToDelete) && v.id).map(v => v.id);
+            } else {
+                visibilityIdsToDelete = selectedMasterLenders.filter(l => l.id).map(l => l.id);
+            }
+
+            if (visibilityIdsToDelete.length > 0) {
+                try {
+                    setIsDeleting(true);
+                    await deleteFundingSequencingVisibilities(id, { visibility_ids: visibilityIdsToDelete });
+                    toast.success("Visibility rules removed successfully.");
+                    setLenderToDelete(null);
+                    setShowBulkDeleteModal(false);
+                    setSelectedMasterLenders([]);
+                    fetchBackendVisibilities();
+                } catch (err: any) {
+                    console.error("Failed to sync deletion with backend", err);
+                    toast.error(err?.response?.data?.message || "Failed to delete.");
+                } finally {
+                    setIsDeleting(false);
+                }
+            }
+            return;
+        }
+
         setVisibilities(newVisibilities);
 
         if (setErrors) {
             setErrors((prev: any) => {
                 if (!prev) return prev;
                 const newErrors = { ...prev };
-                // A bit complex to remap errors, so we'll just clear errors for removed lines
-                if (lenderToDelete !== null) {
+                // We'll clear errors based on lender IDs if possible, but exact mapping is complex
+                // when removing specific categories, so we'll just clear the lender's errors if they were deleted entirely
+                if (deletedIds.length > 0) {
                     visibilities.forEach((v, idx) => {
-                        if (String(v.lender_id) === String(lenderToDelete)) {
+                        if (deletedIds.includes(String(v.lender_id))) {
                             Object.keys(newErrors).forEach(key => {
                                 if (key.startsWith(`lender_visibilities.${idx}.`)) delete newErrors[key];
                             });
                         }
-                    });
-                } else {
-                    const tmpIdsToRemove = selectedMasterLenders.map(l => l._tmpId);
-                    tmpIdsToRemove.forEach(idx => {
-                        Object.keys(newErrors).forEach(key => {
-                            if (key.startsWith(`lender_visibilities.${idx}.`)) delete newErrors[key];
-                        });
                     });
                 }
                 return newErrors;
@@ -416,32 +463,17 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     return (
         <div className="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden" style={{ maxWidth: '100%' }}>
-            {!isFormView ? (
-                selectedMasterLenders.length > 0 && (
-                    <div className="card-header bg-white border-bottom py-3 d-flex align-items-center flex-wrap gap-3 justify-content-between">
-                        <div className="btn-group">
-                            <>
-                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span className="visually-hidden">Toggle dropdown</span>
-                                </button>
-                                <ul className="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <button type="button" className="dropdown-item text-danger" onClick={() => setShowBulkDeleteModal(true)}>
-                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                        </button>
-                                    </li>
-                                </ul>
-                            </>
-                        </div>
-                    </div>
-                )
-            ) : (
+            {!isFormView ? null : (
                 <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-2">
+                        <Link to={visibilityUrl} className="btn btn-outline-secondary waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back to visibility logic
+                        </Link>
+                    </div>
                     <div className="d-flex align-items-center gap-3">
-                        <div className="d-flex align-items-center gap-2" style={{ width: '350px' }}>
+                        <div className="d-flex align-items-center gap-2">
                             <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
-                                {activeLenderId !== null ? 'Visibility Rules Setup for Lender:' : 'Please select lender'}
+                                {activeLenderId !== null ? 'Lender:' : 'Select lender:'}
                             </label>
                             <Dropdown
                                 value={activeLenderId}
@@ -457,13 +489,6 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 className="w-100 employee-filter-dropdown"
                                 itemTemplate={lenderOptionTemplate}
                             />
-                        </div>
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                            <Link to={visibilityUrl} className="btn btn-outline-secondary w-lg waves-effect">
-                                <i className="ri-arrow-left-line align-middle me-1"></i> Back to visibility logic
-                            </Link>
                         </div>
                     </div>
                 </div>
@@ -544,137 +569,139 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             </div>
                         </div>
 
-                        <div className="table-responsive table-card custom-scrollbar-wrapper mt-1">
-                            <DataTable
-                                scrollable
-                                lazy={!!id}
-                                value={displayVisibilities.map((v, i) => {
-                                    const lender = lenders.find(l => String(l.id) === String(v.lender_id));
-                                    const category = productCategories?.find(c => String(c.id) === String(v.lender_product_category_id));
-                                    const lenderName = lender?.name || 'Unknown Lender';
-                                    const catName = category?.name || 'Unknown Category';
-                                    const _tibMonths = String(TIB_OPTIONS.find(t => String(t.value) === String(v.min_tib_months))?.label || v.min_tib_months || '');
-                                    const _minRevenue = v.min_monthly_revenue ? `$${v.min_monthly_revenue}` : '';
-                                    const _minDeposits = v.min_monthly_deposits ? `$${v.min_monthly_deposits}` : '';
+                        {loading ? (
+                            <TableLoader rows={11} />
+                        ) : (
+                            <div className="table-responsive table-card custom-scrollbar-wrapper mt-1">
+                                <DataTable
+                                    scrollable
+                                    lazy={!!id}
+                                    value={displayVisibilities.map((v, i) => {
+                                        const lender = lenders.find(l => String(l.id) === String(v.lender_id));
+                                        const category = productCategories?.find(c => String(c.id) === String(v.lender_product_category_id));
+                                        const lenderName = lender?.name || 'Unknown Lender';
+                                        const catName = category?.name || 'Unknown Category';
+                                        const _tibMonths = String(TIB_OPTIONS.find(t => String(t.value) === String(v.min_tib_months))?.label || v.min_tib_months || '');
+                                        const _minRevenue = v.min_monthly_revenue ? `$${v.min_monthly_revenue}` : '';
+                                        const _minDeposits = v.min_monthly_deposits ? `$${v.min_monthly_deposits}` : '';
 
-                                    const _allowedStates = (v.allowed_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
-                                    const _restrictedStates = (v.restricted_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
-                                    const _allowedIndustries = (v.allowed_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
-                                    const _restrictedIndustries = (v.restricted_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
+                                        const _allowedStates = (v.allowed_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
+                                        const _restrictedStates = (v.restricted_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
+                                        const _allowedIndustries = (v.allowed_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
+                                        const _restrictedIndustries = (v.restricted_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
 
-                                    return {
-                                        ...v,
-                                        _tmpId: i,
-                                        _lenderName: lenderName,
-                                        _categoryName: catName,
-                                        _tibMonths,
-                                        _minRevenue,
-                                        _minDeposits,
-                                        _allowedStates,
-                                        _restrictedStates,
-                                        _allowedIndustries,
-                                        _restrictedIndustries
-                                    };
-                                }).filter(v => id ? true : (
-                                    (!globalFilter || (
-                                        (v._lenderName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._categoryName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.min_fico || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._tibMonths || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._minRevenue || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._minDeposits || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.min_deposit_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.min_average_daily_balance || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.max_nsf_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.max_negative_days || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v.min_dscr || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._allowedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._restrictedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._allowedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
-                                        (v._restrictedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase())
-                                    ))
-                                ))}
-                                loading={loading}
-                                first={lazyState.first}
-                                rows={lazyState.rows}
-                                totalRecords={id ? totalRecords : displayVisibilities.length}
-                                onPage={onPage}
-                                onSort={onSort}
-                                sortField={lazyState.sortField}
-                                sortOrder={lazyState.sortOrder as any}
-                                selection={selectedMasterLenders}
-                                onSelectionChange={(e: any) => setSelectedMasterLenders(e.value)}
-                                dataKey={id ? "id" : "_tmpId"}
-                                emptyMessage="No visibility logic found"
-                                onRowClick={(e: any) => {
-                                    const target = e.originalEvent.target as HTMLElement;
-                                    if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
-                                        setActiveLenderId(e.data.lender_id);
-                                        if (setErrors) setErrors({});
-                                        setSelectedMasterLenders([]);
-                                    }
-                                }}
-                                rowClassName={() => 'cursor-pointer'}
-                                globalFilter={!id ? globalFilter : undefined}
-                                paginator
-                            >
-                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                                <Column field="_lenderName" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
-                                <Column field="_categoryName" header="Category" sortable style={{ minWidth: '150px' }} body={(rowData: any) => {
-                                    const catName = rowData._categoryName;
-                                    const badgeClass = getCategoryBadgeClass(catName !== 'General' ? catName : '');
-                                    return catName !== 'General' ? <span className={`badge ${badgeClass} px-2 py-1 fs-12 rounded-1 fw-semibold d-inline-flex align-items-center`}>{catName}</span> : <span className="text-muted fw-medium fs-13">General</span>;
-                                }} />
-                                <Column field="min_fico" header="Min FICO" sortable style={{ minWidth: '110px' }} />
-                                <Column field="min_tib_months" header="Min TIB" sortable style={{ minWidth: '120px' }} body={(rowData: any) => TIB_OPTIONS.find(t => t.value === rowData.min_tib_months)?.label || rowData.min_tib_months || ''} />
-                                <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue ? `$${rowData.min_monthly_revenue}` : ''} />
-                                <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits ? `$${rowData.min_monthly_deposits}` : ''} />
-                                <Column field="min_deposit_count" header="Min Dep Count" sortable style={{ minWidth: '140px' }} />
-                                <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance ? `$${rowData.min_average_daily_balance}` : ''} />
-                                <Column field="max_nsf_count" header="Max NSF" sortable style={{ minWidth: '110px' }} />
-                                <Column field="max_negative_days" header="Max Neg Days" sortable style={{ minWidth: '140px' }} />
-                            </DataTable>
-                        </div>
+                                        return {
+                                            ...v,
+                                            _tmpId: i,
+                                            _lenderName: lenderName,
+                                            _categoryName: catName,
+                                            _tibMonths,
+                                            _minRevenue,
+                                            _minDeposits,
+                                            _allowedStates,
+                                            _restrictedStates,
+                                            _allowedIndustries,
+                                            _restrictedIndustries
+                                        };
+                                    }).filter(v => id ? true : (
+                                        (!globalFilter || (
+                                            (v._lenderName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._categoryName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.min_fico || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._tibMonths || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._minRevenue || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._minDeposits || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.min_deposit_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.min_average_daily_balance || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.max_nsf_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.max_negative_days || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v.min_dscr || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._allowedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._restrictedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._allowedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                            (v._restrictedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase())
+                                        ))
+                                    ))}
+                                    first={lazyState.first}
+                                    rows={lazyState.rows}
+                                    totalRecords={id ? totalRecords : displayVisibilities.length}
+                                    onPage={onPage}
+                                    onSort={onSort}
+                                    sortField={lazyState.sortField}
+                                    sortOrder={lazyState.sortOrder as any}
+                                    selection={selectedMasterLenders}
+                                    onSelectionChange={(e: any) => setSelectedMasterLenders(e.value)}
+                                    dataKey={id ? "id" : "_tmpId"}
+                                    emptyMessage="No visibility logic found"
+                                    onRowClick={(e: any) => {
+                                        const target = e.originalEvent.target as HTMLElement;
+                                        if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
+                                            setActiveLenderId(e.data.lender_id);
+                                            if (setErrors) setErrors({});
+                                            setSelectedMasterLenders([]);
+                                        }
+                                    }}
+                                    rowClassName={() => 'cursor-pointer'}
+                                    globalFilter={!id ? globalFilter : undefined}
+                                    paginator
+                                >
+                                    <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                                    <Column field="_lenderName" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
+                                    <Column field="_categoryName" header="Category" sortable style={{ minWidth: '150px' }} body={(rowData: any) => {
+                                        const catName = rowData._categoryName;
+                                        const badgeClass = getCategoryBadgeClass(catName !== 'General' ? catName : '');
+                                        return catName !== 'General' ? <span className={`badge ${badgeClass} px-2 py-1 fs-12 rounded-1 fw-semibold d-inline-flex align-items-center`}>{catName}</span> : <span className="text-muted fw-medium fs-13">General</span>;
+                                    }} />
+                                    <Column field="min_fico" header="Min FICO" sortable style={{ minWidth: '110px' }} />
+                                    <Column field="min_tib_months" header="Min TIB" sortable style={{ minWidth: '120px' }} body={(rowData: any) => TIB_OPTIONS.find(t => t.value === rowData.min_tib_months)?.label || rowData.min_tib_months || ''} />
+                                    <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue ? `$${rowData.min_monthly_revenue}` : ''} />
+                                    <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits ? `$${rowData.min_monthly_deposits}` : ''} />
+                                    <Column field="min_deposit_count" header="Min Dep Count" sortable style={{ minWidth: '140px' }} />
+                                    <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance ? `$${rowData.min_average_daily_balance}` : ''} />
+                                    <Column field="max_nsf_count" header="Max NSF" sortable style={{ minWidth: '110px' }} />
+                                    <Column field="max_negative_days" header="Max Neg Days" sortable style={{ minWidth: '140px' }} />
+                                </DataTable>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {isFormView && (
                     <div className="card border border-light-subtle rounded-3 mb-0 bg-white shadow-sm">
                         <div className="card-body p-4">
-                            <div className="table-responsive custom-scrollbar-wrapper pb-3">
-                                <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
-                                    <thead className="text-muted fs-12 fw-semibold" style={{ borderBottom: '2px solid #f3f6f9' }}>
-                                        <tr>
-                                            <th style={{ width: '220px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
-                                            <th style={{ width: '220px' }}>Product Category <span className="text-danger">*</span></th>
-                                            <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
-                                            <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
-                                            <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
-                                            <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
-                                            <th style={{ width: '160px' }}>Min Deposit Count <span className="text-danger">*</span></th>
-                                            <th style={{ width: '200px' }}>Min Avg Daily Bal <span className="text-danger">*</span></th>
-                                            <th style={{ width: '150px' }}>Max NSF Count <span className="text-danger">*</span></th>
-                                            <th style={{ width: '160px' }}>Max Negative Days <span className="text-danger">*</span></th>
-                                            <th style={{ width: '120px' }}>Min DSCR</th>
-                                            <th style={{ width: '250px' }}>Allowed States</th>
-                                            <th style={{ width: '250px' }}>Restricted States</th>
-                                            <th style={{ width: '250px' }}>Allowed Industries</th>
-                                            <th style={{ width: '250px' }}>Restricted Industries</th>
-                                            <th style={{ width: '80px', textAlign: 'center' }}>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {activeLenderId === null ? (
+                            {activeLenderId === null ? (
+                                <div className="text-center py-5">
+                                    <div className="d-flex flex-column align-items-center justify-content-center">
+                                        <i className="ri-error-warning-line text-muted mb-3" style={{ fontSize: '48px' }}></i>
+                                        <h5 className="text-muted fw-semibold fs-16">No Visibility logic setup</h5>
+                                        <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its visibility rules.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="table-responsive custom-scrollbar-wrapper pb-3">
+                                    <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
+                                        <thead className="text-muted fs-12 fw-semibold" style={{ borderBottom: '2px solid #f3f6f9' }}>
                                             <tr>
-                                                <td colSpan={16} className="text-center py-5">
-                                                    <div className="d-flex flex-column align-items-center justify-content-center">
-                                                        <i className="ri-arrow-up-circle-line text-muted mb-2" style={{ fontSize: '32px' }}></i>
-                                                        <p className="text-muted fs-15 mb-0">Please select a lender from the dropdown above to configure visibility rules.</p>
-                                                    </div>
-                                                </td>
+                                                <th style={{ width: '220px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
+                                                <th style={{ width: '220px' }}>Product Category <span className="text-danger">*</span></th>
+                                                <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
+                                                <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
+                                                <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
+                                                <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
+                                                <th style={{ width: '160px' }}>Min Deposit Count <span className="text-danger">*</span></th>
+                                                <th style={{ width: '200px' }}>Min Avg Daily Bal <span className="text-danger">*</span></th>
+                                                <th style={{ width: '150px' }}>Max NSF Count <span className="text-danger">*</span></th>
+                                                <th style={{ width: '160px' }}>Max Negative Days <span className="text-danger">*</span></th>
+                                                <th style={{ width: '120px' }}>Min DSCR</th>
+                                                <th style={{ width: '250px' }}>Allowed States</th>
+                                                <th style={{ width: '250px' }}>Restricted States</th>
+                                                <th style={{ width: '250px' }}>Allowed Industries</th>
+                                                <th style={{ width: '250px' }}>Restricted Industries</th>
+                                                <th style={{ width: '80px', textAlign: 'center' }}>Action</th>
                                             </tr>
-                                        ) : (
-                                            visibilities.map((v, i) => {
+                                        </thead>
+                                        <tbody>
+                                            {visibilities.map((v, i) => {
                                                 if (v.lender_id == null) return null;
                                                 if (activeLenderId !== null && String(v.lender_id) !== String(activeLenderId)) return null;
                                                 const lender = lenders.find(l => l.id === v.lender_id);
@@ -719,10 +746,13 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                         </td>
                                                         <td className="py-3">
                                                             <div className="input-group">
-                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <span
+                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
+                                                                    style={(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? { borderColor: '#f06548' } : undefined}
+                                                                >$</span>
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid border-danger' : ''}`}
+                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
                                                                     placeholder="12000.00"
                                                                     value={v.min_monthly_revenue || ''}
                                                                     onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
@@ -732,10 +762,13 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                         </td>
                                                         <td className="py-3">
                                                             <div className="input-group">
-                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <span
+                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
+                                                                    style={(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? { borderColor: '#f06548' } : undefined}
+                                                                >$</span>
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid border-danger' : ''}`}
+                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
                                                                     placeholder="12000.00"
                                                                     value={v.min_monthly_deposits || ''}
                                                                     onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
@@ -755,10 +788,13 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                         </td>
                                                         <td className="py-3">
                                                             <div className="input-group">
-                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <span
+                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
+                                                                    style={(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? { borderColor: '#f06548' } : undefined}
+                                                                >$</span>
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid border-danger' : ''}`}
+                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
                                                                     placeholder="4000.00"
                                                                     value={v.min_average_daily_balance || ''}
                                                                     onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
@@ -870,10 +906,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                         </td>
                                                     </tr>
                                                 );
-                                            }))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -882,7 +919,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
             <style>{`
                 .custom-scrollbar-wrapper::-webkit-scrollbar,
-                    height: 2px;
+                    height: 8px;
                 }
                 .custom-scrollbar-wrapper::-webkit-scrollbar-track,
                 .custom-scrollbar-wrapper *::-webkit-scrollbar-track {
@@ -898,18 +935,22 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 .custom-scrollbar-wrapper *::-webkit-scrollbar-thumb:hover {
                     background: #b0b0b0;
                 }
+                .p-dropdown.p-invalid .p-dropdown-trigger,
+                .p-multiselect.p-invalid .p-multiselect-trigger {
+                    border-left: 1px solid #f06548 !important;
+                }
             `}</style>
 
             {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
                 show={lenderToDelete !== null || showBulkDeleteModal}
-                onConfirm={confirmRemoveBlock}
+                text={showBulkDeleteModal ? "The selected visibility rules will be removed." : "The selected lender and all associated visibility rules will be removed."}
                 onClose={() => {
                     setLenderToDelete(null);
                     setShowBulkDeleteModal(false);
                 }}
-                loading={false}
-                text={showBulkDeleteModal ? "The selected visibility rules will be removed." : "The selected lender and all associated visibility rules will be removed."}
+                onConfirm={confirmRemoveBlock}
+                loading={isDeleting}
             />
 
 

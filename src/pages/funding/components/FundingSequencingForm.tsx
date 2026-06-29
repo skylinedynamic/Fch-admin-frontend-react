@@ -51,6 +51,10 @@ export default function FundingSequencingForm() {
 
     const isMasterList = activeTab === 'visibility' && activeLenderId === null;
 
+    // Visibility list page: track selection from the grid to render page-header Actions button
+    const [visibilitySelectionCount, setVisibilitySelectionCount] = React.useState(0);
+    const [showVisibilityBulkDelete, setShowVisibilityBulkDelete] = React.useState(false);
+
     useEffect(() => {
         if (isVisibilityRoute) {
             setActiveTab('visibility');
@@ -443,6 +447,24 @@ export default function FundingSequencingForm() {
                 const displayKeys = ['name', 'subtitle', 'funding_group_id', 'funding_type_id', 'lender_id', 'min_amount', 'max_amount', 'terms', 'icon', 'icon_color', 'sort_order', 'readiness_factors', 'allowed_documents'];
                 const hasDisplayError = Object.keys(mappedErrors).some(key => displayKeys.includes(key));
 
+                if (activeLenderId !== null && hasVisibilityError) {
+                    const originalIndices = unifiedPayload.lender_visibilities
+                        .map((v: any, idx: number) => String(v.lender_id) === String(activeLenderId) ? idx : -1)
+                        .filter((idx: number) => idx !== -1);
+
+                    Object.keys(mappedErrors).forEach(key => {
+                        const match = key.match(/^lender_visibilities\.(\d+)\.(.*)$/);
+                        if (match) {
+                            const backendIndex = parseInt(match[1], 10);
+                            const originalIndex = originalIndices[backendIndex];
+                            if (originalIndex !== undefined) {
+                                mappedErrors[`lender_visibilities.${originalIndex}.${match[2]}`] = mappedErrors[key];
+                                delete mappedErrors[key];
+                            }
+                        }
+                    });
+                }
+
                 if (hasVisibilityError) {
                     if (!hasDisplayError && activeTab === 'display') {
                         setActiveTab('visibility');
@@ -544,11 +566,11 @@ export default function FundingSequencingForm() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/funding" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {!isMasterList && (
+                            {!(isVisibilityRoute && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    <Link to="/funding" className="btn btn-outline-secondary w-lg waves-effect">
+                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                    </Link>
                                     <button
                                         type="submit"
                                         form="funding-sequencing-form"
@@ -566,8 +588,35 @@ export default function FundingSequencingForm() {
                                             </>
                                         )}
                                     </button>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    {visibilitySelectionCount > 0 ? (
+                                        <div className="btn-group">
+                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span className="visually-hidden">Toggle dropdown</span>
+                                            </button>
+                                            <ul className="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button type="button" className="dropdown-item text-danger" onClick={() => setShowVisibilityBulkDelete(true)}>
+                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary waves-effect"
+                                            onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
+                                        >
+                                            <i className="ri-add-line align-middle me-1"></i> Add Visibility Logic
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                            
                         </div>
                     </div>
                 </div>
@@ -608,17 +657,6 @@ export default function FundingSequencingForm() {
                                                     Visibility Logic
                                                 </button>
                                             </li>
-                                            {activeTab === 'visibility' && isMasterList && (
-                                                <li className="nav-item ms-auto mb-2">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-primary waves-effect"
-                                                        onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
-                                                    >
-                                                        <i className="ri-add-line align-middle me-1"></i> Add Visibility Logic
-                                                    </button>
-                                                </li>
-                                            )}
                                         </ul>
                                     </div>
                                     <div className="card-body pt-3">
@@ -985,6 +1023,10 @@ export default function FundingSequencingForm() {
                                                     stateOptions={stateOptions}
                                                     industryTypes={industryTypes}
                                                     productCategories={productCategories}
+                                                    onSelectionChange={setVisibilitySelectionCount}
+                                                    onBulkDelete={() => setShowVisibilityBulkDelete(true)}
+                                                    externalBulkDelete={showVisibilityBulkDelete}
+                                                    onExternalBulkDeleteHandled={() => setShowVisibilityBulkDelete(false)}
                                                 />
                                             </div>
                                         </div>
