@@ -2,10 +2,10 @@ import React from 'react';
 import { useSearchParams, Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
-import { DataTable } from 'primereact/datatable';
+import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { TIB_OPTIONS } from '../../../config/funding';
-import { updateFundingSequencingVisibility } from '../../../modules/funding/services';
+import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
 
@@ -47,37 +47,57 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     productCategories = [],
 }) => {
 
-    const [searchParams] = useSearchParams();
     const location = useLocation();
     const navigate = useNavigate();
     const { id } = useParams();
-    const activeLenderIdParam = searchParams.get('lenderId');
-    let activeLenderId = activeLenderIdParam ? parseInt(activeLenderIdParam, 10) : null;
+    const urlMatch = location.pathname.match(/\/lender\/(\d+)\/?$/);
+    const urlLenderId = urlMatch ? urlMatch[1] : null;
+    let activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
     const [selectedMasterLenders, setSelectedMasterLenders] = React.useState<any[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = React.useState(false);
     const [globalFilter, setGlobalFilter] = React.useState('');
 
+    const isAddingUrl = location.pathname.includes('/configuration');
+    const isFormView = activeLenderId !== null || isAddingUrl;
+
     // Clear selections when navigating between master list and details
     React.useEffect(() => {
         setSelectedMasterLenders([]);
-    }, [activeLenderIdParam, id]);
+    }, [urlLenderId, id]);
 
 
     const validVisibilities = visibilities.filter(v => v.lender_id != null);
 
-    // Safety check removed so it doesn't force activeLenderId to null if rules are missing.
-    // Instead, we will auto-generate the forms for them below.
+    const [lazyState, setLazyState] = React.useState({
+        first: 0,
+        rows: 10,
+        page: 1,
+        sortField: 'id',
+        sortOrder: -1,
+    });
+    const [totalRecords, setTotalRecords] = React.useState(0);
+    const [loading, setLoading] = React.useState(false);
+    const [apiVisibilities, setApiVisibilities] = React.useState<any[]>([]);
 
+    const sequenceLenders = React.useMemo(() => {
+        const lenderIds = Array.from(new Set(validVisibilities.map(v => String(v.lender_id))));
+        return lenders.filter(l => lenderIds.includes(String(l.id)));
+    }, [validVisibilities, lenders]);
 
-    const visibilityUrl = `/funding/visibility-logic-details/${id}`;
+    const sequenceCategories = React.useMemo(() => {
+        const categoryIds = Array.from(new Set(validVisibilities.map(v => String(v.lender_product_category_id)).filter(id => id !== 'null' && id !== '')));
+        return productCategories?.filter(c => categoryIds.includes(String(c.id))) || [];
+    }, [validVisibilities, productCategories]);
+
+    const visibilityUrl = `/funding/visibility-rules/${id}`;
 
     const setActiveLenderId = (lenderId: number | null) => {
         if (lenderId === null) {
             navigate(visibilityUrl);
         } else {
-            navigate(`${visibilityUrl}?lenderId=${lenderId}`);
+            navigate(`${visibilityUrl}/lender/${lenderId}`);
         }
     };
 
@@ -185,33 +205,57 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const confirmRemoveBlock = async () => {
         if (lenderToDelete === null && selectedMasterLenders.length === 0) return;
 
-        const idsToRemove = lenderToDelete !== null
-            ? [String(lenderToDelete)]
-            : selectedMasterLenders.map(l => String(l.id));
+        let newVisibilities = [...visibilities];
+        let deletedIds: string[] = [];
 
-        const newVisibilities = visibilities.filter((v, idx) => !idsToRemove.includes(String(v.lender_id)));
+        if (lenderToDelete !== null) {
+            // Delete whole lender block
+            deletedIds = [String(lenderToDelete)];
+            newVisibilities = visibilities.filter(v => String(v.lender_id) !== String(lenderToDelete));
+        } else {
+            // Delete selected visibility rules
+            const tmpIdsToRemove = selectedMasterLenders.map(l => l._tmpId);
+            newVisibilities = visibilities.filter((v, idx) => !tmpIdsToRemove.includes(idx));
+
+            // If all rules for a lender are removed, we should consider that lender "removed" from the active view
+            const remainingLenderIds = newVisibilities.map(v => String(v.lender_id));
+            selectedMasterLenders.forEach(l => {
+                if (!remainingLenderIds.includes(String(l.lender_id))) {
+                    deletedIds.push(String(l.lender_id));
+                }
+            });
+        }
+
         setVisibilities(newVisibilities);
 
         if (setErrors) {
             setErrors((prev: any) => {
                 if (!prev) return prev;
                 const newErrors = { ...prev };
-                visibilities.forEach((v, idx) => {
-                    if (idsToRemove.includes(String(v.lender_id))) {
+                // A bit complex to remap errors, so we'll just clear errors for removed lines
+                if (lenderToDelete !== null) {
+                    visibilities.forEach((v, idx) => {
+                        if (String(v.lender_id) === String(lenderToDelete)) {
+                            Object.keys(newErrors).forEach(key => {
+                                if (key.startsWith(`lender_visibilities.${idx}.`)) delete newErrors[key];
+                            });
+                        }
+                    });
+                } else {
+                    const tmpIdsToRemove = selectedMasterLenders.map(l => l._tmpId);
+                    tmpIdsToRemove.forEach(idx => {
                         Object.keys(newErrors).forEach(key => {
-                            if (key.startsWith(`lender_visibilities.${idx}.`)) {
-                                delete newErrors[key];
-                            }
+                            if (key.startsWith(`lender_visibilities.${idx}.`)) delete newErrors[key];
                         });
-                    }
-                });
+                    });
+                }
                 return newErrors;
             });
         }
 
         if (lenderToDelete !== null && activeLenderId === lenderToDelete) {
             setActiveLenderId(null);
-        } else if (activeLenderId !== null && idsToRemove.includes(String(activeLenderId))) {
+        } else if (activeLenderId !== null && deletedIds.includes(String(activeLenderId))) {
             setActiveLenderId(null);
         }
 
@@ -219,9 +263,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setShowBulkDeleteModal(false);
         setSelectedMasterLenders([]);
 
-        // Just show success message since we are only removing it from the local table state.
-        // The actual database deletion will happen when they click the main "Save Changes" button.
-        toast.success('Lender removed successfully!');
+        toast.success('Visibility logic removed successfully!');
     };
 
     const onRemoveRow = (index: number) => {
@@ -291,46 +333,131 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         const lenderId = e.value;
         if (!selectedLenderIds.some(id => String(id) === String(lenderId))) {
             onAddLenderBlock(lenderId);
+        } else {
+            setActiveLenderId(lenderId);
         }
     };
+    const [search, setSearch] = React.useState('');
+
+    const [filterLenderId, setFilterLenderId] = React.useState<string | null>(null);
+    const [filterCategoryId, setFilterCategoryId] = React.useState<string | null>(null);
+    const [appliedLenderId, setAppliedLenderId] = React.useState<string | null>(null);
+    const [appliedCategoryId, setAppliedCategoryId] = React.useState<string | null>(null);
+
+    const handleApplyFilters = () => {
+        setGlobalFilter(search);
+        setAppliedLenderId(filterLenderId);
+        setAppliedCategoryId(filterCategoryId);
+        setLazyState(prev => ({ ...prev, first: 0, page: 1 }));
+    };
+
+    const handleClearFilters = () => {
+        setSearch('');
+        setGlobalFilter('');
+        setFilterLenderId(null);
+        setFilterCategoryId(null);
+        setAppliedLenderId(null);
+        setAppliedCategoryId(null);
+        setLazyState(prev => ({ ...prev, first: 0, page: 1 }));
+    };
+
+    const fetchBackendVisibilities = React.useCallback(async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            const payload = {
+                ...lazyState,
+                search: globalFilter,
+                lender_id: appliedLenderId,
+                lender_product_category_id: appliedCategoryId
+            };
+            const res = await fetchFundingSequencingVisibilities(id, payload);
+            if (res?.data) {
+                setApiVisibilities(res.data);
+                setTotalRecords(res.meta?.total || res.total || 0);
+            }
+        } catch (error) {
+            console.error('Failed to fetch visibilities', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [id, lazyState, globalFilter, appliedLenderId, appliedCategoryId]);
+
+    React.useEffect(() => {
+        if (id && !isFormView) {
+            fetchBackendVisibilities();
+        }
+    }, [fetchBackendVisibilities, id, isFormView]);
+
+    const onPage = (event: any) => {
+        setLazyState(prev => ({
+            ...prev,
+            first: event.first,
+            rows: event.rows,
+            page: event.page + 1
+        }));
+    };
+
+    const onSort = (event: any) => {
+        setLazyState(prev => ({
+            ...prev,
+            sortField: event.sortField,
+            sortOrder: event.sortOrder
+        }));
+    };
+
+    const displayVisibilities = id ? apiVisibilities : validVisibilities.filter(v => {
+        if (appliedLenderId && String(v.lender_id) !== String(appliedLenderId)) return false;
+        if (appliedCategoryId && String(v.lender_product_category_id) !== String(appliedCategoryId)) return false;
+        return true;
+    });
+
+    // ...
 
     return (
         <div className="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden" style={{ maxWidth: '100%' }}>
-            {activeLenderId === null ? (
-                <div className="card-header bg-white border-bottom py-3 d-flex align-items-center flex-wrap gap-3 justify-content-between">
+            {!isFormView ? (
+                selectedMasterLenders.length > 0 && (
+                    <div className="card-header bg-white border-bottom py-3 d-flex align-items-center flex-wrap gap-3 justify-content-between">
+                        <div className="btn-group">
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={() => setShowBulkDeleteModal(true)}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                        </button>
+                                    </li>
+                                </ul>
+                            </>
+                        </div>
+                    </div>
+                )
+            ) : (
+                <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
-                        <h6 className="card-title mb-0 fw-bold fs-15 text-dark" style={{ minWidth: '110px' }}>Select Lender :</h6>
-                        <div style={{ width: '250px' }}>
+                        <div className="d-flex align-items-center gap-2" style={{ width: '350px' }}>
+                            <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
+                                {activeLenderId !== null ? 'Visibility Rules Setup for Lender:' : 'Please select lender'}
+                            </label>
                             <Dropdown
+                                value={activeLenderId}
                                 options={lenders}
-                                onChange={handleLenderSelect}
+                                onChange={(e) => {
+                                    setActiveLenderId(e.value);
+                                }}
                                 optionLabel="name"
                                 optionValue="id"
                                 placeholder="Please select lender"
                                 filter
                                 filterBy="name"
-                                className="w-100 shadow-sm border-dark text-dark fw-medium slim-dropdown"
+                                className="w-100 employee-filter-dropdown"
                                 itemTemplate={lenderOptionTemplate}
-                                value={null}
-                                disabled={availableLenders.length === 0}
                             />
                         </div>
-                    </div>
-                    {selectedMasterLenders.length > 0 && (
-                        <div className="d-flex align-items-center ms-auto">
-                            <button type="button" className="btn btn-soft-danger waves-effect waves-light" onClick={() => setShowBulkDeleteModal(true)}>
-                                <i className="ri-delete-bin-2-line align-bottom me-1"></i> Delete Selected
-                            </button>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center gap-3">
-                        <h6 className="card-title mb-0 fw-bold fs-15 text-dark">
-                            <span className="text-muted fw-normal">Visibility Rules Setup for Lender: </span>
-                            <span className="text-primary">{lenders.find(l => l.id === activeLenderId)?.name}</span>
-                        </h6>
                     </div>
                     <div className="d-flex align-items-center gap-2">
                         <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
@@ -342,8 +469,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 </div>
             )}
 
-            <div className="card-body p-4 bg-light">
-                {validVisibilities.length === 0 && (
+            <div className="card-body">
+
+                {!isFormView && validVisibilities.length === 0 && (
                     <div className="d-flex flex-column justify-content-center align-items-center py-5 my-3" style={{ minHeight: '300px' }}>
                         <div className="mb-4">
                             <div className="d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle shadow-sm" style={{ width: '80px', height: '80px' }}>
@@ -352,77 +480,165 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         </div>
                         <h5 className="fs-18 fw-semibold text-dark mb-2">No Visibility Logic Configured</h5>
                         <p className="text-muted fs-14 text-center mb-0" style={{ maxWidth: '450px', lineHeight: '1.6' }}>
-                            You haven't added any visibility logic yet. Please select a lender from the top left dropdown to generate qualification rows and configure their rules.
+                            You haven't added any visibility logic yet. Click "Add Visibility Logic" above to configure rules for a lender.
                         </p>
                     </div>
                 )}
 
-                {activeLenderId === null && validVisibilities.length > 0 && (
-                    <div className="card-body">
-                        {/* <form onSubmit={(e) => e.preventDefault()}>
-                            <div className="row g-3 mb-3">
-                                <div className="col-xxl-8 col-sm-12">
-                                    <div className="search-box">
-                                        <input
-                                            type="text"
-                                            className="form-control search bg-light border-light"
-                                            placeholder="Search lenders..."
-                                            value={globalFilter}
-                                            onChange={(e) => setGlobalFilter(e.target.value)}
-                                        />
-                                        <i className="ri-search-line search-icon"></i>
-                                    </div>
-                                </div>
-                                <div className="col-xxl-4 col-sm-12">
-                                    <div className="d-flex gap-2 h-100">
-                                        <button type="button" className="btn btn-default flex-grow-1" onClick={() => setGlobalFilter('')}>
-                                            <i className="ri-close-line me-1 align-bottom"></i> Clear Search
-                                        </button>
-                                    </div>
+                {!isFormView && validVisibilities.length > 0 && (
+                    <div className="card-body px-0 pt-0">
+                        <div className="row g-3 mb-3">
+                            <div className="col-xxl-3 col-sm-12">
+                                <div className="search-box">
+                                    <input
+                                        type="text"
+                                        className="form-control search bg-light border-light"
+                                        placeholder="Search visibility rules..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleApplyFilters();
+                                            }
+                                        }}
+                                    />
+                                    <i className="ri-search-line search-icon"></i>
                                 </div>
                             </div>
-                        </form> */}
-                        <div className="table-responsive table-card mt-1">
+                            <div className="col-xxl-3 col-sm-4">
+                                <Dropdown
+                                    value={filterLenderId}
+                                    options={[{ id: '', name: 'All Lenders' }, ...sequenceLenders]}
+                                    onChange={(e) => setFilterLenderId(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Filter by Lender"
+                                    className="w-100 employee-filter-dropdown"
+                                    filter
+                                    filterBy="name"
+                                />
+                            </div>
+                            <div className="col-xxl-3 col-sm-4">
+                                <Dropdown
+                                    value={filterCategoryId}
+                                    options={[{ id: '', name: 'All Categories' }, ...sequenceCategories]}
+                                    onChange={(e) => setFilterCategoryId(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Filter by Category"
+                                    className="w-100 employee-filter-dropdown"
+                                    filter
+                                    filterBy="name"
+                                />
+                            </div>
+                            <div className="col-xxl-3 col-sm-4">
+                                <div className="d-flex gap-2 h-100">
+                                    <button type="button" className="btn btn-info flex-grow-1" onClick={handleApplyFilters}>
+                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                    </button>
+                                    <button type="button" className="btn btn-light flex-grow-1" onClick={handleClearFilters}>
+                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="table-responsive table-card custom-scrollbar-wrapper mt-1">
                             <DataTable
-                                value={selectedLenderIds.map(lenderId => lenders.find(l => String(l.id) === String(lenderId))).filter(Boolean)}
+                                scrollable
+                                lazy={!!id}
+                                value={displayVisibilities.map((v, i) => {
+                                    const lender = lenders.find(l => String(l.id) === String(v.lender_id));
+                                    const category = productCategories?.find(c => String(c.id) === String(v.lender_product_category_id));
+                                    const lenderName = lender?.name || 'Unknown Lender';
+                                    const catName = category?.name || 'Unknown Category';
+                                    const _tibMonths = String(TIB_OPTIONS.find(t => String(t.value) === String(v.min_tib_months))?.label || v.min_tib_months || '');
+                                    const _minRevenue = v.min_monthly_revenue ? `$${v.min_monthly_revenue}` : '';
+                                    const _minDeposits = v.min_monthly_deposits ? `$${v.min_monthly_deposits}` : '';
+
+                                    const _allowedStates = (v.allowed_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
+                                    const _restrictedStates = (v.restricted_states || []).map((s: string) => stateOptions.find(opt => opt.value === s)?.label || s).join(', ');
+                                    const _allowedIndustries = (v.allowed_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
+                                    const _restrictedIndustries = (v.restricted_industries || []).map((s: string) => industryTypes.find(opt => opt.value === s)?.label || s).join(', ');
+
+                                    return {
+                                        ...v,
+                                        _tmpId: i,
+                                        _lenderName: lenderName,
+                                        _categoryName: catName,
+                                        _tibMonths,
+                                        _minRevenue,
+                                        _minDeposits,
+                                        _allowedStates,
+                                        _restrictedStates,
+                                        _allowedIndustries,
+                                        _restrictedIndustries
+                                    };
+                                }).filter(v => id ? true : (
+                                    (!globalFilter || (
+                                        (v._lenderName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._categoryName || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.min_fico || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._tibMonths || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._minRevenue || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._minDeposits || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.min_deposit_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.min_average_daily_balance || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.max_nsf_count || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.max_negative_days || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v.min_dscr || '').toString().toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._allowedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._restrictedStates || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._allowedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase()) ||
+                                        (v._restrictedIndustries || '').toLowerCase().includes(globalFilter.toLowerCase())
+                                    ))
+                                ))}
+                                loading={loading}
+                                first={lazyState.first}
+                                rows={lazyState.rows}
+                                totalRecords={id ? totalRecords : displayVisibilities.length}
+                                onPage={onPage}
+                                onSort={onSort}
+                                sortField={lazyState.sortField}
+                                sortOrder={lazyState.sortOrder as any}
                                 selection={selectedMasterLenders}
                                 onSelectionChange={(e: any) => setSelectedMasterLenders(e.value)}
-                                dataKey="id"
-                                emptyMessage="No lenders found"
+                                dataKey={id ? "id" : "_tmpId"}
+                                emptyMessage="No visibility logic found"
                                 onRowClick={(e: any) => {
                                     const target = e.originalEvent.target as HTMLElement;
                                     if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
-                                        setActiveLenderId(e.data.id);
+                                        setActiveLenderId(e.data.lender_id);
                                         if (setErrors) setErrors({});
                                         setSelectedMasterLenders([]);
                                     }
                                 }}
                                 rowClassName={() => 'cursor-pointer'}
-                                globalFilter={globalFilter}
-                                globalFilterFields={['name', 'legal_name', 'product_categories', 'contact_phone']}
+                                globalFilter={!id ? globalFilter : undefined}
+                                paginator
                             >
                                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                                <Column field="name" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
-                                <Column field="legal_name" header="Legal Name" sortable style={{ minWidth: '150px' }} />
-                                <Column field="product_categories" header="Categories" style={{ minWidth: '150px' }} body={(rowData: any) => (
-                                    <div className="d-flex flex-wrap gap-1">
-                                        {(rowData.product_categories || []).map((cat: string, idx: number) => (
-                                            <span key={idx} className="badge bg-light text-dark border">{cat}</span>
-                                        ))}
-                                    </div>
-                                )} />
-                                <Column field="contact_phone" header="Contact Phone" sortable style={{ minWidth: '150px' }} />
-                                <Column field="status" header="Status" sortable style={{ minWidth: '120px' }} body={(rowData: any) => (
-                                    <span className={`badge ${rowData.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
-                                        {rowData.status || 'Unknown'}
-                                    </span>
-                                )} />
+                                <Column field="_lenderName" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
+                                <Column field="_categoryName" header="Category" sortable style={{ minWidth: '150px' }} body={(rowData: any) => {
+                                    const catName = rowData._categoryName;
+                                    const badgeClass = getCategoryBadgeClass(catName !== 'General' ? catName : '');
+                                    return catName !== 'General' ? <span className={`badge ${badgeClass} px-2 py-1 fs-12 rounded-1 fw-semibold d-inline-flex align-items-center`}>{catName}</span> : <span className="text-muted fw-medium fs-13">General</span>;
+                                }} />
+                                <Column field="min_fico" header="Min FICO" sortable style={{ minWidth: '110px' }} />
+                                <Column field="min_tib_months" header="Min TIB" sortable style={{ minWidth: '120px' }} body={(rowData: any) => TIB_OPTIONS.find(t => t.value === rowData.min_tib_months)?.label || rowData.min_tib_months || ''} />
+                                <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue ? `$${rowData.min_monthly_revenue}` : ''} />
+                                <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits ? `$${rowData.min_monthly_deposits}` : ''} />
+                                <Column field="min_deposit_count" header="Min Dep Count" sortable style={{ minWidth: '140px' }} />
+                                <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance ? `$${rowData.min_average_daily_balance}` : ''} />
+                                <Column field="max_nsf_count" header="Max NSF" sortable style={{ minWidth: '110px' }} />
+                                <Column field="max_negative_days" header="Max Neg Days" sortable style={{ minWidth: '140px' }} />
                             </DataTable>
                         </div>
                     </div>
                 )}
 
-                {activeLenderId !== null && validVisibilities.length > 0 && (
+                {isFormView && (
                     <div className="card border border-light-subtle rounded-3 mb-0 bg-white shadow-sm">
                         <div className="card-body p-4">
                             <div className="table-responsive custom-scrollbar-wrapper pb-3">
@@ -448,203 +664,213 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {visibilities.map((v, i) => {
-                                            if (v.lender_id == null) return null;
-                                            if (activeLenderId !== null && String(v.lender_id) !== String(activeLenderId)) return null;
-                                            const lender = lenders.find(l => l.id === v.lender_id);
-                                            const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
-                                            const badgeClass = getCategoryBadgeClass(categoryName || '');
+                                        {activeLenderId === null ? (
+                                            <tr>
+                                                <td colSpan={16} className="text-center py-5">
+                                                    <div className="d-flex flex-column align-items-center justify-content-center">
+                                                        <i className="ri-arrow-up-circle-line text-muted mb-2" style={{ fontSize: '32px' }}></i>
+                                                        <p className="text-muted fs-15 mb-0">Please select a lender from the dropdown above to configure visibility rules.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            visibilities.map((v, i) => {
+                                                if (v.lender_id == null) return null;
+                                                if (activeLenderId !== null && String(v.lender_id) !== String(activeLenderId)) return null;
+                                                const lender = lenders.find(l => l.id === v.lender_id);
+                                                const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
+                                                const badgeClass = getCategoryBadgeClass(categoryName || '');
 
-                                            return (
-                                                <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
-                                                    <td className="py-3" style={{ paddingLeft: 0 }}>
-                                                        <div className="fw-semibold text-dark fs-13">{lender?.name || 'Unknown'}</div>
-                                                    </td>
-                                                    <td className="py-3">
-                                                        {categoryName ? (
-                                                            <div className={`badge ${badgeClass} px-3 py-2 fs-13 rounded-1 fw-semibold d-inline-flex align-items-center text-nowrap`}>
-                                                                <i className="ri-bank-card-line me-2 fs-14"></i> {categoryName}
+                                                return (
+                                                    <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
+                                                        <td className="py-3" style={{ paddingLeft: 0 }}>
+                                                            <div className="fw-semibold text-dark fs-13">{lender?.name || 'Unknown'}</div>
+                                                        </td>
+                                                        <td className="py-3">
+                                                            {categoryName ? (
+                                                                <div className={`badge ${badgeClass} px-3 py-2 fs-13 rounded-1 fw-semibold d-inline-flex align-items-center text-nowrap`}>
+                                                                    <i className="ri-bank-card-line me-2 fs-14"></i> {categoryName}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-muted fw-medium fs-13">General</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <input
+                                                                type="number"
+                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
+                                                                placeholder="640"
+                                                                value={v.min_fico || ''}
+                                                                onChange={(e) => onChange(i, 'min_fico', e.target.value)}
+                                                            />
+                                                            {renderError('min_fico', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <Dropdown
+                                                                value={v.min_tib_months}
+                                                                options={TIB_OPTIONS}
+                                                                onChange={(e) => onChange(i, 'min_tib_months', e.value)}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="12 months"
+                                                                className={`w-100 slim-dropdown rounded-2 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_tib_months`] ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {renderError('min_tib_months', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid border-danger' : ''}`}
+                                                                    placeholder="12000.00"
+                                                                    value={v.min_monthly_revenue || ''}
+                                                                    onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
+                                                                />
                                                             </div>
-                                                        ) : (
-                                                            <span className="text-muted fw-medium fs-13">General</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
-                                                            placeholder="640"
-                                                            value={v.min_fico || ''}
-                                                            onChange={(e) => onChange(i, 'min_fico', e.target.value)}
-                                                        />
-                                                        {renderError('min_fico', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <Dropdown
-                                                            value={v.min_tib_months}
-                                                            options={TIB_OPTIONS}
-                                                            onChange={(e) => onChange(i, 'min_tib_months', e.value)}
-                                                            optionLabel="label"
-                                                            optionValue="value"
-                                                            placeholder="12 months"
-                                                            className={`w-100 slim-dropdown rounded-2 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_tib_months`] ? 'p-invalid border-danger' : ''}`}
-                                                        />
-                                                        {renderError('min_tib_months', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <div className="input-group">
-                                                            <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                            {renderError('min_monthly_revenue', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid border-danger' : ''}`}
+                                                                    placeholder="12000.00"
+                                                                    value={v.min_monthly_deposits || ''}
+                                                                    onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
+                                                                />
+                                                            </div>
+                                                            {renderError('min_monthly_deposits', i)}
+                                                        </td>
+                                                        <td className="py-3">
                                                             <input
                                                                 type="number"
-                                                                className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid border-danger' : ''}`}
-                                                                placeholder="12000.00"
-                                                                value={v.min_monthly_revenue || ''}
-                                                                onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
+                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
+                                                                placeholder="100"
+                                                                value={v.min_deposit_count || ''}
+                                                                onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
                                                             />
-                                                        </div>
-                                                        {renderError('min_monthly_revenue', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <div className="input-group">
-                                                            <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                            {renderError('min_deposit_count', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <div className="input-group">
+                                                                <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid border-danger' : ''}`}
+                                                                    placeholder="4000.00"
+                                                                    value={v.min_average_daily_balance || ''}
+                                                                    onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
+                                                                />
+                                                            </div>
+                                                            {renderError('min_average_daily_balance', i)}
+                                                        </td>
+                                                        <td className="py-3">
                                                             <input
                                                                 type="number"
-                                                                className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid border-danger' : ''}`}
-                                                                placeholder="12000.00"
-                                                                value={v.min_monthly_deposits || ''}
-                                                                onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
+                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
+                                                                placeholder="4"
+                                                                value={v.max_nsf_count || ''}
+                                                                onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
                                                             />
-                                                        </div>
-                                                        {renderError('min_monthly_deposits', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
-                                                            placeholder="100"
-                                                            value={v.min_deposit_count || ''}
-                                                            onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
-                                                        />
-                                                        {renderError('min_deposit_count', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <div className="input-group">
-                                                            <span className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'border-danger text-danger' : 'text-muted'}`}>$</span>
+                                                            {renderError('max_nsf_count', i)}
+                                                        </td>
+                                                        <td className="py-3">
                                                             <input
                                                                 type="number"
-                                                                className={`form-control border-start-0 shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid border-danger' : ''}`}
-                                                                placeholder="4000.00"
-                                                                value={v.min_average_daily_balance || ''}
-                                                                onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
+                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
+                                                                placeholder="4"
+                                                                value={v.max_negative_days || ''}
+                                                                onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
                                                             />
-                                                        </div>
-                                                        {renderError('min_average_daily_balance', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
-                                                            placeholder="4"
-                                                            value={v.max_nsf_count || ''}
-                                                            onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
-                                                        />
-                                                        {renderError('max_nsf_count', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
-                                                            placeholder="4"
-                                                            value={v.max_negative_days || ''}
-                                                            onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
-                                                        />
-                                                        {renderError('max_negative_days', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
-                                                            placeholder="1.25"
-                                                            value={v.min_dscr || ''}
-                                                            onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
-                                                        />
-                                                        {renderError('min_dscr', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <MultiSelect
-                                                            value={v.allowed_states}
-                                                            options={stateOptions}
-                                                            onChange={(e) => onChange(i, 'allowed_states', e.value)}
-                                                            optionLabel="label"
-                                                            optionValue="value"
-                                                            placeholder="Select states"
-                                                            filter
-                                                            display="chip"
-                                                            panelStyle={{ maxWidth: '350px' }}
-                                                            className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_states`] ? 'p-invalid border-danger' : ''}`}
-                                                        />
-                                                        {renderError('allowed_states', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <MultiSelect
-                                                            value={v.restricted_states}
-                                                            options={stateOptions}
-                                                            onChange={(e) => onChange(i, 'restricted_states', e.value)}
-                                                            optionLabel="label"
-                                                            optionValue="value"
-                                                            placeholder="Blocked states"
-                                                            filter
-                                                            display="chip"
-                                                            panelStyle={{ maxWidth: '350px' }}
-                                                            className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_states`] ? 'p-invalid border-danger' : ''}`}
-                                                        />
-                                                        {renderError('restricted_states', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <MultiSelect
-                                                            value={v.allowed_industries}
-                                                            options={industryTypes}
-                                                            onChange={(e) => onChange(i, 'allowed_industries', e.value)}
-                                                            optionLabel="label"
-                                                            optionValue="value"
-                                                            placeholder="Select industries"
-                                                            filter
-                                                            display="chip"
-                                                            panelStyle={{ maxWidth: '350px' }}
-                                                            className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_industries`] ? 'p-invalid border-danger' : ''}`}
-                                                        />
-                                                        {renderError('allowed_industries', i)}
-                                                    </td>
-                                                    <td className="py-3">
-                                                        <MultiSelect
-                                                            value={v.restricted_industries}
-                                                            options={industryTypes}
-                                                            onChange={(e) => onChange(i, 'restricted_industries', e.value)}
-                                                            optionLabel="label"
-                                                            optionValue="value"
-                                                            placeholder="Blocked industries"
-                                                            filter
-                                                            display="chip"
-                                                            panelStyle={{ maxWidth: '350px' }}
-                                                            className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_industries`] ? 'p-invalid border-danger' : ''}`}
-                                                        />
-                                                        {renderError('restricted_industries', i)}
-                                                    </td>
-                                                    <td className="py-3 text-center">
-                                                        <button
-                                                            type="button"
-                                                            className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
-                                                            style={{ width: '32px', height: '32px' }}
-                                                            onClick={() => onRemoveRow(i)}
-                                                            title="Remove row"
-                                                        >
-                                                            <i className="ri-delete-bin-line fs-14"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
+                                                            {renderError('max_negative_days', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
+                                                                placeholder="1.25"
+                                                                value={v.min_dscr || ''}
+                                                                onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
+                                                            />
+                                                            {renderError('min_dscr', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <MultiSelect
+                                                                value={v.allowed_states}
+                                                                options={stateOptions}
+                                                                onChange={(e) => onChange(i, 'allowed_states', e.value)}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Select states"
+                                                                filter
+                                                                display="chip"
+                                                                panelStyle={{ maxWidth: '350px' }}
+                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_states`] ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {renderError('allowed_states', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <MultiSelect
+                                                                value={v.restricted_states}
+                                                                options={stateOptions}
+                                                                onChange={(e) => onChange(i, 'restricted_states', e.value)}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Blocked states"
+                                                                filter
+                                                                display="chip"
+                                                                panelStyle={{ maxWidth: '350px' }}
+                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_states`] ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {renderError('restricted_states', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <MultiSelect
+                                                                value={v.allowed_industries}
+                                                                options={industryTypes}
+                                                                onChange={(e) => onChange(i, 'allowed_industries', e.value)}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Select industries"
+                                                                filter
+                                                                display="chip"
+                                                                panelStyle={{ maxWidth: '350px' }}
+                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_industries`] ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {renderError('allowed_industries', i)}
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <MultiSelect
+                                                                value={v.restricted_industries}
+                                                                options={industryTypes}
+                                                                onChange={(e) => onChange(i, 'restricted_industries', e.value)}
+                                                                optionLabel="label"
+                                                                optionValue="value"
+                                                                placeholder="Blocked industries"
+                                                                filter
+                                                                display="chip"
+                                                                panelStyle={{ maxWidth: '350px' }}
+                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_industries`] ? 'p-invalid border-danger' : ''}`}
+                                                            />
+                                                            {renderError('restricted_industries', i)}
+                                                        </td>
+                                                        <td className="py-3 text-center">
+                                                            <button
+                                                                type="button"
+                                                                className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
+                                                                style={{ width: '32px', height: '32px' }}
+                                                                onClick={() => onRemoveRow(i)}
+                                                                title="Remove row"
+                                                            >
+                                                                <i className="ri-delete-bin-line fs-14"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }))}
                                     </tbody>
                                 </table>
                             </div>
@@ -654,28 +880,27 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
             </div>
 
-            <div className="card-footer bg-warning-subtle py-3 d-flex align-items-center gap-2 border-top-0">
-                <i className="ri-error-warning-line text-warning fs-18"></i>
-                <span className="fs-13 text-warning fw-medium">The order of these visibility rules determines borrower qualification for each lender.</span>
-            </div>
-
             <style>{`
-                .custom-scrollbar-wrapper::-webkit-scrollbar {
-                    height: 8px;
+                .custom-scrollbar-wrapper::-webkit-scrollbar,
+                    height: 2px;
                 }
-                .custom-scrollbar-wrapper::-webkit-scrollbar-track {
+                .custom-scrollbar-wrapper::-webkit-scrollbar-track,
+                .custom-scrollbar-wrapper *::-webkit-scrollbar-track {
                     background: #f8f9fa;
                     border-radius: 4px;
                 }
-                .custom-scrollbar-wrapper::-webkit-scrollbar-thumb {
+                .custom-scrollbar-wrapper::-webkit-scrollbar-thumb,
+                .custom-scrollbar-wrapper *::-webkit-scrollbar-thumb {
                     background: #d3d3d3;
                     border-radius: 4px;
                 }
-                .custom-scrollbar-wrapper::-webkit-scrollbar-thumb:hover {
+                .custom-scrollbar-wrapper::-webkit-scrollbar-thumb:hover,
+                .custom-scrollbar-wrapper *::-webkit-scrollbar-thumb:hover {
                     background: #b0b0b0;
                 }
             `}</style>
 
+            {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
                 show={lenderToDelete !== null || showBulkDeleteModal}
                 onConfirm={confirmRemoveBlock}
@@ -684,8 +909,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     setShowBulkDeleteModal(false);
                 }}
                 loading={false}
-                text={showBulkDeleteModal ? "The selected lenders and all their visibility rules will be removed." : "The selected lender and all associated visibility rules will be removed."}
+                text={showBulkDeleteModal ? "The selected visibility rules will be removed." : "The selected lender and all associated visibility rules will be removed."}
             />
+
+
         </div>
     );
 };

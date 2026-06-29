@@ -284,7 +284,7 @@ export default function App() {
               <Route path="funding" element={<FundingList />} />
               <Route path="funding/create" element={<FundingSequencingForm />} />
               <Route path="funding/:id" element={<FundingSequencingForm />} />
-              <Route path="funding/visibility-logic-details/:id" element={<FundingSequencingForm />} />
+              <Route path="funding/visibility-rules/:id/*" element={<FundingSequencingForm />} />
               <Route path="lenders" element={<LendersList />} />
               <Route path="lenders/create" element={<LenderForm />} />
               <Route path="lenders/:id" element={<LenderForm />} />

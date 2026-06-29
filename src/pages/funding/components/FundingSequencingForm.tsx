@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../components/Loader/FormLoader';
 import { STATUS_ACTIVE } from '../../../config/statusOptions';
-import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
+import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
@@ -34,9 +34,22 @@ export default function FundingSequencingForm() {
 
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
-    const isVisibilityRoute = location.pathname.includes('/visibility-logic-details') || queryParams.get('tab') === 'visibility';
+    const isVisibilityRoute = location.pathname.includes('/visibility-rules') || queryParams.get('tab') === 'visibility';
     const [activeTab, setActiveTab] = useState(isVisibilityRoute ? 'visibility' : 'display');
-    const isMasterList = activeTab === 'visibility' && !queryParams.get('lenderId');
+
+    const urlMatch = location.pathname.match(/\/lender\/(\d+)\/?$/);
+    const urlLenderId = urlMatch ? urlMatch[1] : null;
+    const activeLenderId = urlLenderId ? parseInt(urlLenderId, 10) : null;
+
+    const setActiveLenderId = (newLenderId: number | null) => {
+        if (newLenderId === null) {
+            navigate(`/funding/visibility-rules/${id}`);
+        } else {
+            navigate(`/funding/visibility-rules/${id}/lender/${newLenderId}`);
+        }
+    };
+
+    const isMasterList = activeTab === 'visibility' && activeLenderId === null;
 
     useEffect(() => {
         if (isVisibilityRoute) {
@@ -48,12 +61,12 @@ export default function FundingSequencingForm() {
 
     const handleTabClick = (tabId: string) => {
         if (!isEditMode) return;
-        
+
         if (tabId === 'visibility') {
-            window.history.pushState({}, '', `/funding/visibility-logic-details/${id}${location.search}`);
+            navigate(`/funding/visibility-rules/${id}`);
             setActiveTab('visibility');
         } else {
-            window.history.pushState({}, '', `/funding/${id}`);
+            navigate(`/funding/${id}`);
             setActiveTab('display');
         }
     };
@@ -381,10 +394,21 @@ export default function FundingSequencingForm() {
                     toast.success('Display settings updated successfully!');
                     setActiveTab('visibility');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                    await updateFundingSequencingVisibility(id, { lender_visibilities: unifiedPayload.lender_visibilities });
-                    toast.success('Visibility rules updated successfully!');
-                    navigate(`/funding/visibility-logic-details/${id}`);
+                } else if (id && activeTab === 'visibility') {
+                    if (activeLenderId) {
+                        // Save ONLY the active lender's visibility rules
+                        const singleLenderPayload = {
+                            ...unifiedPayload,
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => v.lender_id === activeLenderId)
+                        };
+                        await updateFundingSequencingSingleLenderVisibility(id, activeLenderId, singleLenderPayload);
+                    } else {
+                        // Update all visibilities (usually just deletion/ordering from master list)
+                        await updateFundingSequencingVisibility(id, unifiedPayload);
+                    }
+
+                    toast.success('Visibility logic updated successfully');
+                    navigate(`/funding/visibility-rules/${id}`);
                 }
             } else {
                 const response = await createFundingSequencing(unifiedPayload);
@@ -423,16 +447,17 @@ export default function FundingSequencingForm() {
                     if (!hasDisplayError && activeTab === 'display') {
                         setActiveTab('visibility');
                     }
-                    
-                    // Automatically switch to the lender that has the error
-                    const firstErrorKey = Object.keys(mappedErrors).find(key => key.startsWith('lender_visibilities.'));
-                    if (firstErrorKey) {
-                        const parts = firstErrorKey.split('.');
-                        const index = parseInt(parts[1], 10);
-                        if (!isNaN(index) && unifiedPayload.lender_visibilities[index]) {
-                            const errorLenderId = unifiedPayload.lender_visibilities[index].lender_id;
-                            if (errorLenderId) {
-                                navigate(`/funding/visibility-logic-details/${id}?lenderId=${errorLenderId}`);
+
+                    if (!activeLenderId) {
+                        const firstErrorKey = Object.keys(mappedErrors).find(key => key.startsWith('lender_visibilities.'));
+                        if (firstErrorKey) {
+                            const parts = firstErrorKey.split('.');
+                            const index = parseInt(parts[1], 10);
+                            if (!isNaN(index) && unifiedPayload.lender_visibilities[index]) {
+                                const errorLenderId = unifiedPayload.lender_visibilities[index].lender_id;
+                                if (errorLenderId) {
+                                    navigate(`/funding/visibility-rules/${id}/lender/${errorLenderId}`);
+                                }
                             }
                         }
                     }
@@ -583,6 +608,17 @@ export default function FundingSequencingForm() {
                                                     Visibility Logic
                                                 </button>
                                             </li>
+                                            {activeTab === 'visibility' && isMasterList && (
+                                                <li className="nav-item ms-auto mb-2">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary waves-effect"
+                                                        onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
+                                                    >
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Visibility Logic
+                                                    </button>
+                                                </li>
+                                            )}
                                         </ul>
                                     </div>
                                     <div className="card-body pt-3">

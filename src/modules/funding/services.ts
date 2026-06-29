@@ -21,6 +21,11 @@ export const updateFundingSequencing = async (id: number | string, payload: Fund
     return data;
 };
 
+export const fetchFundingSequencingVisibilities = async (id: number | string, payload: any) => {
+    const response = await apiClient.post(`/admin/funding-sequencings/${id}/visibilities/fetch`, payload);
+    return response.data;
+};
+
 export const updateFundingSequencingDisplay = async (id: number | string, payload: any) => {
     const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/display`, payload);
     return data;
@@ -28,6 +33,11 @@ export const updateFundingSequencingDisplay = async (id: number | string, payloa
 
 export const updateFundingSequencingVisibility = async (id: number | string, payload: any) => {
     const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/visibility`, payload);
+    return data;
+};
+
+export const updateFundingSequencingSingleLenderVisibility = async (id: number | string, lenderId: number | string, payload: any) => {
+    const { data } = await apiClient.post(`/admin/funding-sequencings/${id}/lender/${lenderId}/visibility`, payload);
     return data;
 };
 
