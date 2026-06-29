@@ -600,7 +600,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     <div className="d-flex align-items-center gap-3">
                         <div className="d-flex align-items-center gap-2">
                             <label className="mb-0 fw-bold fs-15 text-dark text-nowrap">
-                                {localActiveLenderId !== null ? 'Lender:' : 'Please select a lender:'}
+                                Lender:
                             </label>
                             <Dropdown
                                 value={localActiveLenderId}
