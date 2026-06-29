@@ -41,6 +41,22 @@ const getCategoryBadgeClass = (category: string) => {
     return `bg-${color}-subtle text-${color} border-${color}`;
 };
 
+const isRuleEmpty = (v: any) => {
+    return !v.min_fico && 
+           !v.min_tib_months && 
+           !v.min_monthly_revenue && 
+           !v.min_monthly_deposits && 
+           !v.min_deposit_count && 
+           !v.min_average_daily_balance && 
+           !v.max_nsf_count && 
+           !v.max_negative_days && 
+           !v.min_dscr && 
+           (!v.allowed_states || v.allowed_states.length === 0) && 
+           (!v.restricted_states || v.restricted_states.length === 0) && 
+           (!v.allowed_industries || v.allowed_industries.length === 0) && 
+           (!v.restricted_industries || v.restricted_industries.length === 0);
+};
+
 export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     visibilities,
     setVisibilities,
@@ -82,14 +98,20 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 newUrl += `/category/${categoryId}`;
             }
         }
-        navigate(newUrl, { replace: true });
+        window.history.replaceState(null, '', newUrl);
     };
 
     // Sync local state when URL changes (e.g. direct URL load or Back navigation)
     React.useEffect(() => {
+        if (localActiveLenderId !== null && localActiveLenderId !== activeLenderId) {
+            const currentLenderRules = visibilities.filter(v => String(v.lender_id) === String(localActiveLenderId));
+            if (currentLenderRules.length > 0 && currentLenderRules.every(isRuleEmpty)) {
+                setVisibilities(visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId)));
+            }
+        }
         setLocalActiveLenderId(activeLenderId);
         setLocalActiveCategoryId(activeCategoryId);
-    }, [activeLenderId, activeCategoryId]);
+    }, [activeLenderId, activeCategoryId, visibilities]);
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
@@ -153,15 +175,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         }
     };
 
-    const isInitialMount = React.useRef(true);
-
     // Show skeleton loader when lender changes in form view
     React.useEffect(() => {
         if (localActiveLenderId !== null) {
-            if (isInitialMount.current) {
-                isInitialMount.current = false;
-                return;
-            }
             setDetailsLoading(true);
             const timer = setTimeout(() => {
                 setDetailsLoading(false);
@@ -433,9 +449,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         }
 
         if (lenderToDelete !== null && activeLenderId === lenderToDelete) {
-            setActiveLenderId(null);
+            setActiveLenderIdAndCategory(null);
         } else if (activeLenderId !== null && deletedIds.includes(String(activeLenderId))) {
-            setActiveLenderId(null);
+            setActiveLenderIdAndCategory(null);
         }
 
         setLenderToDelete(null);
@@ -513,7 +529,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         if (!selectedLenderIds.some(id => String(id) === String(lenderId))) {
             onAddLenderBlock(lenderId);
         } else {
-            setActiveLenderId(lenderId);
+            setActiveLenderIdAndCategory(lenderId);
         }
     };
     const [search, setSearch] = React.useState('');
@@ -607,6 +623,14 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 options={lenders}
                                 onChange={(e) => {
                                     const nextLenderId = e.value;
+                                    let cleanedVisibilities = visibilities;
+                                    if (localActiveLenderId !== null) {
+                                        const currentLenderRules = visibilities.filter(v => String(v.lender_id) === String(localActiveLenderId));
+                                        if (currentLenderRules.length > 0 && currentLenderRules.every(isRuleEmpty)) {
+                                            cleanedVisibilities = visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId));
+                                        }
+                                    }
+                                    setVisibilities(cleanedVisibilities);
                                     setLocalActiveLenderId(nextLenderId);
                                     setLocalActiveCategoryId(null);
                                     syncUrlQuietly(nextLenderId, null);
@@ -622,11 +646,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             />
                         </div>
                     </div>
-                    <div className="d-flex align-items-center gap-2">
-                        <Link to={visibilityUrl} className="btn btn-outline-secondary waves-effect">
-                            <i className="ri-arrow-left-line align-middle me-1"></i>  Back to visibility logic List
-                        </Link>
-                    </div>
+
                 </div>
             )}
 
@@ -774,7 +794,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
                                             const catId = e.data.lender_product_category_id || 'general';
                                             setActiveLenderIdAndCategory(e.data.lender_id, catId);
-                                            if (setErrors) setErrors({});
+                                            if (setErrors) setErrors(() => ({}));
                                             setSelectedMasterLenders([]);
                                         }
                                     }}

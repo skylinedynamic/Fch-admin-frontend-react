@@ -127,11 +127,11 @@ export default function FundingSequencingForm() {
         manual_review_allowed: true,
         exception_allowed: true,
         speed_to_funds: '',
-        uses: [],
-        readiness_factors: [],
-        missing_documents: [],
-        allowed_documents: [],
-        lender_visibilities: []
+        uses: [] as any[],
+        readiness_factors: [] as any[],
+        missing_documents: [] as any[],
+        allowed_documents: [] as any[],
+        lender_visibilities: [] as any[]
     });
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
         setFormData(prev => {
@@ -337,7 +337,7 @@ export default function FundingSequencingForm() {
         if (e) e.preventDefault();
         setLoading(true);
 
-        const cleanData = { ...formData };
+        const cleanData = { ...formData } as any;
         ['allowed_states', 'restricted_states', 'allowed_industries', 'restricted_industries', 'uses', 'missing_documents', 'allowed_documents'].forEach(field => {
             if (Array.isArray(cleanData[field as keyof typeof cleanData])) {
                 cleanData[field as keyof typeof cleanData] = (cleanData[field as keyof typeof cleanData] as any[]).filter(item =>
@@ -599,7 +599,10 @@ export default function FundingSequencingForm() {
                             </div>
                             {!(isVisibilityRoute && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/funding" className="btn btn-outline-secondary w-lg waves-effect">
+                                    <Link
+                                        to={isVisibilityRoute && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
+                                        className="btn btn-outline-secondary w-lg waves-effect"
+                                    >
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
                                     <button
