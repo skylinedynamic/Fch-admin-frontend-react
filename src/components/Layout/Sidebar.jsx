@@ -269,7 +269,21 @@ export default function Sidebar() {
 
   // Get current user and check if is_host
   const currentUser = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
   const isHost = currentUser?.is_host == 1;
+
+  const isFreeTrial = !!userSubscription?.is_free_trail;
+  const trialEndDate = userSubscription?.free_trail_end_date;
+
+  const formatTrialDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   useEffect(() => {
     const onResize = () => {
@@ -641,6 +655,23 @@ export default function Sidebar() {
           </ul>
         </div>
       </div>
+
+      {isFreeTrial && (
+        <div className="sidebar-trial-panel">
+          <div className="trial-panel-inner">
+            <div className="trial-icon-wrap">
+              <i className="ri-vip-crown-2-fill"></i>
+            </div>
+            <div className="trial-text-wrap">
+              <span className="trial-label">Free Trial</span>
+              {trialEndDate && (
+                <span className="trial-expires">Expires {formatTrialDate(trialEndDate)}</span>
+              )}
+            </div>
+            <span className="trial-badge">TRIAL</span>
+          </div>
+        </div>
+      )}
 
       <div className="sidebar-background"></div>
     </div>

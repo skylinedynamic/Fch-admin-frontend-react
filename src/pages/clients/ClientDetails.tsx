@@ -23,6 +23,7 @@ import {
 } from '../../modules/client';
 import { fetchSettings } from '../../modules/settings/services';
 import { fetchNonHostBorrowerPlans } from '../../modules/partner/services';
+import { apiClient } from '../../lib/http/apiClient';
 import type { Client, ClientProfileStats } from '../../modules/client/types';
 import { locationData } from '../../config';
 import { usePermissions } from '../../lib/auth/usePermissions';
@@ -68,6 +69,7 @@ export default function ClientDetails() {
     // const [statsLoading, setStatsLoading] = useState(false); // Managed by Query
     const [settings, setSettings] = useState<any>(null);
     const [nonHostPlan, setNonHostPlan] = useState<any>(null);
+    const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
     // Refs for Child Components
     const clientInfoRef = useRef<ClientInfoSectionRef>(null);
@@ -138,6 +140,17 @@ export default function ClientDetails() {
 
     // Initial Data Loading Effect (Settings only)
     useEffect(() => {
+        const fetchFixedPlan = async () => {
+            try {
+                const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
+                if (response.data?.status && response.data?.data?.payment_amount) {
+                    setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
+                }
+            } catch (error) {
+                console.error('Failed to fetch fixed enrollment plan:', error);
+            }
+        };
+
         const loadInitialData = async () => {
             // ... kept same ...
             try {
@@ -166,6 +179,7 @@ export default function ClientDetails() {
             }
         };
         loadInitialData();
+        fetchFixedPlan();
         // Removed redundant location logic here. Child handles it.
     }, []);
 
@@ -238,6 +252,7 @@ export default function ClientDetails() {
         setErrors({}); // Clear previous errors
         setIsSaving(true);
 
+
         try {
             if (!id) {
                 // CREATE NEW CLIENT - Use centralized mapping logic
@@ -267,7 +282,7 @@ export default function ClientDetails() {
                 }
 
                 if (isWLOrCP) {
-                    toast.success("Client created successfully. Partner fee ($800) charged automatically.");
+                    toast.success(`Client created successfully.`);
                 } else {
                     toast.success("Client created successfully");
                 }

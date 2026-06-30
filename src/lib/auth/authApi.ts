@@ -38,7 +38,9 @@ export async function login(email: string, password: string, remember: boolean =
         subscription_start_date: user.subscription_start_date as string | null | undefined,
         subscription_end_date: user.subscription_end_date as string | null | undefined,
         phase: user.phase as string | undefined,
-        is_host: user.is_host as boolean | undefined
+        is_host: user.is_host as boolean | undefined,
+        is_free_trail: user.is_free_trail as boolean | undefined,
+        free_trail_end_date: user.free_trail_end_date as string | null | undefined
       })
 
       return { token, user }

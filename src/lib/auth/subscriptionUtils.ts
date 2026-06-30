@@ -20,6 +20,23 @@ export function isSubscriptionRestricted(subscription: UserSubscription | null |
     // Hosts are never restricted
     if (subscription.is_host) return false;
 
+    // Free trial partners/users are not restricted if not expired
+    const isFreeTrial = !!subscription.is_free_trail;
+    const trialEndDate = subscription.free_trail_end_date as string | undefined;
+
+    if (isFreeTrial) {
+        if (trialEndDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const end = new Date(trialEndDate);
+            end.setHours(0, 0, 0, 0);
+            if (today > end) {
+                return true; // Expired → restricted
+            }
+        }
+        return false; // Active free trial → not restricted
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { DataTable } from '../../components/Table/DataTableWrapper'
@@ -18,6 +18,7 @@ import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfir
 import { useAuthStore } from '../../store/auth/authStore';
 import UserLimitModal from './components/UserLimitModal';
 import UserPaymentModal from './components/UserPaymentModal';
+import PaidVersionOnlyModal from '../../components/Common/Modals/PaidVersionOnlyModal';
 
 export default function Users() {
   const [filters, setFilters] = useState({})
@@ -50,10 +51,15 @@ export default function Users() {
   const { hasPermission } = usePermissions();
   const [loadingLimitCheck, setLoadingLimitCheck] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const userSubscription = useAuthStore((state) => state.userSubscription);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [limitData, setLimitData] = useState({ count: 0, price: '0', limit: 0, quantity: 1, months: 1, totalPrice: 0 });
   const [isPurchaseFlow, setIsPurchaseFlow] = useState(false);
+
+  // Free Trial User Limit Modal States
+  const [showFreeTrialLimitModal, setShowFreeTrialLimitModal] = useState(false);
+  const [allowedFreeTrialCount, setAllowedFreeTrialCount] = useState(0);
 
   const handleAddUserClick = async () => {
     // Check if current user is host from store (no API call needed)
@@ -85,14 +91,22 @@ export default function Users() {
         setBackendErrors({});
         setNewUser({ user_id: '', name: '', email: '', phone_number: '', role_id: '', password: '', new_password: '', confirm_password: '' });
       } else {
-        setLimitData({
-          count: currentCount,
-          price: data.data.per_user_price,
-          limit: totalAllowed,
-          quantity: 1,
-          totalPrice: parseFloat(data.data.per_user_price || 0)
-        });
-        setShowLimitModal(true);
+        const isPartner = user?.entity_type === 'Partner';
+        const isFreeTrial = !!userSubscription?.is_free_trail;
+
+        if (isPartner && isFreeTrial) {
+          setAllowedFreeTrialCount(totalAllowed);
+          setShowFreeTrialLimitModal(true);
+        } else {
+          setLimitData({
+            count: currentCount,
+            price: data.data.per_user_price,
+            limit: totalAllowed,
+            quantity: 1,
+            totalPrice: parseFloat(data.data.per_user_price || 0)
+          });
+          setShowLimitModal(true);
+        }
       }
     } catch (error) {
       console.error("Failed to check user limit:", error);
@@ -770,6 +784,16 @@ export default function Users() {
           months={limitData.months}
           invoiceId={limitData.invoiceId}
           userId={limitData.userId}
+        />
+
+        <PaidVersionOnlyModal
+          show={showFreeTrialLimitModal}
+          onHide={() => setShowFreeTrialLimitModal(false)}
+          message={
+            <>
+              This feature is available in Paid version. You can only add <strong>{allowedFreeTrialCount}</strong> users in Free trial.
+            </>
+          }
         />
       </div>
     </div>

@@ -109,6 +109,8 @@ export default function PartnerProfile() {
         subscription_status: '',
         partner_domain: '',
         borrower_domain: '',
+        is_free_trail: false,
+        free_trail_end_date: '',
     });
 
     // Fetch Partner Plans on mount
@@ -652,8 +654,6 @@ export default function PartnerProfile() {
                 return;
             }
 
-            try {
-                // Frontend validation for Partner Information removed to rely on backend validation
 
                 const formDataToSend = new FormData();
 
@@ -723,6 +723,10 @@ export default function PartnerProfile() {
                             }
                         } else if (key === 'borrower_domain') {
                             // Do not send borrower_domain
+                        } else if (key === 'is_free_trail') {
+                            formDataToSend.append('is_free_trail', value ? '1' : '0');
+                        } else if (key === 'free_trail_end_date') {
+                            formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? value : '');
                         } else if (value !== '' && value !== null) {
                             formDataToSend.append(key, value);
                         }
@@ -804,7 +808,6 @@ export default function PartnerProfile() {
                         setTimeout(() => navigate('/partners'), 800);
                     }
                 }
-
             } catch (error) {
                 if (error.response?.data?.errors) {
                     const backendErrors = error.response.data.errors;
@@ -826,10 +829,9 @@ export default function PartnerProfile() {
                 } else {
                     toast.error(id ? 'Failed to update partner' : 'Failed to save partner');
                 }
+            } finally {
+                setIsSaving(false);
             }
-        } finally {
-            setIsSaving(false);
-        }
     };
 
     return (

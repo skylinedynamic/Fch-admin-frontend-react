@@ -57,6 +57,9 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
     if (payload.date_of_birth) {
         payload.date_of_birth = normalizeDate(payload.date_of_birth);
     }
+    if (payload.free_trail_end_date) {
+        payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
+    }
 
     // Calculate Enrollment Type and Amount
     let amount = 0;
@@ -134,6 +137,9 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
     }
     if (payload.date_of_birth) {
         payload.date_of_birth = normalizeDate(payload.date_of_birth);
+    }
+    if (payload.free_trail_end_date) {
+        payload.free_trail_end_date = normalizeDate(payload.free_trail_end_date);
     }
 
     if (formData.status) {
