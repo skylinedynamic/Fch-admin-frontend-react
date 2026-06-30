@@ -74,7 +74,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 }, ref) => {
     // 1. Data Fetching (only if clientId exists)
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
-    const wasFreeTrial = !!(fetchedData?.data?.is_free_trail ?? fetchedData?.is_free_trail ?? false);
+    const rawIsFreeTrail = fetchedData?.data?.is_free_trail ?? fetchedData?.is_free_trail ?? false;
+    const wasFreeTrial = rawIsFreeTrail == 1 || rawIsFreeTrail === true || rawIsFreeTrail === 'true' || rawIsFreeTrail === '1';
     const updateMutation = useUpdateClient();
 
     const currentUser = useAuthStore((state) => state.user);
@@ -1093,7 +1094,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
 
                 {/* Free Trial Section */}
-                {(!clientId || !!formData.is_free_trail) && (
+                {(!clientId || wasFreeTrial) && (
                     <div className="col-12 mt-4">
                         <div className="card border-0 bg-light-subtle shadow-sm mb-4">
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
@@ -1113,7 +1114,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 className="form-check-input"
                                                 id="is_free_trail"
                                                 name="is_free_trail"
-                                                checked={!!formData.is_free_trail}
+                                                checked={formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1'}
                                                 style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
                                                 onChange={(e) => {
                                                     if (isPartnerOnFreeTrial) return;
@@ -1186,7 +1187,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 )}
 
-                {!formData.is_free_trail && (
+                {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
                     <>
                         {/* Enrollment Type Dropdown (Now for both Host and Non-Host) */}
                         <div className="col-lg-6">

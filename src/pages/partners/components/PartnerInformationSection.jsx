@@ -528,7 +528,7 @@ export default function PartnerInformationSection({
             </div>
 
             {/* Free Trial Section */}
-            {(!partnerId || !!formData.is_free_trail) && (
+            {(!partnerId || wasFreeTrial) && (
                 <div className="col-12 mt-4">
                     <div className="card border-0 bg-light-subtle shadow-sm mb-4">
                         <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
@@ -545,7 +545,7 @@ export default function PartnerInformationSection({
                                         <input
                                             id="is_free_trail"
                                             name="is_free_trail"
-                                            checked={!!formData.is_free_trail}
+                                            checked={formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1'}
                                             className="form-check-input"
                                             type="checkbox"
                                             onChange={(e) => {
@@ -610,7 +610,7 @@ export default function PartnerInformationSection({
                 </div>
             )}
 
-            {!formData.is_free_trail && (
+            {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
                 <>
                     {/* Enrollment Type */}
                     <div className="col-lg-6">
