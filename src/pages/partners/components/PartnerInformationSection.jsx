@@ -541,26 +541,33 @@ export default function PartnerInformationSection({
                             <div className="col-md-6">
                                 <div className="form-check form-switch form-switch-md">
                                     <input
-                                        type="checkbox"
-                                        className="form-check-input"
                                         id="is_free_trail"
                                         name="is_free_trail"
                                         checked={!!formData.is_free_trail}
+                                        className="form-check-input"
+                                        type="checkbox"
                                         onChange={(e) => {
+                                            const checked = e.target.checked;
                                             handleInputChange({
                                                 target: {
                                                     name: 'is_free_trail',
-                                                    value: e.target.checked
+                                                    value: checked
                                                 }
                                             });
-                                            if (!e.target.checked) {
-                                                handleInputChange({
-                                                    target: {
-                                                        name: 'free_trail_end_date',
-                                                        value: ''
-                                                    }
-                                                });
+
+                                            let dateString = '';
+                                            if (checked) {
+                                                const defaultDate = new Date();
+                                                defaultDate.setMonth(defaultDate.getMonth() + 1);
+                                                dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
                                             }
+
+                                            handleInputChange({
+                                                target: {
+                                                    name: 'free_trail_end_date',
+                                                    value: dateString
+                                                }
+                                            });
                                         }}
                                     />
                                     <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
