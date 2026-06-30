@@ -14,6 +14,7 @@ export const ENTITY_TYPE_PARTNER = 'Partner';
 export const ENTITY_TYPE_BORROWER = 'Borrower';
 export const ENTITY_TYPE_EMPLOYEE = 'Employee';
 export const ENTITY_TYPE_USER = '';
+export const ENTITY_TYPE_FUNDING_REQUEST = 'Funding Request';
 
 export const TYPE_EMAIL = 'email';
 export const TYPE_ACTIVITY = 'activity';
@@ -34,6 +35,8 @@ export const LOG_TYPE_LEAD_CREATE = 'lead_create';
 export const LOG_TYPE_LEAD_UPDATE = 'lead_update';
 export const LOG_TYPE_LEAD_DETAILS_UPDATE = 'lead_details_update';
 export const LOG_TYPE_LEAD_CONTACT_UPDATE = 'lead_contact_update';
+export const LOG_TYPE_FUNDING_REQUEST_CREATE = 'funding_request_create';
+export const LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE = 'funding_request_status_update';
 export const LOG_TYPE_BATCH_PROCESS = 'batch_process';
 export const LOG_TYPE_INVOICE_CREATE = 'invoice_create';
 export const LOG_TYPE_USER_CREATE = 'user_create';

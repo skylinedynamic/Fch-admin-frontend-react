@@ -25,3 +25,24 @@ export interface FundingFilterParams {
     funding_group_id?: string | number;
     funding_type_id?: string | number;
 }
+
+export interface VisibilityFetchParams extends FundingFilterParams {
+    first?: number;
+    rows?: number;
+    lender_id?: number | string | null;
+    lender_product_category_id?: number | string | null;
+}
+
+export interface DeleteVisibilityPayload {
+    visibility_ids: (number | string)[];
+}
+
+export interface UpdateVisibilityPayload {
+    lender_visibilities: any[];
+    [key: string]: any;
+}
+
+export interface SingleLenderVisibilityPayload {
+    lender_visibilities: any[];
+    [key: string]: any;
+}

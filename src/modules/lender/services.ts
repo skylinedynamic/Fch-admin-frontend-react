@@ -30,3 +30,24 @@ export const deleteLender = async (id: number | string) => {
     const { data } = await apiClient.delete(`/admin/lenders/${id}`);
     return data;
 };
+
+// Lender Product Categories
+export const getLenderProductCategories = async () => {
+    const { data } = await apiClient.get('/admin/lenders/product-categories');
+    return data;
+};
+
+export const createLenderProductCategory = async (payload: { name: string; status?: string; sort_order?: number }) => {
+    const { data } = await apiClient.post('/admin/lenders/product-categories', payload);
+    return data;
+};
+
+export const updateLenderProductCategory = async (id: number | string, payload: { name: string; status?: string; sort_order?: number }) => {
+    const { data } = await apiClient.put(`/admin/lenders/product-categories/${id}`, payload);
+    return data;
+};
+
+export const deleteLenderProductCategory = async (id: number | string) => {
+    const { data } = await apiClient.delete(`/admin/lenders/product-categories/${id}`);
+    return data;
+};

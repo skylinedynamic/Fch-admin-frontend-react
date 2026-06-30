@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getLender, createLender, updateLender } from '../../modules/lender/services';
+import { getLender, createLender, updateLender, getLenderProductCategories } from '../../modules/lender/services';
 import { Lender } from '../../modules/lender/types';
 import FormLoader from '../../components/Loader/FormLoader';
 import { formatPhoneNumber } from '../../utils/formatters';
@@ -11,6 +11,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { LENDER_STATUS } from '../../config/statusOptions';
 import { PRODUCT_CATEGORIES, SUBMISSION_METHODS } from '../../config/lender';
 import { useSummernote } from '../../hooks/useSummernote';
+import LenderProductCategoryModal from './components/LenderProductCategoryModal';
 
 export default function LenderForm() {
     const navigate = useNavigate();
@@ -19,6 +20,9 @@ export default function LenderForm() {
 
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
+    
+    const [categoriesList, setCategoriesList] = useState<any[]>([]);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     const initialFormState: any = {
         name: '',
@@ -52,6 +56,7 @@ export default function LenderForm() {
     const { editorRef: internalNotesRef } = useSummernote('internal_notes', formData.internal_notes, handleChange);
 
     useEffect(() => {
+        fetchCategories();
         if (isEditMode) {
             const fetchLender = async () => {
                 try {
@@ -70,6 +75,15 @@ export default function LenderForm() {
             fetchLender();
         }
     }, [id, isEditMode, navigate]);
+
+    const fetchCategories = async () => {
+        try {
+            const res = await getLenderProductCategories();
+            setCategoriesList(res.data || []);
+        } catch (error) {
+            console.error('Failed to fetch categories', error);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,11 +208,14 @@ export default function LenderForm() {
                                             {renderInput('legal_name', 'Legal Name', 'text', 'Enter legal name', 'col-md-6', true)}
 
                                             <div className="mb-4 col-md-4">
-                                                <label className="form-label text-dark fw-medium mb-2">Product Categories <span className="text-danger">*</span></label>
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <label className="form-label text-dark fw-medium mb-0">Product Categories <span className="text-danger">*</span></label>
+                                                    <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowCategoryModal(true)}>Add New</button>
+                                                </div>
                                                 <MultiSelect
                                                     inputId="product_categories"
                                                     value={formData.product_categories || []}
-                                                    options={PRODUCT_CATEGORIES}
+                                                    options={categoriesList.length > 0 ? categoriesList.map(cat => ({ label: cat.name, value: cat.name })) : PRODUCT_CATEGORIES}
                                                     onChange={(e) => handleChange({ target: { name: 'product_categories', value: e.value } } as any)}
                                                     optionLabel="label"
                                                     optionValue="value"
@@ -399,6 +416,14 @@ export default function LenderForm() {
                     </div>
                 </div>
             </div>
+            
+            {/* Product Category Modal */}
+            <LenderProductCategoryModal
+                visible={showCategoryModal}
+                onHide={() => setShowCategoryModal(false)}
+                onSuccess={() => fetchCategories()}
+                categories={categoriesList}
+            />
         </div>
     );
 }

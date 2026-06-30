@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
-import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
+import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -87,13 +87,20 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             payload.append('subject', formData.subject || '');
             payload.append('description', formData.message_body || '');
 
-            // Entity IDs - separate Lead, Client, Borrower, and Partner
-            if (entityType === ENTITY_TYPE_LEAD) {
-                payload.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') {
-                payload.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === ENTITY_TYPE_PARTNER) {
-                payload.append('partner_id', entityId ? entityId.toString() : '');
+            // Resolve entity context: prefer props, fall back to global context set by ActivitySidebar buttons
+            const ctx = window._activityEntityContext || {};
+            const resolvedEntityId = entityId ?? ctx.entityId;
+            const resolvedEntityType = entityType ?? ctx.entityType;
+
+            // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
+            if (resolvedEntityType === ENTITY_TYPE_LEAD) {
+                payload.append('lead_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_BORROWER || resolvedEntityType === 'Client') {
+                payload.append('borrower_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_PARTNER) {
+                payload.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
+                payload.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {

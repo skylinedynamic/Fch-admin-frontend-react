@@ -1,5 +1,5 @@
 import { apiClient } from '../../lib/http/apiClient';
-import { FundingSequencing, FundingFilterParams } from './types';
+import { FundingSequencing, FundingFilterParams, VisibilityFetchParams, DeleteVisibilityPayload, UpdateVisibilityPayload, SingleLenderVisibilityPayload } from './types';
 
 export const fetchFundingSequencings = async (payload: FundingFilterParams = {}) => {
     const response = await apiClient.post('/admin/funding-sequencings/fetch', payload);
@@ -21,13 +21,33 @@ export const updateFundingSequencing = async (id: number | string, payload: Fund
     return data;
 };
 
-export const updateFundingSequencingDisplay = async (id: number | string, payload: any) => {
+export const fetchFundingSequencingVisibilities = async (id: number | string, payload: VisibilityFetchParams) => {
+    const response = await apiClient.post(`/admin/funding-sequencings/${id}/visibilities/fetch`, payload);
+    return response.data;
+};
+
+export const updateFundingSequencingDisplay = async (id: number | string, payload: Partial<FundingSequencing>) => {
     const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/display`, payload);
     return data;
 };
 
-export const updateFundingSequencingVisibility = async (id: number | string, payload: any) => {
+export const updateFundingSequencingVisibility = async (id: number | string, payload: UpdateVisibilityPayload) => {
     const { data } = await apiClient.put(`/admin/funding-sequencings/${id}/visibility`, payload);
+    return data;
+};
+
+export const updateFundingSequencingSingleLenderVisibility = async (id: number | string, lenderId: number | string, payload: SingleLenderVisibilityPayload) => {
+    const { data } = await apiClient.post(`/admin/funding-sequencings/${id}/lender/${lenderId}/visibility`, payload);
+    return data;
+};
+
+export const updateFundingSequencingSingleCategoryVisibility = async (id: number | string, lenderId: number | string, categoryId: number | string, payload: SingleLenderVisibilityPayload) => {
+    const { data } = await apiClient.post(`/admin/funding-sequencings/${id}/lender/${lenderId}/category/${categoryId}/visibility`, payload);
+    return data;
+};
+
+export const deleteFundingSequencingVisibilities = async (id: number | string, payload: DeleteVisibilityPayload) => {
+    const { data } = await apiClient.delete(`/admin/funding-sequencings/${id}/visibilities`, { data: payload });
     return data;
 };
 

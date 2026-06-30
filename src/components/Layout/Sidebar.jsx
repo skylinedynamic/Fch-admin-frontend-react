@@ -56,8 +56,8 @@ const menuItems = [
         permission: 'view funding application',
       },
       {
-        to: '/intake-review/funding-review',
-        label: 'Funding Review',
+        to: '/intake-review/funding-request',
+        label: 'Funding Request',
         permission: 'view funding application', // Reusing permission unless specified otherwise
       },
       {
@@ -245,7 +245,7 @@ export default function Sidebar() {
           )
             return true;
 
-          // Special case for Funding Review/Application details
+          // Special case for Funding Request/Application details
           if (
             sub.to === "/intake-review/funding-application" &&
             location.pathname.includes("/intake-review/funding-applications/")
@@ -253,8 +253,8 @@ export default function Sidebar() {
             return true;
 
           if (
-            sub.to === "/intake-review/funding-review" &&
-            location.pathname.includes("/intake-review/funding-reviews/")
+            sub.to === "/intake-review/funding-request" &&
+            location.pathname.includes("/intake-review/funding-requests/")
           )
             return true;
 
@@ -518,8 +518,8 @@ export default function Sidebar() {
                     return true;
 
                   if (
-                    sub.to === "/intake-review/funding-review" &&
-                    location.pathname.includes("/intake-review/funding-review/")
+                    sub.to === "/intake-review/funding-request" &&
+                    location.pathname.includes("/intake-review/funding-request/")
                   )
                     return true;
 
@@ -589,9 +589,9 @@ export default function Sidebar() {
                                     }
                                     if (
                                       subItem.to ===
-                                      "/intake-review/funding-review" &&
+                                      "/intake-review/funding-request" &&
                                       location.pathname.startsWith(
-                                        "/intake-review/funding-review/",
+                                        "/intake-review/funding-request/",
                                       )
                                     ) {
                                       isPathActive = true;

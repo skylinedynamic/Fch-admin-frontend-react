@@ -38,8 +38,8 @@ import PreQualificationApplication from './pages/applications/pre-qualification/
 import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
 import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
-import FundingReview from './pages/applications/funding-review/FundingReview.tsx';
-import FundingReviewDetail from './pages/applications/funding-review/FundingReviewDetail.tsx';
+import FundingRequest from './pages/applications/funding-request/FundingRequest.tsx';
+import FundingRequestDetail from './pages/applications/funding-request/FundingRequestDetail.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import CreditProfileRequests from './pages/applications/credit-profile-requests/CreditProfileRequests.tsx';
@@ -286,6 +286,7 @@ export default function App() {
               <Route path="funding" element={<FundingList />} />
               <Route path="funding/create" element={<FundingSequencingForm />} />
               <Route path="funding/:id" element={<FundingSequencingForm />} />
+              <Route path="funding/visibility-rules/:id/*" element={<FundingSequencingForm />} />
               <Route path="lenders" element={<LendersList />} />
               <Route path="lenders/create" element={<LenderForm />} />
               <Route path="lenders/:id" element={<LenderForm />} />
@@ -326,8 +327,8 @@ export default function App() {
               <Route element={<PermissionRoute permission="view funding application" />}>
                 <Route path="funding-application" element={<FundingApplication />} />
                 <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
-                <Route path="funding-review" element={<FundingReview />} />
-                <Route path="funding-review/:id" element={<FundingReviewDetail />} />
+                <Route path="funding-request" element={<FundingRequest />} />
+                <Route path="funding-request/:id" element={<FundingRequestDetail />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view change requests" />}>

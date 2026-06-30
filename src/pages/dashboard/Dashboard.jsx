@@ -199,7 +199,7 @@ export default function Dashboard() {
                   dashboardData?.counts?.funding_application || 0,
                   "ri-file-list-3-line",
                   "success",
-                  "/intake-review/funding-review",
+                  "/intake-review/funding-request",
                   "View all Applications"
                 )}
               </>
@@ -275,7 +275,7 @@ export default function Dashboard() {
                         <i className="ri-focus-2-line align-middle me-1 text-primary"></i> Recent Funding Applications
                       </h4>
                       <div className="flex-shrink-0">
-                        <Link to="/intake-review/funding-review" className="text-decoration-underline text-muted">View All <i className="ri-arrow-right-line align-middle"></i></Link>
+                        <Link to="/intake-review/funding-request" className="text-decoration-underline text-muted">View All <i className="ri-arrow-right-line align-middle"></i></Link>
                       </div>
                     </div>
                     <div className="card-body">

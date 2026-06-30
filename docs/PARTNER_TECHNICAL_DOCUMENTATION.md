@@ -51,7 +51,7 @@ The portal serves two primary audiences: **System Hosts (Admins)** and **Partner
 | `/leads`                             | `ProtectedRoute` | `Leads`                      | `view leads`                              |
 | `/leads/:id`                         | `ProtectedRoute` | `LeadDetails`                | `view leads`                              |
 | `/intake-review/pre-qualification`   | `ProtectedRoute` | `PreQualificationApplication`| `view pre qualification`                  |
-| `/intake-review/funding-review`      | `ProtectedRoute` | `FundingApplication`         | `view funding application`                |
+| `/intake-review/funding-request`      | `ProtectedRoute` | `FundingApplication`         | `view funding application`                |
 | `/clients`                           | `ProtectedRoute` | `Clients`                    | `view clients`                            |
 | `/tiers`                             | `ProtectedRoute` | `TiersList`                  | **Host Only**; `view tier`                |
 | `/verification-center`               | `ProtectedRoute` | `VerificationCenter`         | `view verification request`               |
@@ -208,7 +208,7 @@ Located in `LeadService::convertToPartner()`:
 - **Path**: `src/pages/applications/PreQualificationApplication.tsx`
 - **Logic**: Dashboard summary of funding purposing, pre-screening eligibility, and status updates.
 
-### 6.2 Funding Review (8-Step Logic)
+### 6.2 Funding Request (8-Step Logic)
 - **Phase 1**: Personal/Business data verification.
 - **Phase 2**: Document audit (Borrower polymorphic file storage).
 - **Phase 3**: Commission Modal.
