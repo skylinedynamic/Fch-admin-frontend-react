@@ -1097,7 +1097,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                         <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
                             <div className="d-flex align-items-center mb-3">
                                 <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                                <h5 className="mb-0 text-primary fw-semibold">Free Trial Option</h5>
+                                <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
                             </div>
 
                             <p className="text-muted fs-13 mb-4">
