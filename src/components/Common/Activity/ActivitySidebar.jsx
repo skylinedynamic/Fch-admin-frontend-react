@@ -11,13 +11,14 @@ import {
     LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE, LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE,
     LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE,
     LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
-    LOG_TYPE_TASK_VERIFICATION
+    LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST,
+    LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
 } from '../../../config/appConfig';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 
-export default function ActivitySidebar({ entityId, entityType, profileImage = null, loading: externalLoading = false }) {
+export default function ActivitySidebar({ entityId, entityType, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -63,6 +64,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                 if (entityType === ENTITY_TYPE_LEAD) params.lead_id = entityId;
                 if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') params.borrower_id = entityId;
                 if (entityType === ENTITY_TYPE_PARTNER) params.partner_id = entityId;
+                if (entityType === ENTITY_TYPE_FUNDING_REQUEST) params.funding_request_id = entityId;
             }
 
             const response = await getActivityLogs(params);
@@ -219,10 +221,17 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
     const getTitle = (activity) => {
         if (activity.event_label) return activity.event_label;
-        if (activity.log_type === 'email') return 'Email Sent';
-        if (activity.log_type === 'activity') return 'Activity Created';
+        
+        if (activity.log_type === 'email') {
+            return activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
+        }
+        
+        if (activity.log_type === 'activity') {
+            const refType = activity.reference ? activity.reference : 'Activity';
+            return activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
+        }
 
-        // Format system logs (just return the subject like "Borrower Created")
+        // Format system logs
         return activity.subject || activity.log_type || 'Activity';
     };
 
@@ -258,6 +267,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
             LOG_TYPE_CHECKLIST_UPDATE,
             LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
             LOG_TYPE_TASK_VERIFICATION,
+            LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
         ];
         if (commIconTypes.includes(logTypeRaw) && config) {
             return (
@@ -319,24 +329,28 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                 <h4 className="card-title mb-0">
                     <i className="ri-history-line align-middle me-2"></i>Activity
                 </h4>
-                <div className="d-flex gap-2 chip-actions w-100 w-sm-auto justify-content-center justify-content-sm-end">
-                    <button
-                        type="button"
-                        className="btn btn-light btn-sm text-nowrap"
-                        data-bs-toggle="modal"
-                        data-bs-target="#emailComposeModal"
-                    >
-                        <i className="ri-mail-line align-middle me-1"></i>New Email
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-light btn-sm text-nowrap"
-                        data-bs-toggle="modal"
-                        data-bs-target="#activityCreateModal"
-                    >
-                        <i className="ri-calendar-line align-middle me-1"></i>New Event
-                    </button>
-                </div>
+                {!hideTopButtons && (
+                    <div className="d-flex gap-2 chip-actions w-100 w-sm-auto justify-content-center justify-content-sm-end">
+                        <button
+                            type="button"
+                            className="btn btn-light btn-sm text-nowrap"
+                            data-bs-toggle="modal"
+                            data-bs-target="#emailComposeModal"
+                            onClick={() => { window._activityEntityContext = { entityId, entityType }; }}
+                        >
+                            <i className="ri-mail-line align-middle me-1"></i>New Email
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-light btn-sm text-nowrap"
+                            data-bs-toggle="modal"
+                            data-bs-target="#activityCreateModal"
+                            onClick={() => { window._activityEntityContext = { entityId, entityType }; }}
+                        >
+                            <i className="ri-calendar-line align-middle me-1"></i>New Event
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Card Body with Scrollbar */}
@@ -446,7 +460,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                                                                                 const fileIcon = getFileIconConfig(fileName);
                                                                                 return (
                                                                                     <div key={fIdx} className="col-auto">
-                                                                                        <div className="d-flex align-items-center border border-dashed p-2 rounded position-relative" style={{ minWidth: '150px' }}>
+                                                                                        <div className="d-flex align-items-center p-2 rounded position-relative" style={{ minWidth: '150px' }}>
                                                                                             <div className="flex-shrink-0 me-2">
                                                                                                 <i className={`fs-18 ${fileIcon.icon} ${fileIcon.color}`}></i>
                                                                                             </div>

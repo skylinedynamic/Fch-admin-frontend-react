@@ -5,7 +5,7 @@ import { parseDate } from '../../../utils/formatters';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
-import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
+import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 
 const REFERENCE_OPTIONS = ['Event', 'Meeting', 'Call', 'Email', 'Other'];
 
@@ -60,13 +60,20 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
             data.append('to_emails', formData.to_emails || '');
 
-            // Entity IDs - separate Lead, Client, Borrower, and Partner
-            if (entityType === ENTITY_TYPE_LEAD) {
-                data.append('lead_id', entityId ? entityId.toString() : '');
-            } else if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') {
-                data.append('borrower_id', entityId ? entityId.toString() : '');
-            } else if (entityType === ENTITY_TYPE_PARTNER) {
-                data.append('partner_id', entityId ? entityId.toString() : '');
+            // Resolve entity context: prefer props, fall back to global context set by ActivitySidebar buttons
+            const ctx = window._activityEntityContext || {};
+            const resolvedEntityId = entityId ?? ctx.entityId;
+            const resolvedEntityType = entityType ?? ctx.entityType;
+
+            // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
+            if (resolvedEntityType === ENTITY_TYPE_LEAD) {
+                data.append('lead_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_BORROWER || resolvedEntityType === 'Client') {
+                data.append('borrower_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_PARTNER) {
+                data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+            } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
+                data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {

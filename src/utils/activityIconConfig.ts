@@ -34,7 +34,9 @@ import {
     LOG_TYPE_APPOINTMENT_CREATE,
     LOG_TYPE_APPOINTMENT_UPDATE,
     LOG_TYPE_APPOINTMENT_DELETE,
-    LOG_TYPE_TASK_VERIFICATION
+    LOG_TYPE_TASK_VERIFICATION,
+    LOG_TYPE_FUNDING_REQUEST_CREATE,
+    LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
 } from '../config/appConfig';
 
 export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): AvatarConfig | null => {
@@ -49,6 +51,7 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
             case 'call': return { icon: 'ri-phone-line', bgClass: 'bg-success-subtle text-success' };
             case 'meeting': return { icon: 'ri-group-line', bgClass: 'bg-warning-subtle text-warning' };
             case 'email': return { icon: 'ri-mail-line', bgClass: 'bg-primary-subtle text-primary' };
+            case 'task_verification': return { icon: 'ri-shield-check-line', bgClass: 'bg-primary-subtle text-primary' };
             case 'event':
             default: return { icon: 'ri-calendar-event-line', bgClass: 'bg-info-subtle text-info' };
         }
@@ -56,6 +59,14 @@ export const getAvatarConfig = (logTypeRaw: string, reference: string = ''): Ava
 
     if (logTypeRaw === LOG_TYPE_INVOICE_CREATE) {
         return { icon: 'ri-file-list-3-line', bgClass: 'bg-secondary-subtle text-secondary' };
+    }
+
+    if (logTypeRaw === LOG_TYPE_FUNDING_REQUEST_CREATE) {
+        return { icon: 'ri-file-add-line', bgClass: 'bg-info-subtle text-info' };
+    }
+
+    if (logTypeRaw === LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE) {
+        return { icon: 'ri-refresh-line', bgClass: 'bg-warning-subtle text-warning' };
     }
 
     if (logTypeRaw === LOG_TYPE_APPOINTMENT_CREATE || logTypeRaw === LOG_TYPE_APPOINTMENT_UPDATE || logTypeRaw === LOG_TYPE_APPOINTMENT_DELETE) {
