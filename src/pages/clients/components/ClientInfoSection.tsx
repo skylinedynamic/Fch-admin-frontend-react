@@ -74,6 +74,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 }, ref) => {
     // 1. Data Fetching (only if clientId exists)
     const { data: fetchedData, isLoading: isFetching } = useClient(clientId as string, !!clientId);
+    const wasFreeTrial = !!(fetchedData?.data?.is_free_trail ?? fetchedData?.is_free_trail ?? false);
     const updateMutation = useUpdateClient();
 
     const currentUser = useAuthStore((state) => state.user);
@@ -1092,96 +1093,98 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 </div>
 
                 {/* Free Trial Section */}
-                <div className="col-12 mt-4">
-                    <div className="card border-0 bg-light-subtle shadow-sm mb-4">
-                        <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
-                            <div className="d-flex align-items-center mb-3">
-                                <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                                <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
-                            </div>
-
-                            <p className="text-muted fs-13 mb-4">
-                                Enable a free trial period for this client. During the trial period, they will have access to the platform without regular billing restrictions.
-                            </p>
-                            <div className="row align-items-center g-3">
-                                <div className="col-md-6">
-                                    <div className="form-check form-switch form-switch-md">
-                                        <input
-                                            type="checkbox"
-                                            className="form-check-input"
-                                            id="is_free_trail"
-                                            name="is_free_trail"
-                                            checked={!!formData.is_free_trail}
-                                            style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
-                                            onChange={(e) => {
-                                                if (isPartnerOnFreeTrial) return;
-                                                const checked = e.target.checked;
-                                                
-                                                // Calculate default date: 1 month from today
-                                                let dateString = '';
-                                                if (checked) {
-                                                    const defaultDate = new Date();
-                                                    defaultDate.setMonth(defaultDate.getMonth() + 1);
-                                                    dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-                                                }
-
-                                                // Update locally and propagate to parent state
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    is_free_trail: checked,
-                                                    free_trail_end_date: dateString
-                                                }));
-
-                                                if (handleLocationChange) {
-                                                    handleLocationChange('is_free_trail', checked);
-                                                    handleLocationChange('free_trail_end_date', dateString);
-                                                }
-
-                                                if (setErrors) {
-                                                    const newErrors = { ...errors };
-                                                    delete newErrors.is_free_trail;
-                                                    delete newErrors.free_trail_end_date;
-                                                    setErrors(newErrors);
-                                                }
-                                            }}
-                                        />
-                                        <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
-                                            Activate Free Trial
-                                        </label>
-                                    </div>
+                {(!clientId || !!formData.is_free_trail) && (
+                    <div className="col-12 mt-4">
+                        <div className="card border-0 bg-light-subtle shadow-sm mb-4">
+                            <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
+                                <div className="d-flex align-items-center mb-3">
+                                    <i className="ri-gift-line text-warning fs-3 me-2"></i>
+                                    <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
                                 </div>
 
-                                {formData.is_free_trail && (
+                                <p className="text-muted fs-13 mb-4">
+                                    Enable a free trial period for this client. During the trial period, they will have access to the platform without regular billing restrictions.
+                                </p>
+                                <div className="row align-items-center g-3">
                                     <div className="col-md-6">
-                                        <div className="mb-0">
-                                            <label htmlFor="free_trail_end_date" className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
-                                            <div className="custom-datepicker">
-                                                <Calendar
-                                                    id="free_trail_end_date"
-                                                    value={parseDate(formData.free_trail_end_date)}
-                                                    onChange={(e) => {
-                                                        const date = e.value as Date;
-                                                        const dateString = date
-                                                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                            : "";
-                                                        handleInputChange({ target: { name: 'free_trail_end_date', value: dateString } });
-                                                    }}
-                                                    dateFormat="dd M, yy"
-                                                    placeholder="Select trial end date"
-                                                    showIcon
-                                                    className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
-                                                    appendTo="self"
-                                                    readOnlyInput
-                                                />
-                                            </div>
-                                            {errors.free_trail_end_date && <div className="text-danger mt-1 small">{errors.free_trail_end_date}</div>}
+                                        <div className="form-check form-switch form-switch-md">
+                                            <input
+                                                type="checkbox"
+                                                className="form-check-input"
+                                                id="is_free_trail"
+                                                name="is_free_trail"
+                                                checked={!!formData.is_free_trail}
+                                                style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
+                                                onChange={(e) => {
+                                                    if (isPartnerOnFreeTrial) return;
+                                                    const checked = e.target.checked;
+                                                    
+                                                    // Calculate default date: 1 month from today
+                                                    let dateString = '';
+                                                    if (checked) {
+                                                        const defaultDate = new Date();
+                                                        defaultDate.setMonth(defaultDate.getMonth() + 1);
+                                                        dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
+                                                    }
+
+                                                    // Update locally and propagate to parent state
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        is_free_trail: checked,
+                                                        free_trail_end_date: dateString
+                                                    }));
+
+                                                    if (handleLocationChange) {
+                                                        handleLocationChange('is_free_trail', checked);
+                                                        handleLocationChange('free_trail_end_date', dateString);
+                                                    }
+
+                                                    if (setErrors) {
+                                                        const newErrors = { ...errors };
+                                                        delete newErrors.is_free_trail;
+                                                        delete newErrors.free_trail_end_date;
+                                                        setErrors(newErrors);
+                                                    }
+                                                }}
+                                            />
+                                            <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
+                                                Activate Free Trial
+                                            </label>
                                         </div>
                                     </div>
-                                )}
+
+                                    {formData.is_free_trail && (
+                                        <div className="col-md-6">
+                                            <div className="mb-0">
+                                                <label htmlFor="free_trail_end_date" className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
+                                                <div className="custom-datepicker">
+                                                    <Calendar
+                                                        id="free_trail_end_date"
+                                                        value={parseDate(formData.free_trail_end_date)}
+                                                        onChange={(e) => {
+                                                            const date = e.value as Date;
+                                                            const dateString = date
+                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                                : "";
+                                                            handleInputChange({ target: { name: 'free_trail_end_date', value: dateString } });
+                                                        }}
+                                                        dateFormat="dd M, yy"
+                                                        placeholder="Select trial end date"
+                                                        showIcon
+                                                        className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
+                                                        appendTo="self"
+                                                        readOnlyInput
+                                                    />
+                                                </div>
+                                                {errors.free_trail_end_date && <div className="text-danger mt-1 small">{errors.free_trail_end_date}</div>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {!formData.is_free_trail && (
                     <>
@@ -1230,7 +1233,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                     optionValue="value"
                                     placeholder="Select Enrollment Type"
                                     className={`w-100 ${errors.plan_id ? 'p-invalid' : ''}`}
-                                    disabled={!!clientId}
+                                    disabled={!!clientId && !wasFreeTrial}
                                     appendTo="self"
                                 />
                                 {errors.plan_id && <small className="p-error">{errors.plan_id}</small>}
@@ -1252,7 +1255,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                             placeholder="Enter amount"
                                             value={formData.enrollment_payment !== undefined && formData.enrollment_payment !== null && formData.enrollment_payment !== '' ? formData.enrollment_payment : (formData.enrollment_payment === 0 || formData.enrollment_payment === '0' ? 0 : '')}
                                             onChange={handleInputChange}
-                                            disabled={!!clientId}
+                                            disabled={!!clientId && !wasFreeTrial}
                                         />
                                         {(errors.enrollment_payment || errors.payment_amount || errors.amount) && (
                                             <div className="invalid-feedback">{errors.enrollment_payment || errors.payment_amount || errors.amount}</div>
