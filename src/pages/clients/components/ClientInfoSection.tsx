@@ -1115,19 +1115,33 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                             style={isPartnerOnFreeTrial ? { opacity: 1, pointerEvents: 'none' } : undefined}
                                             onChange={(e) => {
                                                 if (isPartnerOnFreeTrial) return;
-                                                handleInputChange({
-                                                    target: {
-                                                        name: 'is_free_trail',
-                                                        value: e.target.checked
-                                                    }
-                                                });
-                                                if (!e.target.checked) {
-                                                    handleInputChange({
-                                                        target: {
-                                                            name: 'free_trail_end_date',
-                                                            value: ''
-                                                        }
-                                                    });
+                                                const checked = e.target.checked;
+                                                
+                                                // Calculate default date: 1 month from today
+                                                let dateString = '';
+                                                if (checked) {
+                                                    const defaultDate = new Date();
+                                                    defaultDate.setMonth(defaultDate.getMonth() + 1);
+                                                    dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
+                                                }
+
+                                                // Update locally and propagate to parent state
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    is_free_trail: checked,
+                                                    free_trail_end_date: dateString
+                                                }));
+
+                                                if (handleLocationChange) {
+                                                    handleLocationChange('is_free_trail', checked);
+                                                    handleLocationChange('free_trail_end_date', dateString);
+                                                }
+
+                                                if (setErrors) {
+                                                    const newErrors = { ...errors };
+                                                    delete newErrors.is_free_trail;
+                                                    delete newErrors.free_trail_end_date;
+                                                    setErrors(newErrors);
                                                 }
                                             }}
                                         />
