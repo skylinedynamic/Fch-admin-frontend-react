@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { fetchScoreConfigurations, updateScoreConfigurations } from '../../../modules/settings/services';
 import type { ScoreConfiguration, ScoreFactorTier } from '../../../modules/settings/types';
-import { STATIC_TIER_LABELS } from '../../../config/scoreCalculation';
+import { STATIC_TIER_LABELS } from '../../../config/capitalAccessOptions';
 
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import FundingReadinessTab from './ScoreCalculation/FundingReadinessTab';
 import ApprovalProbabilityTab from './ScoreCalculation/ApprovalProbabilityTab';
 import ApprovalOddsTab from './ScoreCalculation/ApprovalOddsTab';
+import GeneralSettingTab from './ScoreCalculation/GeneralSettingTab';
 
 export interface FormData {
     weight_fico: string;
@@ -91,6 +92,9 @@ export interface FormData {
     rev_rule_t1: string;
     rev_rule_t2: string;
     rev_rule_t3: string;
+    rev_rule_personal_t1: string;
+    rev_rule_personal_t2: string;
+    rev_rule_personal_t3: string;
 
     trade_rule_multi_accounts: string;
     trade_rule_multi_high_limit_count: string;
@@ -232,10 +236,21 @@ export interface FormErrors {
     [key: string]: string | null;
 }
 
+interface TimeRange {
+    start: string;
+    end: string;
+}
+
+interface TimeSettings {
+    morning: TimeRange;
+    midday: TimeRange;
+    evening: TimeRange;
+}
+
 const ScoreCalculationConfigForm: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [fetching, setFetching] = useState<boolean>(true);
-    const [activeTab, setActiveTab] = useState<'readiness' | 'probability' | 'odds'>('readiness');
+    const [activeTab, setActiveTab] = useState<'readiness' | 'probability' | 'odds' | 'general'>('readiness');
     const [formData, setFormData] = useState<FormData>({
         weight_fico: '35',
         weight_utilization: '25',
@@ -305,6 +320,9 @@ const ScoreCalculationConfigForm: React.FC = () => {
         rev_rule_t1: '500000',
         rev_rule_t2: '150000',
         rev_rule_t3: '50000',
+        rev_rule_personal_t1: '150000',
+        rev_rule_personal_t2: '75000',
+        rev_rule_personal_t3: '40000',
 
         trade_rule_multi_accounts: '5',
         trade_rule_multi_high_limit_count: '2',
@@ -447,6 +465,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         odds_inquiries_rule_t1: '5',
         odds_inquiries_rule_t2: '3',
+    });
+    const [timeSettings, setTimeSettings] = useState<TimeSettings>({
+        morning: { start: '06:00', end: '12:00' },
+        midday: { start: '12:00', end: '17:00' },
+        evening: { start: '17:00', end: '22:00' },
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const scoreDataRef = useRef<ScoreConfiguration | null>(null);
@@ -611,9 +634,12 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 time_rule_t3: buildTierValue('time_in_business', 2, 'min', '12'),
                 time_rule_t4: buildTierValue('time_in_business', 3, 'min', '6'),
 
-                rev_rule_t1: buildTierValue('revenue_strength', 0, 'min', '500000'),
-                rev_rule_t2: buildTierValue('revenue_strength', 1, 'min', '150000'),
-                rev_rule_t3: buildTierValue('revenue_strength', 2, 'min', '50000'),
+                rev_rule_t1: getCond('revenue_strength', 0, 'business_revenue', '500000'),
+                rev_rule_t2: getCond('revenue_strength', 1, 'business_revenue', '150000'),
+                rev_rule_t3: getCond('revenue_strength', 2, 'business_revenue', '50000'),
+                rev_rule_personal_t1: getCond('revenue_strength', 0, 'personal_income', '150000'),
+                rev_rule_personal_t2: getCond('revenue_strength', 1, 'personal_income', '50000'),
+                rev_rule_personal_t3: getCond('revenue_strength', 2, 'personal_income', '25000'),
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
@@ -762,6 +788,30 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 odds_inquiries_rule_t1: buildOddsTierValue('recent_inquiries', 2, 'min', '5'),
                 odds_inquiries_rule_t2: buildOddsTierValue('recent_inquiries', 1, 'min', '3'),
             }));
+
+            const decimalToTime = (d: number): string => {
+                const h = Math.floor(d);
+                const m = Math.round((d - h) * 60);
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            };
+            const ts = scoreConfig?.time_settings;
+            if (ts && Array.isArray(ts)) {
+                const st: Record<string, TimeRange> = {};
+                ts.forEach((s: any) => {
+                    const key = s.label?.toLowerCase().replace(' ', '');
+                    if (key) {
+                        st[key] = {
+                            start: s.start != null ? decimalToTime(s.start) : '00:00',
+                            end: s.end != null ? decimalToTime(s.end) : '00:00',
+                        };
+                    }
+                });
+                setTimeSettings({
+                    morning: st.morning || { start: '06:00', end: '12:00' },
+                    midday: st.midday || { start: '12:00', end: '17:00' },
+                    evening: st.evening || { start: '17:00', end: '22:00' },
+                });
+            }
         } catch (error) {
             console.error('Failed to load score configuration:', error);
             toast.error('Failed to load score configuration.');
@@ -832,10 +882,30 @@ const ScoreCalculationConfigForm: React.FC = () => {
             { i: 4, sub: 'time_subscore_below_6' },
         ],
         revenue_strength: [
-            { i: 0, min: 'rev_rule_t1', sub: 'rev_subscore_strong' },
-            { i: 1, min: 'rev_rule_t2', max: 'rev_rule_t1', maxOffset: -1, sub: 'rev_subscore_moderate' },
-            { i: 2, min: 'rev_rule_t3', max: 'rev_rule_t2', maxOffset: -1, sub: 'rev_subscore_limited' },
-            { i: 3, max: 'rev_rule_t3', maxOffset: -1, sub: 'rev_subscore_weak' },
+            {
+                i: 0, sub: 'rev_subscore_strong', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t1' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t1' },
+                ]
+            },
+            {
+                i: 1, sub: 'rev_subscore_moderate', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t2' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t2' },
+                ]
+            },
+            {
+                i: 2, sub: 'rev_subscore_limited', rules: [
+                    { field: 'business_revenue', operator: '>=', valueKey: 'rev_rule_t3' },
+                    { field: 'personal_income', operator: '>=', valueKey: 'rev_rule_personal_t3' },
+                ]
+            },
+            {
+                i: 3, sub: 'rev_subscore_weak', rules: [
+                    { field: 'business_revenue', operator: '<', valueKey: 'rev_rule_t3' },
+                    { field: 'personal_income', operator: '<', valueKey: 'rev_rule_personal_t3' },
+                ]
+            },
         ],
         tradeline_depth: [
             {
@@ -906,61 +976,63 @@ const ScoreCalculationConfigForm: React.FC = () => {
             banking_relationships: 'weight_banking_relationships',
         };
 
+        const buildTierEntry = (t: any) => {
+            const tierEntry: Record<string, any> = {};
+
+            if (t.min) {
+                tierEntry.min_value = getTierValue(t.min);
+            } else {
+                tierEntry.min_value = null;
+            }
+
+            if (t.max) {
+                let maxVal = getTierValue(t.max);
+                if (t.maxOffset !== undefined) maxVal += t.maxOffset;
+                tierEntry.max_value = maxVal;
+            } else {
+                tierEntry.max_value = null;
+            }
+
+            tierEntry.sub_score = getTierValue(t.sub);
+            tierEntry.sort_order = t.i + 1;
+
+            if (t.rules) {
+                const condition: Record<string, any> = {};
+                for (const rule of t.rules) {
+                    let value: any;
+                    if (rule.value !== undefined) {
+                        value = rule.value;
+                    } else if (rule.valueKey) {
+                        value = getTierValue(rule.valueKey as keyof FormData);
+                        if (rule.transform) value = rule.transform(value);
+                    }
+                    condition[rule.field] = { value, operator: rule.operator };
+                }
+                if (t.each !== undefined) {
+                    condition.each = t.each;
+                }
+                tierEntry.condition = condition;
+            }
+
+            const staticLabels = STATIC_TIER_LABELS['revenue_strength'];
+            if (staticLabels) {
+                const found = staticLabels.find(sl => sl.sortOrder === t.i + 1);
+                if (found) {
+                    tierEntry.label = found.label;
+                }
+            }
+
+            return tierEntry;
+        };
+
         for (const [slug, tiers] of Object.entries(TIER_DEFINITIONS)) {
-            const factorEntry: Record<string, any> = {
+
+
+            payload[slug] = {
                 weight: getTierValue(weightMap[slug] as keyof FormData),
                 order_sort: orderMap[slug],
-                factors: tiers.map(t => {
-                    const tierEntry: Record<string, any> = {};
-
-                    if (t.min) {
-                        tierEntry.min_value = getTierValue(t.min);
-                    } else {
-                        tierEntry.min_value = null;
-                    }
-
-                    if (t.max) {
-                        let maxVal = getTierValue(t.max);
-                        if (t.maxOffset !== undefined) maxVal += t.maxOffset;
-                        tierEntry.max_value = maxVal;
-                    } else {
-                        tierEntry.max_value = null;
-                    }
-
-                    tierEntry.sub_score = getTierValue(t.sub);
-                    tierEntry.sort_order = t.i + 1;
-
-                    if (t.rules) {
-                        const condition: Record<string, any> = {};
-                        for (const rule of t.rules) {
-                            let value: any;
-                            if (rule.value !== undefined) {
-                                value = rule.value;
-                            } else if (rule.valueKey) {
-                                value = getTierValue(rule.valueKey as keyof FormData);
-                                if (rule.transform) value = rule.transform(value);
-                            }
-                            condition[rule.field] = { value, operator: rule.operator };
-                        }
-                        if (t.each !== undefined) {
-                            condition.each = t.each;
-                        }
-                        tierEntry.condition = condition;
-                    }
-
-                    const staticLabels = STATIC_TIER_LABELS[slug];
-                    if (staticLabels) {
-                        const found = staticLabels.find(sl => sl.sortOrder === t.i + 1);
-                        if (found) {
-                            tierEntry.label = found.label;
-                        }
-                    }
-
-                    return tierEntry;
-                }),
+                factors: tiers.map(t => buildTierEntry(t)),
             };
-
-            payload[slug] = factorEntry;
         }
 
         return { funding_readiness: payload };
@@ -1117,17 +1189,17 @@ const ScoreCalculationConfigForm: React.FC = () => {
             }));
             scorePayload.readiness_bands = readinessBands;
 
-            const latePaymentModifiers = [
-                { factor_slug: 'late_30_1', label: formData.late_30_1_lbl, min_value: Number(formData.late_30_1_qty), numeric_value: Number(formData.late_30_1_val), sort_order: 1 },
-                { factor_slug: 'late_30_2_plus', label: formData.late_30_2_plus_lbl, min_value: Number(formData.late_30_2_plus_qty), numeric_value: Number(formData.late_30_2_plus_val), sort_order: 2 },
-                { factor_slug: 'late_60_1', label: formData.late_60_1_lbl, min_value: Number(formData.late_60_1_qty), numeric_value: Number(formData.late_60_1_val), sort_order: 3 },
-                { factor_slug: 'late_60_2_plus', label: formData.late_60_2_plus_lbl, min_value: Number(formData.late_60_2_plus_qty), numeric_value: Number(formData.late_60_2_plus_val), sort_order: 4 },
-                { factor_slug: 'late_90_1', label: formData.late_90_1_lbl, min_value: Number(formData.late_90_1_qty), numeric_value: Number(formData.late_90_1_val), sort_order: 5 },
-                { factor_slug: 'late_90_2_plus', label: formData.late_90_2_plus_lbl, min_value: Number(formData.late_90_2_plus_qty), numeric_value: Number(formData.late_90_2_plus_val), sort_order: 6 },
-                { factor_slug: 'late_120_1', label: formData.late_120_1_lbl, min_value: Number(formData.late_120_1_qty), numeric_value: Number(formData.late_120_1_val), sort_order: 7 },
-                { factor_slug: 'late_120_2_plus', label: formData.late_120_2_plus_lbl, min_value: Number(formData.late_120_2_plus_qty), numeric_value: Number(formData.late_120_2_plus_val), sort_order: 8 },
+            scorePayload.late_payment_modifiers = [];
+
+            const timeToDecimal = (t: string): number => {
+                const [h, m] = t.split(':');
+                return parseInt(h) + parseInt(m) / 60;
+            };
+            scorePayload.time_settings = [
+                { label: 'Morning', start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
+                { label: 'Mid Day', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
+                { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 3 },
             ];
-            scorePayload.late_payment_modifiers = latePaymentModifiers;
 
             const saveResp = await updateScoreConfigurations(scorePayload);
             if (saveResp?.status === false) {
@@ -1210,6 +1282,16 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                     Approval Odds
                                 </button>
                             </li>
+                            <li className="nav-item">
+                                <button
+                                    type="button"
+                                    className={`nav-link fw-semibold ${activeTab === 'general' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('general')}
+                                    role="tab"
+                                >
+                                    General setting
+                                </button>
+                            </li>
                         </ul>
 
                         {activeTab === 'readiness' && (
@@ -1239,6 +1321,13 @@ const ScoreCalculationConfigForm: React.FC = () => {
                                 loading={loading}
                                 handleInputChange={handleInputChange}
                                 factorTierLabel={factorTierLabel}
+                            />
+                        )}
+
+                        {activeTab === 'general' && (
+                            <GeneralSettingTab
+                                timeSettings={timeSettings}
+                                onChange={setTimeSettings}
                             />
                         )}
 
