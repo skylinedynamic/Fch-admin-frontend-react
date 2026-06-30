@@ -620,7 +620,7 @@ export default function Sidebar() {
                 <span className="trial-expires">Expires {formatTrialDate(trialEndDate)}</span>
               )}
             </div>
-            <span className="trial-badge">TRIAL</span>
+            <span className="trial-badge">FREE</span>
           </div>
         </div>
       )}

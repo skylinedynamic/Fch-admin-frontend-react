@@ -201,7 +201,18 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
 
     // Templates
     const fullNameBody = (rowData: Client) => (
-        <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
+        <div className="d-flex align-items-center gap-2">
+            <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
+            {rowData.is_free_trail && (
+                <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
+                    Free Trial
+                </span>
+            )}
+        </div>
+    );
+
+    const businessNameBody = (rowData: Client) => (
+        <span className="fw-medium">{rowData.business_name}</span>
     );
 
     const tierBody = (rowData: Client) => {
@@ -376,7 +387,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                     >
                         {deletePermission && <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />}
                         <Column field="full_name" header="Full Name" body={fullNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by name" style={{ minWidth: '180px' }} />
-                        <Column field="business_name" header="Company Name" sortable filter showFilterMatchModes filterPlaceholder="Search by business" style={{ minWidth: '180px' }} />
+                        <Column field="business_name" header="Company Name" body={businessNameBody} sortable filter showFilterMatchModes filterPlaceholder="Search by business" style={{ minWidth: '180px' }} />
                         <Column field="email" header="Email" sortable filter showFilterMatchModes filterPlaceholder="Search by email" style={{ minWidth: '220px' }} />
                         <Column field="phone_number" header="Phone Number" sortable filter showFilterMatchModes filterPlaceholder="Search by phone" style={{ minWidth: '150px' }} />
                         <Column field="assign_name" header="Assigned To" sortable filter showFilterMatchModes filterPlaceholder="Search by assigned" style={{ minWidth: '150px' }} />
