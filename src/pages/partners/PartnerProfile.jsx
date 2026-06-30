@@ -222,6 +222,7 @@ export default function PartnerProfile() {
     const [isPartnerLoading, setIsPartnerLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [partnerPlans, setPartnerPlans] = useState([]);
+    const [wasFreeTrial, setWasFreeTrial] = useState(false);
 
     // Metrics Configuration
     const metricsConfig = [
@@ -336,6 +337,7 @@ export default function PartnerProfile() {
                 partner_image: data.partner_image || '', // Map company_logo → partner_image
                 country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
             }));
+            setWasFreeTrial(!!data.is_free_trail);
 
             // Set profile image from company_logo field
             if (data.partner_image) {
@@ -661,7 +663,7 @@ export default function PartnerProfile() {
                 Object.entries(formData).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
                         // Skip partner_type and enrollment_type during update to prevent changes
-                        if (id && (key === 'partner_type' || key === 'enrollment_type')) {
+                        if (id && (key === 'partner_type' || (key === 'enrollment_type' && !wasFreeTrial))) {
                             return;
                         }
 
@@ -1017,6 +1019,7 @@ export default function PartnerProfile() {
                                     partnerPlans={partnerPlans}
                                     onRefresh={handleRefresh}
                                     setIsSaving={setIsSaving}
+                                    wasFreeTrial={wasFreeTrial}
                                 />
                             </div>
                         </div>

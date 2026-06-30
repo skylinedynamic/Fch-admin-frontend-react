@@ -23,7 +23,8 @@ export default function PartnerInformationSection({
     states,
     cities,
     partnerId,
-    partnerPlans = []
+    partnerPlans = [],
+    wasFreeTrial = false
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -527,85 +528,87 @@ export default function PartnerInformationSection({
             </div>
 
             {/* Free Trial Section */}
-            <div className="col-12 mt-4">
-                <div className="card border-0 bg-light-subtle shadow-sm mb-4">
-                    <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
-                        <div className="d-flex align-items-center mb-3">
-                            <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                            <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
-                        </div>
-                        <p className="text-muted fs-13 mb-4">
-                            Enable a free trial period for this partner. During the trial period, they will have access to the platform without regular billing restrictions.
-                        </p>
-                        <div className="row align-items-center g-3">
-                            <div className="col-md-6">
-                                <div className="form-check form-switch form-switch-md">
-                                    <input
-                                        id="is_free_trail"
-                                        name="is_free_trail"
-                                        checked={!!formData.is_free_trail}
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            handleInputChange({
-                                                target: {
-                                                    name: 'is_free_trail',
-                                                    value: checked
-                                                }
-                                            });
-
-                                            let dateString = '';
-                                            if (checked) {
-                                                const defaultDate = new Date();
-                                                defaultDate.setMonth(defaultDate.getMonth() + 1);
-                                                dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-                                            }
-
-                                            handleInputChange({
-                                                target: {
-                                                    name: 'free_trail_end_date',
-                                                    value: dateString
-                                                }
-                                            });
-                                        }}
-                                    />
-                                    <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
-                                        Activate Free Trial
-                                    </label>
-                                </div>
+            {(!partnerId || !!formData.is_free_trail) && (
+                <div className="col-12 mt-4">
+                    <div className="card border-0 bg-light-subtle shadow-sm mb-4">
+                        <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
+                            <div className="d-flex align-items-center mb-3">
+                                <i className="ri-gift-line text-warning fs-3 me-2"></i>
+                                <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
                             </div>
-
-                            {formData.is_free_trail && (
+                            <p className="text-muted fs-13 mb-4">
+                                Enable a free trial period for this partner. During the trial period, they will have access to the platform without regular billing restrictions.
+                            </p>
+                            <div className="row align-items-center g-3">
                                 <div className="col-md-6">
-                                    <div className="mb-0">
-                                        <label className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
-                                        <div className="custom-datepicker">
-                                            <Calendar
-                                                value={parseDate(formData.free_trail_end_date)}
-                                                onChange={(e) => {
-                                                    const date = e.value;
-                                                    const dateString = date
-                                                        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                        : "";
-                                                    handleInputChange({ target: { name: "free_trail_end_date", value: dateString } });
-                                                }}
-                                                dateFormat="dd M, yy"
-                                                placeholder="Select trial end date"
-                                                showIcon
-                                                className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
-                                                appendTo="self"
-                                                readOnlyInput
-                                            />
-                                        </div>
-                                        {errors.free_trail_end_date && <div className="invalid-feedback d-block mt-1">{errors.free_trail_end_date}</div>}
+                                    <div className="form-check form-switch form-switch-md">
+                                        <input
+                                            id="is_free_trail"
+                                            name="is_free_trail"
+                                            checked={!!formData.is_free_trail}
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                handleInputChange({
+                                                    target: {
+                                                        name: 'is_free_trail',
+                                                        value: checked
+                                                    }
+                                                });
+
+                                                let dateString = '';
+                                                if (checked) {
+                                                    const defaultDate = new Date();
+                                                    defaultDate.setMonth(defaultDate.getMonth() + 1);
+                                                    dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
+                                                }
+
+                                                handleInputChange({
+                                                    target: {
+                                                        name: 'free_trail_end_date',
+                                                        value: dateString
+                                                    }
+                                                });
+                                            }}
+                                        />
+                                        <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
+                                            Activate Free Trial
+                                        </label>
                                     </div>
                                 </div>
-                            )}
+
+                                {formData.is_free_trail && (
+                                    <div className="col-md-6">
+                                        <div className="mb-0">
+                                            <label className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
+                                            <div className="custom-datepicker">
+                                                <Calendar
+                                                    value={parseDate(formData.free_trail_end_date)}
+                                                    onChange={(e) => {
+                                                        const date = e.value;
+                                                        const dateString = date
+                                                            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                                            : "";
+                                                        handleInputChange({ target: { name: "free_trail_end_date", value: dateString } });
+                                                    }}
+                                                    dateFormat="dd M, yy"
+                                                    placeholder="Select trial end date"
+                                                    showIcon
+                                                    className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
+                                                    appendTo="self"
+                                                    readOnlyInput
+                                                />
+                                            </div>
+                                            {errors.free_trail_end_date && <div className="invalid-feedback d-block mt-1">{errors.free_trail_end_date}</div>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {!formData.is_free_trail && (
                 <>
@@ -641,7 +644,7 @@ export default function PartnerInformationSection({
                                 optionValue="value"
                                 placeholder="Select enrollment type..."
                                 className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
-                                disabled={!formData.partner_type || !!partnerId}
+                                disabled={!formData.partner_type || (!!partnerId && !wasFreeTrial)}
                                 appendTo="self"
                             />
                             {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
@@ -663,7 +666,7 @@ export default function PartnerInformationSection({
                                         placeholder="Enter amount"
                                         value={formData.enrollment_amount !== undefined && formData.enrollment_amount !== null && formData.enrollment_amount !== '' ? formData.enrollment_amount : (formData.payable_amount !== undefined && formData.payable_amount !== null && formData.payable_amount !== '' ? formData.payable_amount : (formData.enrollment_amount === 0 || formData.payable_amount === 0 ? 0 : ''))}
                                         onChange={handleInputChange}
-                                        disabled={!!partnerId}
+                                        disabled={!!partnerId && !wasFreeTrial}
                                     />
                                     {(errors.enrollment_amount || errors.payable_amount || errors.amount) && (
                                         <div className="invalid-feedback">{errors.enrollment_amount || errors.payable_amount || errors.amount}</div>
@@ -683,7 +686,7 @@ export default function PartnerInformationSection({
                                         placeholder="Enter amount"
                                         value={formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== null && formData.monthly_platform_fee !== '' ? formData.monthly_platform_fee : (formData.recurring_amount !== undefined && formData.recurring_amount !== null && formData.recurring_amount !== '' ? formData.recurring_amount : (formData.platform_fee !== undefined && formData.platform_fee !== null && formData.platform_fee !== '' ? formData.platform_fee : (formData.monthly_platform_fee === 0 || formData.recurring_amount === 0 || formData.platform_fee === 0 ? 0 : '')))}
                                         onChange={handleInputChange}
-                                        disabled={!!partnerId}
+                                        disabled={!!partnerId && !wasFreeTrial}
                                     />
                                     {(errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount) && (
                                         <div className="invalid-feedback">{errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount}</div>

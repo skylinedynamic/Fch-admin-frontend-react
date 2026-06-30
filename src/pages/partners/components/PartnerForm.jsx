@@ -28,6 +28,7 @@ export default function PartnerForm({
     , partnerPlans
     , onRefresh
     , setIsSaving
+    , wasFreeTrial
 }) {
     return (
         <div className="tab-content">
@@ -49,6 +50,7 @@ export default function PartnerForm({
                                     cities={cities}
                                     partnerId={partnerId}
                                     partnerPlans={partnerPlans}
+                                    wasFreeTrial={wasFreeTrial}
                                 />
                             </div>
                         </form>
