@@ -5,7 +5,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { DataTable } from 'primereact/datatable';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
-import { TIB_OPTIONS, RESTRICTED_INDUSTRIES_OPTIONS } from '../../../config/funding';
+import { TIB_OPTIONS, INDUSTRIES_OPTIONS } from '../../../config/funding';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -1027,7 +1027,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={v.allowed_industries}
-                                                                    options={industryTypes}
+                                                                    options={INDUSTRIES_OPTIONS}
                                                                     onChange={(e) => onChange(i, 'allowed_industries', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"
@@ -1042,7 +1042,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             <td className="py-3">
                                                                 <MultiSelect
                                                                     value={v.restricted_industries}
-                                                                    options={RESTRICTED_INDUSTRIES_OPTIONS}
+                                                                    options={INDUSTRIES_OPTIONS}
                                                                     onChange={(e) => onChange(i, 'restricted_industries', e.value)}
                                                                     optionLabel="label"
                                                                     optionValue="value"
