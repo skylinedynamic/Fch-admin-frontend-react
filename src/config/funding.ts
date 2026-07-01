@@ -128,7 +128,7 @@ export const TIB_OPTIONS = [
     { label: '36 months', value: 36 }
 ];
 
-export const RESTRICTED_INDUSTRIES_OPTIONS = [
+export const INDUSTRIES_OPTIONS = [
     { label: 'Adult Entertainment', value: 'Adult Entertainment' },
     { label: 'Cannabis / THC / CBD', value: 'Cannabis / THC / CBD' },
     { label: 'Firearm / Ammo / Weapon Sales', value: 'Firearm / Ammo / Weapon Sales' },
