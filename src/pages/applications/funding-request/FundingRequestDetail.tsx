@@ -256,6 +256,28 @@ export default function FundingRequestDetail() {
                                                     review.documents_with_urls.map((doc: any, idx: number) => {
                                                         const displayFileName = doc.file_name ? doc.file_name : doc.name.replace(/_/g, ' ');
                                                         const config = getFileConfig(doc.url || doc.file_name || displayFileName || '');
+                                                        
+                                                        const handleDownload = (e: React.MouseEvent) => {
+                                                            e.preventDefault();
+                                                            let fileName = displayFileName || 'document';
+                                                            const ext = (doc.url?.split(/[#?]/)[0].split('.').pop() || '').trim().toLowerCase();
+                                                            if (ext && !fileName.toLowerCase().endsWith(`.${ext}`)) {
+                                                                fileName += `.${ext}`;
+                                                            }
+                                                            
+                                                            if (doc.document_id && !String(doc.document_id).startsWith('missing_')) {
+                                                                handleFileDownload(
+                                                                    () => downloadBorrowerDocument(doc.document_id),
+                                                                    fileName,
+                                                                    doc.url
+                                                                );
+                                                            } else if (doc.url) {
+                                                                downloadFromUrl(doc.url, fileName);
+                                                            } else {
+                                                                toast.error('Unable to download this document.');
+                                                            }
+                                                        };
+
                                                         return (
                                                             <tr key={idx}>
                                                                 <td className="px-4 py-3">
@@ -267,15 +289,9 @@ export default function FundingRequestDetail() {
                                                                         </div>
                                                                         <div className="ms-3 flex-grow-1 overflow-hidden" style={{ minWidth: 0 }}>
                                                                             <h6 className="fs-14 mb-0 text-truncate" title={displayFileName}>
-                                                                                {doc.url ? (
-                                                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-body fw-medium d-block text-truncate">
-                                                                                        {displayFileName}
-                                                                                    </a>
-                                                                                ) : (
-                                                                                    <span className="text-body fw-medium d-block text-truncate">
-                                                                                        {displayFileName}
-                                                                                    </span>
-                                                                                )}
+                                                                                <a href="#" onClick={handleDownload} className="text-body fw-medium d-block text-truncate">
+                                                                                    {displayFileName}
+                                                                                </a>
                                                                             </h6>
                                                                         </div>
                                                                     </div>
@@ -292,25 +308,9 @@ export default function FundingRequestDetail() {
                                                                 <td className="text-end px-4 py-3">
                                                                     <div className="d-flex justify-content-end align-items-center gap-2">
                                                                         {doc.url ? (
-                                                                            <>
-                                                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="View Document">
-                                                                                    <i className="ri-eye-line"></i>
-                                                                                </a>
-                                                                                <a href="#" onClick={(e) => {
-                                                                                    e.preventDefault();
-                                                                                    if (doc.document_id) {
-                                                                                        handleFileDownload(
-                                                                                            () => downloadBorrowerDocument(doc.document_id),
-                                                                                            displayFileName,
-                                                                                            doc.url
-                                                                                        );
-                                                                                    } else {
-                                                                                        window.open(doc.url, '_blank');
-                                                                                    }
-                                                                                }} className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="Download Document">
-                                                                                    <i className="ri-download-2-line"></i>
-                                                                                </a>
-                                                                            </>
+                                                                            <a href="#" onClick={handleDownload} className="btn btn-sm text-primary fs-14 p-1 d-flex align-items-center justify-content-center bg-white border border-light-subtle rounded shadow-none" style={{ width: '28px', height: '28px', flexShrink: 0 }} title="Download Document">
+                                                                                <i className="ri-download-2-line"></i>
+                                                                            </a>
                                                                         ) : null}
                                                                     </div>
                                                                 </td>
