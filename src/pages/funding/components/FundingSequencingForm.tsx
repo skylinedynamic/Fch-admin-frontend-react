@@ -899,7 +899,7 @@ export default function FundingSequencingForm() {
                                                     {/* Row 7 */}
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Status</label>
+                                                            <label className="form-label text-dark fw-medium mb-2">Status <span className="text-danger">*</span></label>
                                                             <Dropdown
                                                                 value={formData.status}
                                                                 options={FUNDING_STATUS_OPTIONS}

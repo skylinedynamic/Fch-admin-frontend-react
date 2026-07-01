@@ -10,6 +10,8 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
+import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 
 const formatBytes = (bytes: any, decimals = 2) => {
     if (!bytes || bytes === 0 || bytes === '0') return '-';
@@ -23,7 +25,7 @@ const formatBytes = (bytes: any, decimals = 2) => {
 
 const getDocStatusBadge = (status: string) => {
     if (!status || status === 'Not Uploaded') return <span className="badge bg-secondary-subtle text-secondary fs-12"><i className="ri-checkbox-blank-circle-line me-1"></i>Not Uploaded</span>;
-    if (['Uploaded', 'Approved', 'Accepted'].includes(status)) return <span className="badge bg-success-subtle text-success fs-12"><i className="ri-checkbox-circle-fill me-1"></i>Uploaded</span>;
+    if ([DOCUMENT_STATUS.UPLOADED, DOCUMENT_STATUS.ACCEPTED, FUNDING_REVIEW_STATUS.APPROVED].includes(status)) return <span className="badge bg-success-subtle text-success fs-12"><i className="ri-checkbox-circle-fill me-1"></i>Uploaded</span>;
     return <span className="badge bg-warning-subtle text-warning fs-12"><i className="ri-loader-4-line me-1"></i>{status}</span>;
 };
 
@@ -61,7 +63,7 @@ export default function FundingRequestDetail() {
     // Must be before any early returns (Rules of Hooks)
     useEffect(() => {
         if (review?.status && !selectedStatus) {
-            setSelectedStatus(review.status === 'Approved' ? 'Accepted' : review.status);
+            setSelectedStatus(review.status === FUNDING_REVIEW_STATUS.APPROVED ? FUNDING_REVIEW_STATUS.ACCEPTED : review.status);
         }
     }, [review?.status]);
 
@@ -74,12 +76,12 @@ export default function FundingRequestDetail() {
     const handleStatusUpdate = () => {
         setValidationErrors({});
         updateStatusMutation.mutate(
-            { id: review.id, status: selectedStatus, ...(selectedStatus === 'Rejected' && { reject_reason: rejectReason }) },
+            { id: review.id, status: selectedStatus, ...(selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && { reject_reason: rejectReason }) },
             {
                 onSuccess: () => {
                     toast.success(`Funding request status updated to ${selectedStatus} successfully`);
                     setShowStatusModal(false);
-                    if (selectedStatus !== 'Rejected') {
+                    if (selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED) {
                         setRejectReason('');
                     }
                 },
@@ -95,21 +97,16 @@ export default function FundingRequestDetail() {
     };
 
     const getStatusBadge = (status: string) => {
-        if (status === 'Approved' || status === 'Accepted') return <span className="badge bg-success-subtle text-success fs-13">{status}</span>;
-        if (status === 'Rejected') return <span className="badge bg-danger-subtle text-danger fs-13">Rejected</span>;
-        if (status === 'In Progress') return <span className="badge bg-info-subtle text-info fs-13">In Progress</span>;
+        if (status === FUNDING_REVIEW_STATUS.APPROVED || status === FUNDING_REVIEW_STATUS.ACCEPTED) return <span className="badge bg-success-subtle text-success fs-13">{status}</span>;
+        if (status === FUNDING_REVIEW_STATUS.REJECTED) return <span className="badge bg-danger-subtle text-danger fs-13">Rejected</span>;
+        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return <span className="badge bg-info-subtle text-info fs-13">In Progress</span>;
         return <span className="badge bg-warning-subtle text-warning fs-13">Pending</span>;
     };
 
     return (
         <>
             <div className="page-content">
-                <style>{`
-                    #layout-wrapper, .main-content, .page-content {
-                        overflow: clip !important;
-                        overflow-x: clip !important;
-                    }
-                `}</style>
+
                 <div className="container-fluid">
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
@@ -366,7 +363,7 @@ export default function FundingRequestDetail() {
                                             <p className="text-muted mb-2 fs-13">Current Status</p>
                                             <div>{getStatusBadge(review.status)}</div>
                                         </div>
-                                        {review.status === 'Rejected' && (
+                                        {review.status === FUNDING_REVIEW_STATUS.REJECTED && (
                                             <div className="col-md-12">
                                                 <p className="text-muted mb-2 fs-13">Rejection Reason</p>
                                                 <div className="fs-14 p-3 bg-light rounded text-dark border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
@@ -401,14 +398,13 @@ export default function FundingRequestDetail() {
                                             value={selectedStatus}
                                             onChange={(e) => setSelectedStatus(e.target.value)}
                                         >
-                                            <option value="Pending">Pending</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Accepted">Accepted</option>
-                                            <option value="Rejected">Rejected</option>
+                                            {FUNDING_REVIEW_STATUS_OPTIONS.map((option) => (
+                                                <option key={option.value} value={option.value}>{option.label}</option>
+                                            ))}
                                         </select>
                                     </div>
 
-                                    {selectedStatus === 'Rejected' && (
+                                    {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
                                         <div className="mb-4">
                                             <label className="form-label fs-14 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
                                             <textarea
@@ -437,7 +433,7 @@ export default function FundingRequestDetail() {
                                             type="button"
                                             className="btn btn-primary py-2 fs-15 border-0 rounded fw-bold"
                                             onClick={() => {
-                                                if (selectedStatus === 'Rejected' && !rejectReason.trim()) {
+                                                if (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim()) {
                                                     setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
                                                     return;
                                                 }
@@ -447,7 +443,7 @@ export default function FundingRequestDetail() {
                                                     toast.info('Status is already ' + selectedStatus);
                                                 }
                                             }}
-                                            disabled={selectedStatus === review.status || (selectedStatus === 'Rejected' && !rejectReason.trim() && review.status === 'Rejected')}
+                                            disabled={selectedStatus === review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim() && review.status === FUNDING_REVIEW_STATUS.REJECTED)}
                                         >
                                             Update Status
                                         </button>
@@ -468,15 +464,15 @@ export default function FundingRequestDetail() {
                     <ModalBody className="p-4">
                         <div className="text-center mb-4 mt-2">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-24 ${selectedStatus === 'Rejected' ? 'bg-danger-subtle text-danger' : selectedStatus === 'Accepted' ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}`}>
-                                    <i className={selectedStatus === 'Rejected' ? 'ri-close-line' : selectedStatus === 'Accepted' ? 'ri-check-line' : 'ri-refresh-line'}></i>
+                                <span className={`avatar-title rounded-circle fs-24 ${selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger-subtle text-danger' : selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}`}>
+                                    <i className={selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-line' : selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-check-line' : 'ri-refresh-line'}></i>
                                 </span>
                             </div>
                             <h4 className="fw-bold">Confirm Status Update</h4>
                             <p className="text-muted fs-14 mb-0">Are you sure you want to update the status to {selectedStatus}?</p>
                         </div>
 
-                        {selectedStatus === 'Rejected' && (
+                        {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
                             <div className="mb-4 text-start">
                                 <p className="fs-13 fw-semibold text-muted mb-2">Your Reason / Note:</p>
                                 <div className="p-3 bg-light rounded text-dark fs-14 border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
@@ -488,7 +484,7 @@ export default function FundingRequestDetail() {
                         <div className="d-flex flex-column gap-2">
                             <button
                                 type="button"
-                                className={`btn py-2 fs-15 border-0 rounded fw-bold ${selectedStatus === 'Rejected' ? 'btn-danger' : 'btn-primary'}`}
+                                className={`btn py-2 fs-15 border-0 rounded fw-bold ${selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' : 'btn-primary'}`}
                                 onClick={handleStatusUpdate}
                                 disabled={updateStatusMutation.isPending}
                             >

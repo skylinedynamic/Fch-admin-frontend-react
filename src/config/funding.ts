@@ -60,6 +60,22 @@ export const FUNDING_STATUS_OPTIONS: SelectOption[] = [
     { label: 'Inactive', value: 'Inactive' }
 ];
 
+export const FUNDING_REVIEW_STATUS = {
+    PENDING: 'Pending',
+    IN_PROGRESS: 'In Progress',
+    APPROVED: 'Approved',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected'
+};
+
+export const FUNDING_REVIEW_STATUS_OPTIONS = [
+    { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
+    { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
+    { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
+    { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
+    { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED }
+];
+
 export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
     { label: 'Credit Cards', value: 'Credit Cards' },
     { label: 'Working Capital', value: 'Working Capital' },
@@ -104,9 +120,33 @@ export const READINESS_FACTORS_OPTIONS = [
 ];
 
 export const TIB_OPTIONS = [
+    { label: '1 month', value: 1 },
     { label: '3 months', value: 3 },
     { label: '6 months', value: 6 },
     { label: '12 months', value: 12 },
     { label: '24 months', value: 24 },
     { label: '36 months', value: 36 }
+];
+
+export const RESTRICTED_INDUSTRIES_OPTIONS = [
+    { label: 'Adult Entertainment', value: 'Adult Entertainment' },
+    { label: 'Cannabis / THC / CBD', value: 'Cannabis / THC / CBD' },
+    { label: 'Firearm / Ammo / Weapon Sales', value: 'Firearm / Ammo / Weapon Sales' },
+    { label: 'Furniture Stores', value: 'Furniture Stores' },
+    { label: 'Gambling / Lotteries', value: 'Gambling / Lotteries' },
+    { label: 'Gas Stations', value: 'Gas Stations' },
+    { label: 'General Contractors', value: 'General Contractors' },
+    { label: 'Gyms / Personal Trainers', value: 'Gyms / Personal Trainers' },
+    { label: 'Home-Based Businesses', value: 'Home-Based Businesses' },
+    { label: 'Insurance', value: 'Insurance' },
+    { label: 'Investment Opportunities', value: 'Investment Opportunities' },
+    { label: 'Jewelry Stores', value: 'Jewelry Stores' },
+    { label: 'Marketing / Advertising Agencies', value: 'Marketing / Advertising Agencies' },
+    { label: 'Mobile Food Services', value: 'Mobile Food Services' },
+    { label: 'Money Service Businesses', value: 'Money Service Businesses' },
+    { label: 'Online Auctions', value: 'Online Auctions' },
+    { label: 'Real Estate Brokers', value: 'Real Estate Brokers' },
+    { label: 'Staffing Agencies', value: 'Staffing Agencies' },
+    { label: 'Telemarketing / Lead Generation', value: 'Telemarketing / Lead Generation' },
+    { label: 'Trucking', value: 'Trucking' },
 ];
