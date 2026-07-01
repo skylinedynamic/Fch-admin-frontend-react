@@ -15,7 +15,7 @@ import EditStepDetailsModal, { EditDetailsForm } from './EditStepDetailsModal';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 import { STATUS_OPTIONS, STATUS_ACTIVE } from '../../../config/creditBuilder';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
-import { PRE_FLIGHT_TASKS } from '../../../config/capitalAccessOptions';
+import { PRE_FLIGHT_TASKS, ACCESS_TIME } from '../../../config/capitalAccessOptions';
 
 
 export interface SelectedPlayCard extends CreditAccount {
@@ -45,7 +45,7 @@ export default function CapitalAccessForm() {
         est_limit_max: '',
         hard_pull: 'Yes',
         what_you_need: [],
-        access_time: 'Morning',
+        access_time: ACCESS_TIME.MORNING,
         access_day: '',
         access_day_time: '',
         minimum_fico_requirement: '',
@@ -127,7 +127,7 @@ export default function CapitalAccessForm() {
                     est_limit_for_show: acc.pivot.est_limit_for_show || '',
                     hard_pull: acc.pivot.hard_pull || 'Yes',
                     what_you_need: typeof acc.pivot.what_you_need === 'string' ? JSON.parse(acc.pivot.what_you_need) : (acc.pivot.what_you_need || []),
-                    access_time: acc.pivot.access_time || 'Morning',
+                    access_time: acc.pivot.access_time || ACCESS_TIME.MORNING,
                     access_day: acc.pivot.access_day ? String(acc.pivot.access_day) : '',
                     access_day_time: acc.pivot.access_day_time || '',
                     minimum_fico_requirement: acc.pivot.minimum_fico_requirement !== null && acc.pivot.minimum_fico_requirement !== undefined ? String(acc.pivot.minimum_fico_requirement) : '',
@@ -141,7 +141,7 @@ export default function CapitalAccessForm() {
                     est_limit_for_show: '',
                     hard_pull: 'Yes',
                     what_you_need: [],
-                    access_time: 'Morning',
+                    access_time: ACCESS_TIME.MORNING,
                     access_day: '',
                     access_day_time: '',
                     minimum_fico_requirement: '',
@@ -239,7 +239,7 @@ export default function CapitalAccessForm() {
                         est_limit_max: '',
                         hard_pull: 'Yes',
                         what_you_need: [''],
-                        access_time: 'Morning',
+                        access_time: ACCESS_TIME.MORNING,
                         access_day: '',
                         access_day_time: '',
                         minimum_fico_requirement: '',
@@ -274,7 +274,7 @@ export default function CapitalAccessForm() {
                 est_limit_max: '',
                 hard_pull: 'Yes',
                 what_you_need: [''],
-                access_time: 'Morning',
+                access_time: ACCESS_TIME.MORNING,
                 access_day: '',
                 access_day_time: '',
                 minimum_fico_requirement: '',
@@ -306,7 +306,7 @@ export default function CapitalAccessForm() {
             est_limit_max: account.play_details?.est_limit_max || '',
             hard_pull: account.play_details?.hard_pull || 'Yes',
             what_you_need: account.play_details?.what_you_need?.length ? [...account.play_details.what_you_need] : [],
-            access_time: account.play_details?.access_time || 'Morning',
+            access_time: account.play_details?.access_time || ACCESS_TIME.MORNING,
             access_day: account.play_details?.access_day ? String(account.play_details.access_day) : '',
             access_day_time: account.play_details?.access_day_time || '',
             minimum_fico_requirement: account.play_details?.minimum_fico_requirement || '',
@@ -421,11 +421,11 @@ export default function CapitalAccessForm() {
                         est_limit_max: acc.play_details?.est_limit_max || '',
                         hard_pull: acc.play_details?.hard_pull || 'Yes',
                         what_you_need: acc.play_details?.what_you_need || [],
-                        access_time: acc.play_details?.access_time || 'Morning',
-                        access_day: acc.play_details?.access_time === 'Day' && acc.play_details?.access_day
+                        access_time: acc.play_details?.access_time || ACCESS_TIME.MORNING,
+                        access_day: acc.play_details?.access_time === ACCESS_TIME.DAY && acc.play_details?.access_day
                             ? Number(acc.play_details.access_day)
                             : undefined,
-                        access_day_time: acc.play_details?.access_time === 'Day' ? (acc.play_details?.access_day_time || 'Morning') : undefined,
+                        access_day_time: acc.play_details?.access_time === ACCESS_TIME.DAY ? (acc.play_details?.access_day_time || ACCESS_TIME.MORNING) : undefined,
                         minimum_fico_requirement: acc.play_details?.minimum_fico_requirement === '' || acc.play_details?.minimum_fico_requirement === undefined ? null : Number(acc.play_details.minimum_fico_requirement),
                         maximum_utilization_threshold: acc.play_details?.maximum_utilization_threshold === '' || acc.play_details?.maximum_utilization_threshold === undefined ? null : Number(acc.play_details.maximum_utilization_threshold),
                         difficulty_modifier: acc.play_details?.difficulty_modifier === '' || acc.play_details?.difficulty_modifier === undefined ? null : Number(acc.play_details.difficulty_modifier),
@@ -769,7 +769,10 @@ export default function CapitalAccessForm() {
                                                                                     )}
                                                                                     {acc.play_details.access_time && (
                                                                                         <span className="badge bg-primary-subtle text-primary fs-9">
-                                                                                            <i className="ri-time-line align-bottom me-1"></i> {acc.play_details.access_time}{acc.play_details.access_time === 'Day' && acc.play_details.access_day ? ` Day ${acc.play_details.access_day}` : ''}{acc.play_details.access_time === 'Day' && acc.play_details.access_day_time ? ` (${acc.play_details.access_day_time})` : ''}
+                                                                                            <i className="ri-time-line align-bottom me-1"></i>
+                                                                                            {acc.play_details.access_time === ACCESS_TIME.DAY
+                                                                                                ? `Day ${acc.play_details.access_day || ''}${acc.play_details.access_day_time ? ` (${acc.play_details.access_day_time})` : ''}`
+                                                                                                : acc.play_details.access_time}
                                                                                         </span>
                                                                                     )}
                                                                                 </div>

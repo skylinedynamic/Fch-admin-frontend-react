@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { Dropdown } from 'primereact/dropdown';
-import { ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS } from '../../../config';
+import { ACCESS_TIME, ACCESS_TIME_OPTIONS, DAY_OPTIONS, DAY_TIME_OPTIONS } from '../../../config';
 
 export interface EditDetailsForm {
     why_this_card: string;
@@ -35,7 +35,7 @@ export default function EditStepDetailsModal({
     setEditDetailsForm,
     modalValidationErrors
 }: EditStepDetailsModalProps) {
-    const isDay = editDetailsForm.access_time === 'Day';
+    const isDay = editDetailsForm.access_time === ACCESS_TIME.DAY;
 
     return (
         <Modal
@@ -144,8 +144,8 @@ export default function EditStepDetailsModal({
                                     onChange={(e: any) => setEditDetailsForm(prev => ({
                                         ...prev,
                                         access_time: e.value,
-                                        access_day: e.value === 'Day' ? (prev.access_day || '1') : '',
-                                        access_day_time: e.value === 'Day' ? (prev.access_day_time || 'Morning') : '',
+                                        access_day: e.value === ACCESS_TIME.DAY ? (prev.access_day || '1') : '',
+                                        access_day_time: e.value === ACCESS_TIME.DAY ? (prev.access_day_time || ACCESS_TIME.MORNING) : '',
                                     }))}
                                     className="w-100"
                                     appendTo="self"
