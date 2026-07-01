@@ -220,6 +220,20 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // Fetch Users for Assign to dropdown
     useEffect(() => {
+        const isFreeTrailChecked = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1';
+        if (isFreeTrailChecked && !formData.free_trail_end_date) {
+            const defaultDate = new Date();
+            defaultDate.setMonth(defaultDate.getMonth() + 1);
+            const dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
+            setFormData(prev => ({ ...prev, free_trail_end_date: dateString }));
+            if (handleLocationChange) {
+                handleLocationChange('free_trail_end_date', dateString);
+            }
+        }
+    }, [formData.is_free_trail, formData.free_trail_end_date]);
+
+    // Fetch Users for Assign to dropdown
+    useEffect(() => {
         const fetchUsers = async () => {
             try {
                 const response = await allUsers();
@@ -1100,11 +1114,11 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
                                 <div className="d-flex align-items-center mb-3">
                                     <i className="ri-gift-line text-warning fs-3 me-2"></i>
-                                    <h5 className="mb-0 text-primary fw-semibold">Enable Free Trial</h5>
+                                    <h5 className="mb-0 text-primary fw-semibold">Allow Limited Free Edition (Funding Readiness Assessment)</h5>
                                 </div>
 
                                 <p className="text-muted fs-13 mb-4">
-                                    Enable a free trial period for this client. During the trial period, they will have access to the platform without regular billing restrictions.
+                                    Enable the Limited Free Edition for this client. Please note that features including Capital Access, Invoicing, Payments, the Resource Hub, and Credit Builder will be disabled in this version.
                                 </p>
                                 <div className="row align-items-center g-3">
                                     <div className="col-md-6">
@@ -1119,7 +1133,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 onChange={(e) => {
                                                     if (isPartnerOnFreeTrial) return;
                                                     const checked = e.target.checked;
-                                                    
+
                                                     // Calculate default date: 1 month from today
                                                     let dateString = '';
                                                     if (checked) {
@@ -1149,7 +1163,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                 }}
                                             />
                                             <label className="form-check-label fw-semibold text-dark fs-14 ms-2 mb-0" htmlFor="is_free_trail">
-                                                Activate Free Trial
+                                                Activate Limited Free Edition
                                             </label>
                                         </div>
                                     </div>
