@@ -104,6 +104,12 @@ export default function FundingRequestDetail() {
     return (
         <>
             <div className="page-content">
+                <style>{`
+                    #layout-wrapper, .main-content, .page-content {
+                        overflow: clip !important;
+                        overflow-x: clip !important;
+                    }
+                `}</style>
                 <div className="container-fluid">
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
@@ -256,7 +262,7 @@ export default function FundingRequestDetail() {
                                                     review.documents_with_urls.map((doc: any, idx: number) => {
                                                         const displayFileName = doc.file_name ? doc.file_name : doc.name.replace(/_/g, ' ');
                                                         const config = getFileConfig(doc.url || doc.file_name || displayFileName || '');
-                                                        
+
                                                         const handleDownload = (e: React.MouseEvent) => {
                                                             e.preventDefault();
                                                             let fileName = displayFileName || 'document';
@@ -264,7 +270,7 @@ export default function FundingRequestDetail() {
                                                             if (ext && !fileName.toLowerCase().endsWith(`.${ext}`)) {
                                                                 fileName += `.${ext}`;
                                                             }
-                                                            
+
                                                             if (doc.document_id && !String(doc.document_id).startsWith('missing_')) {
                                                                 handleFileDownload(
                                                                     () => downloadBorrowerDocument(doc.document_id),
@@ -469,7 +475,7 @@ export default function FundingRequestDetail() {
                             <h4 className="fw-bold">Confirm Status Update</h4>
                             <p className="text-muted fs-14 mb-0">Are you sure you want to update the status to {selectedStatus}?</p>
                         </div>
-                        
+
                         {selectedStatus === 'Rejected' && (
                             <div className="mb-4 text-start">
                                 <p className="fs-13 fw-semibold text-muted mb-2">Your Reason / Note:</p>

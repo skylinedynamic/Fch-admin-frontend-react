@@ -42,19 +42,19 @@ const getCategoryBadgeClass = (category: string) => {
 };
 
 const isRuleEmpty = (v: any) => {
-    return !v.min_fico && 
-           !v.min_tib_months && 
-           !v.min_monthly_revenue && 
-           !v.min_monthly_deposits && 
-           !v.min_deposit_count && 
-           !v.min_average_daily_balance && 
-           !v.max_nsf_count && 
-           !v.max_negative_days && 
-           !v.min_dscr && 
-           (!v.allowed_states || v.allowed_states.length === 0) && 
-           (!v.restricted_states || v.restricted_states.length === 0) && 
-           (!v.allowed_industries || v.allowed_industries.length === 0) && 
-           (!v.restricted_industries || v.restricted_industries.length === 0);
+    return !v.min_fico &&
+        !v.min_tib_months &&
+        !v.min_monthly_revenue &&
+        !v.min_monthly_deposits &&
+        !v.min_deposit_count &&
+        !v.min_average_daily_balance &&
+        !v.max_nsf_count &&
+        !v.max_negative_days &&
+        !v.min_dscr &&
+        (!v.allowed_states || v.allowed_states.length === 0) &&
+        (!v.restricted_states || v.restricted_states.length === 0) &&
+        (!v.allowed_industries || v.allowed_industries.length === 0) &&
+        (!v.restricted_industries || v.restricted_industries.length === 0);
 };
 
 export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
@@ -75,7 +75,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { id } = useParams();
-    
+
     const lenderMatch = location.pathname.match(/\/lender\/(\d+)/);
     const categoryMatch = location.pathname.match(/\/category\/(\w+)/);
 
@@ -329,7 +329,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     categories.forEach((catName: string) => {
                         const catObj = productCategories.find((c: any) => c.name === catName);
                         const catId = catObj ? catObj.id : catName;
-                        
+
                         const hasRule = currentVisibilities.some(v => {
                             if (String(v.lender_id) !== String(localActiveLenderId)) return false;
                             return String(v.lender_product_category_id) === String(catId);
@@ -762,9 +762,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         {loading ? (
                             <TableLoader rows={11} />
                         ) : (
-                            <div className="table-responsive table-card custom-scrollbar-wrapper mt-1">
+                            <div className="table-responsive table-card mt-1" style={{ minHeight: '200px' }}>
                                 <DataTable
-                                    scrollable
+                                    responsiveLayout="scroll"
                                     lazy={!!id}
                                     value={displayVisibilities.map((v, i) => {
                                         const lender = lenders.find(l => String(l.id) === String(v.lender_id));
