@@ -269,15 +269,22 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setVisibilities([...visibilities, ...newRows]);
     };
 
+    const visibilitiesRef = React.useRef(visibilities);
+    React.useEffect(() => {
+        visibilitiesRef.current = visibilities;
+    }, [visibilities]);
+
     React.useEffect(() => {
         if (localActiveLenderId !== null && id && lenders.length > 0) {
             const lender = lenders.find(l => String(l.id) === String(localActiveLenderId));
             if (!lender) return;
 
+            const currentVisibilities = visibilitiesRef.current;
+
             if (localActiveCategoryId !== null) {
                 // Single category edit mode: ensure only this specific category rule exists
                 const targetCatId = localActiveCategoryId === 'general' ? null : localActiveCategoryId;
-                const hasRule = visibilities.some(v => {
+                const hasRule = currentVisibilities.some(v => {
                     if (String(v.lender_id) !== String(localActiveLenderId)) return false;
                     const vCatId = v.lender_product_category_id;
                     if (targetCatId === null) {
@@ -311,7 +318,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         allowed_industries: [],
                         restricted_industries: []
                     };
-                    setVisibilities([...visibilities, newRow]);
+                    setVisibilities([...currentVisibilities, newRow]);
                 }
             } else {
                 // Lender-wide edit mode (from dropdown): ensure rules for ALL categories of this lender exist
@@ -323,7 +330,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         const catObj = productCategories.find((c: any) => c.name === catName);
                         const catId = catObj ? catObj.id : catName;
                         
-                        const hasRule = visibilities.some(v => {
+                        const hasRule = currentVisibilities.some(v => {
                             if (String(v.lender_id) !== String(localActiveLenderId)) return false;
                             return String(v.lender_product_category_id) === String(catId);
                         });
@@ -350,7 +357,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         }
                     });
                 } else {
-                    const hasGeneral = visibilities.some(v => {
+                    const hasGeneral = currentVisibilities.some(v => {
                         if (String(v.lender_id) !== String(localActiveLenderId)) return false;
                         return v.lender_product_category_id === null || v.lender_product_category_id === '';
                     });
@@ -378,11 +385,11 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 }
 
                 if (newRows.length > 0) {
-                    setVisibilities([...visibilities, ...newRows]);
+                    setVisibilities([...currentVisibilities, ...newRows]);
                 }
             }
         }
-    }, [localActiveLenderId, localActiveCategoryId, visibilities, lenders, productCategories, id]);
+    }, [localActiveLenderId, localActiveCategoryId, lenders, productCategories, id]);
 
 
     const onRemoveBlock = (lenderId: number) => {
@@ -888,7 +895,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                 <th style={{ width: '250px' }}>Restricted States</th>
                                                 <th style={{ width: '250px' }}>Allowed Industries</th>
                                                 <th style={{ width: '250px' }}>Restricted Industries</th>
-                                                <th style={{ width: '80px', textAlign: 'center' }}>Action</th>
+                                                <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 2, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1093,7 +1100,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             />
                                                             {renderError('restricted_industries', i)}
                                                         </td>
-                                                        <td className="py-3 text-center">
+                                                        <td className="py-3 text-center" style={{ position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 1, boxShadow: '-1px 0 0 #e9ebec' }}>
                                                             <button
                                                                 type="button"
                                                                 className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
