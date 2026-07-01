@@ -8,11 +8,18 @@ export interface DayOption {
     value: string;
 }
 
+export const ACCESS_TIME = {
+    MORNING: 'Morning',
+    EVENING: 'Evening',
+    ANYTIME: 'Anytime',
+    DAY: 'Day',
+} as const;
+
 export const ACCESS_TIME_OPTIONS: AccessTimeOption[] = [
-    { label: 'Morning', value: 'Morning' },
-    { label: 'Evening', value: 'Evening' },
-    { label: 'Anytime', value: 'Anytime' },
-    { label: 'Day', value: 'Day' },
+    { label: ACCESS_TIME.MORNING, value: ACCESS_TIME.MORNING },
+    { label: ACCESS_TIME.EVENING, value: ACCESS_TIME.EVENING },
+    { label: ACCESS_TIME.ANYTIME, value: ACCESS_TIME.ANYTIME },
+    { label: ACCESS_TIME.DAY, value: ACCESS_TIME.DAY },
 ];
 
 export const DAY_OPTIONS: DayOption[] = Array.from({ length: 60 }, (_, i) => ({
@@ -21,9 +28,9 @@ export const DAY_OPTIONS: DayOption[] = Array.from({ length: 60 }, (_, i) => ({
 }));
 
 export const DAY_TIME_OPTIONS: AccessTimeOption[] = [
-    { label: 'Morning', value: 'Morning' },
-    { label: 'Evening', value: 'Evening' },
-    { label: 'Anytime', value: 'Anytime' },
+    { label: ACCESS_TIME.MORNING, value: ACCESS_TIME.MORNING },
+    { label: ACCESS_TIME.EVENING, value: ACCESS_TIME.EVENING },
+    { label: ACCESS_TIME.ANYTIME, value: ACCESS_TIME.ANYTIME },
 ];
 
 export const PRE_FLIGHT_TASKS = [
