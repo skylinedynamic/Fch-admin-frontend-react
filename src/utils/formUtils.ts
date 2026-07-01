@@ -10,7 +10,8 @@ export const scrollToFirstError = (errors: Record<string, any>) => {
     // Use a small timeout to ensure data has been rendered/classes applied
     setTimeout(() => {
         const firstErrorKey = Object.keys(errors)[0];
-        const selector = `[name="${firstErrorKey}"], #${firstErrorKey}, [inputid="${firstErrorKey}"]`;
+        const escapedKey = CSS.escape(firstErrorKey);
+        const selector = `[name="${firstErrorKey}"], #${escapedKey}, [inputid="${firstErrorKey}"]`;
         const errorElement = document.querySelector(selector);
         
         if (errorElement) {

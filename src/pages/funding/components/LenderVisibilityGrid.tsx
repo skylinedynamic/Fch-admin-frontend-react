@@ -103,15 +103,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     // Sync local state when URL changes (e.g. direct URL load or Back navigation)
     React.useEffect(() => {
-        if (localActiveLenderId !== null && localActiveLenderId !== activeLenderId) {
-            const currentLenderRules = visibilities.filter(v => String(v.lender_id) === String(localActiveLenderId));
-            if (currentLenderRules.length > 0 && currentLenderRules.every(isRuleEmpty)) {
-                setVisibilities(visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId)));
-            }
-        }
         setLocalActiveLenderId(activeLenderId);
         setLocalActiveCategoryId(activeCategoryId);
-    }, [activeLenderId, activeCategoryId, visibilities]);
+    }, [activeLenderId, activeCategoryId]);
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
@@ -221,15 +215,22 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         if (!newLenderId) return;
 
         const lender = lenders.find(l => String(l.id) === String(newLenderId));
-        const categories = lender?.product_categories || [];
+        let categories = [];
+        if (typeof lender?.product_categories === 'string') {
+            try { categories = JSON.parse(lender.product_categories); } catch (e) {}
+        } else if (Array.isArray(lender?.product_categories)) {
+            categories = lender.product_categories;
+        }
 
         let newRows: any[] = [];
         if (categories.length > 0) {
-            categories.forEach((catName: string) => {
+            categories.forEach((catItem: any) => {
+                const isObj = typeof catItem === 'object' && catItem !== null;
+                const catName = isObj ? catItem.name : catItem;
                 const catObj = productCategories.find((c: any) => c.name === catName);
                 newRows.push({
                     lender_id: newLenderId,
-                    lender_product_category_id: catObj ? catObj.id : catName,
+                    lender_product_category_id: isObj ? catItem.id : (catObj ? catObj.id : catName),
                     product_category: catName,
                     min_fico: '',
                     min_tib_months: '',
@@ -274,122 +275,30 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         visibilitiesRef.current = visibilities;
     }, [visibilities]);
 
-    React.useEffect(() => {
-        if (localActiveLenderId !== null && id && lenders.length > 0) {
-            const lender = lenders.find(l => String(l.id) === String(localActiveLenderId));
-            if (!lender) return;
-
-            const currentVisibilities = visibilitiesRef.current;
-
+    const hasActiveRows = React.useMemo(() => {
+        return visibilities.some(v => {
+            if (v.lender_id == null) return false;
+            if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return false;
             if (localActiveCategoryId !== null) {
-                // Single category edit mode: ensure only this specific category rule exists
-                const targetCatId = localActiveCategoryId === 'general' ? null : localActiveCategoryId;
-                const hasRule = currentVisibilities.some(v => {
-                    if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                    const vCatId = v.lender_product_category_id;
-                    if (targetCatId === null) {
-                        return vCatId === null || vCatId === '';
-                    } else {
-                        return String(vCatId) === String(targetCatId);
-                    }
-                });
-
-                if (!hasRule) {
-                    let catName = '';
-                    if (targetCatId !== null) {
-                        const catObj = productCategories.find((c: any) => String(c.id) === String(targetCatId));
-                        catName = catObj ? catObj.name : String(targetCatId);
-                    }
-                    const newRow = {
-                        lender_id: localActiveLenderId,
-                        lender_product_category_id: targetCatId || '',
-                        product_category: catName,
-                        min_fico: '',
-                        min_tib_months: '',
-                        min_monthly_revenue: '',
-                        min_monthly_deposits: '',
-                        min_deposit_count: '',
-                        min_average_daily_balance: '',
-                        max_nsf_count: '',
-                        max_negative_days: '',
-                        min_dscr: '',
-                        allowed_states: [],
-                        restricted_states: [],
-                        allowed_industries: [],
-                        restricted_industries: []
-                    };
-                    setVisibilities([...currentVisibilities, newRow]);
-                }
-            } else {
-                // Lender-wide edit mode (from dropdown): ensure rules for ALL categories of this lender exist
-                const categories = lender.product_categories || [];
-                const newRows: any[] = [];
-
-                if (categories.length > 0) {
-                    categories.forEach((catName: string) => {
-                        const catObj = productCategories.find((c: any) => c.name === catName);
-                        const catId = catObj ? catObj.id : catName;
-
-                        const hasRule = currentVisibilities.some(v => {
-                            if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                            return String(v.lender_product_category_id) === String(catId);
-                        });
-
-                        if (!hasRule) {
-                            newRows.push({
-                                lender_id: localActiveLenderId,
-                                lender_product_category_id: catId,
-                                product_category: catName,
-                                min_fico: '',
-                                min_tib_months: '',
-                                min_monthly_revenue: '',
-                                min_monthly_deposits: '',
-                                min_deposit_count: '',
-                                min_average_daily_balance: '',
-                                max_nsf_count: '',
-                                max_negative_days: '',
-                                min_dscr: '',
-                                allowed_states: [],
-                                restricted_states: [],
-                                allowed_industries: [],
-                                restricted_industries: []
-                            });
-                        }
-                    });
+                const vCatId = v.lender_product_category_id;
+                if (localActiveCategoryId === 'general') {
+                    if (vCatId !== null && vCatId !== '') return false;
                 } else {
-                    const hasGeneral = currentVisibilities.some(v => {
-                        if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                        return v.lender_product_category_id === null || v.lender_product_category_id === '';
-                    });
-
-                    if (!hasGeneral) {
-                        newRows.push({
-                            lender_id: localActiveLenderId,
-                            lender_product_category_id: '',
-                            product_category: '',
-                            min_fico: '',
-                            min_tib_months: '',
-                            min_monthly_revenue: '',
-                            min_monthly_deposits: '',
-                            min_deposit_count: '',
-                            min_average_daily_balance: '',
-                            max_nsf_count: '',
-                            max_negative_days: '',
-                            min_dscr: '',
-                            allowed_states: [],
-                            restricted_states: [],
-                            allowed_industries: [],
-                            restricted_industries: []
-                        });
-                    }
-                }
-
-                if (newRows.length > 0) {
-                    setVisibilities([...currentVisibilities, ...newRows]);
+                    if (String(vCatId) !== String(localActiveCategoryId)) return false;
                 }
             }
+            return true;
+        });
+    }, [visibilities, localActiveLenderId, localActiveCategoryId]);
+
+    React.useEffect(() => {
+        if (isFormView && localActiveLenderId && !hasActiveRows && !detailsLoading && lenders.length > 0) {
+            const timer = setTimeout(() => {
+                onAddLenderBlock(localActiveLenderId);
+            }, 50);
+            return () => clearTimeout(timer);
         }
-    }, [localActiveLenderId, localActiveCategoryId, lenders, productCategories, id]);
+    }, [hasActiveRows, isFormView, localActiveLenderId, detailsLoading, lenders.length]);
 
 
     const onRemoveBlock = (lenderId: number) => {
@@ -633,7 +542,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     // ...
 
     return (
-        <div className="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden" style={{ maxWidth: '100%' }}>
+        <div className={isFormView ? "mb-0" : "card shadow-sm border-0 rounded-3 mb-4 overflow-hidden"} style={{ maxWidth: '100%' }}>
             {!isFormView ? null : (
                 <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
@@ -654,8 +563,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         }
                                     }
                                     setVisibilities(cleanedVisibilities);
-                                    setLocalActiveLenderId(nextLenderId);
-                                    setLocalActiveCategoryId(null);
+                                    setActiveLenderIdAndCategory(nextLenderId, null);
+
                                     // Clear all visibility errors when switching lender
                                     if (setErrors) {
                                         setErrors((prev: any) => {
@@ -875,14 +784,59 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 </div>
                             ) : detailsLoading ? (
                                 <TableLoader rows={6} />
-                            ) : (
+                            ) : (() => {
+                                const activeRows = visibilities.filter(v => {
+                                    if (v.lender_id == null) return false;
+                                    if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return false;
+                                    if (localActiveCategoryId !== null) {
+                                        const vCatId = v.lender_product_category_id;
+                                        if (localActiveCategoryId === 'general') {
+                                            if (vCatId !== null && vCatId !== '') return false;
+                                        } else {
+                                            if (String(vCatId) !== String(localActiveCategoryId)) return false;
+                                        }
+                                    }
+                                    return true;
+                                });
+
+                                if (activeRows.length === 0) {
+                                    const hasVisibilityError = errors && (errors.lender_visibilities || errors['lender_visibilities']);
+                                    return (
+                                        <div className="text-center py-5">
+                                            <div className="d-flex flex-column align-items-center justify-content-center">
+                                                <i className={`ri-error-warning-line ${hasVisibilityError ? 'text-danger' : 'text-warning'} mb-2`} style={{ fontSize: '32px' }}></i>
+                                                <h5 className="text-muted fw-semibold fs-15">Rules Not Initialized</h5>
+                                                
+                                                {hasVisibilityError && (
+                                                    <div className="alert alert-danger mt-2 mb-3 px-4 py-2">
+                                                        <i className="ri-error-warning-line me-2"></i>
+                                                        <strong>Save Failed:</strong> You must initialize and configure rules for this lender before saving.
+                                                    </div>
+                                                )}
+
+                                                <p className="text-muted mb-3 fs-13">The visibility logic rules for this lender have not been properly loaded.</p>
+                                                <button 
+                                                    type="button" 
+                                                    className={`btn btn-sm ${hasVisibilityError ? 'btn-danger btn-label' : 'btn-primary'}`} 
+                                                    onClick={() => onAddLenderBlock(localActiveLenderId)}
+                                                >
+                                                    {hasVisibilityError && <i className="ri-error-warning-line label-icon align-middle fs-16 me-2"></i>}
+                                                    {!hasVisibilityError && <i className="ri-refresh-line me-1 align-bottom"></i>}
+                                                    Initialize Rules
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
                                 <div className="table-responsive custom-scrollbar-wrapper pb-3">
                                     <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
                                         <thead className="text-muted fs-12 fw-semibold" style={{ borderBottom: '2px solid #f3f6f9' }}>
                                             <tr>
-                                                <th style={{ width: '220px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
-                                                <th style={{ width: '220px' }}>Product Category <span className="text-danger">*</span></th>
-                                                <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
+                                                <th style={{ width: '150px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
+                                                <th style={{ width: '200px' }}>Product Category <span className="text-danger">*</span></th>
+                                                <th style={{ width: '150px' }}>Min FICOs <span className="text-danger">*</span></th>
                                                 <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
                                                 <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
                                                 <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
@@ -891,29 +845,29 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                 <th style={{ width: '150px' }}>Max NSF Count <span className="text-danger">*</span></th>
                                                 <th style={{ width: '160px' }}>Max Negative Days <span className="text-danger">*</span></th>
                                                 <th style={{ width: '120px' }}>Min DSCR</th>
-                                                <th style={{ width: '250px' }}>Allowed States</th>
-                                                <th style={{ width: '250px' }}>Restricted States</th>
-                                                <th style={{ width: '250px' }}>Allowed Industries</th>
-                                                <th style={{ width: '250px' }}>Restricted Industries</th>
+                                                <th style={{ width: '200px' }}>Allowed States</th>
+                                                <th style={{ width: '200px' }}>Restricted States</th>
+                                                <th style={{ width: '200px' }}>Allowed Industries</th>
+                                                <th style={{ width: '200px' }}>Restricted Industries</th>
                                                 <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 2, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {visibilities.map((v, i) => {
-                                                if (v.lender_id == null) return null;
-                                                if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
+                                                    if (v.lender_id == null) return null;
+                                                    if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
 
-                                                if (localActiveCategoryId !== null) {
-                                                    const vCatId = v.lender_product_category_id;
-                                                    if (localActiveCategoryId === 'general') {
-                                                        if (vCatId !== null && vCatId !== '') return null;
-                                                    } else {
-                                                        if (String(vCatId) !== String(localActiveCategoryId)) return null;
+                                                    if (localActiveCategoryId !== null) {
+                                                        const vCatId = v.lender_product_category_id;
+                                                        if (localActiveCategoryId === 'general') {
+                                                            if (vCatId !== null && vCatId !== '') return null;
+                                                        } else {
+                                                            if (String(vCatId) !== String(localActiveCategoryId)) return null;
+                                                        }
                                                     }
-                                                }
-                                                const lender = lenders.find(l => l.id === v.lender_id);
-                                                const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
-                                                const badgeClass = getCategoryBadgeClass(categoryName || '');
+                                                    const lender = lenders.find(l => l.id === v.lender_id);
+                                                    const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
+                                                    const badgeClass = getCategoryBadgeClass(categoryName || '');
 
                                                 return (
                                                     <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
@@ -1117,7 +1071,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

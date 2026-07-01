@@ -423,7 +423,7 @@ export default function FundingSequencingForm() {
                         // Save ONLY the active lender's visibility rules
                         const singleLenderPayload = {
                             ...unifiedPayload,
-                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => v.lender_id === activeLenderId)
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => String(v.lender_id) === String(activeLenderId))
                         };
                         await updateFundingSequencingSingleLenderVisibility(id, activeLenderId, singleLenderPayload);
                     } else {
@@ -709,7 +709,7 @@ export default function FundingSequencingForm() {
                                             </li>
                                         </ul>
                                     </div>
-                                    <div className="card-body pt-3">
+                                    <div className="card-body pt-1">
                                         <div className="tab-content text-muted">
                                             {/* ── Display Tab ─────────────────────────────────────────────────── */}
                                             <div className={`tab-pane ${activeTab === 'display' ? 'active' : ''}`} id="display">
