@@ -849,7 +849,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                 <th style={{ width: '200px' }}>Restricted States</th>
                                                 <th style={{ width: '200px' }}>Allowed Industries</th>
                                                 <th style={{ width: '200px' }}>Restricted Industries</th>
-                                                <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 2, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
+                                                <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 11, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1054,7 +1054,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             />
                                                             {renderError('restricted_industries', i)}
                                                         </td>
-                                                        <td className="py-3 text-center" style={{ position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 1, boxShadow: '-1px 0 0 #e9ebec' }}>
+                                                        <td className="py-3 text-center" style={{ position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 10, boxShadow: '-1px 0 0 #e9ebec' }}>
                                                             <button
                                                                 type="button"
                                                                 className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
