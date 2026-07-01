@@ -1,6 +1,7 @@
 import React from 'react';
 import { MultiSelect } from 'primereact/multiselect';
 import { Dropdown } from 'primereact/dropdown';
+import { RESTRICTED_INDUSTRIES_OPTIONS } from '../../../config/funding';
 
 interface LenderVisibilityCardProps {
     visibility: any;
@@ -96,7 +97,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Deposits <span className="text-danger">*</span></label>
+                            <label className="form-label text-dark fw-medium mb-2">Minimum Monthly Deposits</label>
                             <div className="input-group">
                                 <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any)[`lender_visibilities.${index}.min_monthly_deposits`] ? 'border-danger text-danger' : ''}`}>$</span>
                                 <input type="number" name="min_monthly_deposits" className={`form-control py-2 ps-1 border-start-0 ${(errors as any)[`lender_visibilities.${index}.min_monthly_deposits`] ? 'is-invalid border-danger' : ''}`} value={visibility.min_monthly_deposits || ''} onChange={handleChange} placeholder="None" />
@@ -106,7 +107,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Minimum Deposit Count <span className="text-danger">*</span></label>
+                            <label className="form-label text-dark fw-medium mb-2">Minimum Deposit Count</label>
                             <div className="input-group">
                                 <input type="number" name="min_deposit_count" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.min_deposit_count`] ? 'is-invalid border-danger' : ''}`} value={visibility.min_deposit_count || ''} onChange={handleChange} placeholder="None" />
                                 <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.min_deposit_count`] ? 'border-danger text-danger' : ''}`}>/ mo</span>
@@ -115,7 +116,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Minimum Average Daily Balance <span className="text-danger">*</span></label>
+                            <label className="form-label text-dark fw-medium mb-2">Minimum Average Daily Balance</label>
                             <div className="input-group">
                                 <span className={`input-group-text bg-white text-muted rounded-start-3 pe-2 border-end-0 ${(errors as any)[`lender_visibilities.${index}.min_average_daily_balance`] ? 'border-danger text-danger' : ''}`}>$</span>
                                 <input type="number" name="min_average_daily_balance" className={`form-control rounded-end-3 py-2 ps-1 border-start-0 ${(errors as any)[`lender_visibilities.${index}.min_average_daily_balance`] ? 'is-invalid border-danger' : ''}`} value={visibility.min_average_daily_balance || ''} onChange={handleChange} placeholder="None" />
@@ -195,7 +196,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                             <label className="form-label text-dark fw-medium mb-1">Restricted Industries</label>
                             <MultiSelect
                                 value={visibility.restricted_industries || []}
-                                options={industryTypes}
+                                options={RESTRICTED_INDUSTRIES_OPTIONS}
                                 onChange={(e) => onChange(index, 'restricted_industries', e.value)}
                                 optionLabel="label"
                                 optionValue="value"

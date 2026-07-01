@@ -5,7 +5,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { DataTable } from 'primereact/datatable';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { Column } from 'primereact/column';
-import { TIB_OPTIONS } from '../../../config/funding';
+import { TIB_OPTIONS, RESTRICTED_INDUSTRIES_OPTIONS } from '../../../config/funding';
 import { updateFundingSequencingVisibility, fetchFundingSequencingVisibilities, deleteFundingSequencingVisibilities } from '../../../modules/funding/services';
 import DeleteConfirmationModal from '../../../components/Common/Modals/DeleteConfirmationModal';
 import { toast } from 'react-toastify';
@@ -42,19 +42,19 @@ const getCategoryBadgeClass = (category: string) => {
 };
 
 const isRuleEmpty = (v: any) => {
-    return !v.min_fico && 
-           !v.min_tib_months && 
-           !v.min_monthly_revenue && 
-           !v.min_monthly_deposits && 
-           !v.min_deposit_count && 
-           !v.min_average_daily_balance && 
-           !v.max_nsf_count && 
-           !v.max_negative_days && 
-           !v.min_dscr && 
-           (!v.allowed_states || v.allowed_states.length === 0) && 
-           (!v.restricted_states || v.restricted_states.length === 0) && 
-           (!v.allowed_industries || v.allowed_industries.length === 0) && 
-           (!v.restricted_industries || v.restricted_industries.length === 0);
+    return !v.min_fico &&
+        !v.min_tib_months &&
+        !v.min_monthly_revenue &&
+        !v.min_monthly_deposits &&
+        !v.min_deposit_count &&
+        !v.min_average_daily_balance &&
+        !v.max_nsf_count &&
+        !v.max_negative_days &&
+        !v.min_dscr &&
+        (!v.allowed_states || v.allowed_states.length === 0) &&
+        (!v.restricted_states || v.restricted_states.length === 0) &&
+        (!v.allowed_industries || v.allowed_industries.length === 0) &&
+        (!v.restricted_industries || v.restricted_industries.length === 0);
 };
 
 export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
@@ -75,7 +75,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { id } = useParams();
-    
+
     const lenderMatch = location.pathname.match(/\/lender\/(\d+)/);
     const categoryMatch = location.pathname.match(/\/category\/(\w+)/);
 
@@ -103,15 +103,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
 
     // Sync local state when URL changes (e.g. direct URL load or Back navigation)
     React.useEffect(() => {
-        if (localActiveLenderId !== null && localActiveLenderId !== activeLenderId) {
-            const currentLenderRules = visibilities.filter(v => String(v.lender_id) === String(localActiveLenderId));
-            if (currentLenderRules.length > 0 && currentLenderRules.every(isRuleEmpty)) {
-                setVisibilities(visibilities.filter(v => String(v.lender_id) !== String(localActiveLenderId)));
-            }
-        }
         setLocalActiveLenderId(activeLenderId);
         setLocalActiveCategoryId(activeCategoryId);
-    }, [activeLenderId, activeCategoryId, visibilities]);
+    }, [activeLenderId, activeCategoryId]);
     const [detailsLoading, setDetailsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [lenderToDelete, setLenderToDelete] = React.useState<number | null>(null);
@@ -221,15 +215,22 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         if (!newLenderId) return;
 
         const lender = lenders.find(l => String(l.id) === String(newLenderId));
-        const categories = lender?.product_categories || [];
+        let categories = [];
+        if (typeof lender?.product_categories === 'string') {
+            try { categories = JSON.parse(lender.product_categories); } catch (e) { }
+        } else if (Array.isArray(lender?.product_categories)) {
+            categories = lender.product_categories;
+        }
 
         let newRows: any[] = [];
         if (categories.length > 0) {
-            categories.forEach((catName: string) => {
+            categories.forEach((catItem: any) => {
+                const isObj = typeof catItem === 'object' && catItem !== null;
+                const catName = isObj ? catItem.name : catItem;
                 const catObj = productCategories.find((c: any) => c.name === catName);
                 newRows.push({
                     lender_id: newLenderId,
-                    lender_product_category_id: catObj ? catObj.id : catName,
+                    lender_product_category_id: isObj ? catItem.id : (catObj ? catObj.id : catName),
                     product_category: catName,
                     min_fico: '',
                     min_tib_months: '',
@@ -269,120 +270,35 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setVisibilities([...visibilities, ...newRows]);
     };
 
+    const visibilitiesRef = React.useRef(visibilities);
     React.useEffect(() => {
-        if (localActiveLenderId !== null && id && lenders.length > 0) {
-            const lender = lenders.find(l => String(l.id) === String(localActiveLenderId));
-            if (!lender) return;
+        visibilitiesRef.current = visibilities;
+    }, [visibilities]);
 
+    const hasActiveRows = React.useMemo(() => {
+        return visibilities.some(v => {
+            if (v.lender_id == null) return false;
+            if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return false;
             if (localActiveCategoryId !== null) {
-                // Single category edit mode: ensure only this specific category rule exists
-                const targetCatId = localActiveCategoryId === 'general' ? null : localActiveCategoryId;
-                const hasRule = visibilities.some(v => {
-                    if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                    const vCatId = v.lender_product_category_id;
-                    if (targetCatId === null) {
-                        return vCatId === null || vCatId === '';
-                    } else {
-                        return String(vCatId) === String(targetCatId);
-                    }
-                });
-
-                if (!hasRule) {
-                    let catName = '';
-                    if (targetCatId !== null) {
-                        const catObj = productCategories.find((c: any) => String(c.id) === String(targetCatId));
-                        catName = catObj ? catObj.name : String(targetCatId);
-                    }
-                    const newRow = {
-                        lender_id: localActiveLenderId,
-                        lender_product_category_id: targetCatId || '',
-                        product_category: catName,
-                        min_fico: '',
-                        min_tib_months: '',
-                        min_monthly_revenue: '',
-                        min_monthly_deposits: '',
-                        min_deposit_count: '',
-                        min_average_daily_balance: '',
-                        max_nsf_count: '',
-                        max_negative_days: '',
-                        min_dscr: '',
-                        allowed_states: [],
-                        restricted_states: [],
-                        allowed_industries: [],
-                        restricted_industries: []
-                    };
-                    setVisibilities([...visibilities, newRow]);
-                }
-            } else {
-                // Lender-wide edit mode (from dropdown): ensure rules for ALL categories of this lender exist
-                const categories = lender.product_categories || [];
-                const newRows: any[] = [];
-
-                if (categories.length > 0) {
-                    categories.forEach((catName: string) => {
-                        const catObj = productCategories.find((c: any) => c.name === catName);
-                        const catId = catObj ? catObj.id : catName;
-                        
-                        const hasRule = visibilities.some(v => {
-                            if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                            return String(v.lender_product_category_id) === String(catId);
-                        });
-
-                        if (!hasRule) {
-                            newRows.push({
-                                lender_id: localActiveLenderId,
-                                lender_product_category_id: catId,
-                                product_category: catName,
-                                min_fico: '',
-                                min_tib_months: '',
-                                min_monthly_revenue: '',
-                                min_monthly_deposits: '',
-                                min_deposit_count: '',
-                                min_average_daily_balance: '',
-                                max_nsf_count: '',
-                                max_negative_days: '',
-                                min_dscr: '',
-                                allowed_states: [],
-                                restricted_states: [],
-                                allowed_industries: [],
-                                restricted_industries: []
-                            });
-                        }
-                    });
+                const vCatId = v.lender_product_category_id;
+                if (localActiveCategoryId === 'general') {
+                    if (vCatId !== null && vCatId !== '') return false;
                 } else {
-                    const hasGeneral = visibilities.some(v => {
-                        if (String(v.lender_id) !== String(localActiveLenderId)) return false;
-                        return v.lender_product_category_id === null || v.lender_product_category_id === '';
-                    });
-
-                    if (!hasGeneral) {
-                        newRows.push({
-                            lender_id: localActiveLenderId,
-                            lender_product_category_id: '',
-                            product_category: '',
-                            min_fico: '',
-                            min_tib_months: '',
-                            min_monthly_revenue: '',
-                            min_monthly_deposits: '',
-                            min_deposit_count: '',
-                            min_average_daily_balance: '',
-                            max_nsf_count: '',
-                            max_negative_days: '',
-                            min_dscr: '',
-                            allowed_states: [],
-                            restricted_states: [],
-                            allowed_industries: [],
-                            restricted_industries: []
-                        });
-                    }
-                }
-
-                if (newRows.length > 0) {
-                    setVisibilities([...visibilities, ...newRows]);
+                    if (String(vCatId) !== String(localActiveCategoryId)) return false;
                 }
             }
+            return true;
+        });
+    }, [visibilities, localActiveLenderId, localActiveCategoryId]);
+
+    React.useEffect(() => {
+        if (isFormView && localActiveLenderId && !hasActiveRows && !detailsLoading && lenders.length > 0) {
+            const timer = setTimeout(() => {
+                onAddLenderBlock(localActiveLenderId);
+            }, 50);
+            return () => clearTimeout(timer);
         }
-    }, [localActiveLenderId, localActiveCategoryId, visibilities, lenders, productCategories, id]);
+    }, [hasActiveRows, isFormView, localActiveLenderId, detailsLoading, lenders.length]);
 
 
     const onRemoveBlock = (lenderId: number) => {
@@ -626,7 +542,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     // ...
 
     return (
-        <div className="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden" style={{ maxWidth: '100%' }}>
+        <div className={isFormView ? "mb-0" : "card shadow-sm border-0 rounded-3 mb-4 overflow-hidden"} style={{ maxWidth: '100%' }}>
             {!isFormView ? null : (
                 <div className="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-3">
@@ -647,8 +563,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         }
                                     }
                                     setVisibilities(cleanedVisibilities);
-                                    setLocalActiveLenderId(nextLenderId);
-                                    setLocalActiveCategoryId(null);
+                                    setActiveLenderIdAndCategory(nextLenderId, null);
+
                                     // Clear all visibility errors when switching lender
                                     if (setErrors) {
                                         setErrors((prev: any) => {
@@ -755,9 +671,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                         {loading ? (
                             <TableLoader rows={11} />
                         ) : (
-                            <div className="table-responsive table-card custom-scrollbar-wrapper mt-1">
+                            <div className="table-responsive table-card mt-1" style={{ minHeight: '200px' }}>
                                 <DataTable
-                                    scrollable
+                                    responsiveLayout="scroll"
                                     lazy={!!id}
                                     value={displayVisibilities.map((v, i) => {
                                         const lender = lenders.find(l => String(l.id) === String(v.lender_id));
@@ -868,249 +784,295 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 </div>
                             ) : detailsLoading ? (
                                 <TableLoader rows={6} />
-                            ) : (
-                                <div className="table-responsive custom-scrollbar-wrapper pb-3">
-                                    <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
-                                        <thead className="text-muted fs-12 fw-semibold" style={{ borderBottom: '2px solid #f3f6f9' }}>
-                                            <tr>
-                                                <th style={{ width: '220px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
-                                                <th style={{ width: '220px' }}>Product Category <span className="text-danger">*</span></th>
-                                                <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
-                                                <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
-                                                <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
-                                                <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
-                                                <th style={{ width: '160px' }}>Min Deposit Count <span className="text-danger">*</span></th>
-                                                <th style={{ width: '200px' }}>Min Avg Daily Bal <span className="text-danger">*</span></th>
-                                                <th style={{ width: '150px' }}>Max NSF Count <span className="text-danger">*</span></th>
-                                                <th style={{ width: '160px' }}>Max Negative Days <span className="text-danger">*</span></th>
-                                                <th style={{ width: '120px' }}>Min DSCR</th>
-                                                <th style={{ width: '250px' }}>Allowed States</th>
-                                                <th style={{ width: '250px' }}>Restricted States</th>
-                                                <th style={{ width: '250px' }}>Allowed Industries</th>
-                                                <th style={{ width: '250px' }}>Restricted Industries</th>
-                                                <th style={{ width: '80px', textAlign: 'center' }}>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {visibilities.map((v, i) => {
-                                                if (v.lender_id == null) return null;
-                                                if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
+                            ) : (() => {
+                                const activeRows = visibilities.filter(v => {
+                                    if (v.lender_id == null) return false;
+                                    if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return false;
+                                    if (localActiveCategoryId !== null) {
+                                        const vCatId = v.lender_product_category_id;
+                                        if (localActiveCategoryId === 'general') {
+                                            if (vCatId !== null && vCatId !== '') return false;
+                                        } else {
+                                            if (String(vCatId) !== String(localActiveCategoryId)) return false;
+                                        }
+                                    }
+                                    return true;
+                                });
 
-                                                if (localActiveCategoryId !== null) {
-                                                    const vCatId = v.lender_product_category_id;
-                                                    if (localActiveCategoryId === 'general') {
-                                                        if (vCatId !== null && vCatId !== '') return null;
-                                                    } else {
-                                                        if (String(vCatId) !== String(localActiveCategoryId)) return null;
+                                if (activeRows.length === 0) {
+                                    const hasVisibilityError = errors && (errors.lender_visibilities || errors['lender_visibilities']);
+                                    return (
+                                        <div className="text-center py-5">
+                                            <div className="d-flex flex-column align-items-center justify-content-center">
+                                                <i className={`ri-error-warning-line ${hasVisibilityError ? 'text-danger' : 'text-warning'} mb-2`} style={{ fontSize: '32px' }}></i>
+                                                <h5 className="text-muted fw-semibold fs-15">Rules Not Initialized</h5>
+
+                                                {hasVisibilityError && (
+                                                    <div className="alert alert-danger mt-2 mb-3 px-4 py-2">
+                                                        <i className="ri-error-warning-line me-2"></i>
+                                                        <strong>Save Failed:</strong> You must initialize and configure rules for this lender before saving.
+                                                    </div>
+                                                )}
+
+                                                <p className="text-muted mb-3 fs-13">The visibility logic rules for this lender have not been properly loaded.</p>
+                                                <button
+                                                    type="button"
+                                                    className={`btn btn-sm ${hasVisibilityError ? 'btn-danger btn-label' : 'btn-primary'}`}
+                                                    onClick={() => onAddLenderBlock(localActiveLenderId)}
+                                                >
+                                                    {hasVisibilityError && <i className="ri-error-warning-line label-icon align-middle fs-16 me-2"></i>}
+                                                    {!hasVisibilityError && <i className="ri-refresh-line me-1 align-bottom"></i>}
+                                                    Initialize Rules
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="table-responsive custom-scrollbar-wrapper pb-3">
+                                        <table className="table table-borderless table-nowrap align-middle mb-0" style={{ minWidth: 'max-content' }}>
+                                            <thead className="text-muted fs-12 fw-semibold" style={{ borderBottom: '2px solid #f3f6f9' }}>
+                                                <tr>
+                                                    <th style={{ width: '120px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '200px' }}>Product Category <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '150px' }}>Min FICOs <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '200px' }}>Min Monthly Deposits</th>
+                                                    <th style={{ width: '160px' }}>Min Deposit Count</th>
+                                                    <th style={{ width: '200px' }}>Min Avg Daily Bal</th>
+                                                    <th style={{ width: '150px' }}>Max NSF Count</th>
+                                                    <th style={{ width: '160px' }}>Max Negative Days</th>
+                                                    <th style={{ width: '120px' }}>Min DSCR</th>
+                                                    <th style={{ width: '200px' }}>Allowed States</th>
+                                                    <th style={{ width: '200px' }}>Restricted States</th>
+                                                    <th style={{ width: '200px' }}>Allowed Industries</th>
+                                                    <th style={{ width: '200px' }}>Restricted Industries</th>
+                                                    <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 11, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {visibilities.map((v, i) => {
+                                                    if (v.lender_id == null) return null;
+                                                    if (localActiveLenderId !== null && String(v.lender_id) !== String(localActiveLenderId)) return null;
+
+                                                    if (localActiveCategoryId !== null) {
+                                                        const vCatId = v.lender_product_category_id;
+                                                        if (localActiveCategoryId === 'general') {
+                                                            if (vCatId !== null && vCatId !== '') return null;
+                                                        } else {
+                                                            if (String(vCatId) !== String(localActiveCategoryId)) return null;
+                                                        }
                                                     }
-                                                }
-                                                const lender = lenders.find(l => l.id === v.lender_id);
-                                                const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
-                                                const badgeClass = getCategoryBadgeClass(categoryName || '');
+                                                    const lender = lenders.find(l => l.id === v.lender_id);
+                                                    const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
+                                                    const badgeClass = getCategoryBadgeClass(categoryName || '');
 
-                                                return (
-                                                    <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
-                                                        <td className="py-3" style={{ paddingLeft: 0 }}>
-                                                            <div className="fw-semibold text-dark fs-13">{lender?.name || 'Unknown'}</div>
-                                                        </td>
-                                                        <td className="py-3">
-                                                            {categoryName ? (
-                                                                <div className={`badge ${badgeClass} px-3 py-2 fs-13 rounded-1 fw-semibold d-inline-flex align-items-center text-nowrap`}>
-                                                                    <i className="ri-bank-card-line me-2 fs-14"></i> {categoryName}
+                                                    return (
+                                                        <tr key={i} style={{ borderBottom: '1px dashed #e9ebec' }}>
+                                                            <td className="py-3" style={{ paddingLeft: 0 }}>
+                                                                <div className="fw-semibold text-dark fs-13">{lender?.name || 'Unknown'}</div>
+                                                            </td>
+                                                            <td className="py-3">
+                                                                {categoryName ? (
+                                                                    <div className={`badge ${badgeClass} px-3 py-2 fs-13 rounded-1 fw-semibold d-inline-flex align-items-center text-nowrap`}>
+                                                                        <i className="ri-bank-card-line me-2 fs-14"></i> {categoryName}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-muted fw-medium fs-13">General</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="640"
+                                                                    value={v.min_fico || ''}
+                                                                    onChange={(e) => onChange(i, 'min_fico', e.target.value)}
+                                                                />
+                                                                {renderError('min_fico', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <Dropdown
+                                                                    value={v.min_tib_months}
+                                                                    options={TIB_OPTIONS}
+                                                                    onChange={(e) => onChange(i, 'min_tib_months', e.value)}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    placeholder="12 months"
+                                                                    className={`w-100 slim-dropdown rounded-2 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_tib_months`] ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {renderError('min_tib_months', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <div className="input-group">
+                                                                    <span
+                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
+                                                                        style={(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? { borderColor: '#f06548' } : undefined}
+                                                                    >$</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        placeholder="12000.00"
+                                                                        value={v.min_monthly_revenue || ''}
+                                                                        onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
+                                                                    />
                                                                 </div>
-                                                            ) : (
-                                                                <span className="text-muted fw-medium fs-13">General</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
-                                                                placeholder="640"
-                                                                value={v.min_fico || ''}
-                                                                onChange={(e) => onChange(i, 'min_fico', e.target.value)}
-                                                            />
-                                                            {renderError('min_fico', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <Dropdown
-                                                                value={v.min_tib_months}
-                                                                options={TIB_OPTIONS}
-                                                                onChange={(e) => onChange(i, 'min_tib_months', e.value)}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="12 months"
-                                                                className={`w-100 slim-dropdown rounded-2 shadow-none ${(errors as any)[`lender_visibilities.${i}.min_tib_months`] ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {renderError('min_tib_months', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <div className="input-group">
-                                                                <span
-                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'text-danger' : 'text-muted'}`}
-                                                                    style={(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? { borderColor: '#f06548' } : undefined}
-                                                                >$</span>
+                                                                {renderError('min_monthly_revenue', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <div className="input-group">
+                                                                    <span
+                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
+                                                                        style={(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? { borderColor: '#f06548' } : undefined}
+                                                                    >$</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        placeholder="12000.00"
+                                                                        value={v.min_monthly_deposits || ''}
+                                                                        onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                {renderError('min_monthly_deposits', i)}
+                                                            </td>
+                                                            <td className="py-3">
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
-                                                                    placeholder="12000.00"
-                                                                    value={v.min_monthly_revenue || ''}
-                                                                    onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="100"
+                                                                    value={v.min_deposit_count || ''}
+                                                                    onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
                                                                 />
-                                                            </div>
-                                                            {renderError('min_monthly_revenue', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <div className="input-group">
-                                                                <span
-                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'text-danger' : 'text-muted'}`}
-                                                                    style={(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? { borderColor: '#f06548' } : undefined}
-                                                                >$</span>
+                                                                {renderError('min_deposit_count', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <div className="input-group">
+                                                                    <span
+                                                                        className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
+                                                                        style={(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? { borderColor: '#f06548' } : undefined}
+                                                                    >$</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
+                                                                        placeholder="4000.00"
+                                                                        value={v.min_average_daily_balance || ''}
+                                                                        onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                {renderError('min_average_daily_balance', i)}
+                                                            </td>
+                                                            <td className="py-3">
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
-                                                                    placeholder="12000.00"
-                                                                    value={v.min_monthly_deposits || ''}
-                                                                    onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="4"
+                                                                    value={v.max_nsf_count || ''}
+                                                                    onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
                                                                 />
-                                                            </div>
-                                                            {renderError('min_monthly_deposits', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
-                                                                placeholder="100"
-                                                                value={v.min_deposit_count || ''}
-                                                                onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
-                                                            />
-                                                            {renderError('min_deposit_count', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <div className="input-group">
-                                                                <span
-                                                                    className={`input-group-text bg-white border-end-0 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'text-danger' : 'text-muted'}`}
-                                                                    style={(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? { borderColor: '#f06548' } : undefined}
-                                                                >$</span>
+                                                                {renderError('max_nsf_count', i)}
+                                                            </td>
+                                                            <td className="py-3">
                                                                 <input
                                                                     type="number"
-                                                                    className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
-                                                                    placeholder="4000.00"
-                                                                    value={v.min_average_daily_balance || ''}
-                                                                    onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="4"
+                                                                    value={v.max_negative_days || ''}
+                                                                    onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
                                                                 />
-                                                            </div>
-                                                            {renderError('min_average_daily_balance', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
-                                                                placeholder="4"
-                                                                value={v.max_nsf_count || ''}
-                                                                onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
-                                                            />
-                                                            {renderError('max_nsf_count', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <input
-                                                                type="number"
-                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
-                                                                placeholder="4"
-                                                                value={v.max_negative_days || ''}
-                                                                onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
-                                                            />
-                                                            {renderError('max_negative_days', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
-                                                                placeholder="1.25"
-                                                                value={v.min_dscr || ''}
-                                                                onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
-                                                            />
-                                                            {renderError('min_dscr', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <MultiSelect
-                                                                value={v.allowed_states}
-                                                                options={stateOptions}
-                                                                onChange={(e) => onChange(i, 'allowed_states', e.value)}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Select states"
-                                                                filter
-                                                                display="chip"
-                                                                panelStyle={{ maxWidth: '350px' }}
-                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_states`] ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {renderError('allowed_states', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <MultiSelect
-                                                                value={v.restricted_states}
-                                                                options={stateOptions}
-                                                                onChange={(e) => onChange(i, 'restricted_states', e.value)}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Blocked states"
-                                                                filter
-                                                                display="chip"
-                                                                panelStyle={{ maxWidth: '350px' }}
-                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_states`] ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {renderError('restricted_states', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <MultiSelect
-                                                                value={v.allowed_industries}
-                                                                options={industryTypes}
-                                                                onChange={(e) => onChange(i, 'allowed_industries', e.value)}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Select industries"
-                                                                filter
-                                                                display="chip"
-                                                                panelStyle={{ maxWidth: '350px' }}
-                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_industries`] ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {renderError('allowed_industries', i)}
-                                                        </td>
-                                                        <td className="py-3">
-                                                            <MultiSelect
-                                                                value={v.restricted_industries}
-                                                                options={industryTypes}
-                                                                onChange={(e) => onChange(i, 'restricted_industries', e.value)}
-                                                                optionLabel="label"
-                                                                optionValue="value"
-                                                                placeholder="Blocked industries"
-                                                                filter
-                                                                display="chip"
-                                                                panelStyle={{ maxWidth: '350px' }}
-                                                                className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_industries`] ? 'p-invalid border-danger' : ''}`}
-                                                            />
-                                                            {renderError('restricted_industries', i)}
-                                                        </td>
-                                                        <td className="py-3 text-center">
-                                                            <button
-                                                                type="button"
-                                                                className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
-                                                                style={{ width: '32px', height: '32px' }}
-                                                                onClick={() => onRemoveRow(i)}
-                                                                title="Remove row"
-                                                            >
-                                                                <i className="ri-delete-bin-line fs-14"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                                                {renderError('max_negative_days', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="1.25"
+                                                                    value={v.min_dscr || ''}
+                                                                    onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
+                                                                />
+                                                                {renderError('min_dscr', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <MultiSelect
+                                                                    value={v.allowed_states}
+                                                                    options={stateOptions}
+                                                                    onChange={(e) => onChange(i, 'allowed_states', e.value)}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    placeholder="Select states"
+                                                                    filter
+                                                                    display="chip"
+                                                                    panelStyle={{ maxWidth: '350px' }}
+                                                                    className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_states`] ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {renderError('allowed_states', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <MultiSelect
+                                                                    value={v.restricted_states}
+                                                                    options={stateOptions}
+                                                                    onChange={(e) => onChange(i, 'restricted_states', e.value)}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    placeholder="Blocked states"
+                                                                    filter
+                                                                    display="chip"
+                                                                    panelStyle={{ maxWidth: '350px' }}
+                                                                    className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_states`] ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {renderError('restricted_states', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <MultiSelect
+                                                                    value={v.allowed_industries}
+                                                                    options={industryTypes}
+                                                                    onChange={(e) => onChange(i, 'allowed_industries', e.value)}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    placeholder="Select industries"
+                                                                    filter
+                                                                    display="chip"
+                                                                    panelStyle={{ maxWidth: '350px' }}
+                                                                    className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_industries`] ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {renderError('allowed_industries', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <MultiSelect
+                                                                    value={v.restricted_industries}
+                                                                    options={RESTRICTED_INDUSTRIES_OPTIONS}
+                                                                    onChange={(e) => onChange(i, 'restricted_industries', e.value)}
+                                                                    optionLabel="label"
+                                                                    optionValue="value"
+                                                                    placeholder="Blocked industries"
+                                                                    filter
+                                                                    display="chip"
+                                                                    panelStyle={{ maxWidth: '350px' }}
+                                                                    className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_industries`] ? 'p-invalid border-danger' : ''}`}
+                                                                />
+                                                                {renderError('restricted_industries', i)}
+                                                            </td>
+                                                            <td className="py-3 text-center" style={{ position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 10, boxShadow: '-1px 0 0 #e9ebec' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center border-0 p-0"
+                                                                    style={{ width: '32px', height: '32px' }}
+                                                                    onClick={() => onRemoveRow(i)}
+                                                                    title="Remove row"
+                                                                >
+                                                                    <i className="ri-delete-bin-line fs-14"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

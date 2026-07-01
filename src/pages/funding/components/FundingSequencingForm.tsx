@@ -423,7 +423,7 @@ export default function FundingSequencingForm() {
                         // Save ONLY the active lender's visibility rules
                         const singleLenderPayload = {
                             ...unifiedPayload,
-                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => v.lender_id === activeLenderId)
+                            lender_visibilities: unifiedPayload.lender_visibilities.filter((v: any) => String(v.lender_id) === String(activeLenderId))
                         };
                         await updateFundingSequencingSingleLenderVisibility(id, activeLenderId, singleLenderPayload);
                     } else {
@@ -501,7 +501,7 @@ export default function FundingSequencingForm() {
                             }
                         }
                     });
-                    
+
                     // Merge the remapped errors back into mappedErrors
                     Object.assign(mappedErrors, newMappedErrors);
                 }
@@ -592,6 +592,12 @@ export default function FundingSequencingForm() {
 
     return (
         <div className="page-content">
+            <style>{`
+                #layout-wrapper, .main-content, .page-content {
+                    overflow: clip !important;
+                    overflow-x: clip !important;
+                }
+            `}</style>
             <div className="container-fluid">
                 {/* Page Header */}
                 <div className="row page-subheader-sticky bg-body">
@@ -660,7 +666,7 @@ export default function FundingSequencingForm() {
                                     )}
                                 </div>
                             )}
-                            
+
                         </div>
                     </div>
                 </div>
@@ -671,14 +677,14 @@ export default function FundingSequencingForm() {
                     </div>
                 ) : (
                     <form id="funding-sequencing-form" onSubmit={handleSubmit}>
-                        <div className="row credit-account-section">
+                        <div className="row funding-sequencing-section">
                             <div className="col-lg-12">
                                 <div className="card shadow-sm border-0">
-                                    <div className="card-header border-bottom-dashed pt-4 pb-0 bg-white">
+                                    <div className="card-header border-bottom-dashed pt-0 pb-0 bg-white">
                                         {/* Title removed per user request */}
 
                                         {/* Tabs Navigation */}
-                                        <ul className="nav nav-tabs-custom mb-0 border-bottom-0" role="tablist" style={{ gap: '30px' }}>
+                                        <ul className="nav nav-tabs-custom mb-0 border-bottom-0" role="tablist">
                                             <li className="nav-item">
                                                 <button
                                                     type="button"
@@ -703,7 +709,7 @@ export default function FundingSequencingForm() {
                                             </li>
                                         </ul>
                                     </div>
-                                    <div className="card-body pt-3">
+                                    <div className="card-body pt-1">
                                         <div className="tab-content text-muted">
                                             {/* ── Display Tab ─────────────────────────────────────────────────── */}
                                             <div className={`tab-pane ${activeTab === 'display' ? 'active' : ''}`} id="display">
@@ -893,7 +899,7 @@ export default function FundingSequencingForm() {
                                                     {/* Row 7 */}
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
-                                                            <label className="form-label text-dark fw-medium mb-2">Status</label>
+                                                            <label className="form-label text-dark fw-medium mb-2">Status <span className="text-danger">*</span></label>
                                                             <Dropdown
                                                                 value={formData.status}
                                                                 options={FUNDING_STATUS_OPTIONS}
