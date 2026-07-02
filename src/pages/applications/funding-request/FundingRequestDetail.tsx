@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFundingRequestDetails, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
-import { Skeleton } from 'primereact/skeleton';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
@@ -376,8 +375,8 @@ export default function FundingRequestDetail() {
                                 <div className="card-body p-4">
                                     {isUpdatingOrFetching ? (
                                         <div className="d-flex flex-column gap-3">
-                                            <Skeleton width="100px" height="15px" />
-                                            <Skeleton width="140px" height="30px" borderRadius="4px" />
+                                            <div className="skeleton-line" style={{ width: '100px', height: '14px', borderRadius: '4px' }}></div>
+                                            <div className="skeleton-line" style={{ width: '140px', height: '30px', borderRadius: '4px' }}></div>
                                         </div>
                                     ) : (
                                         <div className="row g-4">
@@ -414,9 +413,9 @@ export default function FundingRequestDetail() {
                                 <div className="card-body p-4">
                                     {isUpdatingOrFetching ? (
                                         <div className="d-flex flex-column gap-3">
-                                            <Skeleton width="120px" height="14px" />
-                                            <Skeleton width="100%" height="38px" borderRadius="4px" />
-                                            <Skeleton width="100%" height="38px" borderRadius="4px" />
+                                            <div className="skeleton-line" style={{ width: '120px', height: '14px', borderRadius: '4px' }}></div>
+                                            <div className="skeleton-line w-100" style={{ height: '38px', borderRadius: '6px' }}></div>
+                                            <div className="skeleton-line w-100" style={{ height: '38px', borderRadius: '6px' }}></div>
                                         </div>
                                     ) : (
                                         <>
@@ -468,13 +467,13 @@ export default function FundingRequestDetail() {
                                                             setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
                                                             return;
                                                         }
-                                                        if (selectedStatus !== review.status) {
+                                                        if (selectedStatus !== review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && rejectReason.trim() !== (review.reject_reason || '').trim())) {
                                                             setShowStatusModal(true);
                                                         } else {
-                                                            toast.info('Status is already ' + selectedStatus);
+                                                            toast.info('Status and note are unchanged.');
                                                         }
                                                     }}
-                                                    disabled={selectedStatus === review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim() && review.status === FUNDING_REVIEW_STATUS.REJECTED)}
+                                                    disabled={selectedStatus === review.status && (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? rejectReason.trim() === (review.reject_reason || '').trim() : true)}
                                                 >
                                                     Update Status
                                                 </button>
@@ -502,8 +501,12 @@ export default function FundingRequestDetail() {
                                     <i className={selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-line' : selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-check-line' : 'ri-refresh-line'}></i>
                                 </span>
                             </div>
-                            <h4 className="fw-bold">Confirm Status Update</h4>
-                            <p className="text-muted fs-14 mb-0">Are you sure you want to update the status to {selectedStatus}?</p>
+                            <h4 className="fw-bold">{selectedStatus === review.status ? 'Confirm Note Update' : 'Confirm Status Update'}</h4>
+                            <p className="text-muted fs-14 mb-0">
+                                {selectedStatus === review.status
+                                    ? 'Are you sure you want to update the rejection reason / note?'
+                                    : `Are you sure you want to update the status to ${selectedStatus}?`}
+                            </p>
                         </div>
 
                         {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (

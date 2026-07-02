@@ -68,6 +68,14 @@ export const FUNDING_REVIEW_STATUS = {
     REJECTED: 'Rejected'
 };
 
+export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
+    [FUNDING_REVIEW_STATUS.PENDING]: '#F59E0B',    // Orange
+    [FUNDING_REVIEW_STATUS.IN_PROGRESS]: '#3B82F6',// Blue
+    [FUNDING_REVIEW_STATUS.ACCEPTED]: '#06B6D4',   // Teal/Cyan
+    [FUNDING_REVIEW_STATUS.APPROVED]: '#10B981',   // Green
+    [FUNDING_REVIEW_STATUS.REJECTED]: '#EF4444',   // Red
+};
+
 export const FUNDING_REVIEW_STATUS_OPTIONS = [
     { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
     { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },

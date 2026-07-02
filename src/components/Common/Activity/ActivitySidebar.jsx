@@ -17,6 +17,7 @@ import {
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
+import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
 export default function ActivitySidebar({ entityId, entityType, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
     const [activities, setActivities] = useState([]);
@@ -219,20 +220,76 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
         return formatRelativeDate(activity.created_at);
     };
 
-    const getTitle = (activity) => {
-        if (activity.event_label) return activity.event_label;
+    const getStatusColor = (status) => {
+        const s = status.toLowerCase();
         
-        if (activity.log_type === 'email') {
-            return activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
-        }
-        
-        if (activity.log_type === 'activity') {
-            const refType = activity.reference ? activity.reference : 'Activity';
-            return activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
+        const configKey = Object.keys(FUNDING_REVIEW_STATUS_COLORS).find(
+            key => key.toLowerCase() === s || s.includes(key.toLowerCase())
+        );
+        if (configKey) {
+            return FUNDING_REVIEW_STATUS_COLORS[configKey];
         }
 
-        // Format system logs
-        return activity.subject || activity.log_type || 'Activity';
+        if (s === 'good' || s === 'strong') {
+            return '#10B981';
+        }
+        if (s.includes('fail') || s.includes('miss')) {
+            return '#EF4444';
+        }
+        return 'inherit';
+    };
+
+    const formatActivityTitle = (title) => {
+        if (typeof title !== 'string') return title;
+
+        if (title.includes('Status Changed:') || title.includes('Status Changed')) {
+            const separator = title.includes('Status Changed:') ? 'Status Changed:' : 'Status Changed';
+            const parts = title.split(separator);
+            const prefix = (parts[0] + separator).trim();
+            const statusPart = parts.slice(1).join(separator).trim();
+
+            const arrow = statusPart.includes('→') ? '→' : (statusPart.includes('->') ? '->' : null);
+            if (arrow) {
+                const statuses = statusPart.split(arrow);
+                const oldStatus = statuses[0].trim();
+                const newStatus = statuses[1].trim();
+
+                return (
+                    <span className="d-block" style={{ lineHeight: '1.4' }}>
+                        <span className="text-dark fw-bold d-block">{prefix}</span>
+                        <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
+                            <span style={{ color: getStatusColor(oldStatus), fontWeight: '700' }}>{oldStatus}</span>
+                            <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
+                            <span style={{ color: getStatusColor(newStatus), fontWeight: '700' }}>{newStatus}</span>
+                        </span>
+                    </span>
+                );
+            } else {
+                return (
+                    <span className="d-block" style={{ lineHeight: '1.4' }}>
+                        <span className="text-dark fw-bold d-block">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart), fontWeight: '700' }} className="d-block mt-1">{statusPart}</span>
+                    </span>
+                );
+            }
+        }
+
+        return title;
+    };
+
+    const getTitle = (activity) => {
+        let title = '';
+        if (activity.event_label) {
+            title = activity.event_label;
+        } else if (activity.log_type === 'email') {
+            title = activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
+        } else if (activity.log_type === 'activity') {
+            const refType = activity.reference ? activity.reference : 'Activity';
+            title = activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
+        } else {
+            title = activity.subject || activity.log_type || 'Activity';
+        }
+        return formatActivityTitle(title);
     };
 
     const renderAvatar = (activity) => {
@@ -418,7 +475,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-13 mb-0">
+                                                                    <h6 className="fs-13 mb-0 fw-bold text-dark">
                                                                         {getTitle(activity)}
                                                                     </h6>
                                                                     <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
@@ -442,6 +499,7 @@ export default function ActivitySidebar({ entityId, entityType, profileImage = n
                                                                 display: 'grid',
                                                                 gridTemplateRows: isOpen ? '1fr' : '0fr',
                                                                 transition: 'grid-template-rows 0.3s ease',
+                                                                overflow: 'hidden',
                                                             }}
                                                         >
                                                             <div style={{ overflow: 'hidden' }}>
