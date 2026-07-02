@@ -624,7 +624,7 @@ export default function FundingSequencingForm() {
                                     <button
                                         type="submit"
                                         form="funding-sequencing-form"
-                                        className="btn btn-primary waves-effect"
+                                        className="btn btn-primary w-lg waves-effect"
                                         disabled={loading || initialLoading}
                                     >
                                         {loading ? (
@@ -634,7 +634,7 @@ export default function FundingSequencingForm() {
                                             </>
                                         ) : (
                                             <>
-                                                <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Save Configuration'}
+                                                <i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}
                                             </>
                                         )}
                                     </button>
@@ -658,7 +658,7 @@ export default function FundingSequencingForm() {
                                     ) : (
                                         <button
                                             type="button"
-                                            className="btn btn-primary waves-effect"
+                                            className="btn btn-primary w-lg waves-effect"
                                             onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
                                         >
                                             <i className="ri-add-line align-middle me-1"></i> Add Visibility Logic

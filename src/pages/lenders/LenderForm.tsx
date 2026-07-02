@@ -181,11 +181,11 @@ export default function LenderForm() {
                                 <button type="button" className="btn btn-outline-secondary w-lg waves-effect" onClick={() => navigate('/lenders')} disabled={loading}>
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </button>
-                                <button type="button" className="btn btn-primary waves-effect" onClick={handleSubmit} disabled={loading || initialLoading}>
+                                <button type="button" className="btn btn-primary w-lg waves-effect" onClick={handleSubmit} disabled={loading || initialLoading}>
                                     {loading ? (
-                                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...</>
+                                        <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> {isEditMode ? 'Updating...' : 'Saving...'}</>
                                     ) : (
-                                        <><i className="ri-save-line align-middle me-1"></i> Save Lender</>
+                                        <><i className="ri-save-3-line align-middle me-1"></i> {isEditMode ? 'Update' : 'Save'}</>
                                     )}
                                 </button>
                             </div>
@@ -224,7 +224,7 @@ export default function LenderForm() {
                                                     appendTo="self"
                                                     display="chip"
                                                 />
-                                                {errors.product_categories && <small className="p-error">{errors.product_categories}</small>}
+                                                {errors.product_categories && <div className="invalid-feedback d-block">{errors.product_categories}</div>}
                                             </div>
 
                                             <div className="mb-4 col-md-4">
@@ -240,7 +240,7 @@ export default function LenderForm() {
                                                     className={`w-100 rounded-3 slim-dropdown ${errors.iso_status ? 'p-invalid' : ''}`}
                                                     appendTo="self"
                                                 />
-                                                {errors.iso_status && <small className="p-error">{errors.iso_status}</small>}
+                                                {errors.iso_status && <div className="invalid-feedback d-block">{errors.iso_status}</div>}
                                             </div>
 
                                             <div className="mb-4 col-md-4">
@@ -256,7 +256,7 @@ export default function LenderForm() {
                                                     className={`w-100 rounded-3 slim-dropdown ${errors.status ? 'p-invalid' : ''}`}
                                                     appendTo="self"
                                                 />
-                                                {errors.status && <small className="p-error">{errors.status}</small>}
+                                                {errors.status && <div className="invalid-feedback d-block">{errors.status}</div>}
                                             </div>
                                         </div>
 
@@ -377,7 +377,7 @@ export default function LenderForm() {
                                             </div>
 
                                             <div className="mb-4 col-md-6">
-                                                <label className="form-label text-dark fw-medium mb-2">Last Verified Date <span className="text-danger">*</span></label>
+                                                <label className="form-label text-dark fw-medium mb-2">Last Verified Date</label>
                                                 <div className="custom-datepicker">
                                                     <Calendar
                                                         id="last_verified_date"
@@ -392,13 +392,13 @@ export default function LenderForm() {
                                                         dateFormat="dd M, yy"
                                                         placeholder="Select date"
                                                         showIcon
-                                                        className="w-100"
+                                                        className={`w-100 ${errors.last_verified_date ? 'p-invalid' : ''}`}
                                                         appendTo="self"
                                                         readOnlyInput
                                                         maxDate={new Date()}
                                                     />
                                                 </div>
-                                                {errors.last_verified_date && <small className="p-error">{errors.last_verified_date}</small>}
+                                                {errors.last_verified_date && <div className="invalid-feedback d-block">{errors.last_verified_date}</div>}
                                             </div>
 
                                             <div className="mb-4 col-md-12">
@@ -416,7 +416,7 @@ export default function LenderForm() {
                     </div>
                 </div>
             </div>
-            
+
             {/* Product Category Modal */}
             <LenderProductCategoryModal
                 visible={showCategoryModal}
