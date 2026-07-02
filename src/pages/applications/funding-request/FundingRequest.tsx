@@ -11,6 +11,7 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
+import { fetchFundingSequencings } from '../../../modules/funding/services';
 
 import TableLoader from '../../../components/Loader/TableLoader';
 
@@ -31,6 +32,8 @@ export default function FundingRequest() {
     // Filter states
     const [searchText, setSearchText] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedFundingSequence, setSelectedFundingSequence] = useState<string>('');
+    const [fundingSequenceOptions, setFundingSequenceOptions] = useState<any[]>([]);
     const [filters, setFilters] = useState<any>({});
 
     // Removed modal state
@@ -39,10 +42,12 @@ export default function FundingRequest() {
     const [appliedFilters, setAppliedFilters] = useState<{
         search: string;
         status: string;
+        funding_sequence_id: string;
         filters: any;
     }>({
         search: '',
         status: '',
+        funding_sequence_id: '',
         filters: {}
     });
 
@@ -52,9 +57,18 @@ export default function FundingRequest() {
         per_page: perPage,
         search: appliedFilters.search,
         status: appliedFilters.status,
+        ...(appliedFilters.funding_sequence_id ? { funding_sequence_id: Number(appliedFilters.funding_sequence_id) } : {}),
         sort_field: sortField,
         sort_order: sortOrder,
     };
+
+    // Load funding sequences for filter dropdown
+    useEffect(() => {
+        fetchFundingSequencings({ per_page: 200, page: 1 }).then((res: any) => {
+            const options = (res?.data || []).map((s: any) => ({ label: s.name, value: String(s.id) }));
+            setFundingSequenceOptions(options);
+        }).catch(() => {});
+    }, []);
 
     const { data: apiResponse, isLoading, isFetching } = useFundingRequests(queryParams);
     const reviews = apiResponse?.data || [];
@@ -83,6 +97,7 @@ export default function FundingRequest() {
             ...prev,
             search: searchText,
             status: selectedStatus,
+            funding_sequence_id: selectedFundingSequence,
             filters: filters
         }));
         setPage(1);
@@ -91,10 +106,12 @@ export default function FundingRequest() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus('');
+        setSelectedFundingSequence('');
         initFilters();
         setAppliedFilters({
             search: '',
             status: '',
+            funding_sequence_id: '',
             filters: {}
         });
         setPage(1);
@@ -179,7 +196,7 @@ export default function FundingRequest() {
                             <div className="card-body">
                                 <form className="table-filter" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     <div className="row g-3 mb-3">
-                                        <div className="col-lg-4 col-md-6 col-12">
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -192,7 +209,7 @@ export default function FundingRequest() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-lg-4 col-md-6 col-12">
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <Dropdown
                                                 value={selectedStatus}
                                                 options={[{ label: 'All Status', value: '' }, ...statusOptions]}
@@ -203,7 +220,19 @@ export default function FundingRequest() {
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className="col-lg-4 col-md-12 col-12">
+                                        <div className="col-lg-3 col-md-6 col-12">
+                                            <Dropdown
+                                                value={selectedFundingSequence}
+                                                options={[{ label: 'All Funding Sequences', value: '' }, ...fundingSequenceOptions]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                onChange={(e) => setSelectedFundingSequence(e.value)}
+                                                placeholder="All Funding Sequences"
+                                                className="w-100 employee-filter-dropdown"
+                                                filter
+                                            />
+                                        </div>
+                                        <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
