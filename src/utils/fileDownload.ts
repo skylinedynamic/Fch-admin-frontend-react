@@ -75,20 +75,26 @@ export const downloadBlob = (blob: Blob, fileName: string, mimeType?: string): v
 };
 
 /**
- * Download file from URL (fallback method)
- * @param fileUrl - URL of the file to download
- * @param fileName - Name to save the file as
+ * Download file from URL using fetch (prevents browser redirect on 404)
+ * Shows toast error if URL is missing, not found, or download fails
  */
-export const downloadFromUrl = (fileUrl: string, fileName: string): void => {
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-
-    setTimeout(() => {
-        document.body.removeChild(link);
-    }, 100);
+export const downloadFromUrl = async (fileUrl: string, fileName: string): Promise<void> => {
+    if (!fileUrl) {
+        toast.error('Download failed: file URL is missing.');
+        return;
+    }
+    try {
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+            toast.error(`Download failed: file not found (${response.status}).`);
+            return;
+        }
+        const blob = await response.blob();
+        downloadBlob(blob, fileName);
+    } catch (error) {
+        console.error('Direct download failed:', error);
+        toast.error('Download failed');
+    }
 };
 
 /**
