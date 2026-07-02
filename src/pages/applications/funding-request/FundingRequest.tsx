@@ -135,7 +135,7 @@ export default function FundingRequest() {
 
     const actionBodyTemplate = (rowData: any) => {
         return (
-            <button 
+            <button
                 className="btn btn-sm btn-primary d-flex align-items-center justify-content-center px-3 rounded shadow-sm"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -184,7 +184,7 @@ export default function FundingRequest() {
                                                 <input
                                                     type="text"
                                                     className="form-control search bg-light border-light"
-                                                    placeholder="Search borrower name..."
+                                                    placeholder="Search borrower or partner name..."
                                                     value={searchText}
                                                     onChange={(e) => setSearchText(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
@@ -245,9 +245,9 @@ export default function FundingRequest() {
                                             onRowClick={(e) => navigate(`/intake-review/funding-request/${e.data.id}`)}
                                             rowClassName={() => 'cursor-pointer'}
                                         >
-                                            <Column header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} style={{ minWidth: '160px' }} />
+                                            <Column field="borrower_name" header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} sortable style={{ minWidth: '160px' }} />
                                             {isHost && (
-                                                <Column header="Partner Name" body={(r) => `${r.partner?.first_name || ''} ${r.partner?.last_name || ''}`} style={{ minWidth: '160px' }} />
+                                                <Column field="partner_name" header="Partner Name" body={(r) => r.partner?.full_name || '-'} sortable style={{ minWidth: '160px' }} />
                                             )}
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
