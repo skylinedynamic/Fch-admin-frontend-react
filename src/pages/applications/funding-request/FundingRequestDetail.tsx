@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFundingRequestDetails, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
+import { Skeleton } from 'primereact/skeleton';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
@@ -53,8 +54,10 @@ export default function FundingRequestDetail() {
     const [selectedStatus, setSelectedStatus] = useState('');
     const [validationErrors, setValidationErrors] = useState<any>({});
 
-    const { data: apiResponse, isLoading, error } = useFundingRequestDetails(id || '');
+    const { data: apiResponse, isLoading, isFetching, error } = useFundingRequestDetails(id || '');
     const updateStatusMutation = useUpdateFundingRequestStatus();
+
+    const isUpdatingOrFetching = updateStatusMutation.isPending || isFetching;
 
     const review = apiResponse?.data;
 
@@ -89,6 +92,8 @@ export default function FundingRequestDetail() {
                     if (selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED) {
                         setRejectReason('');
                     }
+                    // Trigger Activity Log refresh
+                    window.dispatchEvent(new Event('refreshActivities'));
                 },
                 onError: (err: any) => {
                     if (err?.response?.status === 422) {
@@ -369,20 +374,27 @@ export default function FundingRequestDetail() {
                                     </div>
                                 </div>
                                 <div className="card-body p-4">
-                                    <div className="row g-4">
-                                        <div className="col-md-6">
-                                            <p className="text-muted mb-2 fs-13">Current Status</p>
-                                            <div>{getStatusBadge(review.status)}</div>
+                                    {isUpdatingOrFetching ? (
+                                        <div className="d-flex flex-column gap-3">
+                                            <Skeleton width="100px" height="15px" />
+                                            <Skeleton width="140px" height="30px" borderRadius="4px" />
                                         </div>
-                                        {review.status === FUNDING_REVIEW_STATUS.REJECTED && (
-                                            <div className="col-md-12">
-                                                <p className="text-muted mb-2 fs-13">Rejection Reason</p>
-                                                <div className="fs-14 p-3 bg-light rounded text-dark border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
-                                                    {review.reject_reason || 'No reason provided'}
-                                                </div>
+                                    ) : (
+                                        <div className="row g-4">
+                                            <div className="col-md-6">
+                                                <p className="text-muted mb-2 fs-13">Current Status</p>
+                                                <div>{getStatusBadge(review.status)}</div>
                                             </div>
-                                        )}
-                                    </div>
+                                            {review.status === FUNDING_REVIEW_STATUS.REJECTED && (
+                                                <div className="col-md-12">
+                                                    <p className="text-muted mb-2 fs-13">Rejection Reason</p>
+                                                    <div className="fs-14 p-3 bg-light rounded text-dark border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
+                                                        {review.reject_reason || 'No reason provided'}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -400,71 +412,82 @@ export default function FundingRequestDetail() {
                                     </div>
                                 </div>
                                 <div className="card-body p-4">
-                                    <p className="text-muted fs-13 mb-4">Update the status of this funding sequence step.</p>
+                                    {isUpdatingOrFetching ? (
+                                        <div className="d-flex flex-column gap-3">
+                                            <Skeleton width="120px" height="14px" />
+                                            <Skeleton width="100%" height="38px" borderRadius="4px" />
+                                            <Skeleton width="100%" height="38px" borderRadius="4px" />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-muted fs-13 mb-4">Update the status of this funding sequence step.</p>
 
-                                    <div className="mb-4">
-                                        <label className="form-label fs-14 fw-semibold">Status</label>
-                                        <select
-                                            className="form-select bg-light border-0 rounded"
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                        >
-                                            {FUNDING_REVIEW_STATUS_OPTIONS.map((option) => (
-                                                <option key={option.value} value={option.value}>{option.label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                            <div className="mb-4">
+                                                <label className="form-label fs-14 fw-semibold">Status</label>
+                                                <select
+                                                    className="form-select bg-light border-0 rounded"
+                                                    value={selectedStatus}
+                                                    onChange={(e) => setSelectedStatus(e.target.value)}
+                                                >
+                                                    {FUNDING_REVIEW_STATUS_OPTIONS.map((option) => (
+                                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                    {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
-                                        <div className="mb-4">
-                                            <label className="form-label fs-14 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
-                                            <textarea
-                                                className={`form-control bg-light border-0 rounded ${validationErrors.reject_reason ? 'is-invalid' : ''}`}
-                                                rows={4}
-                                                value={rejectReason}
-                                                onChange={(e) => {
-                                                    setRejectReason(e.target.value);
-                                                    if (validationErrors.reject_reason) {
-                                                        setValidationErrors({ ...validationErrors, reject_reason: null });
-                                                    }
-                                                }}
-                                                placeholder="Please provide a reason for rejection..."
-                                                style={{ resize: 'none' }}
-                                            ></textarea>
-                                            {validationErrors.reject_reason && (
-                                                <div className="invalid-feedback d-block mt-2">
-                                                    {validationErrors.reject_reason[0]}
+                                            {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
+                                                <div className="mb-4">
+                                                    <label className="form-label fs-14 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
+                                                    <textarea
+                                                        className={`form-control bg-light border-0 rounded ${validationErrors.reject_reason ? 'is-invalid' : ''}`}
+                                                        rows={4}
+                                                        value={rejectReason}
+                                                        onChange={(e) => {
+                                                            setRejectReason(e.target.value);
+                                                            if (validationErrors.reject_reason) {
+                                                                setValidationErrors({ ...validationErrors, reject_reason: null });
+                                                            }
+                                                        }}
+                                                        placeholder="Please provide a reason for rejection..."
+                                                        style={{ resize: 'none' }}
+                                                    ></textarea>
+                                                    {validationErrors.reject_reason && (
+                                                        <div className="invalid-feedback d-block mt-2">
+                                                            {validationErrors.reject_reason[0]}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
-                                        </div>
-                                    )}
 
-                                    <div className="d-flex flex-column gap-3">
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary py-2 fs-15 border-0 rounded fw-bold"
-                                            onClick={() => {
-                                                if (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim()) {
-                                                    setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
-                                                    return;
-                                                }
-                                                if (selectedStatus !== review.status) {
-                                                    setShowStatusModal(true);
-                                                } else {
-                                                    toast.info('Status is already ' + selectedStatus);
-                                                }
-                                            }}
-                                            disabled={selectedStatus === review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim() && review.status === FUNDING_REVIEW_STATUS.REJECTED)}
-                                        >
-                                            Update Status
-                                        </button>
-                                    </div>
+                                            <div className="d-flex flex-column gap-3">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary py-2 fs-15 border-0 rounded fw-bold"
+                                                    onClick={() => {
+                                                        if (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim()) {
+                                                            setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
+                                                            return;
+                                                        }
+                                                        if (selectedStatus !== review.status) {
+                                                            setShowStatusModal(true);
+                                                        } else {
+                                                            toast.info('Status is already ' + selectedStatus);
+                                                        }
+                                                    }}
+                                                    disabled={selectedStatus === review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim() && review.status === FUNDING_REVIEW_STATUS.REJECTED)}
+                                                >
+                                                    Update Status
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
                             <ActivitySidebar
                                 entityId={review.id}
                                 entityType={ENTITY_TYPE_FUNDING_REQUEST}
+                                loading={isUpdatingOrFetching}
                             />
                         </div>
                     </div>

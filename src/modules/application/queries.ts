@@ -102,7 +102,8 @@ export const useUpdateFundingRequestStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateFundingRequestStatus,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
         queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
     },
   });
