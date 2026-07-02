@@ -246,6 +246,9 @@ export default function FundingRequest() {
                                             rowClassName={() => 'cursor-pointer'}
                                         >
                                             <Column header="Borrower Name" body={(r) => `${r.borrower?.first_name || ''} ${r.borrower?.last_name || ''}`} style={{ minWidth: '160px' }} />
+                                            {isHost && (
+                                                <Column header="Partner Name" body={(r) => `${r.partner?.first_name || ''} ${r.partner?.last_name || ''}`} style={{ minWidth: '160px' }} />
+                                            )}
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
                                             <Column field="use_of_funds" header="Purpose" sortable style={{ minWidth: '160px' }} />

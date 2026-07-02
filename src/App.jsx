@@ -329,11 +329,9 @@ export default function App() {
                 <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
               </Route>
 
-              <Route element={<HostRoute />}>
-                <Route element={<PermissionRoute permission="view funding application" />}>
-                  <Route path="funding-request" element={<FundingRequest />} />
-                  <Route path="funding-request/:id" element={<FundingRequestDetail />} />
-                </Route>
+              <Route element={<PermissionRoute permission="view funding request" />}>
+                <Route path="funding-request" element={<FundingRequest />} />
+                <Route path="funding-request/:id" element={<FundingRequestDetail />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view change requests" />}>

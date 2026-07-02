@@ -38,9 +38,14 @@ const getFileTypeBadge = (type: string) => {
     return <span className={`badge bg-${color}-subtle text-${color} fs-11 px-2 py-1`}>{type}</span>;
 };
 
+import { useAuthStore } from '../../../store/auth/authStore';
+
 export default function FundingRequestDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    
+    const currentUser = useAuthStore((state: any) => state.user);
+    const isHost = currentUser?.is_host == 1;
 
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
@@ -150,6 +155,12 @@ export default function FundingRequestDetail() {
                                             <p className="text-muted mb-1 fs-13">Borrower Name</p>
                                             <h5 className="fs-15 fw-bold mb-0">{`${review.borrower?.first_name || ''} ${review.borrower?.last_name || ''}`}</h5>
                                         </div>
+                                        {isHost && (
+                                            <div className="col-md-6">
+                                                <p className="text-muted mb-1 fs-13">Partner Name</p>
+                                                <h5 className="fs-15 fw-bold mb-0">{review.partner ? `${review.partner.first_name || ''} ${review.partner.last_name || ''}` : '-'}</h5>
+                                            </div>
+                                        )}
                                         <div className="col-md-6">
                                             <p className="text-muted mb-1 fs-13">Funding Sequence</p>
                                             <h5 className="fs-15 fw-bold mb-0">{review.funding_sequence?.name || '-'}</h5>

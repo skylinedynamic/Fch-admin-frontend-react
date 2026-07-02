@@ -58,8 +58,7 @@ const menuItems = [
       {
         to: '/intake-review/funding-request',
         label: 'Funding Request',
-        permission: 'view funding application', // Reusing permission unless specified otherwise
-        isHostOnly: true,
+        permission: 'view funding request',
       },
       {
         to: '/intake-review/change-requests',
