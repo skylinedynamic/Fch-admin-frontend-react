@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { getLender, createLender, updateLender, getLenderProductCategories } from '../../modules/lender/services';
 import { Lender } from '../../modules/lender/types';
 import FormLoader from '../../components/Loader/FormLoader';
-import { formatPhoneNumber } from '../../utils/formatters';
+import { formatPhoneNumber, parseDate } from '../../utils/formatters';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { MultiSelect } from 'primereact/multiselect';
@@ -164,7 +164,7 @@ export default function LenderForm() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
+                <div className="row page-subheader-sticky bg-body" style={{ top: '70px' }}>
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
@@ -381,7 +381,7 @@ export default function LenderForm() {
                                                 <div className="custom-datepicker">
                                                     <Calendar
                                                         id="last_verified_date"
-                                                        value={formData.last_verified_date ? new Date(formData.last_verified_date) : null}
+                                                        value={formData.last_verified_date ? parseDate(formData.last_verified_date) : null}
                                                         onChange={(e) => {
                                                             const date = e.value as Date;
                                                             const dateString = date
