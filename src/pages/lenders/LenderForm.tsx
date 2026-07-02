@@ -164,7 +164,7 @@ export default function LenderForm() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body" style={{ top: '70px' }}>
+                <div className="row page-subheader-sticky bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">

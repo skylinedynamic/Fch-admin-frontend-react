@@ -608,7 +608,7 @@ export default function FundingSequencingForm() {
                                 <nav aria-label="breadcrumb">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/funding" className="text-muted">Funding</Link></li>
+                                        <li className="breadcrumb-item"><Link to="/funding" className="text-muted">Funding Sequence</Link></li>
                                         <li className="breadcrumb-item active" aria-current="page">{isEditMode ? 'Edit' : 'Add'}</li>
                                     </ol>
                                 </nav>
