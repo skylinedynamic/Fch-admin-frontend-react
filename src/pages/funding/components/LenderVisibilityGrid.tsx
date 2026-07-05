@@ -1003,7 +1003,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     optionValue="value"
                                                                     placeholder="Select states"
                                                                     filter
-                                                                    display="chip"
+                                                                    maxSelectedLabels={2}
+                                                                    selectedItemsLabel="{0} states selected"
                                                                     panelStyle={{ maxWidth: '350px' }}
                                                                     className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_states`] ? 'p-invalid border-danger' : ''}`}
                                                                 />
@@ -1018,7 +1019,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     optionValue="value"
                                                                     placeholder="Blocked states"
                                                                     filter
-                                                                    display="chip"
+                                                                    maxSelectedLabels={2}
+                                                                    selectedItemsLabel="{0} states selected"
                                                                     panelStyle={{ maxWidth: '350px' }}
                                                                     className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_states`] ? 'p-invalid border-danger' : ''}`}
                                                                 />
@@ -1033,7 +1035,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     optionValue="value"
                                                                     placeholder="Select industries"
                                                                     filter
-                                                                    display="chip"
+                                                                    maxSelectedLabels={2}
+                                                                    selectedItemsLabel="{0} industries selected"
                                                                     panelStyle={{ maxWidth: '350px' }}
                                                                     className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.allowed_industries`] ? 'p-invalid border-danger' : ''}`}
                                                                 />
@@ -1048,7 +1051,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     optionValue="value"
                                                                     placeholder="Blocked industries"
                                                                     filter
-                                                                    display="chip"
+                                                                    maxSelectedLabels={2}
+                                                                    selectedItemsLabel="{0} industries selected"
                                                                     panelStyle={{ maxWidth: '350px' }}
                                                                     className={`w-100 slim-multiselect rounded-3 shadow-none ${(errors as any)[`lender_visibilities.${i}.restricted_industries`] ? 'p-invalid border-danger' : ''}`}
                                                                 />
