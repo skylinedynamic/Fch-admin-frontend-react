@@ -266,8 +266,9 @@ export default function ClientDetails() {
                     return;
                 }
 
+
                 if (isWLOrCP) {
-                    toast.success("Client created successfully. Partner fee ($800) charged automatically.");
+                    toast.success(`Client created successfully.`);
                 } else {
                     toast.success("Client created successfully");
                 }
