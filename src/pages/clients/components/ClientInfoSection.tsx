@@ -220,20 +220,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
 
     // Fetch Users for Assign to dropdown
     useEffect(() => {
-        const isFreeTrailChecked = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1';
-        if (isFreeTrailChecked && !formData.free_trail_end_date) {
-            const defaultDate = new Date();
-            defaultDate.setMonth(defaultDate.getMonth() + 1);
-            const dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-            setFormData(prev => ({ ...prev, free_trail_end_date: dateString }));
-            if (handleLocationChange) {
-                handleLocationChange('free_trail_end_date', dateString);
-            }
-        }
-    }, [formData.is_free_trail, formData.free_trail_end_date]);
-
-    // Fetch Users for Assign to dropdown
-    useEffect(() => {
         const fetchUsers = async () => {
             try {
                 const response = await allUsers();
@@ -1134,30 +1120,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                     if (isPartnerOnFreeTrial) return;
                                                     const checked = e.target.checked;
 
-                                                    // Calculate default date: 1 month from today
-                                                    let dateString = '';
-                                                    if (checked) {
-                                                        const defaultDate = new Date();
-                                                        defaultDate.setMonth(defaultDate.getMonth() + 1);
-                                                        dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-                                                    }
-
-                                                    // Update locally and propagate to parent state
                                                     setFormData(prev => ({
                                                         ...prev,
                                                         is_free_trail: checked,
-                                                        free_trail_end_date: dateString
                                                     }));
 
                                                     if (handleLocationChange) {
                                                         handleLocationChange('is_free_trail', checked);
-                                                        handleLocationChange('free_trail_end_date', dateString);
                                                     }
 
                                                     if (setErrors) {
                                                         const newErrors = { ...errors };
                                                         delete newErrors.is_free_trail;
-                                                        delete newErrors.free_trail_end_date;
                                                         setErrors(newErrors);
                                                     }
                                                 }}
@@ -1168,33 +1142,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         </div>
                                     </div>
 
-                                    {formData.is_free_trail && (
-                                        <div className="col-md-6">
-                                            <div className="mb-0">
-                                                <label htmlFor="free_trail_end_date" className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
-                                                <div className="custom-datepicker">
-                                                    <Calendar
-                                                        id="free_trail_end_date"
-                                                        value={parseDate(formData.free_trail_end_date)}
-                                                        onChange={(e) => {
-                                                            const date = e.value as Date;
-                                                            const dateString = date
-                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                                : "";
-                                                            handleInputChange({ target: { name: 'free_trail_end_date', value: dateString } });
-                                                        }}
-                                                        dateFormat="dd M, yy"
-                                                        placeholder="Select trial end date"
-                                                        showIcon
-                                                        className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
-                                                        appendTo="self"
-                                                        readOnlyInput
-                                                    />
-                                                </div>
-                                                {errors.free_trail_end_date && <div className="text-danger mt-1 small">{errors.free_trail_end_date}</div>}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
