@@ -230,6 +230,7 @@ export interface FormData {
 
     odds_inquiries_rule_t1: string;
     odds_inquiries_rule_t2: string;
+    next_play_delay: string;
 }
 
 export interface FormErrors {
@@ -465,6 +466,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         odds_inquiries_rule_t1: '5',
         odds_inquiries_rule_t2: '3',
+        next_play_delay: '0',
     });
     const [timeSettings, setTimeSettings] = useState<TimeSettings>({
         morning: { start: '06:00', end: '12:00' },
@@ -787,6 +789,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
                 odds_inquiries_rule_t1: buildOddsTierValue('recent_inquiries', 2, 'min', '5'),
                 odds_inquiries_rule_t2: buildOddsTierValue('recent_inquiries', 1, 'min', '3'),
+                next_play_delay: sv(scoreConfig?.next_play_delay, '0'),
             }));
 
             const decimalToTime = (d: number): string => {
@@ -1200,6 +1203,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 { label: 'Mid Day', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
                 { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 3 },
             ];
+            scorePayload.next_play_delay = formData.next_play_delay ? parseInt(formData.next_play_delay) : 0;
 
             const saveResp = await updateScoreConfigurations(scorePayload);
             if (saveResp?.status === false) {
@@ -1328,6 +1332,8 @@ const ScoreCalculationConfigForm: React.FC = () => {
                             <GeneralSettingTab
                                 timeSettings={timeSettings}
                                 onChange={setTimeSettings}
+                                nextPlayDelay={formData.next_play_delay}
+                                onNextPlayDelayChange={(val) => setFormData(prev => ({ ...prev, next_play_delay: val }))}
                             />
                         )}
 

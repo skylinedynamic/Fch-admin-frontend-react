@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
-import { loadStripe } from '@stripe/stripe-js';
 import {
   CardNumberElement,
   CardExpiryElement,
