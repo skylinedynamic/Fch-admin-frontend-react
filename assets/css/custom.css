@@ -844,6 +844,22 @@ File: Custom Css File
   border-radius: 50% !important;
 }
 
+.sk-rounded-6 {
+  border-radius: 6px !important;
+}
+
+.sk-rounded-8 {
+  border-radius: 8px !important;
+}
+
+.sk-w-48 {
+  width: 48px !important;
+}
+
+.sk-h-48 {
+  height: 48px !important;
+}
+
 .sk-h-2 {
   height: 2px !important;
 }
@@ -1353,6 +1369,7 @@ File: Custom Css File
 .p-dropdown {
   display: inline-flex !important;
   align-items: center !important;
+  border: 1px solid #e3e6e9 !;
 }
 
 .p-dropdown .p-dropdown-label {
@@ -1542,4 +1559,28 @@ File: Custom Css File
   background: var(--vz-sidebar-bg, #f3f6f9);
 }
 
-
+/* Lead Convert Premium Warning Card styles */
+.trial-switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.04) 0%, rgba(255, 193, 7, 0.1) 100%) !important;
+  border: 1px solid rgba(255, 193, 7, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.08) !important;
+}
+
+.trial-switch-container .trial-avatar {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.trial-switch-container .trial-switch-input {
+  cursor: pointer !important;
+}
+
+.trial-switch-container .trial-subtext {
+  font-size: 0.8rem !important;
+}
