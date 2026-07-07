@@ -488,6 +488,9 @@ export default function FundingRequestDetail() {
                                 entityType={ENTITY_TYPE_FUNDING_REQUEST}
                                 loading={isUpdatingOrFetching}
                                 partnerId={review.partner_id}
+                                borrowerEmail={review.borrower?.user?.email || review.borrower?.email}
+                                partnerEmail={review.partner?.user?.email || review.partner?.email}
+                                isHost={isHost}
                             />
                         </div>
                     </div>

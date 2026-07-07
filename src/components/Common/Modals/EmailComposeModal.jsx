@@ -16,8 +16,29 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         subject: '',
         message_body: '',
         attachments: [],
-        target_recipient: ''
+        target_recipient: 'borrower'
     });
+
+    const handleTargetRecipientChange = (e) => {
+        const newTarget = e.target.value;
+        setFormData(prev => ({ ...prev, target_recipient: newTarget }));
+        
+        const ctx = window._activityEntityContext || {};
+        let emailToSet = '';
+        if (newTarget === 'borrower' && ctx.borrowerEmail) {
+            emailToSet = ctx.borrowerEmail;
+        } else if (newTarget === 'host') {
+            emailToSet = ctx.isHost ? (ctx.partnerEmail || '') : 'support@fourcornerholding.com';
+        }
+        
+        if (emailToSet && choicesInstanceRef.current) {
+            choicesInstanceRef.current.removeActiveItems();
+            choicesInstanceRef.current.setValue([emailToSet]);
+            
+            const all = choicesInstanceRef.current.getValue(true);
+            setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -96,7 +117,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
 
             if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
                 if (!formData.target_recipient) {
-                    setErrors({ target_recipient: ['Please select Email to Host or Email to Borrower'] });
+                    setErrors({ target_recipient: ['Please select Email to FCH or Email to Borrower'] });
                     setIsSaving(false);
                     return;
                 }
@@ -234,7 +255,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 addItems: true,
                 removeItems: true,
                 editItems: true,
-                duplicateItemsAllowed: false,
+                duplicateItemsAllowed: true,
                 delimiter: ',',
                 paste: true,
                 placeholderValue: 'Enter emails...',
@@ -319,12 +340,19 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 subject: '',
                 message_body: '',
                 attachments: [],
-                target_recipient: ''
+                target_recipient: 'borrower'
             });
             if (choicesInstanceRef.current) {
                 choicesInstanceRef.current.removeActiveItems();
-                if (lead?.email) {
+                const ctx = window._activityEntityContext || {};
+                const resolvedEntityType = entityType ?? ctx.entityType;
+                
+                if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
+                    choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
+                    setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
+                } else if (lead?.email) {
                     choicesInstanceRef.current.setValue([lead.email]);
+                    setFormData(prev => ({ ...prev, to_emails: lead.email }));
                 }
             }
             
@@ -383,6 +411,50 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                             </div>
                         )}
                         <form onSubmit={(e) => e.preventDefault()}>
+                            {(() => {
+                                const ctx = window._activityEntityContext || {};
+                                const resolvedEntityType = entityType ?? ctx.entityType;
+                                const resolvedPartnerId = ctx.partnerId;
+                                
+                                if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                                    return (
+                                        <div className="mb-3">
+                                            <div className="d-flex gap-4">
+                                                <div className="form-check">
+                                                    <input 
+                                                        className="form-check-input" 
+                                                        type="radio" 
+                                                        name="email_target_recipient"
+                                                        id="emailSendToHost"
+                                                        value="host"
+                                                        checked={formData.target_recipient === 'host'}
+                                                        onChange={handleTargetRecipientChange}
+                                                    />
+                                                    <label className="form-check-label" htmlFor="emailSendToHost">
+                                                        {ctx.isHost ? 'Email to Partner' : 'Email to FCH'}
+                                                    </label>
+                                                </div>
+                                                <div className="form-check">
+                                                    <input 
+                                                        className="form-check-input" 
+                                                        type="radio" 
+                                                        name="email_target_recipient"
+                                                        id="emailSendToBorrower"
+                                                        value="borrower"
+                                                        checked={formData.target_recipient === 'borrower'}
+                                                        onChange={handleTargetRecipientChange}
+                                                    />
+                                                    <label className="form-check-label" htmlFor="emailSendToBorrower">
+                                                        Email to Borrower
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {errors.target_recipient && <div className="text-danger mt-1 small">{errors.target_recipient[0]}</div>}
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <div className="mb-3">
                                 <label className="form-label">To <span className="text-danger">*</span></label>
                                 <div className={errors.to_emails ? 'is-invalid' : ''}>
@@ -420,50 +492,6 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
                             </div>
                             <div className="row g-3">
-                                {(() => {
-                                    const ctx = window._activityEntityContext || {};
-                                    const resolvedEntityType = entityType ?? ctx.entityType;
-                                    const resolvedPartnerId = ctx.partnerId;
-                                    
-                                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
-                                        return (
-                                            <div className="col-12">
-                                                <div className="d-flex gap-4 mb-2">
-                                                    <div className="form-check">
-                                                        <input 
-                                                            className="form-check-input" 
-                                                            type="radio" 
-                                                            name="email_target_recipient"
-                                                            id="emailSendToHost"
-                                                            value="host"
-                                                            checked={formData.target_recipient === 'host'}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_recipient: e.target.value }))}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="emailSendToHost">
-                                                            Email to Host
-                                                        </label>
-                                                    </div>
-                                                    <div className="form-check">
-                                                        <input 
-                                                            className="form-check-input" 
-                                                            type="radio" 
-                                                            name="email_target_recipient"
-                                                            id="emailSendToBorrower"
-                                                            value="borrower"
-                                                            checked={formData.target_recipient === 'borrower'}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_recipient: e.target.value }))}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="emailSendToBorrower">
-                                                            Email to Borrower
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                {errors.target_recipient && <div className="text-danger mt-1 small">{errors.target_recipient[0]}</div>}
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
                                 <div className="col-12">
                                     <label className="form-label">Attachments</label>
                                     <div className="d-flex align-items-center gap-2">

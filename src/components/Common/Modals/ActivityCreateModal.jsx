@@ -22,7 +22,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         summary: '',
         message_body: '',
         attachments: [],
-        target_visibility: ''
+        target_visibility: 'borrower'
     });
 
     const handleInputChange = (e) => {
@@ -68,7 +68,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
 
             if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
                 if (!formData.target_visibility) {
-                    setErrors({ target_visibility: ['Please select Send to Host or Send to Borrower'] });
+                    setErrors({ target_visibility: ['Please select Send to FCH or Send to Borrower'] });
                     setIsSaving(false);
                     return;
                 }
@@ -258,7 +258,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: ''
+                target_visibility: 'borrower'
             });
 
             // Force Summernote HTML clear via jQuery, as a safety fallback
@@ -406,7 +406,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                                             onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
                                                         />
                                                         <label className="form-check-label" htmlFor="activityVisibleToHost">
-                                                            Send to Host
+                                                            {ctx.isHost ? 'Send to Partner' : 'Send to FCH'}
                                                         </label>
                                                     </div>
                                                     <div className="form-check">

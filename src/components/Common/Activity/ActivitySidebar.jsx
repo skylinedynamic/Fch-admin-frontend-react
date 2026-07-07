@@ -19,7 +19,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -393,7 +393,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, profi
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#emailComposeModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost }; }}
                         >
                             <i className="ri-mail-line align-middle me-1"></i>New Email
                         </button>
@@ -402,7 +402,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, profi
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#activityCreateModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost }; }}
                         >
                             <i className="ri-calendar-line align-middle me-1"></i>New Event
                         </button>
@@ -477,9 +477,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, profi
                                                                 <div className="flex-grow-1 ms-3">
                                                                     <h6 className="fs-13 mb-0 fw-bold text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
-                                                                        {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Host</span>}
+                                                                        {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
                                                                         {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}
-                                                                        {activity.properties?.send_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Sent to Host</span>}
+                                                                        {activity.properties?.send_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>{isHost ? 'Sent to Partner' : 'Sent to FCH'}</span>}
                                                                         {activity.properties?.send_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Sent to Borrower</span>}
                                                                     </h6>
                                                                     <div className="fs-10 text-muted" style={{ fontWeight: '500' }}>
