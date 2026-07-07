@@ -763,8 +763,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     <Column field="min_dscr" header="Min DSCR" sortable style={{ minWidth: '120px' }} />
                                     <Column field="_allowedStates" header="Allowed States" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._allowedStates || '—'} />
                                     <Column field="_restrictedStates" header="Restricted States" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._restrictedStates || '—'} />
-                                    <Column field="_allowedIndustries" header="Allowed Industries" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._allowedIndustries || '—'} />
-                                    <Column field="_restrictedIndustries" header="Restricted Industries" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._restrictedIndustries || '—'} />
+                                    <Column field="_allowedIndustries" header="Allow Only Listed Industries" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._allowedIndustries || '—'} />
+                                    <Column field="_restrictedIndustries" header="Allow All Except Restricted (Default)" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._restrictedIndustries || '—'} />
                                 </DataTable>
                             </div>
                         )}
@@ -847,8 +847,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                     <th style={{ width: '120px' }}>Min DSCR</th>
                                                     <th style={{ width: '200px' }}>Allowed States</th>
                                                     <th style={{ width: '200px' }}>Restricted States</th>
-                                                    <th style={{ width: '200px' }}>Allowed Industries</th>
-                                                    <th style={{ width: '200px' }}>Restricted Industries</th>
+                                                    <th style={{ width: '200px' }}>Allow Only Listed Industries</th>
+                                                    <th style={{ width: '200px' }}>Allow All Except Restricted (Default)</th>
                                                     <th style={{ width: '80px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#fff', zIndex: 11, boxShadow: '-1px 0 0 #f3f6f9' }}>Action</th>
                                                 </tr>
                                             </thead>
