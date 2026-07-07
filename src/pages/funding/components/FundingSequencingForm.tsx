@@ -19,9 +19,19 @@ import LenderVisibilityGrid from './LenderVisibilityGrid';
 import { scrollToFirstError } from '../../../utils/formUtils';
 import '../../../../assets/css/funding.css';
 
+const mapStateCodeToName = (stateArray: any[]) => {
+    if (!Array.isArray(stateArray)) return [];
+    return stateArray.map(st => {
+        if (typeof st === 'string' && locationData.USA.states[st as keyof typeof locationData.USA.states]) {
+            return locationData.USA.states[st as keyof typeof locationData.USA.states].name;
+        }
+        return st;
+    });
+};
+
 const stateOptions = Object.entries(locationData.USA.states).map(([code, state]) => ({
-    label: `${state.name} (${code})`,
-    value: code
+    label: state.name,
+    value: state.name
 }));
 
 
@@ -293,8 +303,8 @@ export default function FundingSequencingForm() {
                         max_nsf_negative_days: data.lenders?.[0]?.max_nsf_negative_days || '',
                         min_dscr: data.lenders?.[0]?.min_dscr || '',
                         sort_order: data.sort_order || '',
-                        allowed_states: data.lenders?.[0]?.allowed_states?.length && data.lenders[0].allowed_states[0] !== '' ? data.lenders[0].allowed_states : [],
-                        restricted_states: data.lenders?.[0]?.restricted_states?.length && data.lenders[0].restricted_states[0] !== '' ? data.lenders[0].restricted_states : [],
+                        allowed_states: mapStateCodeToName(data.lenders?.[0]?.allowed_states?.length && data.lenders[0].allowed_states[0] !== '' ? data.lenders[0].allowed_states : []),
+                        restricted_states: mapStateCodeToName(data.lenders?.[0]?.restricted_states?.length && data.lenders[0].restricted_states[0] !== '' ? data.lenders[0].restricted_states : []),
                         allowed_industries: data.lenders?.[0]?.allowed_industries?.length && data.lenders[0].allowed_industries[0] !== '' ? data.lenders[0].allowed_industries : [],
                         restricted_industries: data.lenders?.[0]?.restricted_industries?.length && data.lenders[0].restricted_industries[0] !== '' ? data.lenders[0].restricted_industries : [],
                         require_completed_application: data.require_completed_application ?? (data.lenders?.[0]?.require_completed_application || false),
@@ -307,7 +317,11 @@ export default function FundingSequencingForm() {
                         missing_documents: Array.isArray(data.missing_documents) ? data.missing_documents : [],
                         allowed_documents: Array.isArray(data.allowed_documents) ? data.allowed_documents : (Array.isArray(data.lenders?.[0]?.allowed_documents) ? data.lenders[0].allowed_documents : []),
                         lender_visibilities: Array.isArray(data.lender_visibilities) && data.lender_visibilities.length > 0
-                            ? data.lender_visibilities
+                            ? data.lender_visibilities.map((v: any) => ({
+                                ...v,
+                                allowed_states: mapStateCodeToName(v.allowed_states),
+                                restricted_states: mapStateCodeToName(v.restricted_states)
+                            }))
                             : []
                     });
                 } catch (err) {

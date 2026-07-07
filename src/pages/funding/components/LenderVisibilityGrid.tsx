@@ -836,7 +836,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                 <tr>
                                                     <th style={{ width: '120px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Product Category <span className="text-danger">*</span></th>
-                                                    <th style={{ width: '150px' }}>Min FICOs <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
                                                     <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
