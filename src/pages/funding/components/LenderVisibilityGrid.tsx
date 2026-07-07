@@ -658,10 +658,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                             </div>
                             <div className="col-xxl-3 col-sm-4">
                                 <div className="d-flex gap-2 h-100">
-                                    <button type="button" className="btn btn-info flex-grow-1" onClick={handleApplyFilters}>
+                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                         <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                                     </button>
-                                    <button type="button" className="btn btn-light flex-grow-1" onClick={handleClearFilters}>
+                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
                                         <i className="ri-close-line me-1 align-bottom"></i> Clear
                                     </button>
                                 </div>
@@ -1028,7 +1028,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             </td>
                                                             <td className="py-3">
                                                                 <MultiSelect
-                                                                    value={v.allowed_industries}
+                                                                    value={(v.allowed_industries || []).filter((x: any) => x !== null && x !== undefined && x !== 'null' && x !== '')}
                                                                     options={INDUSTRIES_OPTIONS}
                                                                     onChange={(e) => onChange(i, 'allowed_industries', e.value)}
                                                                     optionLabel="label"
@@ -1044,7 +1044,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                             </td>
                                                             <td className="py-3">
                                                                 <MultiSelect
-                                                                    value={v.restricted_industries}
+                                                                    value={(v.restricted_industries || []).filter((x: any) => x !== null && x !== undefined && x !== 'null' && x !== '')}
                                                                     options={INDUSTRIES_OPTIONS}
                                                                     onChange={(e) => onChange(i, 'restricted_industries', e.value)}
                                                                     optionLabel="label"
