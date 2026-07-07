@@ -2,7 +2,7 @@ import { apiClient } from '../../lib/http/apiClient';
 import { FundingSequencing, FundingFilterParams, VisibilityFetchParams, DeleteVisibilityPayload, UpdateVisibilityPayload, SingleLenderVisibilityPayload } from './types';
 
 export const fetchFundingSequencings = async (payload: FundingFilterParams = {}) => {
-    const response = await apiClient.post('/admin/funding-sequencings/fetch', payload);
+    const response = await apiClient.post('/common/funding-sequencings/fetch', payload);
     return response.data;
 };
 

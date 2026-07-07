@@ -11,8 +11,6 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
-import { fetchFundingSequencings } from '../../../modules/funding/services';
-
 import TableLoader from '../../../components/Loader/TableLoader';
 
 export default function FundingRequest() {
@@ -32,8 +30,7 @@ export default function FundingRequest() {
     // Filter states
     const [searchText, setSearchText] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
-    const [selectedFundingSequence, setSelectedFundingSequence] = useState<string>('');
-    const [fundingSequenceOptions, setFundingSequenceOptions] = useState<any[]>([]);
+    const [selectedFundingSequenceId, setSelectedFundingSequenceId] = useState<string>('');
     const [filters, setFilters] = useState<any>({});
 
     // Removed modal state
@@ -57,22 +54,16 @@ export default function FundingRequest() {
         per_page: perPage,
         search: appliedFilters.search,
         status: appliedFilters.status,
-        ...(appliedFilters.funding_sequence_id ? { funding_sequence_id: Number(appliedFilters.funding_sequence_id) } : {}),
+        funding_sequence_id: appliedFilters.funding_sequence_id,
         sort_field: sortField,
         sort_order: sortOrder,
     };
 
-    // Load funding sequences for filter dropdown
-    useEffect(() => {
-        fetchFundingSequencings({ per_page: 200, page: 1 }).then((res: any) => {
-            const options = (res?.data || []).map((s: any) => ({ label: s.name, value: String(s.id) }));
-            setFundingSequenceOptions(options);
-        }).catch(() => {});
-    }, []);
 
     const { data: apiResponse, isLoading, isFetching } = useFundingRequests(queryParams);
     const reviews = apiResponse?.data || [];
     const totalRecords = apiResponse?.meta?.total || 0;
+    const fundingTypes = apiResponse?.funding_types || [];
     const loading = isLoading || isFetching;
 
     const initFilters = () => {
@@ -97,7 +88,7 @@ export default function FundingRequest() {
             ...prev,
             search: searchText,
             status: selectedStatus,
-            funding_sequence_id: selectedFundingSequence,
+            funding_sequence_id: selectedFundingSequenceId,
             filters: filters
         }));
         setPage(1);
@@ -106,7 +97,7 @@ export default function FundingRequest() {
     const handleClearFilters = () => {
         setSearchText('');
         setSelectedStatus('');
-        setSelectedFundingSequence('');
+        setSelectedFundingSequenceId('');
         initFilters();
         setAppliedFilters({
             search: '',
@@ -222,14 +213,13 @@ export default function FundingRequest() {
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <Dropdown
-                                                value={selectedFundingSequence}
-                                                options={[{ label: 'All Funding Sequences', value: '' }, ...fundingSequenceOptions]}
+                                                value={selectedFundingSequenceId}
+                                                options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
                                                 optionLabel="label"
                                                 optionValue="value"
-                                                onChange={(e) => setSelectedFundingSequence(e.value)}
-                                                placeholder="All Funding Sequences"
+                                                onChange={(e) => setSelectedFundingSequenceId(e.value)}
+                                                placeholder="All Funding Types"
                                                 className="w-100 employee-filter-dropdown"
-                                                filter
                                             />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">

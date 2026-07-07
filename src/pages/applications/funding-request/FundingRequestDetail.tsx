@@ -162,7 +162,7 @@ export default function FundingRequestDetail() {
                                         {isHost && (
                                             <div className="col-md-6">
                                                 <p className="text-muted mb-1 fs-13">Partner Name</p>
-                                                <h5 className="fs-15 fw-bold mb-0">{review.partner ? `${review.partner.first_name || ''} ${review.partner.last_name || ''}` : '-'}</h5>
+                                                <h5 className="fs-15 fw-bold mb-0">{review.partner?.full_name || '-'}</h5>
                                             </div>
                                         )}
                                         <div className="col-md-6">
@@ -487,6 +487,7 @@ export default function FundingRequestDetail() {
                                 entityId={review.id}
                                 entityType={ENTITY_TYPE_FUNDING_REQUEST}
                                 loading={isUpdatingOrFetching}
+                                partnerId={review.partner_id}
                             />
                         </div>
                     </div>

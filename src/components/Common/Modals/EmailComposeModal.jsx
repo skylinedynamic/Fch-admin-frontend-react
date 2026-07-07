@@ -15,7 +15,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         to_emails: '',
         subject: '',
         message_body: '',
-        attachments: []
+        attachments: [],
+        target_recipient: ''
     });
 
     const handleInputChange = (e) => {
@@ -91,6 +92,15 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
             const resolvedEntityType = entityType ?? ctx.entityType;
+            const resolvedPartnerId = ctx.partnerId;
+
+            if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                if (!formData.target_recipient) {
+                    setErrors({ target_recipient: ['Please select Email to Host or Email to Borrower'] });
+                    setIsSaving(false);
+                    return;
+                }
+            }
 
             // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
@@ -101,6 +111,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 payload.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 payload.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+                if (formData.target_recipient === 'host') payload.append('send_to_host', '1');
+                if (formData.target_recipient === 'borrower') payload.append('send_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -306,7 +318,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 to_emails: '',
                 subject: '',
                 message_body: '',
-                attachments: []
+                attachments: [],
+                target_recipient: ''
             });
             if (choicesInstanceRef.current) {
                 choicesInstanceRef.current.removeActiveItems();
@@ -407,6 +420,50 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 {errors.description && <div className="text-danger mt-1 small">{errors.description[0]}</div>}
                             </div>
                             <div className="row g-3">
+                                {(() => {
+                                    const ctx = window._activityEntityContext || {};
+                                    const resolvedEntityType = entityType ?? ctx.entityType;
+                                    const resolvedPartnerId = ctx.partnerId;
+                                    
+                                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                                        return (
+                                            <div className="col-12">
+                                                <div className="d-flex gap-4 mb-2">
+                                                    <div className="form-check">
+                                                        <input 
+                                                            className="form-check-input" 
+                                                            type="radio" 
+                                                            name="email_target_recipient"
+                                                            id="emailSendToHost"
+                                                            value="host"
+                                                            checked={formData.target_recipient === 'host'}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_recipient: e.target.value }))}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="emailSendToHost">
+                                                            Email to Host
+                                                        </label>
+                                                    </div>
+                                                    <div className="form-check">
+                                                        <input 
+                                                            className="form-check-input" 
+                                                            type="radio" 
+                                                            name="email_target_recipient"
+                                                            id="emailSendToBorrower"
+                                                            value="borrower"
+                                                            checked={formData.target_recipient === 'borrower'}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_recipient: e.target.value }))}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="emailSendToBorrower">
+                                                            Email to Borrower
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {errors.target_recipient && <div className="text-danger mt-1 small">{errors.target_recipient[0]}</div>}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 <div className="col-12">
                                     <label className="form-label">Attachments</label>
                                     <div className="d-flex align-items-center gap-2">

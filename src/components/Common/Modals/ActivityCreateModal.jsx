@@ -21,7 +21,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
         assigned_to: '',
         summary: '',
         message_body: '',
-        attachments: []
+        attachments: [],
+        target_visibility: ''
     });
 
     const handleInputChange = (e) => {
@@ -60,10 +61,18 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             // Ensure to_emails and assigned_to are sent (as empty strings which Laravel converts to null)
             data.append('to_emails', formData.to_emails || '');
 
-            // Resolve entity context: prefer props, fall back to global context set by ActivitySidebar buttons
             const ctx = window._activityEntityContext || {};
             const resolvedEntityId = entityId ?? ctx.entityId;
             const resolvedEntityType = entityType ?? ctx.entityType;
+            const resolvedPartnerId = ctx.partnerId;
+
+            if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                if (!formData.target_visibility) {
+                    setErrors({ target_visibility: ['Please select Send to Host or Send to Borrower'] });
+                    setIsSaving(false);
+                    return;
+                }
+            }
 
             // Entity IDs - separate Lead, Client, Borrower, Partner, and Funding Request
             if (resolvedEntityType === ENTITY_TYPE_LEAD) {
@@ -74,6 +83,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 data.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 data.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
+                if (formData.target_visibility === 'host') data.append('visible_to_host', '1');
+                if (formData.target_visibility === 'borrower') data.append('visible_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -118,7 +129,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 assigned_to: '',
                 summary: '',
                 message_body: '',
-                attachments: []
+                attachments: [],
+                target_visibility: ''
             });
 
             // Robust Close Modal
@@ -233,7 +245,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
     // Reset validation and form on modal close/open
     useEffect(() => {
         const modalEl = document.getElementById('activityCreateModal');
-        
+
         const resetForm = (e) => {
             // Prevent nested elements (like Summernote dialogs if appended inside) from triggering the reset
             if (e && e.target !== modalEl) return;
@@ -245,33 +257,34 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 assigned_to: '',
                 summary: '',
                 message_body: '',
-                attachments: []
+                attachments: [],
+                target_visibility: ''
             });
-            
+
             // Force Summernote HTML clear via jQuery, as a safety fallback
             const $ = window.jQuery || window.$;
             if ($ && $('#activityMessageEditor').summernote) {
-                try { 
-                    $('#activityMessageEditor').summernote('code', ''); 
-                    
+                try {
+                    $('#activityMessageEditor').summernote('code', '');
+
                     const $noteEditor = $('#activityMessageEditor').next('.note-editor');
                     if ($noteEditor.length) {
                         // Force clear DOM directly just in case API fails
                         $noteEditor.find('.note-editable').html('<p><br></p>');
-                        
+
                         // Remove any orphaned tags (like links) inserted outside the editable area due to Summernote bug
                         $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
                         $noteEditor.children('a, p, span').remove();
                     }
-                    
+
                     // Hide any floating popovers (like the link popover) that might be stuck open
                     $('.note-popover').hide();
-                    
+
                     // Clear retained link/dialog values in Summernote
                     $('.note-modal .note-link-text').val('');
                     $('.note-modal .note-link-url').val('http://');
                     $('.note-modal .note-image-url').val('');
-                } catch(err) {
+                } catch (err) {
                     console.error('Summernote reset error:', err);
                 }
             }
@@ -373,6 +386,50 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                 </div>
                             </div>
                             <div className="row mt-3">
+                                {(() => {
+                                    const ctx = window._activityEntityContext || {};
+                                    const resolvedEntityType = entityType ?? ctx.entityType;
+                                    const resolvedPartnerId = ctx.partnerId;
+
+                                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
+                                        return (
+                                            <div className="col-12">
+                                                <div className="d-flex gap-4 mb-2">
+                                                    <div className="form-check">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="radio"
+                                                            name="activity_target_visibility"
+                                                            id="activityVisibleToHost"
+                                                            value="host"
+                                                            checked={formData.target_visibility === 'host'}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="activityVisibleToHost">
+                                                            Send to Host
+                                                        </label>
+                                                    </div>
+                                                    <div className="form-check">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="radio"
+                                                            name="activity_target_visibility"
+                                                            id="activityVisibleToBorrower"
+                                                            value="borrower"
+                                                            checked={formData.target_visibility === 'borrower'}
+                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="activityVisibleToBorrower">
+                                                            Send to Borrower
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {errors.target_visibility && <div className="text-danger mt-1 small">{errors.target_visibility[0]}</div>}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 <div className="col-md-6">
                                     <label className="form-label">Select Attachments</label>
                                     <div className="d-flex align-items-center gap-2">
