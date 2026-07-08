@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { fetchScoreConfigurations, updateScoreConfigurations } from '../../../modules/settings/services';
 import type { ScoreConfiguration, ScoreFactorTier } from '../../../modules/settings/types';
-import { STATIC_TIER_LABELS } from '../../../config/capitalAccessOptions';
+import { STATIC_TIER_LABELS, ACCESS_TIME } from '../../../config/capitalAccessOptions';
 
 import { MicroBiltConfigSkeleton } from '../../../components/Loader/SpecificSkeletons';
 import FundingReadinessTab from './ScoreCalculation/FundingReadinessTab';
@@ -512,7 +512,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             }
 
             const buildLatePaymentModifier = (slug: string, key: 'qty' | 'val' | 'label', fallback: string): string => {
-                const found = scoreConfig?.late_payment_modifiers?.find((m: any) => m.factor_slug === slug);
+                const found = scoreConfig?.approval_probability?.late_payment_modifiers?.find((m: any) => m.factor_slug === slug);
                 if (!found) return fallback;
                 if (key === 'qty') return sv(found.min_value, fallback);
                 if (key === 'label') return sv(found.label, fallback);
@@ -520,7 +520,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
 
             const buildProbTierValue = (factorSlug: string, index: number, key: string, fallback: string): string => {
-                const factor = scoreConfig?.probability_factors?.find((f: any) => f.slug === factorSlug);
+                const factor = scoreConfig?.approval_probability?.factors?.find((f: any) => f.slug === factorSlug);
                 const tier = factor?.subscore_tiers?.[index];
                 if (!tier) return fallback;
                 let val: any;
@@ -531,7 +531,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
 
             const buildOddsTierValue = (factorSlug: string, index: number, key: string, fallback: string): string => {
-                const factor = scoreConfig?.odds_factors?.find((f: any) => f.slug === factorSlug);
+                const factor = scoreConfig?.approval_odds?.factors?.find((f: any) => f.slug === factorSlug);
                 const tier = factor?.subscore_tiers?.[index];
                 if (!tier) return fallback;
                 let val: any;
@@ -549,7 +549,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
 
             const buildTierValue = (factorSlug: string, index: number, key: string, fallback: string): string => {
-                const factor = scoreConfig?.factors?.find((f: any) => f.slug === factorSlug);
+                const factor = scoreConfig?.funding_readiness?.factors?.find((f: any) => f.slug === factorSlug);
                 const tier = factor?.subscore_tiers?.[index];
                 if (!tier) return fallback;
                 let val: any;
@@ -560,7 +560,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
 
             const getTiers = (slug: string): ScoreFactorTier[] => {
-                const factor = scoreConfig?.factors?.find((f: any) => f.slug === slug);
+                const factor = scoreConfig?.funding_readiness?.factors?.find((f: any) => f.slug === slug);
                 return factor?.subscore_tiers || [];
             };
 
@@ -581,7 +581,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
 
             const getStartupCond = (field: string, fallback: string): string => {
-                const startupConfig = scoreConfig?.startup_revenue_strength;
+                const startupConfig = scoreConfig?.funding_readiness?.startup_revenue_strength;
                 if (!startupConfig?.conditions) return fallback;
                 const conditions = typeof startupConfig.conditions === 'string' ? JSON.parse(startupConfig.conditions) : startupConfig.conditions;
                 let list = [];
@@ -667,7 +667,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 rev_rule_personal_t3: getCond('revenue_strength', 2, 'personal_income', '25000'),
                 rev_startup_exception_revenue: getStartupCond('business_revenue', '0'),
                 rev_startup_exception_months: getStartupCond('business_age', '24'),
-                rev_subscore_startup_exception: sv(scoreConfig?.startup_revenue_strength?.numeric_value, '55'),
+                rev_subscore_startup_exception: sv(scoreConfig?.funding_readiness?.startup_revenue_strength?.numeric_value, '55'),
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
@@ -678,24 +678,24 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 trade_rule_mod_accounts_min: getCond('tradeline_depth', 2, 'open_accounts', '2'),
                 trade_rule_mod_accounts_max: getCond('tradeline_depth', 2, 'open_accounts', '3', 1),
 
-                fund_readiness_bucket_a_label: sv(scoreConfig?.readiness_bands?.[0]?.label, 'Elite Ready'),
-                fund_readiness_bucket_a_min_score: sv(scoreConfig?.readiness_bands?.[0]?.min_value, '90'),
-                fund_readiness_bucket_a_color: sv((scoreConfig?.readiness_bands?.[0] as any)?.color, '#198754'),
+                fund_readiness_bucket_a_label: sv(scoreConfig?.funding_readiness?.readiness_bands?.[0]?.label, 'Elite Ready'),
+                fund_readiness_bucket_a_min_score: sv(scoreConfig?.funding_readiness?.readiness_bands?.[0]?.min_value, '90'),
+                fund_readiness_bucket_a_color: sv((scoreConfig?.funding_readiness?.readiness_bands?.[0] as any)?.color, '#198754'),
 
-                fund_readiness_bucket_b_label: sv(scoreConfig?.readiness_bands?.[1]?.label, 'Executive Ready'),
-                fund_readiness_bucket_b_min_score: sv(scoreConfig?.readiness_bands?.[1]?.min_value, '80'),
-                fund_readiness_bucket_b_color: sv((scoreConfig?.readiness_bands?.[1] as any)?.color, '#0d6efd'),
+                fund_readiness_bucket_b_label: sv(scoreConfig?.funding_readiness?.readiness_bands?.[1]?.label, 'Executive Ready'),
+                fund_readiness_bucket_b_min_score: sv(scoreConfig?.funding_readiness?.readiness_bands?.[1]?.min_value, '80'),
+                fund_readiness_bucket_b_color: sv((scoreConfig?.funding_readiness?.readiness_bands?.[1] as any)?.color, '#0d6efd'),
 
-                fund_readiness_bucket_c_label: sv(scoreConfig?.readiness_bands?.[2]?.label, 'Foundation Ready'),
-                fund_readiness_bucket_c_min_score: sv(scoreConfig?.readiness_bands?.[2]?.min_value, '70'),
-                fund_readiness_bucket_c_color: sv((scoreConfig?.readiness_bands?.[2] as any)?.color, '#ffc107'),
+                fund_readiness_bucket_c_label: sv(scoreConfig?.funding_readiness?.readiness_bands?.[2]?.label, 'Foundation Ready'),
+                fund_readiness_bucket_c_min_score: sv(scoreConfig?.funding_readiness?.readiness_bands?.[2]?.min_value, '70'),
+                fund_readiness_bucket_c_color: sv((scoreConfig?.funding_readiness?.readiness_bands?.[2] as any)?.color, '#ffc107'),
 
-                fund_readiness_bucket_d_label: sv(scoreConfig?.readiness_bands?.[3]?.label, 'Conditional'),
-                fund_readiness_bucket_d_min_score: sv(scoreConfig?.readiness_bands?.[3]?.min_value, '60'),
-                fund_readiness_bucket_d_color: sv((scoreConfig?.readiness_bands?.[3] as any)?.color, '#fd7e14'),
+                fund_readiness_bucket_d_label: sv(scoreConfig?.funding_readiness?.readiness_bands?.[3]?.label, 'Conditional'),
+                fund_readiness_bucket_d_min_score: sv(scoreConfig?.funding_readiness?.readiness_bands?.[3]?.min_value, '60'),
+                fund_readiness_bucket_d_color: sv((scoreConfig?.funding_readiness?.readiness_bands?.[3] as any)?.color, '#fd7e14'),
 
-                fund_readiness_bucket_e_label: sv(scoreConfig?.readiness_bands?.[4]?.label, 'Not Ready'),
-                fund_readiness_bucket_e_color: sv((scoreConfig?.readiness_bands?.[4] as any)?.color, '#dc3545'),
+                fund_readiness_bucket_e_label: sv(scoreConfig?.funding_readiness?.readiness_bands?.[4]?.label, 'Not Ready'),
+                fund_readiness_bucket_e_color: sv((scoreConfig?.funding_readiness?.readiness_bands?.[4] as any)?.color, '#dc3545'),
 
                 bank_strong_accounts: getCond('banking_relationships', 0, 'accounts', '2'),
                 bank_strong_months: getCond('banking_relationships', 0, 'checking_months', '12'),
@@ -815,7 +815,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
                 odds_inquiries_rule_t1: buildOddsTierValue('recent_inquiries', 2, 'min', '5'),
                 odds_inquiries_rule_t2: buildOddsTierValue('recent_inquiries', 1, 'min', '3'),
-                next_play_delay: sv(scoreConfig?.next_play_delay, '0'),
+                next_play_delay: sv(scoreConfig?.general_setting?.next_play_delay, '0'),
             }));
 
             const decimalToTime = (d: number): string => {
@@ -823,7 +823,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 const m = Math.round((d - h) * 60);
                 return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
             };
-            const ts = scoreConfig?.time_settings;
+            const ts = scoreConfig?.general_setting?.time_settings;
             if (ts && Array.isArray(ts)) {
                 const st: Record<string, TimeRange> = {};
                 ts.forEach((s: any) => {
@@ -1254,11 +1254,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 approval_odds: buildApprovalOddsPayload(),
                 general_setting: {
                     time_settings: [
-                        { label: 'Morning', start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
-                        { label: 'Midday', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
-                        { label: 'Afternoon', start: timeToDecimal(timeSettings.afternoon.start), end: timeToDecimal(timeSettings.afternoon.end), sort_order: 3 },
-                        { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 4 },
-                        { label: 'Anytime', start: timeToDecimal(timeSettings.anytime.start), end: timeToDecimal(timeSettings.anytime.end), sort_order: 5 },
+                        { label: ACCESS_TIME.MORNING, start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
+                        { label: ACCESS_TIME.MIDDAY, start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
+                        { label: ACCESS_TIME.AFTERNOON, start: timeToDecimal(timeSettings.afternoon.start), end: timeToDecimal(timeSettings.afternoon.end), sort_order: 3 },
+                        { label: ACCESS_TIME.EVENING, start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 4 },
+                        { label: ACCESS_TIME.ANYTIME, start: timeToDecimal(timeSettings.anytime.start), end: timeToDecimal(timeSettings.anytime.end), sort_order: 5 },
                     ],
                     next_play_delay: formData.next_play_delay ? parseInt(formData.next_play_delay) : 0
                 }

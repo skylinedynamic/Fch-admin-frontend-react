@@ -1,4 +1,4 @@
-import React from 'react';
+import { ACCESS_TIME } from '../../../../config/capitalAccessOptions';
 
 interface TimeRange {
     start: string;
@@ -28,12 +28,23 @@ const GeneralSettingTab: React.FC<Props> = ({ timeSettings, onChange, nextPlayDe
         });
     };
 
-    const periods: { key: keyof TimeSettings; label: string; icon: string; desc: string }[] = [
-        { key: 'morning', label: 'Morning', icon: 'ri-sun-line', desc: '6:00 AM – 10:59 AM' },
-        { key: 'midday', label: 'Midday', icon: 'ri-sun-fill', desc: '11:00 AM – 1:59 PM' },
-        { key: 'afternoon', label: 'Afternoon', icon: 'ri-sun-cloudy-line', desc: '2:00 PM – 4:59 PM' },
-        { key: 'evening', label: 'Evening', icon: 'ri-moon-line', desc: '5:00 PM – 8:59 PM' },
-        { key: 'anytime', label: 'Anytime', icon: 'ri-time-line', desc: '9:00 AM – 5:00 PM' },
+    const format12Hour = (timeStr: string): string => {
+        if (!timeStr) return '';
+        const [hoursStr, minutesStr] = timeStr.split(':');
+        const hours = parseInt(hoursStr, 10);
+        if (isNaN(hours)) return timeStr;
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+        const minutes = minutesStr ? `:${minutesStr}` : '';
+        return `${displayHours}${minutes} ${ampm}`;
+    };
+
+    const periods: { key: keyof TimeSettings; label: string; icon: string }[] = [
+        { key: 'morning', label: ACCESS_TIME.MORNING, icon: 'ri-sun-line' },
+        { key: 'midday', label: ACCESS_TIME.MIDDAY, icon: 'ri-sun-fill' },
+        { key: 'afternoon', label: ACCESS_TIME.AFTERNOON, icon: 'ri-sun-cloudy-line' },
+        { key: 'evening', label: ACCESS_TIME.EVENING, icon: 'ri-moon-line' },
+        { key: 'anytime', label: ACCESS_TIME.ANYTIME, icon: 'ri-time-line' },
     ];
 
     return (
@@ -72,7 +83,9 @@ const GeneralSettingTab: React.FC<Props> = ({ timeSettings, onChange, nextPlayDe
                                     </span>
                                     <div>
                                         <h6 className="mb-0 fs-14 fw-semibold">{period.label}</h6>
-                                        <small className="text-muted">{period.desc}</small>
+                                        <small className="text-muted">
+                                            {format12Hour(timeSettings[period.key].start)} – {format12Hour(timeSettings[period.key].end)}
+                                        </small>
                                     </div>
                                 </div>
                                 <div className="d-flex align-items-center gap-2">
