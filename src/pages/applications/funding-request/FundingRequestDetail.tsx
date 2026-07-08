@@ -13,6 +13,7 @@ import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
+import ReviewProgressCard from './components/ReviewProgressCard';
 
 const formatBytes = (bytes: any, decimals = 2) => {
     if (!bytes || bytes === 0 || bytes === '0') return '-';
@@ -143,6 +144,12 @@ export default function FundingRequestDetail() {
 
                     <div className="row mt-3">
                         <div className="col-lg-8">
+                            <ReviewProgressCard 
+                                status={review.status} 
+                                createdAt={review.created_at} 
+                                updatedAt={review.updated_at} 
+                            />
+
                             <div className="card shadow-sm border-0 mb-4 rounded-3">
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
                                     <div className="d-flex align-items-center">
@@ -362,41 +369,7 @@ export default function FundingRequestDetail() {
                                 </div>
                             </div>
 
-                            <div className="card shadow-sm border-0 rounded-3">
-                                <div className="card-header bg-white border-0 pt-4 pb-0">
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar-xs me-3">
-                                            <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
-                                                <i className="ri-clipboard-line"></i>
-                                            </span>
-                                        </div>
-                                        <h5 className="card-title mb-0 fs-16 fw-bold">Review Status</h5>
-                                    </div>
-                                </div>
-                                <div className="card-body p-4">
-                                    {isUpdatingOrFetching ? (
-                                        <div className="d-flex flex-column gap-3">
-                                            <div className="skeleton-line" style={{ width: '100px', height: '14px', borderRadius: '4px' }}></div>
-                                            <div className="skeleton-line" style={{ width: '140px', height: '30px', borderRadius: '4px' }}></div>
-                                        </div>
-                                    ) : (
-                                        <div className="row g-4">
-                                            <div className="col-md-6">
-                                                <p className="text-muted mb-2 fs-13">Current Status</p>
-                                                <div>{getStatusBadge(review.status)}</div>
-                                            </div>
-                                            {review.status === FUNDING_REVIEW_STATUS.REJECTED && (
-                                                <div className="col-md-12">
-                                                    <p className="text-muted mb-2 fs-13">Rejection Reason</p>
-                                                    <div className="fs-14 p-3 bg-light rounded text-dark border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
-                                                        {review.reject_reason || 'No reason provided'}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+
                         </div>
 
                         <div className="col-lg-4">
@@ -420,29 +393,53 @@ export default function FundingRequestDetail() {
                                         </div>
                                     ) : (
                                         <>
-                                            <p className="text-muted fs-13 mb-4">Update the status of this funding sequence step.</p>
+                                            <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
 
-                                            <div className="mb-4">
-                                                <label className="form-label fs-14 fw-semibold">Status</label>
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={FUNDING_REVIEW_STATUS_OPTIONS}
-                                                    onChange={(e) => setSelectedStatus(e.value)}
-                                                    className="w-100 bg-light border-0"
-                                                    placeholder="Select a Status"
-                                                    pt={{
-                                                        root: { className: 'w-100 rounded' },
-                                                        input: { className: 'fs-14' },
-                                                        item: { className: 'fs-14' }
-                                                    }}
-                                                />
+                                            {/* Status Row */}
+                                            <div className="d-flex gap-2 align-items-start mb-3">
+                                                <div className="flex-grow-1">
+                                                    <label className="form-label fs-13 fw-semibold">Status</label>
+                                                    <Dropdown
+                                                        value={selectedStatus}
+                                                        options={FUNDING_REVIEW_STATUS_OPTIONS}
+                                                        onChange={(e) => setSelectedStatus(e.value)}
+                                                        className={`w-100 ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                        placeholder="Select a Status"
+                                                        pt={{
+                                                            root: { className: 'w-100 rounded' },
+                                                            input: { className: 'fs-14' },
+                                                            item: { className: 'fs-14' }
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Show Confirm button in same row ONLY if not Rejected */}
+                                                {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
+                                                    <div className="pt-4" style={{ paddingTop: '1.85rem !important' }}>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-primary py-2 px-3 fs-14 border-0 rounded fw-semibold"
+                                                            style={{ marginTop: '2px' }}
+                                                            onClick={() => {
+                                                                if (selectedStatus !== review.status) {
+                                                                    setShowStatusModal(true);
+                                                                } else {
+                                                                    toast.info('Status is unchanged.');
+                                                                }
+                                                            }}
+                                                            disabled={selectedStatus === review.status}
+                                                        >
+                                                            <i className="ri-checkbox-circle-line me-1"></i> Confirm
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
 
+                                            {/* Note and Confirm button below for Rejected */}
                                             {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
-                                                <div className="mb-4">
-                                                    <label className="form-label fs-14 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
+                                                <div className="mb-2">
+                                                    <label className="form-label fs-13 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
                                                     <textarea
-                                                        className={`form-control bg-light border-0 rounded ${validationErrors.reject_reason ? 'is-invalid' : ''}`}
+                                                        className={`form-control rounded ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
                                                         rows={4}
                                                         value={rejectReason}
                                                         onChange={(e) => {
@@ -459,29 +456,24 @@ export default function FundingRequestDetail() {
                                                             {validationErrors.reject_reason[0]}
                                                         </div>
                                                     )}
+                                                    
+                                                    <div className="mt-3">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-primary py-2 px-4 fs-14 border-0 rounded fw-semibold"
+                                                            onClick={() => {
+                                                                if (!rejectReason.trim()) {
+                                                                    setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
+                                                                    return;
+                                                                }
+                                                                setShowStatusModal(true);
+                                                            }}
+                                                        >
+                                                            <i className="ri-checkbox-circle-line me-1"></i> Confirm
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
-
-                                            <div className="d-flex flex-column gap-3">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary py-2 fs-15 border-0 rounded fw-bold"
-                                                    onClick={() => {
-                                                        if (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && !rejectReason.trim()) {
-                                                            setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
-                                                            return;
-                                                        }
-                                                        if (selectedStatus !== review.status || (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && rejectReason.trim() !== (review.reject_reason || '').trim())) {
-                                                            setShowStatusModal(true);
-                                                        } else {
-                                                            toast.info('Status and note are unchanged.');
-                                                        }
-                                                    }}
-                                                    disabled={selectedStatus === review.status && (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? rejectReason.trim() === (review.reject_reason || '').trim() : true)}
-                                                >
-                                                    Update Status
-                                                </button>
-                                            </div>
                                         </>
                                     )}
                                 </div>
@@ -501,52 +493,112 @@ export default function FundingRequestDetail() {
                 </div>
 
                 {/* Status Update Modal */}
-                <Modal isOpen={showStatusModal} toggle={() => setShowStatusModal(false)} centered>
-                    <ModalBody className="p-4">
-                        <div className="text-center mb-4 mt-2">
+                <Modal isOpen={showStatusModal} toggle={() => setShowStatusModal(false)} centered size="md">
+                    <ModalBody className="p-0">
+                        {/* Simple white header band */}
+                        <div className="text-center pt-4 pb-3 px-4 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-24 ${selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger-subtle text-danger' : selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}`}>
-                                    <i className={selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-line' : selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-check-line' : 'ri-refresh-line'}></i>
+                                <span className={`avatar-title rounded-circle fs-22 text-white ${
+                                    selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
+                                    selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
+                                    'bg-primary'
+                                }`}>
+                                    <i className={
+                                        selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-circle-line' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-checkbox-circle-line' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'ri-user-3-fill' :
+                                        'ri-time-line'
+                                    }></i>
                                 </span>
                             </div>
-                            <h4 className="fw-bold">{selectedStatus === review.status ? 'Confirm Note Update' : 'Confirm Status Update'}</h4>
-                            <p className="text-muted fs-14 mb-0">
-                                {selectedStatus === review.status
-                                    ? 'Are you sure you want to update the rejection reason / note?'
-                                    : `Are you sure you want to update the status to ${selectedStatus}?`}
+                            <h5 className="fw-bold mb-1">Confirm Status Update</h5>
+                            <p className="text-muted fs-13 mb-0">
+                                Are you sure you want to update the status to <strong>{selectedStatus}</strong>?
                             </p>
                         </div>
 
-                        {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
+                        {/* Request Information */}
+                        <div className="p-4">
                             <div className="mb-4 text-start">
-                                <p className="fs-13 fw-semibold text-muted mb-2">Your Reason / Note:</p>
-                                <div className="p-3 bg-light rounded text-dark fs-14 border border-light-subtle" style={{ whiteSpace: 'pre-wrap' }}>
-                                    {rejectReason}
+                                <p className="fs-12 text-uppercase fw-bold text-muted mb-2" style={{ letterSpacing: '0.07em' }}>
+                                    <i className="ri-information-line me-1"></i> Request Information
+                                </p>
+                                <div className="border rounded-3 p-3">
+                                    {/* Borrower Name */}
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="fs-13 text-muted fw-medium">Borrower Name</span>
+                                        <span className="fs-13 fw-semibold text-dark">
+                                            {review?.borrower?.business_name || `${review?.borrower?.first_name ?? ''} ${review?.borrower?.last_name ?? ''}`.trim() || '—'}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Funding Type */}
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="fs-13 text-muted fw-medium">Funding Type</span>
+                                        <span className="fs-13 fw-semibold text-dark">{review?.funding_type || '—'}</span>
+                                    </div>
+                                    
+                                    {/* Status Transition */}
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <span className="fs-13 text-muted fw-medium">Status Change</span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <span className={`badge fs-12 ${
+                                                review?.status === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger-subtle text-danger' :
+                                                review?.status === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success-subtle text-success' :
+                                                review?.status === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-info-subtle text-info' :
+                                                review?.status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'bg-primary-subtle text-primary' :
+                                                'bg-warning-subtle text-warning'
+                                            }`}>{review?.status}</span>
+                                            <i className="ri-arrow-right-line text-muted fs-12"></i>
+                                            <span className={`badge fs-12 text-white ${
+                                                selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
+                                                selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
+                                                'bg-primary'
+                                            }`}>{selectedStatus}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        )}
 
-                        <div className="d-flex flex-column gap-2">
-                            <button
-                                type="button"
-                                className={`btn py-2 fs-15 border-0 rounded fw-bold ${selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' : 'btn-primary'}`}
-                                onClick={handleStatusUpdate}
-                                disabled={updateStatusMutation.isPending}
-                            >
-                                {updateStatusMutation.isPending ? (
-                                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
-                                ) : (
-                                    'Confirm Update'
-                                )}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-light py-2 fs-15 border-0 rounded text-dark fw-bold"
-                                onClick={() => setShowStatusModal(false)}
-                                disabled={updateStatusMutation.isPending}
-                            >
-                                Cancel
-                            </button>
+                            {/* Reason Note Preview */}
+                            {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && rejectReason && (
+                                <div className="mt-1 mb-2">
+                                    <p className="fs-12 fw-semibold text-muted mb-2 text-uppercase" style={{ letterSpacing: '0.07em' }}>
+                                        <i className="ri-chat-3-line me-1"></i> Rejection Note
+                                    </p>
+                                    <div className="border rounded-3 p-3 text-dark fs-13" style={{ whiteSpace: 'pre-wrap' }}>
+                                        {rejectReason}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="d-flex justify-content-end gap-2 mt-4">
+                                <button
+                                    type="button"
+                                    className="btn bg-white border border-secondary-subtle px-4 py-2 fs-14 rounded-2 text-dark fw-medium"
+                                    onClick={() => setShowStatusModal(false)}
+                                    disabled={updateStatusMutation.isPending}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn ${
+                                        selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
+                                        'btn-primary'
+                                    } px-4 py-2 fs-14 border-0 rounded-2 fw-semibold`}
+                                    onClick={handleStatusUpdate}
+                                    disabled={updateStatusMutation.isPending}
+                                >
+                                    {updateStatusMutation.isPending ? (
+                                        <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
+                                    ) : (
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm {selectedStatus}</>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </ModalBody>
                 </Modal>

@@ -482,16 +482,19 @@ export default function ChangeRequests() {
                                         canUpdate ? (
                                             <>
                                                 <div className="mb-3">
-                                                    <label className="form-label fw-medium">Decision <span className="text-danger">*</span></label>
+                                                    <label className="form-label fw-semibold text-dark">Decision <span className="text-danger">*</span></label>
                                                     <div className="d-flex gap-2">
                                                         {([CHANGE_REQUEST_STATUS.APPROVED, CHANGE_REQUEST_STATUS.REJECTED] as ChangeRequestStatus[]).map(s => (
                                                             <button
                                                                 key={s}
                                                                 type="button"
-                                                                className={`btn flex-grow-1 ${reviewStatus === s
-                                                                    ? s === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'
-                                                                    : 'btn-light'
-                                                                    }`}
+                                                                className={`btn flex-grow-1 fw-semibold fs-14 py-2 ${
+                                                                    reviewStatus === s
+                                                                        ? s === CHANGE_REQUEST_STATUS.APPROVED
+                                                                            ? 'btn-success text-white'
+                                                                            : 'btn-danger text-white'
+                                                                        : 'btn-light text-muted border'
+                                                                }`}
                                                                 onClick={() => setReviewStatus(s)}
                                                             >
                                                                 <i className={`${s === CHANGE_REQUEST_STATUS.APPROVED ? 'ri-checkbox-circle-line' : 'ri-close-circle-line'} me-1`}></i>
@@ -541,14 +544,20 @@ export default function ChangeRequests() {
                                     )}
                                 </div>
 
-                                <div className="modal-footer border-top-0 pt-0">
-                                    <button type="button" className="btn btn-light" onClick={handleCloseModal}>
+                                <div className="modal-footer border-top-0 pt-0 d-flex justify-content-end gap-2">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light px-4 py-2 fs-14 border rounded-2 text-dark fw-medium"
+                                        onClick={handleCloseModal}
+                                    >
                                         {selectedRow.status !== CHANGE_REQUEST_STATUS.PENDING ? 'Close' : 'Cancel'}
                                     </button>
                                     {selectedRow.status == CHANGE_REQUEST_STATUS.PENDING && canUpdate && (
                                         <button
                                             type="button"
-                                            className={`btn px-4 ${reviewStatus === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'}`}
+                                            className={`btn px-4 py-2 fs-14 fw-semibold border-0 rounded-2 ${
+                                                reviewStatus === CHANGE_REQUEST_STATUS.APPROVED ? 'btn-success' : 'btn-danger'
+                                            }`}
                                             disabled={isUpdating || (reviewStatus === CHANGE_REQUEST_STATUS.REJECTED && !reviewNote.trim())}
                                             onClick={handleSubmitReview}
                                         >
