@@ -13,6 +13,17 @@ export default function ReviewProgressCard({
     updatedAt,
 }: ReviewProgressCardProps) {
 
+    const getProgress = () => {
+        if (status === 'SUBMITTED') return 10;
+        if (status === FUNDING_REVIEW_STATUS.PENDING) return 20;
+        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return 40;
+        if (status === FUNDING_REVIEW_STATUS.ACCEPTED) return 70;
+        if (status === FUNDING_REVIEW_STATUS.APPROVED) return 100;
+        if (status === FUNDING_REVIEW_STATUS.REJECTED) return 100;
+        return 0;
+    };
+    const progressPercentage = getProgress();
+
     const isRejected =
         status === FUNDING_REVIEW_STATUS.REJECTED;
 
@@ -50,32 +61,47 @@ export default function ReviewProgressCard({
         },
     ];
 
-    const guidelines = [
+    const guidelineCards = [
         {
             label: 'Pending',
-            desc: 'Request submitted and waiting for review',
-            color: '#10b981',
+            desc: 'Request submitted and waiting for review.',
+            bg: '#f0fdf4',
+            border: '#bbf7d0',
+            iconBg: '#16a34a',
+            icon: 'ri-time-line'
         },
         {
             label: 'In Progress',
-            desc: 'Admin is reviewing the request',
-            color: '#3b82f6',
+            desc: 'Admin is reviewing the request.',
+            bg: '#eff6ff',
+            border: '#bfdbfe',
+            iconBg: '#3b82f6',
+            icon: 'ri-shield-user-fill'
         },
         {
             label: 'Accepted',
-            desc: 'Review completed successfully',
-            color: '#f59e0b',
+            desc: 'Review completed successfully.',
+            bg: '#fefce8',
+            border: '#fef08a',
+            iconBg: '#eab308',
+            icon: 'ri-check-line'
         },
         {
             label: 'Approved',
-            desc: 'Request approved and funding can begin',
-            color: '#22c55e',
+            desc: 'Borrower can start funding application.',
+            bg: '#f0fdf4',
+            border: '#bbf7d0',
+            iconBg: '#16a34a',
+            icon: 'ri-check-line'
         },
         {
             label: 'Rejected',
-            desc: 'Request has been rejected',
-            color: '#ef4444',
-        },
+            desc: 'Request declined. Process ends.',
+            bg: '#fef2f2',
+            border: '#fecaca',
+            iconBg: '#ef4444',
+            icon: 'ri-close-line'
+        }
     ];
 
     let currentStatusIndex = timelineSteps.findIndex(
@@ -108,15 +134,33 @@ export default function ReviewProgressCard({
 
     return (
         <div className="card shadow-sm border-0 mb-4 rounded-3">
-            <div className="card-header bg-white border-0 p-4 pb-0">
-                <div className="d-flex align-items-center">
-                    <div 
-                        className="d-flex align-items-center justify-content-center rounded" 
-                        style={{ width: 32, height: 32, background: '#f0f5ff', color: '#3b82f6', marginRight: 12 }}
-                    >
-                        <i className="ri-team-line fs-5"></i>
+            <div className="card-header bg-white border-bottom border-light p-4">
+                <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <div 
+                            className="d-flex align-items-center justify-content-center rounded-3" 
+                            style={{ width: 48, height: 48, background: '#f8fafc', color: '#1e293b', marginRight: 16 }}
+                        >
+                            <i className="ri-line-chart-line fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 className="card-title mb-1 fs-16 fw-bold" style={{ color: '#0f172a' }}>Review Progress</h5>
+                            <p className="mb-0 text-muted fs-13">Track the progress of this funding request</p>
+                        </div>
                     </div>
-                    <h5 className="card-title mb-0 fs-15 fw-bold" style={{ color: '#0f172a' }}>Review Progress</h5>
+                    
+                    <div className="d-flex align-items-center position-relative" style={{ width: 64, height: 64 }}>
+                        <svg width="64" height="64" style={{ transform: 'rotate(-90deg)' }}>
+                            <circle cx="32" cy="32" r="28" stroke="#f1f5f9" strokeWidth="6" fill="none" />
+                            <circle cx="32" cy="32" r="28" stroke="#2563eb" strokeWidth="6" fill="none" 
+                                    strokeDasharray="176" strokeDashoffset={176 - (176 * progressPercentage / 100)} 
+                                    strokeLinecap="round" />
+                        </svg>
+                        <div className="position-absolute w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <span className="fw-bold text-dark" style={{ fontSize: '13px', lineHeight: '1' }}>{progressPercentage}%</span>
+                            <span className="text-muted" style={{ fontSize: '9px', marginTop: '2px' }}>Complete</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -214,7 +258,7 @@ export default function ReviewProgressCard({
                 <hr className="my-0 border-light" />
 
                 {/* Status Guideline */}
-                <div className="p-4">
+                <div className="p-4 pt-3">
                     <div className="d-flex align-items-center mb-3">
                         <i className="ri-information-line fs-5 me-2" style={{ color: '#0f172a' }}></i>
                         <h6 className="mb-0 fw-bold" style={{ color: '#0f172a' }}>
@@ -222,42 +266,26 @@ export default function ReviewProgressCard({
                         </h6>
                     </div>
 
-                    <div className="row g-3">
-                        {guidelines.map((item) => (
-                            <div
-                                className="col-xl col-md-6"
-                                key={item.label}
-                            >
-                                <div
-                                    className="h-100 bg-white border border-light-subtle rounded-3 shadow-sm"
-                                    style={{
-                                        borderTop: `4px solid ${item.color} !important`,
-                                        padding: 18,
-                                    }}
-                                >
-                                    <div className="d-flex align-items-center mb-2">
-                                        <span
-                                            style={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius:
-                                                    '50%',
-                                                background:
-                                                    item.color,
-                                                marginRight: 10,
-                                            }}
-                                        />
-
-                                        <h6 className="mb-0 fw-bold">
-                                            {item.label}
-                                        </h6>
+                    <div className="d-flex align-items-center gap-2 w-100">
+                        {guidelineCards.map((item, idx) => (
+                            <React.Fragment key={item.label}>
+                                <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{ 
+                                    backgroundColor: item.bg, 
+                                    border: `1px solid ${item.border}`,
+                                    flex: 1
+                                }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white me-3" style={{ width: 24, height: 24, background: item.iconBg, flexShrink: 0 }}>
+                                        {item.icon ? <i className={item.icon} style={{ fontSize: '12px' }}></i> : null}
                                     </div>
-
-                                    <p className="mb-0 text-muted small">
-                                        {item.desc}
-                                    </p>
+                                    <div>
+                                        <h6 className="mb-1 fw-bold text-dark fs-13">{item.label}</h6>
+                                        <p className="mb-0 text-muted" style={{ fontSize: '11px', lineHeight: '1.4' }}>{item.desc}</p>
+                                    </div>
                                 </div>
-                            </div>
+                                {idx < guidelineCards.length - 1 && (
+                                    <i className="ri-arrow-right-s-line text-muted fs-4"></i>
+                                )}
+                            </React.Fragment>
                         ))}
                     </div>
                 </div>
