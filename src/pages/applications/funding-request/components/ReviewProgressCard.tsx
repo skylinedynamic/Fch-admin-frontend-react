@@ -72,7 +72,7 @@ export default function ReviewProgressCard({
         },
         {
             label: 'In Progress',
-            desc: 'Admin is reviewing the request.',
+            desc: 'Admin/Partner can reviewing the request.',
             bg: '#eff6ff',
             border: '#bfdbfe',
             iconBg: '#3b82f6',
@@ -137,8 +137,8 @@ export default function ReviewProgressCard({
             <div className="card-header bg-white border-bottom border-light p-4">
                 <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center">
-                        <div 
-                            className="d-flex align-items-center justify-content-center rounded-3" 
+                        <div
+                            className="d-flex align-items-center justify-content-center rounded-3"
                             style={{ width: 48, height: 48, background: '#f8fafc', color: '#1e293b', marginRight: 16 }}
                         >
                             <i className="ri-line-chart-line fs-4"></i>
@@ -148,17 +148,17 @@ export default function ReviewProgressCard({
                             <p className="mb-0 text-muted fs-13">Track the progress of this funding request</p>
                         </div>
                     </div>
-                    
-                    <div className="d-flex align-items-center position-relative" style={{ width: 64, height: 64 }}>
-                        <svg width="64" height="64" style={{ transform: 'rotate(-90deg)' }}>
-                            <circle cx="32" cy="32" r="28" stroke="#f1f5f9" strokeWidth="6" fill="none" />
-                            <circle cx="32" cy="32" r="28" stroke="#2563eb" strokeWidth="6" fill="none" 
-                                    strokeDasharray="176" strokeDashoffset={176 - (176 * progressPercentage / 100)} 
-                                    strokeLinecap="round" />
+
+                    <div className="d-flex align-items-center position-relative" style={{ width: 76, height: 76 }}>
+                        <svg width="76" height="76" style={{ transform: 'rotate(-90deg)' }}>
+                            <circle cx="38" cy="38" r="34" stroke="#f1f5f9" strokeWidth="6" fill="none" />
+                            <circle cx="38" cy="38" r="34" stroke={progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
+                                strokeDasharray="213" strokeDashoffset={213 - (213 * progressPercentage / 100)}
+                                strokeLinecap="round" />
                         </svg>
                         <div className="position-absolute w-100 h-100 d-flex flex-column align-items-center justify-content-center">
-                            <span className="fw-bold text-dark" style={{ fontSize: '13px', lineHeight: '1' }}>{progressPercentage}%</span>
-                            <span className="text-muted" style={{ fontSize: '9px', marginTop: '2px' }}>Complete</span>
+                            <span className="fw-bolder text-dark" style={{ fontSize: '15px', lineHeight: '1' }}>{progressPercentage}%</span>
+                            <span className="fw-bold text-muted" style={{ fontSize: '10px', marginTop: '2px' }}>Complete</span>
                         </div>
                     </div>
                 </div>
@@ -196,12 +196,12 @@ export default function ReviewProgressCard({
                             return (
                                 <React.Fragment key={step.key}>
                                     <div className="d-flex flex-column align-items-center position-relative" style={{ width: 100, flexShrink: 0 }}>
-                                        <div 
+                                        <div
                                             className="rounded-circle d-flex align-items-center justify-content-center"
                                             style={{
                                                 width: 36,
                                                 height: 36,
-                                                backgroundColor: completed || current ? stepColor : '#fff',
+                                                backgroundColor: completed ? '#16a34a' : current ? stepColor : '#fff',
                                                 color: completed || current ? '#fff' : '#94a3b8',
                                                 border: future ? '1.5px solid #cbd5e1' : 'none',
                                                 zIndex: 2,
@@ -211,9 +211,9 @@ export default function ReviewProgressCard({
                                             <i className={`${iconClass} fs-5`} />
                                         </div>
 
-                                        <div 
+                                        <div
                                             className="mt-2 fs-13 fw-semibold text-center"
-                                            style={{ color: completed || current ? stepColor : '#64748b' }}
+                                            style={{ color: completed ? '#16a34a' : current ? stepColor : '#64748b' }}
                                         >
                                             {step.label}
                                         </div>
@@ -237,12 +237,12 @@ export default function ReviewProgressCard({
                                     </div>
 
                                     {idx < timelineSteps.length - 1 && (
-                                        <div 
+                                        <div
                                             className="flex-grow-1"
                                             style={{
                                                 height: 2,
                                                 marginTop: 17,
-                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
+                                                backgroundColor: lineCompleted ? '#16a34a' : lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
                                                 zIndex: 1,
                                                 marginLeft: -36,
                                                 marginRight: -36
@@ -266,11 +266,11 @@ export default function ReviewProgressCard({
                         </h6>
                     </div>
 
-                    <div className="d-flex align-items-center gap-2 w-100">
+                    <div className="d-flex align-items-stretch gap-2 w-100">
                         {guidelineCards.map((item, idx) => (
                             <React.Fragment key={item.label}>
-                                <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{ 
-                                    backgroundColor: item.bg, 
+                                <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{
+                                    backgroundColor: item.bg,
                                     border: `1px solid ${item.border}`,
                                     flex: 1
                                 }}>
@@ -283,7 +283,9 @@ export default function ReviewProgressCard({
                                     </div>
                                 </div>
                                 {idx < guidelineCards.length - 1 && (
-                                    <i className="ri-arrow-right-s-line text-muted fs-4"></i>
+                                    <div className="d-flex align-items-center">
+                                        <i className="ri-arrow-right-s-line text-muted fs-4"></i>
+                                    </div>
                                 )}
                             </React.Fragment>
                         ))}

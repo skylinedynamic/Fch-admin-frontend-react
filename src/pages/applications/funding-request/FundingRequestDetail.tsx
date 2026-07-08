@@ -220,10 +220,11 @@ export default function FundingRequestDetail() {
                                             <table className="table align-middle mb-0" style={{ tableLayout: 'fixed' }}>
                                                 <thead className="bg-light">
                                                     <tr>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '30%' }}>Lender Name</th>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Legal Name</th>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '25%' }}>Email</th>
-                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Phone</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-4" style={{ width: '25%' }}>Lender Name</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Legal Name</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Product Category</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '20%' }}>Email</th>
+                                                        <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0" style={{ width: '15%' }}>Phone</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -237,6 +238,9 @@ export default function FundingRequestDetail() {
                                                             </td>
                                                             <td className="py-3 text-body">
                                                                 {lender.legal_name || '-'}
+                                                            </td>
+                                                            <td className="py-3 text-body">
+                                                                {lender.product_category || lender.category || '-'}
                                                             </td>
                                                             <td className="py-3 text-truncate">
                                                                 {lender.email || '-'}
