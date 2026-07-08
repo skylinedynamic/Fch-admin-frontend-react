@@ -185,16 +185,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         }
     };
 
-    // Show skeleton loader when lender changes in form view
-    React.useEffect(() => {
-        if (localActiveLenderId !== null) {
-            setDetailsLoading(true);
-            const timer = setTimeout(() => {
-                setDetailsLoading(false);
-            }, 400);
-            return () => clearTimeout(timer);
-        }
-    }, [localActiveLenderId]);
+
     const blocks: { lenderId: number | null, nullId: number, rows: { item: any, index: number }[] }[] = [];
     let nullCounter = 0;
 
@@ -292,13 +283,13 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     }, [visibilities, localActiveLenderId, localActiveCategoryId]);
 
     React.useEffect(() => {
-        if (isFormView && localActiveLenderId && !hasActiveRows && !detailsLoading && lenders.length > 0) {
+        if (isFormView && localActiveLenderId && !hasActiveRows && lenders.length > 0) {
             const timer = setTimeout(() => {
                 onAddLenderBlock(localActiveLenderId);
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [hasActiveRows, isFormView, localActiveLenderId, detailsLoading, lenders.length]);
+    }, [hasActiveRows, isFormView, localActiveLenderId, lenders.length]);
 
 
     const onRemoveBlock = (lenderId: number) => {

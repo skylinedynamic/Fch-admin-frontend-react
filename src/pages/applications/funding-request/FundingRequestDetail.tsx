@@ -70,7 +70,7 @@ export default function FundingRequestDetail() {
     // Must be before any early returns (Rules of Hooks)
     useEffect(() => {
         if (review?.status && !selectedStatus) {
-            setSelectedStatus(review.status === FUNDING_REVIEW_STATUS.APPROVED ? FUNDING_REVIEW_STATUS.ACCEPTED : review.status);
+            setSelectedStatus(review.status);
         }
     }, [review?.status]);
 
@@ -428,7 +428,24 @@ export default function FundingRequestDetail() {
                                                     value={selectedStatus}
                                                     onChange={(e) => setSelectedStatus(e.target.value)}
                                                 >
-                                                    {FUNDING_REVIEW_STATUS_OPTIONS.map((option) => (
+                                                    {FUNDING_REVIEW_STATUS_OPTIONS.filter((option) => {
+                                                        // Always show the current status as an option
+                                                        if (option.value === review.status) return true;
+                                                        
+                                                        // Flow logic
+                                                        if (review.status === FUNDING_REVIEW_STATUS.PENDING) {
+                                                            return option.value === FUNDING_REVIEW_STATUS.IN_PROGRESS || option.value === FUNDING_REVIEW_STATUS.REJECTED;
+                                                        }
+                                                        if (review.status === FUNDING_REVIEW_STATUS.IN_PROGRESS) {
+                                                            return option.value === FUNDING_REVIEW_STATUS.ACCEPTED;
+                                                        }
+                                                        if (review.status === FUNDING_REVIEW_STATUS.ACCEPTED) {
+                                                            return option.value === FUNDING_REVIEW_STATUS.APPROVED;
+                                                        }
+                                                        
+                                                        // If it's already Approved or Rejected, no further transitions allowed (only current status shown)
+                                                        return false;
+                                                    }).map((option) => (
                                                         <option key={option.value} value={option.value}>{option.label}</option>
                                                     ))}
                                                 </select>
