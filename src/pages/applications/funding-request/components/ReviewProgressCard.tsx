@@ -186,9 +186,10 @@ export default function ReviewProgressCard({
                         </h6>
                     </div>
 
-                    <div className="d-flex align-items-stretch gap-2 w-100">
-                        {guidelineCards.map((item, idx) => (
-                            <React.Fragment key={item.label}>
+                    <div className="overflow-x-auto pb-2">
+                        <div className="d-flex align-items-stretch gap-2 w-100" style={{ minWidth: 800 }}>
+                            {guidelineCards.map((item, idx) => (
+                                <React.Fragment key={item.label}>
                                 <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{
                                     backgroundColor: item.bg,
                                     border: `1px solid ${item.border}`,
@@ -209,6 +210,7 @@ export default function ReviewProgressCard({
                                 )}
                             </React.Fragment>
                         ))}
+                        </div>
                     </div>
                 </div>
 

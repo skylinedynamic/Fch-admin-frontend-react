@@ -343,7 +343,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     },
     {
         label: 'Rejected',
-        desc: 'Request declined. Process ends.',
+        desc: 'Request declined missing information.',
         bg: '#fef2f2',
         border: '#fecaca',
         iconBg: '#ef4444',
