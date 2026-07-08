@@ -333,53 +333,57 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             // Prevent nested elements from triggering the reset
             if (e && e.target !== modalEl) return;
 
-            setErrors({});
-            pendingEmailRef.current = '';
-            setFormData({
-                to_emails: '',
-                subject: '',
-                message_body: '',
-                attachments: [],
-                target_recipient: 'borrower'
-            });
-            if (choicesInstanceRef.current) {
-                choicesInstanceRef.current.removeActiveItems();
-                const ctx = window._activityEntityContext || {};
-                const resolvedEntityType = entityType ?? ctx.entityType;
-                
-                if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
-                    choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
-                    setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
-                } else if (lead?.email) {
-                    choicesInstanceRef.current.setValue([lead.email]);
-                    setFormData(prev => ({ ...prev, to_emails: lead.email }));
-                }
-            }
-            
-            // Force Summernote HTML clear via jQuery, as a safety fallback
-            const $ = window.jQuery || window.$;
-            if ($) {
-                const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
-                if (note && $(note).summernote) {
-                    try { 
-                        $(note).summernote('code', ''); 
-                        
-                        const $noteEditor = $(note).next('.note-editor');
-                        if ($noteEditor.length) {
-                            $noteEditor.find('.note-editable').html('<p><br></p>');
-                            $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
-                            $noteEditor.children('a, p, span').remove();
-                        }
-                        
-                        $('.note-popover').hide();
-                        $('.note-modal .note-link-text').val('');
-                        $('.note-modal .note-link-url').val('http://');
-                        $('.note-modal .note-image-url').val('');
-                    } catch(err) {
-                        console.error('Summernote email reset error:', err);
+            // Use a short timeout to prevent race condition with React's onClick
+            // which sets window._activityEntityContext
+            setTimeout(() => {
+                setErrors({});
+                pendingEmailRef.current = '';
+                setFormData({
+                    to_emails: '',
+                    subject: '',
+                    message_body: '',
+                    attachments: [],
+                    target_recipient: 'borrower'
+                });
+                if (choicesInstanceRef.current) {
+                    choicesInstanceRef.current.removeActiveItems();
+                    const ctx = window._activityEntityContext || {};
+                    const resolvedEntityType = entityType ?? ctx.entityType;
+                    
+                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
+                        choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
+                        setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
+                    } else if (lead?.email) {
+                        choicesInstanceRef.current.setValue([lead.email]);
+                        setFormData(prev => ({ ...prev, to_emails: lead.email }));
                     }
                 }
-            }
+                
+                // Force Summernote HTML clear via jQuery, as a safety fallback
+                const $ = window.jQuery || window.$;
+                if ($) {
+                    const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
+                    if (note && $(note).summernote) {
+                        try { 
+                            $(note).summernote('code', ''); 
+                            
+                            const $noteEditor = $(note).next('.note-editor');
+                            if ($noteEditor.length) {
+                                $noteEditor.find('.note-editable').html('<p><br></p>');
+                                $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
+                                $noteEditor.children('a, p, span').remove();
+                            }
+                            
+                            $('.note-popover').hide();
+                            $('.note-modal .note-link-text').val('');
+                            $('.note-modal .note-link-url').val('http://');
+                            $('.note-modal .note-image-url').val('');
+                        } catch(err) {
+                            console.error('Summernote email reset error:', err);
+                        }
+                    }
+                }
+            }, 50);
         };
 
         if (modalEl) {

@@ -12,6 +12,7 @@ import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
+import { Dropdown } from 'primereact/dropdown';
 
 const formatBytes = (bytes: any, decimals = 2) => {
     if (!bytes || bytes === 0 || bytes === '0') return '-';
@@ -423,32 +424,18 @@ export default function FundingRequestDetail() {
 
                                             <div className="mb-4">
                                                 <label className="form-label fs-14 fw-semibold">Status</label>
-                                                <select
-                                                    className="form-select bg-light border-0 rounded"
+                                                <Dropdown
                                                     value={selectedStatus}
-                                                    onChange={(e) => setSelectedStatus(e.target.value)}
-                                                >
-                                                    {FUNDING_REVIEW_STATUS_OPTIONS.filter((option) => {
-                                                        // Always show the current status as an option
-                                                        if (option.value === review.status) return true;
-                                                        
-                                                        // Flow logic
-                                                        if (review.status === FUNDING_REVIEW_STATUS.PENDING) {
-                                                            return option.value === FUNDING_REVIEW_STATUS.IN_PROGRESS || option.value === FUNDING_REVIEW_STATUS.REJECTED;
-                                                        }
-                                                        if (review.status === FUNDING_REVIEW_STATUS.IN_PROGRESS) {
-                                                            return option.value === FUNDING_REVIEW_STATUS.ACCEPTED;
-                                                        }
-                                                        if (review.status === FUNDING_REVIEW_STATUS.ACCEPTED) {
-                                                            return option.value === FUNDING_REVIEW_STATUS.APPROVED;
-                                                        }
-                                                        
-                                                        // If it's already Approved or Rejected, no further transitions allowed (only current status shown)
-                                                        return false;
-                                                    }).map((option) => (
-                                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                                    ))}
-                                                </select>
+                                                    options={FUNDING_REVIEW_STATUS_OPTIONS}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    className="w-100 bg-light border-0"
+                                                    placeholder="Select a Status"
+                                                    pt={{
+                                                        root: { className: 'w-100 rounded' },
+                                                        input: { className: 'fs-14' },
+                                                        item: { className: 'fs-14' }
+                                                    }}
+                                                />
                                             </div>
 
                                             {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
