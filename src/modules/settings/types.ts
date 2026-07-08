@@ -98,6 +98,7 @@ export interface ScoreConfigItem {
     max_value: number | null;
     numeric_value: number | null;
     sort_order: number;
+    conditions?: any;
 }
 
 export interface ScoreConfiguration {
@@ -109,6 +110,9 @@ export interface ScoreConfiguration {
     late_payment_modifiers?: ScoreConfigItem[];
     probability_factors?: ScoreFactor[];
     odds_factors?: ScoreFactor[];
+    startup_revenue_strength?: ScoreConfigItem;
+    next_play_delay?: number;
+    time_settings?: any[];
 }
 
 export interface ScoreConfigurationResponse {

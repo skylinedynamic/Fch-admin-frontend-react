@@ -48,6 +48,9 @@ export interface FormData {
     rev_subscore_moderate: string;
     rev_subscore_limited: string;
     rev_subscore_weak: string;
+    rev_startup_exception_revenue: string;
+    rev_startup_exception_months: string;
+    rev_subscore_startup_exception: string;
 
     // Tradeline Depth subscores
     trade_subscore_multiple_high: string;
@@ -245,7 +248,9 @@ interface TimeRange {
 interface TimeSettings {
     morning: TimeRange;
     midday: TimeRange;
+    afternoon: TimeRange;
     evening: TimeRange;
+    anytime: TimeRange;
 }
 
 const ScoreCalculationConfigForm: React.FC = () => {
@@ -287,6 +292,9 @@ const ScoreCalculationConfigForm: React.FC = () => {
         rev_subscore_moderate: '75',
         rev_subscore_limited: '55',
         rev_subscore_weak: '25',
+        rev_startup_exception_revenue: '0',
+        rev_startup_exception_months: '24',
+        rev_subscore_startup_exception: '55',
 
         trade_subscore_multiple_high: '100',
         trade_subscore_good_depth: '80',
@@ -469,9 +477,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
         next_play_delay: '0',
     });
     const [timeSettings, setTimeSettings] = useState<TimeSettings>({
-        morning: { start: '06:00', end: '12:00' },
-        midday: { start: '12:00', end: '17:00' },
-        evening: { start: '17:00', end: '22:00' },
+        morning: { start: '06:00', end: '11:00' },
+        midday: { start: '11:00', end: '14:00' },
+        afternoon: { start: '14:00', end: '17:00' },
+        evening: { start: '17:00', end: '21:00' },
+        anytime: { start: '09:00', end: '17:00' },
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const scoreDataRef = useRef<ScoreConfiguration | null>(null);
@@ -570,6 +580,19 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 return sv(found[field]?.value, fallback);
             };
 
+            const getStartupCond = (field: string, fallback: string): string => {
+                const startupConfig = scoreConfig?.startup_revenue_strength;
+                if (!startupConfig?.conditions) return fallback;
+                const conditions = typeof startupConfig.conditions === 'string' ? JSON.parse(startupConfig.conditions) : startupConfig.conditions;
+                let list = [];
+                if (Array.isArray(conditions)) {
+                    list = conditions;
+                }
+                const found = list.find((c: any) => c[field] !== undefined);
+                if (!found) return fallback;
+                return sv(found[field]?.value, fallback);
+            };
+
             setFormData(prev => ({
                 ...prev,
 
@@ -642,6 +665,9 @@ const ScoreCalculationConfigForm: React.FC = () => {
                 rev_rule_personal_t1: getCond('revenue_strength', 0, 'personal_income', '150000'),
                 rev_rule_personal_t2: getCond('revenue_strength', 1, 'personal_income', '50000'),
                 rev_rule_personal_t3: getCond('revenue_strength', 2, 'personal_income', '25000'),
+                rev_startup_exception_revenue: getStartupCond('business_revenue', '0'),
+                rev_startup_exception_months: getStartupCond('business_age', '24'),
+                rev_subscore_startup_exception: sv(scoreConfig?.startup_revenue_strength?.numeric_value, '55'),
 
                 trade_rule_multi_accounts: getCond('tradeline_depth', 0, 'open_accounts', '5'),
                 trade_rule_multi_high_limit_count: getCond('tradeline_depth', 0, 'high_limit_accounts', '2'),
@@ -810,9 +836,11 @@ const ScoreCalculationConfigForm: React.FC = () => {
                     }
                 });
                 setTimeSettings({
-                    morning: st.morning || { start: '06:00', end: '12:00' },
-                    midday: st.midday || { start: '12:00', end: '17:00' },
-                    evening: st.evening || { start: '17:00', end: '22:00' },
+                    morning: st.morning || { start: '06:00', end: '11:00' },
+                    midday: st.midday || { start: '11:00', end: '14:00' },
+                    afternoon: st.afternoon || { start: '14:00', end: '17:00' },
+                    evening: st.evening || { start: '17:00', end: '21:00' },
+                    anytime: st.anytime || { start: '09:00', end: '17:00' },
                 });
             }
         } catch (error) {
@@ -1038,6 +1066,26 @@ const ScoreCalculationConfigForm: React.FC = () => {
             };
         }
 
+        payload['startup_revenue_strength'] = {
+            factors: [
+                {
+                    sort_order: 1,
+                    label: 'Startup Exception',
+                    sub_score: Number(formData.rev_subscore_startup_exception) || 0,
+                    condition: {
+                        business_revenue: {
+                            operator: '<=',
+                            value: Number(formData.rev_startup_exception_revenue) || 0,
+                        },
+                        business_age: {
+                            operator: '<=',
+                            value: Number(formData.rev_startup_exception_months) || 0,
+                        },
+                    },
+                },
+            ],
+        };
+
         return { funding_readiness: payload };
     };
 
@@ -1177,9 +1225,7 @@ const ScoreCalculationConfigForm: React.FC = () => {
 
         setLoading(true);
         try {
-            const scorePayload: any = buildFundingReadinessPayload();
-            scorePayload.approval_probability = buildApprovalProbabilityPayload();
-            scorePayload.approval_odds = buildApprovalOddsPayload();
+            const readinessFactors = buildFundingReadinessPayload().funding_readiness;
 
             const bucketIds = ['a', 'b', 'c', 'd', 'e'];
             const readinessBands = bucketIds.map((bucket, i) => ({
@@ -1190,20 +1236,33 @@ const ScoreCalculationConfigForm: React.FC = () => {
                     ? Number(formData[`fund_readiness_bucket_${bucket}_min_score` as keyof FormData])
                     : null,
             }));
-            scorePayload.readiness_bands = readinessBands;
-
-            scorePayload.late_payment_modifiers = [];
 
             const timeToDecimal = (t: string): number => {
                 const [h, m] = t.split(':');
                 return parseInt(h) + parseInt(m) / 60;
             };
-            scorePayload.time_settings = [
-                { label: 'Morning', start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
-                { label: 'Mid Day', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
-                { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 3 },
-            ];
-            scorePayload.next_play_delay = formData.next_play_delay ? parseInt(formData.next_play_delay) : 0;
+
+            const scorePayload = {
+                funding_readiness: {
+                    factors: readinessFactors,
+                    readiness_bands: readinessBands
+                },
+                approval_probability: {
+                    ...buildApprovalProbabilityPayload(),
+                    late_payment_modifiers: []
+                },
+                approval_odds: buildApprovalOddsPayload(),
+                general_setting: {
+                    time_settings: [
+                        { label: 'Morning', start: timeToDecimal(timeSettings.morning.start), end: timeToDecimal(timeSettings.morning.end), sort_order: 1 },
+                        { label: 'Midday', start: timeToDecimal(timeSettings.midday.start), end: timeToDecimal(timeSettings.midday.end), sort_order: 2 },
+                        { label: 'Afternoon', start: timeToDecimal(timeSettings.afternoon.start), end: timeToDecimal(timeSettings.afternoon.end), sort_order: 3 },
+                        { label: 'Evening', start: timeToDecimal(timeSettings.evening.start), end: timeToDecimal(timeSettings.evening.end), sort_order: 4 },
+                        { label: 'Anytime', start: timeToDecimal(timeSettings.anytime.start), end: timeToDecimal(timeSettings.anytime.end), sort_order: 5 },
+                    ],
+                    next_play_delay: formData.next_play_delay ? parseInt(formData.next_play_delay) : 0
+                }
+            };
 
             const saveResp = await updateScoreConfigurations(scorePayload);
             if (saveResp?.status === false) {

@@ -8,7 +8,9 @@ interface TimeRange {
 interface TimeSettings {
     morning: TimeRange;
     midday: TimeRange;
+    afternoon: TimeRange;
     evening: TimeRange;
+    anytime: TimeRange;
 }
 
 interface Props {
@@ -27,9 +29,11 @@ const GeneralSettingTab: React.FC<Props> = ({ timeSettings, onChange, nextPlayDe
     };
 
     const periods: { key: keyof TimeSettings; label: string; icon: string; desc: string }[] = [
-        { key: 'morning', label: 'Morning', icon: 'ri-sun-line', desc: 'Early to late morning window' },
-        { key: 'midday', label: 'Mid Day', icon: 'ri-sun-fill', desc: 'Noon to afternoon window' },
-        { key: 'evening', label: 'Evening', icon: 'ri-moon-line', desc: 'Late afternoon to night window' },
+        { key: 'morning', label: 'Morning', icon: 'ri-sun-line', desc: '6:00 AM – 10:59 AM' },
+        { key: 'midday', label: 'Midday', icon: 'ri-sun-fill', desc: '11:00 AM – 1:59 PM' },
+        { key: 'afternoon', label: 'Afternoon', icon: 'ri-sun-cloudy-line', desc: '2:00 PM – 4:59 PM' },
+        { key: 'evening', label: 'Evening', icon: 'ri-moon-line', desc: '5:00 PM – 8:59 PM' },
+        { key: 'anytime', label: 'Anytime', icon: 'ri-time-line', desc: '9:00 AM – 5:00 PM' },
     ];
 
     return (
