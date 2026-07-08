@@ -205,7 +205,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             <span className="fw-medium">{rowData.full_name || `${rowData.first_name} ${rowData.last_name}`}</span>
             {rowData.is_free_trail && (
                 <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
-                    Free Trial
+                    <i className="ri-vip-crown-line me-1"></i>Trial
                 </span>
             )}
         </div>

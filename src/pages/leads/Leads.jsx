@@ -300,15 +300,6 @@ export default function Leads() {
     };
 
     const openConvertModal = (rowData) => {
-        // If logged-in user is a Partner and on a Free Trial, show Paid Version restriction modal
-        const isPartner = currentUser?.entity_type === 'Partner' || currentUser?.entity_type === ENTITY_TYPE_PARTNER;
-        const isFreeTrial = !!userSubscription?.is_free_trail;
-        
-        if (isPartner && isFreeTrial) {
-            setShowPaidOnlyModal(true);
-            return;
-        }
-
         setTargetLead(rowData);
         const hasName = rowData.contact_person || rowData.contact_person;
         const isMissingInfo = !hasName || !rowData.email || !rowData.phone_number || !rowData.country || !rowData.state || !rowData.city;
