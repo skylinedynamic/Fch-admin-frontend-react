@@ -177,12 +177,14 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
     const visibilityUrl = `/funding/visibility-rules/${id}`;
 
     const setActiveLenderIdAndCategory = (lenderId: number | null, categoryId: string | number | null = null) => {
+        setDetailsLoading(true);
         if (lenderId === null) {
             navigate(visibilityUrl);
         } else {
             const catPath = categoryId !== null ? `/category/${categoryId}` : '';
             navigate(`${visibilityUrl}/lender/${lenderId}${catPath}`);
         }
+        setTimeout(() => setDetailsLoading(false), 500);
     };
 
 
@@ -745,10 +747,10 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     }} />
                                     <Column field="min_fico" header="Min FICO" sortable style={{ minWidth: '110px' }} />
                                     <Column field="min_tib_months" header="Min TIB" sortable style={{ minWidth: '120px' }} body={(rowData: any) => TIB_OPTIONS.find(t => t.value === rowData.min_tib_months)?.label || rowData.min_tib_months || ''} />
-                                    <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue ? `$${rowData.min_monthly_revenue}` : ''} />
-                                    <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits ? `$${rowData.min_monthly_deposits}` : ''} />
+                                    <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue !== null && rowData.min_monthly_revenue !== undefined && rowData.min_monthly_revenue !== '' ? `$${rowData.min_monthly_revenue}` : ''} />
+                                    <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits !== null && rowData.min_monthly_deposits !== undefined && rowData.min_monthly_deposits !== '' ? `$${rowData.min_monthly_deposits}` : ''} />
                                     <Column field="min_deposit_count" header="Min Dep Count" sortable style={{ minWidth: '140px' }} />
-                                    <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance ? `$${rowData.min_average_daily_balance}` : ''} />
+                                    <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance !== null && rowData.min_average_daily_balance !== undefined && rowData.min_average_daily_balance !== '' ? `$${rowData.min_average_daily_balance}` : ''} />
                                     <Column field="max_nsf_count" header="Max NSF" sortable style={{ minWidth: '110px' }} />
                                     <Column field="max_negative_days" header="Max Neg Days" sortable style={{ minWidth: '140px' }} />
                                     {/* <Column field="min_dscr" header="Min DSCR" sortable style={{ minWidth: '120px' }} /> */}
@@ -879,7 +881,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     type="number"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_fico`] ? 'is-invalid' : ''}`}
                                                                     placeholder="640"
-                                                                    value={v.min_fico || ''}
+                                                                    value={v.min_fico ?? ''}
                                                                     onChange={(e) => onChange(i, 'min_fico', e.target.value)}
                                                                 />
                                                                 {renderError('min_fico', i)}
@@ -906,7 +908,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                         type="number"
                                                                         className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_revenue`] ? 'is-invalid' : 'border-start-0'}`}
                                                                         placeholder="12000.00"
-                                                                        value={v.min_monthly_revenue || ''}
+                                                                        value={v.min_monthly_revenue ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_revenue', e.target.value)}
                                                                     />
                                                                 </div>
@@ -922,7 +924,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                         type="number"
                                                                         className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_monthly_deposits`] ? 'is-invalid' : 'border-start-0'}`}
                                                                         placeholder="12000.00"
-                                                                        value={v.min_monthly_deposits || ''}
+                                                                        value={v.min_monthly_deposits ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_monthly_deposits', e.target.value)}
                                                                     />
                                                                 </div>
@@ -933,7 +935,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     type="number"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_deposit_count`] ? 'is-invalid' : ''}`}
                                                                     placeholder="100"
-                                                                    value={v.min_deposit_count || ''}
+                                                                    value={v.min_deposit_count ?? ''}
                                                                     onChange={(e) => onChange(i, 'min_deposit_count', e.target.value)}
                                                                 />
                                                                 {renderError('min_deposit_count', i)}
@@ -948,7 +950,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                         type="number"
                                                                         className={`form-control shadow-none rounded-end-2 ${(errors as any)[`lender_visibilities.${i}.min_average_daily_balance`] ? 'is-invalid' : 'border-start-0'}`}
                                                                         placeholder="4000.00"
-                                                                        value={v.min_average_daily_balance || ''}
+                                                                        value={v.min_average_daily_balance ?? ''}
                                                                         onChange={(e) => onChange(i, 'min_average_daily_balance', e.target.value)}
                                                                     />
                                                                 </div>
@@ -959,7 +961,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     type="number"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_nsf_count`] ? 'is-invalid' : ''}`}
                                                                     placeholder="4"
-                                                                    value={v.max_nsf_count || ''}
+                                                                    value={v.max_nsf_count ?? ''}
                                                                     onChange={(e) => onChange(i, 'max_nsf_count', e.target.value)}
                                                                 />
                                                                 {renderError('max_nsf_count', i)}
@@ -969,7 +971,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     type="number"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.max_negative_days`] ? 'is-invalid' : ''}`}
                                                                     placeholder="4"
-                                                                    value={v.max_negative_days || ''}
+                                                                    value={v.max_negative_days ?? ''}
                                                                     onChange={(e) => onChange(i, 'max_negative_days', e.target.value)}
                                                                 />
                                                                 {renderError('max_negative_days', i)}
@@ -980,7 +982,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     step="0.01"
                                                                     className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_dscr`] ? 'is-invalid' : ''}`}
                                                                     placeholder="1.25"
-                                                                    value={v.min_dscr || ''}
+                                                                    value={v.min_dscr ?? ''}
                                                                     onChange={(e) => onChange(i, 'min_dscr', e.target.value)}
                                                                 />
                                                                 {renderError('min_dscr', i)}
