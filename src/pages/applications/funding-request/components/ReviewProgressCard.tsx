@@ -1,5 +1,10 @@
 import React from 'react';
-import { FUNDING_REVIEW_STATUS } from '../../../../config/funding';
+import { 
+    FUNDING_REVIEW_STATUS, 
+    getFundingReviewProgress, 
+    FUNDING_REVIEW_TIMELINE_STEPS, 
+    FUNDING_REVIEW_GUIDELINE_CARDS 
+} from '../../../../config/funding';
 
 interface ReviewProgressCardProps {
     status: string;
@@ -13,96 +18,10 @@ export default function ReviewProgressCard({
     updatedAt,
 }: ReviewProgressCardProps) {
 
-    const getProgress = () => {
-        if (status === 'SUBMITTED') return 10;
-        if (status === FUNDING_REVIEW_STATUS.PENDING) return 20;
-        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return 40;
-        if (status === FUNDING_REVIEW_STATUS.ACCEPTED) return 70;
-        if (status === FUNDING_REVIEW_STATUS.APPROVED) return 100;
-        if (status === FUNDING_REVIEW_STATUS.REJECTED) return 100;
-        return 0;
-    };
-    const progressPercentage = getProgress();
-
-    const isRejected =
-        status === FUNDING_REVIEW_STATUS.REJECTED;
-
-    const timelineSteps = [
-        {
-            key: 'SUBMITTED',
-            label: 'Submitted',
-            icon: 'ri-file-list-3-line',
-        },
-        {
-            key: FUNDING_REVIEW_STATUS.PENDING,
-            label: 'Pending',
-            icon: 'ri-time-line',
-        },
-        {
-            key: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-            label: 'In Progress',
-            subtext: 'Under Review',
-            icon: 'ri-user-3-fill',
-        },
-        {
-            key: FUNDING_REVIEW_STATUS.ACCEPTED,
-            label: 'Accepted',
-            icon: 'ri-checkbox-circle-line',
-        },
-        {
-            key: FUNDING_REVIEW_STATUS.APPROVED,
-            label: 'Approved',
-            icon: 'ri-user-follow-line',
-        },
-        {
-            key: FUNDING_REVIEW_STATUS.REJECTED,
-            label: 'Rejected',
-            icon: 'ri-user-unfollow-line',
-        },
-    ];
-
-    const guidelineCards = [
-        {
-            label: 'Pending',
-            desc: 'Request submitted and waiting for review.',
-            bg: '#f0fdf4',
-            border: '#bbf7d0',
-            iconBg: '#16a34a',
-            icon: 'ri-time-line'
-        },
-        {
-            label: 'In Progress',
-            desc: 'Admin/Partner can reviewing the request.',
-            bg: '#eff6ff',
-            border: '#bfdbfe',
-            iconBg: '#3b82f6',
-            icon: 'ri-shield-user-fill'
-        },
-        {
-            label: 'Accepted',
-            desc: 'Review completed successfully.',
-            bg: '#fefce8',
-            border: '#fef08a',
-            iconBg: '#eab308',
-            icon: 'ri-check-line'
-        },
-        {
-            label: 'Approved',
-            desc: 'Borrower can start funding application.',
-            bg: '#f0fdf4',
-            border: '#bbf7d0',
-            iconBg: '#16a34a',
-            icon: 'ri-check-line'
-        },
-        {
-            label: 'Rejected',
-            desc: 'Request declined. Process ends.',
-            bg: '#fef2f2',
-            border: '#fecaca',
-            iconBg: '#ef4444',
-            icon: 'ri-close-line'
-        }
-    ];
+    const progressPercentage = getFundingReviewProgress(status);
+    const isRejected = status === FUNDING_REVIEW_STATUS.REJECTED;
+    const timelineSteps = FUNDING_REVIEW_TIMELINE_STEPS;
+    const guidelineCards = FUNDING_REVIEW_GUIDELINE_CARDS;
 
     let currentStatusIndex = timelineSteps.findIndex(
         (x) => x.key === status
@@ -152,7 +71,7 @@ export default function ReviewProgressCard({
                     <div className="d-flex align-items-center position-relative" style={{ width: 76, height: 76 }}>
                         <svg width="76" height="76" style={{ transform: 'rotate(-90deg)' }}>
                             <circle cx="38" cy="38" r="34" stroke="#f1f5f9" strokeWidth="6" fill="none" />
-                            <circle cx="38" cy="38" r="34" stroke={progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
+                            <circle cx="38" cy="38" r="34" stroke={isRejected ? '#ef4444' : progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
                                 strokeDasharray="213" strokeDashoffset={213 - (213 * progressPercentage / 100)}
                                 strokeLinecap="round" />
                         </svg>
@@ -167,9 +86,8 @@ export default function ReviewProgressCard({
             <div className="card-body p-0 pt-4">
 
                 {/* Timeline */}
-                <div className="px-4 pb-4 overflow-auto">
-
-                    <div className="d-flex w-100 position-relative" style={{ minWidth: 600 }}>
+                <div className="px-4 pb-4 overflow-x-auto">
+                    <div className="d-flex w-100 position-relative" style={{ minWidth: 500 }}>
                         {timelineSteps.map((step, idx) => {
                             const completed = isRejected ? idx < 3 : idx < currentStatusIndex;
                             const current = idx === currentStatusIndex;
@@ -201,7 +119,7 @@ export default function ReviewProgressCard({
                                             style={{
                                                 width: 36,
                                                 height: 36,
-                                                backgroundColor: completed ? '#16a34a' : current ? stepColor : '#fff',
+                                                backgroundColor: completed || current ? stepColor : '#fff',
                                                 color: completed || current ? '#fff' : '#94a3b8',
                                                 border: future ? '1.5px solid #cbd5e1' : 'none',
                                                 zIndex: 2,
@@ -213,7 +131,7 @@ export default function ReviewProgressCard({
 
                                         <div
                                             className="mt-2 fs-13 fw-semibold text-center"
-                                            style={{ color: completed ? '#16a34a' : current ? stepColor : '#64748b' }}
+                                            style={{ color: completed || current ? stepColor : '#64748b' }}
                                         >
                                             {step.label}
                                         </div>
@@ -242,7 +160,7 @@ export default function ReviewProgressCard({
                                             style={{
                                                 height: 2,
                                                 marginTop: 17,
-                                                backgroundColor: lineCompleted ? '#16a34a' : lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
+                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
                                                 zIndex: 1,
                                                 marginLeft: -36,
                                                 marginRight: -36

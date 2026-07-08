@@ -264,3 +264,89 @@ export const INDUSTRIES_OPTIONS = [
     { label: 'Winery', value: 'Winery' },
 ];
 
+export const getFundingReviewProgress = (status: string) => {
+    if (status === 'SUBMITTED') return 10;
+    if (status === FUNDING_REVIEW_STATUS.PENDING) return 20;
+    if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return 40;
+    if (status === FUNDING_REVIEW_STATUS.ACCEPTED) return 70;
+    if (status === FUNDING_REVIEW_STATUS.APPROVED) return 100;
+    if (status === FUNDING_REVIEW_STATUS.REJECTED) return 100;
+    return 0;
+};
+
+export const FUNDING_REVIEW_TIMELINE_STEPS = [
+    {
+        key: 'SUBMITTED',
+        label: 'Submitted',
+        icon: 'ri-file-list-3-line',
+    },
+    {
+        key: FUNDING_REVIEW_STATUS.PENDING,
+        label: 'Pending',
+        icon: 'ri-time-line',
+    },
+    {
+        key: FUNDING_REVIEW_STATUS.IN_PROGRESS,
+        label: 'In Progress',
+        subtext: 'Under Review',
+        icon: 'ri-user-3-fill',
+    },
+    {
+        key: FUNDING_REVIEW_STATUS.ACCEPTED,
+        label: 'Accepted',
+        icon: 'ri-checkbox-circle-line',
+    },
+    {
+        key: FUNDING_REVIEW_STATUS.APPROVED,
+        label: 'Approved',
+        icon: 'ri-user-follow-line',
+    },
+    {
+        key: FUNDING_REVIEW_STATUS.REJECTED,
+        label: 'Rejected',
+        icon: 'ri-user-unfollow-line',
+    },
+];
+
+export const FUNDING_REVIEW_GUIDELINE_CARDS = [
+    {
+        label: 'Pending',
+        desc: 'Request submitted and waiting for review.',
+        bg: '#f0fdf4',
+        border: '#bbf7d0',
+        iconBg: '#16a34a',
+        icon: 'ri-time-line'
+    },
+    {
+        label: 'In Progress',
+        desc: 'Admin/Partner can reviewing the request.',
+        bg: '#eff6ff',
+        border: '#bfdbfe',
+        iconBg: '#3b82f6',
+        icon: 'ri-shield-user-fill'
+    },
+    {
+        label: 'Accepted',
+        desc: 'Review completed successfully.',
+        bg: '#fefce8',
+        border: '#fef08a',
+        iconBg: '#eab308',
+        icon: 'ri-check-line'
+    },
+    {
+        label: 'Approved',
+        desc: 'Borrower can start funding application.',
+        bg: '#f0fdf4',
+        border: '#bbf7d0',
+        iconBg: '#16a34a',
+        icon: 'ri-check-line'
+    },
+    {
+        label: 'Rejected',
+        desc: 'Request declined. Process ends.',
+        bg: '#fef2f2',
+        border: '#fecaca',
+        iconBg: '#ef4444',
+        icon: 'ri-close-line'
+    }
+];
