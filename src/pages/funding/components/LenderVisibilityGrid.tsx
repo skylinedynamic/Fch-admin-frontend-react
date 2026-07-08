@@ -760,7 +760,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     <Column field="min_average_daily_balance" header="Min Avg Bal" sortable style={{ minWidth: '140px' }} body={(rowData: any) => rowData.min_average_daily_balance ? `$${rowData.min_average_daily_balance}` : ''} />
                                     <Column field="max_nsf_count" header="Max NSF" sortable style={{ minWidth: '110px' }} />
                                     <Column field="max_negative_days" header="Max Neg Days" sortable style={{ minWidth: '140px' }} />
-                                    <Column field="min_dscr" header="Min DSCR" sortable style={{ minWidth: '120px' }} />
+                                    {/* <Column field="min_dscr" header="Min DSCR" sortable style={{ minWidth: '120px' }} /> */}
                                     <Column field="_allowedStates" header="Allowed States" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._allowedStates || '—'} />
                                     <Column field="_restrictedStates" header="Restricted States" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._restrictedStates || '—'} />
                                     <Column field="_allowedIndustries" header="Allow Only Listed Industries" sortable style={{ minWidth: '220px' }} className="text-wrap" body={(rowData: any) => rowData._allowedIndustries || '—'} />

@@ -125,19 +125,22 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-dark fw-medium mb-2">Max NSF / Negative Days</label>
-                            <div className="input-group">
-                                <input type="number" name="max_nsf_negative_days" className={`form-control rounded-start-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_nsf_negative_days || ''} onChange={handleChange} placeholder="None" />
-                                <span className={`input-group-text bg-light text-muted rounded-end-3 px-3 ${(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] ? 'border-danger text-danger' : ''}`}>per period</span>
-                            </div>
-                            {(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_nsf_negative_days`]}</div>}
+                            <label className="form-label text-dark fw-medium mb-2">Max NSF</label>
+                            <input type="number" name="max_nsf_count" className={`form-control rounded-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_nsf_count`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_nsf_count || ''} onChange={handleChange} placeholder="None" />
+                            {(errors as any)[`lender_visibilities.${index}.max_nsf_count`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_nsf_count`]}</div>}
                         </div>
 
                         <div className="mb-4">
+                            <label className="form-label text-dark fw-medium mb-2">Negative Days</label>
+                            <input type="number" name="max_negative_days" className={`form-control rounded-3 py-2 ${(errors as any)[`lender_visibilities.${index}.max_negative_days`] ? 'is-invalid border-danger' : ''}`} value={visibility.max_negative_days || ''} onChange={handleChange} placeholder="None" />
+                            {(errors as any)[`lender_visibilities.${index}.max_negative_days`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.max_negative_days`]}</div>}
+                        </div>
+
+                        {/* <div className="mb-4">
                             <label className="form-label text-dark fw-medium mb-1">Minimum DSCR</label>
                             <input type="number" name="min_dscr" className={`form-control rounded-3 py-2 ${(errors as any)[`lender_visibilities.${index}.min_dscr`] ? 'is-invalid border-danger' : ''}`} value={visibility.min_dscr || ''} onChange={handleChange} placeholder="For amortized / SBA products (e.g. 1.25)" />
                             {(errors as any)[`lender_visibilities.${index}.min_dscr`] && <div className="text-danger mt-1 fs-13">{(errors as any)[`lender_visibilities.${index}.min_dscr`]}</div>}
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right Column: Geography & Industry + Review Settings */}

@@ -8,7 +8,7 @@ import { STATUS_ACTIVE } from '../../../config/statusOptions';
 import { createFundingSequencing, updateFundingSequencing, updateFundingSequencingDisplay, updateFundingSequencingVisibility, updateFundingSequencingSingleLenderVisibility, updateFundingSequencingSingleCategoryVisibility, getFundingSequencing, getFundingGroups, getFundingTypes } from '../../../modules/funding/services';
 import { getAllLenders, getLenderProductCategories } from '../../../modules/lender/services';
 import { usePermissions } from '../../../lib/auth/usePermissions';
-import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS } from '../../../config/funding';
+import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP, USES_OPTIONS, READINESS_FACTOR_STATUS_OPTIONS, READINESS_FACTORS_OPTIONS, DEFAULT_READINESS_FACTORS } from '../../../config/funding';
 import { industryTypes } from '../../../config/borrower';
 import { locationData } from '../../../config/locations';
 import { useSummernote } from '../../../hooks/useSummernote';
@@ -125,7 +125,7 @@ export default function FundingSequencingForm() {
         min_monthly_revenue: '',
         min_monthly_deposits: '',
         min_average_daily_balance: '',
-        max_nsf_negative_days: '',
+        max_nsf_negative_days: '', // Deprecated field, remove later if safe
         min_dscr: '',
         sort_order: '',
         allowed_states: [],
@@ -138,7 +138,7 @@ export default function FundingSequencingForm() {
         exception_allowed: true,
         speed_to_funds: '',
         uses: [] as any[],
-        readiness_factors: [] as any[],
+        readiness_factors: (id ? [] : DEFAULT_READINESS_FACTORS) as any[],
         missing_documents: [] as any[],
         allowed_documents: [] as any[],
         lender_visibilities: [] as any[]
@@ -300,7 +300,7 @@ export default function FundingSequencingForm() {
                         min_monthly_deposits: data.lenders?.[0]?.min_monthly_deposits || '',
                         min_average_daily_balance: data.lenders?.[0]?.min_average_daily_balance || '',
                         min_deposit_count: data.lenders?.[0]?.min_deposit_count || '',
-                        max_nsf_negative_days: data.lenders?.[0]?.max_nsf_negative_days || '',
+                        max_nsf_negative_days: '', // Deprecated field, remove later if safe
                         min_dscr: data.lenders?.[0]?.min_dscr || '',
                         sort_order: data.sort_order || '',
                         allowed_states: mapStateCodeToName(data.lenders?.[0]?.allowed_states?.length && data.lenders[0].allowed_states[0] !== '' ? data.lenders[0].allowed_states : []),
