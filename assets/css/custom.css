@@ -1922,4 +1922,105 @@ File: Custom Css File
 
 .trial-switch-container .trial-subtext {
   font-size: 0.8rem !important;
-}
+}
+
+/* Capital Access List Card Stack */
+.capital-card-stack-inner {
+  padding-left: 8px;
+}
+
+.capital-card-item {
+  position: relative;
+}
+
+.capital-card-item+.capital-card-item {
+  margin-left: -14px;
+}
+
+.capital-card-item:nth-child(1) {
+  z-index: 10;
+}
+
+.capital-card-item:nth-child(2) {
+  z-index: 9;
+}
+
+.capital-card-item:nth-child(3) {
+  z-index: 8;
+}
+
+.capital-card-item:nth-child(4) {
+  z-index: 7;
+}
+
+.capital-card-item:nth-child(5) {
+  z-index: 6;
+}
+
+.capital-card-img {
+  width: 45px;
+  height: 28px;
+  object-fit: contain;
+  padding: 1px;
+  display: block;
+}
+
+.capital-card-fallback {
+  width: 45px;
+  height: 28px;
+  font-size: 9px;
+  font-weight: bold;
+}
+
+/* Custom scrollbar styling for Credit Profile metrics inner tables */
+.credit-profile-metrics-card-body .table-responsive::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.credit-profile-metrics-card-body .table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.credit-profile-metrics-card-body .table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.credit-profile-metrics-card-body .table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom border and border-radius for metrics nested tables */
+.credit-profile-metrics-card-body .table-responsive {
+  border-radius: 4px !important;
+}
+
+/* PrimeReact Dropdown sizing inside credit profile tables */
+.p-dropdown.table-dropdown {
+  height: 34px !important;
+  font-size: 11px !important;
+}
+
+.p-dropdown.table-dropdown .p-dropdown-label {
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+  line-height: 1.4 !important;
+}
+
+.p-dropdown.table-dropdown .p-dropdown-trigger {
+  width: 24px !important;
+}
+
+.credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  font-size: 11px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-item-label {
+  font-size: 11px !important;
+}
+
