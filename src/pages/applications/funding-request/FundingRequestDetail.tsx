@@ -146,7 +146,8 @@ export default function FundingRequestDetail() {
                             <ReviewProgressCard 
                                 status={review.status} 
                                 createdAt={review.created_at} 
-                                updatedAt={review.updated_at} 
+                                updatedAt={review.updated_at}
+                                rejectReason={review.reject_reason} 
                             />
 
                             <div className="card shadow-sm border-0 mb-4 rounded-3">

@@ -10,12 +10,14 @@ interface ReviewProgressCardProps {
     status: string;
     createdAt?: string;
     updatedAt?: string;
+    rejectReason?: string;
 }
 
 export default function ReviewProgressCard({
     status,
     createdAt,
     updatedAt,
+    rejectReason,
 }: ReviewProgressCardProps) {
 
     const progressPercentage = getFundingReviewProgress(status);

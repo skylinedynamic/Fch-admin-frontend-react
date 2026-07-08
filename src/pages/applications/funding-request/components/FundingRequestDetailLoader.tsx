@@ -35,9 +35,22 @@ export default function FundingRequestDetailLoader() {
                                     </div>
                                     <div className="skeleton-line rounded-circle" style={{ width: 76, height: 76 }}></div>
                                 </div>
-                                <div className="p-4 pt-0">
-                                    <div className="skeleton-line w-100" style={{ height: '80px', borderRadius: '6px' }}></div>
-                                    <div className="skeleton-line w-100 mt-4" style={{ height: '60px', borderRadius: '6px' }}></div>
+                                <div className="p-4 pt-4 pb-5 overflow-hidden">
+                                    <div className="d-flex justify-content-between align-items-start position-relative px-3">
+                                        {[1, 2, 3, 4, 5].map((_, idx) => (
+                                            <React.Fragment key={idx}>
+                                                <div className="d-flex flex-column align-items-center position-relative" style={{ width: 100, flexShrink: 0 }}>
+                                                    <div className="skeleton-line mb-2 rounded-circle" style={{ width: 36, height: 36 }}></div>
+                                                    <div className="skeleton-line mb-1" style={{ width: 70, height: 14, borderRadius: 4 }}></div>
+                                                    <div className="skeleton-line mt-1" style={{ width: 90, height: 10, borderRadius: 4 }}></div>
+                                                    <div className="skeleton-line mt-1" style={{ width: 110, height: 10, borderRadius: 4 }}></div>
+                                                </div>
+                                                {idx < 4 && (
+                                                    <div className="flex-grow-1" style={{ height: 2, marginTop: 17, backgroundColor: '#f1f5f9', marginLeft: -36, marginRight: -36 }}></div>
+                                                )}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
