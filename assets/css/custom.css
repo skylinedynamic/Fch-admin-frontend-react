@@ -1521,6 +1521,415 @@ File: Custom Css File
   color: #dc2626;
 }
 
+/* Custom border and border-radius for metrics nested tables */
+.credit-profile-metrics-card-body .table-responsive {
+  /* border: 1px solid #ced4da !important; */
+  border-radius: 4px !important;
+}
+
+/* PrimeReact Dropdown sizing inside credit profile tables */
+.p-dropdown.table-dropdown {
+  height: 34px !important;
+  font-size: 11px !important;
+}
+
+.p-dropdown.table-dropdown .p-dropdown-label {
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+  line-height: 1.4 !important;
+}
+
+.p-dropdown.table-dropdown .p-dropdown-trigger {
+  width: 24px !important;
+}
+
+.credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  font-size: 11px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-item-label {
+  font-size: 11px !important;
+}
+
+
+
+/* ── Detail Item ──────────────────────────────────────────────────────────── */
+.detail-label {
+  letter-spacing: 0.5px;
+}
+
+.detail-copy-btn {
+  line-height: 1;
+}
+
+.detail-copy-icon {
+  color: #adb5bd !important;
+  font-size: 15px;
+}
+
+.detail-copy-icon:hover {
+  color: #6c757d !important;
+}
+
+.detail-copy-icon.copied {
+  color: #10b981 !important;
+}
+
+/* ── Reveal SSN Button ────────────────────────────────────────────────────── */
+.btn-reveal-ssn {
+  background-color: var(--secondary-color) !important;
+  border-color: var(--secondary-color) !important;
+  color: #fff !important;
+}
+
+.btn-reveal-ssn:hover,
+.btn-reveal-ssn:active,
+.btn-reveal-ssn:focus {
+  filter: brightness(90%);
+  color: #fff !important;
+}
+
+/* Credit Profile Loading Skeleton Styles */
+.credit-profile-skeleton-card {
+  height: calc(100vh - 360px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  border: 1px solid #e9e9e9 !important;
+}
+
+.credit-profile-skeleton-body {
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.skeleton-title {
+  width: 180px !important;
+  height: 16px !important;
+}
+
+.skeleton-btn-lg {
+  width: 140px !important;
+  height: 30px !important;
+}
+
+.skeleton-btn-md {
+  width: 100px !important;
+  height: 30px !important;
+}
+
+.skeleton-btn-sm {
+  width: 80px !important;
+  height: 30px !important;
+}
+
+.skeleton-tab-lg {
+  width: 160px !important;
+  height: 18px !important;
+}
+
+.skeleton-tab-md {
+  width: 130px !important;
+  height: 18px !important;
+}
+
+.skeleton-tab-sm {
+  width: 110px !important;
+  height: 18px !important;
+}
+
+.skeleton-tab-xs {
+  width: 90px !important;
+  height: 18px !important;
+}
+
+.skeleton-label {
+  width: 80px !important;
+  height: 14px !important;
+}
+
+.skeleton-input {
+  width: 100% !important;
+  height: 38px !important;
+  border-radius: 6px !important;
+}
+
+.skeleton-table-title {
+  width: 150px !important;
+  height: 16px !important;
+}
+
+.skeleton-th {
+  height: 20px !important;
+}
+
+.skeleton-td {
+  height: 28px !important;
+}
+
+.skeleton-pdf-header {
+  width: 100% !important;
+  height: 40px !important;
+}
+
+.skeleton-pdf-view {
+  width: 100% !important;
+  flex: 1 !important;
+}
+
+.skeleton-border-container {
+  border: 1px solid #e9e9e9 !important;
+  border-radius: 4px !important;
+}
+
+/* Score Configuration Form */
+#score-config-form input.form-control,
+#score-config-form input.form-control-sm,
+#score-config-form input.form-control-xs {
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+.config-input-xs {
+  width: 40px !important;
+}
+
+.config-input-sm {
+  width: 45px !important;
+}
+
+.config-input-md {
+  width: 60px !important;
+}
+
+.config-input-lg {
+  width: 65px !important;
+}
+
+.config-input-xl {
+  width: 80px !important;
+}
+
+.config-input-xxl {
+  width: 100px !important;
+}
+
+.config-input-no-shadow {
+  box-shadow: none !important;
+}
+
+.config-label-span {
+  min-width: 120px !important;
+  justify-content: center !important;
+}
+
+.config-progress {
+  height: 8px !important;
+}
+
+.config-dropdown-radius {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.config-th {
+  width: 120px !important;
+}
+
+.config-th-lg {
+  width: 65% !important;
+}
+
+.config-th-sm {
+  width: 35% !important;
+}
+
+.config-th-quarter {
+  width: 25% !important;
+}
+
+.config-th-half {
+  width: 60% !important;
+}
+
+.config-th-subscore {
+  width: 15% !important;
+  min-width: 120px !important;
+}
+
+.config-th-qty {
+  width: 240px !important;
+}
+
+.config-th-val {
+  width: 160px !important;
+}
+
+.config-th-status {
+  width: 280px !important;
+}
+
+.config-th-label {
+  width: 240px !important;
+}
+
+/* PrimeReact Dropdown Vertical Centering */
+.p-dropdown {
+  display: inline-flex !important;
+  align-items: center !important;
+  border: 1px solid #e3e6e9 !important;
+}
+
+.p-dropdown .p-dropdown-label {
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 100% !important;
+}
+
+.p-dropdown .p-dropdown-trigger {
+  height: 100% !important;
+}
+
+.list-group-item.active {
+  z-index: 2;
+  color: #fff !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.navbar-menu {
+  border-right: 1px solid var(--primary-color) !important;
+}
+
+.logo {
+  line-height: 60px !important;
+}
+
+.custom-datepicker .p-calendar .p-inputtext:focus {
+  border-color: none !important;
+  box-shadow: none !important;
+}
+
+.p-calendar.p-invalid .p-inputtext {
+  border-color: #f06548 !important;
+}
+
+/* ================================================
+   Sidebar Free Trial Panel — Absolute Bottom
+   ================================================ */
+
+/* Add bottom padding to scrollbar so items never hide behind trial panel */
+.navbar-menu #scrollbar .simplebar-content,
+.navbar-menu #scrollbar {
+  padding-bottom: 76px !important;
+}
+
+/* Trial panel: always pinned to bottom 0, never scrolls */
+.sidebar-trial-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 10px 14px;
+  z-index: 10;
+  /* Match the sidebar background so it covers scrolled content */
+  background: var(--vz-sidebar-bg, #1a1d21);
+}
+
+.trial-panel-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.13) 0%, rgba(220, 38, 38, 0.07) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s;
+}
+
+/* Red gradient top accent bar */
+.trial-panel-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+  border-radius: 10px 10px 0 0;
+}
+
+/* Icon box */
+.trial-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+.trial-icon-wrap i {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.trial-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trial-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #fca5a5;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trial-expires {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trial-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+/* Light sidebar overrides */
+[data-sidebar="light"] .trial-label,
+.light-sidebar .trial-label {
+  color: #dc2626;
+}
+
 [data-sidebar="light"] .trial-expires,
 .light-sidebar .trial-expires {
   color: #64748b;
