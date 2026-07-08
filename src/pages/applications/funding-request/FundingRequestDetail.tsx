@@ -3,8 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFundingRequestDetails, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
-// @ts-ignore
-import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
+import FundingRequestDetailLoader from './components/FundingRequestDetailLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
 import { handleFileDownload } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
@@ -76,8 +75,8 @@ export default function FundingRequestDetail() {
         }
     }, [review?.status]);
 
-    if (isLoading) {
-        return <ApplicationDetailsLoader />;
+    if (isLoading || isUpdatingOrFetching) {
+        return <FundingRequestDetailLoader />;
     }
 
     if (!review) return null;
@@ -389,15 +388,7 @@ export default function FundingRequestDetail() {
                                     </div>
                                 </div>
                                 <div className="card-body p-4">
-                                    {isUpdatingOrFetching ? (
-                                        <div className="d-flex flex-column gap-3">
-                                            <div className="skeleton-line" style={{ width: '120px', height: '14px', borderRadius: '4px' }}></div>
-                                            <div className="skeleton-line w-100" style={{ height: '38px', borderRadius: '6px' }}></div>
-                                            <div className="skeleton-line w-100" style={{ height: '38px', borderRadius: '6px' }}></div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
+                                    <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
 
                                             {/* Status Row */}
                                             <div className="d-flex gap-2 align-items-start mb-3">
@@ -478,8 +469,6 @@ export default function FundingRequestDetail() {
                                                     </div>
                                                 </div>
                                             )}
-                                        </>
-                                    )}
                                 </div>
                             </div>
 
