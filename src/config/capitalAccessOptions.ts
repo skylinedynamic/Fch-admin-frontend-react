@@ -10,6 +10,8 @@ export interface DayOption {
 
 export const ACCESS_TIME = {
     MORNING: 'Morning',
+    MIDDAY: 'Mid Day',
+    AFTERNOON: 'Afternoon',
     EVENING: 'Evening',
     ANYTIME: 'Anytime',
     DAY: 'Day',
@@ -17,6 +19,8 @@ export const ACCESS_TIME = {
 
 export const ACCESS_TIME_OPTIONS: AccessTimeOption[] = [
     { label: ACCESS_TIME.MORNING, value: ACCESS_TIME.MORNING },
+    { label: ACCESS_TIME.MIDDAY, value: ACCESS_TIME.MIDDAY },
+    { label: ACCESS_TIME.AFTERNOON, value: ACCESS_TIME.AFTERNOON },
     { label: ACCESS_TIME.EVENING, value: ACCESS_TIME.EVENING },
     { label: ACCESS_TIME.ANYTIME, value: ACCESS_TIME.ANYTIME },
     { label: ACCESS_TIME.DAY, value: ACCESS_TIME.DAY },
@@ -29,6 +33,8 @@ export const DAY_OPTIONS: DayOption[] = Array.from({ length: 60 }, (_, i) => ({
 
 export const DAY_TIME_OPTIONS: AccessTimeOption[] = [
     { label: ACCESS_TIME.MORNING, value: ACCESS_TIME.MORNING },
+    { label: ACCESS_TIME.MIDDAY, value: ACCESS_TIME.MIDDAY },
+    { label: ACCESS_TIME.AFTERNOON, value: ACCESS_TIME.AFTERNOON },
     { label: ACCESS_TIME.EVENING, value: ACCESS_TIME.EVENING },
     { label: ACCESS_TIME.ANYTIME, value: ACCESS_TIME.ANYTIME },
 ];

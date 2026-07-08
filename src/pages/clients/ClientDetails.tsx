@@ -281,6 +281,7 @@ export default function ClientDetails() {
                     return;
                 }
 
+
                 if (isWLOrCP) {
                     toast.success(`Client created successfully.`);
                 } else {
