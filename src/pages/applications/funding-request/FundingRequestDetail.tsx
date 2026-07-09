@@ -755,10 +755,17 @@ export default function FundingRequestDetail() {
                                 </div>
                             )}
 
-                            <div className="d-flex justify-content-end gap-2 mt-4">
+                            <div className="d-flex justify-content-center gap-3 mt-4 px-2">
                                 <button
                                     type="button"
-                                    className="btn bg-white border border-secondary-subtle px-2 py-2 fs-14 rounded-2 text-dark fw-medium"
+                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary"
+                                    style={{ 
+                                        background: '#f8fafc',
+                                        borderRadius: '12px',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
                                     onClick={() => setShowStatusModal(false)}
                                     disabled={updateStatusMutation.isPending}
                                 >
@@ -766,11 +773,18 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`btn ${
+                                    className={`btn text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap ${
                                         selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
                                         'btn-primary'
-                                    } px-2 py-2 fs-14 border-0 rounded-2 fw-semibold`}
+                                    }`}
+                                    style={{ 
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 20px rgba(0,0,0, 0.15)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     onClick={handleStatusUpdate}
                                     disabled={updateStatusMutation.isPending}
                                 >
@@ -799,11 +813,11 @@ export default function FundingRequestDetail() {
                                 </div>
                             </div>
                             
-                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Confirm Assignment</h4>
+                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Confirm Assign Lender</h4>
                             <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
                                 Are you sure you want to assign <strong className="text-dark fs-16">{lenderToAssign?.name}</strong> to this funding request?
                                 <br />
-                                <span className="fs-13 text-primary bg-primary-subtle px-2 py-1 rounded mt-2 d-inline-block">This will automatically approve the request.</span>
+                                <span className="fs-13 text-primary bg-primary-subtle px-2 py-1 rounded mt-2 d-inline-block">This will Approve and Assign the Lender.</span>
                             </p>
                         </div>
 
@@ -811,7 +825,7 @@ export default function FundingRequestDetail() {
                             <div className="d-flex justify-content-center gap-3 mt-3 px-2">
                                 <button
                                     type="button"
-                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary w-50"
+                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary"
                                     style={{ 
                                         background: '#f8fafc',
                                         borderRadius: '12px',
@@ -826,7 +840,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn btn-primary px-4 py-3 fs-15 border-0 fw-bold w-50"
+                                    className="btn btn-primary text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap"
                                     style={{ 
                                         borderRadius: '12px',
                                         boxShadow: '0 8px 20px rgba(var(--bs-primary-rgb), 0.25)',
@@ -869,7 +883,7 @@ export default function FundingRequestDetail() {
                                     {assignLenderMutation.isPending || updateStatusMutation.isPending ? (
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm</>
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm Assign Lender</>
                                     )}
                                 </button>
                             </div>
@@ -877,7 +891,7 @@ export default function FundingRequestDetail() {
                     </ModalBody>
                 </Modal>
                 {/* Awesome Missing Lender Modal */}
-                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="lg" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
                     <ModalBody className="p-0 position-relative">
                         {/* Decorative Background Element */}
                         <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
@@ -890,9 +904,9 @@ export default function FundingRequestDetail() {
                                 </div>
                             </div>
                             
-                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Assignment Required</h4>
+                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Lender Required</h4>
                             <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
-                                You can assign Before <strong className="text-dark">Approved</strong>
+                                Assign to Lender. You can assign Before <strong className="text-dark">Approved</strong>
                             </p>
                         </div>
                         <div className="p-4 pt-3 pb-4 bg-white">
