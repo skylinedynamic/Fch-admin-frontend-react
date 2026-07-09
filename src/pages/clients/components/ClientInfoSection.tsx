@@ -82,6 +82,15 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const userSubscription = useAuthStore((state) => state.userSubscription);
     const isPartnerOnFreeTrial = currentUser?.entity_type === ENTITY_TYPE_PARTNER && !!userSubscription?.is_free_trail;
 
+    // Borrower's owning partner ID (present only in edit mode)
+    const borrowerPartnerId = fetchedData?.data?.partner_id ?? fetchedData?.partner_id ?? null;
+
+    // The free-edition section is visible only when:
+    //  • creating a new borrower (no clientId), OR
+    //  • the borrower IS on free trial AND the logged-in partner owns them
+    const canManageFreeTrial = !clientId
+        || (wasFreeTrial && borrowerPartnerId !== null && String(currentUser?.partner_id) === String(borrowerPartnerId));
+
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
     const [isSynced, setIsSynced] = useState(false); // Track if data has been synced from API
@@ -1093,8 +1102,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {/* Free Trial Section */}
-                {(!clientId || wasFreeTrial) && (
+                {/* Free Trial Section — only visible to the borrower's own partner */}
+                {canManageFreeTrial && (
                     <div className="col-12 mt-4">
                         <div className="card border-0 bg-light-subtle shadow-sm mb-4">
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
