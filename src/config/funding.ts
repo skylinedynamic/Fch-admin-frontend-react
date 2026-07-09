@@ -137,6 +137,7 @@ export const DEFAULT_READINESS_FACTORS = [
 ];
 
 export const TIB_OPTIONS = [
+    { label: '0 Month', value: 0 },
     { label: '1 month', value: 1 },
     { label: '3 months', value: 3 },
     { label: '6 months', value: 6 },
