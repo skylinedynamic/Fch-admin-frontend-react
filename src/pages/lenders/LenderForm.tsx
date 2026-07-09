@@ -222,7 +222,8 @@ export default function LenderForm() {
                                                     placeholder="Select Categories"
                                                     className={`w-100 rounded-3 slim-multiselect ${errors.product_categories ? 'p-invalid' : ''}`}
                                                     appendTo="self"
-                                                    display="chip"
+                                                    maxSelectedLabels={2}
+                                                    selectedItemsLabel="{0} items selected"
                                                 />
                                                 {errors.product_categories && <div className="invalid-feedback d-block">{errors.product_categories}</div>}
                                             </div>
