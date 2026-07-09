@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -105,6 +105,16 @@ export const useUpdateFundingRequestStatus = () => {
     onSuccess: (data, variables) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
         queryClient.invalidateQueries({ queryKey: queryKeys.application.all });
+    },
+  });
+};
+
+export const useAssignLenderToFundingRequest = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: assignLenderToFundingRequest,
+    onSuccess: (data, variables) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(variables.id) });
     },
   });
 };

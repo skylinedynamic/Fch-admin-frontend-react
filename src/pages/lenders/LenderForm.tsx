@@ -215,7 +215,7 @@ export default function LenderForm() {
                                                 <MultiSelect
                                                     inputId="product_categories"
                                                     value={formData.product_categories || []}
-                                                    options={categoriesList.length > 0 ? categoriesList.map(cat => ({ label: cat.name, value: cat.name })) : PRODUCT_CATEGORIES}
+                                                    options={categoriesList.length > 0 ? categoriesList.map(cat => ({ label: cat.name, value: cat.id })) : PRODUCT_CATEGORIES.map(cat => ({ label: cat.label, value: cat.value }))}
                                                     onChange={(e) => handleChange({ target: { name: 'product_categories', value: e.value } } as any)}
                                                     optionLabel="label"
                                                     optionValue="value"

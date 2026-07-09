@@ -6,7 +6,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
-import { fetchFundingSequencings, deleteFundingSequencing, updateFundingSequencingStatus, getFundingGroups, getFundingTypes } from '../../modules/funding/services';
+import { fetchFundingSequencings, deleteFundingSequencing, updateFundingSequencingStatus, getFundingGroups } from '../../modules/funding/services';
+import { getLenderProductCategories } from '../../modules/lender/services';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { FUNDING_STATUS_OPTIONS, FUNDING_ICON_MAP, FUNDING_COLOR_MAP } from '../../config/funding';
@@ -67,7 +68,7 @@ export default function FundingList() {
             try {
                 const [groupsRes, typesRes] = await Promise.all([
                     getFundingGroups(),
-                    getFundingTypes()
+                    getLenderProductCategories()
                 ]);
                 setGroups(groupsRes.data || []);
                 setTypes(typesRes.data || []);

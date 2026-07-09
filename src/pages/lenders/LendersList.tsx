@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
-import { getLenders, deleteLender } from '../../modules/lender/services';
+import { getLenders, deleteLender, getLenderProductCategories } from '../../modules/lender/services';
 import { Lender } from '../../modules/lender/types';
 import { DataTable, DataTablePageEvent, DataTableSortEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -12,6 +12,8 @@ export default function LendersList() {
     const navigate = useNavigate();
     const [lenders, setLenders] = useState<Lender[]>([]);
     const [loading, setLoading] = useState(true);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [categoriesList, setCategoriesList] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [appliedSearch, setAppliedSearch] = useState('');
 
@@ -29,7 +31,7 @@ export default function LendersList() {
     const fetchLenders = async () => {
         setLoading(true);
         try {
-            const res = await getLenders({ 
+            const res = await getLenders({
                 search: appliedSearch,
                 page,
                 per_page: perPage,
@@ -50,8 +52,22 @@ export default function LendersList() {
     };
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await getLenderProductCategories();
+                setCategoriesList(res.data || []);
+            } catch (error) {
+                console.error('Failed to fetch categories', error);
+            } finally {
+                setCategoriesLoading(false);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
         fetchLenders();
-        
+
         // Add class to body to prevent global scroll and setup layout
         document.body.classList.add('table-page-fit-active');
 
@@ -188,7 +204,7 @@ export default function LendersList() {
                                     </div>
                                 </form>
 
-                                {loading ? (
+                                {loading || categoriesLoading ? (
                                     <TableLoader rows={10} columns={new Array(5).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
@@ -211,13 +227,28 @@ export default function LendersList() {
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                             <Column field="name" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
                                             <Column field="legal_name" header="Legal Name" sortable style={{ minWidth: '150px' }} />
-                                            <Column field="product_categories" header="Categories" style={{ minWidth: '150px' }} body={(rowData) => (
-                                                <div className="d-flex flex-wrap gap-1">
-                                                    {(rowData.product_categories || []).map((cat: string) => (
-                                                        <span key={cat} className="badge bg-light text-dark border">{cat}</span>
-                                                    ))}
-                                                </div>
-                                            )} />
+                                            <Column field="product_categories" header="Product Categories" style={{ minWidth: '150px' }} body={(rowData) => {
+                                                let catIds = rowData.product_categories || [];
+                                                if (typeof catIds === 'string') {
+                                                    try { catIds = JSON.parse(catIds); } catch (e) { catIds = []; }
+                                                }
+                                                if (!Array.isArray(catIds)) catIds = [];
+
+                                                const displayCats = catIds.map((idOrName: any) => {
+                                                    if (typeof idOrName === 'number' || !isNaN(Number(idOrName))) {
+                                                        const cat = categoriesList.find(c => c.id == idOrName);
+                                                        return cat ? cat.name : idOrName;
+                                                    }
+                                                    return idOrName;
+                                                });
+                                                return (
+                                                    <div className="d-flex flex-wrap gap-1">
+                                                        {displayCats.map((cat: string, i: number) => (
+                                                            <span key={i} className="badge bg-light text-dark border">{cat}</span>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }} />
                                             <Column field="contact_name" header="Contact Name" sortable style={{ minWidth: '150px' }} />
                                             <Column field="contact_phone" header="Contact Phone" sortable style={{ minWidth: '150px' }} />
                                             <Column field="iso_status" header="ISO Status" sortable style={{ minWidth: '120px' }} />

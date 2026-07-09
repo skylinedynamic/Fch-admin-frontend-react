@@ -140,7 +140,7 @@ export default function FundingSequencingForm() {
         uses: [] as any[],
         readiness_factors: (id ? [] : DEFAULT_READINESS_FACTORS) as any[],
         missing_documents: [] as any[],
-        allowed_documents: [] as any[],
+        allowed_documents: (id ? [] : [3, 2]) as any[],
         lender_visibilities: [] as any[]
     });
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
@@ -754,7 +754,7 @@ export default function FundingSequencingForm() {
                                                                 <div className="w-50">
                                                                     <div className="input-group">
                                                                         <span className={`input-group-text bg-light text-muted px-3 ${(errors as any).min_amount ? 'border-danger text-danger' : ''}`}>$</span>
-                                                                        <input type="number" name="min_amount" className={`form-control py-2 ${(errors as any).min_amount ? 'is-invalid border-danger' : ''}`} value={formData.min_amount} onChange={handleChange} placeholder="Min" />
+                                                                        <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} name="min_amount" className={`form-control py-2 ${(errors as any).min_amount ? 'is-invalid border-danger' : ''}`} value={formData.min_amount} onChange={handleChange} placeholder="Min" />
                                                                     </div>
                                                                     {(errors as any).min_amount && <div className="text-danger mt-1 fs-13">{(errors as any).min_amount}</div>}
                                                                 </div>
@@ -762,7 +762,7 @@ export default function FundingSequencingForm() {
                                                                 <div className="w-50">
                                                                     <div className="input-group">
                                                                         <span className={`input-group-text bg-light text-muted px-3 ${(errors as any).max_amount ? 'border-danger text-danger' : ''}`}>$</span>
-                                                                        <input type="number" name="max_amount" className={`form-control py-2 ${(errors as any).max_amount ? 'is-invalid border-danger' : ''}`} value={formData.max_amount} onChange={handleChange} placeholder="Max" />
+                                                                        <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} name="max_amount" className={`form-control py-2 ${(errors as any).max_amount ? 'is-invalid border-danger' : ''}`} value={formData.max_amount} onChange={handleChange} placeholder="Max" />
                                                                     </div>
                                                                     {(errors as any).max_amount && <div className="text-danger mt-1 fs-13">{(errors as any).max_amount}</div>}
                                                                 </div>
@@ -795,11 +795,10 @@ export default function FundingSequencingForm() {
                                                         <div className="mb-2">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <label className="form-label text-dark fw-medium mb-0">Funding Type <span className="text-danger">*</span></label>
-                                                                <button type="button" className="btn btn-link p-0 text-decoration-none fs-13" onClick={() => setShowTypeModal(true)}>Add New</button>
                                                             </div>
                                                             <Dropdown
                                                                 value={formData.funding_type_id}
-                                                                options={types}
+                                                                options={productCategories}
                                                                 onChange={(e) => handleInputChange({ target: { name: 'funding_type_id', value: e.value } })}
                                                                 optionLabel="name"
                                                                 optionValue="id"
