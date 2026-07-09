@@ -370,7 +370,7 @@ export default function ClientDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
