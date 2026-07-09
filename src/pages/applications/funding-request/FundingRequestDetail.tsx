@@ -54,6 +54,7 @@ export default function FundingRequestDetail() {
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showMissingLenderModal, setShowMissingLenderModal] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [validationErrors, setValidationErrors] = useState<any>({});
     const sidebarRef = useRef<HTMLDivElement>(null);
@@ -104,7 +105,13 @@ export default function FundingRequestDetail() {
     const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => l.name))).map(name => ({ label: name, value: name }));
     
     const filteredLenders = matchedLenders.filter((lender: any) => {
-        const matchesSearch = !lenderSearch || lender.name?.toLowerCase().includes(lenderSearch.toLowerCase()) || lender.product_category?.toLowerCase().includes(lenderSearch.toLowerCase());
+        const matchesSearch = !lenderSearch || 
+            lender.name?.toLowerCase().includes(lenderSearch.toLowerCase()) || 
+            lender.product_category?.toLowerCase().includes(lenderSearch.toLowerCase()) ||
+            lender.requirements?.min_fico?.toString().includes(lenderSearch) ||
+            lender.requirements?.min_revenue?.toString().includes(lenderSearch) ||
+            lender.requirements?.min_tib?.toString().includes(lenderSearch) ||
+            lender.requirements?.min_deposit?.toString().includes(lenderSearch);
         const matchesCategory = !lenderCategoryFilter || lender.product_category === lenderCategoryFilter;
         const matchesName = !lenderNameFilter || lender.name === lenderNameFilter;
         return matchesSearch && matchesCategory && matchesName;
@@ -192,7 +199,7 @@ export default function FundingRequestDetail() {
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <>
                                     
-                                    <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+                                    <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3">
                                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2">
                                         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
                                             <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
@@ -320,6 +327,7 @@ export default function FundingRequestDetail() {
                                                                                     setLenderToAssign(lender);
                                                                                     setShowAssignModal(true);
                                                                                 }} 
+                                                                                disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                                                                 className="btn btn-sm d-inline-flex align-items-center gap-1" 
                                                                                 style={{ background: '#fff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 500, padding: '5px 12px' }}
                                                                             >
@@ -587,7 +595,7 @@ export default function FundingRequestDetail() {
                                                             onClick={() => {
                                                                 if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                     if (assignedLenderIds.length === 0) {
-                                                                        toast.error('You must assign at least one lender before approving this funding request.');
+                                                                        setShowMissingLenderModal(true);
                                                                         if (lenderTableRef.current) {
                                                                             lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                                                             lenderTableRef.current.classList.add('border-danger');
@@ -777,34 +785,55 @@ export default function FundingRequestDetail() {
                     </ModalBody>
                 </Modal>
 
-                {/* Assign Lender Modal */}
-                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered className="border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden', maxWidth: '400px' }}>
-                    <ModalBody className="p-0">
-                        <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
-                            <div className="avatar-md mx-auto mb-3">
-                                <span className="avatar-title rounded-circle fs-22 text-white bg-primary">
-                                    <i className="ri-user-add-line"></i>
-                                </span>
+                {/* Awesome Assign Lender Modal */}
+                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered size="md" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+                    <ModalBody className="p-0 position-relative">
+                        {/* Decorative Background Element */}
+                        <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
+                        
+                        <div className="text-center pt-5 pb-3 px-4 rounded-top-4 bg-white position-relative z-1">
+                            {/* Icon Container with glowing effect */}
+                            <div className="mx-auto mb-4 d-flex align-items-center justify-content-center bg-primary-subtle" style={{ width: '84px', height: '84px', borderRadius: '50%', boxShadow: '0 0 0 10px rgba(var(--bs-primary-rgb), 0.05)' }}>
+                                <div className="d-flex align-items-center justify-content-center bg-primary" style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 8px 16px rgba(var(--bs-primary-rgb), 0.25)' }}>
+                                    <i className="ri-user-add-fill text-white" style={{ fontSize: '32px' }}></i>
+                                </div>
                             </div>
-                            <h5 className="fw-bold mb-1">Confirm Lender Assignment</h5>
-                            <p className="text-muted fs-13 mb-0">
-                                Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
+                            
+                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Confirm Assignment</h4>
+                            <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
+                                Are you sure you want to assign <strong className="text-dark fs-16">{lenderToAssign?.name}</strong> to this funding request?
+                                <br />
+                                <span className="fs-13 text-primary bg-primary-subtle px-2 py-1 rounded mt-2 d-inline-block">This will automatically approve the request.</span>
                             </p>
                         </div>
 
-                        <div className="p-4 pt-2">
-                            <div className="d-flex justify-content-end gap-2 mt-2">
+                        <div className="p-4 pt-3 pb-4 bg-white">
+                            <div className="d-flex justify-content-center gap-3 mt-3 px-2">
                                 <button
                                     type="button"
-                                    className="btn bg-white border border-secondary-subtle px-3 py-2 fs-14 rounded-2 text-dark fw-medium"
+                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary w-50"
+                                    style={{ 
+                                        background: '#f8fafc',
+                                        borderRadius: '12px',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
                                     onClick={() => setShowAssignModal(false)}
-                                    disabled={assignLenderMutation.isPending}
+                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn btn-primary px-3 py-2 fs-14 border-0 rounded-2 fw-semibold"
+                                    className="btn btn-primary px-4 py-3 fs-15 border-0 fw-bold w-50"
+                                    style={{ 
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 20px rgba(var(--bs-primary-rgb), 0.25)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                     onClick={() => {
                                         assignLenderMutation.mutate(
                                             { id: review.id, lender_ids: [lenderToAssign?.id] },
@@ -814,7 +843,20 @@ export default function FundingRequestDetail() {
                                                     setShowAssignModal(false);
                                                     setLenderToAssign(null);
                                                     setAssignedLenderIds([lenderToAssign?.id]);
-                                                    window.dispatchEvent(new Event('refreshActivities'));
+                                                    
+                                                    if (review.status !== FUNDING_REVIEW_STATUS.APPROVED) {
+                                                        updateStatusMutation.mutate(
+                                                            { id: review.id, status: FUNDING_REVIEW_STATUS.APPROVED },
+                                                            {
+                                                                onSuccess: () => {
+                                                                    setSelectedStatus(FUNDING_REVIEW_STATUS.APPROVED);
+                                                                    window.dispatchEvent(new Event('refreshActivities'));
+                                                                }
+                                                            }
+                                                        );
+                                                    } else {
+                                                        window.dispatchEvent(new Event('refreshActivities'));
+                                                    }
                                                 },
                                                 onError: (err: any) => {
                                                     toast.error(err?.response?.data?.message || 'Failed to assign lender');
@@ -822,13 +864,57 @@ export default function FundingRequestDetail() {
                                             }
                                         );
                                     }}
-                                    disabled={assignLenderMutation.isPending}
+                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                 >
-                                    {assignLenderMutation.isPending ? (
-                                        <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Assigning...</>
+                                    {assignLenderMutation.isPending || updateStatusMutation.isPending ? (
+                                        <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm Assignment</>
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm</>
                                     )}
+                                </button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+                {/* Awesome Missing Lender Modal */}
+                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+                    <ModalBody className="p-0 position-relative">
+                        {/* Decorative Background Element */}
+                        <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
+                        
+                        <div className="text-center pt-5 pb-3 px-4 rounded-top-4 bg-white position-relative z-1">
+                            {/* Icon Container with glowing effect */}
+                            <div className="mx-auto mb-4 d-flex align-items-center justify-content-center bg-primary-subtle" style={{ width: '84px', height: '84px', borderRadius: '50%', boxShadow: '0 0 0 10px rgba(var(--bs-primary-rgb), 0.05)' }}>
+                                <div className="d-flex align-items-center justify-content-center bg-primary" style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 8px 16px rgba(var(--bs-primary-rgb), 0.25)' }}>
+                                    <i className="ri-error-warning-fill text-white" style={{ fontSize: '32px' }}></i>
+                                </div>
+                            </div>
+                            
+                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Assignment Required</h4>
+                            <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
+                                You can assign Before <strong className="text-dark">Approved</strong>
+                            </p>
+                        </div>
+                        <div className="p-4 pt-3 pb-4 bg-white">
+                            <div className="d-flex justify-content-center mt-2 px-3">
+                                <button
+                                    type="button"
+                                    className="btn btn-primary px-4 py-3 fs-15 border-0 fw-bold w-100"
+                                    style={{ 
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 20px rgba(var(--bs-primary-rgb), 0.25)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    onClick={() => {
+                                        setShowMissingLenderModal(false);
+                                        if (lenderTableRef.current) {
+                                            lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                    }}
+                                >
+                                    Got it, take me there!
                                 </button>
                             </div>
                         </div>
