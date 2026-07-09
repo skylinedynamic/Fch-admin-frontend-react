@@ -594,7 +594,7 @@ export default function FundingRequestDetail() {
                                                             style={{ marginTop: '2px' }}
                                                             onClick={() => {
                                                                 if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
-                                                                    if (assignedLenderIds.length === 0) {
+                                                                    if (isHost && assignedLenderIds.length === 0) {
                                                                         setShowMissingLenderModal(true);
                                                                         if (lenderTableRef.current) {
                                                                             lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -692,7 +692,9 @@ export default function FundingRequestDetail() {
                             </div>
                             <h5 className="fw-bold mb-1">Confirm Status Update</h5>
                             <p className="text-muted fs-13 mb-0">
-                                Are you sure you want to update the status to <strong>{selectedStatus}</strong>?
+                                {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost 
+                                    ? "Are you sure you want to Approve?" 
+                                    : <>Are you sure you want to update the status to <strong>{selectedStatus}</strong>?</>}
                             </p>
                         </div>
 
@@ -783,7 +785,7 @@ export default function FundingRequestDetail() {
                                     {updateStatusMutation.isPending ? (
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm {selectedStatus}</>
+                                        <><i className="ri-checkbox-circle-line me-1"></i> {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost ? "Approve" : `Confirm ${selectedStatus}`}</>
                                     )}
                                 </button>
                             </div>
@@ -883,7 +885,7 @@ export default function FundingRequestDetail() {
                     </ModalBody>
                 </Modal>
                 {/* Awesome Missing Lender Modal */}
-                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="lg" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" contentClassName="border-0 rounded-4 overflow-hidden shadow-lg">
                     <ModalBody className="p-0 position-relative">
                         {/* Decorative Background Element */}
                         <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
