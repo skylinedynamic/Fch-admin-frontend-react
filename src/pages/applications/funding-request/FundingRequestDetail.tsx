@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useFundingRequestDetails, useUpdateFundingRequestStatus } from '../../../modules/application';
+import { useFundingRequestDetails, useUpdateFundingRequestStatus, useAssignLenderToFundingRequest } from '../../../modules/application';
 import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import FundingRequestDetailLoader from './components/FundingRequestDetailLoader';
@@ -58,13 +58,29 @@ export default function FundingRequestDetail() {
     const [validationErrors, setValidationErrors] = useState<any>({});
     const sidebarRef = useRef<HTMLDivElement>(null);
     const sidebarColRef = useRef<HTMLDivElement>(null);
+    const lenderTableRef = useRef<HTMLDivElement>(null);
 
     const { data: apiResponse, isLoading, isFetching, error } = useFundingRequestDetails(id || '');
     const updateStatusMutation = useUpdateFundingRequestStatus();
+    const assignLenderMutation = useAssignLenderToFundingRequest();
+
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [lenderToAssign, setLenderToAssign] = useState<any>(null);
+    const [assignedLenderIds, setAssignedLenderIds] = useState<number[]>([]);
+    
+    const [lenderSearch, setLenderSearch] = useState('');
+    const [lenderCategoryFilter, setLenderCategoryFilter] = useState('');
+    const [lenderNameFilter, setLenderNameFilter] = useState('');
 
     const isUpdatingOrFetching = updateStatusMutation.isPending || isFetching;
 
     const review = apiResponse?.data;
+
+    useEffect(() => {
+        if (review) {
+            setAssignedLenderIds(review.assign_lender ? [review.assign_lender] : []);
+        }
+    }, [review]);
 
     useEffect(() => {
         if (error || (!isLoading && !review)) {
@@ -81,6 +97,18 @@ export default function FundingRequestDetail() {
     }, [review?.status]);
 
     // Use standard CSS sticky instead of JS listener to avoid jumping/cut-off issues
+
+    const matchedLenders = review?.matched_lenders || [];
+    
+    const uniqueCategories = Array.from(new Set(matchedLenders.map((l: any) => l.product_category))).map(cat => ({ label: cat, value: cat }));
+    const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => l.name))).map(name => ({ label: name, value: name }));
+    
+    const filteredLenders = matchedLenders.filter((lender: any) => {
+        const matchesSearch = !lenderSearch || lender.name?.toLowerCase().includes(lenderSearch.toLowerCase()) || lender.product_category?.toLowerCase().includes(lenderSearch.toLowerCase());
+        const matchesCategory = !lenderCategoryFilter || lender.product_category === lenderCategoryFilter;
+        const matchesName = !lenderNameFilter || lender.name === lenderNameFilter;
+        return matchesSearch && matchesCategory && matchesName;
+    });
 
     if (isLoading || isUpdatingOrFetching) {
         return <FundingRequestDetailLoader />;
@@ -161,10 +189,10 @@ export default function FundingRequestDetail() {
                                 updatedAt={review.updated_at}
                                 rejectReason={review.reject_reason} 
                             />
-                            {review.matched_lenders && review.matched_lenders.length > 0 && (
+                            {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <>
                                     
-                                    <div className="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+                                    <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
                                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2">
                                         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
                                             <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
@@ -172,20 +200,20 @@ export default function FundingRequestDetail() {
                                         <div className="row g-3 mb-3 align-items-end">
                                             <div className="col-md-4">
                                                 <div className="search-box">
-                                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." />
+                                                    <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
                                                     <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
                                             <div className="col-md-3">
-                                                <Dropdown value={null} options={[{label: 'All Categories', value: ''}]} optionLabel="label" optionValue="value" onChange={() => {}} placeholder="All Categories" className="w-100" />
+                                                <Dropdown value={lenderCategoryFilter} options={[{label: 'All Categories', value: ''}, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => setLenderCategoryFilter(e.value)} placeholder="All Categories" className="w-100" />
                                             </div>
                                             <div className="col-md-3">
-                                                <Dropdown value={null} options={[{label: 'All Lenders', value: ''}]} optionLabel="label" optionValue="value" onChange={() => {}} placeholder="All Lenders" className="w-100" />
+                                                <Dropdown value={lenderNameFilter} options={[{label: 'All Lenders', value: ''}, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
                                             </div>
                                             <div className="col-md-2">
                                                 <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-secondary flex-grow-1 text-white">
-                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    <button type="button" className="btn btn-secondary flex-grow-1 text-white" onClick={() => { setLenderSearch(''); setLenderCategoryFilter(''); setLenderNameFilter(''); }}>
+                                                        <i className="ri-refresh-line me-1 align-bottom"></i> Reset
                                                     </button>
                                                     
                                                     
@@ -218,89 +246,102 @@ export default function FundingRequestDetail() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {[...Array(10)].map((_, i) => review.matched_lenders[0] ? { ...review.matched_lenders[0], id: 'dummy-' + i, name: 'Lender ' + (i+1) } : { id: i, name: 'Lender ' + (i+1) }).map((lender: any, idx: number) => {
-                                                        const statPresets = [
-                                                            { m: '6/6', t: 'Perfect Match', hex: '#16a34a', s: 100, r: [1, 1, 1, 1], catBg: '#eff6ff', catColor: '#2563eb', catLabel: 'Working Capital' },
-                                                            { m: '5/6', t: 'High Match',    hex: '#16a34a', s: 83,  r: [1, 1, 1, 0], catBg: '#f0fdf4', catColor: '#15803d', catLabel: 'Term Loan' },
-                                                            { m: '4/6', t: 'Good Match',    hex: '#16a34a', s: 67,  r: [1, 1, 0, 1], catBg: '#ecfeff', catColor: '#0e7490', catLabel: 'Revenue-Based Financing' },
-                                                            { m: '3/6', t: 'Fair Match',    hex: '#d97706', s: 50,  r: [1, 0, 1, 0], catBg: '#fefce8', catColor: '#a16207', catLabel: 'Business Line of Credit' },
-                                                            { m: '2/6', t: 'Low Match',     hex: '#dc2626', s: 33,  r: [0, 1, 0, 1], catBg: '#fff7ed', catColor: '#c2410c', catLabel: 'Asset-Based Lending' },
-                                                            { m: '1/6', t: 'Minimal Match', hex: '#dc2626', s: 17,  r: [0, 0, 0, 0], catBg: '#fef2f2', catColor: '#b91c1c', catLabel: 'Equipment Financing' },
-                                                            { m: '0/6', t: 'No Match',      hex: '#94a3b8', s: 0,   r: [0, 0, 0, 0], catBg: '#fdf4ff', catColor: '#9333ea', catLabel: 'Invoice Factoring' },
-                                                        ];
-                                                        const s = statPresets[idx % statPresets.length];
-                                                        
-                                                        const radius = 16;
-                                                        const circumference = 2 * Math.PI * radius;
-                                                        const strokeDashoffset = circumference - (s.s / 100) * circumference;
+                                                    {filteredLenders.length > 0 ? (
+                                                        filteredLenders.map((lender: any, idx: number) => {
+                                                            const radius = 16;
+                                                            const circumference = 2 * Math.PI * radius;
+                                                            const strokeDashoffset = circumference - (lender.score / 100) * circumference;
+                                                            
+                                                            const isAssigned = assignedLenderIds.includes(lender.id);
 
-                                                        return (
-                                                            <tr key={lender.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: '#fff' }} onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
-                                                                
-                                                                {/* Lender Name */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="fw-bold text-dark" style={{ fontSize: '13px', marginBottom: '2px' }}>{lender.name || 'Lender Name'}</div>
-                                                                    <div className="text-muted" style={{ fontSize: '11px' }}>{lender.phone || '(153) 458-1862'}</div>
-                                                                </td>
-                                                                {/* Category */}
-                                                                <td className="px-1 py-3 text-center" style={{ border: '1px solid #e2e8f0', width: '1%' }}>
-                                                                    <span style={{ background: s.catBg, color: s.catColor, padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, display: 'inline-block', whiteSpace: 'nowrap' }}>
-                                                                        {lender.product_category || lender.category || s.catLabel}
-                                                                    </span>
-                                                                </td>
-                                                                {/* Matches */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="fw-bold" style={{ fontSize: '13px', color: s.hex, marginBottom: '2px', whiteSpace: 'nowrap' }}>{s.m}</div>
-                                                                    <div style={{ fontSize: '10px', color: s.hex, fontWeight: 600, whiteSpace: 'nowrap' }}>{s.t}</div>
-                                                                </td>
+                                                            return (
+                                                                <tr key={lender.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }} onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = '#fff')}>
+                                                                    
+                                                                    {/* Lender Name */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="fw-bold text-dark" style={{ fontSize: '13px', marginBottom: '2px' }}>{lender.name || 'Lender Name'}</div>
+                                                                        <div className="text-muted" style={{ fontSize: '11px' }}>{lender.phone || lender.email || 'N/A'}</div>
+                                                                    </td>
+                                                                    {/* Category */}
+                                                                    <td className="px-1 py-3 text-center" style={{ border: '1px solid #e2e8f0', width: '1%' }}>
+                                                                        <span style={{ background: '#eff6ff', color: '#2563eb', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, display: 'inline-block', whiteSpace: 'nowrap' }}>
+                                                                            {lender.product_category || 'Category'}
+                                                                        </span>
+                                                                    </td>
+                                                                    {/* Matches */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="fw-bold" style={{ fontSize: '13px', color: lender.score_hex, marginBottom: '2px', whiteSpace: 'nowrap' }}>{lender.matches_fraction}</div>
+                                                                        <div style={{ fontSize: '10px', color: lender.score_hex, fontWeight: 600, whiteSpace: 'nowrap' }}>{lender.score_text}</div>
+                                                                    </td>
 
-                                                                {/* FICO Score */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
-                                                                        {s.r[0] ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>720+</span>
-                                                                    </div>
-                                                                </td>
-                                                                {/* Min Revenue */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
-                                                                        {s.r[1] ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>$5.00+</span>
-                                                                    </div>
-                                                                </td>
-                                                                {/* Min TIB */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
-                                                                        {s.r[2] ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>1 mo</span>
-                                                                    </div>
-                                                                </td>
-                                                                {/* Min Deposit */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
-                                                                        {s.r[3] ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>$5.00+</span>
-                                                                    </div>
-                                                                </td>
-                                                                {/* Overall Match */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <div className="d-inline-flex align-items-center justify-content-center position-relative" style={{ width: '44px', height: '44px' }}>
-                                                                        <svg width="44" height="44" viewBox="0 0 44 44">
-                                                                            <circle cx="22" cy="22" r={radius} stroke="#e2e8f0" strokeWidth="3.5" fill="none" />
-                                                                            <circle cx="22" cy="22" r={radius} stroke={s.hex} strokeWidth="3.5" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease' }} />
-                                                                        </svg>
-                                                                        <span className="position-absolute fw-bold" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', color: s.hex }}>{s.s}%</span>
-                                                                    </div>
-                                                                </td>
-                                                                {/* Actions */}
-                                                                <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
-                                                                    <button onClick={() => setShowAssignModal(true)} className="btn btn-sm d-inline-flex align-items-center gap-1" style={{ background: '#fff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 500, padding: '5px 12px' }}>
-                                                                        <i className="ri-user-add-line" style={{ fontSize: '13px' }}></i> Assign
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
+                                                                    {/* FICO Score */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
+                                                                            {lender.checks.fico ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_fico ? `${lender.requirements.min_fico}+` : 'N/A'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    {/* Min Revenue */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
+                                                                            {lender.checks.revenue ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_revenue ? `$${lender.requirements.min_revenue}+` : 'N/A'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    {/* Min TIB */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
+                                                                            {lender.checks.tib ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_tib ? `${lender.requirements.min_tib} mo` : 'N/A'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    {/* Min Deposit */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
+                                                                            {lender.checks.deposit ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_deposit ? `$${lender.requirements.min_deposit}+` : 'N/A'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    {/* Overall Match */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        <div className="d-inline-flex align-items-center justify-content-center position-relative" style={{ width: '44px', height: '44px' }}>
+                                                                            <svg width="44" height="44" viewBox="0 0 44 44">
+                                                                                <circle cx="22" cy="22" r={radius} stroke="#e2e8f0" strokeWidth="3.5" fill="none" />
+                                                                                <circle cx="22" cy="22" r={radius} stroke={lender.score_hex} strokeWidth="3.5" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease' }} />
+                                                                            </svg>
+                                                                            <span className="position-absolute fw-bold" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '10px', color: lender.score_hex }}>{lender.score}%</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    {/* Actions */}
+                                                                    <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
+                                                                        {!isAssigned ? (
+                                                                            <button 
+                                                                                onClick={() => {
+                                                                                    setLenderToAssign(lender);
+                                                                                    setShowAssignModal(true);
+                                                                                }} 
+                                                                                className="btn btn-sm d-inline-flex align-items-center gap-1" 
+                                                                                style={{ background: '#fff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: 500, padding: '5px 12px' }}
+                                                                            >
+                                                                                <i className="ri-user-add-line" style={{ fontSize: '13px' }}></i> Assign
+                                                                            </button>
+                                                                        ) : (
+                                                                            <span className="badge bg-secondary-subtle text-secondary fs-12 px-2 py-1">
+                                                                                <i className="ri-check-line me-1"></i> Assigned
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={9} className="text-center py-4 text-muted fs-14">
+                                                                <i className="ri-search-line fs-24 d-block mb-2"></i>
+                                                                No matched lenders found for this funding type.
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -308,7 +349,7 @@ export default function FundingRequestDetail() {
                                     <div className="card-footer bg-white border-top p-3">
                                         <div className="d-flex align-items-center justify-content-between">
                                             <div className="text-muted fs-13">
-                                                Showing <span className="fw-semibold text-dark">1</span> to <span className="fw-semibold text-dark">10</span> of <span className="fw-semibold text-dark">45</span> lenders
+                                                Showing <span className="fw-semibold text-dark">1</span> to <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> of <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> lenders
                                             </div>
                                             <div className="d-flex align-items-center gap-3">
                                                 <ul className="pagination pagination-sm mb-0">
@@ -544,6 +585,17 @@ export default function FundingRequestDetail() {
                                                             className="btn btn-primary py-2 px-2 fs-14 border-0 rounded fw-semibold"
                                                             style={{ marginTop: '2px' }}
                                                             onClick={() => {
+                                                                if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
+                                                                    if (assignedLenderIds.length === 0) {
+                                                                        toast.error('You must assign at least one lender before approving this funding request.');
+                                                                        if (lenderTableRef.current) {
+                                                                            lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                                            lenderTableRef.current.classList.add('border-danger');
+                                                                            setTimeout(() => lenderTableRef.current?.classList.remove('border-danger'), 2000);
+                                                                        }
+                                                                        return;
+                                                                    }
+                                                                }
                                                                 if (selectedStatus !== review.status) {
                                                                     setShowStatusModal(true);
                                                                 } else {
@@ -718,6 +770,64 @@ export default function FundingRequestDetail() {
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
                                     ) : (
                                         <><i className="ri-checkbox-circle-line me-1"></i> Confirm {selectedStatus}</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+
+                {/* Assign Lender Modal */}
+                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered className="border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden', maxWidth: '400px' }}>
+                    <ModalBody className="p-0">
+                        <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
+                            <div className="avatar-md mx-auto mb-3">
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-primary">
+                                    <i className="ri-user-add-line"></i>
+                                </span>
+                            </div>
+                            <h5 className="fw-bold mb-1">Confirm Lender Assignment</h5>
+                            <p className="text-muted fs-13 mb-0">
+                                Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
+                            </p>
+                        </div>
+
+                        <div className="p-4 pt-2">
+                            <div className="d-flex justify-content-end gap-2 mt-2">
+                                <button
+                                    type="button"
+                                    className="btn bg-white border border-secondary-subtle px-3 py-2 fs-14 rounded-2 text-dark fw-medium"
+                                    onClick={() => setShowAssignModal(false)}
+                                    disabled={assignLenderMutation.isPending}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary px-3 py-2 fs-14 border-0 rounded-2 fw-semibold"
+                                    onClick={() => {
+                                        assignLenderMutation.mutate(
+                                            { id: review.id, lender_ids: [lenderToAssign?.id] },
+                                            {
+                                                onSuccess: () => {
+                                                    toast.success(`Lender assigned successfully`);
+                                                    setShowAssignModal(false);
+                                                    setLenderToAssign(null);
+                                                    setAssignedLenderIds([lenderToAssign?.id]);
+                                                    window.dispatchEvent(new Event('refreshActivities'));
+                                                },
+                                                onError: (err: any) => {
+                                                    toast.error(err?.response?.data?.message || 'Failed to assign lender');
+                                                }
+                                            }
+                                        );
+                                    }}
+                                    disabled={assignLenderMutation.isPending}
+                                >
+                                    {assignLenderMutation.isPending ? (
+                                        <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Assigning...</>
+                                    ) : (
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm Assignment</>
                                     )}
                                 </button>
                             </div>

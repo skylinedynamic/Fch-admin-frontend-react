@@ -272,6 +272,7 @@ export default function FundingRequest() {
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
                                             <Column field="use_of_funds" header="Purpose" sortable style={{ minWidth: '160px' }} />
                                             <Column header="Requested Amount" field="requested_amount" sortable style={{ minWidth: '150px' }} />
+                                            <Column field="lender_names" header="Assigned Lender" body={(r) => r.lender_names || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="status" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '140px' }} />
                                             <Column header="Action" body={actionBodyTemplate} style={{ minWidth: '100px' }} />
                                         </DataTable>

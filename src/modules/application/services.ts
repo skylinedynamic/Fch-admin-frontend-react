@@ -69,4 +69,9 @@ export const updateFundingRequestStatus = async (payload: { id: number | string;
   return response.data;
 };
 
+export const assignLenderToFundingRequest = async (payload: { id: number | string; lender_ids: number[] }): Promise<SingleApiResponse<any>> => {
+  const response = await apiClient.post('/common/funding-request/assign-lender', payload);
+  return response.data;
+};
+
 
