@@ -859,7 +859,14 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                         }
                                                     }
                                                     const lender = lenders.find(l => l.id === v.lender_id);
-                                                    const categoryName = v.product_category || productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
+                                                    let categoryName = '';
+                                                    if (v.lender_product_category_id) {
+                                                        categoryName = productCategories.find((c: any) => String(c.id) === String(v.lender_product_category_id))?.name;
+                                                    }
+                                                    if (!categoryName && v.product_category) {
+                                                        const isNum = !isNaN(Number(v.product_category));
+                                                        categoryName = isNum ? (productCategories.find((c: any) => String(c.id) === String(v.product_category))?.name || v.product_category) : v.product_category;
+                                                    }
                                                     const badgeClass = getCategoryBadgeClass(categoryName || '');
 
                                                     return (

@@ -12,6 +12,7 @@ export default function LendersList() {
     const navigate = useNavigate();
     const [lenders, setLenders] = useState<Lender[]>([]);
     const [loading, setLoading] = useState(true);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [categoriesList, setCategoriesList] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [appliedSearch, setAppliedSearch] = useState('');
@@ -30,7 +31,7 @@ export default function LendersList() {
     const fetchLenders = async () => {
         setLoading(true);
         try {
-            const res = await getLenders({ 
+            const res = await getLenders({
                 search: appliedSearch,
                 page,
                 per_page: perPage,
@@ -51,20 +52,22 @@ export default function LendersList() {
     };
 
     useEffect(() => {
-        fetchLenders();
-        
         const fetchCategories = async () => {
             try {
                 const res = await getLenderProductCategories();
                 setCategoriesList(res.data || []);
             } catch (error) {
                 console.error('Failed to fetch categories', error);
+            } finally {
+                setCategoriesLoading(false);
             }
         };
-        if (categoriesList.length === 0) {
-            fetchCategories();
-        }
-        
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        fetchLenders();
+
         // Add class to body to prevent global scroll and setup layout
         document.body.classList.add('table-page-fit-active');
 
@@ -201,7 +204,7 @@ export default function LendersList() {
                                     </div>
                                 </form>
 
-                                {loading ? (
+                                {loading || categoriesLoading ? (
                                     <TableLoader rows={10} columns={new Array(5).fill({ style: { minWidth: '100px' } })} />
                                 ) : (
                                     <div className="table-responsive table-card mt-1">
@@ -224,8 +227,13 @@ export default function LendersList() {
                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                             <Column field="name" header="Lender Name" sortable style={{ minWidth: '180px' }} className="fw-medium text-dark" />
                                             <Column field="legal_name" header="Legal Name" sortable style={{ minWidth: '150px' }} />
-                                            <Column field="product_categories" header="Categories" style={{ minWidth: '150px' }} body={(rowData) => {
-                                                const catIds = rowData.product_categories || [];
+                                            <Column field="product_categories" header="Product Categories" style={{ minWidth: '150px' }} body={(rowData) => {
+                                                let catIds = rowData.product_categories || [];
+                                                if (typeof catIds === 'string') {
+                                                    try { catIds = JSON.parse(catIds); } catch (e) { catIds = []; }
+                                                }
+                                                if (!Array.isArray(catIds)) catIds = [];
+
                                                 const displayCats = catIds.map((idOrName: any) => {
                                                     if (typeof idOrName === 'number' || !isNaN(Number(idOrName))) {
                                                         const cat = categoriesList.find(c => c.id == idOrName);

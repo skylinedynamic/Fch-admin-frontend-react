@@ -140,7 +140,7 @@ export default function FundingSequencingForm() {
         uses: [] as any[],
         readiness_factors: (id ? [] : DEFAULT_READINESS_FACTORS) as any[],
         missing_documents: [] as any[],
-        allowed_documents: [] as any[],
+        allowed_documents: (id ? [] : [3, 2]) as any[],
         lender_visibilities: [] as any[]
     });
     const handleArrayChange = (name: string, index: number, value: any, key?: string) => {
