@@ -117,7 +117,7 @@ export default function FundingRequestDetail() {
         return matchesSearch && matchesCategory && matchesName;
     });
 
-    if (isLoading || isUpdatingOrFetching) {
+    if (isLoading) {
         return <FundingRequestDetailLoader />;
     }
 
@@ -219,8 +219,8 @@ export default function FundingRequestDetail() {
                                             </div>
                                             <div className="col-md-2">
                                                 <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-secondary flex-grow-1 text-white" onClick={() => { setLenderSearch(''); setLenderCategoryFilter(''); setLenderNameFilter(''); }}>
-                                                        <i className="ri-refresh-line me-1 align-bottom"></i> Reset
+                                                    <button type="button" className="btn bg-light text-dark flex-grow-1 fw-medium border-0" onClick={() => { setLenderSearch(''); setLenderCategoryFilter(''); setLenderNameFilter(''); }}>
+                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                     </button>
                                                     
                                                     
@@ -680,11 +680,7 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-22 text-white ${
-                                    selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
-                                    selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
-                                    'bg-primary'
-                                }`}>
+                                <span className={`avatar-title rounded-circle fs-22 text-white bg-primary`}>
                                     <i className={
                                         selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-circle-line' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
@@ -773,11 +769,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`btn text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap ${
-                                        selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
-                                        'btn-primary'
-                                    }`}
+                                    className={`btn text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap btn-primary`}
                                     style={{ 
                                         borderRadius: '12px',
                                         boxShadow: '0 8px 20px rgba(0,0,0, 0.15)',
