@@ -120,7 +120,7 @@ export default function CapitalAccessList() {
                         return (
                             <div
                                 key={index}
-                                className="avatar-group-item capital-card-item"
+                                className="avatar-group-item"
                             >
                                 {img ? (
                                     <img
@@ -289,23 +289,23 @@ export default function CapitalAccessList() {
                                         </div>
                                         <div className="col-xxl-3 col-sm-12">
                                             <div className="d-flex gap-2">
-                                                 <button
-                                                     type="button"
-                                                     className="btn btn-warning flex-grow-1"
-                                                     onClick={handleApplyFilters}
-                                                     disabled={loading}
-                                                 >
-                                                     {loading ? (
-                                                         <>
-                                                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                             Loading...
-                                                         </>
-                                                     ) : (
-                                                         <>
-                                                             <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
-                                                         </>
-                                                     )}
-                                                 </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-warning flex-grow-1"
+                                                    onClick={handleApplyFilters}
+                                                    disabled={loading}
+                                                >
+                                                    {loading ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                            Loading...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                        </>
+                                                    )}
+                                                </button>
                                                 <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
                                                     <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                 </button>
