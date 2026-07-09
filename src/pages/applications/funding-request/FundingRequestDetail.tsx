@@ -334,7 +334,7 @@ export default function FundingRequestDetail() {
                                                                                 <i className="ri-user-add-line" style={{ fontSize: '13px' }}></i> Assign
                                                                             </button>
                                                                         ) : (
-                                                                            <span className="badge bg-secondary-subtle text-secondary fs-12 px-2 py-1">
+                                                                            <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
                                                                                 <i className="ri-check-line me-1"></i> Assigned
                                                                             </span>
                                                                         )}
