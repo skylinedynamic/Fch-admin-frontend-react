@@ -130,63 +130,49 @@ export default function TenantConfigSection({
         <form id="tenant-config-form" onSubmit={handleSubmit}>
             <div className="row g-3">
                 {!config.active_custom_url && (
-                    <div className="col-lg-12 mb-2">
-                        <div className="row g-3">
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label fw-semibold text-muted mb-1 fs-13">Active Partner URL</label>
-                                    <div className="p-3 bg-light rounded-3 border border-light-subtle d-flex align-items-center justify-content-between shadow-sm">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className="fw-semibold text-dark fs-14 font-monospace">
-                                                {config.partner_subdomain ? `https://${config.partner_subdomain}` : 'Not configured'}
-                                            </span>
-                                            {config.partner_subdomain && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-link p-0 text-muted fs-15 lh-1"
-                                                    onClick={() => handleCopy(`https://${config.partner_subdomain}`, 'Partner URL')}
-                                                    title="Copy URL"
-                                                >
-                                                    <i className={copiedState === 'Partner URL' ? "ri-check-line text-success" : "ri-file-copy-line text-primary"}></i>
-                                                </button>
-                                            )}
-                                        </div>
-                                        <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-11">Default Subdomain</span>
-                                    </div>
-                                    {config.partner_domain && (
-                                        <small className="text-muted mt-1.5 d-block fs-12">
-                                            Saved Custom Domain: <span className="fw-medium text-dark font-monospace">{config.partner_domain}</span> (Inactive)
-                                        </small>
+                    <>
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label className="form-label fw-semibold text-muted mb-1 fs-13">Partner Domain</label>
+                                <div className="d-flex align-items-center gap-2 py-1">
+                                    <span className="fw-semibold text-dark fs-14 font-monospace">
+                                        {config.partner_subdomain ? `https://${config.partner_subdomain}` : <span className="text-muted fst-italic fs-13">Domain not set yet</span>}
+                                    </span>
+                                    {config.partner_subdomain && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 text-muted fs-15 lh-1"
+                                            onClick={() => handleCopy(`https://${config.partner_subdomain}`, 'Partner URL')}
+                                            title="Copy URL"
+                                        >
+                                            <i className={copiedState === 'Partner URL' ? "ri-check-line text-success" : "ri-file-copy-line text-primary"}></i>
+                                        </button>
                                     )}
                                 </div>
                             </div>
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label fw-semibold text-muted mb-1 fs-13">Active Borrower URL</label>
-                                    <div className="p-3 bg-light rounded-3 border border-light-subtle d-flex align-items-center justify-content-between shadow-sm">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className="fw-semibold text-dark fs-14 font-monospace">
-                                                {config.borrower_domain ? `https://${config.borrower_domain}` : 'Default System Borrower Portal'}
-                                            </span>
-                                            {config.borrower_domain && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-link p-0 text-muted fs-15 lh-1"
-                                                    onClick={() => handleCopy(`https://${config.borrower_domain}`, 'Borrower URL')}
-                                                    title="Copy URL"
-                                                >
-                                                    <i className={copiedState === 'Borrower URL' ? "ri-check-line text-success" : "ri-file-copy-line text-success"}></i>
-                                                </button>
-                                            )}
-                                        </div>
-                                        <span className={`badge ${config.borrower_domain ? 'bg-secondary-subtle text-secondary border-secondary-subtle' : 'bg-success-subtle text-success border-success-subtle'} rounded-pill fs-11`}>
-                                            {config.borrower_domain ? 'Inactive Custom' : 'Default Active'}
-                                        </span>
-                                    </div>
+                        </div>
+
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label className="form-label fw-semibold text-muted mb-1 fs-13">Borrower Domain</label>
+                                <div className="d-flex align-items-center gap-2 py-1">
+                                    <span className="fw-semibold text-dark fs-14 font-monospace">
+                                        {config.borrower_domain ? `https://${config.borrower_domain}` : <span className="text-muted fst-italic fs-13">Domain not set yet</span>}
+                                    </span>
+                                    {config.borrower_domain && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 text-muted fs-15 lh-1"
+                                            onClick={() => handleCopy(`https://${config.borrower_domain}`, 'Borrower URL')}
+                                            title="Copy URL"
+                                        >
+                                            <i className={copiedState === 'Borrower URL' ? "ri-check-line text-success" : "ri-file-copy-line text-success"}></i>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </>
                 )}
 
                 <div className="col-lg-12 mb-3">
