@@ -116,14 +116,17 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                         } else if (lowerLabel.includes('time') || lowerLabel === 'time in business') {
                             const fmtMonths = (months: any) => {
                                 const m = Number(months);
-                                if (isNaN(m)) return months || '0 Months';
-                                if (m < 1 && m > 0) {
-                                    const days = Math.round(m * 30);
-                                    return `${days} Day${days === 1 ? '' : 's'}`;
-                                }
-                                const isInteger = m % 1 === 0;
-                                const formattedNum = isInteger ? m : Number(m.toFixed(1));
-                                return `${formattedNum} Month${formattedNum === 1 ? '' : 's'}`;
+                                if (isNaN(m) || m === 0) return months || '0 Months';
+                                const totalDays = Math.round(m * 30);
+                                const y = Math.floor(totalDays / 360);
+                                const remY = totalDays % 360;
+                                const mo = Math.floor(remY / 30);
+                                const d = remY % 30;
+                                const parts = [];
+                                if (y > 0) parts.push(`${y} Year${y > 1 ? 's' : ''}`);
+                                if (mo > 0) parts.push(`${mo} Month${mo > 1 ? 's' : ''}`);
+                                if (d > 0) parts.push(`${d} Day${d > 1 ? 's' : ''}`);
+                                return parts.length > 0 ? parts.join(' ') : '0 Months';
                             };
                             actVal = fmtMonths(act);
                             reqVal = fmtMonths(req);
