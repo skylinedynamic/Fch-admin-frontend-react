@@ -526,6 +526,21 @@ export default function ClientDetails() {
                                             Documents
                                         </button>
                                     </li>
+
+                                    {isHost && (
+                                        <li className="nav-item">
+                                            <button
+                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.TASK_LIST ? 'active' : ''}`}
+                                                onClick={() => handleTabChange(ENROLLMENT_TABS.TASK_LIST)}
+                                                type="button"
+                                                role="tab"
+                                                disabled={!id}
+                                            >
+                                                Task List
+                                            </button>
+                                        </li>
+                                    )}
+
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.CREDIT_PROFILE ? 'active' : ''}`}
@@ -548,19 +563,7 @@ export default function ClientDetails() {
                                             Capital Access
                                         </button>
                                     </li>
-                                    {isHost && (
-                                        <li className="nav-item">
-                                            <button
-                                                className={`nav-link ${activeTab === ENROLLMENT_TABS.TASK_LIST ? 'active' : ''}`}
-                                                onClick={() => handleTabChange(ENROLLMENT_TABS.TASK_LIST)}
-                                                type="button"
-                                                role="tab"
-                                                disabled={!id}
-                                            >
-                                                Task List
-                                            </button>
-                                        </li>
-                                    )}
+
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUESTS ? 'active' : ''}`}

@@ -59,8 +59,8 @@ export const saveClientChecklist = async (borrowerId: string | number, checkedId
     return data;
 };
 
-export const fetchClientFundingOptions = async (borrowerId: string | number): Promise<any> => {
-    const { data } = await apiClient.get(`/common/funding-sequencings/client-funding-options/${borrowerId}`);
+export const fetchClientFundingOptions = async (borrowerId: string | number, params?: any): Promise<any> => {
+    const { data } = await apiClient.get(`/common/funding-sequencings/client-funding-options/${borrowerId}`, { params });
     return data;
 };
 

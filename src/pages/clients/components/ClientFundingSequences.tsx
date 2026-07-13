@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { fetchClientFundingOptions } from '../../../modules/client';
 import ClientFundingDetail from './ClientFundingDetail';
-import CustomDropdown from '../../../components/Common/CustomDropdown';
+import { Dropdown } from 'primereact/dropdown';
 import { FundingOptionsLoader } from '../../../components/Loader/FundingSkeletonLoader';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -99,11 +99,11 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                     const label = f.label;
                     const req = f.required_value;
                     const act = f.borrower_value;
-                    
+
                     const lowerLabel = label.toLowerCase();
                     let actVal = act;
                     let reqVal = req;
-                    
+
                     if (req !== undefined && req !== null) {
                         if (lowerLabel.includes('revenue') || lowerLabel.includes('deposit') || lowerLabel.includes('balance')) {
                             const fmt = (val: any) => {
@@ -209,7 +209,7 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const iconClass = resolveIcon(item.icon);
     const colors = getFundingColorStyles(item.icon_color);
     const [tooltipVisible, setTooltipVisible] = useState(false);
-    
+
     // Status badges based on borrower's logic
     const missingFactors = (item.readiness_factors || []).filter((f: any) => f.status?.toLowerCase() === 'missing');
     const hasMissing = missingFactors.length > 0;
@@ -224,7 +224,7 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div 
+            <div
                 className={`funding-card ${isFullyDisabled ? 'funding-card-disabled' : ''} ${isLocked ? 'funding-card-locked' : ''}`}
                 onClick={(e) => {
                     if (isFullyDisabled) {
@@ -233,10 +233,10 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                     }
                     onClick();
                 }}
-                onMouseEnter={() => { 
+                onMouseEnter={() => {
                     if (isFullyDisabled || isLocked) setTooltipVisible(true);
                 }}
-                onMouseLeave={() => { 
+                onMouseLeave={() => {
                     setTooltipVisible(false);
                 }}
             >
@@ -277,7 +277,7 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                     </div>
                 </div>
             </div>
-            
+
             <MissingTooltip factors={missingFactors} visible={tooltipVisible && hasMissing && !isEngineLocked} />
             <PendingTooltip visible={tooltipVisible && isPending && !hasMissing && !isEngineLocked} />
             <EngineLockedTooltip visible={tooltipVisible && isEngineLocked} />
@@ -294,17 +294,35 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [selectedSequence, setSelectedSequence] = useState<any>(null);
+
+    // Applied states used for list filtering
     const [searchQuery, setSearchQuery] = useState('');
     const [activeType, setActiveType] = useState<string>('all');
+
+    // Temporary input bindings
+    const [tempSearchQuery, setTempSearchQuery] = useState('');
+    const [tempActiveType, setTempActiveType] = useState<string>('all');
 
     useEffect(() => {
         if (clientId) loadData();
     }, [clientId]);
 
-    const loadData = async () => {
+    const loadData = async (search?: string, type?: string) => {
         setLoading(true);
         try {
-            const res = await fetchClientFundingOptions(clientId!);
+            const params: any = {};
+            const activeSearch = search !== undefined ? search : searchQuery;
+            const activeCategory = type !== undefined ? type : activeType;
+
+            if (activeSearch.trim() !== '') {
+                params.search = activeSearch.trim();
+            }
+            if (activeCategory !== 'all') {
+                params.funding_type_id = activeCategory;
+                params.type = activeCategory;
+            }
+
+            const res = await fetchClientFundingOptions(clientId!, params);
             if (res.status) setData(res.data);
             else toast.error(res.message || 'Failed to fetch funding options');
         } catch (error: any) {
@@ -332,9 +350,9 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
 
     if (selectedSequence) {
         return (
-            <ClientFundingDetail 
-                clientId={clientId} 
-                fundingData={selectedSequence} 
+            <ClientFundingDetail
+                clientId={clientId}
+                fundingData={selectedSequence}
                 onBack={() => setSelectedSequence(null)}
                 iconClass={resolveIcon(selectedSequence.icon)}
                 colors={getFundingColorStyles(selectedSequence.icon_color)}
@@ -348,9 +366,9 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
     const matchesQuery = (seq: any, q: string) => {
         if (!q) return true;
         const lq = q.toLowerCase();
-        
+
         const str = (v: any) => typeof v === 'string' && v.toLowerCase().includes(lq);
-        
+
         const numLq = lq.replace(/[^0-9]/g, '');
         const numStr = (v: any) => typeof v === 'string' && numLq !== '' && v.replace(/[^0-9]/g, '').includes(numLq);
 
@@ -371,59 +389,70 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
         }))
         .filter((g: any) => g.sequencings.length > 0);
 
-    const clearAll = () => { setSearchQuery(''); setActiveType('all'); };
+    const clearAll = () => {
+        setTempSearchQuery('');
+        setTempActiveType('all');
+        setSearchQuery('');
+        setActiveType('all');
+        loadData('', 'all');
+    };
+
+    const handleApplyFilters = () => {
+        setSearchQuery(tempSearchQuery);
+        setActiveType(tempActiveType);
+        loadData(tempSearchQuery, tempActiveType);
+    };
 
     return (
         <div className="client-funding-options funding-page p-2">
-            <div className="row mb-3">
-                <div className="col-12">
-                    <div className="card shadow-sm border-0 bg-white mb-2">
-                        <div className="card-body p-3">
-                            <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3">
-                                <div className="flex-grow-1">
-                                    <div className="row g-3">
-                                        <div className="col-12 col-md-9">
-                                            <div className="input-group vendor-filter-input-group border transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9', borderColor: '#e5e7eb' }}>
-                                                <span className="input-group-text bg-transparent border-0 pe-1">
-                                                    <i className="ri-search-line text-muted opacity-75"></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
-                                                    placeholder="Search here..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="col-12 col-md-3">
-                                            <div className="h-100">
-                                                <CustomDropdown
-                                                    searchable
-                                                    value={activeType}
-                                                    options={allTypes.map(t => ({ id: t.id.toString(), name: t.name }))}
-                                                    optionLabel="name"
-                                                    optionValue="id"
-                                                    onChange={(val) => { setActiveType(val.toString()); setSearchQuery(''); }}
-                                                    placeholder="All Categories"
-                                                    className="border rounded-2 fs-13 vendor-filter-bg h-100 w-100"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="d-flex gap-2 flex-shrink-0">
-                                    <button className="btn btn-warning d-flex align-items-center justify-content-center gap-2 px-3 transition-all fs-13 shadow-sm text-white">
-                                        <i className="ri-equalizer-fill align-bottom"></i> Filters
-                                    </button>
-                                    {hasFilter && (
-                                        <button className="btn-clear d-flex align-items-center justify-content-center gap-2 px-3 transition-all fs-13" onClick={clearAll}>
-                                            <i className="ri-close-line align-bottom"></i> Clear
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+            <div className="ca-filter-bar mb-4">
+                <div className="d-flex align-items-center gap-3 flex-wrap">
+                    {/* Search Input */}
+                    <div className="ca-search-input-wrap flex-grow-1">
+                        <div className="input-group">
+                            <span className="input-group-text">
+                                <i className="ri-search-2-line"></i>
+                            </span>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search funding options..."
+                                value={tempSearchQuery}
+                                onChange={(e) => setTempSearchQuery(e.target.value)}
+                            />
                         </div>
+                    </div>
+
+                    {/* Category Dropdown */}
+                    <div className="ca-category-dropdown-wrap">
+                        <Dropdown
+                            value={tempActiveType}
+                            onChange={(e) => setTempActiveType(e.value?.toString() || 'all')}
+                            options={allTypes.map(t => ({ label: t.name, value: t.id.toString() }))}
+                            optionLabel="label"
+                            optionValue="value"
+                            filter
+                            filterBy="label"
+                            placeholder="All Categories"
+                            className="w-100 bg-light border-light"
+                        />
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                        <button 
+                            className="btn btn-secondary d-flex align-items-center justify-content-center gap-2 px-3 transition-all fs-13 ca-filter-btn"
+                            onClick={handleApplyFilters}
+                        >
+                            <i className="ri-equalizer-fill align-bottom"></i> Filters
+                        </button>
+
+                        <button
+                            className="btn btn-light d-flex align-items-center justify-content-center gap-2 px-3 transition-all fs-13 ca-btn-clear"
+                            onClick={clearAll}
+                        >
+                            <i className="ri-refresh-line align-middle me-1"></i>Clear
+                        </button>
                     </div>
                 </div>
             </div>
@@ -439,7 +468,7 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
                 filteredGroups.map((group: any) => (
                     <div key={group.id} className="mb-4">
                         <div className="d-flex align-items-center gap-2 mb-3">
-                            <h5 className="mb-0 fw-bold fs-15 text-dark">{group.name}</h5>
+                            <h5 className="mb-0 fs-15 text-dark">{group.name}</h5>
                             <span className="funding-group-count">
                                 {group.sequencings?.length || 0}
                             </span>

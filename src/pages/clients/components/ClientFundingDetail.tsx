@@ -24,32 +24,16 @@ const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isL
     const badgeStyle = READINESS_BADGE_STYLES[s] || READINESS_BADGE_STYLES.default || { bg: '#f3f4f6', color: '#4b5563' };
 
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 0',
-            borderBottom: isLast ? 'none' : '1px solid #f3f4f6'
-        }}>
+        <div className={`ca-readiness-row status-${s} ${isLast ? 'is-last' : ''}`}>
             <div className="d-flex align-items-center gap-3">
-                <i className={leftIcon} style={{ fontSize: 20, color: leftIconColor }}></i>
-                <span style={{ fontSize: 14, color: '#1e293b', fontWeight: 500 }}>{factor.label.toLowerCase() === 'time in business' ? 'Months' : factor.label}</span>
+                <i className={`${leftIcon} ca-readiness-icon`} style={{ color: leftIconColor }} />
+                <span className="ca-readiness-label">{factor.label.toLowerCase() === 'time in business' ? 'Months' : factor.label}</span>
             </div>
-            <div style={{
-                background: badgeStyle.bg,
-                color: badgeStyle.color,
-                padding: '4px 12px',
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6
-            }}>
+            <div className="ca-readiness-badge">
                 {badgeStyle.icon ? (
-                    <i className={badgeStyle.icon} style={{ fontSize: 14 }} />
+                    <i className={`${badgeStyle.icon} ca-badge-icon`} />
                 ) : (
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: badgeStyle.color }}></div>
+                    <div className="ca-badge-dot" />
                 )}
                 {badgeText}
             </div>
@@ -109,115 +93,112 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
     }
 
     return (
-        <div>
-            <div className="d-flex align-items-center justify-content-between mb-4">
-                <div>
-                    <h4 className="fs-20 mb-1">{name}</h4>
-                    <span className="text-muted">Viewing Funding Sequence Detail</span>
-                </div>
-                <button onClick={onBack} className="btn btn-primary fw-medium">
-                    <i className="ri-arrow-left-line me-1 align-bottom"></i> Back
-                </button>
-            </div>
-
-            <div className="card shadow-sm" style={{ borderRadius: 12, border: '1px solid #e8ecf0' }}>
-                <div className="card-body p-4">
-                    <div className="d-flex align-items-start justify-content-between mb-4 gap-3">
-                        <div className="d-flex align-items-center gap-3">
-                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <i className={iconClass} style={{ fontSize: 28, color: colors.text }} />
+        <div className="client-funding-options w-100">
+            <div className="row">
+                <div className="col-12">
+                    <div className="card shadow-sm ca-funding-detail-card">
+                        <div className="card-body p-4">
+                            <div className="d-flex align-items-start justify-content-between mb-4 gap-3">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className={`ca-detail-icon-wrapper color-${fundingData.icon_color?.toLowerCase() || 'indigo'}`}>
+                                        <i className={`${iconClass} ca-detail-icon`} />
+                                    </div>
+                                    <div>
+                                        <h4 className="mb-1 fs-16 text-dark">{name}</h4>
+                                        {subtitle && <p className="text-muted mb-0 fs-13">{subtitle}</p>}
+                                    </div>
+                                </div>
+                                <div className="text-end flex-shrink-0 d-flex align-items-center gap-2">
+                                    <span className={`badge ca-detail-status-badge ${isLocked ? 'is-locked' : 'is-eligible'}`}>
+                                        {displayLabel}
+                                    </span>
+                                    <button onClick={onBack} className="btn btn-light ca-detail-back-btn">
+                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="mb-1 fw-bold fs-20 text-dark">{name}</h4>
-                                {subtitle && <p className="text-muted mb-0 fs-13">{subtitle}</p>}
+
+                            <div className="row g-0 mb-4 ca-detail-meta-grid">
+                                {metaItems.map((m, i) => (
+                                    <div key={i} className={`col-md-3 col-6 ca-detail-meta-item ${i === metaItems.length - 1 ? 'is-last' : ''}`}>
+                                        <p className="ca-meta-label">{m.label}</p>
+                                        <p className="ca-meta-value">{m.value}</p>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
-                        <div className="text-end flex-shrink-0">
-                            <span className="badge" style={{ background: isLocked ? '#f3f4f6' : '#eef2ff', color: isLocked ? '#4b5563' : '#4f46e5', padding: '6px 12px', fontSize: 13, borderRadius: 20 }}>
-                                {displayLabel}
-                            </span>
-                        </div>
-                    </div>
 
-                    <div className="row g-0 mb-4" style={{ border: '1px solid #e8ecf0', borderRadius: 10, overflow: 'hidden' }}>
-                        {metaItems.map((m, i) => (
-                            <div key={i} className="col-md-3 col-6" style={{ padding: '14px 18px', borderRight: i < metaItems.length - 1 ? '1px solid #e8ecf0' : 'none' }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#9ca3af', marginBottom: 5 }}>{m.label}</p>
-                                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1e293b', lineHeight: 1.4 }}>{m.value}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="row g-4 mb-4">
-                        <div className="col-lg-6">
-                            <div className="card h-100 border-0 shadow-none mb-0" style={{ background: '#f8fafc', borderRadius: 12 }}>
-                                <div className="card-body p-4">
-                                    <h5 className="fs-15 fw-bold mb-3" style={{ color: '#1e293b' }}>Why They May Qualify</h5>
-                                    {dynamicQualifyReasons.length === 0 ? (
-                                        <div className="text-muted fs-13 d-flex align-items-center gap-2">
-                                            <i className="ri-information-line fs-16" /> No strong qualifying factors available.
-                                        </div>
-                                    ) : (
-                                        <ul className="list-unstyled mb-0 d-flex flex-column gap-3">
-                                            {dynamicQualifyReasons.map((r, idx) => (
-                                                <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#374151' }}>
-                                                    <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: 16, marginTop: 1, flexShrink: 0 }} />
-                                                    {r.label}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-
-                                    {(() => {
-                                        const extractedDocs = dynamicReadiness
-                                            .filter((f: any) => f.missing_docs && f.missing_docs.length > 0)
-                                            .flatMap((f: any) => f.missing_docs);
-                                        const combinedDocs = [...extractedDocs, ...(fundingData.missing_documents || [])];
-                                        const currentMissingDocs = Array.from(new Set(combinedDocs));
-
-                                        return currentMissingDocs.length > 0 && (
-                                            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f3f7' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                                    <i className="ri-error-warning-fill" style={{ color: '#dc2626', fontSize: 16 }} />
-                                                    <span style={{ fontWeight: 700, fontSize: 13, color: '#0f1b2d' }}>Missing Documents</span>
+                            <div className="row g-4 mb-4">
+                                <div className="col-lg-6">
+                                    <div className="card h-100 border-0 shadow-none mb-0 ca-detail-qualify-card">
+                                        <div className="card-body p-4">
+                                            <h5 className="fs-15 fw-bold mb-3 text-dark">Why They May Qualify</h5>
+                                            {dynamicQualifyReasons.length === 0 ? (
+                                                <div className="text-muted fs-13 d-flex align-items-center gap-2">
+                                                    <i className="ri-information-line fs-16" /> No strong qualifying factors available.
                                                 </div>
-                                                <ul style={{ margin: 0, padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                    {currentMissingDocs.map((doc: string, i: number) => (
-                                                        <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#4b5563' }}>
-                                                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
-                                                            {doc}
+                                            ) : (
+                                                <ul className="list-unstyled mb-0 d-flex flex-column gap-3">
+                                                    {dynamicQualifyReasons.map((r, idx) => (
+                                                        <li key={idx} className="ca-qualify-reason-item">
+                                                            <i className="ri-checkbox-circle-fill text-success fs-16 flex-shrink-0" />
+                                                            {r.label}
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
+                                            )}
 
-                        <div className="col-lg-6">
-                            <div className="card h-100 border-1 shadow-none mb-0" style={{ borderColor: '#f3f4f6', borderRadius: 12 }}>
-                                <div className="card-body p-4">
-                                    <h5 className="fs-15 fw-bold mb-3" style={{ color: '#1e293b' }}>Underwriting Factors</h5>
-                                    <div className="d-flex flex-column">
-                                        {dynamicReadiness.map((factor, idx) => (
-                                            <ReadinessItem key={idx} factor={factor} isLast={idx === dynamicReadiness.length - 1} />
-                                        ))}
+                                            {(() => {
+                                                const extractedDocs = dynamicReadiness
+                                                    .filter((f: any) => f.missing_docs && f.missing_docs.length > 0)
+                                                    .flatMap((f: any) => f.missing_docs);
+                                                const combinedDocs = [...extractedDocs, ...(fundingData.missing_documents || [])];
+                                                const currentMissingDocs = Array.from(new Set(combinedDocs));
+
+                                                return currentMissingDocs.length > 0 && (
+                                                    <div className="ca-detail-missing-docs-wrap">
+                                                        <div className="ca-detail-missing-docs-header">
+                                                            <i className="ri-error-warning-fill text-danger fs-16" />
+                                                            <span className="fw-bold fs-13 text-dark">Missing Documents</span>
+                                                        </div>
+                                                        <ul className="ca-detail-missing-docs-list">
+                                                            {currentMissingDocs.map((doc: string, i: number) => (
+                                                                <li key={i} className="ca-detail-missing-docs-item">
+                                                                    <span className="ca-bullet-dot" />
+                                                                    {doc}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-lg-6">
+                                    <div className="card h-100 shadow-none mb-0 ca-detail-underwriting-card">
+                                        <div className="card-body p-4">
+                                            <h5 className="fs-15 fw-bold mb-3 text-dark">Underwriting Factors</h5>
+                                            <div className="d-flex flex-column">
+                                                {dynamicReadiness.map((factor, idx) => (
+                                                    <ReadinessItem key={idx} factor={factor} isLast={idx === dynamicReadiness.length - 1} />
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {description && (
+                                <div className="card border-0 shadow-none mb-0 ca-detail-desc-card">
+                                    <div className="card-body p-4">
+                                        <h5 className="fs-15 fw-bold mb-2 text-dark">Description</h5>
+                                        <p className="text-muted fs-14 mb-0" dangerouslySetInnerHTML={{ __html: description }}></p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    {description && (
-                        <div className="card border-0 shadow-none mb-0 bg-light" style={{ borderRadius: 12 }}>
-                            <div className="card-body p-4">
-                                <h5 className="fs-15 fw-bold mb-2">Description</h5>
-                                <p className="text-muted fs-14 mb-0" dangerouslySetInnerHTML={{ __html: description }}></p>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

@@ -3205,3 +3205,735 @@ File: Custom Css File
   animation: skeleton-loading 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
   border-radius: 4px !important;
 }
+
+/* ============================================================
+   Premium Funding Options Styles (Overriding funding.css)
+   ============================================================ */
+
+/* Filter Area Styles */
+.client-funding-options .vendor-filter-input-group {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.client-funding-options .vendor-filter-input-group:focus-within {
+  border-color: var(--vz-primary, #405189) !important;
+  box-shadow: 0 0 0 3px rgba(64, 81, 137, 0.1) !important;
+  background-color: #ffffff !important;
+}
+
+.client-funding-options .vendor-filter-input-group input {
+  color: #495057 !important;
+}
+
+.client-funding-options .vendor-filter-bg {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .btn-clear {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border-radius: 4px !important;
+  border: none !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.client-funding-options .btn-clear:hover {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.client-funding-options .btn-warning {
+  border-radius: 4px !important;
+  background-color: #e49b0f !important;
+  border-color: #e49b0f !important;
+  font-weight: 500 !important;
+}
+
+.client-funding-options .btn-warning:hover {
+  background-color: #ca8a04 !important;
+  border-color: #ca8a04 !important;
+}
+
+/* Category Badge Counts */
+.client-funding-options .funding-group-count {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  background: rgba(64, 81, 137, 0.1) !important;
+  color: var(--vz-primary, #405189) !important;
+  border: 1px solid rgba(64, 81, 137, 0.15) !important;
+  padding: 2px 10px !important;
+  border-radius: 4px !important;
+  min-width: 26px !important;
+}
+
+/* Funding Card Redesign (More Compact & Premium) */
+.client-funding-options .funding-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  padding: 14px 16px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01) !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.client-funding-options .funding-card:hover:not(.funding-card-disabled) {
+  transform: translateY(-3px) !important;
+  border-color: rgba(64, 81, 137, 0.2) !important;
+  box-shadow: 0 10px 24px -8px rgba(64, 81, 137, 0.1) !important;
+}
+
+.client-funding-options .funding-card.funding-card-disabled {
+  opacity: 0.65 !important;
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+.client-funding-options .funding-card.funding-card-locked {
+  opacity: 0.8 !important;
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.client-funding-options .funding-card-top {
+  margin-bottom: 12px !important;
+  gap: 12px !important;
+}
+
+.client-funding-options .funding-card-icon-wrapper {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.04) !important;
+}
+
+.client-funding-options .funding-card-icon-wrapper i {
+  font-size: 18px !important;
+}
+
+.client-funding-options .funding-card-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  line-height: 1.3 !important;
+}
+
+.client-funding-options .funding-card-subtitle {
+  font-size: 11.5px !important;
+  color: #64748b !important;
+  line-height: 1.3 !important;
+}
+
+/* Card Bottom & Meta */
+.client-funding-options .funding-card-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 4px !important;
+}
+
+.client-funding-options .funding-card-meta {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.client-funding-options .funding-card-amount {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: var(--vz-primary, #405189) !important;
+}
+
+.client-funding-options .funding-pill.large-pill {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: none !important;
+}
+
+/* Arrow Button Redesign */
+.client-funding-options .funding-card-arrow {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 4px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+  transition: all 0.2s ease !important;
+}
+
+.client-funding-options .funding-card-arrow i {
+  font-size: 13px !important;
+  color: #94a3b8 !important;
+}
+
+.client-funding-options .funding-card:hover:not(.funding-card-disabled) .funding-card-arrow {
+  background: var(--vz-primary, #405189) !important;
+  border-color: var(--vz-primary, #405189) !important;
+}
+
+.client-funding-options .funding-card:hover:not(.funding-card-disabled) .funding-card-arrow i {
+  color: #ffffff !important;
+}
+
+/* Status badging custom alignment */
+.client-funding-options .funding-card-missing-badge {
+  top: 10px !important;
+  right: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 4px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+.client-funding-options .funding-card-pending-badge {
+  background: rgba(41, 156, 219, 0.1) !important;
+  border-color: rgba(41, 156, 219, 0.2) !important;
+  color: var(--vz-info, #299cdb) !important;
+}
+
+/* ============================================================
+   Premium Filter Bar Redesign (Client Funding Options)
+   ============================================================ */
+.client-funding-options .ca-filter-bar {
+  background: #ffffff !important;
+  border: 1px solid #e3e8f0 !important;
+  border-radius: 4px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 1px 2px rgba(56, 65, 74, 0.03) !important;
+}
+
+/* Search input container */
+.client-funding-options .ca-search-input-wrap .input-group {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  background: #f8fafc !important;
+  height: 38px !important;
+}
+
+.client-funding-options .ca-search-input-wrap .input-group-text {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  padding-left: 12px !important;
+  padding-right: 4px !important;
+}
+
+.client-funding-options .ca-search-input-wrap input {
+  border: none !important;
+  height: 36px !important;
+  background: transparent !important;
+  font-size: 13px !important;
+  color: #1e293b !important;
+}
+
+
+/* Filter Button */
+.client-funding-options .ca-filter-btn {
+  height: 38px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  background-color: var(--secondary-color, #3577f1) !important;
+  border-color: var(--secondary-color, #3577f1) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  box-shadow: 0 2px 6px rgba(53, 119, 241, 0.15) !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.client-funding-options .ca-filter-btn:hover {
+  background-color: var(--secondary-color, #3577f1) !important;
+  filter: brightness(0.9) !important;
+  box-shadow: 0 4px 12px rgba(53, 119, 241, 0.25) !important;
+}
+
+/* Clear Button (Always Visible) */
+.client-funding-options .ca-btn-clear {
+  height: 38px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  background-color: #f3f3f9 !important;
+  color: #495057 !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.client-funding-options .ca-btn-clear:hover {
+  background-color: #e2e8f0 !important;
+  color: #212529 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.p-inputtext,
+.p-dropdown {
+  border-radius: 4px !important;
+}
+
+.client-funding-options .ca-category-dropdown-wrap {
+  width: 200px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ============================================================
+   Premium Funding Skeleton Loader Redesign (No Inline CSS)
+   ============================================================ */
+.client-funding-options .skeleton-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  padding: 14px 16px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 120px !important;
+}
+
+.client-funding-options .skeleton-card-top {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.client-funding-options .skeleton-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.client-funding-options .skeleton-text-wrap {
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-top: 2px !important;
+}
+
+.client-funding-options .skeleton-title-line {
+  width: 60% !important;
+  height: 12px !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .skeleton-subtitle-line {
+  width: 80% !important;
+  height: 10px !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .skeleton-card-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 4px !important;
+}
+
+.client-funding-options .skeleton-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.client-funding-options .skeleton-amount-line {
+  width: 70px !important;
+  height: 14px !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .skeleton-pill-line {
+  width: 80px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .skeleton-arrow {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.client-funding-options .skeleton-group-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 16px !important;
+}
+
+.client-funding-options .skeleton-group-title {
+  width: 140px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+}
+
+.client-funding-options .skeleton-group-count {
+  width: 24px !important;
+  height: 20px !important;
+  border-radius: 4px !important;
+}
+
+/* ============================================================
+   Premium Funding Detail Screen Redesign (No Inline CSS)
+   ============================================================ */
+.client-funding-options .ca-funding-detail-card {
+  border: 1px solid #e3e8f0 !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  overflow: visible !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.client-funding-options .ca-detail-icon {
+  font-size: 28px !important;
+}
+
+.client-funding-options .ca-detail-status-badge,
+.client-funding-options .ca-detail-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 32px !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+}
+
+.client-funding-options .ca-detail-status-badge {
+  padding: 0 12px !important;
+}
+
+.client-funding-options .ca-detail-back-btn {
+  padding: 0 16px !important;
+  margin: 0 !important;
+}
+
+.client-funding-options .ca-detail-meta-grid {
+  border: 1px solid #e8ecf0 !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  background: #f8fafc !important;
+}
+
+.client-funding-options .ca-detail-meta-item {
+  padding: 14px 18px !important;
+  border-right: 1px solid #e8ecf0 !important;
+}
+
+@media (max-width: 767.98px) {
+  .client-funding-options .ca-detail-meta-item {
+    border-right: none !important;
+    border-bottom: 1px solid #e8ecf0 !important;
+  }
+
+  .client-funding-options .ca-detail-meta-item:last-child {
+    border-bottom: none !important;
+  }
+}
+
+.client-funding-options .ca-meta-label {
+  margin: 0 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: #94a3b8 !important;
+  margin-bottom: 4px !important;
+}
+
+.client-funding-options .ca-meta-value {
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  line-height: 1.4 !important;
+}
+
+/* Quality Card styling */
+.client-funding-options .ca-detail-qualify-card {
+  background: #f8fafc !important;
+  border-radius: 4px !important;
+  border: 1px solid #e3e8f0 !important;
+}
+
+.client-funding-options .ca-qualify-reason-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  font-size: 13.5px !important;
+  color: #334155 !important;
+}
+
+/* Missing Docs styling */
+.client-funding-options .ca-detail-missing-docs-wrap {
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.client-funding-options .ca-detail-missing-docs-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+}
+
+.client-funding-options .ca-detail-missing-docs-list {
+  margin: 0 !important;
+  padding: 0 0 0 4px !important;
+  list-style: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.client-funding-options .ca-detail-missing-docs-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13px !important;
+  color: #475569 !important;
+}
+
+.client-funding-options .ca-bullet-dot {
+  width: 5px !important;
+  height: 5px !important;
+  border-radius: 50% !important;
+  background: #94a3b8 !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+}
+
+/* Underwriting Card styling */
+.client-funding-options .ca-detail-underwriting-card {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+}
+
+/* Description Card styling */
+.client-funding-options .ca-detail-desc-card {
+  border-radius: 4px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+}
+
+/* Readiness Row component styles */
+.client-funding-options .ca-readiness-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 0 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.client-funding-options .ca-readiness-row.is-last {
+  border-bottom: none !important;
+}
+
+.client-funding-options .ca-readiness-icon {
+  font-size: 15px !important;
+}
+
+/* Dynamic Left Icon colors based on row status */
+.client-funding-options .ca-readiness-row.status-good .ca-readiness-icon,
+.client-funding-options .ca-readiness-row.status-strong .ca-readiness-icon {
+  color: #10b981 !important;
+}
+
+.client-funding-options .ca-readiness-row.status-missing .ca-readiness-icon {
+  color: #f59e0b !important;
+}
+
+.client-funding-options .ca-readiness-row.status-pending .ca-readiness-icon,
+.client-funding-options .ca-readiness-row.status-default .ca-readiness-icon {
+  color: #3b82f6 !important;
+}
+
+.client-funding-options .ca-readiness-label {
+  font-size: 13.5px !important;
+  color: #1e293b !important;
+  font-weight: 500 !important;
+}
+
+.client-funding-options .ca-readiness-badge {
+  padding: 3px 10px !important;
+  border-radius: 20px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* Dynamic Badge Colors by Status */
+.client-funding-options .ca-readiness-row.status-good .ca-readiness-badge,
+.client-funding-options .ca-readiness-row.status-strong .ca-readiness-badge {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+.client-funding-options .ca-readiness-row.status-missing .ca-readiness-badge {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+}
+
+.client-funding-options .ca-readiness-row.status-pending .ca-readiness-badge,
+.client-funding-options .ca-readiness-row.status-default .ca-readiness-badge {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.client-funding-options .ca-badge-icon {
+  font-size: 14px !important;
+}
+
+.client-funding-options .ca-badge-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+}
+
+/* Fallback Dot Colors by Status */
+.client-funding-options .ca-readiness-row.status-good .ca-badge-dot,
+.client-funding-options .ca-readiness-row.status-strong .ca-badge-dot {
+  background: #047857 !important;
+}
+
+.client-funding-options .ca-readiness-row.status-missing .ca-badge-dot {
+  background: #b45309 !important;
+}
+
+.client-funding-options .ca-readiness-row.status-pending .ca-badge-dot,
+.client-funding-options .ca-readiness-row.status-default .ca-badge-dot {
+  background: #1d4ed8 !important;
+}
+
+/* Status Badge inside main card */
+.client-funding-options .ca-detail-status-badge.is-locked {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+}
+
+.client-funding-options .ca-detail-status-badge.is-eligible {
+  background: color-mix(in srgb, var(--secondary-color, #3577f1) 10%, transparent) !important;
+  color: var(--secondary-color, #3577f1) !important;
+}
+
+/* Dynamic color definitions for detail icon wrapper */
+.client-funding-options .ca-detail-icon-wrapper.color-green {
+  background: #ecfdf5 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-green .ca-detail-icon {
+  color: #059669 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-blue {
+  background: #eff6ff !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-blue .ca-detail-icon {
+  color: #2563eb !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-purple {
+  background: #f5f3ff !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-purple .ca-detail-icon {
+  color: #7c3aed !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-orange {
+  background: #fff7ed !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-orange .ca-detail-icon {
+  color: #ea580c !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-red {
+  background: #fef2f2 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-red .ca-detail-icon {
+  color: #dc2626 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-teal {
+  background: #f0fdfa !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-teal .ca-detail-icon {
+  color: #0d9488 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-indigo {
+  background: #eef2ff !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-indigo .ca-detail-icon {
+  color: #4f46e5 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-pink {
+  background: #fdf2f8 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-pink .ca-detail-icon {
+  color: #db2777 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-yellow {
+  background: #fefce8 !important;
+}
+
+.client-funding-options .ca-detail-icon-wrapper.color-yellow .ca-detail-icon {
+  color: #ca8a04 !important;
+}

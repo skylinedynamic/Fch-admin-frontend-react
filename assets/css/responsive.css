@@ -1854,3 +1854,48 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         font-size: 16px !important;
     }
 }
+
+/* ============================================================
+   Client Funding Options — Responsive Adjustments
+   ============================================================ */
+@media (max-width: 767.98px) {
+    .client-funding-options .ca-filter-bar {
+        padding: 12px 16px !important;
+    }
+    
+    .client-funding-options .ca-filter-bar > div {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .client-funding-options .ca-search-input-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .client-funding-options .ca-category-dropdown-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .client-funding-options .ca-filter-bar .d-flex.align-items-center.gap-2.flex-shrink-0 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .client-funding-options .ca-filter-btn {
+        width: 100% !important;
+        border-radius: 4px !important;
+        height: 38px !important;
+    }
+
+    .client-funding-options .ca-btn-clear {
+        width: 100% !important;
+        border-radius: 4px !important;
+        height: 38px !important;
+    }
+}

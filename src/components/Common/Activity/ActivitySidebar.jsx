@@ -152,12 +152,6 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         fetchActivities(nextPage, true);
     };
 
-    const formatTime = (dateStr) => {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    };
-
     const formatRelativeDate = (dateStr) => {
         if (!dateStr) return '';
         const targetDate = new Date(dateStr);
@@ -256,19 +250,19 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
+                        <span className="text-dark d-block">{prefix}</span>
                         <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
-                            <span style={{ color: getStatusColor(oldStatus), fontWeight: '700' }}>{oldStatus}</span>
+                            <span style={{ color: getStatusColor(oldStatus), fontWeight: 'normal' }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
-                            <span style={{ color: getStatusColor(newStatus), fontWeight: '700' }}>{newStatus}</span>
+                            <span style={{ color: getStatusColor(newStatus), fontWeight: 'normal' }}>{newStatus}</span>
                         </span>
                     </span>
                 );
             } else {
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
-                        <span style={{ color: getStatusColor(statusPart), fontWeight: '700' }} className="d-block mt-1">{statusPart}</span>
+                        <span className="text-dark d-block">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart), fontWeight: 'normal' }} className="d-block mt-1">{statusPart}</span>
                     </span>
                 );
             }
@@ -382,7 +376,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     return (
         <div className="card">
             {/* Card Header */}
-            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2">
+            <div className="card-header px-3 py-3 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2">
                 <h4 className="card-title mb-0">
                     <i className="ri-history-line align-middle me-2"></i>Activity
                 </h4>
@@ -475,7 +469,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-13 mb-0 fw-bold text-dark d-flex align-items-center flex-wrap gap-2">
+                                                                    <h6 className="fs-13 mb-0 fw-normal text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
                                                                         {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
                                                                         {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}
@@ -637,6 +631,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 .profile-timeline .avatar-xs {
                     z-index: 2;
                     background: #fff;
+                }
+                .profile-timeline h6 {
+                    font-weight: 500 !important;
                 }
             `}} />
         </div >
