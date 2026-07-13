@@ -681,7 +681,12 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-22 text-white bg-primary`}>
+                                <span className={`avatar-title rounded-circle fs-22 text-white ${
+                                    selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
+                                    selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
+                                    selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-dark' :
+                                    'bg-primary'
+                                }`}>
                                     <i className={
                                         selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-circle-line' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
@@ -791,7 +796,7 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-success">
                                     <i className="ri-user-add-fill"></i>
                                 </span>
                             </div>
@@ -826,11 +831,21 @@ export default function FundingRequestDetail() {
                                         <div className="d-flex justify-content-between align-items-center">
                                             <span className="fs-13 text-muted fw-medium">Match Analysis</span>
                                             <div className="d-flex align-items-center gap-2">
-                                                <span className="badge fs-12" style={{ backgroundColor: `${lenderToAssign.score_hex || '#059669'}20`, color: lenderToAssign.score_hex || '#059669' }}>
+                                                <span className={`badge fs-12 ${
+                                                    lenderToAssign.score_text?.includes('Excellent') ? 'bg-success-subtle text-success' :
+                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning-subtle text-warning' :
+                                                    lenderToAssign.score_text?.includes('Poor') ? 'bg-danger-subtle text-danger' :
+                                                    'bg-primary-subtle text-primary'
+                                                }`}>
                                                     {lenderToAssign.matches_fraction || 'N/A'}
                                                 </span>
                                                 <i className="ri-arrow-right-line text-muted fs-12"></i>
-                                                <span className="badge fs-12 text-white" style={{ backgroundColor: lenderToAssign.score_hex || '#059669' }}>
+                                                <span className={`badge fs-12 text-white ${
+                                                    lenderToAssign.score_text?.includes('Excellent') ? 'bg-success' :
+                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
+                                                    lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
+                                                    'bg-primary'
+                                                }`}>
                                                     {lenderToAssign.score_text || 'Match'}
                                                 </span>
                                             </div>
@@ -850,7 +865,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn btn-primary"
+                                    className="btn btn-success"
                                     onClick={() => {
                                         assignLenderMutation.mutate(
                                             { id: review.id, lender_ids: [lenderToAssign?.id] },
