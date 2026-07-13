@@ -71,7 +71,8 @@ export const ENROLLMENT_TABS: Record<string, string> = {
     DOCUMENTS: 'documents',
     TASK_LIST: 'taskList',
     AGREEMENT: 'agreement',
-    CREDIT_PROFILE: 'creditProfile'
+    CREDIT_PROFILE: 'creditProfile',
+    FUNDING_REQUESTS: 'fundingRequests'
 };
 
 // Re-exporting from config for easier module-level access if needed

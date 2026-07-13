@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import { Dropdown } from 'primereact/dropdown';
+import CustomDropdown from '../../components/Common/CustomDropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
@@ -37,9 +37,9 @@ export default function FundingList() {
     const [appliedSearchText, setAppliedSearchText] = useState<string>('');
     const [filters, setFilters] = useState<any>({});
     const [appliedFilters, setAppliedFilters] = useState<any>({});
-    const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-    const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const [selectedType, setSelectedType] = useState<string>('');
 
     // Checkbox selection state
     const [selectedFundings, setSelectedFundings] = useState<any[]>([]);
@@ -139,9 +139,9 @@ export default function FundingList() {
     const handleClearFilters = () => {
         setSearchText('');
         setAppliedSearchText('');
-        setSelectedStatus(null);
-        setSelectedGroup(null);
-        setSelectedType(null);
+        setSelectedStatus('');
+        setSelectedGroup('');
+        setSelectedType('');
         initFilters();
         setPage(1);
     };
@@ -307,61 +307,66 @@ export default function FundingList() {
                                     ) : (
                                         <div className="row g-3 mb-2">
                                             <div className="col-xxl-3 col-sm-12">
-                                                <div className="search-box">
+                                                <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
+                                                    <span className="input-group-text bg-transparent border-0 pe-1">
+                                                        <i className="ri-search-line text-muted opacity-75"></i>
+                                                    </span>
                                                     <input
                                                         type="text"
-                                                        className="form-control search bg-light border-light"
+                                                        className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
                                                         placeholder="Search here..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                     />
-                                                    <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={[{ label: 'All Status', value: null }, ...FUNDING_STATUS_OPTIONS]}
-                                                    onChange={(e) => setSelectedStatus(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="All Status"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    appendTo="self"
-                                                />
+                                                <div className="h-100">
+                                                    <CustomDropdown
+                                                        value={selectedStatus}
+                                                        options={[{ label: 'All Status', value: '' }, ...FUNDING_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
+                                                        onChange={(val) => setSelectedStatus(val)}
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder="All Status"
+                                                        className="w-100 vendor-filter-bg h-100"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedGroup}
-                                                    options={[{ label: 'All Groups', value: null }, ...groupOptions]}
-                                                    onChange={(e) => setSelectedGroup(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="All Groups"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    appendTo="self"
-                                                />
+                                                <div className="h-100">
+                                                    <CustomDropdown
+                                                        value={selectedGroup}
+                                                        options={[{ label: 'All Groups', value: '' }, ...groupOptions.map(o => ({ ...o, value: o.value || '' }))]}
+                                                        onChange={(val) => setSelectedGroup(val)}
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder="All Groups"
+                                                        className="w-100 vendor-filter-bg h-100"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
-                                                <Dropdown
-                                                    value={selectedType}
-                                                    options={[{ label: 'All Types', value: null }, ...typeOptions]}
-                                                    onChange={(e) => setSelectedType(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="All Types"
-                                                    className="w-100 employee-filter-dropdown"
-                                                    appendTo="self"
-                                                />
+                                                <div className="h-100">
+                                                    <CustomDropdown
+                                                        value={selectedType}
+                                                        options={[{ label: 'All Types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
+                                                        onChange={(val) => setSelectedType(val)}
+                                                        optionLabel="label"
+                                                        optionValue="value"
+                                                        placeholder="All Types"
+                                                        className="w-100 vendor-filter-bg h-100"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="col-xxl-3 col-sm-12">
                                                 <div className="d-flex gap-2">
-                                                    <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                        <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                    <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
+                                                        <i className="ri-equalizer-fill align-bottom"></i> Filters
                                                     </button>
-                                                    <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                        <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                    <button type="button" className="btn-clear flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleClearFilters}>
+                                                        <i className="ri-close-line align-bottom"></i> Clear
                                                     </button>
                                                 </div>
                                             </div>

@@ -550,6 +550,17 @@ export default function ClientDetails() {
                                             </button>
                                         </li>
                                     )}
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUESTS ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.FUNDING_REQUESTS)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            <i className="fas fa-hand-holding-usd"></i> Funding Sequence
+                                        </button>
+                                    </li>
                                     {formData.has_sign && (
                                         <li className="nav-item">
                                             <button

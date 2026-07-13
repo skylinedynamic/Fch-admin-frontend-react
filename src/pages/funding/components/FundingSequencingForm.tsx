@@ -418,6 +418,11 @@ export default function FundingSequencingForm() {
                     setActiveTab('visibility');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else if (id && activeTab === 'visibility') {
+                    if (location.pathname.includes('/configuration') && !activeLenderId) {
+                        toast.error('Please select a lender before updating');
+                        return;
+                    }
+
                     if (activeLenderId && activeCategoryId !== null) {
                         // Save ONLY the active category's visibility rule
                         const singleCategoryPayload = {
@@ -445,7 +450,7 @@ export default function FundingSequencingForm() {
                         await updateFundingSequencingVisibility(id, unifiedPayload);
                     }
 
-                    toast.success('Visibility logic updated successfully');
+                    toast.success('Underwriting logic updated successfully');
                     navigate(`/funding/visibility-rules/${id}`);
                 }
             } else {
@@ -627,10 +632,10 @@ export default function FundingSequencingForm() {
                                     </ol>
                                 </nav>
                             </div>
-                            {!(isVisibilityRoute && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
+                            {!(activeTab === 'visibility' && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                     <Link
-                                        to={isVisibilityRoute && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
+                                        to={activeTab === 'visibility' && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
                                         className="btn btn-outline-secondary w-lg waves-effect"
                                     >
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
@@ -675,7 +680,7 @@ export default function FundingSequencingForm() {
                                             className="btn btn-primary w-lg waves-effect"
                                             onClick={() => navigate(`/funding/visibility-rules/${id}/configuration`)}
                                         >
-                                            <i className="ri-add-line align-middle me-1"></i> Add Visibility Logic
+                                            <i className="ri-add-line align-middle me-1"></i> Add Underwriting Logic
                                         </button>
                                     )}
                                 </div>
@@ -704,7 +709,7 @@ export default function FundingSequencingForm() {
                                                     type="button"
                                                     className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'display' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'}`}
                                                     onClick={() => handleTabClick('display')}
-                                                    style={{ backgroundColor: 'transparent', transition: 'all 0.2s', border: 'none' }}
+                                                    style={{ backgroundColor: 'transparent', transition: 'all 0.2s', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}
                                                 >
                                                     Display
                                                 </button>
@@ -714,11 +719,11 @@ export default function FundingSequencingForm() {
                                                     type="button"
                                                     className={`nav-link fw-semibold fs-15 pb-3 ${activeTab === 'visibility' ? 'active text-primary border-primary border-bottom border-3' : 'text-muted border-transparent'} ${!isEditMode ? 'opacity-50' : ''}`}
                                                     onClick={() => handleTabClick('visibility')}
-                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', transition: 'all 0.2s', border: 'none' }}
-                                                    title={!isEditMode ? "Please save the sequence first to unlock visibility logic" : ""}
+                                                    style={{ cursor: !isEditMode ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', transition: 'all 0.2s', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}
+                                                    title={!isEditMode ? "Please save the sequence first to unlock underwriting logic" : ""}
                                                 >
                                                     {!isEditMode && <i className="ri-lock-line align-middle me-1"></i>}
-                                                    Visibility Logic
+                                                    Underwriting Logic
                                                 </button>
                                             </li>
                                         </ul>
@@ -923,11 +928,11 @@ export default function FundingSequencingForm() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    {/* Row 7: Readiness Factors */}
+                                                    {/* Row 7: Underwriting Factors */}
                                                     <div className="col-lg-12">
                                                         <div className="card shadow-sm border rounded-3 mt-4 mb-2">
                                                             <div className="card-header bg-light border-bottom py-3">
-                                                                <h6 className="card-title mb-0 fw-bold text-dark">Readiness Factors <span className="text-danger">*</span></h6>
+                                                                <h6 className="card-title mb-0 fw-bold text-dark">Underwriting Factors <span className="text-danger">*</span></h6>
                                                             </div>
                                                             <div className="card-body p-4">
                                                                 <div className="row g-4">
@@ -966,7 +971,7 @@ export default function FundingSequencingForm() {
                                                                             ))}
                                                                             {formData.readiness_factors.length === 0 && (
                                                                                 <div className={`fs-13 py-3 px-3 rounded border text-center border-dashed mt-2 ${(errors as any).readiness_factors ? 'border-danger bg-danger-subtle text-danger' : 'text-muted bg-light'}`}>
-                                                                                    No readiness factors added yet. Select from the dropdown above to begin.
+                                                                                    No underwriting factors added yet. Select from the dropdown above to begin.
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -1073,7 +1078,7 @@ export default function FundingSequencingForm() {
                                                 </div>
                                             </div>
 
-                                            {/* ── Visibility Logic Tab ────────────────────────────────────────── */}
+                                            {/* ── Underwriting Logic Tab ────────────────────────────────────────── */}
                                             <div className={`tab-pane ${activeTab === 'visibility' ? 'active' : ''}`} id="visibility" style={{ marginTop: '-1rem' }}>
                                                 <LenderVisibilityGrid
                                                     visibilities={formData.lender_visibilities}

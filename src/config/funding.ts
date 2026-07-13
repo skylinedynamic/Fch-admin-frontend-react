@@ -351,3 +351,62 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-close-line'
     }
 ];
+
+export const QUALIFY_REASONS_MAP: Record<string, string> = {
+    'Business Credit': 'Business profile meets our lending standards',
+    'Revenue': 'Revenue exceeds minimum threshold',
+    'Time in Business': 'Time in business exceeds requirement',
+    'Banking Activity': 'Banking activity shows consistent deposits',
+    'Documents': 'Required documents have been provided',
+    'Minimum Monthly Deposits': 'Deposit volume meets minimum requirements',
+    'Monthly Deposit Count': 'Deposit frequency meets minimum requirements',
+    'Minimum Average Daily Balance': 'Average daily balance meets minimum requirements',
+    'Max NSF / Negative Days': 'Banking history meets minimum NSF/negative day requirements'
+};
+
+export const FACTOR_STATUS_VALUES = {
+    GOOD: 'good',
+    STRONG: 'strong',
+    ELIGIBLE: 'eligible',
+    MISSING: 'missing',
+    RESTRICTED: 'restricted',
+    FAIR: 'fair',
+    WEAK: 'weak',
+};
+
+export const READINESS_FACTOR_LABELS = {
+    RESTRICTED_STATE: 'Restricted State',
+    STATE_ELIGIBILITY: 'State Eligibility',
+    RESTRICTED_INDUSTRY: 'Restricted Industry',
+    INDUSTRY_ELIGIBILITY: 'Industry Eligibility',
+};
+
+export const BADGE_LABELS = {
+    RESTRICTED: 'Restricted',
+    ELIGIBLE: 'Eligible',
+};
+
+export const FACTOR_ICON_STYLES: Record<string, { icon: string, color: string }> = {
+    [FACTOR_STATUS_VALUES.GOOD]: { icon: 'ri-checkbox-circle-fill', color: '#10b981' },
+    [FACTOR_STATUS_VALUES.ELIGIBLE]: { icon: 'ri-checkbox-circle-fill', color: '#10b981' },
+    [FACTOR_STATUS_VALUES.STRONG]: { icon: 'ri-star-fill', color: '#3b82f6' },
+    [FACTOR_STATUS_VALUES.MISSING]: { icon: 'ri-close-circle-fill', color: '#ef4444' },
+    [FACTOR_STATUS_VALUES.RESTRICTED]: { icon: 'ri-close-circle-fill', color: '#ef4444' },
+};
+
+export const READINESS_BADGE_STYLES: Record<string, { icon: string; bg: string; color: string }> = {
+    [FACTOR_STATUS_VALUES.GOOD]: { icon: 'ri-checkbox-circle-fill', bg: '#e8f9f0', color: '#1a7a4a' },
+    [FACTOR_STATUS_VALUES.STRONG]: { icon: 'ri-checkbox-circle-fill', bg: '#dbeafe', color: '#1d4ed8' },
+    [FACTOR_STATUS_VALUES.FAIR]: { icon: 'ri-error-warning-fill', bg: '#fef3c7', color: '#92400e' },
+    [FACTOR_STATUS_VALUES.MISSING]: { icon: 'ri-information-fill', bg: '#fff3cd', color: '#92400e' },
+    [FACTOR_STATUS_VALUES.WEAK]: { icon: 'ri-close-circle-fill', bg: '#fee2e2', color: '#991b1b' },
+    [FACTOR_STATUS_VALUES.RESTRICTED]: { icon: 'ri-close-circle-fill', bg: '#fee2e2', color: '#ef4444' },
+    [FACTOR_STATUS_VALUES.ELIGIBLE]: { icon: 'ri-checkbox-circle-fill', bg: '#e8f9f0', color: '#10b981' },
+};
+
+export const META_ITEM_LABELS = {
+    RECOMMENDED_RANGE: 'Recommended Range',
+    TERM: 'Term',
+    SPEED_TO_FUNDS: 'Speed to Funds',
+    USES: 'Uses',
+};
