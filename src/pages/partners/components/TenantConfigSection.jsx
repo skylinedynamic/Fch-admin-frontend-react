@@ -12,6 +12,7 @@ export default function TenantConfigSection({
         active_custom_url: false,
         partner_domain: '',
         borrower_domain: '',
+        partner_subdomain: '',
     });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -36,6 +37,7 @@ export default function TenantConfigSection({
                     active_custom_url: data.active_custom_url === true || data.active_custom_url === 1 || data.active_custom_url === '1',
                     partner_domain: data.partner_domain || '',
                     borrower_domain: data.borrower_domain || '',
+                    partner_subdomain: data.partner_subdomain || '',
                 });
             }
         } catch (error) {
@@ -88,6 +90,7 @@ export default function TenantConfigSection({
                     active_custom_url: data.active_custom_url === true || data.active_custom_url === 1 || data.active_custom_url === '1',
                     partner_domain: data.partner_domain || '',
                     borrower_domain: data.borrower_domain || '',
+                    partner_subdomain: data.partner_subdomain || '',
                 });
             }
 
@@ -115,6 +118,46 @@ export default function TenantConfigSection({
     return (
         <form id="tenant-config-form" onSubmit={handleSubmit}>
             <div className="row g-3">
+                {!config.active_custom_url && (
+                    <div className="col-lg-12 mb-2">
+                        <div className="row g-3">
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold text-muted mb-1 fs-13">Active Partner URL</label>
+                                    <div className="p-3 bg-light rounded-3 border border-light-subtle d-flex align-items-center justify-content-between shadow-sm">
+                                        <div>
+                                            <span className="fw-semibold text-dark fs-14 font-monospace">
+                                                {config.partner_subdomain ? `https://${config.partner_subdomain}` : 'Not configured'}
+                                            </span>
+                                        </div>
+                                        <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-11">Default Subdomain</span>
+                                    </div>
+                                    {config.partner_domain && (
+                                        <small className="text-muted mt-1.5 d-block fs-12">
+                                            Saved Custom Domain: <span className="fw-medium text-dark font-monospace">{config.partner_domain}</span> (Inactive)
+                                        </small>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold text-muted mb-1 fs-13">Active Borrower URL</label>
+                                    <div className="p-3 bg-light rounded-3 border border-light-subtle d-flex align-items-center justify-content-between shadow-sm">
+                                        <div>
+                                            <span className="fw-semibold text-dark fs-14 font-monospace">
+                                                {config.borrower_domain ? `https://${config.borrower_domain}` : 'Default System Borrower Portal'}
+                                            </span>
+                                        </div>
+                                        <span className={`badge ${config.borrower_domain ? 'bg-secondary-subtle text-secondary border-secondary-subtle' : 'bg-success-subtle text-success border-success-subtle'} rounded-pill fs-11`}>
+                                            {config.borrower_domain ? 'Inactive Custom' : 'Default Active'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="col-lg-12 mb-3">
                     <div className="form-check form-switch form-switch-lg custom-switch-primary">
                         <input
