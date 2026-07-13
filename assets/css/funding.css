@@ -1,25 +1,524 @@
-.slim-multiselect.p-multiselect {
-    min-height: 38px;
-    height: auto;
+/* ─── Color Variables (fallback — overridden at runtime by branding API) ──── */
+:root {
+    --primary-color: var(--primary-color);
+    --secondary-color: var(--secondary-color);
 }
 
-/* Allow the chip container to wrap to multiple lines so all chips are visible */
-.slim-multiselect.p-multiselect .p-multiselect-label {
+/* ─── Funding Page Styles ────────────────────────────────────────────── */
+
+
+
+.funding-page .funding-empty-state {
+    min-height: 380px;
+}
+
+.funding-page .funding-empty-state-icon {
+    background: #f8f9fa;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
     display: flex;
-    flex-wrap: wrap;
-    padding: 0.25rem 0.5rem; 
     align-items: center;
-    gap: 0.25rem;
+    justify-content: center;
+    margin-bottom: 20px;
 }
 
-/* Ensure chips look clean when wrapping and make the text smaller */
-.slim-multiselect.p-multiselect .p-multiselect-token {
-    margin: 0; /* Use gap for spacing instead */
-    padding: 0.15rem 0.5rem; /* Smaller padding */
+.funding-page .funding-empty-state-icon i {
+    font-size: 2.5rem;
+}
+
+.funding-page .funding-group-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--primary-color) 12%, white);
+    color: var(--primary-color);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 30%, white);
+    padding: 2px 10px;
+    border-radius: 20px;
+    min-width: 24px;
+    letter-spacing: 0.02em;
+}
+
+/* ─── Funding Card Styles ────────────────────────────────────────────── */
+
+.funding-card {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1.5px solid #e8ecf0;
     border-radius: 4px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transform: translateY(0);
+    user-select: none;
+    width: 100%;
+    height: 100%;
+    min-height: 150px;
+    position: relative;
+    cursor: pointer;
 }
 
-/* Make the chip text smaller as requested */
-.slim-multiselect.p-multiselect .p-multiselect-token .p-multiselect-token-label {
-    font-size: 0.85rem;
+.funding-card:hover:not(.funding-card-disabled) {
+    /* border-color: var(--primary-color); */
+    box-shadow: 0 8px 20px #00000038;
+    transform: translateY(-2px);
+}
+
+.funding-card.funding-card-disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.funding-card.funding-card-locked {
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+/* Top Section */
+.funding-card-top {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.funding-card-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.funding-card-icon-wrapper.disabled {
+    background: #f0f3f7 !important;
+    filter: grayscale(100%);
+}
+
+.funding-card-icon-wrapper i {
+    font-size: 22px;
+}
+
+.funding-card-icon-wrapper.disabled i {
+    color: #6c757d !important;
+}
+
+/* Text Content */
+.funding-card-text-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.funding-card-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #0f1b2d;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.funding-card-subtitle {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Bottom Section */
+.funding-card-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.funding-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.funding-card-amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.01em;
+}
+
+/* Pill Badge */
+.funding-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.funding-pill.large-pill {
+    font-size: 12px;
+    padding: 5px 12px;
+}
+
+/* Likely Eligible pill — uses secondary brand color */
+.funding-pill-eligible {
+    background: color-mix(in srgb, var(--secondary-color) 12%, white);
+    color: var(--secondary-color);
+    border: 1px solid color-mix(in srgb, var(--secondary-color) 30%, white);
+}
+
+/* Arrow Button */
+.funding-card-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid #e5e7eb;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.funding-card-arrow i {
+    font-size: 18px;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+
+.funding-card:hover:not(.funding-card-disabled) .funding-card-arrow {
+    border-color: var(--primary-color);
+}
+
+.funding-card:hover:not(.funding-card-disabled) .funding-card-arrow i {
+    color: var(--primary-color);
+}
+
+/* ─── Funding Detail Page Overrides ──────────────────────────────────── */
+.funding-detail-badge {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 18px;
+    border-radius: 24px;
+    letter-spacing: 0.01em;
+}
+
+.funding-detail-badge-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1.5px solid #f6d860;
+}
+
+.funding-detail-badge-greyed-out {
+    background: #e2e3e5;
+    color: #383d41;
+    border: 1.5px solid #d6d8db;
+}
+
+.funding-detail-badge-active,
+.funding-detail-badge-review {
+    background: color-mix(in srgb, var(--secondary-color) 12%, white);
+    color: var(--secondary-color);
+    border: 1.5px solid color-mix(in srgb, var(--secondary-color) 30%, white);
+}
+
+.funding-detail-btn-review {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-color);
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+.funding-detail-btn-review:hover {
+    opacity: 0.9;
+    color: #ffffff !important;
+}
+
+/* ─── Grayed Card (Missing Underwriting Factors) ────────────────────────── */
+.funding-card.funding-card-grayed {
+    cursor: not-allowed;
+    background: #f4f6f9;
+    border-color: #dde1e9;
+    cursor: not-allowed;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle gray overlay without washing out layout structure */
+.funding-card.funding-card-grayed::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(248, 249, 251, 0.45);
+    border-radius: 4px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* All inner content sits above the overlay */
+.funding-card.funding-card-grayed>* {
+    position: relative;
+    z-index: 2;
+}
+
+.funding-card.funding-card-grayed:hover {
+    transform: none;
+    border-color: #b0b8c8;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.funding-card.funding-card-grayed .funding-card-title {
+    color: #8a94a6;
+}
+
+.funding-card.funding-card-grayed .funding-card-subtitle {
+    color: #aab0bd !important;
+}
+
+.funding-card.funding-card-grayed .funding-card-amount {
+    color: #aab0bd;
+}
+
+.funding-card.funding-card-grayed .funding-card-icon-wrapper {
+    filter: grayscale(60%) !important;
+    opacity: 0.7;
+}
+
+.funding-card.funding-card-grayed .funding-card-top {
+    padding-right: 32px;
+}
+
+/* ─── Lock / Clock badge ──────────────────────────────────────────────── */
+.funding-card-missing-badge {
+    position: absolute;
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    font-size: 14px;
+    color: #9ca3af !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* Clock badge for pending cards */
+.funding-card-pending-badge {
+    color: #9ca3af !important;
+    border: 1px solid #e5e7eb !important;
+    background: #ffffff !important;
+}
+
+/* ─── Premium Missing Tooltip ─────────────────────────────────────────── */
+.funding-missing-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    min-width: 280px;
+    max-width: 320px;
+    background: var(--primary-color);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    padding: 14px 16px;
+    pointer-events: none;
+    animation: tooltipFadeIn 0.15s ease-out;
+    border: 1px solid rgba(226, 232, 240, 0.08);
+}
+
+/* Arrow pointing down to card */
+.funding-missing-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--primary-color);
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.funding-missing-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #E2E8F0;
+}
+
+.funding-missing-tooltip-desc {
+    font-size: 12.5px;
+    color: #94A3B8;
+    line-height: 1.5;
+    margin: 8px 0 0;
+}
+
+.funding-missing-tooltip-divider {
+    height: 1px;
+    background: rgba(226, 232, 240, 0.08);
+    margin: 10px 0;
+}
+
+.funding-missing-tooltip-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.funding-missing-tooltip-item {
+    font-size: 13px;
+    color: #E2E8F0;
+}
+
+.tooltip-item-title {
+    font-weight: 600;
+    color: #E2E8F0;
+    line-height: 1.3;
+}
+
+.tooltip-item-req {
+    font-size: 11.5px;
+    color: #94A3B8;
+    margin-top: 2px;
+}
+
+.funding-missing-tooltip-footer-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: #94A3B8;
+    line-height: 1.45;
+}
+
+.activity-detail-card {
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+}
+
+.activity-section-title {
+    margin-bottom: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0F172A;
+}
+
+.activity-detail-item:first-child {
+    padding-right: 16px;
+}
+
+.activity-detail-item:last-child {
+    padding-left: 16px;
+    border-left: 1px solid #E2E8F0;
+}
+
+.activity-detail-label {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.activity-detail-value {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.4;
+}
+
+.activity-detail-card:hover {
+    border-color: #CBD5E1;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+}
+
+/* ─── Filter & Search Styling ────────────────────────────────────────── */
+.vendor-filter-bg,
+.vendor-filter-bg:focus,
+.vendor-filter-bg:active,
+.vendor-filter-bg.show,
+.vendor-filter-bg.is-open {
+    background-color: #f0f2f5 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.vendor-filter-input-group {
+    background-color: #f0f2f5 !important;
+    border-radius: 4px !important;
+    overflow: hidden;
+}
+
+.vendor-filter-input-group input:focus {
+    box-shadow: none !important;
+}
+
+.btn-clear {
+    background-color: #f0f2f5 !important;
+    color: #666 !important;
+    border-radius: 4px !important;
+    border: none !important;
+    font-weight: 500;
+}
+
+.btn-clear:hover {
+    background-color: #e2e5e9 !important;
+    color: #333 !important;
 }

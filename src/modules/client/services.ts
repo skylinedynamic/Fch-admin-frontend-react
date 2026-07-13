@@ -59,6 +59,16 @@ export const saveClientChecklist = async (borrowerId: string | number, checkedId
     return data;
 };
 
+export const fetchClientFundingOptions = async (borrowerId: string | number): Promise<any> => {
+    const { data } = await apiClient.get(`/common/funding-sequencings/client-funding-options/${borrowerId}`);
+    return data;
+};
+
+export const fetchClientReadinessFactors = async (borrowerId: string | number, fundingId: string | number): Promise<any> => {
+    const { data } = await apiClient.get(`/common/funding-qualification/client-readiness-factors/${borrowerId}/${fundingId}`);
+    return data;
+};
+
 // Fetch borrower profile stats details (for detail page)
 export const fetchBorrowerProfileStats = async (borrowerId: string | number): Promise<any> => {
     const { data } = await apiClient.post(`/common/borrowers-profile-states-details-count/${borrowerId}`);
