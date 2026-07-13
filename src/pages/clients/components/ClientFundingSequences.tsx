@@ -133,12 +133,14 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                         }
                     }
 
+                    const displayLabel = lowerLabel === 'time in business' ? 'Months' : label;
+
                     return (
                         <li key={i} className="funding-missing-tooltip-item">
                             <div className="d-flex align-items-start gap-2">
                                 <i className="ri-close-circle-fill" style={{ color: '#EF4444', fontSize: 15, marginTop: 1 }} />
                                 <div>
-                                    <div className="tooltip-item-title">{label}: {actVal ?? 'Missing'}</div>
+                                    <div className="tooltip-item-title">{displayLabel}: {actVal ?? 'Missing'}</div>
                                     {req !== undefined && req !== null && (
                                         <div className="tooltip-item-req">Required: {reqVal}</div>
                                     )}
