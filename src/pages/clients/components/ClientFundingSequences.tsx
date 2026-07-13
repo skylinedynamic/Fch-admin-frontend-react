@@ -212,7 +212,7 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const pillColor = isEngineLocked ? '#4b5563' : hasMissing ? '#78350f' : isPending ? '#4f52c8' : '#4f46e5';
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
             <div 
                 className={`funding-card ${isFullyDisabled ? 'funding-card-grayed' : ''} ${isLocked ? 'funding-card-locked' : ''}`}
                 onClick={(e) => {
@@ -230,12 +230,12 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                 }}
             >
                 {(hasMissing || isEngineLocked) && (
-                    <div className="funding-card-missing-badge">
+                    <div className="funding-card-missing-badge" style={{ position: 'absolute', top: '14px', right: '14px', left: 'auto' }}>
                         <i className="ri-lock-line" />
                     </div>
                 )}
                 {isPending && !hasMissing && !isEngineLocked && (
-                    <div className="funding-card-missing-badge funding-card-pending-badge">
+                    <div className="funding-card-missing-badge funding-card-pending-badge" style={{ position: 'absolute', top: '14px', right: '14px', left: 'auto' }}>
                         <i className="ri-time-line" />
                     </div>
                 )}
@@ -253,12 +253,10 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                 <div className="funding-card-bottom">
                     <div className="funding-card-meta">
                         {item.amount_range && (
-                            <p className="funding-card-amount m-0">
-                                {item.amount_range || '\u00A0'}
-                            </p>
+                            <span className="funding-card-amount">{item.amount_range}</span>
                         )}
-                        <div>
-                            <span className="funding-pill" style={{ background: pillBg, color: pillColor, border: `1px solid ${pillBg}` }}>
+                        <div style={{ alignSelf: 'flex-start' }}>
+                            <span className="funding-pill large-pill" style={{ background: pillBg, color: pillColor, border: `1px solid ${pillBg}` }}>
                                 {displayLabel}
                             </span>
                         </div>
