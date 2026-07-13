@@ -16,7 +16,9 @@ import {
     fetchBorrowerTierWiseTaskList,
     fetchBorrowerProgress,
     updateTaskVerificationStatus,
-    fetchCreditProfile
+    fetchCreditProfile,
+    fetchClientCapitalAccessOverview,
+    fetchClientCapitalAccessStrategies
 } from './services';
 import type { BorrowerTier, BorrowerProgress } from './types';
 import { fetchAllBorrowers, getAllUsers } from '../borrower/services';
@@ -33,6 +35,8 @@ export const clientKeys = {
     checklist: (id: string | number) => [...clientKeys.detail(id), 'checklist'] as const,
     stats: (id: string | number) => [...clientKeys.detail(id), 'stats'] as const,
     creditProfile: (id: string | number) => [...clientKeys.detail(id), 'creditProfile'] as const,
+    capitalAccess: (id: string | number) => [...clientKeys.detail(id), 'capitalAccess'] as const,
+    capitalAccessStrategies: (id: string | number) => [...clientKeys.detail(id), 'capitalAccessStrategies'] as const,
     listStats: (partnerId?: string | number) => [...clientKeys.lists(), 'stats', partnerId] as const,
     partners: () => ['partners'] as const,
     users: () => ['users'] as const,
@@ -141,6 +145,22 @@ export const useClientCreditProfile = (id: string | number, enabled: boolean = t
     return useQuery({
         queryKey: clientKeys.creditProfile(id),
         queryFn: () => fetchCreditProfile(id),
+        enabled: enabled && !!id,
+    });
+};
+
+export const useClientCapitalAccessOverview = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.capitalAccess(id),
+        queryFn: () => fetchClientCapitalAccessOverview(id),
+        enabled: enabled && !!id,
+    });
+};
+
+export const useClientCapitalAccessStrategies = (id: string | number, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: clientKeys.capitalAccessStrategies(id),
+        queryFn: () => fetchClientCapitalAccessStrategies(id),
         enabled: enabled && !!id,
     });
 };

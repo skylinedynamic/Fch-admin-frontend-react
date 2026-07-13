@@ -256,3 +256,82 @@ export const TenantDomainSkeleton: React.FC = () => {
         </div>
     );
 };
+
+/**
+ * Custom skeleton loader for the Capital Access Section
+ */
+export const CapitalAccessSkeleton: React.FC = () => {
+    return (
+        <div className="ca-page-wrap pt-0 animate__animated animate__fadeIn">
+            <div className="d-flex justify-content-end mb-4">
+                <div className="skeleton-line rounded sk-w-130 sk-h-32"></div>
+            </div>
+
+            <div className="row g-4 mb-4">
+                {/* Funding Readiness Score Card Skeleton */}
+                <div className="col-md-6">
+                    <div className="ca-metric-card h-100">
+                        <div className="ca-metric-header">
+                            <div className="ca-metric-title-block">
+                                <div className="skeleton-line mb-2 sk-w-150 sk-h-14"></div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className="skeleton-line sk-w-60 sk-h-34"></div>
+                                    <div className="skeleton-line rounded-pill sk-w-60 sk-h-24"></div>
+                                </div>
+                            </div>
+                            <div className="skeleton-line rounded sk-w-44 sk-h-44"></div>
+                        </div>
+
+                        <div className="ca-slider-wrapper">
+                            <div className="ca-custom-progress-container">
+                                <div className="skeleton-line w-100 sk-h-10 rounded-3"></div>
+                            </div>
+                        </div>
+
+                        <div className="ca-score-factors mt-3">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="d-flex align-items-center justify-content-between py-1">
+                                    <div className="skeleton-line sk-w-110 sk-h-12"></div>
+                                    <div className="skeleton-line sk-w-60 sk-h-12"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Estimated Total Access Card Skeleton */}
+                <div className="col-md-6">
+                    <div className="ca-metric-card h-100">
+                        <div className="ca-metric-header">
+                            <div className="ca-metric-title-block">
+                                <div className="skeleton-line mb-2 sk-w-150 sk-h-14"></div>
+                                <div className="skeleton-line sk-w-110 sk-h-34"></div>
+                            </div>
+                            <div className="skeleton-line rounded sk-w-44 sk-h-44"></div>
+                        </div>
+
+                        <div className="ca-exposure-vertical-chart">
+                            <div className="ca-exposure-vertical-bar skeleton-line rounded sk-h-38"></div>
+                            <div className="ca-exposure-vertical-bar skeleton-line rounded sk-h-42"></div>
+                            <div className="ca-exposure-vertical-bar skeleton-line rounded sk-h-60"></div>
+                            <div className="ca-exposure-vertical-bar skeleton-line rounded sk-h-38"></div>
+                            <div className="ca-exposure-vertical-bar skeleton-line rounded sk-h-42"></div>
+                        </div>
+
+                        <div className="ca-access-footer">
+                            <div className="skeleton-line sk-w-130 sk-h-12"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="ca-next-step-card mt-4">
+                <div className="ca-next-step-content w-100">
+                    <div className="skeleton-line mb-2 sk-w-110 sk-h-16"></div>
+                    <div className="skeleton-line w-100 sk-h-12"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
