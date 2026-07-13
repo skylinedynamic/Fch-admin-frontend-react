@@ -796,7 +796,12 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className="avatar-title rounded-circle fs-22 text-white bg-success">
+                                <span className={`avatar-title rounded-circle fs-22 text-white ${
+                                    lenderToAssign?.score_text?.includes('Excellent') ? 'bg-success' :
+                                    lenderToAssign?.score_text?.includes('Good') ? 'bg-warning' :
+                                    lenderToAssign?.score_text?.includes('Poor') ? 'bg-danger' :
+                                    'bg-primary'
+                                }`}>
                                     <i className="ri-user-add-fill"></i>
                                 </span>
                             </div>
@@ -865,7 +870,12 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn btn-success"
+                                    className={`btn ${
+                                        lenderToAssign?.score_text?.includes('Excellent') ? 'btn-success' :
+                                        lenderToAssign?.score_text?.includes('Good') ? 'btn-warning text-dark' :
+                                        lenderToAssign?.score_text?.includes('Poor') ? 'btn-danger' :
+                                        'btn-primary'
+                                    }`}
                                     onClick={() => {
                                         assignLenderMutation.mutate(
                                             { id: review.id, lender_ids: [lenderToAssign?.id] },
