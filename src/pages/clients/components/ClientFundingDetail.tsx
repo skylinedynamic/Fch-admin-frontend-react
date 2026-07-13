@@ -172,7 +172,8 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
                                         const extractedDocs = dynamicReadiness
                                             .filter((f: any) => f.missing_docs && f.missing_docs.length > 0)
                                             .flatMap((f: any) => f.missing_docs);
-                                        const currentMissingDocs = extractedDocs.length > 0 ? Array.from(new Set(extractedDocs)) : (fundingData.missing_documents || []);
+                                        const combinedDocs = [...extractedDocs, ...(fundingData.missing_documents || [])];
+                                        const currentMissingDocs = Array.from(new Set(combinedDocs));
 
                                         return currentMissingDocs.length > 0 && (
                                             <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f3f7' }}>
