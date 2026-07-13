@@ -627,10 +627,10 @@ export default function FundingSequencingForm() {
                                     </ol>
                                 </nav>
                             </div>
-                            {!(isVisibilityRoute && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
+                            {!(activeTab === 'visibility' && activeLenderId === null && !location.pathname.includes('/configuration')) ? (
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                     <Link
-                                        to={isVisibilityRoute && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
+                                        to={activeTab === 'visibility' && activeLenderId !== null ? `/funding/visibility-rules/${id}` : '/funding'}
                                         className="btn btn-outline-secondary w-lg waves-effect"
                                     >
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
