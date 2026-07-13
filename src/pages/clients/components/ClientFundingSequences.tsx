@@ -117,7 +117,13 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                             const fmtMonths = (months: any) => {
                                 const m = Number(months);
                                 if (isNaN(m)) return months || '0 Months';
-                                return `${Math.round(m)} Month${Math.round(m) === 1 ? '' : 's'}`;
+                                if (m < 1 && m > 0) {
+                                    const days = Math.round(m * 30);
+                                    return `${days} Day${days === 1 ? '' : 's'}`;
+                                }
+                                const isInteger = m % 1 === 0;
+                                const formattedNum = isInteger ? m : Number(m.toFixed(1));
+                                return `${formattedNum} Month${formattedNum === 1 ? '' : 's'}`;
                             };
                             actVal = fmtMonths(act);
                             reqVal = fmtMonths(req);
@@ -208,13 +214,13 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const isLocked = hasMissing || isEngineLocked;
 
     const displayLabel = isEngineLocked ? 'Locked' : (hasMissing ? 'Missing Info' : isPending ? 'Under Review' : 'Likely Eligible');
-    const pillBg = isEngineLocked ? '#f3f4f6' : hasMissing ? '#fef3c7' : isPending ? '#f0f0ff' : `#eef2ff`;
-    const pillColor = isEngineLocked ? '#4b5563' : hasMissing ? '#78350f' : isPending ? '#4f52c8' : '#4f46e5';
+    const pillBg = isEngineLocked ? '#f3f4f6' : hasMissing ? '#fef3c7' : isPending ? '#f0f0ff' : `color-mix(in srgb, var(--secondary-color) 10%, transparent)`;
+    const pillColor = isEngineLocked ? '#4b5563' : hasMissing ? '#78350f' : isPending ? '#4f52c8' : 'var(--secondary-color)';
 
     return (
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <div 
-                className={`funding-card ${isFullyDisabled ? 'funding-card-grayed' : ''} ${isLocked ? 'funding-card-locked' : ''}`}
+                className={`funding-card ${isFullyDisabled ? 'funding-card-disabled' : ''} ${isLocked ? 'funding-card-locked' : ''}`}
                 onClick={(e) => {
                     if (isFullyDisabled) {
                         e.preventDefault();
@@ -372,7 +378,7 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
                                 <div className="flex-grow-1">
                                     <div className="row g-3">
                                         <div className="col-12 col-md-9">
-                                            <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
+                                            <div className="input-group vendor-filter-input-group border transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9', borderColor: '#e5e7eb' }}>
                                                 <span className="input-group-text bg-transparent border-0 pe-1">
                                                     <i className="ri-search-line text-muted opacity-75"></i>
                                                 </span>
@@ -395,7 +401,7 @@ const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
                                                     optionValue="id"
                                                     onChange={(val) => { setActiveType(val.toString()); setSearchQuery(''); }}
                                                     placeholder="All Categories"
-                                                    className="border-0 rounded-2 fs-13 vendor-filter-bg h-100 w-100"
+                                                    className="border rounded-2 fs-13 vendor-filter-bg h-100 w-100"
                                                 />
                                             </div>
                                         </div>

@@ -167,6 +167,30 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
                                             ))}
                                         </ul>
                                     )}
+
+                                    {(() => {
+                                        const extractedDocs = dynamicReadiness
+                                            .filter((f: any) => f.missing_docs && f.missing_docs.length > 0)
+                                            .flatMap((f: any) => f.missing_docs);
+                                        const currentMissingDocs = extractedDocs.length > 0 ? Array.from(new Set(extractedDocs)) : (fundingData.missing_documents || []);
+
+                                        return currentMissingDocs.length > 0 && (
+                                            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f3f7' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                                    <i className="ri-error-warning-fill" style={{ color: '#dc2626', fontSize: 16 }} />
+                                                    <span style={{ fontWeight: 700, fontSize: 13, color: '#0f1b2d' }}>Missing Documents</span>
+                                                </div>
+                                                <ul style={{ margin: 0, padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                    {currentMissingDocs.map((doc: string, i: number) => (
+                                                        <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#4b5563' }}>
+                                                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#9ca3af', flexShrink: 0, display: 'inline-block' }} />
+                                                            {doc}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
