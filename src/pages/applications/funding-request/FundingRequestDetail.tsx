@@ -754,17 +754,10 @@ export default function FundingRequestDetail() {
                                 </div>
                             )}
 
-                            <div className="d-flex justify-content-center gap-3 mt-4 px-2">
+                            <div className="d-flex justify-content-center gap-3 mt-4">
                                 <button
                                     type="button"
-                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary"
-                                    style={{ 
-                                        background: '#f8fafc',
-                                        borderRadius: '12px',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                    className="btn btn-light"
                                     onClick={() => setShowStatusModal(false)}
                                     disabled={updateStatusMutation.isPending}
                                 >
@@ -772,14 +765,12 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`btn text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap btn-primary`}
-                                    style={{ 
-                                        borderRadius: '12px',
-                                        boxShadow: '0 8px 20px rgba(0,0,0, 0.15)',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    className={`btn ${
+                                        selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
+                                        selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'btn-dark' :
+                                        'btn-primary'
+                                    }`}
                                     onClick={handleStatusUpdate}
                                     disabled={updateStatusMutation.isPending}
                                 >
