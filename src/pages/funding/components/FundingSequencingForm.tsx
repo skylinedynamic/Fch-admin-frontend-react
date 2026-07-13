@@ -418,6 +418,11 @@ export default function FundingSequencingForm() {
                     setActiveTab('visibility');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else if (id && activeTab === 'visibility') {
+                    if (location.pathname.includes('/configuration') && !activeLenderId) {
+                        toast.error('Please select a lender before updating');
+                        return;
+                    }
+
                     if (activeLenderId && activeCategoryId !== null) {
                         // Save ONLY the active category's visibility rule
                         const singleCategoryPayload = {
