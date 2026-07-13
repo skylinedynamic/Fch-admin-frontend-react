@@ -794,40 +794,64 @@ export default function FundingRequestDetail() {
                     </ModalBody>
                 </Modal>
 
-                {/* Awesome Assign Lender Modal */}
-                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered size="md" className="border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-                    <ModalBody className="p-0 position-relative">
-                        {/* Decorative Background Element */}
-                        <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
-                        
-                        <div className="text-center pt-5 pb-3 px-4 rounded-top-4 bg-white position-relative z-1">
-                            {/* Icon Container with glowing effect */}
-                            <div className="mx-auto mb-4 d-flex align-items-center justify-content-center bg-primary-subtle" style={{ width: '84px', height: '84px', borderRadius: '50%', boxShadow: '0 0 0 10px rgba(var(--bs-primary-rgb), 0.05)' }}>
-                                <div className="d-flex align-items-center justify-content-center bg-primary" style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 8px 16px rgba(var(--bs-primary-rgb), 0.25)' }}>
-                                    <i className="ri-user-add-fill text-white" style={{ fontSize: '32px' }}></i>
-                                </div>
+                {/* Standard Assign Lender Modal */}
+                <Modal isOpen={showAssignModal} toggle={() => !assignLenderMutation.isPending && setShowAssignModal(false)} centered size="md" contentClassName="border-0 shadow-lg" modalClassName="flip">
+                    <ModalBody className="p-0">
+                        {/* Simple white header band */}
+                        <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
+                            <div className="avatar-md mx-auto mb-3">
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
+                                    <i className="ri-user-add-fill"></i>
+                                </span>
                             </div>
-                            
-                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Confirm Assign Lender</h4>
-                            <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
-                                Are you sure you want to assign <strong className="text-dark fs-16">{lenderToAssign?.name}</strong> to this funding request?
-                                <br />
-                                <span className="fs-13 text-primary bg-primary-subtle px-2 py-1 rounded mt-2 d-inline-block">This will Approve and Assign the Lender.</span>
+                            <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
+                            <p className="text-muted fs-13 mb-0">
+                                Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
+                                <br />This action will Approve the request and Assign the Lender.
                             </p>
                         </div>
 
-                        <div className="p-4 pt-3 pb-4 bg-white">
-                            <div className="d-flex justify-content-center gap-3 mt-3 px-2">
+                        {/* Request Information */}
+                        <div className="p-4">
+                            {lenderToAssign && (
+                                <div className="mb-4 text-start">
+                                    <p className="fs-12 text-uppercase fw-bold text-muted mb-2" style={{ letterSpacing: '0.07em' }}>
+                                        <i className="ri-information-line me-1"></i> Lender Information
+                                    </p>
+                                    <div className="border rounded-3 p-3">
+                                        {/* Lender Name */}
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <span className="fs-13 text-muted fw-medium">Lender Name</span>
+                                            <span className="fs-13 fw-semibold text-dark">{lenderToAssign.name}</span>
+                                        </div>
+                                        
+                                        {/* Funding Type */}
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <span className="fs-13 text-muted fw-medium">Funding Type</span>
+                                            <span className="fs-13 fw-semibold text-dark">{lenderToAssign.product_category || '—'}</span>
+                                        </div>
+                                        
+                                        {/* Match Analysis */}
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <span className="fs-13 text-muted fw-medium">Match Analysis</span>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className="badge fs-12" style={{ backgroundColor: `${lenderToAssign.score_hex || '#059669'}20`, color: lenderToAssign.score_hex || '#059669' }}>
+                                                    {lenderToAssign.matches_fraction || 'N/A'}
+                                                </span>
+                                                <i className="ri-arrow-right-line text-muted fs-12"></i>
+                                                <span className="badge fs-12 text-white" style={{ backgroundColor: lenderToAssign.score_hex || '#059669' }}>
+                                                    {lenderToAssign.score_text || 'Match'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="d-flex justify-content-center gap-3 mt-4">
                                 <button
                                     type="button"
-                                    className="btn px-4 py-3 fs-15 border-0 fw-semibold text-secondary"
-                                    style={{ 
-                                        background: '#f8fafc',
-                                        borderRadius: '12px',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                    className="btn btn-light"
                                     onClick={() => setShowAssignModal(false)}
                                     disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                 >
@@ -835,14 +859,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn btn-primary text-white px-4 py-3 fs-15 border-0 fw-bold text-nowrap"
-                                    style={{ 
-                                        borderRadius: '12px',
-                                        boxShadow: '0 8px 20px rgba(var(--bs-primary-rgb), 0.25)',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    className="btn btn-primary"
                                     onClick={() => {
                                         assignLenderMutation.mutate(
                                             { id: review.id, lender_ids: [lenderToAssign?.id] },
@@ -878,7 +895,7 @@ export default function FundingRequestDetail() {
                                     {assignLenderMutation.isPending || updateStatusMutation.isPending ? (
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm Assign Lender</>
+                                        <><i className="ri-user-add-line align-bottom me-1"></i> Assign Lender</>
                                     )}
                                 </button>
                             </div>
