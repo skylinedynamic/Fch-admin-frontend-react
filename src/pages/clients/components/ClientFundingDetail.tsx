@@ -33,7 +33,7 @@ const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isL
         }}>
             <div className="d-flex align-items-center gap-3">
                 <i className={leftIcon} style={{ fontSize: 20, color: leftIconColor }}></i>
-                <span style={{ fontSize: 14, color: '#1e293b', fontWeight: 500 }}>{factor.label}</span>
+                <span style={{ fontSize: 14, color: '#1e293b', fontWeight: 500 }}>{factor.label.toLowerCase() === 'time in business' ? 'Months' : factor.label}</span>
             </div>
             <div style={{
                 background: badgeStyle.bg,
