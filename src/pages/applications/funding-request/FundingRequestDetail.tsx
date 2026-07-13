@@ -13,6 +13,7 @@ import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../c
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
+import { formatCurrency } from '../../../utils/helper';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
 
@@ -292,7 +293,7 @@ export default function FundingRequestDetail() {
                                                                     <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
                                                                         <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
                                                                             {lender.checks.revenue ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_revenue ? `$${lender.requirements.min_revenue}+` : 'N/A'}</span>
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_revenue ? `${formatCurrency(lender.requirements.min_revenue, '$', 1, 0)}+` : 'N/A'}</span>
                                                                         </div>
                                                                     </td>
                                                                     {/* Min TIB */}
@@ -306,7 +307,7 @@ export default function FundingRequestDetail() {
                                                                     <td className="px-2 py-3 text-center" style={{ border: '1px solid #e2e8f0' }}>
                                                                         <div className="d-flex align-items-center justify-content-center gap-1" style={{ whiteSpace: 'nowrap' }}>
                                                                             {lender.checks.deposit ? <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: '15px' }}></i> : <i className="ri-close-circle-fill" style={{ color: '#dc2626', fontSize: '15px' }}></i>}
-                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_deposit ? `$${lender.requirements.min_deposit}+` : 'N/A'}</span>
+                                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{lender.requirements.min_deposit ? `${formatCurrency(lender.requirements.min_deposit, '$', 1, 0)}+` : 'N/A'}</span>
                                                                         </div>
                                                                     </td>
                                                                     {/* Overall Match */}

@@ -383,7 +383,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
         setShowBulkDeleteModal(false);
         setSelectedMasterLenders([]);
 
-        toast.success('Visibility logic removed successfully!');
+        toast.success('Underwriting logic removed successfully!');
     };
 
     const onRemoveRow = (index: number) => {
@@ -595,9 +595,9 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <i className="ri-file-list-3-line" style={{ fontSize: '32px' }}></i>
                             </div>
                         </div>
-                        <h5 className="fs-18 fw-semibold text-dark mb-2">No Visibility Logic Configured</h5>
+                        <h5 className="fs-18 fw-semibold text-dark mb-2">No Underwriting Logic Configured</h5>
                         <p className="text-muted fs-14 text-center mb-0" style={{ maxWidth: '450px', lineHeight: '1.6' }}>
-                            You haven't added any visibility logic yet. Click "Add Visibility Logic" above to configure rules for a lender.
+                            You haven't added any underwriting logic yet. Click "Add Underwriting Logic" above to configure rules for a lender.
                         </p>
                     </div>
                 )}
@@ -724,7 +724,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                     selection={selectedMasterLenders}
                                     onSelectionChange={(e: any) => setSelectedMasterLenders(e.value)}
                                     dataKey={id ? "id" : "_tmpId"}
-                                    emptyMessage="No visibility logic found"
+                                    emptyMessage="No underwriting logic found"
                                     onRowClick={(e: any) => {
                                         const target = e.originalEvent.target as HTMLElement;
                                         if (!target.closest('.p-checkbox') && !target.closest('.p-selection-column') && target.tagName !== 'INPUT') {
@@ -771,8 +771,8 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                 <div className="text-center py-5">
                                     <div className="d-flex flex-column align-items-center justify-content-center">
                                         <i className="ri-error-warning-line text-muted mb-3" style={{ fontSize: '48px' }}></i>
-                                        <h5 className="text-muted fw-semibold fs-16">No Visibility logic setup</h5>
-                                        <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its visibility rules.</p>
+                                        <h5 className="text-muted fw-semibold fs-16">No Underwriting logic setup</h5>
+                                        <p className="text-muted fs-14 mb-0">Please select a lender from the dropdown above to configure its underwriting rules.</p>
                                     </div>
                                 </div>
                             ) : detailsLoading ? (
@@ -807,7 +807,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                     </div>
                                                 )}
 
-                                                <p className="text-muted mb-3 fs-13">The visibility logic rules for this lender have not been properly loaded.</p>
+                                                <p className="text-muted mb-3 fs-13">The underwriting logic rules for this lender have not been properly loaded.</p>
                                                 <button
                                                     type="button"
                                                     className={`btn btn-sm ${hasVisibilityError ? 'btn-danger btn-label' : 'btn-primary'}`}

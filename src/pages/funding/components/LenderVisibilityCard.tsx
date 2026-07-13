@@ -39,7 +39,7 @@ export const LenderVisibilityCard: React.FC<LenderVisibilityCardProps> = ({
     return (
         <div className="card mb-4 border shadow-sm">
             <div className="card-header bg-light d-flex justify-content-between align-items-center py-3">
-                <h6 className="mb-0 fw-bold text-dark">Visibility Logic Setup #{index + 1}</h6>
+                <h6 className="mb-0 fw-bold text-dark">Underwriting Logic Setup #{index + 1}</h6>
                 <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => onRemove(index)}>
                     <i className="ri-delete-bin-line me-1"></i> Remove Lender
                 </button>

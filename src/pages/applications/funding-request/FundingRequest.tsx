@@ -12,6 +12,7 @@ import { Button } from 'primereact/button';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
+import { formatCurrency } from '../../../utils/helper';
 
 export default function FundingRequest() {
     const { hasPermission } = usePermissions();
@@ -271,7 +272,7 @@ export default function FundingRequest() {
                                             <Column field="funding_sequence_id" header="Funding Sequence" body={(r) => r.funding_sequence?.name || '-'} sortable style={{ minWidth: '160px' }} />
                                             <Column field="funding_type" header="Funding Type" sortable style={{ minWidth: '150px' }} />
                                             <Column field="use_of_funds" header="Purpose" sortable style={{ minWidth: '160px' }} />
-                                            <Column header="Requested Amount" field="requested_amount" sortable style={{ minWidth: '150px' }} />
+                                            <Column header="Requested Amount" field="requested_amount" body={(r) => formatCurrency(r.requested_amount ?? 0, '$', 1, 0)} sortable style={{ minWidth: '150px' }} />
                                             {isHost && (
                                                 <Column field="lender_names" header="Assigned Lender" body={(r) => r.lender_names || '-'} sortable style={{ minWidth: '160px' }} />
                                             )}
