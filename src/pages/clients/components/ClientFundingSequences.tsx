@@ -245,15 +245,17 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
                         <i className={iconClass} style={{ color: colors.text }} />
                     </div>
                     <div className="funding-card-text-content">
-                        <h3 className="funding-card-title">{item.name}</h3>
-                        <p className="funding-card-subtitle">{item.subtitle || '\u00A0'}</p>
+                        <p className="funding-card-title m-0">{item.name}</p>
+                        <p className="funding-card-subtitle m-0 mt-1" style={{ color: item.subtitle ? '#6b7280' : 'transparent' }}>{item.subtitle || '\u00A0'}</p>
                     </div>
                 </div>
 
                 <div className="funding-card-bottom">
                     <div className="funding-card-meta">
                         {item.amount_range && (
-                            <span className="funding-card-amount">{item.amount_range}</span>
+                            <p className="funding-card-amount m-0">
+                                {item.amount_range || '\u00A0'}
+                            </p>
                         )}
                         <div>
                             <span className="funding-pill" style={{ background: pillBg, color: pillColor, border: `1px solid ${pillBg}` }}>
@@ -279,7 +281,7 @@ interface Props {
     clientId?: string | null;
 }
 
-const ClientFundingRequests: React.FC<Props> = ({ clientId }) => {
+const ClientFundingSequences: React.FC<Props> = ({ clientId }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [selectedSequence, setSelectedSequence] = useState<any>(null);
@@ -337,9 +339,15 @@ const ClientFundingRequests: React.FC<Props> = ({ clientId }) => {
     const matchesQuery = (seq: any, q: string) => {
         if (!q) return true;
         const lq = q.toLowerCase();
+        
         const str = (v: any) => typeof v === 'string' && v.toLowerCase().includes(lq);
-        if (str(seq.name) || str(seq.subtitle) || str(seq.amount_range) || str(seq.terms) || str(seq.description)) return true;
-        if (Array.isArray(seq.uses) && seq.uses.some((u: any) => String(u).toLowerCase().includes(lq))) return true;
+        
+        const numLq = lq.replace(/[^0-9]/g, '');
+        const numStr = (v: any) => typeof v === 'string' && numLq !== '' && v.replace(/[^0-9]/g, '').includes(numLq);
+
+        if (str(seq.name) || str(seq.subtitle) || str(seq.description) || str(seq.terms)) return true;
+        if (str(seq.amount_range) || numStr(seq.amount_range)) return true;
+        if (Array.isArray(seq.uses) && seq.uses.some((u: any) => str(String(u)))) return true;
         return false;
     };
 
@@ -382,11 +390,12 @@ const ClientFundingRequests: React.FC<Props> = ({ clientId }) => {
                                         <div className="col-12 col-md-3">
                                             <div className="h-100">
                                                 <CustomDropdown
-                                                    options={allTypes.map(t => ({ id: t.id.toString(), name: t.name }))}
+                                                    searchable
                                                     value={activeType}
-                                                    onChange={(val) => { setActiveType(val.toString()); setSearchQuery(''); }}
+                                                    options={allTypes.map(t => ({ id: t.id.toString(), name: t.name }))}
                                                     optionLabel="name"
                                                     optionValue="id"
+                                                    onChange={(val) => { setActiveType(val.toString()); setSearchQuery(''); }}
                                                     placeholder="All Categories"
                                                     className="border-0 rounded-2 fs-13 vendor-filter-bg h-100 w-100"
                                                 />
@@ -440,4 +449,4 @@ const ClientFundingRequests: React.FC<Props> = ({ clientId }) => {
     );
 };
 
-export default ClientFundingRequests;
+export default ClientFundingSequences;

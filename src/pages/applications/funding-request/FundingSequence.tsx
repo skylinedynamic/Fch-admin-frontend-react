@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import { Dropdown } from 'primereact/dropdown';
+import CustomDropdown from '../../../components/Common/CustomDropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -14,7 +14,7 @@ import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { formatCurrency } from '../../../utils/helper';
 
-export default function FundingRequest() {
+export default function FundingSequence() {
     const { hasPermission } = usePermissions();
     const currentUser = useAuthStore((state: any) => state.user)
     const isHost = currentUser?.is_host == 1;
@@ -189,47 +189,53 @@ export default function FundingRequest() {
                                 <form className="table-filter" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     <div className="row g-3 mb-3">
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <div className="search-box">
+                                            <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
+                                                <span className="input-group-text bg-transparent border-0 pe-1">
+                                                    <i className="ri-search-line text-muted opacity-75"></i>
+                                                </span>
                                                 <input
                                                     type="text"
-                                                    className="form-control search bg-light border-light"
+                                                    className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
                                                     placeholder="Search borrower or partner name..."
                                                     value={searchText}
                                                     onChange={(e) => setSearchText(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                 />
-                                                <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...statusOptions]}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                placeholder="All Status"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
+                                            <div className="h-100">
+                                                <CustomDropdown
+                                                    value={selectedStatus}
+                                                    options={[{ label: 'All Status', value: '' }, ...statusOptions.map(o => ({ ...o, value: o.value || '' }))]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(val) => setSelectedStatus(val)}
+                                                    placeholder="All Status"
+                                                    className="w-100 vendor-filter-bg h-100"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <Dropdown
-                                                value={selectedFundingSequenceId}
-                                                options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                onChange={(e) => setSelectedFundingSequenceId(e.value)}
-                                                placeholder="All Funding Types"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
+                                            <div className="h-100">
+                                                <CustomDropdown
+                                                    value={selectedFundingSequenceId}
+                                                    options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(val) => setSelectedFundingSequenceId(val)}
+                                                    placeholder="All Funding Types"
+                                                    className="w-100 vendor-filter-bg h-100"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                <button type="button" className="btn-clear flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line align-bottom"></i> Clear
                                                 </button>
                                             </div>
                                         </div>

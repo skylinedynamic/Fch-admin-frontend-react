@@ -38,7 +38,7 @@ import PreQualificationApplication from './pages/applications/pre-qualification/
 import PreQualificationDetails from './pages/applications/pre-qualification/PreQualificationDetails.tsx';
 import FundingApplication from './pages/applications/funding/FundingApplication.tsx';
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
-import FundingRequest from './pages/applications/funding-request/FundingRequest.tsx';
+import FundingSequence from './pages/applications/funding-request/FundingSequence.tsx';
 import FundingRequestDetail from './pages/applications/funding-request/FundingRequestDetail.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
@@ -330,7 +330,7 @@ export default function App() {
               </Route>
 
               <Route element={<PermissionRoute permission="view funding request" />}>
-                <Route path="funding-request" element={<FundingRequest />} />
+                <Route path="funding-request" element={<FundingSequence />} />
                 <Route path="funding-request/:id" element={<FundingRequestDetail />} />
               </Route>
 

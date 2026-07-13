@@ -134,12 +134,11 @@ export default function CustomDropdown({
                                 <button
                                     key={idx}
                                     type="button"
-                                    className={`dropdown-item px-3 py-2 fs-13 ${option[optionValue] === value ? 'bg-light text-primary fw-medium' : 'text-dark'}`}
+                                    className={`list-group-item list-group-item-action border-0 ${option[optionValue] === value ? 'active' : ''}`}
                                     onClick={() => {
                                         onChange(option[optionValue])
                                         setIsOpen(false)
                                     }}
-                                    style={{ cursor: 'pointer' }}
                                 >
                                     {renderOption ? renderOption(option) : option[optionLabel]}
                                 </button>

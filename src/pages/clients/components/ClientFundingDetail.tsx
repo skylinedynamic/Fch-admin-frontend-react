@@ -46,7 +46,11 @@ const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isL
                 alignItems: 'center',
                 gap: 6
             }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: badgeStyle.color }}></div>
+                {badgeStyle.icon ? (
+                    <i className={badgeStyle.icon} style={{ fontSize: 14 }} />
+                ) : (
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: badgeStyle.color }}></div>
+                )}
                 {badgeText}
             </div>
         </div>
@@ -156,9 +160,9 @@ export default function ClientFundingDetail({ clientId, fundingData, onBack, ico
                                     ) : (
                                         <ul className="list-unstyled mb-0 d-flex flex-column gap-3">
                                             {dynamicQualifyReasons.map((r, idx) => (
-                                                <li key={idx} className="d-flex align-items-start gap-2">
-                                                    <i className="ri-checkbox-circle-fill" style={{ color: '#10b981', fontSize: 18, marginTop: -2 }} />
-                                                    <span className="fs-13" style={{ color: '#4b5563' }}>{r.label}</span>
+                                                <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#374151' }}>
+                                                    <i className="ri-checkbox-circle-fill" style={{ color: '#16a34a', fontSize: 16, marginTop: 1, flexShrink: 0 }} />
+                                                    {r.label}
                                                 </li>
                                             ))}
                                         </ul>

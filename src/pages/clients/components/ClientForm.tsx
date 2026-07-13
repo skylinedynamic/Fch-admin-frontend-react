@@ -11,7 +11,7 @@ import { ENROLLMENT_TABS } from '../../../modules/client';
 import type { Client } from '../../../modules/client/types';
 // @ts-ignore
 import FormLoader from '../../../components/Loader/FormLoader';
-import ClientFundingRequests from './ClientFundingRequests';
+import ClientFundingSequences from './ClientFundingSequences';
 
 interface ClientFormProps {
     clientId?: string | null;
@@ -165,7 +165,7 @@ export default function ClientForm({
             {activeTab === ENROLLMENT_TABS.FUNDING_REQUESTS && (
                 <div className="tab-pane active show" role="tabpanel">
                     {clientId ? (
-                        <ClientFundingRequests clientId={clientId} />
+                        <ClientFundingSequences clientId={clientId} />
                     ) : (
                         <div>Please create the client first to view Funding Requests.</div>
                     )}
