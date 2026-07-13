@@ -130,49 +130,85 @@ export default function TenantConfigSection({
         <form id="tenant-config-form" onSubmit={handleSubmit}>
             <div className="row g-3">
                 {!config.active_custom_url && (
-                    <>
-                        <div className="col-lg-6">
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold text-muted mb-1 fs-13">Partner Domain</label>
-                                <div className="d-flex align-items-center gap-2 py-1">
-                                    <span className="fw-semibold text-dark fs-14 font-monospace">
-                                        {config.partner_subdomain ? `https://${config.partner_subdomain}` : <span className="text-muted fst-italic fs-13">Domain not set yet</span>}
-                                    </span>
-                                    {config.partner_subdomain && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 text-muted fs-15 lh-1"
-                                            onClick={() => handleCopy(`https://${config.partner_subdomain}`, 'Partner URL')}
-                                            title="Copy URL"
-                                        >
-                                            <i className={copiedState === 'Partner URL' ? "ri-check-line text-success" : "ri-file-copy-line text-primary"}></i>
-                                        </button>
-                                    )}
+                    <div className="col-12 mb-2">
+                        <div className="dns-panel">
+                            {/* Partner Domain Row */}
+                            <div className="dns-row">
+                                <div className="dns-label-col">
+                                    <div className="dns-icon-box dns-icon-box-partner">
+                                        <i className="ri-global-line fs-15 text-primary"></i>
+                                    </div>
+                                    <span className="dns-label-text">Partner</span>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="col-lg-6">
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold text-muted mb-1 fs-13">Borrower Domain</label>
-                                <div className="d-flex align-items-center gap-2 py-1">
-                                    <span className="fw-semibold text-dark fs-14 font-monospace">
-                                        {config.borrower_domain ? `https://${config.borrower_domain}` : <span className="text-muted fst-italic fs-13">Domain not set yet</span>}
-                                    </span>
-                                    {config.borrower_domain && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 text-muted fs-15 lh-1"
-                                            onClick={() => handleCopy(`https://${config.borrower_domain}`, 'Borrower URL')}
-                                            title="Copy URL"
-                                        >
-                                            <i className={copiedState === 'Borrower URL' ? "ri-check-line text-success" : "ri-file-copy-line text-success"}></i>
-                                        </button>
+                                <div className="dns-value-col">
+                                    {config.partner_subdomain ? (
+                                        <>
+                                            <div className="dns-badge dns-badge-partner">
+                                                <span className="dns-pulse-dot"></span>
+                                                <a
+                                                    href={`https://${config.partner_subdomain}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dns-link dns-link-partner"
+                                                >
+                                                    https://{config.partner_subdomain}
+                                                </a>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`btn btn-sm border-0 dns-copy-btn ${copiedState === 'Partner URL' ? 'dns-copy-btn-partner-copied' : 'dns-copy-btn-partner'}`}
+                                                onClick={() => handleCopy(`https://${config.partner_subdomain}`, 'Partner URL')}
+                                                title="Copy URL"
+                                            >
+                                                <i className={copiedState === 'Partner URL' ? "ri-check-line fs-15" : "ri-file-copy-line fs-15"}></i>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="dns-not-set">Domain not set yet</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Borrower Domain Row */}
+                            <div className="dns-row">
+                                <div className="dns-label-col">
+                                    <div className="dns-icon-box dns-icon-box-borrower">
+                                        <i className="ri-user-settings-line fs-15 text-success"></i>
+                                    </div>
+                                    <span className="dns-label-text">Borrower</span>
+                                </div>
+
+                                <div className="dns-value-col">
+                                    {config.borrower_domain ? (
+                                        <>
+                                            <div className="dns-badge dns-badge-borrower">
+                                                <span className="dns-pulse-dot"></span>
+                                                <a
+                                                    href={`https://${config.borrower_domain}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dns-link dns-link-borrower"
+                                                >
+                                                    https://{config.borrower_domain}
+                                                </a>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`btn btn-sm border-0 dns-copy-btn ${copiedState === 'Borrower URL' ? 'dns-copy-btn-borrower-copied' : 'dns-copy-btn-borrower'}`}
+                                                onClick={() => handleCopy(`https://${config.borrower_domain}`, 'Borrower URL')}
+                                                title="Copy URL"
+                                            >
+                                                <i className={copiedState === 'Borrower URL' ? "ri-check-line fs-15" : "ri-file-copy-line fs-15"}></i>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="dns-not-set">Domain not set yet</span>
                                     )}
                                 </div>
                             </div>
                         </div>
-                    </>
+                    </div>
                 )}
 
                 <div className="col-lg-12 mb-3">

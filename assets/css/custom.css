@@ -2093,3 +2093,145 @@ File: Custom Css File
 .credit-profile-metrics-card-body .p-dropdown-panel .p-dropdown-item-label {
   font-size: 11px !important;
 }
+
+/* DNS Dashboard Panel */
+.dns-panel {
+  border: 1px solid #e9ebec !important;
+  border-radius: 4px !important;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%) !important;
+  overflow: hidden;
+}
+
+.dns-row {
+  display: flex !important;
+  align-items: center !important;
+  padding: 16px 24px !important;
+}
+
+.dns-row:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.dns-label-col {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 140px !important;
+}
+
+.dns-icon-box {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 8px !important;
+}
+
+.dns-icon-box-partner {
+  background: rgba(64, 81, 137, 0.12) !important;
+}
+
+.dns-icon-box-borrower {
+  background: rgba(10, 179, 156, 0.12) !important;
+}
+
+.dns-label-text {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #878a99 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.dns-value-col {
+  flex-grow: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+}
+
+.dns-badge {
+  display: flex !important;
+  align-items: center !important;
+  border-radius: 4px !important;
+  padding: 4px 12px !important;
+  gap: 8px !important;
+  flex-grow: 1 !important;
+  background: #ffffff !important;
+  max-width: fit-content !important;
+}
+
+.dns-badge-partner {
+  border: 1px solid rgba(64, 81, 137, 0.15) !important;
+}
+
+.dns-badge-borrower {
+  border: 1px solid rgba(10, 179, 156, 0.2) !important;
+}
+
+.dns-pulse-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #0ab39c !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 0 0 2px rgba(10, 179, 156, 0.2) !important;
+}
+
+.dns-link {
+  font-family: var(--vz-font-monospace, monospace) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+.dns-link-partner {
+  color: #405189 !important;
+}
+
+.dns-link-borrower {
+  color: #0ab39c !important;
+}
+
+.dns-copy-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 4px !important;
+  border: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+.dns-copy-btn-partner {
+  background: rgba(64, 81, 137, 0.08) !important;
+  color: #405189 !important;
+}
+
+.dns-copy-btn-partner-copied {
+  background: rgba(10, 179, 156, 0.12) !important;
+  color: #0ab39c !important;
+}
+
+.dns-copy-btn-borrower {
+  background: rgba(10, 179, 156, 0.08) !important;
+  color: #0ab39c !important;
+}
+
+.dns-copy-btn-borrower-copied {
+  background: rgba(10, 179, 156, 0.12) !important;
+  color: #0ab39c !important;
+}
+
+.dns-not-set {
+  font-style: italic !important;
+  color: #878a99 !important;
+  font-size: 13px !important;
+  margin-left: 4px !important;
+}
