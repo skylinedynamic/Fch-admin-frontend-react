@@ -518,56 +518,58 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
                 {/* Partner Details Section */}
-                <div className="col-12">
-                    <div className="card partner-details-section p-0">
-                        <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
-                            <div className="partner-section-title-wrap d-flex align-items-center gap-3">
-                                {partnerLogo ? (
-                                    <img
-                                        src={partnerLogo}
-                                        alt="Partner Logo"
-                                        className="partner-logo-img"
-                                    />
-                                ) : (
-                                    <div className="partner-logo-fallback">
-                                        <i className="ri-user-line"></i>
+                {isHost && (
+                    <div className="col-12 mb-4">
+                        <div className="card partner-details-section p-0">
+                            <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
+                                <div className="partner-section-title-wrap d-flex align-items-center gap-3">
+                                    {partnerLogo ? (
+                                        <img
+                                            src={partnerLogo}
+                                            alt="Partner Logo"
+                                            className="partner-logo-img"
+                                        />
+                                    ) : (
+                                        <div className="partner-logo-fallback">
+                                            <i className="ri-user-line"></i>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h5 className="partner-section-title mb-1">Partner Details</h5>
+                                        <p className="partner-section-subtitle mb-0">Assigned partner information and referral status</p>
                                     </div>
+                                </div>
+                                {formData.partner_id ? (
+                                    <Link to={`/partners/${formData.partner_id}`} className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1 partner-profile-btn">
+                                        <i className="ri-external-link-line"></i> View Profile
+                                    </Link>
+                                ) : (
+                                    <span className="partner-status-badge">No Assigned Partner</span>
                                 )}
-                                <div>
-                                    <h5 className="partner-section-title mb-1">Partner Details</h5>
-                                    <p className="partner-section-subtitle mb-0">Assigned partner information and referral status</p>
-                                </div>
                             </div>
-                            {formData.partner_id ? (
-                                <Link to={`/partners/${formData.partner_id}`} className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1 partner-profile-btn">
-                                    <i className="ri-external-link-line"></i> View Profile
-                                </Link>
-                            ) : (
-                                <span className="partner-status-badge">No Assigned Partner</span>
-                            )}
-                        </div>
-                        <div className="card-body partner-details-body p-4">
-                            <div className="partner-info-grid">
-                                <div className="partner-info-card">
-                                    <span className="partner-info-label">Partner Name</span>
-                                    <span className="partner-info-val">{partnerName}</span>
-                                </div>
-                                <div className="partner-info-card">
-                                    <span className="partner-info-label">Company</span>
-                                    <span className="partner-info-val">{partnerCompanyName}</span>
-                                </div>
-                                <div className="partner-info-card">
-                                    <span className="partner-info-label">Phone</span>
-                                    <span className="partner-info-val">{partnerPhone}</span>
-                                </div>
-                                <div className="partner-info-card">
-                                    <span className="partner-info-label">Email</span>
-                                    <span className="partner-info-val">{partnerEmailAddress}</span>
+                            <div className="card-body partner-details-body p-4">
+                                <div className="partner-info-grid">
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Partner Name</span>
+                                        <span className="partner-info-val">{partnerName}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Company</span>
+                                        <span className="partner-info-val">{partnerCompanyName}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Phone</span>
+                                        <span className="partner-info-val">{partnerPhone}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Email</span>
+                                        <span className="partner-info-val">{partnerEmailAddress}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 <div className="col-12 mt-2 mb-2">
                     <h5 className="text-primary fs-16 mb-1">Personal Information</h5>
