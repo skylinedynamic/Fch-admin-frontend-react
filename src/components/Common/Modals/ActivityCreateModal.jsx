@@ -130,7 +130,7 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                 summary: '',
                 message_body: '',
                 attachments: [],
-                target_visibility: ''
+                target_visibility: 'borrower'
             });
 
             // Robust Close Modal
@@ -301,6 +301,9 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
             }
         };
     }, []);
+    const ctx = window._activityEntityContext || {};
+    const resolvedEntityType = entityType ?? ctx.entityType;
+    const resolvedPartnerId = ctx.partnerId;
 
     return (
         <div className="modal fade" id="activityCreateModal" tabIndex="-1" aria-labelledby="activityCreateLabel" aria-hidden="true" data-bs-focus="false">
@@ -320,6 +323,43 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                         )}
                         <form>
                             <div className="row g-3">
+                                {/* Send to Partner / Borrower Radio Buttons - Moved to top as requested */}
+                                {resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1 && (
+                                    <div className="col-12 border-bottom pb-3 mb-1 mt-0">
+                                        <div className="d-flex gap-4">
+                                            <div className="form-check">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="activity_target_visibility"
+                                                    id="activityVisibleToHost"
+                                                    value="host"
+                                                    checked={formData.target_visibility === 'host'}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
+                                                />
+                                                <label className="form-check-label" htmlFor="activityVisibleToHost">
+                                                    {ctx.isHost ? 'Send to Partner' : 'Send to FCH'}
+                                                </label>
+                                            </div>
+                                            <div className="form-check">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="activity_target_visibility"
+                                                    id="activityVisibleToBorrower"
+                                                    value="borrower"
+                                                    checked={formData.target_visibility === 'borrower'}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
+                                                />
+                                                <label className="form-check-label" htmlFor="activityVisibleToBorrower">
+                                                    Send to Borrower
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {errors.target_visibility && <div className="text-danger mt-1 small">{errors.target_visibility[0]}</div>}
+                                    </div>
+                                )}
+
                                 <div className="col-md-6">
                                     <label className="form-label">Reference <span className="text-danger">*</span></label>
                                     <select
@@ -386,52 +426,8 @@ export default function ActivityCreateModal({ entityId, entityType, onActivityCr
                                 </div>
                             </div>
                             <div className="row mt-3">
-                                {(() => {
-                                    const ctx = window._activityEntityContext || {};
-                                    const resolvedEntityType = entityType ?? ctx.entityType;
-                                    const resolvedPartnerId = ctx.partnerId;
-
-                                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
-                                        return (
-                                            <div className="col-12">
-                                                <div className="d-flex gap-4 mb-2">
-                                                    <div className="form-check">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="radio"
-                                                            name="activity_target_visibility"
-                                                            id="activityVisibleToHost"
-                                                            value="host"
-                                                            checked={formData.target_visibility === 'host'}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="activityVisibleToHost">
-                                                            {ctx.isHost ? 'Send to Partner' : 'Send to FCH'}
-                                                        </label>
-                                                    </div>
-                                                    <div className="form-check">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="radio"
-                                                            name="activity_target_visibility"
-                                                            id="activityVisibleToBorrower"
-                                                            value="borrower"
-                                                            checked={formData.target_visibility === 'borrower'}
-                                                            onChange={(e) => setFormData(prev => ({ ...prev, target_visibility: e.target.value }))}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="activityVisibleToBorrower">
-                                                            Send to Borrower
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                {errors.target_visibility && <div className="text-danger mt-1 small">{errors.target_visibility[0]}</div>}
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-                                <div className="col-md-6">
-                                    <label className="form-label">Select Attachments</label>
+                                <div className="col-12 mt-3">
+                                    <label className="form-label mb-2">Select Attachments</label>
                                     <div className="d-flex align-items-center gap-2">
                                         <button
                                             type="button"

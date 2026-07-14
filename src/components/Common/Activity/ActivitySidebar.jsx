@@ -19,7 +19,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -144,6 +144,18 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         window.addEventListener('refreshActivities', handleRefresh);
         return () => window.removeEventListener('refreshActivities', handleRefresh);
     }, [entityId, entityType]);
+
+    useEffect(() => {
+        window._activityEntityContext = {
+            entityId,
+            entityType,
+            partnerId,
+            borrowerEmail,
+            partnerEmail,
+            hostEmail,
+            isHost
+        };
+    }, [entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost]);
 
     const handleLoadMore = () => {
         if (!hasMore || loadingMore) return;
@@ -380,9 +392,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card">
+        <div className="card activity-sidebar-card d-flex flex-column w-100 h-100 mb-0" style={{ flex: 1, minHeight: 0, position: 'sticky', top: '145px', alignSelf: 'flex-start', zIndex: 10 }}>
             {/* Card Header */}
-            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2">
+            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={{ position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
                 <h4 className="card-title mb-0">
                     <i className="ri-history-line align-middle me-2"></i>Activity
                 </h4>
@@ -393,7 +405,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#emailComposeModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
                         >
                             <i className="ri-mail-line align-middle me-1"></i>New Email
                         </button>
@@ -402,7 +414,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                             className="btn btn-light btn-sm text-nowrap"
                             data-bs-toggle="modal"
                             data-bs-target="#activityCreateModal"
-                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, isHost }; }}
+                            onClick={() => { window._activityEntityContext = { entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost }; }}
                         >
                             <i className="ri-calendar-line align-middle me-1"></i>New Event
                         </button>
@@ -411,11 +423,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             </div>
 
             {/* Card Body with Scrollbar */}
-            <div className="card-body p-0 pb-4">
+            <div className="card-body p-0 pb-4 d-flex flex-column" style={{ minHeight: 0 }}>
                 <div
-                    className="activity-scroll-container"
+                    className="activity-scroll-container flex-grow-1"
                     style={{
-                        maxHeight: '520px',
                         overflowY: 'auto',
                         overflowX: 'hidden',
                         padding: '12px 16px',

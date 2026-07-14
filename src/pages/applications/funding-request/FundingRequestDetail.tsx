@@ -554,8 +554,9 @@ export default function FundingRequestDetail() {
 
                         </div>
                         {/* Right sticky column — pure CSS sticky */}
-                        <div className="col-lg-4" style={{ position: 'sticky', top: '70px', alignSelf: 'flex-start', zIndex: 10 }}>
-                            <div className="card shadow-sm border-0 mb-3 rounded-3">
+                        <div className="col-lg-4 d-flex flex-column gap-3" style={{ position: 'sticky', top: '145px', maxHeight: 'calc(100vh - 150px)', alignSelf: 'flex-start', zIndex: 10 }}>
+                            {isHost && (
+                            <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
                                     <div className="d-flex align-items-center">
                                         <div className="avatar-xs me-3">
@@ -661,6 +662,7 @@ export default function FundingRequestDetail() {
                                             )}
                                 </div>
                             </div>
+                            )}
 
                             <ActivitySidebar
                                 entityId={review.id}
@@ -669,6 +671,7 @@ export default function FundingRequestDetail() {
                                 partnerId={review.partner_id}
                                 borrowerEmail={review.borrower?.user?.email || review.borrower?.email}
                                 partnerEmail={review.partner?.user?.email || review.partner?.email}
+                                hostEmail={review.host_email}
                                 isHost={isHost}
                             />
                         </div>
@@ -808,7 +811,6 @@ export default function FundingRequestDetail() {
                             <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
                             <p className="text-muted fs-13 mb-0">
                                 Are you sure you want to assign <strong>{lenderToAssign?.name}</strong> to this funding request?
-                                <br />This action will Approve the request and Assign the Lender.
                             </p>
                         </div>
 
@@ -885,20 +887,7 @@ export default function FundingRequestDetail() {
                                                     setShowAssignModal(false);
                                                     setLenderToAssign(null);
                                                     setAssignedLenderIds([lenderToAssign?.id]);
-                                                    
-                                                    if (review.status !== FUNDING_REVIEW_STATUS.APPROVED) {
-                                                        updateStatusMutation.mutate(
-                                                            { id: review.id, status: FUNDING_REVIEW_STATUS.APPROVED },
-                                                            {
-                                                                onSuccess: () => {
-                                                                    setSelectedStatus(FUNDING_REVIEW_STATUS.APPROVED);
-                                                                    window.dispatchEvent(new Event('refreshActivities'));
-                                                                }
-                                                            }
-                                                        );
-                                                    } else {
-                                                        window.dispatchEvent(new Event('refreshActivities'));
-                                                    }
+                                                    window.dispatchEvent(new Event('refreshActivities'));
                                                 },
                                                 onError: (err: any) => {
                                                     toast.error(err?.response?.data?.message || 'Failed to assign lender');

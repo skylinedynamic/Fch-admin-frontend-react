@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
+import { fetchPartners } from '../../../modules/partner/services';
 import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
@@ -19,7 +20,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         target_recipient: 'borrower'
     });
 
-    const handleTargetRecipientChange = (e) => {
+    const handleTargetRecipientChange = async (e) => {
         const newTarget = e.target.value;
         setFormData(prev => ({ ...prev, target_recipient: newTarget }));
         
@@ -28,7 +29,15 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         if (newTarget === 'borrower' && ctx.borrowerEmail) {
             emailToSet = ctx.borrowerEmail;
         } else if (newTarget === 'host') {
-            emailToSet = ctx.isHost ? (ctx.partnerEmail || '') : 'support@fourcornerholding.com';
+            if (ctx.isHost) {
+                emailToSet = ctx.partnerEmail || '';
+            } else {
+                if (ctx.hostEmail) {
+                    emailToSet = ctx.hostEmail;
+                } else {
+                    emailToSet = 'support@fourcornerholding.com';
+                }
+            }
         }
         
         if (emailToSet && choicesInstanceRef.current) {
@@ -335,22 +344,45 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
 
             // Use a short timeout to prevent race condition with React's onClick
             // which sets window._activityEntityContext
-            setTimeout(() => {
+            setTimeout(async () => {
                 setErrors({});
                 pendingEmailRef.current = '';
+                
+                const ctx = window._activityEntityContext || {};
+                let initialEmail = '';
+                let defaultTarget = 'borrower';
+                
+                if (ctx.isHost) {
+                    if (ctx.partnerEmail) {
+                        defaultTarget = 'host';
+                        initialEmail = ctx.partnerEmail;
+                    }
+                } else {
+                    if (!ctx.borrowerEmail) {
+                        defaultTarget = 'host';
+                        if (ctx.hostEmail) {
+                            initialEmail = ctx.hostEmail;
+                        } else {
+                            initialEmail = 'support@fourcornerholding.com';
+                        }
+                    }
+                }
+
                 setFormData({
-                    to_emails: '',
+                    to_emails: initialEmail,
                     subject: '',
                     message_body: '',
                     attachments: [],
-                    target_recipient: 'borrower'
+                    target_recipient: defaultTarget
                 });
+                
                 if (choicesInstanceRef.current) {
                     choicesInstanceRef.current.removeActiveItems();
-                    const ctx = window._activityEntityContext || {};
                     const resolvedEntityType = entityType ?? ctx.entityType;
                     
-                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
+                    if (initialEmail) {
+                        choicesInstanceRef.current.setValue([initialEmail]);
+                    } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
                         choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
                         setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
                     } else if (lead?.email) {
