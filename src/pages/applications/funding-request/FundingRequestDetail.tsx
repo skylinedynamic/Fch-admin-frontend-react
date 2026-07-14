@@ -687,7 +687,7 @@ export default function FundingRequestDetail() {
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
                                 <span className={`avatar-title rounded-circle fs-22 text-white ${
-                                    selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
+                                    (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'bg-danger' :
                                     selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
                                     selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-dark' :
                                     'bg-primary'
@@ -743,7 +743,7 @@ export default function FundingRequestDetail() {
                                             }`}>{review?.status}</span>
                                             <i className="ri-arrow-right-line text-muted fs-12"></i>
                                             <span className={`badge fs-12 text-white ${
-                                                selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger' :
+                                                (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'bg-danger' :
                                                 selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
                                                 'bg-primary'
                                             }`}>{selectedStatus}</span>
@@ -776,7 +776,7 @@ export default function FundingRequestDetail() {
                                 <button
                                     type="button"
                                     className={`btn ${
-                                        selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'btn-danger' :
+                                        (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'btn-danger' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'btn-dark' :
                                         'btn-primary'
