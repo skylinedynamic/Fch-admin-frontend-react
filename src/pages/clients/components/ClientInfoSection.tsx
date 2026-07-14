@@ -519,7 +519,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             <div className="row">
                 {/* Partner Details Section */}
                 {isHost && (
-                    <div className="col-12 mb-4">
+                    <div className="col-12">
                         <div className="card partner-details-section p-0">
                             <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
                                 <div className="partner-section-title-wrap d-flex align-items-center gap-3">
