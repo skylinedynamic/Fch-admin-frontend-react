@@ -22,13 +22,27 @@ export default function ReviewProgressCard({
 
     const progressPercentage = getFundingReviewProgress(status);
     const isRejected = status === FUNDING_REVIEW_STATUS.REJECTED;
-    const timelineSteps = FUNDING_REVIEW_TIMELINE_STEPS;
+    const isCanceled = status === FUNDING_REVIEW_STATUS.CANCELED;
+    const isErrorState = isRejected || isCanceled;
     const guidelineCards = FUNDING_REVIEW_GUIDELINE_CARDS;
+    
+    const terminalStatuses = [FUNDING_REVIEW_STATUS.APPROVED, FUNDING_REVIEW_STATUS.REJECTED, FUNDING_REVIEW_STATUS.CANCELED];
+    const isCurrentTerminal = terminalStatuses.includes(status);
+    const terminalKey = isCurrentTerminal ? status : FUNDING_REVIEW_STATUS.APPROVED;
 
-    let currentStatusIndex = timelineSteps.findIndex(
-        (x) => x.key === status
-    );
+    const displaySteps = FUNDING_REVIEW_TIMELINE_STEPS.filter(step => {
+        if (terminalStatuses.includes(step.key)) {
+            return step.key === terminalKey;
+        }
+        // If it's an error state, we don't show Accepted or In Progress
+        // because we don't know the exact history and it's confusing to see them.
+        if (isErrorState && (step.key === FUNDING_REVIEW_STATUS.ACCEPTED || step.key === FUNDING_REVIEW_STATUS.IN_PROGRESS)) {
+            return false;
+        }
+        return true;
+    });
 
+    let currentStatusIndex = displaySteps.findIndex((x) => x.key === status);
     if (currentStatusIndex === -1) {
         currentStatusIndex = 1;
     }
@@ -73,7 +87,7 @@ export default function ReviewProgressCard({
                     <div className="d-flex align-items-center position-relative" style={{ width: 76, height: 76 }}>
                         <svg width="76" height="76" style={{ transform: 'rotate(-90deg)' }}>
                             <circle cx="38" cy="38" r="34" stroke="#f1f5f9" strokeWidth="6" fill="none" />
-                            <circle cx="38" cy="38" r="34" stroke={isRejected ? '#ef4444' : progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
+                            <circle cx="38" cy="38" r="34" stroke={isErrorState ? '#ef4444' : progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
                                 strokeDasharray="213" strokeDashoffset={213 - (213 * progressPercentage / 100)}
                                 strokeLinecap="round" />
                         </svg>
@@ -90,24 +104,30 @@ export default function ReviewProgressCard({
                 {/* Timeline */}
                 <div className="px-4 pb-4 overflow-x-auto">
                     <div className="d-flex w-100 position-relative" style={{ minWidth: 500 }}>
-                        {timelineSteps.map((step, idx) => {
-                            const completed = isRejected ? idx < 3 : idx < currentStatusIndex;
+                        {displaySteps.map((step, idx) => {
+                            // Since we now have a clean 5-step track, we just use simple index logic
+                            // If it's an error state (Rejected or Canceled) and this step is before the terminal step (which is at index 4),
+                            // we show it as completed if we've passed it, or incomplete if we haven't?
+                            // Actually, if it's Rejected or Canceled, we just mark everything before the current step as completed.
+                            const completed = idx < currentStatusIndex;
                             const current = idx === currentStatusIndex;
-                            const future = isRejected ? (idx >= 3 && !current) : idx > currentStatusIndex;
+                            const future = idx > currentStatusIndex;
 
                             let iconClass = step.icon;
                             if (completed) iconClass = 'ri-check-line';
+                            if (isErrorState && current) iconClass = isCanceled ? 'ri-stop-circle-line' : 'ri-close-line';
 
-                            const lineCompleted = isRejected ? idx < 2 : idx < currentStatusIndex - 1;
-                            const lineActive = isRejected ? false : idx === currentStatusIndex - 1;
+                            const lineCompleted = idx < currentStatusIndex - 1;
+                            const lineActive = idx === currentStatusIndex - 1;
 
                             const getStatusColor = (key: string) => {
                                 if (key === 'SUBMITTED') return '#16a34a';
                                 if (key === FUNDING_REVIEW_STATUS.PENDING) return '#10b981';
                                 if (key === FUNDING_REVIEW_STATUS.IN_PROGRESS) return '#3b82f6';
-                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#f59e0b';
-                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#22c55e';
+                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#06B6D4';
+                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#10b981';
                                 if (key === FUNDING_REVIEW_STATUS.REJECTED) return '#ef4444';
+                                if (key === FUNDING_REVIEW_STATUS.CANCELED) return '#ef4444';
                                 return '#3b82f6';
                             };
 
@@ -156,13 +176,13 @@ export default function ReviewProgressCard({
                                         )}
                                     </div>
 
-                                    {idx < timelineSteps.length - 1 && (
+                                    {idx < displaySteps.length - 1 && (
                                         <div
                                             className="flex-grow-1"
                                             style={{
                                                 height: 2,
                                                 marginTop: 17,
-                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
+                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(displaySteps[idx + 1].key) : '#e2e8f0',
                                                 zIndex: 1,
                                                 marginLeft: -36,
                                                 marginRight: -36
@@ -187,7 +207,7 @@ export default function ReviewProgressCard({
                     </div>
 
                     <div className="overflow-x-auto pb-2">
-                        <div className="d-flex align-items-stretch gap-2 w-100" style={{ minWidth: 800 }}>
+                        <div className="d-flex align-items-stretch gap-2 w-100" style={{ minWidth: 950 }}>
                             {guidelineCards.map((item, idx) => (
                                 <React.Fragment key={item.label}>
                                 <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{

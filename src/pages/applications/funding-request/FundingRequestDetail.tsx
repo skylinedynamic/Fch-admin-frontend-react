@@ -150,9 +150,11 @@ export default function FundingRequestDetail() {
     };
 
     const getStatusBadge = (status: string) => {
-        if (status === FUNDING_REVIEW_STATUS.APPROVED || status === FUNDING_REVIEW_STATUS.ACCEPTED) return <span className="badge bg-success-subtle text-success fs-13">{status}</span>;
+        if (status === FUNDING_REVIEW_STATUS.APPROVED) return <span className="badge bg-success-subtle text-success fs-13">{status}</span>;
+        if (status === FUNDING_REVIEW_STATUS.ACCEPTED) return <span className="badge bg-info-subtle text-info fs-13">{status}</span>;
         if (status === FUNDING_REVIEW_STATUS.REJECTED) return <span className="badge bg-danger-subtle text-danger fs-13">Rejected</span>;
-        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return <span className="badge bg-info-subtle text-info fs-13">In Progress</span>;
+        if (status === FUNDING_REVIEW_STATUS.CANCELED) return <span className="badge bg-secondary-subtle text-secondary fs-13">Canceled</span>;
+        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return <span className="badge bg-primary-subtle text-primary fs-13">In Progress</span>;
         return <span className="badge bg-warning-subtle text-warning fs-13">Pending</span>;
     };
 
@@ -907,37 +909,25 @@ export default function FundingRequestDetail() {
                         </div>
                     </ModalBody>
                 </Modal>
-                {/* Awesome Missing Lender Modal */}
-                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" contentClassName="border-0 rounded-4 overflow-hidden shadow-lg">
-                    <ModalBody className="p-0 position-relative">
-                        {/* Decorative Background Element */}
-                        <div className="position-absolute top-0 start-0 w-100 bg-primary" style={{ height: '150px', opacity: 0.08, clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0% 100%)' }}></div>
-                        
-                        <div className="text-center pt-5 pb-3 px-4 rounded-top-4 bg-white position-relative z-1">
-                            {/* Icon Container with glowing effect */}
-                            <div className="mx-auto mb-4 d-flex align-items-center justify-content-center bg-primary-subtle" style={{ width: '84px', height: '84px', borderRadius: '50%', boxShadow: '0 0 0 10px rgba(var(--bs-primary-rgb), 0.05)' }}>
-                                <div className="d-flex align-items-center justify-content-center bg-primary" style={{ width: '64px', height: '64px', borderRadius: '50%', boxShadow: '0 8px 16px rgba(var(--bs-primary-rgb), 0.25)' }}>
-                                    <i className="ri-error-warning-fill text-white" style={{ fontSize: '32px' }}></i>
-                                </div>
+                {/* Standard Missing Lender Modal */}
+                <Modal isOpen={showMissingLenderModal} toggle={() => setShowMissingLenderModal(false)} centered size="md" contentClassName="border-0 shadow-lg" modalClassName="flip">
+                    <ModalBody className="p-0">
+                        <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
+                            <div className="avatar-md mx-auto mb-3">
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-primary">
+                                    <i className="ri-error-warning-fill"></i>
+                                </span>
                             </div>
-                            
-                            <h4 className="fw-bolder mb-2 text-dark" style={{ letterSpacing: '-0.02em', fontSize: '24px' }}>Lender Required</h4>
-                            <p className="text-muted fs-15 mb-0" style={{ lineHeight: '1.6' }}>
+                            <h5 className="fw-bold mb-1">Lender Required</h5>
+                            <p className="text-muted fs-13 mb-0">
                                 Assign to Lender. You can assign Before <strong className="text-dark">Approved</strong>
                             </p>
                         </div>
-                        <div className="p-4 pt-3 pb-4 bg-white">
-                            <div className="d-flex justify-content-center mt-2 px-3">
+                        <div className="p-4">
+                            <div className="d-flex justify-content-center mt-2">
                                 <button
                                     type="button"
-                                    className="btn btn-primary px-4 py-3 fs-15 border-0 fw-bold w-100"
-                                    style={{ 
-                                        borderRadius: '12px',
-                                        boxShadow: '0 8px 20px rgba(var(--bs-primary-rgb), 0.25)',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                    className="btn btn-primary px-4 py-2"
                                     onClick={() => {
                                         setShowMissingLenderModal(false);
                                         if (lenderTableRef.current) {

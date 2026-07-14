@@ -13,6 +13,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { formatCurrency } from '../../../utils/helper';
+import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 
 export default function FundingSequence() {
     const { hasPermission } = usePermissions();
@@ -135,10 +136,13 @@ export default function FundingSequence() {
 
 
     const statusBodyTemplate = (rowData: any) => {
-        let className = 'bg-light text-body';
-        if (rowData.status === 'Approved') className = 'bg-success-subtle text-success';
-        if (rowData.status === 'Rejected') className = 'bg-danger-subtle text-danger';
-        if (rowData.status === 'Pending') className = 'bg-warning-subtle text-warning';
+        let className = 'bg-secondary-subtle text-secondary';
+        if (rowData.status === FUNDING_REVIEW_STATUS.APPROVED) className = 'bg-success-subtle text-success';
+        if (rowData.status === FUNDING_REVIEW_STATUS.ACCEPTED) className = 'bg-info-subtle text-info';
+        if (rowData.status === FUNDING_REVIEW_STATUS.REJECTED) className = 'bg-danger-subtle text-danger';
+        if (rowData.status === FUNDING_REVIEW_STATUS.CANCELED) className = 'bg-secondary-subtle text-secondary';
+        if (rowData.status === FUNDING_REVIEW_STATUS.PENDING) className = 'bg-warning-subtle text-warning';
+        if (rowData.status === FUNDING_REVIEW_STATUS.IN_PROGRESS) className = 'bg-primary-subtle text-primary';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 
@@ -158,9 +162,12 @@ export default function FundingSequence() {
     };
 
     const statusOptions = [
-        { label: 'Pending', value: 'Pending' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Rejected', value: 'Rejected' },
+        { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
+        { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
+        { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
+        { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
+        { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
+        { label: 'Canceled', value: FUNDING_REVIEW_STATUS.CANCELED },
     ];
 
     return (
