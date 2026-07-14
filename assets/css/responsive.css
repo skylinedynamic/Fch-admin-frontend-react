@@ -1899,3 +1899,34 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
         height: 38px !important;
     }
 }
+
+/* ============================================================
+   Partner Details Section — Responsive Styles
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .partner-info-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .partner-details-section {
+    padding: 16px !important;
+  }
+  
+  .partner-section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  
+  .partner-status-badge {
+    align-self: flex-start !important;
+  }
+  
+  .partner-info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
