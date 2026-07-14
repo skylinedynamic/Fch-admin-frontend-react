@@ -22,7 +22,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
     const handleTargetRecipientChange = (e) => {
         const newTarget = e.target.value;
         setFormData(prev => ({ ...prev, target_recipient: newTarget }));
-        
+
         const ctx = window._activityEntityContext || {};
         let emailToSet = '';
         if (newTarget === 'borrower' && ctx.borrowerEmail) {
@@ -30,11 +30,11 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         } else if (newTarget === 'host') {
             emailToSet = ctx.isHost ? (ctx.partnerEmail || '') : 'support@fourcornerholding.com';
         }
-        
+
         if (emailToSet && choicesInstanceRef.current) {
             choicesInstanceRef.current.removeActiveItems();
             choicesInstanceRef.current.setValue([emailToSet]);
-            
+
             const all = choicesInstanceRef.current.getValue(true);
             setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
         }
@@ -312,19 +312,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         };
     }, []);
 
-    // Also sync if lead object changes after mount
-    useEffect(() => {
-        if (lead?.email && choicesInstanceRef.current) {
-            const current = choicesInstanceRef.current.getValue(true);
-            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
-            if (!currentArray.includes(lead.email)) {
-                choicesInstanceRef.current.setValue([...currentArray, lead.email]);
-                // Trigger state sync from instance directly
-                const all = choicesInstanceRef.current.getValue(true);
-                setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
-            }
-        }
-    }, [lead?.email]);
+
 
     // Reset validation and form on modal close/open
     useEffect(() => {
@@ -349,7 +337,7 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                     choicesInstanceRef.current.removeActiveItems();
                     const ctx = window._activityEntityContext || {};
                     const resolvedEntityType = entityType ?? ctx.entityType;
-                    
+
                     if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
                         choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
                         setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
@@ -358,27 +346,27 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         setFormData(prev => ({ ...prev, to_emails: lead.email }));
                     }
                 }
-                
+
                 // Force Summernote HTML clear via jQuery, as a safety fallback
                 const $ = window.jQuery || window.$;
                 if ($) {
                     const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
                     if (note && $(note).summernote) {
-                        try { 
-                            $(note).summernote('code', ''); 
-                            
+                        try {
+                            $(note).summernote('code', '');
+
                             const $noteEditor = $(note).next('.note-editor');
                             if ($noteEditor.length) {
                                 $noteEditor.find('.note-editable').html('<p><br></p>');
                                 $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
                                 $noteEditor.children('a, p, span').remove();
                             }
-                            
+
                             $('.note-popover').hide();
                             $('.note-modal .note-link-text').val('');
                             $('.note-modal .note-link-url').val('http://');
                             $('.note-modal .note-image-url').val('');
-                        } catch(err) {
+                        } catch (err) {
                             console.error('Summernote email reset error:', err);
                         }
                     }
@@ -419,15 +407,15 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 const ctx = window._activityEntityContext || {};
                                 const resolvedEntityType = entityType ?? ctx.entityType;
                                 const resolvedPartnerId = ctx.partnerId;
-                                
+
                                 if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
                                     return (
                                         <div className="mb-3">
                                             <div className="d-flex gap-4">
                                                 <div className="form-check">
-                                                    <input 
-                                                        className="form-check-input" 
-                                                        type="radio" 
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToHost"
                                                         value="host"
@@ -439,9 +427,9 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                                     </label>
                                                 </div>
                                                 <div className="form-check">
-                                                    <input 
-                                                        className="form-check-input" 
-                                                        type="radio" 
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToBorrower"
                                                         value="borrower"
