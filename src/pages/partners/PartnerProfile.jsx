@@ -1028,7 +1028,7 @@ export default function PartnerProfile() {
                     {/* Activity Sidebar */}
                     {id && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} />
+                            <ActivitySidebar entityId={id} entityType="Partner" loading={isPartnerLoading} partnerEmail={formData.email} />
                         </div>
                     )}
                 </div>

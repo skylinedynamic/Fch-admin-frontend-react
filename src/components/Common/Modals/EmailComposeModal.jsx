@@ -3,7 +3,10 @@ import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
 import { fetchPartners } from '../../../modules/partner/services';
-import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
+import { 
+    ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST,
+    TARGET_RECIPIENT_HOST, TARGET_RECIPIENT_BORROWER
+} from '../../../config/appConfig';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -17,18 +20,18 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         subject: '',
         message_body: '',
         attachments: [],
-        target_recipient: 'borrower'
+        target_recipient: TARGET_RECIPIENT_BORROWER
     });
 
     const handleTargetRecipientChange = async (e) => {
         const newTarget = e.target.value;
         setFormData(prev => ({ ...prev, target_recipient: newTarget }));
-        
+
         const ctx = window._activityEntityContext || {};
         let emailToSet = '';
-        if (newTarget === 'borrower' && ctx.borrowerEmail) {
+        if (newTarget === TARGET_RECIPIENT_BORROWER && ctx.borrowerEmail) {
             emailToSet = ctx.borrowerEmail;
-        } else if (newTarget === 'host') {
+        } else if (newTarget === TARGET_RECIPIENT_HOST) {
             if (ctx.isHost) {
                 emailToSet = ctx.partnerEmail || '';
             } else {
@@ -39,11 +42,11 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 }
             }
         }
-        
+
         if (emailToSet && choicesInstanceRef.current) {
             choicesInstanceRef.current.removeActiveItems();
             choicesInstanceRef.current.setValue([emailToSet]);
-            
+
             const all = choicesInstanceRef.current.getValue(true);
             setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
         }
@@ -141,8 +144,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 payload.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 payload.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_recipient === 'host') payload.append('send_to_host', '1');
-                if (formData.target_recipient === 'borrower') payload.append('send_to_borrower', '1');
+                if (formData.target_recipient === TARGET_RECIPIENT_HOST) payload.append('send_to_host', '1');
+                if (formData.target_recipient === TARGET_RECIPIENT_BORROWER) payload.append('send_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -347,24 +350,37 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
             setTimeout(async () => {
                 setErrors({});
                 pendingEmailRef.current = '';
-                
+
                 const ctx = window._activityEntityContext || {};
                 let initialEmail = '';
-                let defaultTarget = 'borrower';
-                
-                if (ctx.isHost) {
+                let defaultTarget = TARGET_RECIPIENT_BORROWER;
+
+                const resolvedEntityType = entityType ?? ctx.entityType;
+
+                if (resolvedEntityType === ENTITY_TYPE_PARTNER || resolvedEntityType === 'Partner') {
+                    if (ctx.partnerEmail === undefined) {
+                        initialEmail = 'support@fourcornerholding.com';
+                    } else {
+                        initialEmail = ctx.partnerEmail || '';
+                    }
+                } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
+                    defaultTarget = TARGET_RECIPIENT_BORROWER;
+                    initialEmail = ctx.borrowerEmail || '';
+                } else if (ctx.isHost) {
                     if (ctx.partnerEmail) {
-                        defaultTarget = 'host';
+                        defaultTarget = TARGET_RECIPIENT_HOST;
                         initialEmail = ctx.partnerEmail;
                     }
                 } else {
-                    if (!ctx.borrowerEmail) {
-                        defaultTarget = 'host';
+                    if (ctx.borrowerEmail === undefined) {
+                        defaultTarget = TARGET_RECIPIENT_HOST;
                         if (ctx.hostEmail) {
                             initialEmail = ctx.hostEmail;
                         } else {
-                            initialEmail = 'support@fourcornerholding.com';
+                            initialEmail = '';
                         }
+                    } else {
+                        initialEmail = ctx.borrowerEmail || '';
                     }
                 }
 
@@ -375,11 +391,10 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                     attachments: [],
                     target_recipient: defaultTarget
                 });
-                
+
                 if (choicesInstanceRef.current) {
                     choicesInstanceRef.current.removeActiveItems();
-                    const resolvedEntityType = entityType ?? ctx.entityType;
-                    
+
                     if (initialEmail) {
                         choicesInstanceRef.current.setValue([initialEmail]);
                     } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
@@ -390,27 +405,27 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                         setFormData(prev => ({ ...prev, to_emails: lead.email }));
                     }
                 }
-                
+
                 // Force Summernote HTML clear via jQuery, as a safety fallback
                 const $ = window.jQuery || window.$;
                 if ($) {
                     const note = document.querySelector('#emailComposeModal textarea[name="message_body"]');
                     if (note && $(note).summernote) {
-                        try { 
-                            $(note).summernote('code', ''); 
-                            
+                        try {
+                            $(note).summernote('code', '');
+
                             const $noteEditor = $(note).next('.note-editor');
                             if ($noteEditor.length) {
                                 $noteEditor.find('.note-editable').html('<p><br></p>');
                                 $noteEditor.find('.note-editing-area').children().not('.note-editable, .note-codable, .note-placeholder').remove();
                                 $noteEditor.children('a, p, span').remove();
                             }
-                            
+
                             $('.note-popover').hide();
                             $('.note-modal .note-link-text').val('');
                             $('.note-modal .note-link-url').val('http://');
                             $('.note-modal .note-image-url').val('');
-                        } catch(err) {
+                        } catch (err) {
                             console.error('Summernote email reset error:', err);
                         }
                     }
@@ -451,19 +466,19 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                 const ctx = window._activityEntityContext || {};
                                 const resolvedEntityType = entityType ?? ctx.entityType;
                                 const resolvedPartnerId = ctx.partnerId;
-                                
+
                                 if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && resolvedPartnerId && resolvedPartnerId != 1) {
                                     return (
                                         <div className="mb-3">
                                             <div className="d-flex gap-4">
                                                 <div className="form-check">
-                                                    <input 
-                                                        className="form-check-input" 
-                                                        type="radio" 
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToHost"
-                                                        value="host"
-                                                        checked={formData.target_recipient === 'host'}
+                                                        value={TARGET_RECIPIENT_HOST}
+                                                        checked={formData.target_recipient === TARGET_RECIPIENT_HOST}
                                                         onChange={handleTargetRecipientChange}
                                                     />
                                                     <label className="form-check-label" htmlFor="emailSendToHost">
@@ -471,13 +486,13 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                                     </label>
                                                 </div>
                                                 <div className="form-check">
-                                                    <input 
-                                                        className="form-check-input" 
-                                                        type="radio" 
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToBorrower"
-                                                        value="borrower"
-                                                        checked={formData.target_recipient === 'borrower'}
+                                                        value={TARGET_RECIPIENT_BORROWER}
+                                                        checked={formData.target_recipient === TARGET_RECIPIENT_BORROWER}
                                                         onChange={handleTargetRecipientChange}
                                                     />
                                                     <label className="form-check-label" htmlFor="emailSendToBorrower">

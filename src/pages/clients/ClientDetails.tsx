@@ -617,7 +617,7 @@ export default function ClientDetails() {
                     {/* Activity Sidebar */}
                     {id && activeTab !== ENROLLMENT_TABS.CREDIT_PROFILE && (
                         <div className="col-xxl-4">
-                            <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} />
+                            <ActivitySidebar entityId={id} entityType="Client" loading={isSaving} borrowerEmail={formData.email} />
                         </div>
                     )}
                 </div>
