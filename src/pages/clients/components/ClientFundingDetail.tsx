@@ -15,13 +15,17 @@ const ReadinessItem: React.FC<{ factor: any, isLast: boolean }> = ({ factor, isL
     }
 
     let badgeText = factor.status;
+    if (badgeText === 'Missing') {
+        badgeText = 'Failed';
+    }
+
     if ((factor.label === READINESS_FACTOR_LABELS.RESTRICTED_STATE || factor.label === READINESS_FACTOR_LABELS.RESTRICTED_INDUSTRY) && s === FACTOR_STATUS_VALUES.MISSING) {
         badgeText = BADGE_LABELS.RESTRICTED;
     } else if ((factor.label === READINESS_FACTOR_LABELS.STATE_ELIGIBILITY || factor.label === READINESS_FACTOR_LABELS.INDUSTRY_ELIGIBILITY) && (s === FACTOR_STATUS_VALUES.GOOD || s === FACTOR_STATUS_VALUES.STRONG)) {
         badgeText = BADGE_LABELS.ELIGIBLE;
     }
 
-    const badgeStyle = READINESS_BADGE_STYLES[s] || READINESS_BADGE_STYLES.default || { bg: '#f3f4f6', color: '#4b5563' };
+    const badgeStyle = READINESS_BADGE_STYLES[badgeText.toLowerCase()] || READINESS_BADGE_STYLES[s] || { bg: '#f3f4f6', color: '#4b5563' };
 
     return (
         <div style={{
