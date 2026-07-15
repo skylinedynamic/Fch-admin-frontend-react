@@ -281,6 +281,7 @@ export default function ClientDetails() {
                     return;
                 }
 
+
                 if (isWLOrCP) {
                     toast.success(`Client created successfully.`);
                 } else {
@@ -369,7 +370,7 @@ export default function ClientDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 bg-body">
                     <div className="col-12">
                         <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
                             <div className="flex-grow-1">
@@ -386,7 +387,7 @@ export default function ClientDetails() {
                                 <Link to="/clients" className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
-                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE].includes(activeTab as any) && (
+                                {(id ? canUpdate : canCreate) && ![ENROLLMENT_TABS.AGREEMENT, ENROLLMENT_TABS.DOCUMENTS, ENROLLMENT_TABS.CREDIT_PROFILE, ENROLLMENT_TABS.CAPITAL_ACCESS].includes(activeTab as any) && (
                                     <button
                                         type="button"
                                         className="btn btn-primary w-lg waves-effect"
@@ -489,7 +490,7 @@ export default function ClientDetails() {
                                             type="button"
                                             role="tab"
                                         >
-                                            <i className="fas fa-home"></i> Client Info
+                                            Client Info
                                         </button>
                                     </li>
                                     <li className="nav-item">
@@ -500,7 +501,7 @@ export default function ClientDetails() {
                                             role="tab"
                                             disabled={!id}
                                         >
-                                            <i className="far fa-user"></i> Business Financials
+                                            Business Financials
                                         </button>
                                     </li>
                                     <li className="nav-item">
@@ -511,7 +512,7 @@ export default function ClientDetails() {
                                             role="tab"
                                             disabled={!id}
                                         >
-                                            <i className="far fa-envelope"></i> Document Checklist
+                                            Document Checklist
                                         </button>
                                     </li>
                                     <li className="nav-item">
@@ -522,20 +523,10 @@ export default function ClientDetails() {
                                             role="tab"
                                             disabled={!id}
                                         >
-                                            <i className="far fa-envelope"></i> Documents
+                                            Documents
                                         </button>
                                     </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CREDIT_PROFILE ? 'active' : ''}`}
-                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CREDIT_PROFILE)}
-                                            type="button"
-                                            role="tab"
-                                            disabled={!id}
-                                        >
-                                            <i className="far fa-credit-card"></i> Credit Profile
-                                        </button>
-                                    </li>
+
                                     {isHost && (
                                         <li className="nav-item">
                                             <button
@@ -545,10 +536,34 @@ export default function ClientDetails() {
                                                 role="tab"
                                                 disabled={!id}
                                             >
-                                                <i className="fas fa-tasks"></i> Task List
+                                                Task List
                                             </button>
                                         </li>
                                     )}
+
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CREDIT_PROFILE ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CREDIT_PROFILE)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            Credit Profile
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === ENROLLMENT_TABS.CAPITAL_ACCESS ? 'active' : ''}`}
+                                            onClick={() => handleTabChange(ENROLLMENT_TABS.CAPITAL_ACCESS)}
+                                            type="button"
+                                            role="tab"
+                                            disabled={!id}
+                                        >
+                                            Capital Access
+                                        </button>
+                                    </li>
+
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.FUNDING_REQUESTS ? 'active' : ''}`}

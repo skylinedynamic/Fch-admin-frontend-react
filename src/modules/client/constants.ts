@@ -72,6 +72,7 @@ export const ENROLLMENT_TABS: Record<string, string> = {
     TASK_LIST: 'taskList',
     AGREEMENT: 'agreement',
     CREDIT_PROFILE: 'creditProfile',
+    CAPITAL_ACCESS: 'capitalAccess',
     FUNDING_REQUESTS: 'fundingRequests'
 };
 

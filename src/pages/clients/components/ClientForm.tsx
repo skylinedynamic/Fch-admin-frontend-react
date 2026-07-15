@@ -5,6 +5,7 @@ import DocumentChecklistSection, { DocumentChecklistSectionRef } from './Documen
 import ClientDocumentsSection from './ClientDocumentsSection';
 import TaskListSection from './TaskListSection';
 import CreditProfileSection from './CreditProfileSection';
+import CapitalAccessSection from './CapitalAccessSection';
 // @ts-ignore
 import AgreementSection from '../../partners/components/AgreementSection';
 import { ENROLLMENT_TABS } from '../../../modules/client';
@@ -176,6 +177,17 @@ export default function ClientForm({
             {activeTab === ENROLLMENT_TABS.AGREEMENT && (
                 <div className="tab-pane active show" role="tabpanel">
                     <AgreementSection clientId={clientId} formData={formData} onRefresh={onRefresh} />
+                </div>
+            )}
+
+            {/* Capital Access Tab */}
+            {activeTab === ENROLLMENT_TABS.CAPITAL_ACCESS && (
+                <div className="tab-pane active show" role="tabpanel">
+                    {clientId ? (
+                        <CapitalAccessSection clientId={clientId} />
+                    ) : (
+                        <div>Please create the client first to view Capital Access.</div>
+                    )}
                 </div>
             )}
         </div>

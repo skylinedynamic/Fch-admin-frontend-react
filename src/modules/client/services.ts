@@ -59,8 +59,8 @@ export const saveClientChecklist = async (borrowerId: string | number, checkedId
     return data;
 };
 
-export const fetchClientFundingOptions = async (borrowerId: string | number): Promise<any> => {
-    const { data } = await apiClient.get(`/common/funding-sequencings/client-funding-options/${borrowerId}`);
+export const fetchClientFundingOptions = async (borrowerId: string | number, params?: any): Promise<any> => {
+    const { data } = await apiClient.get(`/common/funding-sequencings/client-funding-options/${borrowerId}`, { params });
     return data;
 };
 
@@ -198,6 +198,18 @@ export const saveCreditProfile = async (borrowerId: string | number, profileData
 // Fetch Credit Profile Data
 export const fetchCreditProfile = async (borrowerId: string | number) => {
     const { data } = await apiClient.get(`/common/borrowers/get-credit-profile/${borrowerId}`);
+    return data;
+};
+
+// Fetch Capital Access Overview for a specific client
+export const fetchClientCapitalAccessOverview = async (id: string | number) => {
+    const { data } = await apiClient.get(`/common/borrowers/${id}/capital-access-overview`);
+    return data;
+};
+
+// Fetch Capital Access Strategies for a specific client
+export const fetchClientCapitalAccessStrategies = async (id: string | number) => {
+    const { data } = await apiClient.get(`/common/borrowers/${id}/capital-access-strategies`);
     return data;
 };
 

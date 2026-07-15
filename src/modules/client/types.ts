@@ -76,6 +76,14 @@ export type Client = {
     is_partner_paying?: boolean;
     credit_profile?: any;
 
+    // Partner Details
+    partner_name?: string | null;
+    partner_company?: string | null;
+    partner_phone?: string | null;
+    partner_email?: string | null;
+    partner_logo?: string | null;
+    partner_id?: number | string | null;
+
     [key: string]: any;
 };
 

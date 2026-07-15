@@ -26,6 +26,8 @@ import { BORROWER_STATUS } from '../../../config/statusOptions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { PARTNER_TYPES, CLIENT_TYPE_LABELS, STRIPE_BILLING_LABELS, ENROLLMENT_INSTALLMENTS, ENROLLMENT_TYPES } from '../../../config/partnerTypeOptions';
 import { ENTITY_TYPE_PARTNER } from '../../../config/appConfig';
+import avatarDefault from '../../../../assets/images/users/avatar-1.jpg';
+import { Link } from 'react-router-dom';
 
 
 interface ClientInfoSectionProps {
@@ -81,6 +83,15 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
     const currentUser = useAuthStore((state) => state.user);
     const userSubscription = useAuthStore((state) => state.userSubscription);
     const isPartnerOnFreeTrial = currentUser?.entity_type === ENTITY_TYPE_PARTNER && !!userSubscription?.is_free_trail;
+
+    // Borrower's owning partner ID (present only in edit mode)
+    const borrowerPartnerId = fetchedData?.data?.partner_id ?? fetchedData?.partner_id ?? null;
+
+    // The free-edition section is visible only when:
+    //  • creating a new borrower (no clientId), OR
+    //  • the borrower IS on free trial AND the logged-in partner owns them
+    const canManageFreeTrial = !clientId
+        || (wasFreeTrial && borrowerPartnerId !== null && String(currentUser?.partner_id) === String(borrowerPartnerId));
 
     // 2. Local State - Moved up to avoid TDZ (Temporal Dead Zone) in enrollmentOptions
     const [formData, setFormData] = useState<Client>(initialData || DEFAULT_CLIENT_STATE);
@@ -217,20 +228,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             }
         }
     }, [borrowerPlans, nonHostPlans, isHost, isSynced]);
-
-    // Fetch Users for Assign to dropdown
-    useEffect(() => {
-        const isFreeTrailChecked = formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1';
-        if (isFreeTrailChecked && !formData.free_trail_end_date) {
-            const defaultDate = new Date();
-            defaultDate.setMonth(defaultDate.getMonth() + 1);
-            const dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-            setFormData(prev => ({ ...prev, free_trail_end_date: dateString }));
-            if (handleLocationChange) {
-                handleLocationChange('free_trail_end_date', dateString);
-            }
-        }
-    }, [formData.is_free_trail, formData.free_trail_end_date]);
 
     // Fetch Users for Assign to dropdown
     useEffect(() => {
@@ -504,18 +501,77 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             </div>
         );
     }
-
     const selectedOption = enrollmentOptions.find((opt: any) =>
         String(opt.value) === String(formData.plan_id)
     ) || enrollmentOptions.find((opt: any) =>
         opt.enrollment_type === formData.enrollment_type
     );
 
+    const partnerName = formData.partner_name || 'N/A';
+    const partnerCompanyName = formData.partner_company || 'N/A';
+    const partnerPhone = formData.partner_phone || 'N/A';
+    const partnerEmailAddress = formData.partner_email || 'N/A';
+    const partnerLogo = formData.partner_logo || null;
+
     // Reuse rendering logic
     return (
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
-                <div className="col-12 mt-4 mb-2">
+                {/* Partner Details Section */}
+                {isHost && (
+                    <div className="col-12">
+                        <div className="card partner-details-section p-0">
+                            <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
+                                <div className="partner-section-title-wrap d-flex align-items-center gap-3">
+                                    {partnerLogo ? (
+                                        <img
+                                            src={partnerLogo}
+                                            alt="Partner Logo"
+                                            className="partner-logo-img"
+                                        />
+                                    ) : (
+                                        <div className="partner-logo-fallback">
+                                            <i className="ri-user-line"></i>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h5 className="partner-section-title mb-1">Partner Details</h5>
+                                        <p className="partner-section-subtitle mb-0">Assigned partner information and referral status</p>
+                                    </div>
+                                </div>
+                                {formData.partner_id ? (
+                                    <Link to={`/partners/${formData.partner_id}`} className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1 partner-profile-btn">
+                                        <i className="ri-external-link-line"></i> View Profile
+                                    </Link>
+                                ) : (
+                                    <span className="partner-status-badge">No Assigned Partner</span>
+                                )}
+                            </div>
+                            <div className="card-body partner-details-body p-4">
+                                <div className="partner-info-grid">
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Partner Name</span>
+                                        <span className="partner-info-val">{partnerName}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Company</span>
+                                        <span className="partner-info-val">{partnerCompanyName}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Phone</span>
+                                        <span className="partner-info-val">{partnerPhone}</span>
+                                    </div>
+                                    <div className="partner-info-card">
+                                        <span className="partner-info-label">Email</span>
+                                        <span className="partner-info-val">{partnerEmailAddress}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="col-12 mt-2 mb-2">
                     <h5 className="text-primary fs-16 mb-1">Personal Information</h5>
                     <hr className="mt-1" />
                 </div>
@@ -1107,8 +1163,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                     </div>
                 </div>
 
-                {/* Free Trial Section */}
-                {(!clientId || wasFreeTrial) && (
+                {/* Free Trial Section — only visible to the borrower's own partner */}
+                {canManageFreeTrial && (
                     <div className="col-12 mt-4">
                         <div className="card border-0 bg-light-subtle shadow-sm mb-4">
                             <div className="card-body p-4 rounded" style={{ backgroundColor: 'var(--vz-light)' }}>
@@ -1134,30 +1190,18 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                                     if (isPartnerOnFreeTrial) return;
                                                     const checked = e.target.checked;
 
-                                                    // Calculate default date: 1 month from today
-                                                    let dateString = '';
-                                                    if (checked) {
-                                                        const defaultDate = new Date();
-                                                        defaultDate.setMonth(defaultDate.getMonth() + 1);
-                                                        dateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-${String(defaultDate.getDate()).padStart(2, "0")}`;
-                                                    }
-
-                                                    // Update locally and propagate to parent state
                                                     setFormData(prev => ({
                                                         ...prev,
                                                         is_free_trail: checked,
-                                                        free_trail_end_date: dateString
                                                     }));
 
                                                     if (handleLocationChange) {
                                                         handleLocationChange('is_free_trail', checked);
-                                                        handleLocationChange('free_trail_end_date', dateString);
                                                     }
 
                                                     if (setErrors) {
                                                         const newErrors = { ...errors };
                                                         delete newErrors.is_free_trail;
-                                                        delete newErrors.free_trail_end_date;
                                                         setErrors(newErrors);
                                                     }
                                                 }}
@@ -1168,33 +1212,6 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                                         </div>
                                     </div>
 
-                                    {formData.is_free_trail && (
-                                        <div className="col-md-6">
-                                            <div className="mb-0">
-                                                <label htmlFor="free_trail_end_date" className="form-label fw-medium text-dark fs-13 mb-1">Trial End Date <span className="text-danger">*</span></label>
-                                                <div className="custom-datepicker">
-                                                    <Calendar
-                                                        id="free_trail_end_date"
-                                                        value={parseDate(formData.free_trail_end_date)}
-                                                        onChange={(e) => {
-                                                            const date = e.value as Date;
-                                                            const dateString = date
-                                                                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                                                : "";
-                                                            handleInputChange({ target: { name: 'free_trail_end_date', value: dateString } });
-                                                        }}
-                                                        dateFormat="dd M, yy"
-                                                        placeholder="Select trial end date"
-                                                        showIcon
-                                                        className={`w-100 ${errors.free_trail_end_date ? 'is-invalid' : ''}`}
-                                                        appendTo="self"
-                                                        readOnlyInput
-                                                    />
-                                                </div>
-                                                {errors.free_trail_end_date && <div className="text-danger mt-1 small">{errors.free_trail_end_date}</div>}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>

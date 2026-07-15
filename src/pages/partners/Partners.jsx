@@ -33,7 +33,7 @@ export default function Partners() {
 
     // Sorting state
     const [sortField, setSortField] = useState('id');
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortOrder, setSortOrder] = useState('desc');
 
     // Filter states
     const [filters, setFilters] = useState({});
@@ -249,7 +249,7 @@ export default function Partners() {
                 </span>
                 {rowData.is_free_trail && (
                     <span className="badge bg-danger-subtle text-danger fs-10 px-2 py-1">
-                        Free Trial
+                        <i className="ri-vip-crown-line me-1"></i>Trial
                     </span>
                 )}
             </div>

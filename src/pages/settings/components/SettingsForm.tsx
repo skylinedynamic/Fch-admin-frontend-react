@@ -51,24 +51,20 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
         sections.push({ id: 'branding', label: 'Branding', icon: 'ri-brush-line' });
     }
 
-    // Custom Domain Configuration - Only for White-Label Partners (who are not the host)
-    if (
-        user?.entity_type == ENTITY_TYPE_PARTNER &&
-        user?.is_host == 0 &&
-        user.partner_type == PARTNER_TYPES.WHITE_LABEL
-    ) {
+    // Custom Domain Configuration - Only for White-Label Partners (who are not the host) or the Host itself
+    if (hasPermission('update domain configuration settings') && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'domain_configuration', label: 'Custom Domain', icon: 'ri-global-line' });
     }
 
-    if (user && (user.is_host == 1 || user.is_host == true)) {
+    if (hasPermission('update microbilt settings') && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'microbilt', label: 'MicroBilt Config', icon: 'ri-settings-4-line' });
     }
 
-    if (hasPermission('update branding settings') || (user && (user.is_host == 1 || user.is_host == true))) {
+    if (hasPermission('update credit profile settings') && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'credit_profile', label: 'Credit Profile', icon: 'ri-file-chart-line' });
     }
 
-    if (user && (user.is_host == 1 || user.is_host == true)) {
+    if (hasPermission('update score calculation settings') && (user && (user.is_host == 1 || user.is_host == true))) {
         sections.push({ id: 'score_calculation', label: 'Score Calculation', icon: 'ri-percent-line' });
     }
 

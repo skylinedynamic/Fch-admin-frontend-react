@@ -12,7 +12,9 @@ export default function TenantConfigSection({
         active_custom_url: false,
         partner_domain: '',
         borrower_domain: '',
+        partner_subdomain: '',
     });
+    const [copiedState, setCopiedState] = useState('');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
@@ -36,6 +38,7 @@ export default function TenantConfigSection({
                     active_custom_url: data.active_custom_url === true || data.active_custom_url === 1 || data.active_custom_url === '1',
                     partner_domain: data.partner_domain || '',
                     borrower_domain: data.borrower_domain || '',
+                    partner_subdomain: data.partner_subdomain || '',
                 });
             }
         } catch (error) {
@@ -65,6 +68,16 @@ export default function TenantConfigSection({
         }));
     };
 
+    const handleCopy = (text, type) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                setCopiedState(type);
+                setTimeout(() => setCopiedState(''), 2000);
+            })
+            .catch(() => {});
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -88,6 +101,7 @@ export default function TenantConfigSection({
                     active_custom_url: data.active_custom_url === true || data.active_custom_url === 1 || data.active_custom_url === '1',
                     partner_domain: data.partner_domain || '',
                     borrower_domain: data.borrower_domain || '',
+                    partner_subdomain: data.partner_subdomain || '',
                 });
             }
 
@@ -115,6 +129,88 @@ export default function TenantConfigSection({
     return (
         <form id="tenant-config-form" onSubmit={handleSubmit}>
             <div className="row g-3">
+                {!config.active_custom_url && (
+                    <div className="col-12 mb-2">
+                        <div className="dns-panel">
+                            {/* Partner Domain Row */}
+                            <div className="dns-row">
+                                <div className="dns-label-col">
+                                    <div className="dns-icon-box dns-icon-box-partner">
+                                        <i className="ri-global-line fs-15 text-primary"></i>
+                                    </div>
+                                    <span className="dns-label-text">Partner</span>
+                                </div>
+
+                                <div className="dns-value-col">
+                                    {config.partner_subdomain ? (
+                                        <>
+                                            <div className="dns-badge dns-badge-partner">
+                                                <span className="dns-pulse-dot"></span>
+                                                <a
+                                                    href={`https://${config.partner_subdomain}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dns-link dns-link-partner"
+                                                >
+                                                    https://{config.partner_subdomain}
+                                                </a>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`btn btn-sm border-0 dns-copy-btn ${copiedState === 'Partner URL' ? 'dns-copy-btn-partner-copied' : 'dns-copy-btn-partner'}`}
+                                                onClick={() => handleCopy(`https://${config.partner_subdomain}`, 'Partner URL')}
+                                                title="Copy URL"
+                                            >
+                                                <i className={copiedState === 'Partner URL' ? "ri-check-line fs-15" : "ri-file-copy-line fs-15"}></i>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="dns-not-set">Domain not set yet</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Borrower Domain Row */}
+                            <div className="dns-row">
+                                <div className="dns-label-col">
+                                    <div className="dns-icon-box dns-icon-box-borrower">
+                                        <i className="ri-user-settings-line fs-15 text-success"></i>
+                                    </div>
+                                    <span className="dns-label-text">Borrower</span>
+                                </div>
+
+                                <div className="dns-value-col">
+                                    {config.borrower_domain ? (
+                                        <>
+                                            <div className="dns-badge dns-badge-borrower">
+                                                <span className="dns-pulse-dot"></span>
+                                                <a
+                                                    href={`https://${config.borrower_domain}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="dns-link dns-link-borrower"
+                                                >
+                                                    https://{config.borrower_domain}
+                                                </a>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`btn btn-sm border-0 dns-copy-btn ${copiedState === 'Borrower URL' ? 'dns-copy-btn-borrower-copied' : 'dns-copy-btn-borrower'}`}
+                                                onClick={() => handleCopy(`https://${config.borrower_domain}`, 'Borrower URL')}
+                                                title="Copy URL"
+                                            >
+                                                <i className={copiedState === 'Borrower URL' ? "ri-check-line fs-15" : "ri-file-copy-line fs-15"}></i>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="dns-not-set">Domain not set yet</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="col-lg-12 mb-3">
                     <div className="form-check form-switch form-switch-lg custom-switch-primary">
                         <input

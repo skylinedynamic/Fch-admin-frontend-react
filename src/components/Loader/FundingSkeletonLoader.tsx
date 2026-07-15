@@ -1,49 +1,35 @@
 import React from 'react';
 
-// ─── Reusable skeleton card — IDENTICAL layout every time ────────────────────
+// ─── Reusable skeleton card — IDENTICAL layout to AdminFundingCard ────────────
 export const SkeletonCard = () => (
-    <div
-        style={{
-            display: 'flex',
-            alignItems: 'stretch',
-            gap: 14,
-            background: '#fff',
-            border: '1px solid #e8ecf0',
-            borderRadius: 12,
-            padding: '16px 18px',
-            width: '100%',
-            minHeight: 110,
-        }}
-    >
-        <div className="skeleton-line flex-shrink-0" style={{ width: 44, height: 44, borderRadius: 10, alignSelf: 'center' }} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div className="skeleton-line" style={{ width: '72%', height: 14, borderRadius: 4 }} />
-            <div style={{ margin: '8px 0' }}>
-                <div className="skeleton-line mb-1" style={{ width: '90%', height: 11, borderRadius: 4 }} />
-                <div className="skeleton-line" style={{ width: '75%', height: 11, borderRadius: 4 }} />
-            </div>
-            <div className="d-flex gap-2">
-                <div className="skeleton-line" style={{ width: 80, height: 20, borderRadius: 20 }} />
-                <div className="skeleton-line" style={{ width: 60, height: 20, borderRadius: 20 }} />
+    <div className="skeleton-card">
+        <div className="skeleton-card-top">
+            <div className="skeleton-line skeleton-icon" />
+            <div className="skeleton-text-wrap">
+                <div className="skeleton-line skeleton-title-line" />
+                <div className="skeleton-line skeleton-subtitle-line" />
             </div>
         </div>
-        <div className="skeleton-line flex-shrink-0" style={{ width: 30, height: 30, borderRadius: '50%', alignSelf: 'center' }} />
+        <div className="skeleton-card-bottom">
+            <div className="skeleton-meta">
+                <div className="skeleton-line skeleton-amount-line" />
+                <div className="skeleton-line skeleton-pill-line" />
+            </div>
+            <div className="skeleton-line skeleton-arrow" />
+        </div>
     </div>
 );
 
 // ─── Reusable group skeleton ──────────────────────────────────────────────────
-export const SkeletonGroup = ({ cards = 3, titleWidth = 200 }: { cards?: number; titleWidth?: number }) => (
-    <div className="mb-5">
-        <div className="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom">
-            <div className="skeleton-line" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-            <div>
-                <div className="skeleton-line mb-2" style={{ width: titleWidth, height: 18, borderRadius: 4 }} />
-                <div className="skeleton-line" style={{ width: titleWidth + 100, height: 14, borderRadius: 4 }} />
-            </div>
+export const SkeletonGroup = ({ cards = 3 }: { cards?: number }) => (
+    <div className="mb-4">
+        <div className="skeleton-group-header">
+            <div className="skeleton-line skeleton-group-title" />
+            <div className="skeleton-line skeleton-group-count" />
         </div>
         <div className="row g-4">
             {Array.from({ length: cards }).map((_, i) => (
-                <div className="col-12 col-md-6 col-lg-4 d-flex align-items-stretch" key={i}>
+                <div className="col-12 col-md-6 col-lg-4" key={i}>
                     <SkeletonCard />
                 </div>
             ))}
@@ -53,8 +39,9 @@ export const SkeletonGroup = ({ cards = 3, titleWidth = 200 }: { cards?: number;
 
 export const FundingOptionsLoader = () => (
     <div className="client-funding-options p-2">
-        <SkeletonGroup cards={3} titleWidth={150} />
-        <SkeletonGroup cards={2} titleWidth={200} />
+        <SkeletonGroup cards={3} />
+        <SkeletonGroup cards={3} />
+        <SkeletonGroup cards={3} />
     </div>
 );
 

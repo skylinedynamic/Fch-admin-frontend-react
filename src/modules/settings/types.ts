@@ -98,17 +98,27 @@ export interface ScoreConfigItem {
     max_value: number | null;
     numeric_value: number | null;
     sort_order: number;
+    conditions?: any;
 }
 
 export interface ScoreConfiguration {
+    funding_readiness: {
+        factors: ScoreFactor[];
+        readiness_bands: ScoreConfigItem[];
+        startup_revenue_strength: ScoreConfigItem;
+    };
+    approval_probability: {
+        factors: ScoreFactor[];
+        late_payment_modifiers: ScoreConfigItem[];
+    };
+    approval_odds: {
+        factors: ScoreFactor[];
+    };
+    general_setting: {
+        time_settings: any[];
+        next_play_delay: number;
+    };
     models: ScoreModel[];
-    factors: ScoreFactor[];
-    band_mappings: ScoreConfigItem[];
-    readiness_bands: ScoreConfigItem[];
-    play_eligibility: ScoreConfigItem[];
-    late_payment_modifiers?: ScoreConfigItem[];
-    probability_factors?: ScoreFactor[];
-    odds_factors?: ScoreFactor[];
 }
 
 export interface ScoreConfigurationResponse {
