@@ -4,6 +4,7 @@ import { fetchClientFundingOptions } from '../../../modules/client';
 import ClientFundingDetail from './ClientFundingDetail';
 import { Dropdown } from 'primereact/dropdown';
 import { FundingOptionsLoader } from '../../../components/Loader/FundingSkeletonLoader';
+import { FACTOR_STATUS_VALUES } from '../../../config/funding';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const FUNDING_ICON_MAP: Record<string, string> = {
@@ -211,7 +212,10 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const [tooltipVisible, setTooltipVisible] = useState(false);
 
     // Status badges based on borrower's logic
-    const missingFactors = (item.readiness_factors || []).filter((f: any) => f.status?.toLowerCase() === 'missing');
+    const missingFactors = (item.readiness_factors || []).filter((f: any) => {
+        const s = f.status?.toLowerCase();
+        return s === FACTOR_STATUS_VALUES.FAILED || s === FACTOR_STATUS_VALUES.RESTRICTED || s === FACTOR_STATUS_VALUES.WEAK;
+    });
     const hasMissing = missingFactors.length > 0;
     const isPending = item.latest_review_status === 'Pending';
     const isEngineLocked = item.engine_status === 'Locked';
