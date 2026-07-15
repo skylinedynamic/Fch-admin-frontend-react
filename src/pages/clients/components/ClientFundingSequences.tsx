@@ -90,8 +90,8 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
     return (
         <div className="funding-missing-tooltip">
             <div className="funding-missing-tooltip-header">
-                <i className="ri-error-warning-fill" style={{ color: '#F59E0B', fontSize: 18 }} />
-                <span>Missing Requirements</span>
+                <i className="ri-error-warning-fill" style={{ color: '#EF4444', fontSize: 18 }} />
+                <span>Failed Requirements</span>
             </div>
             <p className="funding-missing-tooltip-desc">This funding option is currently locked because the following requirement(s) are not met.</p>
             <div className="funding-missing-tooltip-divider" />
@@ -141,7 +141,7 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                             <div className="d-flex align-items-start gap-2">
                                 <i className="ri-close-circle-fill" style={{ color: '#EF4444', fontSize: 15, marginTop: 1 }} />
                                 <div>
-                                    <div className="tooltip-item-title">{displayLabel}: {actVal ?? 'Missing'}</div>
+                                    <div className="tooltip-item-title">{displayLabel}: {actVal ?? 'Failed'}</div>
                                     {req !== undefined && req !== null && (
                                         <div className="tooltip-item-req">Required: {reqVal}</div>
                                     )}
@@ -154,7 +154,7 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
             <div className="funding-missing-tooltip-divider" />
             <div className="funding-missing-tooltip-footer-info">
                 <i className="ri-information-fill" style={{ color: '#3B82F6', fontSize: 16, marginTop: 1 }} />
-                <span>Update the missing requirement(s) above to unlock this funding option.</span>
+                <span>Update the failed requirement(s) above to unlock this funding option.</span>
             </div>
         </div>
     );
@@ -222,9 +222,9 @@ const AdminFundingCard = ({ item, onClick }: { item: any; onClick: () => void })
     const isFullyDisabled = (isPending && !hasMissing) || isEngineLocked;
     const isLocked = hasMissing || isEngineLocked;
 
-    const displayLabel = isEngineLocked ? 'Locked' : (hasMissing ? 'Missing Info' : isPending ? 'Under Review' : 'Likely Eligible');
-    const pillBg = isEngineLocked ? '#f3f4f6' : hasMissing ? '#fef3c7' : isPending ? '#f0f0ff' : `color-mix(in srgb, var(--secondary-color) 10%, transparent)`;
-    const pillColor = isEngineLocked ? '#4b5563' : hasMissing ? '#78350f' : isPending ? '#4f52c8' : 'var(--secondary-color)';
+    const displayLabel = isEngineLocked ? 'Locked' : (hasMissing ? 'Failed' : isPending ? 'Under Review' : 'Likely Eligible');
+    const pillBg = isEngineLocked ? '#f3f4f6' : hasMissing ? '#fee2e2' : isPending ? '#f0f0ff' : `color-mix(in srgb, var(--secondary-color) 10%, transparent)`;
+    const pillColor = isEngineLocked ? '#4b5563' : hasMissing ? '#ef4444' : isPending ? '#4f52c8' : 'var(--secondary-color)';
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
