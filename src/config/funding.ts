@@ -120,6 +120,7 @@ export const READINESS_FACTOR_STATUS_OPTIONS: SelectOption[] = [
 ];
 
 export const READINESS_FACTORS_OPTIONS = [
+    "Business Credit",
     "Personal Credit",
     "Revenue",
     "Time in Business",
