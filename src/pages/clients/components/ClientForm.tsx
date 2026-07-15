@@ -148,6 +148,7 @@ export default function ClientForm({
                             clientId={clientId}
                             initialCreditProfile={formData?.credit_profile}
                             onRefresh={onRefresh}
+                            isHost={isHost}
                         />
                     ) : (
                         <div>Please create the client first to view Credit Profile.</div>

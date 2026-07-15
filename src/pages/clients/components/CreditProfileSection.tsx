@@ -104,13 +104,17 @@ interface CreditProfileSectionProps {
     clientId: string | number;
     initialCreditProfile?: CreditProfile | null;
     onRefresh?: () => void;
+    isHost?: boolean;
 }
 
 export default function CreditProfileSection({
     clientId,
     initialCreditProfile,
-    onRefresh
+    onRefresh,
+    isHost = false
 }: CreditProfileSectionProps) {
+    // Non-host partners can only VIEW credit profile data — no upload, no edit, no save.
+    const readOnly = !isHost;
     const [profile, setProfile] = useState<CreditProfile>({});
     const [pdfUrl, setPdfUrl] = useState<string>('');
     const [documentId, setDocumentId] = useState<number | string | null>(null);
@@ -219,6 +223,27 @@ export default function CreditProfileSection({
                     const blob = new Blob([bytes], { type: response.data.mime || 'application/pdf' });
                     setPdfBlobUrl(URL.createObjectURL(blob));
                 }
+
+                // Auto-save the parsed data so it persists in the database immediately.
+                // This is essential for non-host partners who don't have a manual Save button.
+                try {
+                    const personalInfo = parsed.personal_info || {};
+                    const payload = {
+                        metrics: parsed.metrics || {},
+                        personal_info: personalInfo,
+                        ssn: personalInfo.ssn || '',
+                        addresses: parsed.addresses || [],
+                        trade_accounts: parsed.trade_accounts || [],
+                        inquiries: parsed.inquiries || [],
+                        pdf_url: url,
+                        document_id: docId
+                    };
+                    await saveCreditProfile(clientId, payload);
+                    queryClient.invalidateQueries({ queryKey: clientKeys.creditProfile(clientId) });
+                } catch (saveErr) {
+                    console.error('Failed to auto-save parsed credit profile:', saveErr);
+                }
+
                 toast.success('PDF uploaded and credit profile parsed successfully!');
             } else {
                 toast.error(response?.message || 'Failed to parse credit profile PDF.');
@@ -555,6 +580,7 @@ export default function CreditProfileSection({
                                     <h6 className="card-title mb-0">Extracted Credit Metrics</h6>
                                     <div className="d-flex align-items-center gap-2">
 
+                                        {/* Re-upload & Save */}
                                         <Button
                                             type="button"
                                             color="outline-danger"
@@ -597,22 +623,24 @@ export default function CreditProfileSection({
                                             {hidePdf ? "Show PDF" : "Hide PDF"}
                                         </Button>
 
-                                        <Button
-                                            type="submit"
-                                            color="primary"
-                                            size="sm"
-                                            disabled={isSaving || isUploading}
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <Spinner size="sm" className="me-2" /> Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-save-line align-middle me-1"></i> Save Credit Profile
-                                                </>
-                                            )}
-                                        </Button>
+                                        {!readOnly && (
+                                            <Button
+                                                type="submit"
+                                                color="primary"
+                                                size="sm"
+                                                disabled={isSaving || isUploading}
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <Spinner size="sm" className="me-2" /> Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="ri-save-line align-middle me-1"></i> Save Credit Profile
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                                 <CardBody className="p-3 credit-profile-metrics-card-body" style={{ flex: 1, overflowY: 'auto' }}>
@@ -656,6 +684,8 @@ export default function CreditProfileSection({
                                         </li>
                                     </ul>
 
+                                    <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
+
                                     {/* Tab Contents */}
                                     {activeSubTab === 'metrics' && (
                                         <div>
@@ -669,6 +699,7 @@ export default function CreditProfileSection({
                                                             placeholder="e.g. 720"
                                                             value={metrics.fico_score ?? ''}
                                                             onChange={handleMetricChange}
+                                                            disabled={readOnly}
                                                         />
                                                     </FormGroup>
                                                 </Col>
@@ -1012,9 +1043,11 @@ export default function CreditProfileSection({
                                                 <CardBody className="p-3">
                                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                                         <h5 className="fs-14 mb-0 text-primary">Address History</h5>
-                                                        <Button type="button" color="soft-success" size="sm" onClick={addAddressRow}>
-                                                            <i className="ri-add-line align-middle me-1"></i> Add Address
-                                                        </Button>
+                                                        {!readOnly && (
+                                                            <Button type="button" color="soft-success" size="sm" onClick={addAddressRow}>
+                                                                <i className="ri-add-line align-middle me-1"></i> Add Address
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                     <div className="table-responsive">
                                                         <Table className="align-middle table-nowrap mb-0" size="sm">
@@ -1090,14 +1123,16 @@ export default function CreditProfileSection({
                                                                             />
                                                                         </td>
                                                                         <td>
-                                                                            <Button
-                                                                                type="button"
-                                                                                color="soft-danger"
-                                                                                size="sm"
-                                                                                onClick={() => removeAddressRow(index)}
-                                                                            >
-                                                                                <i className="ri-delete-bin-line"></i>
-                                                                            </Button>
+                                                                            {!readOnly && (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    color="soft-danger"
+                                                                                    size="sm"
+                                                                                    onClick={() => removeAddressRow(index)}
+                                                                                >
+                                                                                    <i className="ri-delete-bin-line"></i>
+                                                                                </Button>
+                                                                            )}
                                                                         </td>
                                                                     </tr>
                                                                 ))}
@@ -1119,9 +1154,11 @@ export default function CreditProfileSection({
                                     {activeSubTab === 'trade_accounts' && (
                                         <div>
                                             <div className="d-flex justify-content-end align-items-center mb-3">
-                                                <Button type="button" color="soft-success" size="sm" onClick={addTradeRow}>
-                                                    <i className="ri-add-line align-middle me-1"></i> Add Trade Account
-                                                </Button>
+                                                {!readOnly && (
+                                                    <Button type="button" color="soft-success" size="sm" onClick={addTradeRow}>
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Trade Account
+                                                    </Button>
+                                                )}
                                             </div>
                                             <div className="table-responsive" style={{ maxHeight: '550px', overflowY: 'auto' }}>
                                                 <Table className="align-middle mb-0" size="sm">
@@ -1422,9 +1459,11 @@ export default function CreditProfileSection({
                                     {activeSubTab === 'inquiries' && (
                                         <div>
                                             <div className="d-flex justify-content-end align-items-center mb-3">
-                                                <Button type="button" color="soft-success" size="sm" onClick={addInquiryRow}>
-                                                    <i className="ri-add-line align-middle me-1"></i> Add Inquiry
-                                                </Button>
+                                                {!readOnly && (
+                                                    <Button type="button" color="soft-success" size="sm" onClick={addInquiryRow}>
+                                                        <i className="ri-add-line align-middle me-1"></i> Add Inquiry
+                                                    </Button>
+                                                )}
                                             </div>
                                             <div className="table-responsive">
                                                 <Table className="align-middle table-nowrap mb-0" size="sm">
@@ -1465,14 +1504,16 @@ export default function CreditProfileSection({
                                                                     />
                                                                 </td>
                                                                 <td>
-                                                                    <Button
-                                                                        type="button"
-                                                                        color="soft-danger"
-                                                                        size="sm"
-                                                                        onClick={() => removeInquiryRow(index)}
-                                                                    >
-                                                                        <i className="ri-delete-bin-line"></i>
-                                                                    </Button>
+                                                                    {!readOnly && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            color="soft-danger"
+                                                                            size="sm"
+                                                                            onClick={() => removeInquiryRow(index)}
+                                                                        >
+                                                                            <i className="ri-delete-bin-line"></i>
+                                                                        </Button>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -1489,6 +1530,7 @@ export default function CreditProfileSection({
                                         </div>
                                     )}
 
+                                    </fieldset>
                                 </CardBody>
                             </Card>
                         </Col>
@@ -1546,7 +1588,6 @@ export default function CreditProfileSection({
         );
     }
 
-    // Render upload state
     return (
         <Card className="border shadow-none mb-0">
             <CardBody className="p-5">

@@ -170,6 +170,17 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
 
     delete (payload as any).enrollment_amount;
 
+    // 'current_selection' is a frontend-only placeholder used when the borrower already
+    // has a plan that could not be matched to a known plan ID.
+    // The dropdown is disabled in this case, so there is no plan change — strip it
+    // entirely so the backend's exists:subscription_plans,id rule is never triggered.
+    if (payload.plan_id === 'current_selection') {
+        delete payload.plan_id;
+        delete payload.amount;
+        delete payload.payment_amount;
+        delete payload.enrollment_payment;
+    }
+
     return payload;
 };
 

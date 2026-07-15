@@ -126,8 +126,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             price: Number(plan.payment_amount)
         }));
 
-        // Ensure current selection is visible even if not in the plans list
+        // Always inject a fallback display option so the (possibly disabled) dropdown
+        // can show the borrower's current enrollment type even if that plan is no longer
+        // present in the plans list loaded from the API.
+        // NOTE: 'current_selection' is a frontend-only placeholder — it is stripped from
+        //       the update payload in mapClientUpdatePayload() and never sent to the API.
         if (formData.plan_id && formData.plan_id !== 'current_selection' && !options.find((opt: any) => String(opt.value) === String(formData.plan_id))) {
+            // Real plan_id but not found in the fetched list — inject it so it stays visible
             const currentPrice = Number(formData.payment_amount || formData.amount || 0);
             options.unshift({
                 label: formData.enrollment_type || 'Current Plan',
@@ -137,7 +142,8 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
                 price: currentPrice
             });
         } else if (formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
-            // If we have type but no ID or generic ID, try to find matching option to get the ID
+            // Have an enrollment_type but no resolvable numeric ID — inject virtual placeholder
+            // so the label is visible. Only shown when there is no type-name match in the list.
             const match = options.find((opt: any) =>
                 opt.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
             );
@@ -165,24 +171,13 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
             // @ts-ignore
             const apiData = fetchedData.data || fetchedData;
 
-            // If plan_id is missing but enrollment_type exists, try to find plan_id
-            if (!apiData.plan_id && apiData.enrollment_type) {
-                const plans = isHost ? borrowerPlans : nonHostPlans;
-                const matchedPlan = plans.find((p: any) => p.enrollment_type === apiData.enrollment_type);
-                if (matchedPlan) {
-                    apiData.plan_id = matchedPlan.id;
-                } else {
-                    apiData.plan_id = 'current_selection';
-                }
-            }
-
-
+            // plan_id is now returned directly by the API (latestSubscription.subscription_plan_id).
+            // No frontend guessing needed — use it as-is.
 
             // Normalize date
             if (apiData.business_start_date) {
                 apiData.business_start_date = normalizeDate(apiData.business_start_date);
             }
-
 
             // Ensure country uses full name for mapping to dropdown value
             if (apiData.country) {
@@ -214,20 +209,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         }
     }, [fetchedData, clientId]);
 
-    // Separate effect to handle plan list matching once plans load
-    useEffect(() => {
-        if (isSynced && formData.enrollment_type && (formData.plan_id === 'current_selection' || !formData.plan_id)) {
-            const plans = isHost ? borrowerPlans : nonHostPlans;
-            if (plans.length > 0) {
-                const matchedPlan = plans.find((p: any) =>
-                    p.enrollment_type?.toLowerCase().trim() === formData.enrollment_type?.toLowerCase().trim()
-                );
-                if (matchedPlan) {
-                    setFormData(prev => ({ ...prev, plan_id: matchedPlan.id }));
-                }
-            }
-        }
-    }, [borrowerPlans, nonHostPlans, isHost, isSynced]);
+    // plan_id now comes directly from the API — no retry/matching effect needed.
 
     // Fetch Users for Assign to dropdown
     useEffect(() => {
@@ -518,7 +500,7 @@ const ClientInfoSection = forwardRef<ClientInfoSectionRef, ClientInfoSectionProp
         <form onSubmit={(e) => e.preventDefault()}>
             <div className="row">
                 {/* Partner Details Section */}
-                {isHost && (
+                {isHost && !!clientId && (
                     <div className="col-12">
                         <div className="card partner-details-section p-0">
                             <div className="card-header partner-section-header bg-transparent border-bottom border-bottom-dashed d-flex align-items-center justify-content-between py-3 px-4">
