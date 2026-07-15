@@ -133,7 +133,7 @@ const MissingTooltip: React.FC<{ factors: any[]; visible: boolean }> = ({ factor
                         }
                     }
 
-                    const displayLabel = lowerLabel === 'time in business' ? 'Months' : label;
+                    const displayLabel = label;
 
                     return (
                         <li key={i} className="funding-missing-tooltip-item">
