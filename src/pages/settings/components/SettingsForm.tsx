@@ -52,7 +52,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
     }
 
     // Custom Domain Configuration - Only for White-Label Partners (who are not the host) or the Host itself
-    if (hasPermission('update domain configuration settings') && (user && (user.is_host == 1 || user.is_host == true))) {
+    if (hasPermission('update domain configuration settings') && (user)) {
         sections.push({ id: 'domain_configuration', label: 'Custom Domain', icon: 'ri-global-line' });
     }
 

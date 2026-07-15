@@ -354,14 +354,14 @@ export default function EditRole() {
                                       return (
                                         <div className="form-check form-check-inline m-0 me-4 py-1" key={mod.key + '-' + p.key}>
                                           <input
-                                            className={`form-check-input cursor-pointer shadow-none ${checked ? 'border-primary' : 'border-secondary-subtle'}`}
+                                            className={`form-check-input cursor-pointer shadow-none ${checked ? 'border-primary' : 'border-primary'}`}
                                             type="checkbox"
                                             id={`perm-${mod.key}-${p.key}`}
                                             checked={checked}
                                             onChange={(e) => togglePerm(mod, p.key, e.target.checked)}
                                             style={{ width: "1.15em", height: "1.15em", marginTop: "0.15em" }}
                                           />
-                                          <label className={`form-check-label cursor-pointer ms-1 fs-14 ${checked ? 'text-dark fw-medium' : 'text-muted'}`} htmlFor={`perm-${mod.key}-${p.key}`}>
+                                          <label className={`form-check-label cursor-pointer ms-1 fs-13 ${checked ? 'text-dark' : 'text-dark'}`} htmlFor={`perm-${mod.key}-${p.key}`}>
                                             {p.label}
                                           </label>
                                         </div>

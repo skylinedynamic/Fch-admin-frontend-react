@@ -129,89 +129,203 @@ File: Custom Css File
 }
 
 #roles-permissions-page .role-summary-card {
-  border: 1px solid var(--vz-border-color);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  border-radius: 0.75rem;
-  background: var(--bs-body-bg);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  background: #ffffff;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  height: 425px;
+  min-height: 445px;
+  height: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-#roles-permissions-page .role-summary-card h5 {
-  font-weight: 700;
-  margin-bottom: 12px;
+#roles-permissions-page .role-summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
 }
 
-#roles-permissions-page .role-meta {
-  color: var(--vz-gray);
-}
+/* Card Neutral Themes (Monochromatic design) */
 
-#roles-permissions-page .role-header {
+#roles-permissions-page .role-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
-#roles-permissions-page .count-badge {
-  background: var(--bs-primary-bg-subtle);
-  color: var(--bs-primary);
-  border-radius: 999px;
+#roles-permissions-page .role-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+}
+
+#roles-permissions-page .role-desc-text {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+  color: #6b7280;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#roles-permissions-page .users-count-badge {
   padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #e5e7eb;
+  background-color: #f3f4f6;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+#roles-permissions-page .permissions-section {
+  margin-top: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#roles-permissions-page .permissions-title {
   font-size: 12px;
   font-weight: 600;
-}
-
-#roles-permissions-page .count-badge.solid {
-  background: var(--secondary-color);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4b5563;
+  margin-bottom: 8px;
 }
 
 #roles-permissions-page .bullet-list {
   list-style: none;
   padding-left: 0;
-  margin: 16px 0;
-  flex: 0 0 auto;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
 }
 
 #roles-permissions-page .bullet-list li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  color: var(--vz-body-color);
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
 }
 
-#roles-permissions-page .bullet-list li::before {
-  content: "â€¢";
-  color: var(--bs-primary);
+#roles-permissions-page .bullet-list li i {
+  font-size: 15px;
+  color: #9ca3af !important;
+  flex-shrink: 0;
+}
+
+#roles-permissions-page .more-perms-badge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  margin-top: 6px;
+  display: inline-block;
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
 #roles-permissions-page .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+#roles-permissions-page .card-actions .btn {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+#roles-permissions-page .card-actions .btn-outline-primary {
+  border-color: var(--primary-color, #405189) !important;
+  color: var(--primary-color, #405189) !important;
+  background-color: transparent !important;
+}
+
+#roles-permissions-page .card-actions .btn-outline-primary:hover,
+#roles-permissions-page .card-actions .btn-outline-primary:active,
+#roles-permissions-page .card-actions .btn-outline-primary:focus {
+  background-color: var(--primary-color, #405189) !important;
+  border-color: var(--primary-color, #405189) !important;
+  color: #ffffff !important;
+}
+
+#roles-permissions-page .card-actions .btn-icon-only {
+  width: 32px;
+  flex: 0 0 auto !important;
+  padding: 6px 0;
 }
 
 #roles-permissions-page .add-role-card {
-  border: 1px dashed var(--vz-border-color);
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1.5px dashed var(--vz-border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   background: var(--bs-body-bg);
   padding: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  height: 425px;
+  min-height: 445px;
+  height: auto;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+#roles-permissions-page .add-role-card:hover {
+  border-color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.01);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
 }
 
 #roles-permissions-page .add-role-card img {
-  max-width: 120px;
-  opacity: 0.9;
-  margin-bottom: 12px;
+  max-width: 90px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
+
+#roles-permissions-page .add-role-card:hover img {
+  transform: scale(1.05);
+}
+
+#roles-permissions-page .add-role-card h6 {
+  font-weight: 600;
+  color: var(--vz-heading-color);
+}
+
+#roles-permissions-page .add-role-card p {
+  font-size: 13px;
 }
 
 /* Fixed height for role cards in the grid */

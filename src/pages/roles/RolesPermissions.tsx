@@ -12,6 +12,19 @@ import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfir
 
 type User = { id: number; name: string; email: string; role: string; joined: string }
 
+const getRoleIcon = (name: string, idx: number) => {
+  const norm = name.toLowerCase()
+  if (norm.includes('admin')) return 'ri-shield-user-line'
+  if (norm.includes('manager')) return 'ri-briefcase-line'
+  if (norm.includes('underwriter')) return 'ri-shield-check-line'
+  if (norm.includes('analyst')) return 'ri-pie-chart-line'
+  if (norm.includes('assistant')) return 'ri-coins-line'
+  if (norm.includes('sales')) return 'ri-bar-chart-box-line'
+  if (norm.includes('support')) return 'ri-customer-service-2-line'
+  if (norm.includes('partner') || norm.includes('success')) return 'ri-user-star-line'
+  return idx % 2 === 0 ? 'ri-shield-user-line' : 'ri-user-star-line'
+}
+
 export default function RolesPermissions() {
   const navigate = useNavigate()
   const { data: apiRoles, isLoading, isError, refetch } = useRoles()
@@ -156,34 +169,74 @@ export default function RolesPermissions() {
                 ) : (
                   <div className="roles-grid">
                     {roles.map((r, idx) => (
-                      <div className="role-summary-card" key={(r.id ?? r.name) + String(idx)} style={{ position: 'relative' }}>
-                        <div className="role-header"><h5>{r.name}</h5><span className="count-badge solid text-white">{Number(r.users_count ?? 0)} users</span></div>
-                        {r.description && <p className="text-muted fs-14 mb-0 role-desc" title={r.description}>{r.description}</p>}
-                        <ul className="bullet-list">
-                          {r.permissions.length === 0 ? (
-                            <li className="text-muted fst-italic">No permissions assigned to this role</li>
-                          ) : (
-                            <>
-                              {previewPermissions(r.permissions).map((p, i) => (<li key={p + i}>{p}</li>))}
-                              {remainingCount(r.permissions) > 0 && (
-                                <li className="text-muted">and {remainingCount(r.permissions)} more...</li>
+                      <div
+                        className="role-summary-card"
+                        key={(r.id ?? r.name) + String(idx)}
+                      >
+                        <div className="role-header-wrapper d-flex align-items-center justify-content-between w-100">
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="role-icon-box d-flex align-items-center justify-content-center">
+                              <i className={getRoleIcon(r.name || '', idx)}></i>
+                            </div>
+                            <div className="d-flex flex-column text-start">
+                              <h5 className="role-title mb-0">{r.name}</h5>
+                              {r.description && (
+                                <p className="role-desc-text text-muted mb-0" title={r.description}>
+                                  {r.description}
+                                </p>
                               )}
-                            </>
-                          )}
-                        </ul>
-                        <div className="card-actions d-flex align-items-center">
-                          <button className="btn btn-light" onClick={() => handleViewUsers(r)}>
-                            <span className="label-full">View All Users</span>
-                            <span className="label-short">Users</span>
+                            </div>
+                          </div>
+                          <span className="users-count-badge d-inline-flex align-items-center gap-1">
+                            <i className="ri-group-line"></i> {Number(r.users_count ?? 0)} Users
+                          </span>
+                        </div>
+
+                        <div className="permissions-section text-start w-100">
+                          <div className="permissions-title">Permissions</div>
+                          <ul className="bullet-list mb-0">
+                            {r.permissions.length === 0 ? (
+                              <li className="text-muted fst-italic fs-13">No permissions assigned to this role</li>
+                            ) : (
+                              <>
+                                {previewPermissions(r.permissions).map((p, i) => (
+                                  <li key={p + i} className="d-flex align-items-center gap-2">
+                                    <i className="ri-checkbox-circle-line"></i>
+                                    <span className="permission-text">{p}</span>
+                                  </li>
+                                ))}
+                                {remainingCount(r.permissions) > 0 && (
+                                  <li className="list-unstyled mt-1">
+                                    <span className="more-perms-badge">
+                                      +{remainingCount(r.permissions)} more permissions
+                                    </span>
+                                  </li>
+                                )}
+                              </>
+                            )}
+                          </ul>
+                        </div>
+
+                        <div className="card-actions d-flex align-items-center gap-2 w-100">
+                          <button className="btn btn-outline-primary flex-grow-1" onClick={() => handleViewUsers(r)}>
+                            <i className="ri-user-3-line"></i>
+                            <span className="btn-text ms-1">View Users</span>
                           </button>
-                          <button className="btn btn-primary ms-2" onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)} disabled={!r.id}>Edit Role</button>
+                          <button
+                            className="btn btn-outline-primary flex-grow-1"
+                            onClick={() => r.id && navigate(`/roles-permissions/edit/${r.id}`)}
+                            disabled={!r.id}
+                          >
+                            <i className="ri-edit-2-line"></i>
+                            <span className="btn-text ms-1">Edit Role</span>
+                          </button>
                           {!r.is_static && (
                             <button
-                              className="btn btn-outline-danger ms-auto"
+                              className="btn btn-outline-danger btn-icon-only"
                               onClick={() => openDeleteModal(r)}
                               disabled={deletingRole}
                             >
-                              <i className="ri-delete-bin-6-line align-bottom"></i>
+                              <i className="ri-delete-bin-line"></i>
                             </button>
                           )}
                         </div>
@@ -193,8 +246,10 @@ export default function RolesPermissions() {
                     <div className="add-role-card text-center">
                       <img src={newDocImg} alt="Add role" />
                       <h6 className="mb-1">Add New Role</h6>
-                      <p className="text-muted mb-3">Create a role and assign permissions.</p>
-                      <Link to="/roles-permissions/create" className="btn btn-outline-primary"><i className="ri-add-line me-1"></i> New Role</Link>
+                      <p className="text-muted mb-3 fs-13">Create a role and assign permissions.</p>
+                      <Link to="/roles-permissions/create" className="btn btn-outline-primary">
+                        <i className="ri-add-line me-1"></i> New Role
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -230,7 +285,12 @@ export default function RolesPermissions() {
                                           <h6 className="section-title mb-0">All Permissions</h6>
                                         </div>
                                         <ul className="bullet-list mb-0">
-                                          {(roleDetail?.permission || []).map((p, i) => (<li key={p + i}>{p}</li>))}
+                                          {(roleDetail?.permission || []).map((p, i) => (
+                                            <li key={p + i}>
+                                              <i className="ri-shield-keyhole-line text-primary"></i>
+                                              {p}
+                                            </li>
+                                          ))}
                                         </ul>
                                       </div>
 
