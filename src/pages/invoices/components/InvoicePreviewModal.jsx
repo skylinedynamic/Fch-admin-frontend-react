@@ -138,9 +138,9 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
 
     // Calculations - only if displayInvoice exists
     const amount = displayInvoice ? (typeof displayInvoice.payable_amount_sub === 'string'
-        ? parseFloat(displayInvoice.payable_amount_sub)
+        ? parseFloat(displayInvoice.payable_amount_sub.replace(/[^0-9.]/g, ''))
         : displayInvoice.payable_amount_sub || (typeof displayInvoice.payment_amount === 'string'
-            ? parseFloat(displayInvoice.payment_amount)
+            ? parseFloat(displayInvoice.payment_amount.replace(/[^0-9.]/g, ''))
             : displayInvoice.payment_amount || 0)) : 0;
 
     const subtotal = amount;

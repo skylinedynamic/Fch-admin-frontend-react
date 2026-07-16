@@ -111,7 +111,7 @@ export default function InvoiceDetails() {
                                                     <p className="text-muted mb-0 fs-13">Date: <span className="fw-medium text-body">{invoice.created_at}</span></p>
                                                 </div>
                                                 <div className="flex-shrink-0 text-end">
-                                                    <h2 className="text-primary mb-1">{invoice.payment_amount || '-'}</h2>
+                                                    <h2 className="text-primary mb-1">{invoice.displayable_payment_amount || '-'}</h2>
                                                     <span className={`badge bg-${statusSeverity} fs-12 text-uppercase`}>{invoice.status}</span>
                                                 </div>
                                             </div>
@@ -169,9 +169,9 @@ export default function InvoiceDetails() {
                                                                 <td className="text-start">
                                                                     <span className="fw-medium">General Payment</span>
                                                                 </td>
-                                                                <td>{invoice.payment_amount || '-'}</td>
+                                                                <td>{invoice.displayable_payment_amount || '-'}</td>
                                                                 <td>1</td>
-                                                                <td className="text-end">{invoice.payment_amount || '-'}</td>
+                                                                <td className="text-end">{invoice.displayable_payment_amount || '-'}</td>
                                                             </tr>
                                                         )}
                                                     </tbody>
@@ -182,11 +182,11 @@ export default function InvoiceDetails() {
                                                     <tbody>
                                                         <tr>
                                                             <td>Sub Total</td>
-                                                            <td className="text-end">{invoice.payment_amount || '-'}</td>
+                                                            <td className="text-end">{invoice.displayable_payment_amount || '-'}</td>
                                                         </tr>
                                                         <tr className="border-top border-top-dashed fs-15">
                                                             <th scope="row">Total Amount</th>
-                                                            <th className="text-end">{invoice.payment_amount || '-'}</th>
+                                                            <th className="text-end">{invoice.displayable_payment_amount || '-'}</th>
                                                         </tr>
                                                     </tbody>
                                                 </table>
