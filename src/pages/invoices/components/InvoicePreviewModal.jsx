@@ -15,6 +15,16 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
+const base64ToBlob = (base64, mimeType) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+};
+
 export default function InvoicePreviewModal({ show, onHide, invoice }) {
     const user = useAuthStore((state) => state.user);
     const modalRef = useRef(null);
@@ -98,17 +108,24 @@ export default function InvoicePreviewModal({ show, onHide, invoice }) {
         if (!displayInvoice?.id || downloadLoading) return;
         setDownloadLoading(true);
         try {
-            const blob = await downloadInvoice(displayInvoice.id);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `invoice-${displayInvoice.invoice_id || displayInvoice.id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const response = await downloadInvoice(displayInvoice.id);
+            if (response && response.status && response.data?.file) {
+                const blob = base64ToBlob(response.data.file, response.data.mime_type || 'application/pdf');
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', response.data.file_name || `invoice-${displayInvoice.invoice_id || displayInvoice.id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } else {
+                throw new Error(response?.message || 'Failed to download invoice PDF');
+            }
         } catch (error) {
-
+            const message = error?.message || 'Failed to download invoice';
+            console.error('Error downloading invoice:', error);
+            toast.error(message);
         } finally {
             setDownloadLoading(false);
         }

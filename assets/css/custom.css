@@ -4244,8 +4244,8 @@ File: Custom Css File
 }
 
 .stripe-input-container.focused {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 31, 63, 0.15);
+  border-color: #e3e8ee;
+  box-shadow: none;
 }
 
 .stripe-summary-card {
