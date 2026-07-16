@@ -340,7 +340,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     },
     {
         label: 'In Progress',
-        desc: 'Admin/Partner can reviewing the request.',
+        desc: 'Admin can reviewing the request.',
         bg: '#eff6ff',
         border: '#bfdbfe',
         iconBg: '#3b82f6',

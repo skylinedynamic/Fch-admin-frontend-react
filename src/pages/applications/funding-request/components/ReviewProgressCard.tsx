@@ -121,10 +121,10 @@ export default function ReviewProgressCard({
 
                             const getStatusColor = (key: string) => {
                                 if (key === 'SUBMITTED') return '#16a34a';
-                                if (key === FUNDING_REVIEW_STATUS.PENDING) return '#10b981';
+                                if (key === FUNDING_REVIEW_STATUS.PENDING) return '#16a34a';
                                 if (key === FUNDING_REVIEW_STATUS.IN_PROGRESS) return '#3b82f6';
-                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#06B6D4';
-                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#10b981';
+                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#eab308';
+                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#16a34a';
                                 if (key === FUNDING_REVIEW_STATUS.REJECTED) return '#ef4444';
                                 if (key === FUNDING_REVIEW_STATUS.CANCELED) return '#ef4444';
                                 return '#3b82f6';
@@ -205,31 +205,23 @@ export default function ReviewProgressCard({
                         </h6>
                     </div>
 
-                    <div className="overflow-x-auto pb-3 funding-request-scrollbar">
-                        <div className="d-flex align-items-stretch gap-2 w-100 status-guideline-container pb-2">
-                            {guidelineCards.map((item, idx) => (
-                                <React.Fragment key={item.label}>
-                                <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{
+                    <div className="row g-2">
+                        {guidelineCards.map((item, idx) => (
+                            <div key={item.label} className="col-12 col-md-6 col-xl-4">
+                                <div className="d-flex align-items-center p-2 px-xl-2 rounded-3 h-100" style={{
                                     backgroundColor: item.bg,
-                                    border: `1px solid ${item.border}`,
-                                    flex: 1
+                                    border: `1px solid ${item.border}`
                                 }}>
-                                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white me-3" style={{ width: 24, height: 24, background: item.iconBg, flexShrink: 0 }}>
-                                        {item.icon ? <i className={item.icon} className="fr-progress-style-3f4a8cad"></i> : null}
+                                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white me-2" style={{ width: 24, height: 24, background: item.iconBg, flexShrink: 0 }}>
+                                        {item.icon && <i className={`${item.icon} fs-12`}></i>}
                                     </div>
                                     <div>
                                         <h6 className="mb-1 fw-bold text-dark fs-13">{item.label}</h6>
                                         <p className="mb-0 text-muted fr-progress-style-501635f8">{item.desc}</p>
                                     </div>
                                 </div>
-                                {idx < guidelineCards.length - 1 && (
-                                    <div className="d-flex align-items-center">
-                                        <i className="ri-arrow-right-s-line text-muted fs-4"></i>
-                                    </div>
-                                )}
-                            </React.Fragment>
+                            </div>
                         ))}
-                        </div>
                     </div>
                 </div>
 

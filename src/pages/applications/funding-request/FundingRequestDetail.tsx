@@ -9,7 +9,7 @@ import { handleFileDownload } from '../../../utils/fileDownload';
 import { downloadBorrowerDocument } from '../../../modules/client/services';
 import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
-import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS, FUNDING_REVIEW_GUIDELINE_CARDS } from '../../../config/funding';
 import { DOCUMENT_STATUS } from '../../../config/documentStatus';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
@@ -130,13 +130,43 @@ export default function FundingRequestDetail() {
         );
     };
 
+    const getExactStatusStyles = (status: string) => {
+        const mapping: Record<string, string> = {
+            [FUNDING_REVIEW_STATUS.PENDING]: 'Pending',
+            [FUNDING_REVIEW_STATUS.ACCEPTED]: 'Accepted',
+            [FUNDING_REVIEW_STATUS.IN_PROGRESS]: 'In Progress',
+            [FUNDING_REVIEW_STATUS.APPROVED]: 'Approved',
+            [FUNDING_REVIEW_STATUS.REJECTED]: 'Rejected',
+            [FUNDING_REVIEW_STATUS.CANCELED]: 'Canceled',
+        };
+        const label = mapping[status] || 'Pending';
+        const card = FUNDING_REVIEW_GUIDELINE_CARDS.find(c => c.label === label);
+        return {
+            bg: card?.bg || '#f0fdf4',
+            border: card?.border || '#bbf7d0',
+            iconBg: card?.iconBg || '#16a34a',
+        };
+    };
+
     const getStatusBadge = (status: string) => {
-        if (status === FUNDING_REVIEW_STATUS.APPROVED) return <span className="badge bg-success-subtle text-success fs-13">{status}</span>;
-        if (status === FUNDING_REVIEW_STATUS.ACCEPTED) return <span className="badge bg-info-subtle text-info fs-13">{status}</span>;
-        if (status === FUNDING_REVIEW_STATUS.REJECTED) return <span className="badge bg-danger-subtle text-danger fs-13">Rejected</span>;
-        if (status === FUNDING_REVIEW_STATUS.CANCELED) return <span className="badge bg-secondary-subtle text-secondary fs-13">Canceled</span>;
-        if (status === FUNDING_REVIEW_STATUS.IN_PROGRESS) return <span className="badge bg-primary-subtle text-primary fs-13">In Progress</span>;
-        return <span className="badge bg-warning-subtle text-warning fs-13">Pending</span>;
+        const styles = getExactStatusStyles(status);
+        const displayStatus = status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'In Progress' :
+                              status === FUNDING_REVIEW_STATUS.REJECTED ? 'Rejected' :
+                              status === FUNDING_REVIEW_STATUS.CANCELED ? 'Canceled' :
+                              status === 'PENDING' ? 'Pending' : status;
+        
+        return (
+            <span 
+                className="badge fs-13" 
+                style={{ 
+                    backgroundColor: styles.bg, 
+                    color: styles.iconBg, 
+                    border: `1px solid ${styles.border}` 
+                }}
+            >
+                {displayStatus}
+            </span>
+        );
     };
 
     return (
@@ -184,7 +214,7 @@ export default function FundingRequestDetail() {
                                 <>
                                     
                                     <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3">
-                                        <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2">
+                                        <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2 d-block">
                                         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
                                             <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
                                         </div>
@@ -444,7 +474,7 @@ export default function FundingRequestDetail() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="table-responsive border rounded border-light-subtle bg-white lender-match-table-container">
-                                        <table className="table align-middle mb-0 fr-style-4ac477ea">
+                                        <table className="table align-middle mb-0 fr-style-4ac477ea" style={{ minWidth: '700px' }}>
                                             <thead className="bg-light">
                                                 <tr>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-2 fr-style-55c8853f">File Name</th>
@@ -562,7 +592,7 @@ export default function FundingRequestDetail() {
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
                                     <div className="d-flex align-items-center">
                                         <div className="avatar-xs me-3">
-                                            <span className="avatar-title bg-primary-subtle text-primary rounded fs-18">
+                                            <span className="avatar-title bg-light text-dark rounded fs-18">
                                                 <i className="ri-shield-check-line"></i>
                                             </span>
                                         </div>
@@ -573,37 +603,32 @@ export default function FundingRequestDetail() {
                                     <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
 
                                             {/* Status Row */}
-                                            <div className="d-flex gap-2 align-items-start mb-3">
-                                                <div className="flex-grow-1">
-                                                    <label className="form-label fs-13 fw-semibold">Status</label>
-                                                    <Dropdown
-                                                        value={selectedStatus}
-                                                        options={FUNDING_REVIEW_STATUS_OPTIONS}
-                                                        onChange={(e) => setSelectedStatus(e.value)}
-                                                        className={`w-100 ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
-                                                        placeholder="Select a Status"
-                                                        pt={{
-                                                            root: { className: 'w-100 rounded' },
-                                                            input: { className: 'fs-14' },
-                                                            item: { className: 'fs-14' }
-                                                        }}
-                                                    />
-                                                </div>
-                                                {/* Show Confirm button in same row ONLY if not Rejected */}
-                                                {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
-                                                    <div className="pt-4 fr-style-374ec73b">
+                                            <div className="mb-3">
+                                                <label className="form-label fs-13 fw-semibold mb-2">Status</label>
+                                                <div className="d-flex gap-2 align-items-stretch">
+                                                    <div className="flex-grow-1">
+                                                        <Dropdown
+                                                            value={selectedStatus}
+                                                            options={FUNDING_REVIEW_STATUS_OPTIONS}
+                                                            onChange={(e) => setSelectedStatus(e.value)}
+                                                            className={`w-100 h-100 d-flex align-items-center ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                            placeholder="Select a Status"
+                                                            pt={{
+                                                                root: { className: 'w-100 rounded h-100' },
+                                                                input: { className: 'fs-14' },
+                                                                item: { className: 'fs-14' }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    {/* Show Confirm button in same row ONLY if not Rejected */}
+                                                    {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark d-flex align-items-center gap-2 rounded-pill px-4 fr-style-59ff025d"
+                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 h-100 fr-style-59ff025d"
                                                             onClick={() => {
                                                                 if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                     if (isHost && assignedLenderIds.length === 0) {
                                                                         setShowMissingLenderModal(true);
-                                                                        if (lenderTableRef.current) {
-                                                                            lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                                            lenderTableRef.current.classList.add('border-danger');
-                                                                            setTimeout(() => lenderTableRef.current?.classList.remove('border-danger'), 2000);
-                                                                        }
                                                                         return;
                                                                     }
                                                                 }
@@ -613,19 +638,20 @@ export default function FundingRequestDetail() {
                                                                     toast.info('Status is unchanged.');
                                                                 }
                                                             }}
+                                                            disabled={updateStatusMutation.isPending}
                                                         >
                                                             Confirm <i className="ri-arrow-right-line ms-1"></i>
                                                         </button>
-                                                    </div>
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Note and Confirm button below for Rejected */}
                                             {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
-                                                <div className="mb-2">
-                                                    <label className="form-label fs-13 fw-semibold">Reason / Note <span className="text-danger">*</span></label>
+                                                <div className="mb-2 mt-3">
+                                                    <label className="form-label fs-13 fw-semibold mb-2">Reason / Note <span className="text-danger">*</span></label>
                                                     <textarea
-                                                        className={`form-control rounded ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
+                                                        className={`form-control rounded fr-style-6e003d7 ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
                                                         rows={4}
                                                         value={rejectReason}
                                                         onChange={(e) => {
@@ -635,7 +661,6 @@ export default function FundingRequestDetail() {
                                                             }
                                                         }}
                                                         placeholder="Please provide a reason for rejection..."
-                                                        className="fr-style-6e003d7"
                                                     ></textarea>
                                                     {validationErrors.reject_reason && (
                                                         <div className="invalid-feedback d-block mt-2">
@@ -646,7 +671,7 @@ export default function FundingRequestDetail() {
                                                     <div className="mt-3">
                                                         <button
                                                             type="button"
-                                                            className="btn btn-dark d-flex align-items-center gap-2 rounded-pill px-4"
+                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
                                                             onClick={() => {
                                                                 if (!rejectReason.trim()) {
                                                                     setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
@@ -684,12 +709,9 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-22 text-white ${
-                                    (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'bg-danger' :
-                                    selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
-                                    selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-dark' :
-                                    'bg-primary'
-                                }`}>
+                                <span 
+                                    className="avatar-title rounded-circle fs-22 text-white bg-dark"
+                                >
                                     <i className={
                                         selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-circle-line' :
                                         selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
@@ -732,19 +754,17 @@ export default function FundingRequestDetail() {
                                     <div className="d-flex justify-content-between align-items-center">
                                         <span className="fs-13 text-muted fw-medium">Status Change</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <span className={`badge fs-12 ${
-                                                review?.status === FUNDING_REVIEW_STATUS.REJECTED ? 'bg-danger-subtle text-danger' :
-                                                review?.status === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success-subtle text-success' :
-                                                review?.status === FUNDING_REVIEW_STATUS.ACCEPTED ? 'bg-info-subtle text-info' :
-                                                review?.status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'bg-primary-subtle text-primary' :
-                                                'bg-warning-subtle text-warning'
-                                            }`}>{review?.status}</span>
+                                            <span 
+                                                className="badge fs-12 bg-primary-subtle text-primary px-2 py-1"
+                                            >
+                                                {review?.status === 'IN_PROGRESS' ? 'In Progress' : review?.status}
+                                            </span>
                                             <i className="ri-arrow-right-line text-muted fs-12"></i>
-                                            <span className={`badge fs-12 text-white ${
-                                                (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'bg-danger' :
-                                                selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'bg-success' :
-                                                'bg-primary'
-                                            }`}>{selectedStatus}</span>
+                                            <span 
+                                                className="badge fs-12 bg-dark text-white px-2 py-1"
+                                            >
+                                                {selectedStatus === 'IN_PROGRESS' ? 'In Progress' : selectedStatus}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -765,7 +785,7 @@ export default function FundingRequestDetail() {
                             <div className="d-flex justify-content-center gap-3 mt-4">
                                 <button
                                     type="button"
-                                    className="btn btn-light"
+                                    className="btn btn-light fw-medium px-4"
                                     onClick={() => setShowStatusModal(false)}
                                     disabled={updateStatusMutation.isPending}
                                 >
@@ -773,12 +793,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`btn ${
-                                        (selectedStatus === FUNDING_REVIEW_STATUS.REJECTED || selectedStatus === FUNDING_REVIEW_STATUS.CANCELED) ? 'btn-danger' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'btn-success' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'btn-dark' :
-                                        'btn-primary'
-                                    }`}
+                                    className="btn btn-dark fw-medium waves-effect waves-light px-4"
                                     onClick={handleStatusUpdate}
                                     disabled={updateStatusMutation.isPending}
                                 >
@@ -799,13 +814,8 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className={`avatar-title rounded-circle fs-22 text-white ${
-                                    lenderToAssign?.score_text?.includes('Excellent') ? 'bg-success' :
-                                    lenderToAssign?.score_text?.includes('Good') ? 'bg-warning' :
-                                    lenderToAssign?.score_text?.includes('Poor') ? 'bg-danger' :
-                                    'bg-primary'
-                                }`}>
-                                    <i className="ri-user-add-fill"></i>
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
+                                    <i className="ri-bank-line"></i>
                                 </span>
                             </div>
                             <h5 className="fw-bold mb-1">Confirm Assign Lender</h5>
@@ -864,7 +874,7 @@ export default function FundingRequestDetail() {
                             <div className="d-flex justify-content-center gap-3 mt-4">
                                 <button
                                     type="button"
-                                    className="btn btn-light"
+                                    className="btn btn-light fw-medium px-4"
                                     onClick={() => setShowAssignModal(false)}
                                     disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
                                 >
@@ -872,12 +882,7 @@ export default function FundingRequestDetail() {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`btn ${
-                                        lenderToAssign?.score_text?.includes('Excellent') ? 'btn-success' :
-                                        lenderToAssign?.score_text?.includes('Good') ? 'btn-warning text-dark' :
-                                        lenderToAssign?.score_text?.includes('Poor') ? 'btn-danger' :
-                                        'btn-primary'
-                                    }`}
+                                    className="btn btn-dark fw-medium waves-effect waves-light px-4"
                                     onClick={() => {
                                         assignLenderMutation.mutate(
                                             { id: review.id, lender_ids: [lenderToAssign?.id] },
@@ -912,8 +917,8 @@ export default function FundingRequestDetail() {
                     <ModalBody className="p-0">
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span className="avatar-title rounded-circle fs-22 text-white bg-primary">
-                                    <i className="ri-error-warning-fill"></i>
+                                <span className="avatar-title rounded-circle fs-22 text-white bg-dark">
+                                    <i className="ri-bank-line"></i>
                                 </span>
                             </div>
                             <h5 className="fw-bold mb-1">Lender Required</h5>
@@ -922,14 +927,30 @@ export default function FundingRequestDetail() {
                             </p>
                         </div>
                         <div className="p-4">
-                            <div className="d-flex justify-content-center mt-2">
+                            <div className="d-flex justify-content-center gap-3 mt-2">
                                 <button
                                     type="button"
-                                    className="btn btn-primary px-4 py-2"
+                                    className="btn btn-light fw-medium px-4"
+                                    onClick={() => setShowMissingLenderModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-dark fw-medium px-4"
                                     onClick={() => {
                                         setShowMissingLenderModal(false);
                                         if (lenderTableRef.current) {
-                                            lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                            lenderTableRef.current.classList.add('border-danger');
+                                            setTimeout(() => lenderTableRef.current?.classList.remove('border-danger'), 2000);
+                                            
+                                            setTimeout(() => {
+                                                const firstAssignBtn = lenderTableRef.current?.querySelector('td button.btn') as HTMLButtonElement;
+                                                if (firstAssignBtn) {
+                                                    firstAssignBtn.click();
+                                                }
+                                            }, 600);
                                         }
                                     }}
                                 >
