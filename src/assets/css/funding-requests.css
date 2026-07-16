@@ -113,5 +113,51 @@
 .fr-progress-style-501635f8 { font-size: 11px; line-height: 1.4; }
 
 
+
 .funding-req-circle-text { top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; }
+
+/* Lender Score Match Fraction & Text */
+.fr-lender-score-fraction {
+    font-size: 13px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+.fr-lender-score-text {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Documents Table Min Width */
+.fr-style-docs-table {
+    min-width: 700px;
+}
+
+/* Status Dropdown Row — fixed 38px height to align with Confirm button */
+.fr-status-dropdown-wrap {
+    height: 38px;
+}
+.fr-status-dropdown,
+.fr-status-dropdown-root {
+    height: 38px !important;
+}
+.fr-status-dropdown-input {
+    line-height: 38px;
+}
+
+/* Confirm button — matches dropdown height */
+.fr-confirm-btn {
+    height: 38px;
+    white-space: nowrap;
+}
+
+/* Lender row pulse animation (moved from inline style tag) */
+@keyframes highlightRowPulse {
+    0%   { background-color: #ffffff; }
+    50%  { background-color: #fff3cd; }
+    100% { background-color: #ffffff; }
+}
+.row-pulse-animation {
+    animation: highlightRowPulse 1.2s ease-in-out infinite !important;
+}
 

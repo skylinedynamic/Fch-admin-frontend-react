@@ -258,18 +258,6 @@ export default function FundingRequestDetail() {
                                         </div>{/* end card-header */}
                                         <div className="card-body p-0">
                                             <div className="fr-style-1d4669b6">
-                                                <style>
-                                                    {`
-                                                    @keyframes highlightRowPulse {
-                                                        0% { background-color: #ffffff; }
-                                                        50% { background-color: #fff3cd; }
-                                                        100% { background-color: #ffffff; }
-                                                    }
-                                                    .row-pulse-animation {
-                                                        animation: highlightRowPulse 1.2s ease-in-out infinite !important;
-                                                    }
-                                                `}
-                                                </style>
                                                 <table className="table align-middle mb-0 fr-style-310c95f3">
                                                     <thead>
                                                         <tr className="fr-style-c2cbac2">
@@ -323,8 +311,8 @@ export default function FundingRequestDetail() {
                                                                         </td>
                                                                         {/* Matches */}
                                                                         <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                            <div className="fw-bold" style={{ fontSize: '13px', color: lender.score_hex, marginBottom: '2px', whiteSpace: 'nowrap' }}>{lender.matches_fraction}</div>
-                                                                            <div style={{ fontSize: '10px', color: lender.score_hex, fontWeight: 600, whiteSpace: 'nowrap' }}>{lender.score_text}</div>
+                                                                            <div className="fw-bold fr-lender-score-fraction" style={{ color: lender.score_hex }}>{lender.matches_fraction}</div>
+                                                                            <div className="fr-lender-score-text" style={{ color: lender.score_hex }}>{lender.score_text}</div>
                                                                         </td>
 
                                                                         {/* FICO Score */}
@@ -493,7 +481,7 @@ export default function FundingRequestDetail() {
                                 </div>
                                 <div className="card-body p-4">
                                     <div className="table-responsive border rounded border-light-subtle bg-white lender-match-table-container">
-                                        <table className="table align-middle mb-0 fr-style-4ac477ea" style={{ minWidth: '700px' }}>
+                                        <table className="table align-middle mb-0 fr-style-4ac477ea fr-style-docs-table">
                                             <thead className="bg-light">
                                                 <tr>
                                                     <th scope="col" className="fs-13 fw-semibold text-muted border-bottom-0 px-2 fr-style-55c8853f">File Name</th>
@@ -624,17 +612,17 @@ export default function FundingRequestDetail() {
                                         {/* Status Row */}
                                         <div className="mb-3">
                                             <label className="form-label fs-13 fw-semibold mb-2">Status</label>
-                                            <div className="d-flex gap-2 align-items-stretch">
-                                                <div className="flex-grow-1">
+                                            <div className="d-flex gap-2 align-items-center">
+                                                <div className="flex-grow-1 fr-status-dropdown-wrap">
                                                     <Dropdown
                                                         value={selectedStatus}
                                                         options={FUNDING_REVIEW_STATUS_OPTIONS}
                                                         onChange={(e) => setSelectedStatus(e.value)}
-                                                        className={`w-100 h-100 d-flex align-items-center ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                        className={`w-100 d-flex align-items-center fr-status-dropdown ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
                                                         placeholder="Select a Status"
                                                         pt={{
-                                                            root: { className: 'w-100 rounded h-100' },
-                                                            input: { className: 'fs-14' },
+                                                            root: { className: 'w-100 rounded fr-status-dropdown-root' },
+                                                            input: { className: 'fs-14 py-0 d-flex align-items-center fr-status-dropdown-input' },
                                                             item: { className: 'fs-14' }
                                                         }}
                                                     />
@@ -643,7 +631,7 @@ export default function FundingRequestDetail() {
                                                 {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
                                                     <button
                                                         type="button"
-                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 h-100 fr-style-59ff025d"
+                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 fr-style-59ff025d fr-confirm-btn"
                                                         onClick={() => {
                                                             if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                 if (isHost && assignedLenderIds.length === 0) {
