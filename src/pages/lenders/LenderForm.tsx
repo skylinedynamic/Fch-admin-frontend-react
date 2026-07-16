@@ -12,6 +12,7 @@ import { LENDER_STATUS } from '../../config/statusOptions';
 import { PRODUCT_CATEGORIES, SUBMISSION_METHODS } from '../../config/lender';
 import { useSummernote } from '../../hooks/useSummernote';
 import LenderProductCategoryModal from './components/LenderProductCategoryModal';
+import '../../../assets/css/lenders.css';
 
 export default function LenderForm() {
     const navigate = useNavigate();

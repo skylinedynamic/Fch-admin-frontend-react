@@ -22,13 +22,27 @@ export default function ReviewProgressCard({
 
     const progressPercentage = getFundingReviewProgress(status);
     const isRejected = status === FUNDING_REVIEW_STATUS.REJECTED;
-    const timelineSteps = FUNDING_REVIEW_TIMELINE_STEPS;
+    const isCanceled = status === FUNDING_REVIEW_STATUS.CANCELED;
+    const isErrorState = isRejected || isCanceled;
     const guidelineCards = FUNDING_REVIEW_GUIDELINE_CARDS;
+    
+    const terminalStatuses = [FUNDING_REVIEW_STATUS.APPROVED, FUNDING_REVIEW_STATUS.REJECTED, FUNDING_REVIEW_STATUS.CANCELED];
+    const isCurrentTerminal = terminalStatuses.includes(status);
+    const terminalKey = isCurrentTerminal ? status : FUNDING_REVIEW_STATUS.APPROVED;
 
-    let currentStatusIndex = timelineSteps.findIndex(
-        (x) => x.key === status
-    );
+    const displaySteps = FUNDING_REVIEW_TIMELINE_STEPS.filter(step => {
+        if (terminalStatuses.includes(step.key)) {
+            return step.key === terminalKey;
+        }
+        // If it's an error state, we don't show Accepted or In Progress
+        // because we don't know the exact history and it's confusing to see them.
+        if (isErrorState && (step.key === FUNDING_REVIEW_STATUS.ACCEPTED || step.key === FUNDING_REVIEW_STATUS.IN_PROGRESS)) {
+            return false;
+        }
+        return true;
+    });
 
+    let currentStatusIndex = displaySteps.findIndex((x) => x.key === status);
     if (currentStatusIndex === -1) {
         currentStatusIndex = 1;
     }
@@ -59,27 +73,26 @@ export default function ReviewProgressCard({
                 <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center">
                         <div
-                            className="d-flex align-items-center justify-content-center rounded-3"
-                            style={{ width: 48, height: 48, background: '#f8fafc', color: '#1e293b', marginRight: 16 }}
+                            className="d-flex align-items-center justify-content-center rounded-3 fr-progress-style-3c782fa9"
                         >
                             <i className="ri-line-chart-line fs-4"></i>
                         </div>
                         <div>
-                            <h5 className="card-title mb-1 fs-16 fw-bold" style={{ color: '#0f172a' }}>Review Progress</h5>
+                            <h5 className="card-title mb-1 fs-16 fw-bold fr-progress-style-3ded13b6">Review Progress</h5>
                             <p className="mb-0 text-muted fs-13">Track the progress of this funding request</p>
                         </div>
                     </div>
 
-                    <div className="d-flex align-items-center position-relative" style={{ width: 76, height: 76 }}>
-                        <svg width="76" height="76" style={{ transform: 'rotate(-90deg)' }}>
+                    <div className="d-flex align-items-center position-relative fr-progress-style-484b8e41">
+                        <svg width="76" height="76" className="fr-progress-style-386cac71">
                             <circle cx="38" cy="38" r="34" stroke="#f1f5f9" strokeWidth="6" fill="none" />
-                            <circle cx="38" cy="38" r="34" stroke={isRejected ? '#ef4444' : progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
+                            <circle cx="38" cy="38" r="34" stroke={isErrorState ? '#ef4444' : progressPercentage === 100 ? '#22c55e' : '#2563eb'} strokeWidth="6" fill="none"
                                 strokeDasharray="213" strokeDashoffset={213 - (213 * progressPercentage / 100)}
                                 strokeLinecap="round" />
                         </svg>
                         <div className="position-absolute w-100 h-100 d-flex flex-column align-items-center justify-content-center">
-                            <span className="fw-bolder text-dark" style={{ fontSize: '15px', lineHeight: '1' }}>{progressPercentage}%</span>
-                            <span className="fw-bold text-muted" style={{ fontSize: '10px', marginTop: '2px' }}>Complete</span>
+                            <span className="fw-bolder text-dark fr-progress-style-67aa90fa">{progressPercentage}%</span>
+                            <span className="fw-bold text-muted fr-progress-style-33f3a8e">Complete</span>
                         </div>
                     </div>
                 </div>
@@ -88,26 +101,32 @@ export default function ReviewProgressCard({
             <div className="card-body p-0 pt-4">
 
                 {/* Timeline */}
-                <div className="px-4 pb-4 overflow-x-auto">
-                    <div className="d-flex w-100 position-relative" style={{ minWidth: 500 }}>
-                        {timelineSteps.map((step, idx) => {
-                            const completed = isRejected ? idx < 3 : idx < currentStatusIndex;
+                <div className="px-4 pb-4 overflow-x-auto funding-request-scrollbar">
+                    <div className="d-flex w-100 position-relative timeline-track-container">
+                        {displaySteps.map((step, idx) => {
+                            // Since we now have a clean 5-step track, we just use simple index logic
+                            // If it's an error state (Rejected or Canceled) and this step is before the terminal step (which is at index 4),
+                            // we show it as completed if we've passed it, or incomplete if we haven't?
+                            // Actually, if it's Rejected or Canceled, we just mark everything before the current step as completed.
+                            const completed = idx < currentStatusIndex;
                             const current = idx === currentStatusIndex;
-                            const future = isRejected ? (idx >= 3 && !current) : idx > currentStatusIndex;
+                            const future = idx > currentStatusIndex;
 
                             let iconClass = step.icon;
                             if (completed) iconClass = 'ri-check-line';
+                            if (isErrorState && current) iconClass = isCanceled ? 'ri-stop-circle-line' : 'ri-close-line';
 
-                            const lineCompleted = isRejected ? idx < 2 : idx < currentStatusIndex - 1;
-                            const lineActive = isRejected ? false : idx === currentStatusIndex - 1;
+                            const lineCompleted = idx < currentStatusIndex - 1;
+                            const lineActive = idx === currentStatusIndex - 1;
 
                             const getStatusColor = (key: string) => {
                                 if (key === 'SUBMITTED') return '#16a34a';
-                                if (key === FUNDING_REVIEW_STATUS.PENDING) return '#10b981';
+                                if (key === FUNDING_REVIEW_STATUS.PENDING) return '#16a34a';
                                 if (key === FUNDING_REVIEW_STATUS.IN_PROGRESS) return '#3b82f6';
-                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#f59e0b';
-                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#22c55e';
+                                if (key === FUNDING_REVIEW_STATUS.ACCEPTED) return '#eab308';
+                                if (key === FUNDING_REVIEW_STATUS.APPROVED) return '#16a34a';
                                 if (key === FUNDING_REVIEW_STATUS.REJECTED) return '#ef4444';
+                                if (key === FUNDING_REVIEW_STATUS.CANCELED) return '#ef4444';
                                 return '#3b82f6';
                             };
 
@@ -115,7 +134,7 @@ export default function ReviewProgressCard({
 
                             return (
                                 <React.Fragment key={step.key}>
-                                    <div className="d-flex flex-column align-items-center position-relative" style={{ width: 100, flexShrink: 0 }}>
+                                    <div className="d-flex flex-column align-items-center position-relative fr-progress-style-2134b75c">
                                         <div
                                             className="rounded-circle d-flex align-items-center justify-content-center"
                                             style={{
@@ -139,30 +158,30 @@ export default function ReviewProgressCard({
                                         </div>
 
                                         {step.subtext && current && (
-                                            <div className="text-center mt-1" style={{ color: '#64748b', fontSize: 11 }}>
+                                            <div className="text-center mt-1 fr-progress-style-1a4a5286">
                                                 {step.subtext}
                                             </div>
                                         )}
 
                                         {idx === 0 && createdAt && (
-                                            <div className="text-center mt-1 fw-medium" style={{ color: '#64748b', fontSize: 11 }}>
+                                            <div className="text-center mt-1 fw-medium fr-progress-style-1a4a5286">
                                                 {formatDateTime(createdAt)}
                                             </div>
                                         )}
                                         {current && updatedAt && (
-                                            <div className="text-center mt-1 fw-medium" style={{ color: '#64748b', fontSize: 11 }}>
+                                            <div className="text-center mt-1 fw-medium fr-progress-style-1a4a5286">
                                                 {formatDateTime(updatedAt)}
                                             </div>
                                         )}
                                     </div>
 
-                                    {idx < timelineSteps.length - 1 && (
+                                    {idx < displaySteps.length - 1 && (
                                         <div
                                             className="flex-grow-1"
                                             style={{
                                                 height: 2,
                                                 marginTop: 17,
-                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(timelineSteps[idx + 1].key) : '#e2e8f0',
+                                                backgroundColor: lineCompleted || lineActive ? getStatusColor(displaySteps[idx + 1].key) : '#e2e8f0',
                                                 zIndex: 1,
                                                 marginLeft: -36,
                                                 marginRight: -36
@@ -180,37 +199,29 @@ export default function ReviewProgressCard({
                 {/* Status Guideline */}
                 <div className="p-4 pt-3">
                     <div className="d-flex align-items-center mb-3">
-                        <i className="ri-information-line fs-5 me-2" style={{ color: '#0f172a' }}></i>
-                        <h6 className="mb-0 fw-bold" style={{ color: '#0f172a' }}>
+                        <i className="ri-information-line fs-5 me-2 fr-progress-style-3ded13b6"></i>
+                        <h6 className="mb-0 fw-bold fr-progress-style-3ded13b6">
                             Status Guideline
                         </h6>
                     </div>
 
-                    <div className="overflow-x-auto pb-2">
-                        <div className="d-flex align-items-stretch gap-2 w-100" style={{ minWidth: 800 }}>
-                            {guidelineCards.map((item, idx) => (
-                                <React.Fragment key={item.label}>
-                                <div className="d-flex align-items-center p-2 px-xl-3 rounded-3" style={{
+                    <div className="row g-2">
+                        {guidelineCards.map((item, idx) => (
+                            <div key={item.label} className="col-12 col-md-6 col-xl-4">
+                                <div className="d-flex align-items-center p-2 px-xl-2 rounded-3 h-100" style={{
                                     backgroundColor: item.bg,
-                                    border: `1px solid ${item.border}`,
-                                    flex: 1
+                                    border: `1px solid ${item.border}`
                                 }}>
-                                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white me-3" style={{ width: 24, height: 24, background: item.iconBg, flexShrink: 0 }}>
-                                        {item.icon ? <i className={item.icon} style={{ fontSize: '12px' }}></i> : null}
+                                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white me-2" style={{ width: 24, height: 24, background: item.iconBg, flexShrink: 0 }}>
+                                        {item.icon && <i className={`${item.icon} fs-12`}></i>}
                                     </div>
                                     <div>
                                         <h6 className="mb-1 fw-bold text-dark fs-13">{item.label}</h6>
-                                        <p className="mb-0 text-muted" style={{ fontSize: '11px', lineHeight: '1.4' }}>{item.desc}</p>
+                                        <p className="mb-0 text-muted fr-progress-style-501635f8">{item.desc}</p>
                                     </div>
                                 </div>
-                                {idx < guidelineCards.length - 1 && (
-                                    <div className="d-flex align-items-center">
-                                        <i className="ri-arrow-right-s-line text-muted fs-4"></i>
-                                    </div>
-                                )}
-                            </React.Fragment>
+                            </div>
                         ))}
-                        </div>
                     </div>
                 </div>
 

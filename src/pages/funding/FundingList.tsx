@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import CustomDropdown from '../../components/Common/CustomDropdown';
+import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
@@ -40,6 +40,9 @@ export default function FundingList() {
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedType, setSelectedType] = useState<string>('');
+    const [appliedStatus, setAppliedStatus] = useState<string>('');
+    const [appliedGroup, setAppliedGroup] = useState<string>('');
+    const [appliedType, setAppliedType] = useState<string>('');
 
     // Checkbox selection state
     const [selectedFundings, setSelectedFundings] = useState<any[]>([]);
@@ -89,9 +92,9 @@ export default function FundingList() {
                 sort_order: sortOrder,
                 search: appliedSearchText,
                 filters: appliedFilters,
-                status: selectedStatus || undefined,
-                funding_group_id: selectedGroup || undefined,
-                funding_type_id: selectedType || undefined,
+                status: appliedStatus || undefined,
+                funding_group_id: appliedGroup || undefined,
+                funding_type_id: appliedType || undefined,
             };
             const response = await fetchFundingSequencings(payload);
             if (response.status !== false) {
@@ -113,7 +116,7 @@ export default function FundingList() {
 
     useEffect(() => {
         loadData();
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, selectedStatus, selectedGroup, selectedType]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, appliedStatus, appliedGroup, appliedType]);
 
     const onPage = (event) => {
         const nextPerPage = event.rows;
@@ -132,6 +135,9 @@ export default function FundingList() {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
+        setAppliedStatus(selectedStatus);
+        setAppliedGroup(selectedGroup);
+        setAppliedType(selectedType);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -142,6 +148,9 @@ export default function FundingList() {
         setSelectedStatus('');
         setSelectedGroup('');
         setSelectedType('');
+        setAppliedStatus('');
+        setAppliedGroup('');
+        setAppliedType('');
         initFilters();
         setPage(1);
     };
@@ -323,40 +332,52 @@ export default function FundingList() {
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedStatus}
                                                         options={[{ label: 'All Status', value: '' }, ...FUNDING_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedStatus(val)}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        onChange={(e) => {
+                                                            setSelectedStatus(e.value);
+                                                        }}
+                                                        filter
+                                                        filterBy="label"
                                                         placeholder="All Status"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedGroup}
                                                         options={[{ label: 'All Groups', value: '' }, ...groupOptions.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedGroup(val)}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        onChange={(e) => {
+                                                            setSelectedGroup(e.value);
+                                                        }}
+                                                        filter
+                                                        filterBy="label"
                                                         placeholder="All Groups"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedType}
-                                                        options={[{ label: 'All Types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedType(val)}
+                                                        options={[{ label: 'All Funding types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                         optionLabel="label"
                                                         optionValue="value"
-                                                        placeholder="All Types"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        onChange={(e) => {
+                                                            setSelectedType(e.value);
+                                                        }}
+                                                        filter
+                                                        filterBy="label"
+                                                        placeholder="All Funding types"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
