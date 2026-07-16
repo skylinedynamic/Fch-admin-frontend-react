@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import CustomDropdown from '../../components/Common/CustomDropdown';
+import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import TableLoader from '../../components/Loader/TableLoader';
 import FilterLoader from '../../components/Loader/FilterLoader';
@@ -323,40 +323,46 @@ export default function FundingList() {
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedStatus}
+                                                        onChange={(e) => { setSelectedStatus(e.value); setPage(1); }}
                                                         options={[{ label: 'All Status', value: '' }, ...FUNDING_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedStatus(val)}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        filter
+                                                        filterBy="label"
                                                         placeholder="All Status"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedGroup}
+                                                        onChange={(e) => { setSelectedGroup(e.value); setPage(1); }}
                                                         options={[{ label: 'All Groups', value: '' }, ...groupOptions.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedGroup(val)}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        filter
+                                                        filterBy="label"
                                                         placeholder="All Groups"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">
                                                 <div className="h-100">
-                                                    <CustomDropdown
+                                                    <Dropdown
                                                         value={selectedType}
-                                                        options={[{ label: 'All Types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
-                                                        onChange={(val) => setSelectedType(val)}
+                                                        onChange={(e) => { setSelectedType(e.value); setPage(1); }}
+                                                        options={[{ label: 'All Funding types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                         optionLabel="label"
                                                         optionValue="value"
-                                                        placeholder="All Types"
-                                                        className="w-100 vendor-filter-bg h-100"
+                                                        filter
+                                                        filterBy="label"
+                                                        placeholder="All Funding types"
+                                                        className="w-100 bg-light border-light"
                                                     />
                                                 </div>
                                             </div>
