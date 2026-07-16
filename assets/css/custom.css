@@ -1487,7 +1487,7 @@ File: Custom Css File
 .p-dropdown {
   display: inline-flex !important;
   align-items: center !important;
-  border: 1px solid #ced4da !important;
+  /* border: 1px solid #ced4da !important; */
 }
 
 .p-dropdown .p-dropdown-label {
@@ -1896,7 +1896,7 @@ File: Custom Css File
 .p-dropdown {
   display: inline-flex !important;
   align-items: center !important;
-  border: 1px solid #ced4da !important;
+  /* border: 1px solid #ced4da !important; */
 }
 
 .p-dropdown .p-dropdown-label {
@@ -4177,13 +4177,15 @@ File: Custom Css File
   opacity: 1 !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
+  background: #f9f9f9 !important;
 }
 
 .p-disabled,
 .p-component:disabled {
   opacity: 1 !important;
+  background: #f9f9f9 !important;
 }
 
 .form-control:disabled {
-  background-color: #fff !important;
+  background: #f9f9f9 !important;
 }
