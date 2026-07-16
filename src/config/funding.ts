@@ -147,7 +147,9 @@ export const TIB_OPTIONS = [
     { label: '6 months', value: 6 },
     { label: '12 months', value: 12 },
     { label: '24 months', value: 24 },
-    { label: '36 months', value: 36 }
+    { label: '36 months', value: 36 },
+    { label: '48 months', value: 48 },
+    { label: '60 months', value: 60 }
 ];
 
 export const INDUSTRIES_OPTIONS = [
