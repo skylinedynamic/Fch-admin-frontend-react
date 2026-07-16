@@ -40,6 +40,9 @@ export default function FundingList() {
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedType, setSelectedType] = useState<string>('');
+    const [appliedStatus, setAppliedStatus] = useState<string>('');
+    const [appliedGroup, setAppliedGroup] = useState<string>('');
+    const [appliedType, setAppliedType] = useState<string>('');
 
     // Checkbox selection state
     const [selectedFundings, setSelectedFundings] = useState<any[]>([]);
@@ -89,9 +92,9 @@ export default function FundingList() {
                 sort_order: sortOrder,
                 search: appliedSearchText,
                 filters: appliedFilters,
-                status: selectedStatus || undefined,
-                funding_group_id: selectedGroup || undefined,
-                funding_type_id: selectedType || undefined,
+                status: appliedStatus || undefined,
+                funding_group_id: appliedGroup || undefined,
+                funding_type_id: appliedType || undefined,
             };
             const response = await fetchFundingSequencings(payload);
             if (response.status !== false) {
@@ -113,7 +116,7 @@ export default function FundingList() {
 
     useEffect(() => {
         loadData();
-    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, selectedStatus, selectedGroup, selectedType]);
+    }, [page, perPage, sortField, sortOrder, appliedSearchText, appliedFilters, appliedStatus, appliedGroup, appliedType]);
 
     const onPage = (event) => {
         const nextPerPage = event.rows;
@@ -132,6 +135,9 @@ export default function FundingList() {
 
     const handleApplyFilters = () => {
         setAppliedSearchText(searchText);
+        setAppliedStatus(selectedStatus);
+        setAppliedGroup(selectedGroup);
+        setAppliedType(selectedType);
         setAppliedFilters(filters);
         setPage(1);
     };
@@ -142,6 +148,9 @@ export default function FundingList() {
         setSelectedStatus('');
         setSelectedGroup('');
         setSelectedType('');
+        setAppliedStatus('');
+        setAppliedGroup('');
+        setAppliedType('');
         initFilters();
         setPage(1);
     };
@@ -325,10 +334,12 @@ export default function FundingList() {
                                                 <div className="h-100">
                                                     <Dropdown
                                                         value={selectedStatus}
-                                                        onChange={(e) => { setSelectedStatus(e.value); setPage(1); }}
                                                         options={[{ label: 'All Status', value: '' }, ...FUNDING_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        onChange={(e) => {
+                                                            setSelectedStatus(e.value);
+                                                        }}
                                                         filter
                                                         filterBy="label"
                                                         placeholder="All Status"
@@ -340,10 +351,12 @@ export default function FundingList() {
                                                 <div className="h-100">
                                                     <Dropdown
                                                         value={selectedGroup}
-                                                        onChange={(e) => { setSelectedGroup(e.value); setPage(1); }}
                                                         options={[{ label: 'All Groups', value: '' }, ...groupOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        onChange={(e) => {
+                                                            setSelectedGroup(e.value);
+                                                        }}
                                                         filter
                                                         filterBy="label"
                                                         placeholder="All Groups"
@@ -355,10 +368,12 @@ export default function FundingList() {
                                                 <div className="h-100">
                                                     <Dropdown
                                                         value={selectedType}
-                                                        onChange={(e) => { setSelectedType(e.value); setPage(1); }}
                                                         options={[{ label: 'All Funding types', value: '' }, ...typeOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                         optionLabel="label"
                                                         optionValue="value"
+                                                        onChange={(e) => {
+                                                            setSelectedType(e.value);
+                                                        }}
                                                         filter
                                                         filterBy="label"
                                                         placeholder="All Funding types"

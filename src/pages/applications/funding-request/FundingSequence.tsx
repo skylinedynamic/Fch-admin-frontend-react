@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import CustomDropdown from '../../../components/Common/CustomDropdown';
+import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -212,27 +212,31 @@ export default function FundingSequence() {
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="h-100">
-                                                <CustomDropdown
+                                                <Dropdown
                                                     value={selectedStatus}
                                                     options={[{ label: 'All Status', value: '' }, ...statusOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    onChange={(val) => setSelectedStatus(val)}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    filter
+                                                    filterBy="label"
                                                     placeholder="All Status"
-                                                    className="w-100 vendor-filter-bg h-100"
+                                                    className="w-100 bg-light border-light h-100"
                                                 />
                                             </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="h-100">
-                                                <CustomDropdown
+                                                <Dropdown
                                                     value={selectedFundingSequenceId}
                                                     options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    onChange={(val) => setSelectedFundingSequenceId(val)}
+                                                    onChange={(e) => setSelectedFundingSequenceId(e.value)}
+                                                    filter
+                                                    filterBy="label"
                                                     placeholder="All Funding Types"
-                                                    className="w-100 vendor-filter-bg h-100"
+                                                    className="w-100 bg-light border-light h-100"
                                                 />
                                             </div>
                                         </div>
