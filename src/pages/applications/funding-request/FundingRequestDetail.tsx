@@ -25,7 +25,7 @@ import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
 export default function FundingRequestDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    
+
     const currentUser = useAuthStore((state: any) => state.user);
     const isHost = currentUser?.is_host == 1;
 
@@ -46,7 +46,8 @@ export default function FundingRequestDetail() {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [lenderToAssign, setLenderToAssign] = useState<any>(null);
     const [assignedLenderIds, setAssignedLenderIds] = useState<number[]>([]);
-    
+    const [showAssignIndicator, setShowAssignIndicator] = useState(false);
+
     const [lenderSearch, setLenderSearch] = useState('');
     const [lenderCategoryFilter, setLenderCategoryFilter] = useState('');
     const [lenderNameFilter, setLenderNameFilter] = useState('');
@@ -82,13 +83,13 @@ export default function FundingRequestDetail() {
     // Use standard CSS sticky instead of JS listener to avoid jumping/cut-off issues
 
     const matchedLenders = review?.matched_lenders || [];
-    
+
     const uniqueCategories = Array.from(new Set(matchedLenders.map((l: any) => l.product_category))).map(cat => ({ label: cat, value: cat }));
     const uniqueLenderNames = Array.from(new Set(matchedLenders.map((l: any) => l.name))).map(name => ({ label: name, value: name }));
-    
+
     const filteredLenders = matchedLenders.filter((lender: any) => {
-        const matchesSearch = !appliedLenderSearch || 
-            lender.name?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) || 
+        const matchesSearch = !appliedLenderSearch ||
+            lender.name?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
             lender.product_category?.toLowerCase().includes(appliedLenderSearch.toLowerCase()) ||
             lender.requirements?.min_fico?.toString().includes(appliedLenderSearch) ||
             lender.requirements?.min_revenue?.toString().includes(appliedLenderSearch) ||
@@ -151,17 +152,17 @@ export default function FundingRequestDetail() {
     const getStatusBadge = (status: string) => {
         const styles = getExactStatusStyles(status);
         const displayStatus = status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'In Progress' :
-                              status === FUNDING_REVIEW_STATUS.REJECTED ? 'Rejected' :
-                              status === FUNDING_REVIEW_STATUS.CANCELED ? 'Canceled' :
-                              status === 'PENDING' ? 'Pending' : status;
-        
+            status === FUNDING_REVIEW_STATUS.REJECTED ? 'Rejected' :
+                status === FUNDING_REVIEW_STATUS.CANCELED ? 'Canceled' :
+                    status === 'PENDING' ? 'Pending' : status;
+
         return (
-            <span 
-                className="badge fs-13" 
-                style={{ 
-                    backgroundColor: styles.bg, 
-                    color: styles.iconBg, 
-                    border: `1px solid ${styles.border}` 
+            <span
+                className="badge fs-13"
+                style={{
+                    backgroundColor: styles.bg,
+                    color: styles.iconBg,
+                    border: `1px solid ${styles.border}`
                 }}
             >
                 {displayStatus}
@@ -197,215 +198,233 @@ export default function FundingRequestDetail() {
                         </div>
                     </div>
 
-                    
 
-                    
+
+
 
 
                     <div className="row mt-3 fr-style-4f667c71">
                         <div className="col-lg-8">
-                            <ReviewProgressCard 
-                                status={review.status} 
-                                createdAt={review.created_at} 
+                            <ReviewProgressCard
+                                status={review.status}
+                                createdAt={review.created_at}
                                 updatedAt={review.updated_at}
-                                rejectReason={review.reject_reason} 
+                                rejectReason={review.reject_reason}
                             />
                             {isHost && review.matched_lenders && review.matched_lenders.length > 0 && (
                                 <>
-                                    
+
                                     <div ref={lenderTableRef} className="card shadow-sm border-0 mb-4 rounded-3">
                                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-2 d-block">
-                                        <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
-                                            <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
-                                        </div>
-                                        <form onSubmit={(e) => {
-                                            e.preventDefault();
-                                            setAppliedLenderSearch(lenderSearch);
-                                            setAppliedLenderCategoryFilter(lenderCategoryFilter);
-                                            setAppliedLenderNameFilter(lenderNameFilter);
-                                        }}>
-                                            <div className="row g-3 mb-3 align-items-end">
-                                                <div className="col-md-3">
-                                                    <div className="search-box">
-                                                        <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
-                                                        <i className="ri-search-line search-icon"></i>
-                                                    </div>
-                                                </div>
-                                                <div className="col-md-3">
-                                                    <Dropdown value={lenderCategoryFilter} options={[{label: 'All Categories', value: ''}, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => setLenderCategoryFilter(e.value)} placeholder="All Categories" className="w-100" />
-                                                </div>
-                                                <div className="col-md-3">
-                                                    <Dropdown value={lenderNameFilter} options={[{label: 'All Lenders', value: ''}, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
-                                                </div>
-                                                <div className="col-md-3">
-                                                    <div className="d-flex gap-2">
-                                                        <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
-                                                        <button type="button" className="btn btn-default flex-grow-1" onClick={() => { 
-                                                            setLenderSearch(''); 
-                                                            setLenderCategoryFilter(''); 
-                                                            setLenderNameFilter(''); 
-                                                            setAppliedLenderSearch('');
-                                                            setAppliedLenderCategoryFilter('');
-                                                            setAppliedLenderNameFilter('');
-                                                        }}>
-                                                            <i className="ri-close-line me-1 align-bottom"></i> Clear
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                            <div className="d-flex align-items-center justify-content-between mb-3 border-bottom">
+                                                <h5 className="card-title mb-0 fs-16 fw-bold text-dark">Lender Information</h5>
                                             </div>
-                                        </form>
+                                            <form onSubmit={(e) => {
+                                                e.preventDefault();
+                                                setAppliedLenderSearch(lenderSearch);
+                                                setAppliedLenderCategoryFilter(lenderCategoryFilter);
+                                                setAppliedLenderNameFilter(lenderNameFilter);
+                                            }}>
+                                                <div className="row g-3 mb-3 align-items-end">
+                                                    <div className="col-md-3">
+                                                        <div className="search-box">
+                                                            <input type="text" className="form-control search bg-light border-light" placeholder="Search lenders..." value={lenderSearch} onChange={(e) => setLenderSearch(e.target.value)} />
+                                                            <i className="ri-search-line search-icon"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <Dropdown value={lenderCategoryFilter} options={[{ label: 'All Categories', value: '' }, ...uniqueCategories]} optionLabel="label" optionValue="value" onChange={(e) => setLenderCategoryFilter(e.value)} placeholder="All Categories" className="w-100" />
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <Dropdown value={lenderNameFilter} options={[{ label: 'All Lenders', value: '' }, ...uniqueLenderNames]} optionLabel="label" optionValue="value" onChange={(e) => setLenderNameFilter(e.value)} placeholder="All Lenders" className="w-100" />
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <div className="d-flex gap-2">
+                                                            <button type="submit" className="btn btn-warning flex-grow-1"><i className="ri-equalizer-fill me-1 align-bottom"></i> Filters</button>
+                                                            <button type="button" className="btn btn-default flex-grow-1" onClick={() => {
+                                                                setLenderSearch('');
+                                                                setLenderCategoryFilter('');
+                                                                setLenderNameFilter('');
+                                                                setAppliedLenderSearch('');
+                                                                setAppliedLenderCategoryFilter('');
+                                                                setAppliedLenderNameFilter('');
+                                                            }}>
+                                                                <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
                                         </div>{/* end card-header */}
                                         <div className="card-body p-0">
-                                        <div className="fr-style-1d4669b6">
-                                            <table className="table align-middle mb-0 fr-style-310c95f3">
-                                                <thead>
-                                                    <tr className="fr-style-c2cbac2">
-                                                        <th rowSpan={2} className="px-2 py-3 align-middle text-center fr-style-4ff6cdc1">
-                                                            <div className="text-dark fw-bold fr-style-3f3c752c">Lender Name</div>
-                                                            <div className="text-muted fr-style-3f58a42e">Contact Info</div>
-                                                        </th>
-                                                        <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-26842ef4">Category</th>
-                                                        <th className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Match Analysis</th>
-                                                        <th colSpan={4} className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Requirements Match</th>
-                                                        <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-1b4a0199">Match</th>
-                                                        <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee">Actions</th>
-                                                    </tr>
-                                                    <tr className="fr-style-123ff9de">
-                                                        <th className="px-1 py-2 text-center fr-style-6fe1846d">Matches</th>
-
-                                                        <th className="px-1 py-2 text-center fr-style-6ed6d344">FICO Score</th>
-                                                        <th className="px-1 py-2 text-center fr-style-45c66d77">Min Revenue</th>
-                                                        <th className="px-1 py-2 text-center fr-style-350c3165">Min TIB</th>
-                                                        <th className="px-1 py-2 text-center fr-style-45c66d77">Min Deposit</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredLenders.length > 0 ? (
-                                                        filteredLenders.map((lender: any, idx: number) => {
-                                                            const radius = 16;
-                                                            const circumference = 2 * Math.PI * radius;
-                                                            const strokeDashoffset = circumference - (lender.score / 100) * circumference;
-                                                            
-                                                            const isAssigned = assignedLenderIds.includes(lender.id);
-
-                                                            return (
-                                                                <tr key={lender.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }} onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = '#f8fafc')} onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = '#fff')}>
-                                                                    
-                                                                    {/* Lender Name */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="fw-bold text-dark fr-style-747e3e7d">{lender.name || 'Lender Name'}</div>
-                                                                        <div className="text-muted fr-style-3f58a42e">{lender.phone || lender.email || 'N/A'}</div>
-                                                                    </td>
-                                                                    {/* Category */}
-                                                                    <td className="px-1 py-3 text-center fr-style-579eac21">
-                                                                        <span className="fr-style-1db6650e">
-                                                                            {lender.product_category || 'Category'}
-                                                                        </span>
-                                                                    </td>
-                                                                    {/* Matches */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="fw-bold" style={{ fontSize: '13px', color: lender.score_hex, marginBottom: '2px', whiteSpace: 'nowrap' }}>{lender.matches_fraction}</div>
-                                                                        <div style={{ fontSize: '10px', color: lender.score_hex, fontWeight: 600, whiteSpace: 'nowrap' }}>{lender.score_text}</div>
-                                                                    </td>
-
-                                                                    {/* FICO Score */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                            {lender.checks.fico ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                            <span className="fr-style-d7deedb">{lender.requirements.min_fico ? `${lender.requirements.min_fico}+` : 'N/A'}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    {/* Min Revenue */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                            {lender.checks.revenue ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                            <span className="fr-style-d7deedb">{lender.requirements.min_revenue ? `${formatCurrency(lender.requirements.min_revenue, '$', 1, 0)}+` : 'N/A'}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    {/* Min TIB */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                            {lender.checks.tib ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                            <span className="fr-style-d7deedb">{lender.requirements.min_tib ? `${lender.requirements.min_tib} mo` : 'N/A'}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    {/* Min Deposit */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
-                                                                            {lender.checks.deposit ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
-                                                                            <span className="fr-style-d7deedb">{lender.requirements.min_deposit ? `${formatCurrency(lender.requirements.min_deposit, '$', 1, 0)}+` : 'N/A'}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    {/* Overall Match */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        <div className="d-inline-flex align-items-center justify-content-center position-relative fr-style-210d4313">
-                                                                            <svg width="44" height="44" viewBox="0 0 44 44">
-                                                                                <circle cx="22" cy="22" r={radius} stroke="#e2e8f0" strokeWidth="3.5" fill="none" />
-                                                                                <circle cx="22" cy="22" r={radius} stroke={lender.score_hex} strokeWidth="3.5" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="fr-style-c5a99bb" />
-                                                                            </svg>
-                                                                            <span className="position-absolute fw-bold funding-req-circle-text" style={{ color: lender.score_hex }}>{lender.score}%</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    {/* Actions */}
-                                                                    <td className="px-2 py-3 text-center fr-style-73d7d324">
-                                                                        {!isAssigned ? (
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    setLenderToAssign(lender);
-                                                                                    setShowAssignModal(true);
-                                                                                }} 
-                                                                                disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
-                                                                                className="btn btn-sm d-inline-flex align-items-center gap-1 fr-style-4f21c796"
-                                                                            >
-                                                                                <i className="ri-user-add-line fr-style-3f3c752c"></i> Assign
-                                                                            </button>
-                                                                        ) : (
-                                                                            <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
-                                                                                <i className="ri-check-line me-1"></i> Assigned
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan={9} className="text-center py-4 text-muted fs-14">
-                                                                <i className="ri-search-line fs-24 d-block mb-2"></i>
-                                                                No matched lenders found for this funding type.
-                                                            </td>
+                                            <div className="fr-style-1d4669b6">
+                                                <style>
+                                                    {`
+                                                    @keyframes highlightRowPulse {
+                                                        0% { background-color: #ffffff; }
+                                                        50% { background-color: #fff3cd; }
+                                                        100% { background-color: #ffffff; }
+                                                    }
+                                                    .row-pulse-animation {
+                                                        animation: highlightRowPulse 1.2s ease-in-out infinite !important;
+                                                    }
+                                                `}
+                                                </style>
+                                                <table className="table align-middle mb-0 fr-style-310c95f3">
+                                                    <thead>
+                                                        <tr className="fr-style-c2cbac2">
+                                                            <th rowSpan={2} className="px-2 py-3 align-middle text-center fr-style-4ff6cdc1">
+                                                                <div className="text-dark fw-bold fr-style-3f3c752c">Lender Name</div>
+                                                                <div className="text-muted fr-style-3f58a42e">Contact Info</div>
+                                                            </th>
+                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-26842ef4">Category</th>
+                                                            <th className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Match Analysis</th>
+                                                            <th colSpan={4} className="px-3 py-2 text-center fw-bold fr-style-13ecc849">Requirements Match</th>
+                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-1b4a0199">Match</th>
+                                                            <th rowSpan={2} className="px-2 py-3 text-center fw-bold align-middle fr-style-705890ee">Actions</th>
                                                         </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div className="card-footer bg-white border-top p-3">
-                                        <div className="d-flex align-items-center justify-content-between">
-                                            <div className="text-muted fs-13">
-                                                Showing <span className="fw-semibold text-dark">1</span> to <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> of <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> lenders
+                                                        <tr className="fr-style-123ff9de">
+                                                            <th className="px-1 py-2 text-center fr-style-6fe1846d">Matches</th>
+
+                                                            <th className="px-1 py-2 text-center fr-style-6ed6d344">FICO Score</th>
+                                                            <th className="px-1 py-2 text-center fr-style-45c66d77">Min Revenue</th>
+                                                            <th className="px-1 py-2 text-center fr-style-350c3165">Min TIB</th>
+                                                            <th className="px-1 py-2 text-center fr-style-45c66d77">Min Deposit</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {filteredLenders.length > 0 ? (
+                                                            filteredLenders.map((lender: any, idx: number) => {
+                                                                const radius = 16;
+                                                                const circumference = 2 * Math.PI * radius;
+                                                                const strokeDashoffset = circumference - (lender.score / 100) * circumference;
+
+                                                                const isAssigned = assignedLenderIds.includes(lender.id);
+
+                                                                return (
+                                                                    <tr
+                                                                        key={lender.id || idx}
+                                                                        className={showAssignIndicator && idx === 0 ? 'row-pulse-animation' : ''}
+                                                                        style={{ borderBottom: '1px solid #e2e8f0', background: isAssigned ? '#f1f5f9' : '#fff' }}
+                                                                        onMouseEnter={e => !isAssigned && (e.currentTarget.style.background = showAssignIndicator && idx === 0 ? '' : '#f8fafc')}
+                                                                        onMouseLeave={e => !isAssigned && (e.currentTarget.style.background = showAssignIndicator && idx === 0 ? '' : '#fff')}
+                                                                    >
+
+                                                                        {/* Lender Name */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="fw-bold text-dark fr-style-747e3e7d">{lender.name || 'Lender Name'}</div>
+                                                                            <div className="text-muted fr-style-3f58a42e">{lender.phone || lender.email || 'N/A'}</div>
+                                                                        </td>
+                                                                        {/* Category */}
+                                                                        <td className="px-1 py-3 text-center fr-style-579eac21">
+                                                                            <span className="fr-style-1db6650e">
+                                                                                {lender.product_category || 'Category'}
+                                                                            </span>
+                                                                        </td>
+                                                                        {/* Matches */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="fw-bold" style={{ fontSize: '13px', color: lender.score_hex, marginBottom: '2px', whiteSpace: 'nowrap' }}>{lender.matches_fraction}</div>
+                                                                            <div style={{ fontSize: '10px', color: lender.score_hex, fontWeight: 600, whiteSpace: 'nowrap' }}>{lender.score_text}</div>
+                                                                        </td>
+
+                                                                        {/* FICO Score */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
+                                                                                {lender.checks.fico ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
+                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_fico ? `${lender.requirements.min_fico}+` : 'N/A'}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {/* Min Revenue */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
+                                                                                {lender.checks.revenue ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
+                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_revenue ? `${formatCurrency(lender.requirements.min_revenue, '$', 1, 0)}+` : 'N/A'}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {/* Min TIB */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
+                                                                                {lender.checks.tib ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
+                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_tib ? `${lender.requirements.min_tib} mo` : 'N/A'}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {/* Min Deposit */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="d-flex align-items-center justify-content-center gap-1 fr-style-66f5a318">
+                                                                                {lender.checks.deposit ? <i className="ri-checkbox-circle-fill fr-style-6005154d"></i> : <i className="ri-close-circle-fill fr-style-34f57f10"></i>}
+                                                                                <span className="fr-style-d7deedb">{lender.requirements.min_deposit ? `${formatCurrency(lender.requirements.min_deposit, '$', 1, 0)}+` : 'N/A'}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {/* Overall Match */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            <div className="d-inline-flex align-items-center justify-content-center position-relative fr-style-210d4313">
+                                                                                <svg width="44" height="44" viewBox="0 0 44 44">
+                                                                                    <circle cx="22" cy="22" r={radius} stroke="#e2e8f0" strokeWidth="3.5" fill="none" />
+                                                                                    <circle cx="22" cy="22" r={radius} stroke={lender.score_hex} strokeWidth="3.5" fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="fr-style-c5a99bb" />
+                                                                                </svg>
+                                                                                <span className="position-absolute fw-bold funding-req-circle-text" style={{ color: lender.score_hex }}>{lender.score}%</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        {/* Actions */}
+                                                                        <td className="px-2 py-3 text-center fr-style-73d7d324">
+                                                                            {!isAssigned ? (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setLenderToAssign(lender);
+                                                                                        setShowAssignModal(true);
+                                                                                    }}
+                                                                                    disabled={assignLenderMutation.isPending || updateStatusMutation.isPending}
+                                                                                    className="btn btn-sm btn-light border text-muted fw-medium d-inline-flex align-items-center gap-1 fr-style-4f21c796"
+                                                                                >
+                                                                                    <i className="ri-user-add-line fr-style-3f3c752c"></i> Assign
+                                                                                </button>
+                                                                            ) : (
+                                                                                <span className="badge bg-success-subtle text-success fs-12 px-2 py-1">
+                                                                                    <i className="ri-check-line me-1"></i> Assigned
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan={9} className="text-center py-4 text-muted fs-14">
+                                                                    <i className="ri-search-line fs-24 d-block mb-2"></i>
+                                                                    No matched lenders found for this funding type.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                            <div className="d-flex align-items-center gap-3">
-                                                <ul className="pagination pagination-sm mb-0">
-                                                    <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-double-line"></i></a></li>
-                                                    <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-s-line"></i></a></li>
-                                                    <li className="page-item active"><a className="page-link rounded bg-dark border-dark text-white fw-medium" href="#!">1</a></li>
-                                                    <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-s-line"></i></a></li>
-                                                    <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-double-line"></i></a></li>
-                                                </ul>
-                                                <select className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308">
-                                                    <option value="10">10</option>
-                                                    <option value="25">25</option>
-                                                    <option value="50">50</option>
-                                                </select>
+                                        </div>
+                                        <div className="card-footer bg-white border-top p-3">
+                                            <div className="d-flex align-items-center justify-content-between">
+                                                <div className="text-muted fs-13">
+                                                    Showing <span className="fw-semibold text-dark">1</span> to <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> of <span className="fw-semibold text-dark">{review.matched_lenders?.length || 0}</span> lenders
+                                                </div>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <ul className="pagination pagination-sm mb-0">
+                                                        <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-double-line"></i></a></li>
+                                                        <li className="page-item disabled"><a className="page-link border-0 text-muted" href="#!"><i className="ri-arrow-left-s-line"></i></a></li>
+                                                        <li className="page-item active"><a className="page-link rounded bg-dark border-dark text-white fw-medium" href="#!">1</a></li>
+                                                        <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-s-line"></i></a></li>
+                                                        <li className="page-item"><a className="page-link border-0 text-dark" href="#!"><i className="ri-arrow-right-double-line"></i></a></li>
+                                                    </ul>
+                                                    <select className="form-select form-select-sm border-light bg-light fw-medium text-dark fr-style-5dc02308">
+                                                        <option value="10">10</option>
+                                                        <option value="25">25</option>
+                                                        <option value="50">50</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
                                     </div>{/* end card */}
                                 </>
                             )}
 
-                            
+
 
                             <div className="card shadow-sm border-0 mb-4 rounded-3">
                                 <div className="card-header bg-white border-0 pt-4 pb-0">
@@ -458,7 +477,7 @@ export default function FundingRequestDetail() {
                                 </div>
                             </div>
 
-                            
+
 
                             {/* Documents Uploaded Card */}
                             <div className="card shadow-sm border-0 mb-4 rounded-3">
@@ -588,105 +607,105 @@ export default function FundingRequestDetail() {
                         {/* Right sticky column — pure CSS sticky */}
                         <div className="col-lg-4 d-flex flex-column gap-3 fr-style-30509dca">
                             {isHost && (
-                            <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
-                                <div className="card-header bg-white border-0 pt-4 pb-0">
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar-xs me-3">
-                                            <span className="avatar-title bg-light text-dark rounded fs-18">
-                                                <i className="ri-shield-check-line"></i>
-                                            </span>
-                                        </div>
-                                        <h5 className="card-title mb-0 fs-16 fw-bold">Review Actions</h5>
-                                    </div>
-                                </div>
-                                <div className="card-body p-4">
-                                    <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
-
-                                            {/* Status Row */}
-                                            <div className="mb-3">
-                                                <label className="form-label fs-13 fw-semibold mb-2">Status</label>
-                                                <div className="d-flex gap-2 align-items-stretch">
-                                                    <div className="flex-grow-1">
-                                                        <Dropdown
-                                                            value={selectedStatus}
-                                                            options={FUNDING_REVIEW_STATUS_OPTIONS}
-                                                            onChange={(e) => setSelectedStatus(e.value)}
-                                                            className={`w-100 h-100 d-flex align-items-center ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
-                                                            placeholder="Select a Status"
-                                                            pt={{
-                                                                root: { className: 'w-100 rounded h-100' },
-                                                                input: { className: 'fs-14' },
-                                                                item: { className: 'fs-14' }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    {/* Show Confirm button in same row ONLY if not Rejected */}
-                                                    {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 h-100 fr-style-59ff025d"
-                                                            onClick={() => {
-                                                                if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
-                                                                    if (isHost && assignedLenderIds.length === 0) {
-                                                                        setShowMissingLenderModal(true);
-                                                                        return;
-                                                                    }
-                                                                }
-                                                                if (selectedStatus !== review.status) {
-                                                                    setShowStatusModal(true);
-                                                                } else {
-                                                                    toast.info('Status is unchanged.');
-                                                                }
-                                                            }}
-                                                            disabled={updateStatusMutation.isPending}
-                                                        >
-                                                            Confirm <i className="ri-arrow-right-line ms-1"></i>
-                                                        </button>
-                                                    )}
-                                                </div>
+                                <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
+                                    <div className="card-header bg-white border-0 pt-4 pb-0">
+                                        <div className="d-flex align-items-center">
+                                            <div className="avatar-xs me-3">
+                                                <span className="avatar-title bg-light text-dark rounded fs-18">
+                                                    <i className="ri-shield-check-line"></i>
+                                                </span>
                                             </div>
+                                            <h5 className="card-title mb-0 fs-16 fw-bold">Review Actions</h5>
+                                        </div>
+                                    </div>
+                                    <div className="card-body p-4">
+                                        <p className="text-muted fs-13 mb-3">Update the status of this funding sequence step.</p>
 
-                                            {/* Note and Confirm button below for Rejected */}
-                                            {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
-                                                <div className="mb-2 mt-3">
-                                                    <label className="form-label fs-13 fw-semibold mb-2">Reason / Note <span className="text-danger">*</span></label>
-                                                    <textarea
-                                                        className={`form-control rounded fr-style-6e003d7 ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
-                                                        rows={4}
-                                                        value={rejectReason}
-                                                        onChange={(e) => {
-                                                            setRejectReason(e.target.value);
-                                                            if (validationErrors.reject_reason) {
-                                                                setValidationErrors({ ...validationErrors, reject_reason: null });
-                                                            }
+                                        {/* Status Row */}
+                                        <div className="mb-3">
+                                            <label className="form-label fs-13 fw-semibold mb-2">Status</label>
+                                            <div className="d-flex gap-2 align-items-stretch">
+                                                <div className="flex-grow-1">
+                                                    <Dropdown
+                                                        value={selectedStatus}
+                                                        options={FUNDING_REVIEW_STATUS_OPTIONS}
+                                                        onChange={(e) => setSelectedStatus(e.value)}
+                                                        className={`w-100 h-100 d-flex align-items-center ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                        placeholder="Select a Status"
+                                                        pt={{
+                                                            root: { className: 'w-100 rounded h-100' },
+                                                            input: { className: 'fs-14' },
+                                                            item: { className: 'fs-14' }
                                                         }}
-                                                        placeholder="Please provide a reason for rejection..."
-                                                    ></textarea>
-                                                    {validationErrors.reject_reason && (
-                                                        <div className="invalid-feedback d-block mt-2">
-                                                            {validationErrors.reject_reason[0]}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    <div className="mt-3">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
-                                                            onClick={() => {
-                                                                if (!rejectReason.trim()) {
-                                                                    setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
+                                                    />
+                                                </div>
+                                                {/* Show Confirm button in same row ONLY if not Rejected */}
+                                                {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 h-100 fr-style-59ff025d"
+                                                        onClick={() => {
+                                                            if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
+                                                                if (isHost && assignedLenderIds.length === 0) {
+                                                                    setShowMissingLenderModal(true);
                                                                     return;
                                                                 }
+                                                            }
+                                                            if (selectedStatus !== review.status) {
                                                                 setShowStatusModal(true);
-                                                            }}
-                                                        >
-                                                            Confirm <i className="ri-arrow-right-line ms-1"></i>
-                                                        </button>
+                                                            } else {
+                                                                toast.info('Status is unchanged.');
+                                                            }
+                                                        }}
+                                                        disabled={updateStatusMutation.isPending}
+                                                    >
+                                                        Confirm <i className="ri-arrow-right-line ms-1"></i>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Note and Confirm button below for Rejected */}
+                                        {selectedStatus === FUNDING_REVIEW_STATUS.REJECTED && (
+                                            <div className="mb-2 mt-3">
+                                                <label className="form-label fs-13 fw-semibold mb-2">Reason / Note <span className="text-danger">*</span></label>
+                                                <textarea
+                                                    className={`form-control rounded fr-style-6e003d7 ${validationErrors.reject_reason ? 'is-invalid' : 'bg-light border-0'}`}
+                                                    rows={4}
+                                                    value={rejectReason}
+                                                    onChange={(e) => {
+                                                        setRejectReason(e.target.value);
+                                                        if (validationErrors.reject_reason) {
+                                                            setValidationErrors({ ...validationErrors, reject_reason: null });
+                                                        }
+                                                    }}
+                                                    placeholder="Please provide a reason for rejection..."
+                                                ></textarea>
+                                                {validationErrors.reject_reason && (
+                                                    <div className="invalid-feedback d-block mt-2">
+                                                        {validationErrors.reject_reason[0]}
                                                     </div>
+                                                )}
+
+                                                <div className="mt-3">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center gap-2 px-4"
+                                                        onClick={() => {
+                                                            if (!rejectReason.trim()) {
+                                                                setValidationErrors({ reject_reason: ['The reason / note field is required.'] });
+                                                                return;
+                                                            }
+                                                            setShowStatusModal(true);
+                                                        }}
+                                                    >
+                                                        Confirm <i className="ri-arrow-right-line ms-1"></i>
+                                                    </button>
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
                             )}
 
                             <ActivitySidebar
@@ -709,22 +728,22 @@ export default function FundingRequestDetail() {
                         {/* Simple white header band */}
                         <div className="text-center pt-4 pb-3 px-2 rounded-top-3 bg-white">
                             <div className="avatar-md mx-auto mb-3">
-                                <span 
+                                <span
                                     className="avatar-title rounded-circle fs-22 text-white bg-dark"
                                 >
                                     <i className={
                                         selectedStatus === FUNDING_REVIEW_STATUS.REJECTED ? 'ri-close-circle-line' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-checkbox-circle-line' :
-                                        selectedStatus === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'ri-user-3-fill' :
-                                        'ri-time-line'
+                                            selectedStatus === FUNDING_REVIEW_STATUS.APPROVED ? 'ri-shield-check-line' :
+                                                selectedStatus === FUNDING_REVIEW_STATUS.ACCEPTED ? 'ri-checkbox-circle-line' :
+                                                    selectedStatus === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'ri-user-3-fill' :
+                                                        'ri-time-line'
                                     }></i>
                                 </span>
                             </div>
                             <h5 className="fw-bold mb-1">Confirm Status Update</h5>
                             <p className="text-muted fs-13 mb-0">
-                                {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost 
-                                    ? "Are you sure you want to Approve?" 
+                                {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost
+                                    ? "Are you sure you want to Approve?"
                                     : <>Are you sure you want to update the status to <strong>{selectedStatus}</strong>?</>}
                             </p>
                         </div>
@@ -743,24 +762,24 @@ export default function FundingRequestDetail() {
                                             {review?.borrower?.business_name || `${review?.borrower?.first_name ?? ''} ${review?.borrower?.last_name ?? ''}`.trim() || '—'}
                                         </span>
                                     </div>
-                                    
+
                                     {/* Funding Type */}
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="fs-13 text-muted fw-medium">Funding Type</span>
                                         <span className="fs-13 fw-semibold text-dark">{review?.funding_type || '—'}</span>
                                     </div>
-                                    
+
                                     {/* Status Transition */}
                                     <div className="d-flex justify-content-between align-items-center">
                                         <span className="fs-13 text-muted fw-medium">Status Change</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <span 
+                                            <span
                                                 className="badge fs-12 bg-primary-subtle text-primary px-2 py-1"
                                             >
                                                 {review?.status === 'IN_PROGRESS' ? 'In Progress' : review?.status}
                                             </span>
                                             <i className="ri-arrow-right-line text-muted fs-12"></i>
-                                            <span 
+                                            <span
                                                 className="badge fs-12 bg-dark text-white px-2 py-1"
                                             >
                                                 {selectedStatus === 'IN_PROGRESS' ? 'In Progress' : selectedStatus}
@@ -837,32 +856,30 @@ export default function FundingRequestDetail() {
                                             <span className="fs-13 text-muted fw-medium">Lender Name</span>
                                             <span className="fs-13 fw-semibold text-dark">{lenderToAssign.name}</span>
                                         </div>
-                                        
+
                                         {/* Funding Type */}
                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                             <span className="fs-13 text-muted fw-medium">Funding Type</span>
                                             <span className="fs-13 fw-semibold text-dark">{lenderToAssign.product_category || '—'}</span>
                                         </div>
-                                        
+
                                         {/* Match Analysis */}
                                         <div className="d-flex justify-content-between align-items-center">
                                             <span className="fs-13 text-muted fw-medium">Match Analysis</span>
                                             <div className="d-flex align-items-center gap-2">
-                                                <span className={`badge fs-12 ${
-                                                    lenderToAssign.score_text?.includes('Excellent') ? 'bg-success-subtle text-success' :
-                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning-subtle text-warning' :
-                                                    lenderToAssign.score_text?.includes('Poor') ? 'bg-danger-subtle text-danger' :
-                                                    'bg-primary-subtle text-primary'
-                                                }`}>
+                                                <span className={`fs-13 fw-semibold ${lenderToAssign.score_text?.includes('Excellent') ? 'text-success' :
+                                                        lenderToAssign.score_text?.includes('Good') ? 'text-warning' :
+                                                            lenderToAssign.score_text?.includes('Poor') ? 'text-danger' :
+                                                                'text-primary'
+                                                    }`}>
                                                     {lenderToAssign.matches_fraction || 'N/A'}
                                                 </span>
                                                 <i className="ri-arrow-right-line text-muted fs-12"></i>
-                                                <span className={`badge fs-12 text-white ${
-                                                    lenderToAssign.score_text?.includes('Excellent') ? 'bg-success' :
-                                                    lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
-                                                    lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
-                                                    'bg-primary'
-                                                }`}>
+                                                <span className={`badge fs-12 text-white ${lenderToAssign.score_text?.includes('Excellent') ? 'bg-success' :
+                                                        lenderToAssign.score_text?.includes('Good') ? 'bg-warning' :
+                                                            lenderToAssign.score_text?.includes('Poor') ? 'bg-danger' :
+                                                                'bg-primary'
+                                                    }`}>
                                                     {lenderToAssign.score_text || 'Match'}
                                                 </span>
                                             </div>
@@ -943,18 +960,15 @@ export default function FundingRequestDetail() {
                                         if (lenderTableRef.current) {
                                             lenderTableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                             lenderTableRef.current.classList.add('border-danger');
-                                            setTimeout(() => lenderTableRef.current?.classList.remove('border-danger'), 2000);
-                                            
+                                            setShowAssignIndicator(true);
                                             setTimeout(() => {
-                                                const firstAssignBtn = lenderTableRef.current?.querySelector('td button.btn') as HTMLButtonElement;
-                                                if (firstAssignBtn) {
-                                                    firstAssignBtn.click();
-                                                }
-                                            }, 600);
+                                                lenderTableRef.current?.classList.remove('border-danger');
+                                                setShowAssignIndicator(false);
+                                            }, 30000);
                                         }
                                     }}
                                 >
-                                    Got it, take me there!
+                                    Got it, take me there! <i className="ri-arrow-right-line ms-1"></i>
                                 </button>
                             </div>
                         </div>
