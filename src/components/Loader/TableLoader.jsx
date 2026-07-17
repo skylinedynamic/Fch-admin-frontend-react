@@ -2,7 +2,7 @@ import React from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 
-export default function TableLoader({ rows = 10, columns = 6, showHeader = true }) {
+export default function TableLoader({ rows = 8, columns = 6, showHeader = true }) {
 
     // Create skeleton data for rows
     const skeletonItems = Array.from({ length: rows }, (_, i) => ({ id: i }));

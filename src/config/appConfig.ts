@@ -14,6 +14,7 @@ export const ENTITY_TYPE_PARTNER = 'Partner';
 export const ENTITY_TYPE_BORROWER = 'Borrower';
 export const ENTITY_TYPE_EMPLOYEE = 'Employee';
 export const ENTITY_TYPE_USER = '';
+export const ENTITY_TYPE_USER_MODEL = 'USER';
 export const ENTITY_TYPE_FUNDING_REQUEST = 'Funding Request';
 
 export const TYPE_EMAIL = 'email';
