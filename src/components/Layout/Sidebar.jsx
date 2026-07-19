@@ -126,6 +126,13 @@ const menuItems = [
     permission: "view commission",
   },
   {
+    to: "/billing",
+    icon: "ri-bill-line",
+    label: "Billing",
+    permission: "view subscriptions",
+    isHostOnly: true,
+  },
+  {
     to: "/invoices",
     icon: "ri-file-text-line",
     label: "Invoices",

@@ -4297,3 +4297,7 @@ File: Custom Css File
 .stripe-submit-btn:active:not(:disabled) {
   transform: translateY(1px);
 }
+
+.card.card-animate {
+  margin-bottom: 15px !important;
+}

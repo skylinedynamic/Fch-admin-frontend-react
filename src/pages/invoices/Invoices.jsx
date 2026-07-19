@@ -8,8 +8,10 @@ import { fetchInvoices, fetchInvoiceStats } from '../../modules/invoice';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ListSkeletonLoader from '../../components/Loader/ListSkeletonLoader';
+import { useAuthStore } from '../../store/auth';
 
 export default function Invoices() {
+    const user = useAuthStore((state) => state.user);
     const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(true);
     const [invoices, setInvoices] = useState([]);
@@ -110,7 +112,9 @@ export default function Invoices() {
                 page,
                 per_page: perPage,
                 sort_field: sortField,
-                sort_order: sortOrder
+                sort_order: sortOrder,
+                entity_type: user?.is_host == 0 || user?.is_host === false ? user?.entity_type : null,
+                entity_id: user?.is_host == 0 || user?.is_host === false ? user?.entity_id : null
             };
 
             const response = await fetchInvoices(payload);
