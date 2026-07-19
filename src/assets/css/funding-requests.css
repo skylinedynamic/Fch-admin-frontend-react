@@ -1,0 +1,163 @@
+/* Funding Request Details - Custom CSS */
+
+/* Review Progress Custom Scrollbar */
+.funding-request-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.funding-request-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.funding-request-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.funding-request-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Status Guideline Cards Container */
+.status-guideline-container {
+    min-width: 950px;
+}
+
+/* Timeline Container */
+.timeline-track-container {
+    min-width: 500px;
+}
+
+/* Progress Circle */
+.progress-circle-svg {
+    transform: rotate(-90deg);
+}
+
+/* Lender Match Details Scrollbar */
+.lender-match-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+.lender-match-table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.lender-match-table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.lender-match-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.sticky-sidebar-actions {
+    position: sticky;
+    top: 145px;
+    max-height: calc(100vh - 150px);
+    align-self: flex-start;
+    z-index: 10;
+}
+
+
+/* Auto-extracted inline styles */
+.fr-style-4f667c71 { align-items: flex-start; }
+.fr-style-1d4669b6 { overflow-x: auto; overflow-y: hidden; }
+.fr-style-310c95f3 { border-collapse: collapse; font-size: 13px; width: 100%; border: 1px solid #e2e8f0; }
+.fr-style-c2cbac2 { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+.fr-style-4ff6cdc1 { border: 1px solid #e2e8f0; min-width: 100px; vertical-align: middle; background: #f8fafc; }
+.fr-style-3f3c752c { font-size: 13px; }
+.fr-style-3f58a42e { font-size: 11px; }
+.fr-style-26842ef4 { border: 1px solid #e2e8f0; font-size: 13px; color: #1e293b; width: 1%; vertical-align: middle; background: #f8fafc; white-space: nowrap; }
+.fr-style-13ecc849 { font-size: 13px; color: #1e293b; border: 1px solid #e2e8f0; background: #f8fafc; }
+.fr-style-1b4a0199 { border: 1px solid #e2e8f0; font-size: 13px; color: #1e293b; min-width: 60px; vertical-align: middle; background: #f8fafc; white-space: nowrap; }
+.fr-style-705890ee { border: 1px solid #e2e8f0; font-size: 13px; color: #1e293b; min-width: 70px; vertical-align: middle; background: #f8fafc; }
+.fr-style-123ff9de { background: #f8fafc; }
+.fr-style-6fe1846d { font-size: 12px; color: #64748b; font-weight: 600; border: 1px solid #e2e8f0; min-width: 50px; background: #f8fafc; }
+.fr-style-6ed6d344 { font-size: 12px; color: #64748b; font-weight: 600; border: 1px solid #e2e8f0; min-width: 60px; background: #f8fafc; white-space: nowrap; }
+.fr-style-45c66d77 { font-size: 12px; color: #64748b; font-weight: 600; border: 1px solid #e2e8f0; min-width: 65px; background: #f8fafc; white-space: nowrap; }
+.fr-style-350c3165 { font-size: 12px; color: #64748b; font-weight: 600; border: 1px solid #e2e8f0; min-width: 50px; background: #f8fafc; white-space: nowrap; }
+.fr-style-73d7d324 { border: 1px solid #e2e8f0; }
+.fr-style-747e3e7d { font-size: 13px; margin-bottom: 2px; }
+.fr-style-579eac21 { border: 1px solid #e2e8f0; width: 1%; }
+.fr-style-1db6650e { background: #eff6ff; color: #2563eb; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+.fr-style-66f5a318 { white-space: nowrap; }
+.fr-style-6005154d { color: #16a34a; font-size: 15px; }
+.fr-style-34f57f10 { color: #dc2626; font-size: 15px; }
+.fr-style-d7deedb { font-size: 12px; font-weight: 600; color: #1e293b; }
+.fr-style-210d4313 { width: 44px; height: 44px; }
+.fr-style-c5a99bb { transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.5s ease; }
+.fr-style-4f21c796 { background: #fff; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 500; padding: 5px 12px; }
+.fr-style-5dc02308 { width: 65px; }
+.fr-style-4ac477ea { table-layout: fixed; }
+.fr-style-55c8853f { width: 30%; }
+.fr-style-55d69cc0 { width: 20%; }
+.fr-style-55e26e66 { width: 15%; }
+.fr-style-18eb16e4 { min-width: 0; }
+.fr-style-affbd8f { width: 28px; height: 28px; flex-shrink: 0; }
+.fr-style-30509dca { position: sticky; top: 145px; max-height: calc(100vh - 150px); align-self: flex-start; z-index: 10; }
+.fr-style-374ec73b { padding-top: 1.85rem !important; }
+.fr-style-59ff025d { margin-top: 2px; }
+.fr-style-6e003d7 { resize: none; }
+.fr-style-5385d7b4 { letter-spacing: 0.07em; }
+.fr-style-44b06d7f { white-space: pre-wrap; }
+
+
+/* ReviewProgressCard Auto-extracted inline styles */
+.fr-progress-style-3c782fa9 { width: 48px; height: 48px; background: #f8fafc; color: #1e293b; margin-right: 16px; }
+.fr-progress-style-3ded13b6 { color: #0f172a; }
+.fr-progress-style-484b8e41 { width: 76px; height: 76px; }
+.fr-progress-style-386cac71 { transform: rotate(-90deg); }
+.fr-progress-style-67aa90fa { font-size: 15px; line-height: 1; }
+.fr-progress-style-33f3a8e { font-size: 10px; margin-top: 2px; }
+.fr-progress-style-2134b75c { width: 100px; flex-shrink: 0; }
+.fr-progress-style-1a4a5286 { color: #64748b; font-size: 11px; }
+.fr-progress-style-3f4a8cad { font-size: 12px; }
+.fr-progress-style-501635f8 { font-size: 11px; line-height: 1.4; }
+
+
+
+.funding-req-circle-text { top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; }
+
+/* Lender Score Match Fraction & Text */
+.fr-lender-score-fraction {
+    font-size: 13px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+.fr-lender-score-text {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Documents Table Min Width */
+.fr-style-docs-table {
+    min-width: 700px;
+}
+
+/* Status Dropdown Row — fixed 38px height to align with Confirm button */
+.fr-status-dropdown-wrap {
+    height: 38px;
+}
+.fr-status-dropdown,
+.fr-status-dropdown-root {
+    height: 38px !important;
+}
+.fr-status-dropdown-input {
+    line-height: 38px;
+}
+
+/* Confirm button — matches dropdown height */
+.fr-confirm-btn {
+    height: 38px;
+    white-space: nowrap;
+}
+
+/* Lender row pulse animation (moved from inline style tag) */
+@keyframes highlightRowPulse {
+    0%   { background-color: #ffffff; }
+    50%  { background-color: #fff3cd; }
+    100% { background-color: #ffffff; }
+}
+.row-pulse-animation {
+    animation: highlightRowPulse 1.2s ease-in-out infinite !important;
+}
+

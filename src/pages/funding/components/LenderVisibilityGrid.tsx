@@ -226,6 +226,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                     lender_product_category_id: isObj ? catItem.id : (catObj ? catObj.id : catName),
                     product_category: catName,
                     min_fico: '',
+                    min_business_credit_score: '',
                     min_tib_months: '',
                     min_monthly_revenue: '',
                     min_monthly_deposits: '',
@@ -245,6 +246,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                 lender_id: newLenderId,
                 lender_product_category_id: '',
                 min_fico: '',
+                min_business_credit_score: '',
                 min_tib_months: '',
                 min_monthly_revenue: '',
                 min_monthly_deposits: '',
@@ -746,6 +748,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                         return catName !== 'General' ? <span className={`badge ${badgeClass} px-2 py-1 fs-12 rounded-1 fw-semibold d-inline-flex align-items-center`}>{catName}</span> : <span className="text-muted fw-medium fs-13">General</span>;
                                     }} />
                                     <Column field="min_fico" header="Min FICO" sortable style={{ minWidth: '110px' }} />
+                                    <Column field="min_business_credit_score" header="Min Business Credit" sortable style={{ minWidth: '150px' }} />
                                     <Column field="min_tib_months" header="Min TIB" sortable style={{ minWidth: '120px' }} body={(rowData: any) => TIB_OPTIONS.find(t => t.value === rowData.min_tib_months)?.label || rowData.min_tib_months || ''} />
                                     <Column field="min_monthly_revenue" header="Min Revenue" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_revenue !== null && rowData.min_monthly_revenue !== undefined && rowData.min_monthly_revenue !== '' ? `$${rowData.min_monthly_revenue}` : ''} />
                                     <Column field="min_monthly_deposits" header="Min Deposits" sortable style={{ minWidth: '130px' }} body={(rowData: any) => rowData.min_monthly_deposits !== null && rowData.min_monthly_deposits !== undefined && rowData.min_monthly_deposits !== '' ? `$${rowData.min_monthly_deposits}` : ''} />
@@ -830,6 +833,7 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                     <th style={{ width: '120px', paddingLeft: 0 }}>Lender <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Product Category <span className="text-danger">*</span></th>
                                                     <th style={{ width: '150px' }}>Min FICO <span className="text-danger">*</span></th>
+                                                    <th style={{ width: '150px' }}>Min Business Credit</th>
                                                     <th style={{ width: '180px' }}>Min Time In Business <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Min Monthly Revenue <span className="text-danger">*</span></th>
                                                     <th style={{ width: '200px' }}>Min Monthly Deposits <span className="text-danger">*</span></th>
@@ -892,6 +896,17 @@ export const LenderVisibilityGrid: React.FC<LenderVisibilityGridProps> = ({
                                                                     onChange={(e) => onChange(i, 'min_fico', e.target.value)}
                                                                 />
                                                                 {renderError('min_fico', i)}
+                                                            </td>
+                                                            <td className="py-3">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    className={`form-control shadow-none rounded-2 ${(errors as any)[`lender_visibilities.${i}.min_business_credit_score`] ? 'is-invalid' : ''}`}
+                                                                    placeholder="80"
+                                                                    value={v.min_business_credit_score ?? ''}
+                                                                    onChange={(e) => onChange(i, 'min_business_credit_score', e.target.value)}
+                                                                />
+                                                                {renderError('min_business_credit_score', i)}
                                                             </td>
                                                             <td className="py-3">
                                                                 <Dropdown

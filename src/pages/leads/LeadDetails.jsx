@@ -1047,7 +1047,7 @@ export default function LeadDetails() {
                         {/* Activity Sidebar */}
                         {id && (
                             <div className="col-xxl-4">
-                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} />
+                                <ActivitySidebar entityId={id} entityType="Lead" loading={isLoading || isSaving} borrowerEmail={formData.email} />
                             </div>
                         )}
                     </div>

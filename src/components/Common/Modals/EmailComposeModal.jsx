@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useSummernote } from '../../../hooks/useSummernote';
 import { createActivityLog } from '../../../modules/activity-log/services';
-import { ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST } from '../../../config/appConfig';
+import { fetchPartners } from '../../../modules/partner/services';
+import { 
+    ENTITY_TYPE_LEAD, ENTITY_TYPE_BORROWER, ENTITY_TYPE_PARTNER, ENTITY_TYPE_FUNDING_REQUEST,
+    TARGET_RECIPIENT_HOST, TARGET_RECIPIENT_BORROWER
+} from '../../../config/appConfig';
 
 export default function EmailComposeModal({ entityId, entityType, lead }) {
     const choicesRef = useRef(null);
@@ -16,19 +20,27 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         subject: '',
         message_body: '',
         attachments: [],
-        target_recipient: 'borrower'
+        target_recipient: TARGET_RECIPIENT_BORROWER
     });
 
-    const handleTargetRecipientChange = (e) => {
+    const handleTargetRecipientChange = async (e) => {
         const newTarget = e.target.value;
         setFormData(prev => ({ ...prev, target_recipient: newTarget }));
 
         const ctx = window._activityEntityContext || {};
         let emailToSet = '';
-        if (newTarget === 'borrower' && ctx.borrowerEmail) {
+        if (newTarget === TARGET_RECIPIENT_BORROWER && ctx.borrowerEmail) {
             emailToSet = ctx.borrowerEmail;
-        } else if (newTarget === 'host') {
-            emailToSet = ctx.isHost ? (ctx.partnerEmail || '') : 'support@fourcornerholding.com';
+        } else if (newTarget === TARGET_RECIPIENT_HOST) {
+            if (ctx.isHost) {
+                emailToSet = ctx.partnerEmail || '';
+            } else {
+                if (ctx.hostEmail) {
+                    emailToSet = ctx.hostEmail;
+                } else {
+                    emailToSet = 'support@fourcornerholding.com';
+                }
+            }
         }
 
         if (emailToSet && choicesInstanceRef.current) {
@@ -132,8 +144,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                 payload.append('partner_id', resolvedEntityId ? resolvedEntityId.toString() : '');
             } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
                 payload.append('funding_request_id', resolvedEntityId ? resolvedEntityId.toString() : '');
-                if (formData.target_recipient === 'host') payload.append('send_to_host', '1');
-                if (formData.target_recipient === 'borrower') payload.append('send_to_borrower', '1');
+                if (formData.target_recipient === TARGET_RECIPIENT_HOST) payload.append('send_to_host', '1');
+                if (formData.target_recipient === TARGET_RECIPIENT_BORROWER) payload.append('send_to_borrower', '1');
             }
 
             if (formData.attachments && formData.attachments.length > 0) {
@@ -312,7 +324,19 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         };
     }, []);
 
-
+    // Also sync if lead object changes after mount
+    useEffect(() => {
+        if (lead?.email && choicesInstanceRef.current) {
+            const current = choicesInstanceRef.current.getValue(true);
+            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
+            if (!currentArray.includes(lead.email)) {
+                choicesInstanceRef.current.setValue([...currentArray, lead.email]);
+                // Trigger state sync from instance directly
+                const all = choicesInstanceRef.current.getValue(true);
+                setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
+            }
+        }
+    }, [lead?.email]);
 
     // Reset validation and form on modal close/open
     useEffect(() => {
@@ -323,22 +347,57 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
 
             // Use a short timeout to prevent race condition with React's onClick
             // which sets window._activityEntityContext
-            setTimeout(() => {
+            setTimeout(async () => {
                 setErrors({});
                 pendingEmailRef.current = '';
+
+                const ctx = window._activityEntityContext || {};
+                let initialEmail = '';
+                let defaultTarget = TARGET_RECIPIENT_BORROWER;
+
+                const resolvedEntityType = entityType ?? ctx.entityType;
+
+                if (resolvedEntityType === ENTITY_TYPE_PARTNER || resolvedEntityType === 'Partner') {
+                    if (ctx.partnerEmail === undefined) {
+                        initialEmail = 'support@fourcornerholding.com';
+                    } else {
+                        initialEmail = ctx.partnerEmail || '';
+                    }
+                } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST) {
+                    defaultTarget = TARGET_RECIPIENT_BORROWER;
+                    initialEmail = ctx.borrowerEmail || '';
+                } else if (ctx.isHost) {
+                    if (ctx.partnerEmail) {
+                        defaultTarget = TARGET_RECIPIENT_HOST;
+                        initialEmail = ctx.partnerEmail;
+                    }
+                } else {
+                    if (ctx.borrowerEmail === undefined) {
+                        defaultTarget = TARGET_RECIPIENT_HOST;
+                        if (ctx.hostEmail) {
+                            initialEmail = ctx.hostEmail;
+                        } else {
+                            initialEmail = '';
+                        }
+                    } else {
+                        initialEmail = ctx.borrowerEmail || '';
+                    }
+                }
+
                 setFormData({
-                    to_emails: '',
+                    to_emails: initialEmail,
                     subject: '',
                     message_body: '',
                     attachments: [],
-                    target_recipient: 'borrower'
+                    target_recipient: defaultTarget
                 });
+
                 if (choicesInstanceRef.current) {
                     choicesInstanceRef.current.removeActiveItems();
-                    const ctx = window._activityEntityContext || {};
-                    const resolvedEntityType = entityType ?? ctx.entityType;
 
-                    if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
+                    if (initialEmail) {
+                        choicesInstanceRef.current.setValue([initialEmail]);
+                    } else if (resolvedEntityType === ENTITY_TYPE_FUNDING_REQUEST && ctx.borrowerEmail) {
                         choicesInstanceRef.current.setValue([ctx.borrowerEmail]);
                         setFormData(prev => ({ ...prev, to_emails: ctx.borrowerEmail }));
                     } else if (lead?.email) {
@@ -418,8 +477,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                                         type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToHost"
-                                                        value="host"
-                                                        checked={formData.target_recipient === 'host'}
+                                                        value={TARGET_RECIPIENT_HOST}
+                                                        checked={formData.target_recipient === TARGET_RECIPIENT_HOST}
                                                         onChange={handleTargetRecipientChange}
                                                     />
                                                     <label className="form-check-label" htmlFor="emailSendToHost">
@@ -432,8 +491,8 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
                                                         type="radio"
                                                         name="email_target_recipient"
                                                         id="emailSendToBorrower"
-                                                        value="borrower"
-                                                        checked={formData.target_recipient === 'borrower'}
+                                                        value={TARGET_RECIPIENT_BORROWER}
+                                                        checked={formData.target_recipient === TARGET_RECIPIENT_BORROWER}
                                                         onChange={handleTargetRecipientChange}
                                                     />
                                                     <label className="form-check-label" htmlFor="emailSendToBorrower">

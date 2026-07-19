@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
-import CustomDropdown from '../../../components/Common/CustomDropdown';
+import { Dropdown } from 'primereact/dropdown';
 import { FilterMatchMode, FilterOperator } from 'primereact/api';
 import { useFundingRequests, useUpdateFundingRequestStatus } from '../../../modules/application';
 import { usePermissions } from '../../../lib/auth/usePermissions';
@@ -13,6 +13,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { formatCurrency } from '../../../utils/helper';
+import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
 
 export default function FundingSequence() {
     const { hasPermission } = usePermissions();
@@ -135,10 +136,13 @@ export default function FundingSequence() {
 
 
     const statusBodyTemplate = (rowData: any) => {
-        let className = 'bg-light text-body';
-        if (rowData.status === 'Approved') className = 'bg-success-subtle text-success';
-        if (rowData.status === 'Rejected') className = 'bg-danger-subtle text-danger';
-        if (rowData.status === 'Pending') className = 'bg-warning-subtle text-warning';
+        let className = 'bg-secondary-subtle text-secondary';
+        if (rowData.status === FUNDING_REVIEW_STATUS.APPROVED) className = 'bg-success-subtle text-success';
+        if (rowData.status === FUNDING_REVIEW_STATUS.ACCEPTED) className = 'bg-info-subtle text-info';
+        if (rowData.status === FUNDING_REVIEW_STATUS.REJECTED) className = 'bg-danger-subtle text-danger';
+        if (rowData.status === FUNDING_REVIEW_STATUS.CANCELED) className = 'bg-secondary-subtle text-secondary';
+        if (rowData.status === FUNDING_REVIEW_STATUS.PENDING) className = 'bg-warning-subtle text-warning';
+        if (rowData.status === FUNDING_REVIEW_STATUS.IN_PROGRESS) className = 'bg-primary-subtle text-primary';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 
@@ -158,9 +162,12 @@ export default function FundingSequence() {
     };
 
     const statusOptions = [
-        { label: 'Pending', value: 'Pending' },
-        { label: 'Approved', value: 'Approved' },
-        { label: 'Rejected', value: 'Rejected' },
+        { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
+        { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
+        { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
+        { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
+        { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
+        { label: 'Canceled', value: FUNDING_REVIEW_STATUS.CANCELED },
     ];
 
     return (
@@ -205,27 +212,31 @@ export default function FundingSequence() {
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="h-100">
-                                                <CustomDropdown
+                                                <Dropdown
                                                     value={selectedStatus}
                                                     options={[{ label: 'All Status', value: '' }, ...statusOptions.map(o => ({ ...o, value: o.value || '' }))]}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    onChange={(val) => setSelectedStatus(val)}
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    filter
+                                                    filterBy="label"
                                                     placeholder="All Status"
-                                                    className="w-100 vendor-filter-bg h-100"
+                                                    className="w-100 bg-light border-light h-100"
                                                 />
                                             </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="h-100">
-                                                <CustomDropdown
+                                                <Dropdown
                                                     value={selectedFundingSequenceId}
                                                     options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
                                                     optionLabel="label"
                                                     optionValue="value"
-                                                    onChange={(val) => setSelectedFundingSequenceId(val)}
+                                                    onChange={(e) => setSelectedFundingSequenceId(e.value)}
+                                                    filter
+                                                    filterBy="label"
                                                     placeholder="All Funding Types"
-                                                    className="w-100 vendor-filter-bg h-100"
+                                                    className="w-100 bg-light border-light h-100"
                                                 />
                                             </div>
                                         </div>

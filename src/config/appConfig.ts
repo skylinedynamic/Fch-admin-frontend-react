@@ -20,6 +20,9 @@ export const ENTITY_TYPE_FUNDING_REQUEST = 'Funding Request';
 export const TYPE_EMAIL = 'email';
 export const TYPE_ACTIVITY = 'activity';
 
+export const TARGET_RECIPIENT_HOST = 'host';
+export const TARGET_RECIPIENT_BORROWER = 'borrower';
+
 
 // New Log Types
 export const LOG_TYPE_EMAIL_UPDATE = 'email_update';
