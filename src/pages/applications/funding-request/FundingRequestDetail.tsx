@@ -185,7 +185,7 @@ export default function FundingRequestDetail() {
                                         <ol className="breadcrumb m-0">
                                             <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                             <li className="breadcrumb-item"><Link to="/intake-review/funding-request">Funding Requests</Link></li>
-                                            <li className="breadcrumb-item active" aria-current="page">Review Details</li>
+                                            <li className="breadcrumb-item active" aria-current="page">Details</li>
                                         </ol>
                                     </nav>
                                 </div>
@@ -197,13 +197,7 @@ export default function FundingRequestDetail() {
                             </div>
                         </div>
                     </div>
-
-
-
-
-
-
-                    <div className="row mt-3 fr-style-4f667c71">
+                    <div className="row">
                         <div className="col-lg-8">
                             <ReviewProgressCard
                                 status={review.status}
