@@ -904,15 +904,16 @@ export default function FundingSequencingForm() {
                                                     <div className="col-lg-6 col-md-6">
                                                         <div className="mb-2">
                                                             <label className="form-label text-dark fw-medium mb-2">Uses</label>
-                                                            <MultiSelect
-                                                                value={formData.uses}
+                                                            <Dropdown
+                                                                value={formData.uses && formData.uses.length > 0 ? formData.uses[0] : null}
                                                                 options={USES_OPTIONS}
-                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value } })}
+                                                                onChange={(e) => handleInputChange({ target: { name: 'uses', value: e.value ? [e.value] : [] } })}
                                                                 optionLabel="label"
                                                                 optionValue="value"
                                                                 placeholder="Select uses..."
-                                                                className="w-100 rounded-3 slim-multiselect"
-                                                                display="chip"
+                                                                filter
+                                                                filterPlaceholder="Search uses..."
+                                                                className="w-100 rounded-3 slim-dropdown"
                                                             />
                                                         </div>
                                                     </div>
