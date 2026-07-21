@@ -85,7 +85,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
               </div>
               <div className="flex-grow-1">
                 <h5 className="modal-title mb-1 fw-bold text-dark fs-18">Download Documents</h5>
-                <p className="text-muted fs-13 mb-0 pdf-modal-desc-text">Borrower application, funding application and all information will be packaged into a secure ZIP file.</p>
+                <p className="text-muted fs-13 mb-0 pdf-modal-desc-text">Funding application and all information will be packaged into a secure ZIP file.</p>
               </div>
               <button type="button" className="btn-close pdf-modal-close-btn" onClick={handleClose} disabled={loading}></button>
             </div>
@@ -108,10 +108,10 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between align-items-start mb-1">
-                        <div className="fw-bold fs-14 text-dark">Borrower Application</div>
+                        <div className="fw-bold fs-14 text-dark">Funding Application</div>
                         <span className="badge rounded-1 pdf-modal-badge">PDF</span>
                       </div>
-                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Borrower application, funding application and with all information.</div>
+                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Funding application and with all information.</div>
                     </div>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 {/* Password Protected Option */}
                 <div
                   onClick={() => { setWithPassword(true); if (!password) setPassword(generatePasswordString()); }}
-                  className={`p-4 mb-3 ${withPassword ? 'pdf-modal-security-active' : 'pdf-modal-security'}`}
+                  className={`p-4 mb-3 pdf-modal-security-pw ${withPassword ? 'active' : ''}`}
                 >
                   <div className="d-flex align-items-center gap-3 mb-2">
                     {/* Custom Radio Button */}
@@ -197,7 +197,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 {/* Without Password Option */}
                 <div
                   onClick={() => setWithPassword(false)}
-                  className={`p-4 ${!withPassword ? 'pdf-modal-security-active' : 'pdf-modal-security'}`}
+                  className={`p-4 pdf-modal-security-nopw ${!withPassword ? 'active' : ''}`}
                 >
                   <div className="d-flex align-items-center gap-3 mb-2">
                     {/* Custom Radio Button */}
