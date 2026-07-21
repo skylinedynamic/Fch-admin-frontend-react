@@ -6,11 +6,13 @@ import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import { FUNDING_APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP, FUNDING_APPLICATION_STATUS } from '../../../config/borrower';
 import { useUpdateFundingApplicationStatus, useFundingApplicationDetails, useSaveFundingApplicationCommission } from '../../../modules/application/queries';
+import { downloadFundingApplication, downloadFundingSignature, downloadFundingZip } from '../../../modules/application/services';
 // @ts-ignore
 import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDetailsLoader';
 // @ts-ignore
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
+import DownloadPdfModal from './DownloadPdfModal';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
@@ -47,6 +49,10 @@ export default function FundingApplicationDetails() {
     const [showFundedModal, setShowFundedModal] = useState(false);
     const [fundedAmount, setFundedAmount] = useState<string>('');
     const updateMutation = useUpdateFundingApplicationStatus();
+
+    // PDF Download state
+    const [showDownloadModal, setShowDownloadModal] = useState(false);
+    const [downloadType, setDownloadType] = useState<'application' | 'signature'>('application');
 
     // Commission state
     const [successFee, setSuccessFee] = useState<string>('');
@@ -550,6 +556,15 @@ export default function FundingApplicationDetails() {
                                     </nav>
                                 </div>
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary w-lg waves-effect"
+                                        onClick={() => {
+                                            setShowDownloadModal(true);
+                                        }}
+                                    >
+                                        <i className="ri-file-download-line align-middle me-1"></i> Download
+                                    </button>
                                     <Link to="/intake-review/funding-application" className="btn btn-outline-secondary w-lg waves-effect">
                                         <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                     </Link>
@@ -1133,6 +1148,20 @@ export default function FundingApplicationDetails() {
                 partnerCommissionRate={parseFloat(app.partner_commission?.toString() || '0')}
                 showPartnerCommission={showPartnerCommission}
                 isCommissionSet={isCommissionSet}
+            />
+
+            <DownloadPdfModal
+                show={showDownloadModal}
+                onHide={() => setShowDownloadModal(false)}
+                onDownload={async (type, password) => {
+                    if (type === 'application') {
+                        await downloadFundingApplication(id || '', password);
+                    } else if (type === 'signature') {
+                        await downloadFundingSignature(id || '', password);
+                    } else if (type === 'both') {
+                        await downloadFundingZip(id || '', password);
+                    }
+                }}
             />
         </>
     );

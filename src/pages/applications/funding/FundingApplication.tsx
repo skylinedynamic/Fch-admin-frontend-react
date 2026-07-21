@@ -13,6 +13,8 @@ import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
+import { downloadFundingApplication, downloadFundingSignature } from '../../../modules/application/services';
+import { toast } from 'react-toastify';
 
 import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 
@@ -186,7 +188,6 @@ export default function FundingApplication() {
         const className = FUNDING_APPLICATION_STATUS_CLASS_MAP[rowData.status] || 'bg-light text-body';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
-
 
 
     return (
