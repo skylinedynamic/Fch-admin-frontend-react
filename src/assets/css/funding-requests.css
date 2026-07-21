@@ -187,5 +187,7 @@
 .pdf-modal-pw-input { color: #0f172a; border-radius: 0; }
 .pdf-modal-pw-btn { border-left: 1px solid #0f172a; color: #0f172a; }
 .pdf-modal-footer { border-top: 1px solid transparent; }
-.pdf-modal-btn-cancel { background: #f1f5f9; border: 1px solid transparent; color: #334155; font-size: 14px; border-radius: 8px; }
-.pdf-modal-btn-download { background: #0f172a; font-size: 14px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06); }
+.pdf-modal-btn-cancel { background: #f1f5f9 !important; border: 1px solid transparent !important; color: #334155 !important; font-size: 14px; border-radius: 4px !important; }
+.pdf-modal-btn-cancel:hover { background: #e2e8f0 !important; color: #334155 !important; }
+.pdf-modal-btn-download { background: #0f172a !important; border: 1px solid #0f172a !important; color: #ffffff !important; font-size: 14px; border-radius: 4px !important; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06); }
+.pdf-modal-btn-download:hover { background: #0f172a !important; color: #ffffff !important; border-color: #0f172a !important; }
