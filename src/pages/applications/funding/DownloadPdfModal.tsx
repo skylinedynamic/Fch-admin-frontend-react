@@ -181,23 +181,23 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                   {/* Password Controls */}
                   {withPassword && (
                     <div style={{ paddingLeft: "34px" }} onClick={(e) => e.stopPropagation()}>
-                      <div className="d-flex align-items-center bg-white mb-3" style={{ border: "1px solid #0f172a", borderRadius: "8px", overflow: "hidden", height: 46 }}>
+                      <div className="d-flex align-items-center bg-white mb-3" style={{ border: "1px solid #0f172a", borderRadius: 0, overflow: "hidden", height: 46 }}>
                         <div className="px-3" style={{ color: "#0f172a" }}><i className="ri-key-2-line fs-16"></i></div>
                         <input
                           type={showPassword ? "text" : "password"}
                           className="form-control border-0 shadow-none font-monospace fs-14 px-0 h-100 bg-white"
                           value={password}
-                          style={{ color: "#0f172a" }}
+                          style={{ color: "#0f172a", borderRadius: 0 }}
                           onChange={(e) => setPassword(e.target.value)}
                         />
                         <div className="d-flex h-100">
-                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={() => setShowPassword(!showPassword)}>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100" style={{ borderLeft: "1px solid #0f172a", color: "#0f172a" }} onClick={() => setShowPassword(!showPassword)}>
                             <i className={showPassword ? "ri-eye-line fs-16" : "ri-eye-off-line fs-16"}></i>
                           </button>
-                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={handleCopy}>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100" style={{ borderLeft: "1px solid #0f172a", color: "#0f172a" }} onClick={handleCopy}>
                             <i className="ri-clipboard-line fs-16"></i>
                           </button>
-                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={() => setPassword(generatePasswordString())}>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100" style={{ borderLeft: "1px solid #0f172a", color: "#0f172a" }} onClick={() => setPassword(generatePasswordString())}>
                             <i className="ri-refresh-line fs-16"></i>
                           </button>
                         </div>
