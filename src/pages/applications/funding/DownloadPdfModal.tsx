@@ -12,6 +12,7 @@ interface DownloadPdfModalProps {
 export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadPdfModalProps) {
   const [withPassword, setWithPassword] = useState(true);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -31,6 +32,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
       modal.show();
       setWithPassword(true);
       setPassword(generatePasswordString());
+      setShowPassword(true);
     } else {
       modal.hide();
     }
@@ -41,6 +43,13 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     let p = "";
     for (let i = 0; i < 14; i++) p += chars.charAt(Math.floor(Math.random() * chars.length));
     return p;
+  };
+
+  const handleCopy = () => {
+    if (password) {
+      navigator.clipboard.writeText(password);
+      toast.success("Password copied to clipboard");
+    }
   };
 
   const handleDownload = async () => {
@@ -65,145 +74,166 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
 
   return (
     <div className="modal fade flip" ref={modalRef} tabIndex={-1} aria-hidden="true">
-      <div className="modal-dialog modal-dialog-centered modal-lg">
-        <div className="modal-content border-0 shadow-lg rounded-4">
+      <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: "880px" }}>
+        <div className="modal-content border-0 shadow-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
 
           {/* Header */}
-          <div className="modal-header border-bottom px-4 py-3">
-            <div className="d-flex align-items-center gap-3">
-              <div className="avatar-sm flex-shrink-0">
-                <div className="avatar-title bg-dark rounded-3">
-                  <i className="ri-folder-zip-fill text-white fs-18"></i>
-                </div>
+          <div className="modal-header px-4 py-4">
+            <div className="d-flex align-items-center gap-3 w-100">
+              <div className="flex-shrink-0" style={{ width: 48, height: 48, background: "#111827", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="ri-folder-zip-fill text-white fs-22"></i>
               </div>
-              <div>
-                <h5 className="modal-title mb-0 fw-semibold">Download Documents</h5>
-                <p className="text-muted fs-12 mb-0 mt-1">Both PDFs will be packaged into a single ZIP archive</p>
+              <div className="flex-grow-1">
+                <h5 className="modal-title mb-1 fw-bold text-dark fs-18">Download Documents</h5>
+                <p className="text-muted fs-13 mb-0" style={{ color: "#64748b" }}>Borrower application, funding application and all information will be packaged into a secure ZIP file.</p>
               </div>
+              <button type="button" className="btn-close" onClick={handleClose} disabled={loading} style={{ backgroundSize: "0.8em" }}></button>
             </div>
-            <button type="button" className="btn-close" onClick={handleClose} disabled={loading}></button>
           </div>
 
-          <div className="modal-body p-4">
+          <div className="modal-body p-4 bg-white">
             <div className="row g-4">
 
               {/* Left — Package Contents */}
               <div className="col-md-5">
-                <p className="text-uppercase fw-semibold text-muted mb-3" style={{ fontSize: 11, letterSpacing: "0.7px" }}>
-                  <i className="ri-archive-line me-1"></i> Package Contents
+                <p className="text-uppercase fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: 11, letterSpacing: "1px", color: "#0f172a" }}>
+                  <i className="ri-archive-line fs-14"></i> FUNDING DOCUMENTS
                 </p>
 
-                {/* Application */}
-                <div className="d-flex align-items-start gap-3 p-3 rounded-3 mb-2" style={{ background: "#EBF3FF", border: "1px solid #C7DEFF" }}>
-                  <div className="avatar-sm flex-shrink-0">
-                    <div className="avatar-title bg-primary rounded-3">
-                      <i className="ri-file-text-line text-white fs-16"></i>
+                {/* Application Card */}
+                <div className="d-flex flex-column p-3 mb-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <div className="d-flex gap-3">
+                    <div className="flex-shrink-0" style={{ width: 44, height: 44, background: "#1e293b", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <i className="ri-file-text-line text-white fs-20"></i>
                     </div>
-                  </div>
-                  <div className="flex-grow-1">
-                    <div className="fw-semibold fs-13 text-dark">Funding Application</div>
-                    <div className="text-muted fs-12 mt-1">Borrower information &amp; all supporting documents</div>
-                    <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mt-2" style={{ fontSize: 10 }}>PDF</span>
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <div className="fw-bold fs-14 text-dark">Borrower Application</div>
+                        <span className="badge rounded-1" style={{ background: "#f1f5f9", color: "#0f172a", fontSize: 11, padding: "5px 12px", fontWeight: 600 }}>PDF</span>
+                      </div>
+                      <div className="text-muted fs-13 lh-sm" style={{ color: "#64748b" }}>Borrower application, funding application and with all information.</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Signature */}
-                <div className="d-flex align-items-start gap-3 p-3 rounded-3" style={{ background: "#EDFBF4", border: "1px solid #B9F0D5" }}>
-                  <div className="avatar-sm flex-shrink-0">
-                    <div className="avatar-title bg-success rounded-3">
-                      <i className="ri-shield-check-line text-white fs-16"></i>
+                {/* Signature Card */}
+                <div className="d-flex flex-column p-3 mb-3" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                  <div className="d-flex gap-3">
+                    <div className="flex-shrink-0" style={{ width: 44, height: 44, background: "#16a34a", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <i className="ri-shield-check-line text-white fs-20"></i>
+                    </div>
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <div className="fw-bold fs-14 text-dark">Signature Certificate</div>
+                        <span className="badge rounded-1" style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 11, padding: "5px 12px", fontWeight: 600 }}>PDF</span>
+                      </div>
+                      <div className="text-muted fs-13 lh-sm" style={{ color: "#64748b" }}>Signed authorization certificate based on borrower.</div>
                     </div>
                   </div>
-                  <div className="flex-grow-1">
-                    <div className="fw-semibold fs-13 text-dark">Signature Certificate</div>
-                    <div className="text-muted fs-12 mt-1">Signed authorization based on borrower</div>
-                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mt-2" style={{ fontSize: 10 }}>PDF</span>
+                </div>
+
+                {/* Notice Box */}
+                <div className="d-flex gap-3 p-3 align-items-center" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <div className="flex-shrink-0" style={{ width: 36, height: 36, background: "#e0e7ff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <i className="ri-group-fill" style={{ color: "#4338ca", fontSize: 16 }}></i>
+                  </div>
+                  <div className="text-muted fs-13 lh-sm" style={{ color: "#64748b" }}>
+                    You can securely download and send this funding application and signature to the borrower's email.
                   </div>
                 </div>
               </div>
 
               {/* Right — Security */}
               <div className="col-md-7">
-                <p className="text-uppercase fw-semibold text-muted mb-3" style={{ fontSize: 11, letterSpacing: "0.7px" }}>
-                  <i className="ri-shield-keyhole-line me-1"></i> ZIP Security
+                <p className="text-uppercase fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: 11, letterSpacing: "1px", color: "#0f172a" }}>
+                  <i className="ri-shield-keyhole-line fs-14"></i> ZIP SECURITY
                 </p>
 
-                {/* Option 1: Password Protected */}
+                {/* Password Protected Option */}
                 <div
                   onClick={() => { setWithPassword(true); if (!password) setPassword(generatePasswordString()); }}
-                  className={`rounded-3 p-3 mb-2 ${withPassword ? "border border-dark" : "border"}`}
-                  style={{ cursor: "pointer", background: withPassword ? "#f8f9fa" : "#fff", transition: "all 0.15s" }}
+                  className="p-4 mb-3"
+                  style={{ 
+                    cursor: "pointer", 
+                    background: "#ffffff", 
+                    border: withPassword ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                    transition: "all 0.2s ease" 
+                  }}
                 >
-                  <div className="d-flex align-items-center gap-2 mb-1">
-                    <input
-                      className="form-check-input mt-0 flex-shrink-0"
-                      type="radio"
-                      name="zipSecurity"
-                      checked={withPassword}
-                      onChange={() => { setWithPassword(true); if (!password) setPassword(generatePasswordString()); }}
-                      onClick={(e) => e.stopPropagation()}
-                      readOnly
-                    />
-                    <span className="fw-semibold fs-13 text-dark">
-                      <i className="ri-lock-fill text-warning me-1"></i> Password Protected
-                    </span>
-                    <span className="badge bg-success ms-auto fs-10">Recommended</span>
+                  <div className="d-flex align-items-center gap-3 mb-2">
+                    {/* Custom Radio Button */}
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", 
+                      border: withPassword ? "7px solid #0f172a" : "2px solid #cbd5e1",
+                      background: "#fff", flexShrink: 0,
+                      transition: "all 0.2s ease"
+                    }}></div>
+                    
+                    <div className="d-flex align-items-center gap-2 flex-grow-1">
+                      <i className="ri-lock-fill text-dark fs-18"></i>
+                      <span className="fw-bold fs-15 text-dark">Password Protected</span>
+                    </div>
                   </div>
-                  <p className="text-muted fs-12 mb-0 ms-4">ZIP requires a password to open and extract files</p>
+                  <div className="text-muted fs-13 lh-base mb-4" style={{ paddingLeft: "34px", color: "#64748b" }}>
+                    ZIP file will be password protected.<br/>The password is required to open and extract files.
+                  </div>
 
-                  {/* Password input — shown when selected */}
+                  {/* Password Controls */}
                   {withPassword && (
-                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="input-group">
-                        <span className="input-group-text bg-white">
-                          <i className="ri-key-2-line text-muted"></i>
-                        </span>
+                    <div style={{ paddingLeft: "34px" }} onClick={(e) => e.stopPropagation()}>
+                      <div className="d-flex align-items-center bg-white mb-3" style={{ border: "1px solid #0f172a", borderRadius: "8px", overflow: "hidden", height: 46 }}>
+                        <div className="px-3" style={{ color: "#0f172a" }}><i className="ri-key-2-line fs-16"></i></div>
                         <input
-                          type="text"
-                          className="form-control font-monospace fs-13 bg-white"
-                          placeholder="Set a secure password"
+                          type={showPassword ? "text" : "password"}
+                          className="form-control border-0 shadow-none font-monospace fs-14 px-0 h-100 bg-white"
                           value={password}
+                          style={{ color: "#0f172a" }}
                           onChange={(e) => setPassword(e.target.value)}
                         />
-                        <button
-                          className="btn btn-dark btn-sm"
-                          type="button"
-                          onClick={() => setPassword(generatePasswordString())}
-                        >
-                          <i className="ri-refresh-line me-1"></i> Generate
-                        </button>
-                      </div>
-                      <div className="d-flex align-items-start gap-2 mt-2 p-2 rounded-2 border border-warning border-opacity-50" style={{ background: "#FFFBEB" }}>
-                        <i className="ri-information-line text-warning mt-1 flex-shrink-0" style={{ fontSize: 13 }}></i>
-                        <span className="fs-12 text-warning-emphasis">
-                          Share this password with the recipient separately — they need it to extract and open the documents.
-                        </span>
+                        <div className="d-flex h-100">
+                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={() => setShowPassword(!showPassword)}>
+                            <i className={showPassword ? "ri-eye-line fs-16" : "ri-eye-off-line fs-16"}></i>
+                          </button>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={handleCopy}>
+                            <i className="ri-clipboard-line fs-16"></i>
+                          </button>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none border-start rounded-0 h-100" style={{ borderColor: "#e2e8f0", color: "#0f172a" }} onClick={() => setPassword(generatePasswordString())}>
+                            <i className="ri-refresh-line fs-16"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Option 2: Without Password */}
+                {/* Without Password Option */}
                 <div
                   onClick={() => setWithPassword(false)}
-                  className={`rounded-3 p-3 ${!withPassword ? "border border-secondary" : "border"}`}
-                  style={{ cursor: "pointer", background: !withPassword ? "#f8f9fa" : "#fff", transition: "all 0.15s" }}
+                  className="p-4"
+                  style={{ 
+                    cursor: "pointer", 
+                    background: "#ffffff", 
+                    border: !withPassword ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                    transition: "all 0.2s ease" 
+                  }}
                 >
-                  <div className="d-flex align-items-center gap-2 mb-1">
-                    <input
-                      className="form-check-input mt-0 flex-shrink-0"
-                      type="radio"
-                      name="zipSecurity"
-                      checked={!withPassword}
-                      onChange={() => setWithPassword(false)}
-                      onClick={(e) => e.stopPropagation()}
-                      readOnly
-                    />
-                    <span className="fw-semibold fs-13 text-dark">
-                      <i className="ri-lock-unlock-line text-muted me-1"></i> Without Password
-                    </span>
+                  <div className="d-flex align-items-center gap-3 mb-2">
+                    {/* Custom Radio Button */}
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", 
+                      border: !withPassword ? "7px solid #0f172a" : "2px solid #cbd5e1",
+                      background: "#fff", flexShrink: 0,
+                      transition: "all 0.2s ease"
+                    }}></div>
+
+                    <div className="d-flex align-items-center gap-2">
+                      <i className="ri-lock-unlock-line text-dark fs-18"></i>
+                      <span className="fw-bold fs-15 text-dark">Without Password</span>
+                    </div>
                   </div>
-                  <p className="text-muted fs-12 mb-0 ms-4">ZIP can be opened by anyone without a password</p>
+                  <div className="text-muted fs-13 lh-base" style={{ paddingLeft: "34px", color: "#64748b" }}>
+                    ZIP file will not be password protected.<br/>Anyone can open the ZIP file without a password.
+                  </div>
                 </div>
 
               </div>
@@ -211,16 +241,17 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-top px-4 py-3 gap-2">
-            <button type="button" className="btn btn-light px-4" onClick={handleClose} disabled={loading}>
+          <div className="modal-footer border-top-0 px-4 py-4 mt-2" style={{ borderTop: "1px solid transparent" }}>
+            <button type="button" className="btn px-4 py-2 fw-semibold" onClick={handleClose} disabled={loading} style={{ background: "#f1f5f9", border: "none", color: "#334155", fontSize: 14, borderRadius: "8px" }}>
               Cancel
             </button>
-            <button type="button" className="btn btn-dark px-4" onClick={handleDownload} disabled={loading}>
+            <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2" onClick={handleDownload} disabled={loading} style={{ background: "#0f172a", fontSize: 14, borderRadius: "8px", boxShadow: "0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06)" }}>
               {loading ? (
-                <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating ZIP...</>
+                <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
               ) : (
-                <><i className="ri-folder-zip-line me-2"></i>Download ZIP</>
+                <i className="ri-download-2-line fs-16"></i>
               )}
+              Download ZIP
             </button>
           </div>
 
