@@ -85,7 +85,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
               </div>
               <div className="flex-grow-1">
                 <h5 className="modal-title mb-1 fw-bold text-dark fs-18">Download Documents</h5>
-                <p className="text-muted fs-13 mb-0 pdf-modal-desc-text">Funding application and all information will be packaged into a secure ZIP file.</p>
+                <p className="text-muted fs-13 mb-0 pdf-modal-desc-text">Securely download your funding application and related documents compiled in a protected package.</p>
               </div>
               <button type="button" className="btn-close pdf-modal-close-btn" onClick={handleClose} disabled={loading}></button>
             </div>
