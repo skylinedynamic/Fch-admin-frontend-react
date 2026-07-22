@@ -13,7 +13,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   const [withPassword, setWithPassword] = useState(true);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<"application" | "signature" | "both" | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalInstanceRef = useRef<Modal | null>(null);
@@ -52,11 +52,11 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (type: "application" | "signature" | "both") => {
     if (withPassword && !password) { toast.error("Please enter or generate a ZIP password"); return; }
-    setLoading(true);
+    setLoadingType(type);
     try {
-      await onDownload("both", withPassword ? password : undefined);
+      await onDownload(type, withPassword ? password : undefined);
       onHide();
       resetState();
     } catch (error: any) {
@@ -66,11 +66,11 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
       } else {
         toast.error(error.response?.data?.message || "Failed to download documents");
       }
-    } finally { setLoading(false); }
+    } finally { setLoadingType(null); }
   };
 
-  const resetState = () => { setPassword(""); setLoading(false); setWithPassword(true); };
-  const handleClose = () => { if (!loading) { onHide(); resetState(); } };
+  const resetState = () => { setPassword(""); setLoadingType(null); setWithPassword(true); };
+  const handleClose = () => { if (!loadingType) { onHide(); resetState(); } };
 
   return (
     <div className="modal fade flip" ref={modalRef} tabIndex={-1} aria-hidden="true">
@@ -87,7 +87,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 <h5 className="modal-title mb-1 fw-bold text-dark fs-18">Download Documents</h5>
                 <p className="text-muted fs-13 mb-0 pdf-modal-desc-text">Securely download your funding application and related documents compiled in a protected package.</p>
               </div>
-              <button type="button" className="btn-close pdf-modal-close-btn" onClick={handleClose} disabled={loading}></button>
+              <button type="button" className="btn-close pdf-modal-close-btn" onClick={handleClose} disabled={loadingType !== null}></button>
             </div>
           </div>
 
@@ -218,18 +218,36 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer">
-            <button type="button" className="btn px-4 py-2 fw-semibold pdf-modal-btn-cancel" onClick={handleClose} disabled={loading}>
+          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer d-flex justify-content-between flex-wrap gap-3">
+            <button type="button" className="btn px-4 py-2 fw-semibold pdf-modal-btn-cancel" onClick={handleClose} disabled={loadingType !== null}>
               Cancel
             </button>
-            <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={handleDownload} disabled={loading}>
-              {loading ? (
-                <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
-              ) : (
-                <i className="ri-download-2-line fs-16"></i>
-              )}
-              Download ZIP
-            </button>
+            <div className="d-flex gap-2 flex-wrap">
+              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('application')} disabled={loadingType !== null}>
+                {loadingType === 'application' ? (
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ) : (
+                  <i className="ri-file-download-line fs-16"></i>
+                )}
+                Application Download
+              </button>
+              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
+                {loadingType === 'signature' ? (
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ) : (
+                  <i className="ri-file-download-line fs-16"></i>
+                )}
+                Signature Download
+              </button>
+              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
+                {loadingType === 'both' ? (
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ) : (
+                  <i className="ri-download-2-line fs-16"></i>
+                )}
+                Download All ZIP
+              </button>
+            </div>
           </div>
 
         </div>
