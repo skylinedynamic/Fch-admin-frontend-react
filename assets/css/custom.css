@@ -4301,3 +4301,102 @@ File: Custom Css File
 .card.card-animate {
   margin-bottom: 15px !important;
 }
+
+/* Payment Method Settings page scoped styles */
+.payment-method-card {
+  border-radius: 4px !important;
+  overflow: hidden;
+}
+
+.payment-method-avatar-title {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.payment-method-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.payment-method-row:not(:last-child) {
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.payment-method-row:hover {
+  background-color: #fafbfc;
+}
+
+.payment-method-logo-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  width: 96px;
+  height: 60px;
+  border: 1px solid #e9ebec;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.payment-method-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.status-dot-active {
+  background-color: #0ab39c;
+}
+
+.status-dot-inactive {
+  background-color: #878a99;
+}
+
+.payment-method-switch {
+  box-shadow: none !important;
+}
+
+/* Payment Method Modal & Transition helpers */
+.payment-method-modal-content {
+  border-radius: 4px !important;
+}
+
+.payment-method-alert-warning {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.payment-method-transition-box {
+  border-radius: 4px !important;
+}
+
+.payment-method-arrow-circle {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-method-btn-round {
+  border-radius: 4px !important;
+}

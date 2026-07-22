@@ -90,4 +90,37 @@ export const updateTimeSettings = async (payload: { time_settings: any[] }): Pro
     return data;
 };
 
+export interface PartnerPaymentProvider {
+    id: number;
+    name: string;
+    slug: string;
+    logo: string | null;
+    status: boolean;
+    is_default: boolean;
+    is_configured: boolean;
+}
+
+export interface PartnerPaymentProviderConfig {
+    payment_provider_id: number;
+    status: boolean;
+    is_default: boolean;
+    configuration: Record<string, any>;
+}
+
+export const fetchPartnerPaymentProviders = async (): Promise<{ status: boolean; data: PartnerPaymentProvider[] }> => {
+    const { data } = await apiClient.get('/common/partner-payment-providers');
+    return data;
+};
+
+export const fetchPartnerPaymentProviderConfig = async (providerId: number): Promise<{ status: boolean; data: PartnerPaymentProviderConfig }> => {
+    const { data } = await apiClient.get(`/common/partner-payment-providers/${providerId}`);
+    return data;
+};
+
+export const updatePartnerPaymentProviderConfig = async (payload: PartnerPaymentProviderConfig): Promise<any> => {
+    const { data } = await apiClient.post('/common/partner-payment-providers', payload);
+    return data;
+};
+
+
 

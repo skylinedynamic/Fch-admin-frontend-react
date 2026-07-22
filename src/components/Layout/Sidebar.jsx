@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/auth/authStore";
 import { useConfigStore } from "../../store/config";
 import faviconImg from "../../../assets/images/Favicon.png";
 import avatarDefault from "../../../assets/images/users/avatar-1.jpg";
+import { ENTITY_TYPE_PARTNER } from "../../config/appConfig";
 
 // Menu item configuration with required permissions
 const menuItems = [
@@ -143,6 +144,13 @@ const menuItems = [
     icon: "bx bx-credit-card",
     label: "Payments",
     permission: "view payments",
+  },
+  {
+    to: "/payment-methods",
+    icon: "ri-wallet-3-line",
+    label: "Payment Method",
+    isHostOnly: true,
+    isPartnerOnly: true,
   },
   {
     to: "/subscriptions",
@@ -347,6 +355,11 @@ export default function Sidebar() {
 
       // 5. Generic rule: Check isHostOnly flag
       if (item.isHostOnly && !isHost) {
+        return false;
+      }
+
+      // 6. Generic rule: Check isPartnerOnly flag
+      if (item.isPartnerOnly && currentUser?.entity_type !== ENTITY_TYPE_PARTNER) {
         return false;
       }
 

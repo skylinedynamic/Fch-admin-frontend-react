@@ -7,11 +7,11 @@ import { usePermissions } from '../../../lib/auth/usePermissions';
 import { useAuthStore } from '../../../store/auth/authStore';
 import TestMailForm from './TestMailForm';
 import MicroBiltConfigForm from './MicroBiltConfigForm';
-import StripeConfigForm from './StripeConfigForm';
-import EmailConfigurationForm from './EmailConfigurationForm';
 import BrandingForm from './BrandingForm';
 import CreditProfileConfigForm from './CreditProfileConfigForm';
 import ScoreCalculationConfigForm from './ScoreCalculationConfigForm';
+import PaymentMethodConfig from './PaymentMethodConfig/PaymentMethodConfig';
+import EmailConfigurationForm from './EmailConfigurationForm';
 // @ts-ignore
 import TenantDomainConfig from './TenantDomainConfig';
 
@@ -182,7 +182,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                 ) : activeSection === 'domain_configuration' ? (
                     <TenantDomainConfig />
                 ) : (
-                    <StripeConfigForm />
+                    <PaymentMethodConfig />
                 )}
             </div>
         </div>

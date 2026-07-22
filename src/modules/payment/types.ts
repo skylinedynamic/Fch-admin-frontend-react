@@ -8,7 +8,7 @@ export type Payment = {
     transaction_id: string;
     amount: string | number;
     currency: string;
-    status: 'SUCCESS' | 'PENDING' | 'FAILED' | 'DISPUTED' | 'REFUNDED';
+    status: string;
     created_at: string;
 };
 

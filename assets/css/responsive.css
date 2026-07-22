@@ -1929,4 +1929,16 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
+  
+  /* Payment Method responsive rows */
+  .payment-method-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+    padding: 1.25rem !important;
+  }
+
+  .payment-method-row .payment-method-switch {
+    margin-top: 4px;
+  }
 }

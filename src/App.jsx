@@ -12,7 +12,7 @@ import UnderConstruction from '../src/pages/UnderConstruction.jsx';
 import RolesPermissions from '../src/pages/roles/RolesPermissions.tsx';
 import CreateRole from '../src/pages/roles/CreateRole.tsx';
 import EditRole from '../src/pages/roles/EditRole.tsx';
-import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute } from './lib/auth';
+import { ProtectedRoute, GuestRoute, checkSession, PermissionRoute, refreshSubscription, HostRoute, PartnerHostRoute } from './lib/auth';
 import { useAuthStore } from './store/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -75,6 +75,7 @@ import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
+import PaymentMethods from './pages/payment-methods/PaymentMethods';
 
 
 // Import jQuery and expose to window (Summernote requires this)
@@ -292,6 +293,11 @@ export default function App() {
               <Route path="lenders" element={<LendersList />} />
               <Route path="lenders/create" element={<LenderForm />} />
               <Route path="lenders/:id" element={<LenderForm />} />
+            </Route>
+
+            {/* Payment Method Routes - Host Partner Only */}
+            <Route element={<PartnerHostRoute />}>
+              <Route path="payment-methods" element={<PaymentMethods />} />
             </Route>
 
             {/* Appointments Routes - requires 'view appointments' permission */}
