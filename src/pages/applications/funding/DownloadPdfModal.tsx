@@ -28,6 +28,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     return () => {
       if (modalInstanceRef.current) {
         modalInstanceRef.current.dispose();
+        modalInstanceRef.current = null;
       }
       document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
       document.body.classList.remove('modal-open');
