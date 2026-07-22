@@ -10,7 +10,7 @@ interface DownloadPdfModalProps {
 }
 
 export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadPdfModalProps) {
-  const [withPassword, setWithPassword] = useState(true);
+  const [withPassword, setWithPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(true);
   const [loadingType, setLoadingType] = useState<"application" | "signature" | "both" | null>(null);
@@ -23,6 +23,17 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     if (!modalInstanceRef.current) {
       modalInstanceRef.current = new Modal(modalRef.current, { backdrop: "static", keyboard: false });
     }
+    
+    // Cleanup on unmount
+    return () => {
+      if (modalInstanceRef.current) {
+        modalInstanceRef.current.dispose();
+      }
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
   }, []);
 
   useEffect(() => {
@@ -30,11 +41,20 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     if (!modal) return;
     if (show) {
       modal.show();
-      setWithPassword(true);
+      setWithPassword(false);
       setPassword(generatePasswordString());
       setShowPassword(true);
     } else {
       modal.hide();
+      // Ensure backdrop is removed after hide animation completes
+      setTimeout(() => {
+        if (!show) {
+          document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }
+      }, 400);
     }
   }, [show]);
 
@@ -69,7 +89,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     } finally { setLoadingType(null); }
   };
 
-  const resetState = () => { setPassword(""); setLoadingType(null); setWithPassword(true); };
+  const resetState = () => { setPassword(""); setLoadingType(null); setWithPassword(false); };
   const handleClose = () => { if (!loadingType) { onHide(); resetState(); } };
 
   return (
