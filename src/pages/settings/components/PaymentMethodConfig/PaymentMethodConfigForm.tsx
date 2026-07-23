@@ -92,10 +92,10 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 // Initialize fields depending on payment gateway type
                 if (slug === 'stripe') {
                     setFormData({
-                        stripe_key_sandbox: config.stripe_key_sandbox || '',
-                        stripe_secret_sandbox: config.stripe_secret_sandbox || '',
-                        stripe_key_production: config.stripe_key_production || '',
-                        stripe_secret_production: config.stripe_secret_production || '',
+                        stripe_key_sandbox: config.stripe_key_sandbox || config.sandbox?.publishable_key || config.sandbox?.stripe_key_sandbox || '',
+                        stripe_secret_sandbox: config.stripe_secret_sandbox || config.sandbox?.secret_key || config.sandbox?.stripe_secret_sandbox || '',
+                        stripe_key_production: config.stripe_key_production || config.production?.publishable_key || config.production?.stripe_key_production || '',
+                        stripe_secret_production: config.stripe_secret_production || config.production?.secret_key || config.production?.stripe_secret_production || '',
                         payment_mode: config.payment_mode || 'sandbox',
                         partner_auto_charge_host_fee: config.partner_auto_charge_host_fee !== undefined
                             ? (config.partner_auto_charge_host_fee == 1 || config.partner_auto_charge_host_fee === 'true' || config.partner_auto_charge_host_fee === true)
@@ -103,27 +103,27 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                     });
                 } else if (slug === 'square') {
                     setFormData({
-                        square_app_id_sandbox: config.square_app_id_sandbox || '',
-                        square_token_sandbox: config.square_token_sandbox || '',
-                        square_app_id_production: config.square_app_id_production || '',
-                        square_token_production: config.square_token_production || '',
+                        square_app_id_sandbox: config.square_app_id_sandbox || config.sandbox?.app_id || config.sandbox?.square_app_id || config.sandbox?.square_app_id_sandbox || '',
+                        square_token_sandbox: config.square_token_sandbox || config.sandbox?.access_token || config.sandbox?.token || config.sandbox?.square_token || config.sandbox?.square_token_sandbox || '',
+                        square_app_id_production: config.square_app_id_production || config.production?.app_id || config.production?.square_app_id || config.production?.square_app_id_production || '',
+                        square_token_production: config.square_token_production || config.production?.access_token || config.production?.token || config.production?.square_token || config.production?.square_token_production || '',
                         payment_mode: config.payment_mode || 'sandbox'
                     });
                 } else if (slug === 'authorizenet' || slug === 'authorize') {
                     setFormData({
-                        authorize_login_id_sandbox: config.authorize_login_id_sandbox || '',
-                        authorize_transaction_key_sandbox: config.authorize_transaction_key_sandbox || '',
-                        authorize_login_id_production: config.authorize_login_id_production || '',
-                        authorize_transaction_key_production: config.authorize_transaction_key_production || '',
+                        authorize_login_id_sandbox: config.authorize_login_id_sandbox || config.sandbox?.login_id || config.sandbox?.authorize_login_id || config.sandbox?.authorize_login_id_sandbox || '',
+                        authorize_transaction_key_sandbox: config.authorize_transaction_key_sandbox || config.sandbox?.transaction_key || config.sandbox?.authorize_transaction_key || config.sandbox?.authorize_transaction_key_sandbox || '',
+                        authorize_login_id_production: config.authorize_login_id_production || config.production?.login_id || config.production?.authorize_login_id || config.production?.authorize_login_id_production || '',
+                        authorize_transaction_key_production: config.authorize_transaction_key_production || config.production?.transaction_key || config.production?.authorize_transaction_key || config.production?.authorize_transaction_key_production || '',
                         payment_mode: config.payment_mode || 'sandbox'
                     });
                 } else {
                     // Default configuration structure for unknown/other providers
                     setFormData({
-                        client_key_sandbox: config.client_key_sandbox || '',
-                        client_secret_sandbox: config.client_secret_sandbox || '',
-                        client_key_production: config.client_key_production || '',
-                        client_secret_production: config.client_secret_production || '',
+                        client_key_sandbox: config.client_key_sandbox || config.sandbox?.client_key || config.sandbox?.key || config.sandbox?.client_key_sandbox || '',
+                        client_secret_sandbox: config.client_secret_sandbox || config.sandbox?.client_secret || config.sandbox?.secret || config.sandbox?.client_secret_sandbox || '',
+                        client_key_production: config.client_key_production || config.production?.client_key || config.production?.key || config.production?.client_key_production || '',
+                        client_secret_production: config.client_secret_production || config.production?.client_secret || config.production?.secret || config.production?.client_secret_production || '',
                         payment_mode: config.payment_mode || 'sandbox'
                     });
                 }
@@ -215,11 +215,51 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
         setLoading(true);
         try {
+            // Prepare configuration with both flat and nested keys for backend compatibility
+            const configuration: Record<string, any> = { ...formData };
+            if (slug === 'stripe') {
+                configuration.sandbox = {
+                    publishable_key: formData.stripe_key_sandbox || '',
+                    secret_key: formData.stripe_secret_sandbox || ''
+                };
+                configuration.production = {
+                    publishable_key: formData.stripe_key_production || '',
+                    secret_key: formData.stripe_secret_production || ''
+                };
+            } else if (slug === 'square') {
+                configuration.sandbox = {
+                    app_id: formData.square_app_id_sandbox || '',
+                    access_token: formData.square_token_sandbox || ''
+                };
+                configuration.production = {
+                    app_id: formData.square_app_id_production || '',
+                    access_token: formData.square_token_production || ''
+                };
+            } else if (slug === 'authorizenet' || slug === 'authorize') {
+                configuration.sandbox = {
+                    login_id: formData.authorize_login_id_sandbox || '',
+                    transaction_key: formData.authorize_transaction_key_sandbox || ''
+                };
+                configuration.production = {
+                    login_id: formData.authorize_login_id_production || '',
+                    transaction_key: formData.authorize_transaction_key_production || ''
+                };
+            } else {
+                configuration.sandbox = {
+                    client_key: formData.client_key_sandbox || '',
+                    client_secret: formData.client_secret_sandbox || ''
+                };
+                configuration.production = {
+                    client_key: formData.client_key_production || '',
+                    client_secret: formData.client_secret_production || ''
+                };
+            }
+
             await updatePartnerPaymentProviderConfig({
                 payment_provider_id: provider.id,
                 status: true,
                 is_default: isDefault,
-                configuration: formData
+                configuration: configuration
             });
             toast.success(`${provider.name} configuration saved successfully!`);
             queryClient.invalidateQueries({ queryKey: ['globalConfigurations'] });
@@ -304,6 +344,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder={isSandbox ? "pk_test_..." : "pk_live_..."}
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`stripe_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -327,6 +368,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder={isSandbox ? "sk_test_..." : "sk_live_..."}
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`stripe_secret${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -386,6 +428,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder={isSandbox ? "sandbox-sq-app-id-..." : "sq-app-id-..."}
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`square_app_id${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -409,6 +452,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder={isSandbox ? "EAAAEO..." : "EAAAE..."}
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`square_token${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -436,6 +480,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder="Enter API Login ID"
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`authorize_login_id${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -459,6 +504,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder="Enter Transaction Key"
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`authorize_transaction_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -486,6 +532,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder="Enter Client Key"
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`client_key${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">
@@ -509,6 +556,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                         onChange={handleInputChange}
                                                         placeholder="Enter Client Secret"
                                                         style={{ boxShadow: 'none' }}
+                                                        autoComplete="new-password"
                                                     />
                                                     {errors[`client_secret${suffix}`] && (
                                                         <div className="invalid-feedback ps-3 pb-2">

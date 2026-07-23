@@ -75,7 +75,7 @@ import FundingList from './pages/funding/FundingList';
 import FundingSequencingForm from './pages/funding/components/FundingSequencingForm';
 import LendersList from './pages/lenders/LendersList';
 import LenderForm from './pages/lenders/LenderForm';
-import PaymentMethods from './pages/payment-methods/PaymentMethods';
+import PaymentMethods from './pages/payment-methods/PaymentMethods.tsx';
 
 
 // Import jQuery and expose to window (Summernote requires this)
