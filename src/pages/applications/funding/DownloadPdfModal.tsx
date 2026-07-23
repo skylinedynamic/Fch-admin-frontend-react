@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 // @ts-ignore
 import Modal from "bootstrap/js/dist/modal";
 import { toast } from "react-toastify";
+import "../../../../assets/css/funding-application.css";
 
 interface DownloadPdfModalProps {
   show: boolean;
@@ -232,7 +233,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                   <div className="text-muted fs-13 lh-base pdf-modal-indent pdf-modal-desc-text">
                     ZIP file will not be password protected.<br />Anyone can open the ZIP file without a password.
                   </div>
-                  <div className="text-danger fs-13 lh-base pdf-modal-indent mt-2 fw-semibold">
+                  <div className="pdf-modal-warning-text fs-13 lh-base pdf-modal-indent mt-2 fw-semibold">
                     <i className="ri-error-warning-line me-1"></i>
                     Warning: The package may contain confidential borrower information.
                   </div>
@@ -243,12 +244,12 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer d-flex justify-content-between flex-nowrap gap-3">
+          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer d-flex justify-content-between gap-3">
             <button type="button" className="btn px-4 py-2 fw-semibold pdf-modal-btn-cancel text-nowrap" onClick={handleClose} disabled={loadingType !== null}>
               Cancel
             </button>
-            <div className="d-flex gap-2 flex-nowrap overflow-auto pb-1">
-              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('application')} disabled={loadingType !== null}>
+            <div className="d-flex gap-2 pdf-modal-download-actions">
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('application')} disabled={loadingType !== null}>
                 {loadingType === 'application' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
@@ -256,7 +257,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 )}
                 Download Application
               </button>
-              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
                 {loadingType === 'signature' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
@@ -264,7 +265,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 )}
                 Download Signature Certificate
               </button>
-              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
                 {loadingType === 'both' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (

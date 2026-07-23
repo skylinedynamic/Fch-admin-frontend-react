@@ -16,7 +16,7 @@ import { Dialog } from 'primereact/dialog';
 import { formatCurrency } from '../../../utils/helper';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
-import '../../../assets/css/funding-requests.css';
+import '../../../../assets/css/funding-requests.css';
 
 
 import { useAuthStore } from '../../../store/auth/authStore';
