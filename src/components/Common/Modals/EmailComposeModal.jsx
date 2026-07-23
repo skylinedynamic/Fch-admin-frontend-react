@@ -324,19 +324,11 @@ export default function EmailComposeModal({ entityId, entityType, lead }) {
         };
     }, []);
 
-    // Also sync if lead object changes after mount
-    useEffect(() => {
-        if (lead?.email && choicesInstanceRef.current) {
-            const current = choicesInstanceRef.current.getValue(true);
-            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
-            if (!currentArray.includes(lead.email)) {
-                choicesInstanceRef.current.setValue([...currentArray, lead.email]);
-                // Trigger state sync from instance directly
-                const all = choicesInstanceRef.current.getValue(true);
-                setFormData(prev => ({ ...prev, to_emails: Array.isArray(all) ? all.join(', ') : (all || '') }));
-            }
-        }
-    }, [lead?.email]);
+    // NOTE: No live-sync of lead.email into the Choices tags input here.
+    // Doing so in a [lead?.email] effect appends a new tag on EVERY keystroke
+    // (setValue only appends), causing unbounded tag growth and freezing the page.
+    // The recipient is already prefilled with the latest email on modal open
+    // via the show.bs.modal reset handler below (ctx.borrowerEmail / lead?.email).
 
     // Reset validation and form on modal close/open
     useEffect(() => {
