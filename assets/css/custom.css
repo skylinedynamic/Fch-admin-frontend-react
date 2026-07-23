@@ -4399,4 +4399,274 @@ File: Custom Css File
 
 .payment-method-btn-round {
   border-radius: 4px !important;
-}
+}
+
+/* ============================================================
+   Installment Details Modal — Elegant & Professional
+   ============================================================ */
+.installment-trigger-btn {
+  background: rgba(10, 179, 156, 0.1) !important;
+  border: 1px solid rgba(10, 179, 156, 0.25) !important;
+  color: #0ab39c !important;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-radius: 6px !important;
+  padding: 0.4rem 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.installment-trigger-btn:hover {
+  background: #0ab39c !important;
+  border-color: #0ab39c !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+.installment-details-modal .modal-content {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 24px 48px -12px rgba(10, 179, 156, 0.08), 0 8px 16px -8px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(10, 179, 156, 0.12) !important;
+}
+
+.installment-modal-header {
+  border-bottom: 1px solid #eef1f4;
+  padding: 1.5rem 1.75rem;
+  background-color: #ffffff;
+}
+
+.installment-down-payment-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.installment-down-payment-toggle .form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.installment-down-payment-toggle .form-check-input:checked {
+  background-color: #0ab39c;
+  border-color: #0ab39c;
+}
+
+.installment-down-payment-toggle .form-check-label {
+  cursor: pointer;
+}
+
+.installment-icon-avatar {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0ab39c 0%, #0c9c88 100%);
+  color: #ffffff;
+  font-size: 1.4rem;
+  box-shadow: 0 6px 14px rgba(10, 179, 156, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.installment-icon-avatar:hover {
+  transform: rotate(15deg);
+}
+
+.installment-modal-subtitle {
+  font-size: 0.85rem;
+  color: #8592a3;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+.installment-field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5b6b79;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.installment-input-group {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  border: 1px solid #e3e8ee;
+  transition: all 0.2s ease-in-out;
+}
+
+.installment-input-group:focus-within {
+  border-color: #0ab39c;
+  box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.15);
+}
+
+.installment-input-group .input-group-text {
+  background-color: #f8fafc;
+  border: none;
+  color: #5b6b79;
+  font-weight: 600;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+}
+
+.installment-input-group .form-control {
+  border: none;
+  font-size: 0.95rem;
+  padding: 0.65rem 1rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.installment-input-group .form-control:focus {
+  box-shadow: none;
+}
+
+.installment-input-group.is-invalid-group {
+  border-color: #f06548 !important;
+}
+
+.installment-input-group.is-invalid-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(240, 101, 72, 0.15);
+}
+
+.installment-warning-text {
+  color: #f06548;
+  font-size: 0.76rem;
+  font-weight: 500;
+  display: inline-block;
+  margin-top: 0.45rem;
+}
+
+.installment-inputs-col {
+  padding: 2.25rem 2rem;
+  background-color: #ffffff;
+}
+
+.installment-details-modal .p-dropdown {
+  border-radius: 10px;
+  border-color: #e3e8ee;
+  padding: 0.35rem 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.installment-details-modal .p-dropdown:not(.p-disabled):hover {
+  border-color: #cbd5e1;
+}
+
+.installment-details-modal .p-dropdown:not(.p-disabled).p-focus {
+  border-color: #0ab39c;
+  box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.15);
+}
+
+.installment-result-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(160deg, #e6f7f5 0%, #f0faf9 100%);
+  border-left: 1px solid rgba(10, 179, 156, 0.15);
+  padding: 2.25rem 2rem;
+}
+
+.installment-result-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px dashed rgba(10, 179, 156, 0.25);
+}
+
+.installment-result-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5b7a76;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.installment-result-amount {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #0ab39c;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-shadow: 0 4px 12px rgba(10, 179, 156, 0.15);
+  margin-bottom: 0.25rem;
+}
+
+.installment-result-caption {
+  font-size: 0.85rem;
+  color: #7c9490;
+  font-weight: 500;
+}
+
+.installment-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.installment-breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.installment-breakdown-item span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7c9490;
+  letter-spacing: 0.01em;
+}
+
+.installment-breakdown-item strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.installment-breakdown-total {
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(10, 179, 156, 0.2);
+}
+
+.installment-breakdown-total span {
+  color: #0ab39c;
+  font-weight: 700;
+}
+
+.installment-breakdown-total strong {
+  font-size: 1.15rem;
+  color: #0ab39c;
+  font-weight: 800;
+  text-shadow: 0 2px 8px rgba(10, 179, 156, 0.1);
+}
+
+.installment-modal-footer {
+  border-top: 1px solid #eef1f4;
+  padding: 1.25rem 1.75rem;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.installment-footer-hint {
+  color: #98a2b3;
+  font-size: 0.78rem;
+  font-weight: 500;
+}

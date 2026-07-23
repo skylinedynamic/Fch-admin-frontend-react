@@ -9,6 +9,7 @@ import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
+import InstallmentDetailsModal from './InstallmentDetailsModal';
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
@@ -28,6 +29,7 @@ export default function PartnerInformationSection({
 }) {
     const [showFileManager, setShowFileManager] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [showInstallmentModal, setShowInstallmentModal] = useState(false);
     const domainManuallyEditedRef = useRef(false);
 
     // Show partner_domain field: always in create mode, only for Certified in edit mode
@@ -55,6 +57,8 @@ export default function PartnerInformationSection({
     const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR || formData.enrollment_type?.includes('One Time');
     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;
     const enrollmentTypeName = selectedPlan?.enrollment_type || formData.enrollment_type;
+    const enrollmentTypeSlug = (selectedPlan?.enrollment_type_slug || formData.enrollment_type_slug || '').toString().toLowerCase();
+    const isInstallmentPlan = enrollmentTypeSlug === 'installment' || (formData.enrollment_type || '').toString().toLowerCase() === 'installment';
 
     const totalInvestment = formData.total_subscription_amount || (Number(currentPaymentAmount) * (selectedPlan?.total_installments_count || 11));
 
@@ -639,7 +643,12 @@ export default function PartnerInformationSection({
 
                                     return options.length > 0 ? options : (PAYMENT_TYPE_OPTIONS || []);
                                 })()}
-                                onChange={(e) => handleInputChange({ target: { name: 'enrollment_type', value: e.value } })}
+                                onChange={(e) => {
+                                    handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
+                                    if ((e.value || '').toString().toLowerCase() === 'installment') {
+                                        setShowInstallmentModal(true);
+                                    }
+                                }}
                                 optionLabel="label"
                                 optionValue="value"
                                 placeholder="Select enrollment type..."
@@ -737,6 +746,30 @@ export default function PartnerInformationSection({
                                                                     Platform fee of <strong>${Number(currentPlatformFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month</strong> starts on the 12th month
                                                                 </p>
                                                             </div>
+                                                        </>
+                                                    ) : isInstallmentPlan ? (
+                                                        <>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <span className="info-label">
+                                                                    <i className="ri-hand-coin-line"></i> Total Enrollment Cost:
+                                                                </span>
+                                                                <span className="amount-value amount-success">
+                                                                    ${Number(selectedPlan?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            </div>
+                                                            <div className="custom-notice">
+                                                                <i className="ri-information-line"></i>
+                                                                <p className="custom-notice-text">
+                                                                    Flexible installment plan. Choose a down payment and duration to calculate the monthly amount.
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm installment-trigger-btn mt-2"
+                                                                onClick={() => setShowInstallmentModal(true)}
+                                                            >
+                                                                <i className="ri-calculator-line me-1"></i> View Installment Details
+                                                            </button>
                                                         </>
                                                     ) : (
                                                         <>
@@ -849,6 +882,15 @@ export default function PartnerInformationSection({
                     </div>
                 </div>
             )}
+
+            <InstallmentDetailsModal
+                show={showInstallmentModal}
+                onHide={() => setShowInstallmentModal(false)}
+                totalAmount={selectedPlan?.total_amount || formData.total_subscription_amount || 0}
+                defaultMonths={selectedPlan?.total_installments_count || 12}
+                planLabel={enrollmentTypeName}
+                partnerType={partnerTypeName}
+            />
         </>
     );
 }
