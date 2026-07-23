@@ -78,7 +78,10 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   };
 
   const handleDownload = async (type: "application" | "signature" | "both") => {
-    if (withPassword && !password) { toast.error("Please enter or generate a ZIP password"); return; }
+    if (withPassword && !password) { 
+      toast.error("Please enter or generate a password"); 
+      return; 
+    }
     setLoadingType(type);
     try {
       await onDownload(type, withPassword ? password : undefined);
