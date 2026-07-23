@@ -23,7 +23,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     if (!modalInstanceRef.current) {
       modalInstanceRef.current = new Modal(modalRef.current, { backdrop: "static", keyboard: false });
     }
-    
+
     // Cleanup on unmount
     return () => {
       if (modalInstanceRef.current) {
@@ -132,7 +132,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                         <div className="fw-bold fs-14 text-dark">Funding Application</div>
                         <span className="badge rounded-1 pdf-modal-badge">PDF</span>
                       </div>
-                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Funding application and with all information.</div>
+                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Completed funding application containing all submitted information.</div>
                     </div>
                   </div>
                 </div>
@@ -148,7 +148,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                         <div className="fw-bold fs-14 text-dark">Signature Certificate</div>
                         <span className="badge rounded-1 pdf-modal-badge-success">PDF</span>
                       </div>
-                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Signed authorization certificate based on borrower.</div>
+                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Electronic signature and consent certificate for the applicant.</div>
                     </div>
                   </div>
                 </div>
@@ -178,14 +178,14 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                   <div className="d-flex align-items-center gap-3 mb-2">
                     {/* Custom Radio Button */}
                     <div className={`pdf-modal-radio-dot ${withPassword ? 'active' : ''}`}></div>
-                    
+
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
                       <i className="ri-lock-fill text-dark fs-18"></i>
                       <span className="fw-bold fs-15 text-dark">Password Protected</span>
                     </div>
                   </div>
                   <div className="text-muted fs-13 lh-base mb-4 pdf-modal-indent pdf-modal-desc-text">
-                    ZIP file will be password protected.<br/>The password is required to open and extract files.
+                    ZIP file will be password protected.<br />The password is required to open and extract files.
                   </div>
 
                   {/* Password Controls */}
@@ -230,7 +230,11 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                     </div>
                   </div>
                   <div className="text-muted fs-13 lh-base pdf-modal-indent pdf-modal-desc-text">
-                    ZIP file will not be password protected.<br/>Anyone can open the ZIP file without a password.
+                    ZIP file will not be password protected.<br />Anyone can open the ZIP file without a password.
+                  </div>
+                  <div className="text-danger fs-13 lh-base pdf-modal-indent mt-2 fw-semibold">
+                    <i className="ri-error-warning-line me-1"></i>
+                    Warning: The package may contain confidential borrower information.
                   </div>
                 </div>
 
@@ -239,28 +243,28 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer d-flex justify-content-between flex-wrap gap-3">
-            <button type="button" className="btn px-4 py-2 fw-semibold pdf-modal-btn-cancel" onClick={handleClose} disabled={loadingType !== null}>
+          <div className="modal-footer border-top-0 px-4 py-4 mt-2 pdf-modal-footer d-flex justify-content-between flex-nowrap gap-3">
+            <button type="button" className="btn px-4 py-2 fw-semibold pdf-modal-btn-cancel text-nowrap" onClick={handleClose} disabled={loadingType !== null}>
               Cancel
             </button>
-            <div className="d-flex gap-2 flex-wrap">
-              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('application')} disabled={loadingType !== null}>
+            <div className="d-flex gap-2 flex-nowrap overflow-auto pb-1">
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('application')} disabled={loadingType !== null}>
                 {loadingType === 'application' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
                   <i className="ri-file-download-line fs-16"></i>
                 )}
-                Application Download
+                Download Application
               </button>
-              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
                 {loadingType === 'signature' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
                   <i className="ri-file-download-line fs-16"></i>
                 )}
-                Signature Download
+                Download Signature Certificate
               </button>
-              <button type="button" className="btn px-4 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
+              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
                 {loadingType === 'both' ? (
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ) : (
