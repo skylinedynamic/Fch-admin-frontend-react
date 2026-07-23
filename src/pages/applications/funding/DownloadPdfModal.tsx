@@ -15,6 +15,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(true);
   const [loadingType, setLoadingType] = useState<"application" | "signature" | "both" | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalInstanceRef = useRef<Modal | null>(null);
@@ -70,7 +71,9 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   const handleCopy = () => {
     if (password) {
       navigator.clipboard.writeText(password);
+      setIsCopied(true);
       toast.success("Password copied to clipboard");
+      setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
@@ -204,10 +207,10 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                           <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={() => setShowPassword(!showPassword)}>
                             <i className={showPassword ? "ri-eye-line fs-16" : "ri-eye-off-line fs-16"}></i>
                           </button>
-                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={handleCopy}>
-                            <i className="ri-clipboard-line fs-16"></i>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={handleCopy} title="Copy password">
+                            <i className={isCopied ? "ri-check-line fs-16 fw-bold text-success" : "ri-file-copy-line fs-16"}></i>
                           </button>
-                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={() => setPassword(generatePasswordString())}>
+                          <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={() => setPassword(generatePasswordString())} title="Generate new password">
                             <i className="ri-refresh-line fs-16"></i>
                           </button>
                         </div>
@@ -218,7 +221,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
 
                 {/* Without Password Option */}
                 <div
-                  onClick={() => setWithPassword(false)}
+                  onClick={() => { setWithPassword(false); setPassword(""); }}
                   className={`p-4 pdf-modal-security-nopw ${!withPassword ? 'active' : ''}`}
                 >
                   <div className="d-flex align-items-center gap-3 mb-2">

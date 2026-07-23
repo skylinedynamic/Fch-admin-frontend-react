@@ -23,8 +23,12 @@
 .pdf-modal-indent { padding-left: 34px; }
 .pdf-modal-pw-wrapper { border: 1px solid var(--primary-color); border-radius: 0; overflow: hidden; height: 46px; }
 .pdf-modal-pw-icon { color: var(--primary-color); }
-.pdf-modal-pw-input { color: var(--primary-color); border-radius: 0; }
-.pdf-modal-pw-btn { border-left: 1px solid var(--primary-color); color: var(--primary-color); }
+.pdf-modal-pw-input { color: var(--primary-color); border-radius: 0; font-weight: 500; }
+.pdf-modal-pw-btn { border: none !important; border-left: 1px solid var(--primary-color) !important; color: var(--primary-color) !important; border-radius: 0 !important; transition: all 0.2s ease; z-index: 1 !important; }
+.pdf-modal-pw-btn i { transition: all 0.2s ease; }
+.pdf-modal-pw-btn:hover, .pdf-modal-pw-btn:focus { background-color: transparent !important; border: none !important; border-left: 1px solid var(--primary-color) !important; box-shadow: none !important; z-index: 1 !important; color: var(--primary-color) !important; }
+
+.pdf-modal-pw-btn:active { opacity: 0.7; }
 .pdf-modal-footer { border-top: 1px solid transparent; flex-wrap: wrap !important; }
 .pdf-modal-download-actions { flex-wrap: wrap !important; justify-content: flex-end !important; }
 .pdf-modal-btn-cancel { background: #f1f5f9 !important; border: 1px solid transparent !important; color: #334155 !important; font-size: 14px; border-radius: 4px !important; }
