@@ -8,6 +8,15 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import DynamicActionModal from '../../../../components/Common/Modals/DynamicActionModal';
 import { useAuthStore } from '../../../../store/auth/authStore';
 import { apiClient } from '../../../../lib/http/apiClient';
+import { PAYMENT_METHOD_PROVIDER, PAYMENT_ENVIRONMENT_LABELS } from '../../../../config/paymentConfig';
+
+const MODE_SANDBOX = PAYMENT_ENVIRONMENT_LABELS[0].toLowerCase();
+const MODE_PRODUCTION = PAYMENT_ENVIRONMENT_LABELS[1].toLowerCase();
+
+const PROVIDER_STRIPE = PAYMENT_METHOD_PROVIDER[1].toLowerCase();
+const PROVIDER_SQUARE = PAYMENT_METHOD_PROVIDER[2].toLowerCase();
+const PROVIDER_ECRYPT = PAYMENT_METHOD_PROVIDER[3].toLowerCase();
+const PROVIDER_AUTHORIZE = PAYMENT_METHOD_PROVIDER[4].toLowerCase().replace(/[\s\.]/g, '');
 
 // Static logo imports
 import stripeLogo from "../../../../../assets/images/payment_provider/stripe_logo.png";
@@ -27,15 +36,14 @@ interface FormErrors {
 const getProviderLogo = (name: string, slug?: string): string => {
     const key = (slug || name || '').toLowerCase().replace(/[\s\.]/g, '');
     switch (key) {
-        case 'stripe':
+        case PROVIDER_STRIPE:
             return stripeLogo;
-        case 'square':
+        case PROVIDER_SQUARE:
             return squareLogo;
-        case 'ecrypt':
+        case PROVIDER_ECRYPT:
             return ecryptLogo;
+        case PROVIDER_AUTHORIZE:
         case 'authorize':
-        case 'authorizenet':
-        case 'authorization':
             return authorizeLogo;
         default:
             return '';
@@ -50,35 +58,26 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const [showModal, setShowModal] = useState<boolean>(false);
     const [pendingMode, setPendingMode] = useState<string | null>(null);
     const [isDefault, setIsDefault] = useState<boolean>(false);
-    
+
     // Dynamic config form state containing keys for whichever provider is configured
     const [formData, setFormData] = useState<Record<string, any>>({
-        payment_mode: 'sandbox',
-        partner_auto_charge_host_fee: 1
+        payment_mode: MODE_SANDBOX
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
-    const [fixedEnrollmentAmount, setFixedEnrollmentAmount] = useState<number>(0);
 
     const slug = provider.slug || provider.name.toLowerCase().replace(/[\s\.]/g, '');
 
+    const isStripe = slug === PROVIDER_STRIPE;
+    const isSquare = slug === PROVIDER_SQUARE;
+    const isAuthorize = slug === PROVIDER_AUTHORIZE;
+    const isEcrypt = slug === PROVIDER_ECRYPT;
+    const isFallback = !isStripe && !isSquare && !isAuthorize && !isEcrypt;
+
     useEffect(() => {
         loadConfig();
-        if (slug === 'stripe') {
-            fetchFixedPlan();
-        }
     }, [provider.id]);
 
-    const fetchFixedPlan = async () => {
-        try {
-            const response = await apiClient.get('/common/partner-plans/fixed-enrollment');
-            if (response.data?.status && response.data?.data?.payment_amount) {
-                setFixedEnrollmentAmount(Number(response.data.data.payment_amount));
-            }
-        } catch (error) {
-            console.error('Failed to fetch fixed enrollment plan:', error);
-        }
-    };
 
     const loadConfig = async () => {
         try {
@@ -88,43 +87,42 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 const linkage = response.data;
                 setIsDefault(!!linkage.is_default);
                 const config = linkage.configuration || {};
-                
+
                 // Initialize fields depending on payment gateway type
-                if (slug === 'stripe') {
+                if (isStripe) {
                     setFormData({
-                        stripe_key_sandbox: config.stripe_key_sandbox || config.sandbox?.publishable_key || config.sandbox?.stripe_key_sandbox || '',
-                        stripe_secret_sandbox: config.stripe_secret_sandbox || config.sandbox?.secret_key || config.sandbox?.stripe_secret_sandbox || '',
-                        stripe_key_production: config.stripe_key_production || config.production?.publishable_key || config.production?.stripe_key_production || '',
-                        stripe_secret_production: config.stripe_secret_production || config.production?.secret_key || config.production?.stripe_secret_production || '',
-                        payment_mode: config.payment_mode || 'sandbox',
-                        partner_auto_charge_host_fee: config.partner_auto_charge_host_fee !== undefined
-                            ? (config.partner_auto_charge_host_fee == 1 || config.partner_auto_charge_host_fee === 'true' || config.partner_auto_charge_host_fee === true)
-                            : 1
+                        stripe_key_sandbox: config.stripe_key_sandbox || '',
+                        stripe_secret_sandbox: config.stripe_secret_sandbox || '',
+                        stripe_key_production: config.stripe_key_production || '',
+                        stripe_secret_production: config.stripe_secret_production || '',
+                        payment_mode: config.payment_mode || MODE_SANDBOX
                     });
-                } else if (slug === 'square') {
+                }
+                if (isSquare) {
                     setFormData({
-                        square_app_id_sandbox: config.square_app_id_sandbox || config.sandbox?.app_id || config.sandbox?.square_app_id || config.sandbox?.square_app_id_sandbox || '',
-                        square_token_sandbox: config.square_token_sandbox || config.sandbox?.access_token || config.sandbox?.token || config.sandbox?.square_token || config.sandbox?.square_token_sandbox || '',
-                        square_app_id_production: config.square_app_id_production || config.production?.app_id || config.production?.square_app_id || config.production?.square_app_id_production || '',
-                        square_token_production: config.square_token_production || config.production?.access_token || config.production?.token || config.production?.square_token || config.production?.square_token_production || '',
-                        payment_mode: config.payment_mode || 'sandbox'
+                        square_app_id_sandbox: config.square_app_id_sandbox || '',
+                        square_token_sandbox: config.square_token_sandbox || '',
+                        square_app_id_production: config.square_app_id_production || '',
+                        square_token_production: config.square_token_production || '',
+                        payment_mode: config.payment_mode || MODE_SANDBOX
                     });
-                } else if (slug === 'authorizenet' || slug === 'authorize') {
+                }
+                if (isAuthorize) {
                     setFormData({
-                        authorize_login_id_sandbox: config.authorize_login_id_sandbox || config.sandbox?.login_id || config.sandbox?.authorize_login_id || config.sandbox?.authorize_login_id_sandbox || '',
-                        authorize_transaction_key_sandbox: config.authorize_transaction_key_sandbox || config.sandbox?.transaction_key || config.sandbox?.authorize_transaction_key || config.sandbox?.authorize_transaction_key_sandbox || '',
-                        authorize_login_id_production: config.authorize_login_id_production || config.production?.login_id || config.production?.authorize_login_id || config.production?.authorize_login_id_production || '',
-                        authorize_transaction_key_production: config.authorize_transaction_key_production || config.production?.transaction_key || config.production?.authorize_transaction_key || config.production?.authorize_transaction_key_production || '',
-                        payment_mode: config.payment_mode || 'sandbox'
+                        authorize_login_id_sandbox: config.authorize_login_id_sandbox || '',
+                        authorize_transaction_key_sandbox: config.authorize_transaction_key_sandbox || '',
+                        authorize_login_id_production: config.authorize_login_id_production || '',
+                        authorize_transaction_key_production: config.authorize_transaction_key_production || '',
+                        payment_mode: config.payment_mode || MODE_SANDBOX
                     });
-                } else {
-                    // Default configuration structure for unknown/other providers
+                }
+                if (isEcrypt || isFallback) {
                     setFormData({
-                        client_key_sandbox: config.client_key_sandbox || config.sandbox?.client_key || config.sandbox?.key || config.sandbox?.client_key_sandbox || '',
-                        client_secret_sandbox: config.client_secret_sandbox || config.sandbox?.client_secret || config.sandbox?.secret || config.sandbox?.client_secret_sandbox || '',
-                        client_key_production: config.client_key_production || config.production?.client_key || config.production?.key || config.production?.client_key_production || '',
-                        client_secret_production: config.client_secret_production || config.production?.client_secret || config.production?.secret || config.production?.client_secret_production || '',
-                        payment_mode: config.payment_mode || 'sandbox'
+                        client_key_sandbox: config.client_key_sandbox || '',
+                        client_secret_sandbox: config.client_secret_sandbox || '',
+                        client_key_production: config.client_key_production || '',
+                        client_secret_production: config.client_secret_production || '',
+                        payment_mode: config.payment_mode || MODE_SANDBOX
                     });
                 }
             }
@@ -172,31 +170,34 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
-        const mode = formData.payment_mode || 'sandbox';
+        const mode = formData.payment_mode || MODE_SANDBOX;
         const suffix = `_${mode}`;
 
-        if (slug === 'stripe') {
+        if (isStripe) {
             if (!formData[`stripe_key${suffix}`]) {
                 newErrors[`stripe_key${suffix}`] = 'Stripe Publishable Key is required.';
             }
             if (!formData[`stripe_secret${suffix}`]) {
                 newErrors[`stripe_secret${suffix}`] = 'Stripe Secret Key is required.';
             }
-        } else if (slug === 'square') {
+        }
+        if (isSquare) {
             if (!formData[`square_app_id${suffix}`]) {
                 newErrors[`square_app_id${suffix}`] = 'Square Application ID is required.';
             }
             if (!formData[`square_token${suffix}`]) {
                 newErrors[`square_token${suffix}`] = 'Square Access Token is required.';
             }
-        } else if (slug === 'authorizenet' || slug === 'authorize') {
+        }
+        if (isAuthorize) {
             if (!formData[`authorize_login_id${suffix}`]) {
                 newErrors[`authorize_login_id${suffix}`] = 'Authorize.Net API Login ID is required.';
             }
             if (!formData[`authorize_transaction_key${suffix}`]) {
                 newErrors[`authorize_transaction_key${suffix}`] = 'Authorize.Net Transaction Key is required.';
             }
-        } else {
+        }
+        if (isEcrypt || isFallback) {
             if (!formData[`client_key${suffix}`]) {
                 newErrors[`client_key${suffix}`] = 'Client Key is required.';
             }
@@ -217,39 +218,42 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         try {
             // Prepare configuration with both flat and nested keys for backend compatibility
             const configuration: Record<string, any> = { ...formData };
-            if (slug === 'stripe') {
-                configuration.sandbox = {
+            if (isStripe) {
+                configuration[MODE_SANDBOX] = {
                     publishable_key: formData.stripe_key_sandbox || '',
                     secret_key: formData.stripe_secret_sandbox || ''
                 };
-                configuration.production = {
+                configuration[MODE_PRODUCTION] = {
                     publishable_key: formData.stripe_key_production || '',
                     secret_key: formData.stripe_secret_production || ''
                 };
-            } else if (slug === 'square') {
-                configuration.sandbox = {
+            }
+            if (isSquare) {
+                configuration[MODE_SANDBOX] = {
                     app_id: formData.square_app_id_sandbox || '',
                     access_token: formData.square_token_sandbox || ''
                 };
-                configuration.production = {
+                configuration[MODE_PRODUCTION] = {
                     app_id: formData.square_app_id_production || '',
                     access_token: formData.square_token_production || ''
                 };
-            } else if (slug === 'authorizenet' || slug === 'authorize') {
-                configuration.sandbox = {
+            }
+            if (isAuthorize) {
+                configuration[MODE_SANDBOX] = {
                     login_id: formData.authorize_login_id_sandbox || '',
                     transaction_key: formData.authorize_transaction_key_sandbox || ''
                 };
-                configuration.production = {
+                configuration[MODE_PRODUCTION] = {
                     login_id: formData.authorize_login_id_production || '',
                     transaction_key: formData.authorize_transaction_key_production || ''
                 };
-            } else {
-                configuration.sandbox = {
+            }
+            if (isEcrypt || isFallback) {
+                configuration[MODE_SANDBOX] = {
                     client_key: formData.client_key_sandbox || '',
                     client_secret: formData.client_secret_sandbox || ''
                 };
-                configuration.production = {
+                configuration[MODE_PRODUCTION] = {
                     client_key: formData.client_key_production || '',
                     client_secret: formData.client_secret_production || ''
                 };
@@ -271,8 +275,8 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
         }
     };
 
-    const isSandbox = formData.payment_mode !== 'production';
-    const suffix = isSandbox ? '_sandbox' : '_production';
+    const isSandbox = formData.payment_mode !== MODE_PRODUCTION;
+    const suffix = `_${isSandbox ? MODE_SANDBOX : MODE_PRODUCTION}`;
     const providerLogo = getProviderLogo(provider.name, provider.slug);
 
     return (
@@ -308,15 +312,15 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                         <div>
                                             <h6 className="mb-1 fw-bold fs-14">Operating Environment</h6>
                                             <p className="text-muted mb-0 fs-13">
-                                                Currently configuring the <strong>{isSandbox ? 'Sandbox' : 'Production'}</strong> API credentials.
+                                                Currently configuring the <strong>{isSandbox ? PAYMENT_ENVIRONMENT_LABELS[0] : PAYMENT_ENVIRONMENT_LABELS[1]}</strong> API credentials.
                                             </p>
                                         </div>
                                         <div>
                                             <Dropdown
                                                 value={formData.payment_mode}
                                                 options={[
-                                                    { label: '🧪 Sandbox', value: 'sandbox' },
-                                                    { label: '🚀 Production', value: 'production' }
+                                                    { label: `🧪 ${PAYMENT_ENVIRONMENT_LABELS[0]}`, value: MODE_SANDBOX },
+                                                    { label: `🚀 ${PAYMENT_ENVIRONMENT_LABELS[1]}`, value: MODE_PRODUCTION }
                                                 ]}
                                                 onChange={(e: DropdownChangeEvent) => handleModeChangeRequest(e.value)}
                                                 placeholder="Select Environment"
@@ -328,7 +332,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                 </div>
 
                                 <div className="row g-4 mt-2">
-                                    {slug === 'stripe' && (
+                                    {isStripe && (
                                         <>
                                             {/* Stripe Publishable Key */}
                                             <div className="col-12">
@@ -378,41 +382,11 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                                 </div>
                                             </div>
 
-                                            {/* Partner Auto Charge Fee */}
-                                            {user?.is_host == 0 && (
-                                                <div className="col-12 mt-4">
-                                                    <div className="p-3 border border-light-subtle rounded-3 bg-light bg-opacity-50">
-                                                        <div className="d-flex align-items-center justify-content-between">
-                                                            <div>
-                                                                <h6 className="mb-1 fw-semibold fs-14 text-dark">
-                                                                    Host Fee Auto Deduction
-                                                                </h6>
-                                                                <p className="text-muted mb-0 fs-13">
-                                                                    Automatically transfer ${fixedEnrollmentAmount} from the partner account to the host account upon successful transactions.
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex-shrink-0 ms-3">
-                                                                <div className="form-check form-switch form-switch-md mb-0" dir="ltr">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        className="form-check-input"
-                                                                        id="partner_auto_charge_host_fee"
-                                                                        name="partner_auto_charge_host_fee"
-                                                                        checked={!!formData.partner_auto_charge_host_fee}
-                                                                        onChange={handleCheckboxChange}
-                                                                        disabled={loading}
-                                                                        style={{ cursor: 'pointer' }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
+
                                         </>
                                     )}
 
-                                    {slug === 'square' && (
+                                    {isSquare && (
                                         <>
                                             {/* Square App ID */}
                                             <div className="col-12">
@@ -464,7 +438,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                         </>
                                     )}
 
-                                    {(slug === 'authorizenet' || slug === 'authorize') && (
+                                    {isAuthorize && (
                                         <>
                                             {/* Authorize Login ID */}
                                             <div className="col-12">
@@ -516,7 +490,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                                         </>
                                     )}
 
-                                    {slug !== 'stripe' && slug !== 'square' && slug !== 'authorizenet' && slug !== 'authorize' && (
+                                    {(isEcrypt || isFallback) && (
                                         <>
                                             {/* Default Gateway Client Key */}
                                             <div className="col-12">
@@ -609,17 +583,17 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
                 title="Confirm Environment Change"
                 description={
                     <>
-                        You are about to switch the payment environment to <strong>{pendingMode === 'production' ? 'Production' : 'Sandbox'}</strong>.
+                        You are about to switch the payment environment to <strong>{pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]}</strong>.
                     </>
                 }
-                warningText={`Switching to Production will use live ${provider.name} keys. Real transactions will be processed if this is used in checkout.`}
-                warningBgClass={pendingMode === 'production'
+                warningText={`Switching to ${pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]} will use live ${provider.name} keys. Real transactions will be processed if this is used in checkout.`}
+                warningBgClass={pendingMode === MODE_PRODUCTION
                     ? 'bg-danger-subtle border-start border-3 border-danger'
                     : 'bg-info-subtle border-start border-3 border-info'
                 }
                 imgSrc={providerLogo}
-                confirmText={`Yes, Change to ${pendingMode === 'production' ? 'Production' : 'Sandbox'}`}
-                confirmBtnClass={pendingMode === 'production' ? 'btn-danger' : 'btn-primary'}
+                confirmText={`Yes, Change to ${pendingMode === MODE_PRODUCTION ? PAYMENT_ENVIRONMENT_LABELS[1] : PAYMENT_ENVIRONMENT_LABELS[0]}`}
+                confirmBtnClass={pendingMode === MODE_PRODUCTION ? 'btn-danger' : 'btn-primary'}
                 onClose={cancelModeChange}
                 onConfirm={confirmModeChange}
             />

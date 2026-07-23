@@ -38,3 +38,10 @@ export const PAYMENT_ENVIRONMENT_LABELS = {
     [1]: 'Production',
     [0]: 'Sandbox'
 };
+
+export const PAYMENT_METHOD_PROVIDER = {
+    [1]: 'Stripe',
+    [2]: 'Square',
+    [3]: 'Ecrypt',
+    [4]: 'Authorize.Net',
+};
