@@ -19,7 +19,7 @@ const clampMonths = (value) => {
     return Math.round(num);
 };
 
-// Simple calculator: splits (Total Amount - Down Payment) evenly across the chosen number of months.
+// Simple calculator: splits Total Amount evenly across the chosen number of months (no down payment).
 export default function InstallmentDetailsModal({
     show,
     onHide,
@@ -27,6 +27,11 @@ export default function InstallmentDetailsModal({
     defaultMonths = 12,
     planLabel,
     partnerType,
+    onApply,
+    appliedTotalAmount,
+    appliedDownPayment,
+    appliedMonths,
+    appliedApplied,
 }) {
     const modalRef = useRef(null);
     const modalInstanceRef = useRef(null);
@@ -34,7 +39,7 @@ export default function InstallmentDetailsModal({
     const [totalAmountInput, setTotalAmountInput] = useState(totalAmount || 0);
     const [includeDownPayment, setIncludeDownPayment] = useState(false);
     const [downPayment, setDownPayment] = useState(0);
-    const [months, setMonths] = useState(clampMonths(defaultMonths));
+    const [months, setMonths] = useState(clampMonths(12));
 
     useEffect(() => {
         if (!modalRef.current) return;
@@ -45,12 +50,30 @@ export default function InstallmentDetailsModal({
             });
         }
 
+        const el = modalRef.current;
+
+        // Force-restore body scroll whenever the modal fully finishes hiding.
+        // Bootstrap sometimes leaves overflow:hidden / padding-right on <body>
+        // after programmatic hide(), causing the page to be unscrollable.
+        const handleHidden = () => {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            // Remove any leftover backdrop
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        };
+
+        el.addEventListener('hidden.bs.modal', handleHidden);
+
         return () => {
+            el.removeEventListener('hidden.bs.modal', handleHidden);
             if (modalInstanceRef.current) {
                 modalInstanceRef.current.hide();
                 modalInstanceRef.current.dispose();
                 modalInstanceRef.current = null;
             }
+            // Also clean up on unmount
+            handleHidden();
         };
     }, []);
 
@@ -59,11 +82,18 @@ export default function InstallmentDetailsModal({
         if (!modal) return;
 
         if (show) {
-            // Reset the calculator to the plan defaults every time it opens
-            setTotalAmountInput(totalAmount || 0);
-            setIncludeDownPayment(false);
-            setDownPayment(0);
-            setMonths(clampMonths(defaultMonths));
+            // Restore previously set values if applied, otherwise default to plan defaults
+            if (appliedApplied === true || appliedApplied === 'true') {
+                setTotalAmountInput(appliedTotalAmount ?? (totalAmount || 0));
+                setIncludeDownPayment(Number(appliedDownPayment) > 0);
+                setDownPayment(appliedDownPayment ?? 0);
+                setMonths(clampMonths(appliedMonths ?? 12));
+            } else {
+                setTotalAmountInput(totalAmount || 0);
+                setIncludeDownPayment(false);
+                setDownPayment(0);
+                setMonths(clampMonths(12));
+            }
             modal.show();
         } else {
             modal.hide();
@@ -88,125 +118,170 @@ export default function InstallmentDetailsModal({
     return createPortal(
         <div className="modal fade flip installment-details-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content border-0 shadow-lg">
-                    <div className="modal-header installment-modal-header">
-                        <div className="d-flex align-items-center gap-3">
-                            <div className="installment-icon-avatar">
+                <div className="modal-content idm-content">
+
+                    {/* Header */}
+                    <div className="idm-header">
+                        <div className="d-flex align-items-center gap-2">
+                            <div className="idm-icon-box">
                                 <i className="ri-calculator-line"></i>
                             </div>
                             <div>
-                                <h5 className="modal-title mb-0">Installment Details</h5>
+                                <h5 className="idm-title">Installment Calculator</h5>
                                 {(partnerType || planLabel) && (
-                                    <p className="installment-modal-subtitle mb-0">
-                                        {[partnerType, planLabel].filter(Boolean).join(' • ')}
-                                    </p>
+                                    <p className="idm-subtitle">{[partnerType, planLabel].filter(Boolean).join(' · ')}</p>
                                 )}
                             </div>
                         </div>
                         <button type="button" className="btn-close" onClick={onHide} aria-label="Close"></button>
                     </div>
 
+                    {/* Body */}
                     <div className="modal-body p-0">
                         <div className="row g-0">
-                            <div className="col-lg-7 installment-inputs-col">
-                                <div className="mb-3">
-                                    <label className="form-label installment-field-label">Total Amount</label>
-                                    <div className="input-group installment-input-group">
-                                        <span className="input-group-text">$</span>
+
+                            {/* Left — Inputs */}
+                            <div className="col-lg-7 idm-inputs-panel">
+
+                                <div className="idm-form-group">
+                                    <label className="idm-label">Total Loan Amount</label>
+                                    <div className="idm-input-wrap">
+                                        <span className="idm-prefix">$</span>
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
-                                            className="form-control"
+                                            className="idm-input"
                                             value={totalAmountInput}
                                             onChange={(e) => setTotalAmountInput(e.target.value)}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
-                                    <div className="form-check form-switch installment-down-payment-toggle mb-2">
-                                        <input
-                                            id="includeDownPayment"
-                                            type="checkbox"
-                                            className="form-check-input"
-                                            checked={includeDownPayment}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setIncludeDownPayment(checked);
-                                                if (!checked) setDownPayment(0);
-                                            }}
-                                        />
-                                        <label className="form-check-label installment-field-label mb-0" htmlFor="includeDownPayment">
-                                            Add Down Payment
-                                        </label>
-                                    </div>
-                                    {includeDownPayment && (
-                                        <>
-                                            <div className={`input-group installment-input-group ${downExceedsTotal ? 'is-invalid-group' : ''}`}>
-                                                <span className="input-group-text">$</span>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    className="form-control"
-                                                    value={downPayment}
-                                                    onChange={(e) => setDownPayment(e.target.value)}
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            {downExceedsTotal && (
-                                                <small className="installment-warning-text">Down payment cannot exceed the total amount.</small>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="form-label installment-field-label">Installment Duration</label>
+                                <div className="idm-form-group">
+                                    <label className="idm-label">Installment Duration</label>
                                     <Dropdown
                                         value={months}
                                         options={monthOptions}
                                         onChange={(e) => setMonths(e.value)}
                                         optionLabel="label"
                                         optionValue="value"
-                                        className="w-100"
+                                        className="idm-dropdown"
                                         appendTo="self"
                                     />
                                 </div>
-                            </div>
 
-                            <div className="col-lg-5">
-                                <div className="installment-result-card">
-                                    <div className="installment-result-main">
-                                        <span className="installment-result-label">Per Month Installment</span>
-                                        <span className="installment-result-amount">${formatCurrency(perMonthAmount)}</span>
-                                        <span className="installment-result-caption">for {months} {months === 1 ? 'month' : 'months'}</span>
+                                <div className="idm-form-group mb-0">
+                                    <div className="idm-toggle-row">
+                                        <div>
+                                            <p className="idm-toggle-title mb-0">Down Payment</p>
+                                            <p className="idm-toggle-desc mb-0">Deduct an upfront amount before splitting</p>
+                                        </div>
+                                        <div className="form-check form-switch m-0">
+                                            <input
+                                                id="includeDownPayment"
+                                                type="checkbox"
+                                                className="form-check-input idm-switch"
+                                                checked={includeDownPayment}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setIncludeDownPayment(checked);
+                                                    if (checked) {
+                                                        setDownPayment('');
+                                                    } else {
+                                                        setDownPayment(0);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="installment-breakdown">
-                                        <div className="installment-breakdown-item">
-                                            <span>Down Payment</span>
-                                            <strong>${formatCurrency(numericDown)}</strong>
+                                    {includeDownPayment && (
+                                        <div className="idm-down-payment-field">
+                                            <label className="idm-label">Down Payment Amount</label>
+                                            <div className={`idm-input-wrap${downExceedsTotal ? ' idm-input-wrap--error' : ''}`}>
+                                                <span className="idm-prefix">$</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    className="idm-input"
+                                                    value={downPayment}
+                                                    onChange={(e) => setDownPayment(e.target.value)}
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            {downExceedsTotal && (
+                                                <p className="idm-error-text">
+                                                    <i className="ri-error-warning-line"></i>
+                                                    Down payment cannot exceed the total amount.
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="installment-breakdown-item">
-                                            <span>Remaining Balance</span>
-                                            <strong>${formatCurrency(remainingBalance)}</strong>
-                                        </div>
-                                        <div className="installment-breakdown-item installment-breakdown-total">
-                                            <span>Total Payable</span>
-                                            <strong>${formatCurrency(totalPayable)}</strong>
-                                        </div>
+                                    )}
+                                </div>
+
+                            </div>
+
+                            {/* Right — Summary */}
+                            <div className="col-lg-5 idm-summary-panel">
+                                <div className="idm-monthly-card">
+                                    <span className="idm-monthly-label">Monthly Payment</span>
+                                    <span className="idm-monthly-amount">${formatCurrency(perMonthAmount)}</span>
+                                    <span className="idm-monthly-caption">over {months} {months === 1 ? 'month' : 'months'}</span>
+                                </div>
+
+                                <div className="idm-breakdown-card">
+                                    <div className="idm-breakdown-row">
+                                        <span className="idm-breakdown-key">Down Payment</span>
+                                        <span className="idm-breakdown-val">${formatCurrency(numericDown)}</span>
+                                    </div>
+                                    <div className="idm-breakdown-row">
+                                        <span className="idm-breakdown-key">Remaining Balance</span>
+                                        <span className="idm-breakdown-val">${formatCurrency(remainingBalance)}</span>
+                                    </div>
+                                    <div className="idm-breakdown-row idm-breakdown-row--total">
+                                        <span className="idm-breakdown-key">Total Payable</span>
+                                        <span className="idm-breakdown-val idm-breakdown-val--total">${formatCurrency(totalPayable)}</span>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
-                    <div className="modal-footer installment-modal-footer">
-                        <small className="installment-footer-hint">Figures are estimates and are not saved automatically.</small>
-                        <button type="button" className="btn btn-light" onClick={onHide}>Close</button>
+                    {/* Footer */}
+                    <div className="idm-footer">
+                        <span className="idm-footer-note">
+                            <i className="ri-information-line"></i>
+                            Figures are estimates only and are not saved automatically.
+                        </span>
+                        <div className="d-flex gap-2">
+                            <button type="button" className="btn btn-sm btn-light idm-close-btn" onClick={onHide}>
+                                Close
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-sm idm-apply-btn"
+                                onClick={() => {
+                                    if (onApply) {
+                                        onApply({
+                                            totalAmount: numericTotal,
+                                            downPayment: numericDown,
+                                            months,
+                                            monthlyPayment: perMonthAmount,
+                                            remainingBalance
+                                        });
+                                    }
+                                    onHide();
+                                }}
+                            >
+                                <i className="ri-check-line me-1"></i>
+                                Apply
+                            </button>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>,

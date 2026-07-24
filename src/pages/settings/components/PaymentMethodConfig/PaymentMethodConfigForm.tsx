@@ -58,6 +58,7 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
     const [showModal, setShowModal] = useState<boolean>(false);
     const [pendingMode, setPendingMode] = useState<string | null>(null);
     const [isDefault, setIsDefault] = useState<boolean>(false);
+    const [linkageId, setLinkageId] = useState<number | null>(null);
 
     // Dynamic config form state containing keys for whichever provider is configured
     const [formData, setFormData] = useState<Record<string, any>>({
@@ -85,44 +86,46 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
             const response = await fetchPartnerPaymentProviderConfig(provider.id);
             if (response && response.status && response.data) {
                 const linkage = response.data;
+                setLinkageId(linkage.id || null);
                 setIsDefault(!!linkage.is_default);
                 const config = linkage.configuration || {};
+                const paymentMode = linkage.payment_mode || config.payment_mode || MODE_SANDBOX;
 
                 // Initialize fields depending on payment gateway type
                 if (isStripe) {
                     setFormData({
-                        stripe_key_sandbox: config.stripe_key_sandbox || '',
-                        stripe_secret_sandbox: config.stripe_secret_sandbox || '',
-                        stripe_key_production: config.stripe_key_production || '',
-                        stripe_secret_production: config.stripe_secret_production || '',
-                        payment_mode: config.payment_mode || MODE_SANDBOX
+                        stripe_key_sandbox: config.sandbox?.publishable_key || config.stripe_key_sandbox || '',
+                        stripe_secret_sandbox: config.sandbox?.secret_key || config.stripe_secret_sandbox || '',
+                        stripe_key_production: config.production?.publishable_key || config.stripe_key_production || '',
+                        stripe_secret_production: config.production?.secret_key || config.stripe_secret_production || '',
+                        payment_mode: paymentMode
                     });
                 }
                 if (isSquare) {
                     setFormData({
-                        square_app_id_sandbox: config.square_app_id_sandbox || '',
-                        square_token_sandbox: config.square_token_sandbox || '',
-                        square_app_id_production: config.square_app_id_production || '',
-                        square_token_production: config.square_token_production || '',
-                        payment_mode: config.payment_mode || MODE_SANDBOX
+                        square_app_id_sandbox: config.sandbox?.app_id || config.square_app_id_sandbox || '',
+                        square_token_sandbox: config.sandbox?.access_token || config.square_token_sandbox || '',
+                        square_app_id_production: config.production?.app_id || config.square_app_id_production || '',
+                        square_token_production: config.production?.access_token || config.square_token_production || '',
+                        payment_mode: paymentMode
                     });
                 }
                 if (isAuthorize) {
                     setFormData({
-                        authorize_login_id_sandbox: config.authorize_login_id_sandbox || '',
-                        authorize_transaction_key_sandbox: config.authorize_transaction_key_sandbox || '',
-                        authorize_login_id_production: config.authorize_login_id_production || '',
-                        authorize_transaction_key_production: config.authorize_transaction_key_production || '',
-                        payment_mode: config.payment_mode || MODE_SANDBOX
+                        authorize_login_id_sandbox: config.sandbox?.login_id || config.authorize_login_id_sandbox || '',
+                        authorize_transaction_key_sandbox: config.sandbox?.transaction_key || config.authorize_transaction_key_sandbox || '',
+                        authorize_login_id_production: config.production?.login_id || config.authorize_login_id_production || '',
+                        authorize_transaction_key_production: config.production?.transaction_key || config.authorize_transaction_key_production || '',
+                        payment_mode: paymentMode
                     });
                 }
                 if (isEcrypt || isFallback) {
                     setFormData({
-                        client_key_sandbox: config.client_key_sandbox || '',
-                        client_secret_sandbox: config.client_secret_sandbox || '',
-                        client_key_production: config.client_key_production || '',
-                        client_secret_production: config.client_secret_production || '',
-                        payment_mode: config.payment_mode || MODE_SANDBOX
+                        client_key_sandbox: config.sandbox?.client_key || config.client_key_sandbox || '',
+                        client_secret_sandbox: config.sandbox?.client_secret || config.client_secret_sandbox || '',
+                        client_key_production: config.production?.client_key || config.client_key_production || '',
+                        client_secret_production: config.production?.client_secret || config.client_secret_production || '',
+                        payment_mode: paymentMode
                     });
                 }
             }
@@ -216,51 +219,58 @@ export default function PaymentMethodConfigForm({ provider, onBack }: PaymentMet
 
         setLoading(true);
         try {
-            // Prepare configuration with both flat and nested keys for backend compatibility
-            const configuration: Record<string, any> = { ...formData };
+            // Prepare configuration with only the nested keys for environment
+            let configuration: Record<string, any> = {};
             if (isStripe) {
-                configuration[MODE_SANDBOX] = {
-                    publishable_key: formData.stripe_key_sandbox || '',
-                    secret_key: formData.stripe_secret_sandbox || ''
+                configuration = {
+                    sandbox: {
+                        publishable_key: formData.stripe_key_sandbox || null,
+                        secret_key: formData.stripe_secret_sandbox || null
+                    },
+                    production: {
+                        publishable_key: formData.stripe_key_production || null,
+                        secret_key: formData.stripe_secret_production || null
+                    }
                 };
-                configuration[MODE_PRODUCTION] = {
-                    publishable_key: formData.stripe_key_production || '',
-                    secret_key: formData.stripe_secret_production || ''
+            } else if (isSquare) {
+                configuration = {
+                    sandbox: {
+                        app_id: formData.square_app_id_sandbox || null,
+                        access_token: formData.square_token_sandbox || null
+                    },
+                    production: {
+                        app_id: formData.square_app_id_production || null,
+                        access_token: formData.square_token_production || null
+                    }
                 };
-            }
-            if (isSquare) {
-                configuration[MODE_SANDBOX] = {
-                    app_id: formData.square_app_id_sandbox || '',
-                    access_token: formData.square_token_sandbox || ''
+            } else if (isAuthorize) {
+                configuration = {
+                    sandbox: {
+                        login_id: formData.authorize_login_id_sandbox || null,
+                        transaction_key: formData.authorize_transaction_key_sandbox || null
+                    },
+                    production: {
+                        login_id: formData.authorize_login_id_production || null,
+                        transaction_key: formData.authorize_transaction_key_production || null
+                    }
                 };
-                configuration[MODE_PRODUCTION] = {
-                    app_id: formData.square_app_id_production || '',
-                    access_token: formData.square_token_production || ''
-                };
-            }
-            if (isAuthorize) {
-                configuration[MODE_SANDBOX] = {
-                    login_id: formData.authorize_login_id_sandbox || '',
-                    transaction_key: formData.authorize_transaction_key_sandbox || ''
-                };
-                configuration[MODE_PRODUCTION] = {
-                    login_id: formData.authorize_login_id_production || '',
-                    transaction_key: formData.authorize_transaction_key_production || ''
-                };
-            }
-            if (isEcrypt || isFallback) {
-                configuration[MODE_SANDBOX] = {
-                    client_key: formData.client_key_sandbox || '',
-                    client_secret: formData.client_secret_sandbox || ''
-                };
-                configuration[MODE_PRODUCTION] = {
-                    client_key: formData.client_key_production || '',
-                    client_secret: formData.client_secret_production || ''
+            } else {
+                configuration = {
+                    sandbox: {
+                        client_key: formData.client_key_sandbox || null,
+                        client_secret: formData.client_secret_sandbox || null
+                    },
+                    production: {
+                        client_key: formData.client_key_production || null,
+                        client_secret: formData.client_secret_production || null
+                    }
                 };
             }
 
             await updatePartnerPaymentProviderConfig({
+                id: linkageId,
                 payment_provider_id: provider.id,
+                payment_mode: formData.payment_mode || MODE_SANDBOX,
                 status: true,
                 is_default: isDefault,
                 configuration: configuration

@@ -46,7 +46,7 @@ export default function PartnerInformationSection({
     // Calculate dynamic values for summary and overrides
     const selectedPlan = partnerPlans.find(
         plan => plan.partner_type === formData.partner_type &&
-            plan.enrollment_type === formData.enrollment_type
+            (plan.enrollment_type || '').toString().toLowerCase() === (formData.enrollment_type || '').toString().toLowerCase()
     );
 
     const hasCustomEnrollment = (formData.enrollment_amount !== undefined && formData.enrollment_amount !== '') || (formData.payable_amount !== undefined && formData.payable_amount !== '');
@@ -616,94 +616,97 @@ export default function PartnerInformationSection({
 
             {!(formData.is_free_trail == 1 || formData.is_free_trail === true || formData.is_free_trail === 'true' || formData.is_free_trail === '1') && (
                 <>
-                    {/* Enrollment Type */}
-                    <div className="col-lg-6">
-                        <div className="mb-3">
-                            <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
-                            <Dropdown
-                                value={formData.enrollment_type}
-                                options={(() => {
-                                    // Base options from plans matching partner type
-                                    const matchedPlans = partnerPlans.filter(plan =>
-                                        plan.partner_type === formData.partner_type
-                                    );
+                    {/* Enrollment Type — always visible */}
+                    {(
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label className="form-label">Enrollment Type <span className="text-danger">*</span></label>
+                                <Dropdown
+                                    value={formData.enrollment_type}
+                                    options={(() => {
+                                        // Base options from plans matching partner type
+                                        const matchedPlans = partnerPlans.filter(plan =>
+                                            plan.partner_type === formData.partner_type
+                                        );
 
-                                    const options = matchedPlans.map(plan => ({
-                                        label: `${plan.enrollment_type}`,
-                                        value: plan.enrollment_type
-                                    }));
+                                        const options = matchedPlans.map(plan => ({
+                                            label: `${plan.enrollment_type}`,
+                                            value: plan.enrollment_type
+                                        }));
 
-                                    // Ensure current enrollment type is in the list
-                                    if (formData.enrollment_type && !options.find(opt => opt.value === formData.enrollment_type)) {
-                                        options.unshift({
-                                            label: formData.enrollment_type,
-                                            value: formData.enrollment_type
-                                        });
-                                    }
+                                        // Ensure current enrollment type is in the list
+                                        if (formData.enrollment_type && !options.find(opt => opt.value === formData.enrollment_type)) {
+                                            options.unshift({
+                                                label: formData.enrollment_type,
+                                                value: formData.enrollment_type
+                                            });
+                                        }
 
-                                    return options.length > 0 ? options : (PAYMENT_TYPE_OPTIONS || []);
-                                })()}
-                                onChange={(e) => {
-                                    handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
-                                    if ((e.value || '').toString().toLowerCase() === 'installment') {
-                                        setShowInstallmentModal(true);
-                                    }
-                                }}
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Select enrollment type..."
-                                className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
-                                disabled={!formData.partner_type || (!!partnerId && !wasFreeTrial)}
-                                appendTo="self"
-                            />
-                            {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
+                                        return options.length > 0 ? options : (PAYMENT_TYPE_OPTIONS || []);
+                                    })()}
+                                    onChange={(e) => {
+                                        handleInputChange({ target: { name: 'enrollment_type', value: e.value } });
+                                        if ((e.value || '').toString().toLowerCase() === 'installment') {
+                                            setShowInstallmentModal(true);
+                                        }
+                                    }}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Select enrollment type..."
+                                    className={`w-100 ${errors.enrollment_type ? 'p-invalid' : ''}`}
+                                    disabled={!formData.partner_type || (!!partnerId && !wasFreeTrial)}
+                                    appendTo="self"
+                                />
+                                {errors.enrollment_type && <div className="invalid-feedback d-block">{errors.enrollment_type}</div>}
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Custom Enrollment Amount & Platform Fee */}
-                    {formData.enrollment_type && (
-                        <>
-                            <div className="col-lg-6">
-                                <div className="mb-3">
-                                    <label className="form-label">
-                                        Enrollment Payment ($) <span className="text-danger">*</span>
-                                    </label>
-                                    <InputText
-                                        type="number"
-                                        className={`form-control ${errors.enrollment_amount || errors.payable_amount || errors.amount ? 'is-invalid' : ''}`}
-                                        name="enrollment_amount"
-                                        placeholder="Enter amount"
-                                        value={formData.enrollment_amount !== undefined && formData.enrollment_amount !== null && formData.enrollment_amount !== '' ? formData.enrollment_amount : (formData.payable_amount !== undefined && formData.payable_amount !== null && formData.payable_amount !== '' ? formData.payable_amount : (formData.enrollment_amount === 0 || formData.payable_amount === 0 ? 0 : ''))}
-                                        onChange={handleInputChange}
-                                        disabled={!!partnerId && !wasFreeTrial}
-                                    />
-                                    {(errors.enrollment_amount || errors.payable_amount || errors.amount) && (
-                                        <div className="invalid-feedback">{errors.enrollment_amount || errors.payable_amount || errors.amount}</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="col-lg-6">
-                                <div className="mb-3">
-                                    <label className="form-label">
-                                        Platform Fee Payment ($) <span className="text-danger">*</span>
-                                    </label>
-                                    <InputText
-                                        type="number"
-                                        className={`form-control ${errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount ? 'is-invalid' : ''}`}
-                                        name="monthly_platform_fee"
-                                        placeholder="Enter amount"
-                                        value={formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== null && formData.monthly_platform_fee !== '' ? formData.monthly_platform_fee : (formData.recurring_amount !== undefined && formData.recurring_amount !== null && formData.recurring_amount !== '' ? formData.recurring_amount : (formData.platform_fee !== undefined && formData.platform_fee !== null && formData.platform_fee !== '' ? formData.platform_fee : (formData.monthly_platform_fee === 0 || formData.recurring_amount === 0 || formData.platform_fee === 0 ? 0 : '')))}
-                                        onChange={handleInputChange}
-                                        disabled={!!partnerId && !wasFreeTrial}
-                                    />
-                                    {(errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount) && (
-                                        <div className="invalid-feedback">{errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount}</div>
-                                    )}
-                                </div>
-                            </div>
-                        </>
                     )}
+
+                    {/* Enrollment Payment — hidden for installment plans */}
+                    {formData.enrollment_type && !isInstallmentPlan && !(formData.installment_applied === true || formData.installment_applied === 'true') && (
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label className="form-label">
+                                    Enrollment Payment ($) <span className="text-danger">*</span>
+                                </label>
+                                <InputText
+                                    type="number"
+                                    className={`form-control ${errors.enrollment_amount || errors.payable_amount || errors.amount ? 'is-invalid' : ''}`}
+                                    name="enrollment_amount"
+                                    placeholder="Enter amount"
+                                    value={formData.enrollment_amount !== undefined && formData.enrollment_amount !== null && formData.enrollment_amount !== '' ? formData.enrollment_amount : (formData.payable_amount !== undefined && formData.payable_amount !== null && formData.payable_amount !== '' ? formData.payable_amount : (formData.enrollment_amount === 0 || formData.payable_amount === 0 ? 0 : ''))}
+                                    onChange={handleInputChange}
+                                    disabled={!!partnerId && !wasFreeTrial}
+                                />
+                                {(errors.enrollment_amount || errors.payable_amount || errors.amount) && (
+                                    <div className="invalid-feedback">{errors.enrollment_amount || errors.payable_amount || errors.amount}</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Platform Fee Payment — always visible when enrollment type is set */}
+                    {formData.enrollment_type && (
+                        <div className="col-lg-6">
+                            <div className="mb-3">
+                                <label className="form-label">
+                                    Platform Fee Payment ($) <span className="text-danger">*</span>
+                                </label>
+                                <InputText
+                                    type="number"
+                                    className={`form-control ${errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount ? 'is-invalid' : ''}`}
+                                    name="monthly_platform_fee"
+                                    placeholder="Enter amount"
+                                    value={formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== null && formData.monthly_platform_fee !== '' ? formData.monthly_platform_fee : (formData.recurring_amount !== undefined && formData.recurring_amount !== null && formData.recurring_amount !== '' ? formData.recurring_amount : (formData.platform_fee !== undefined && formData.platform_fee !== null && formData.platform_fee !== '' ? formData.platform_fee : (formData.monthly_platform_fee === 0 || formData.recurring_amount === 0 || formData.platform_fee === 0 ? 0 : '')))}
+                                    onChange={handleInputChange}
+                                />
+                                {(errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount) && (
+                                    <div className="invalid-feedback">{errors.platform_fee || errors.monthly_platform_fee || errors.recurring_amount}</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Enrollment Amount - Dynamic Display */}
                     {formData.partner_type && formData.enrollment_type && (
@@ -749,27 +752,97 @@ export default function PartnerInformationSection({
                                                         </>
                                                     ) : isInstallmentPlan ? (
                                                         <>
-                                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                <span className="info-label">
-                                                                    <i className="ri-hand-coin-line"></i> Total Enrollment Cost:
-                                                                </span>
-                                                                <span className="amount-value amount-success">
-                                                                    ${Number(selectedPlan?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                </span>
-                                                            </div>
-                                                            <div className="custom-notice">
-                                                                <i className="ri-information-line"></i>
-                                                                <p className="custom-notice-text">
-                                                                    Flexible installment plan. Choose a down payment and duration to calculate the monthly amount.
-                                                                </p>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-sm installment-trigger-btn mt-2"
-                                                                onClick={() => setShowInstallmentModal(true)}
-                                                            >
-                                                                <i className="ri-calculator-line me-1"></i> View Installment Details
-                                                            </button>
+                                                            {(formData.installment_applied === true || formData.installment_applied === 'true') ? (
+                                                                <>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-hand-coin-line text-success"></i> Total Loan Amount:
+                                                                        </span>
+                                                                        <span className="info-value fw-semibold">
+                                                                            ${Number(formData.installment_total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-wallet-3-line text-success"></i> Down Payment (Upfront):
+                                                                        </span>
+                                                                        <span className="info-value text-success fw-semibold">
+                                                                            ${Number(formData.installment_down_payment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-calendar-line text-success"></i> Installment Duration:
+                                                                        </span>
+                                                                        <span className="info-value fw-semibold">
+                                                                            {formData.installment_months || 12} Months
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-money-dollar-circle-line text-success"></i> Monthly Installment Amount:
+                                                                        </span>
+                                                                        <span className="amount-value text-success fw-semibold">
+                                                                            ${Number(
+                                                                                ((Number(formData.installment_total_amount) || 0) - (Number(formData.installment_down_payment) || 0)) / (Number(formData.installment_months) || 12)
+                                                                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-calculator-line text-success"></i> Remaining Balance:
+                                                                        </span>
+                                                                        <span className="info-value fw-semibold">
+                                                                            ${Number((formData.installment_total_amount || 0) - (formData.installment_down_payment || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="d-flex gap-2 mt-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm installment-trigger-btn"
+                                                                            onClick={() => setShowInstallmentModal(true)}
+                                                                        >
+                                                                            <i className="ri-edit-line me-1"></i> View Payment Details
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm btn-light border"
+                                                                            onClick={() => {
+                                                                                handleInputChange({ target: { name: 'installment_applied', value: false } });
+                                                                                handleInputChange({ target: { name: 'enrollment_type', value: '' } });
+                                                                                handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
+                                                                                handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
+                                                                            }}
+                                                                        >
+                                                                            <i className="ri-refresh-line me-1"></i> Reset
+                                                                        </button>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className="info-label">
+                                                                            <i className="ri-hand-coin-line"></i> Total Enrollment Cost:
+                                                                        </span>
+                                                                        <span className="amount-value amount-success">
+                                                                            ${Number(selectedPlan?.total_amount || formData.total_subscription_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="custom-notice">
+                                                                        <i className="ri-information-line"></i>
+                                                                        <p className="custom-notice-text">
+                                                                            Flexible installment plan. Choose a down payment and duration to calculate the monthly amount.
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-sm installment-trigger-btn mt-2"
+                                                                        onClick={() => setShowInstallmentModal(true)}
+                                                                    >
+                                                                        <i className="ri-calculator-line me-1"></i> View Installment Details
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
@@ -890,6 +963,17 @@ export default function PartnerInformationSection({
                 defaultMonths={selectedPlan?.total_installments_count || 12}
                 planLabel={enrollmentTypeName}
                 partnerType={partnerTypeName}
+                appliedTotalAmount={formData.installment_total_amount}
+                appliedDownPayment={formData.installment_down_payment}
+                appliedMonths={formData.installment_months}
+                appliedApplied={formData.installment_applied}
+                onApply={(data) => {
+                    handleInputChange({ target: { name: 'enrollment_amount', value: data.downPayment.toFixed(2) } });
+                    handleInputChange({ target: { name: 'installment_total_amount', value: data.totalAmount } });
+                    handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });
+                    handleInputChange({ target: { name: 'installment_months', value: data.months } });
+                    handleInputChange({ target: { name: 'installment_applied', value: true } });
+                }}
             />
         </>
     );

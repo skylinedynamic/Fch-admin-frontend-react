@@ -529,15 +529,28 @@ export default function PartnerProfile() {
             // Find the matching plan from fetched partnerPlans
             const selectedPlan = partnerPlans.find(plan =>
                 plan.partner_type === currentPartnerType &&
-                plan.enrollment_type === currentEnrollmentType
+                (plan.enrollment_type || '').toString().toLowerCase() === (currentEnrollmentType || '').toString().toLowerCase()
             );
 
             if (selectedPlan) {
-                fees.enrollment_amount = selectedPlan.payment_amount.toString();
-                fees.first_reg_amount = selectedPlan.payment_amount.toString();
-                fees.first_reg_payment = selectedPlan.payment_amount.toString();
+                fees.enrollment_amount = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
+                fees.first_reg_amount = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
+                fees.first_reg_payment = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
                 fees.monthly_platform_fee = (selectedPlan.platform_fee || 0).toString();
                 fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
+
+                if ((currentEnrollmentType || '').toString().toLowerCase() === 'installment') {
+                    fees.installment_applied = true;
+                    fees.installment_total_amount = selectedPlan.total_amount || 0;
+                    fees.installment_down_payment = 0;
+                    fees.installment_months = 12;
+                    fees.enrollment_amount = '0.00';
+                } else {
+                    fees.installment_applied = false;
+                    fees.installment_total_amount = 0;
+                    fees.installment_down_payment = 0;
+                    fees.installment_months = 0;
+                }
             } else {
                 // Fallback for types not in plans (like Referral)
                 fees.enrollment_amount = '0';

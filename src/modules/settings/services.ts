@@ -101,6 +101,8 @@ export interface PartnerPaymentProvider {
 }
 
 export interface PartnerPaymentProviderConfig {
+    id?: number | null;
+    payment_mode?: string;
     payment_provider_id: number;
     status: boolean;
     is_default: boolean;
@@ -119,6 +121,11 @@ export const fetchPartnerPaymentProviderConfig = async (providerId: number): Pro
 
 export const updatePartnerPaymentProviderConfig = async (payload: PartnerPaymentProviderConfig): Promise<any> => {
     const { data } = await apiClient.post('/common/partner-payment-providers', payload);
+    return data;
+};
+
+export const updatePartnerPaymentProviderStatus = async (payload: { payment_provider_id: number; status: boolean }): Promise<any> => {
+    const { data } = await apiClient.post('/common/partner-payment-providers/status', payload);
     return data;
 };
 

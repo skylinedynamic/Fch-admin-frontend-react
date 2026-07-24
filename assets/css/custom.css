@@ -684,7 +684,7 @@ File: Custom Css File
   }
 }
 
-/* FullCalendar header & icon tweaks to match template design âœ… */
+/* FullCalendar header & icon tweaks to match template design Ã¢Å“â€¦ */
 .fc .fc-toolbar {
   display: flex;
   align-items: center;
@@ -1527,7 +1527,7 @@ File: Custom Css File
 }
 
 /* ================================================
-   Sidebar Free Trial Panel — Absolute Bottom
+   Sidebar Free Trial Panel â€” Absolute Bottom
    ================================================ */
 
 /* Add bottom padding to scrollbar so items never hide behind trial panel */
@@ -1673,7 +1673,7 @@ File: Custom Css File
 
 
 
-/* ── Detail Item ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Detail Item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .detail-label {
   letter-spacing: 0.5px;
 }
@@ -1695,7 +1695,7 @@ File: Custom Css File
   color: #10b981 !important;
 }
 
-/* ── Reveal SSN Button ────────────────────────────────────────────────────── */
+/* â”€â”€ Reveal SSN Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .btn-reveal-ssn {
   background-color: var(--secondary-color) !important;
   border-color: var(--secondary-color) !important;
@@ -1936,7 +1936,7 @@ File: Custom Css File
 }
 
 /* ================================================
-   Sidebar Free Trial Panel — Absolute Bottom
+   Sidebar Free Trial Panel â€” Absolute Bottom
    ================================================ */
 
 /* Add bottom padding to scrollbar so items never hide behind trial panel */
@@ -2080,7 +2080,7 @@ File: Custom Css File
   padding: 10px;
 }
 
-/* Light sidebar — override background */
+/* Light sidebar â€” override background */
 [data-sidebar="light"] .sidebar-trial-panel,
 .light-sidebar .sidebar-trial-panel {
   background: var(--vz-sidebar-bg, #f3f6f9);
@@ -2355,10 +2355,10 @@ File: Custom Css File
 }
 
 /* ============================================================
-   Capital Access — Design System
+   Capital Access â€” Design System
    ============================================================ */
 
-/* ─── CSS Tokens ─────────────────────────────────────────── */
+/* â”€â”€â”€ CSS Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
   --ca-primary: var(--vz-primary, #405189);
   --ca-primary-light: rgba(64, 81, 137, 0.08);
@@ -2377,14 +2377,14 @@ File: Custom Css File
   --ca-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-/* ─── Page Wrapper ───────────────────────────────────────── */
+/* â”€â”€â”€ Page Wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-page-wrap {
   max-width: 1080px;
   margin: 10px auto 0;
   padding-bottom: 60px;
 }
 
-/* ─── Page Title Block ───────────────────────────────────── */
+/* â”€â”€â”€ Page Title Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-page-title {
   font-size: 22px;
   font-weight: 800;
@@ -2402,7 +2402,7 @@ File: Custom Css File
   line-height: 1.6;
 }
 
-/* ─── Metric Card ────────────────────────────────────────── */
+/* â”€â”€â”€ Metric Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-metric-card {
   background: #ffffff;
   padding: 20px;
@@ -2945,7 +2945,7 @@ File: Custom Css File
   background: #f0fdf4 !important;
 }
 
-/* ─── Strategy Page Header ───────────────────────────────── */
+/* â”€â”€â”€ Strategy Page Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-strategy-page-header {
   display: flex;
   align-items: center;
@@ -2954,7 +2954,7 @@ File: Custom Css File
   flex-wrap: wrap;
 }
 
-/* ─── Hero Play Card ─────────────────────────────────────── */
+/* â”€â”€â”€ Hero Play Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-hero-play-wrap {
   position: relative;
 }
@@ -3099,7 +3099,7 @@ File: Custom Css File
   line-height: 1.2;
 }
 
-/* ─── Section Header ─────────────────────────────────────── */
+/* â”€â”€â”€ Section Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-section-header {
   display: flex;
   align-items: center;
@@ -3128,7 +3128,7 @@ File: Custom Css File
   color: #64748b;
 }
 
-/* ─── Play Row ───────────────────────────────────────────── */
+/* â”€â”€â”€ Play Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-play-row {
   display: flex;
   align-items: center;
@@ -3198,7 +3198,7 @@ File: Custom Css File
   font-size: 13px;
 }
 
-/* ─── Empty State ────────────────────────────────────────── */
+/* â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-empty-state {
   padding: 48px 24px;
 }
@@ -3216,7 +3216,7 @@ File: Custom Css File
   font-size: 28px;
 }
 
-/* ─── No Chart Placeholder ───────────────────────────────── */
+/* â”€â”€â”€ No Chart Placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-no-chart-wrap {
   display: flex;
   flex-direction: column;
@@ -3241,7 +3241,7 @@ File: Custom Css File
   margin-bottom: 10px;
 }
 
-/* ─── Active Play Icon ───────────────────────────────────── */
+/* â”€â”€â”€ Active Play Icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-active-play-icon {
   width: 46px;
   height: 46px;
@@ -3255,7 +3255,7 @@ File: Custom Css File
   flex-shrink: 0;
 }
 
-/* ─── Show Strategy Button ───────────────────────────────── */
+/* â”€â”€â”€ Show Strategy Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ca-show-strategy-btn {
   padding: 10px 28px;
   font-size: 14px;
@@ -4402,271 +4402,507 @@ File: Custom Css File
 }
 
 /* ============================================================
-   Installment Details Modal — Elegant & Professional
+   Installment Details Modal â€” idm-* (Teal Accent Theme)
    ============================================================ */
+
+/* Trigger button */
 .installment-trigger-btn {
-  background: rgba(10, 179, 156, 0.1) !important;
-  border: 1px solid rgba(10, 179, 156, 0.25) !important;
+  background: rgba(10, 179, 156, 0.08) !important;
+  border: 1px solid rgba(10, 179, 156, 0.3) !important;
   color: #0ab39c !important;
   font-weight: 600;
   font-size: 0.8rem;
-  border-radius: 6px !important;
-  padding: 0.4rem 0.9rem;
-  transition: all 0.2s ease;
+  border-radius: 4px !important;
+  padding: 0.3rem 0.85rem;
+  transition: all 0.18s ease;
 }
 
 .installment-trigger-btn:hover {
   background: #0ab39c !important;
   border-color: #0ab39c !important;
   color: #ffffff !important;
-  transform: translateY(-1px);
 }
 
-.installment-details-modal .modal-content {
-  border-radius: 16px !important;
+/* ── Modal shell ── */
+.installment-details-modal .idm-content {
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  box-shadow: 0 24px 48px -12px rgba(10, 179, 156, 0.08), 0 8px 16px -8px rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid rgba(10, 179, 156, 0.12) !important;
 }
 
-.installment-modal-header {
-  border-bottom: 1px solid #eef1f4;
-  padding: 1.5rem 1.75rem;
-  background-color: #ffffff;
-}
-
-.installment-down-payment-toggle {
-  display: inline-flex;
+/* ── Header ── */
+.idm-header {
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  justify-content: space-between;
+  padding: 1.1rem 1.75rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.installment-down-payment-toggle .form-check-input {
-  width: 2.5rem;
-  height: 1.25rem;
-  margin-top: 0;
+.idm-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(10, 179, 156, 0.15) 0%, rgba(10, 179, 156, 0.08) 100%);
+  border: 1px solid rgba(10, 179, 156, 0.2);
+  color: #0ab39c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(10, 179, 156, 0.12);
+}
+
+.idm-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.idm-subtitle {
+  font-size: 0.73rem;
+  color: #8898aa;
+  margin-top: 0.2rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* ── Body two-column ── */
+.idm-inputs-panel {
+  padding: 1.5rem 1.75rem;
+  background: #ffffff;
+  border-right: 1px solid #dee2e6;
+}
+
+.idm-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.idm-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5b6b79;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+/* Input wrapper */
+.idm-input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.idm-input-wrap--error {
+  border-color: #f06548 !important;
+}
+
+.idm-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-right: 1.5px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.idm-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.875rem;
+  color: #1a202c;
+  background: #ffffff;
+  height: calc(1.5em + 0.9rem + 2px);
+}
+
+.idm-input:focus {
+  box-shadow: none;
+}
+
+/* PrimeReact Dropdown */
+.idm-dropdown {
+  width: 100% !important;
+  height: calc(1.5em + 0.9rem + 2px) !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.idm-dropdown .p-dropdown-label {
+  font-size: 0.875rem;
+  color: #1a202c;
+  font-weight: 400;
+  padding: 0 0.6rem;
+  display: flex;
+  align-items: center;
+}
+
+.idm-dropdown .p-dropdown-trigger {
+  width: 2.2rem;
+  color: #94a3b8;
+}
+
+.idm-dropdown .p-dropdown-trigger .p-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* Toggle row */
+.idm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+.idm-toggle-row:has(.idm-switch:checked) {
+  border-color: rgba(10, 179, 156, 0.4);
+  background: rgba(10, 179, 156, 0.04);
+}
+
+.idm-toggle-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.idm-toggle-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.idm-switch {
   cursor: pointer;
+  width: 2.3rem;
+  height: 1.2rem;
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
-.installment-down-payment-toggle .form-check-input:checked {
+.idm-switch:checked {
   background-color: #0ab39c;
   border-color: #0ab39c;
 }
 
-.installment-down-payment-toggle .form-check-label {
-  cursor: pointer;
+.idm-down-payment-field {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: rgba(10, 179, 156, 0.06);
+  border: 1px solid rgba(10, 179, 156, 0.2);
+  border-radius: 4px;
 }
 
-.installment-icon-avatar {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: 12px;
+.idm-down-payment-field .idm-label {
+  color: #0ab39c !important;
+}
+
+.idm-down-payment-field .idm-input-wrap {
+  border-color: rgba(10, 179, 156, 0.3) !important;
+}
+
+.idm-down-payment-field .idm-prefix {
+  color: #0ab39c !important;
+  background: rgba(10, 179, 156, 0.1) !important;
+  border-right: 1.5px solid rgba(10, 179, 156, 0.3) !important;
+}
+
+.idm-down-payment-field .idm-input {
+  color: #0ab39c !important;
+  font-weight: 600;
+}
+
+
+
+.idm-error-text {
+  font-size: 0.72rem;
+  color: #f06548;
+  margin-top: 0.3rem;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── Summary Panel (right col) ── */
+.idm-summary-panel {
+  background: #f8fafc;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Monthly Hero Card */
+.idm-monthly-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 1.6rem 1.25rem 1.4rem;
+  text-align: center;
+  margin-bottom: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0ab39c 0%, #0c9c88 100%);
-  color: #ffffff;
-  font-size: 1.4rem;
-  box-shadow: 0 6px 14px rgba(10, 179, 156, 0.2);
-  transition: transform 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.installment-icon-avatar:hover {
-  transform: rotate(15deg);
+.idm-monthly-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0ab39c, #06d6a0);
+  border-radius: 4px 4px 0 0;
 }
 
-.installment-modal-subtitle {
-  font-size: 0.85rem;
-  color: #8592a3;
-  font-weight: 500;
-  margin-top: 0.15rem;
-}
-
-.installment-field-label {
-  font-size: 0.78rem;
+.idm-monthly-label {
+  font-size: 0.67rem;
   font-weight: 700;
-  color: #5b6b79;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.45rem;
+}
+
+.idm-monthly-amount {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0ab39c;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+
+.idm-monthly-caption {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Breakdown card (class used in JSX) */
+.idm-breakdown-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.25rem 1rem;
+  overflow: hidden;
+}
+
+/* Breakdown rows */
+.idm-breakdown {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
+  gap: 0;
+}
+
+.idm-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.idm-breakdown-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.idm-breakdown-key {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.idm-breakdown-val {
+  font-size: 0.875rem;
+  color: #1a202c;
+  font-weight: 600;
+}
+
+.idm-breakdown-row--total {
+  margin-top: 0.35rem;
+  padding-top: 0.65rem;
+  border-bottom: none !important;
+}
+
+.idm-breakdown-row--total .idm-breakdown-key {
+  color: #0ab39c;
+  font-weight: 700;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 0.5rem;
-  display: inline-block;
 }
 
-.installment-input-group {
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  border: 1px solid #e3e8ee;
-  transition: all 0.2s ease-in-out;
-}
-
-.installment-input-group:focus-within {
-  border-color: #0ab39c;
-  box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.15);
-}
-
-.installment-input-group .input-group-text {
-  background-color: #f8fafc;
-  border: none;
-  color: #5b6b79;
-  font-weight: 600;
-  padding-left: 1rem;
-  padding-right: 0.75rem;
-}
-
-.installment-input-group .form-control {
-  border: none;
-  font-size: 0.95rem;
-  padding: 0.65rem 1rem;
-  color: #2d3748;
-  font-weight: 500;
-}
-
-.installment-input-group .form-control:focus {
-  box-shadow: none;
-}
-
-.installment-input-group.is-invalid-group {
-  border-color: #f06548 !important;
-}
-
-.installment-input-group.is-invalid-group:focus-within {
-  box-shadow: 0 0 0 3px rgba(240, 101, 72, 0.15);
-}
-
-.installment-warning-text {
-  color: #f06548;
-  font-size: 0.76rem;
-  font-weight: 500;
-  display: inline-block;
-  margin-top: 0.45rem;
-}
-
-.installment-inputs-col {
-  padding: 2.25rem 2rem;
-  background-color: #ffffff;
-}
-
-.installment-details-modal .p-dropdown {
-  border-radius: 10px;
-  border-color: #e3e8ee;
-  padding: 0.35rem 0.5rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease-in-out;
-}
-
-.installment-details-modal .p-dropdown:not(.p-disabled):hover {
-  border-color: #cbd5e1;
-}
-
-.installment-details-modal .p-dropdown:not(.p-disabled).p-focus {
-  border-color: #0ab39c;
-  box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.15);
-}
-
-.installment-result-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: linear-gradient(160deg, #e6f7f5 0%, #f0faf9 100%);
-  border-left: 1px solid rgba(10, 179, 156, 0.15);
-  padding: 2.25rem 2rem;
-}
-
-.installment-result-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px dashed rgba(10, 179, 156, 0.25);
-}
-
-.installment-result-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #5b7a76;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.4rem;
-}
-
-.installment-result-amount {
-  font-size: 2.6rem;
+.idm-breakdown-val--total {
+  font-size: 1.05rem;
   font-weight: 800;
   color: #0ab39c;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  text-shadow: 0 4px 12px rgba(10, 179, 156, 0.15);
-  margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
 }
 
-.installment-result-caption {
-  font-size: 0.85rem;
-  color: #7c9490;
-  font-weight: 500;
-}
-
-.installment-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.installment-breakdown-item {
+/* â”€â”€ Footer â”€â”€ */
+.idm-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0.85rem 1.75rem;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
 }
 
-.installment-breakdown-item span {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #7c9490;
-  letter-spacing: 0.01em;
-}
-
-.installment-breakdown-item strong {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #2d3748;
-}
-
-.installment-breakdown-total {
-  padding-top: 1rem;
-  margin-top: 0.5rem;
-  border-top: 1px solid rgba(10, 179, 156, 0.2);
-}
-
-.installment-breakdown-total span {
-  color: #0ab39c;
-  font-weight: 700;
-}
-
-.installment-breakdown-total strong {
-  font-size: 1.15rem;
-  color: #0ab39c;
-  font-weight: 800;
-  text-shadow: 0 2px 8px rgba(10, 179, 156, 0.1);
-}
-
-.installment-modal-footer {
-  border-top: 1px solid #eef1f4;
-  padding: 1.25rem 1.75rem;
-  background-color: #ffffff;
+.idm-footer-note {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 400;
 }
 
-.installment-footer-hint {
-  color: #98a2b3;
-  font-size: 0.78rem;
+.idm-footer-note i {
+  font-size: 0.82rem;
+  color: #b2bec3;
+}
+
+.idm-close-btn {
+  border-radius: 4px !important;
+  font-size: 0.8rem;
   font-weight: 500;
+  padding: 0.35rem 1.1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-color: #dee2e6 !important;
+  color: #495057 !important;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.idm-close-btn:hover {
+  background: #e9ecef !important;
+  border-color: #ced4da !important;
+}
+
+.idm-apply-btn {
+  border-radius: 4px !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 1.25rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background-color: #0ab39c !important;
+  border-color: #0ab39c !important;
+  color: #ffffff !important;
+  transition: filter 0.15s ease;
+}
+
+.idm-apply-btn:hover {
+  filter: brightness(92%);
+}
+
+/* â”€â”€ Responsive â”€â”€ */
+@media (max-width: 991.98px) {
+  .installment-details-modal .modal-lg {
+    max-width: 96vw;
+  }
+
+  .idm-inputs-panel {
+    border-right: none;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .idm-summary-panel {
+    border-left: none;
+  }
+
+  .idm-monthly-hero {
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+
+  .idm-monthly-amount {
+    font-size: 2.1rem;
+  }
+
+  .idm-breakdown {
+    padding: 1rem 1.25rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .installment-details-modal .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .idm-header {
+    padding: 0.9rem 1.1rem;
+  }
+
+  .idm-inputs-panel {
+    padding: 1rem 1.1rem 0.75rem;
+  }
+
+  .idm-monthly-amount {
+    font-size: 1.85rem;
+  }
+
+  .idm-breakdown {
+    padding: 0.75rem 1.1rem;
+  }
+
+  .idm-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .idm-close-btn,
+  .idm-apply-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .idm-footer .d-flex {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .idm-footer-note {
+    justify-content: center;
+    text-align: center;
+  }
 }
