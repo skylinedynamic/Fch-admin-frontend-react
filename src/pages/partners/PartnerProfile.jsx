@@ -111,6 +111,12 @@ export default function PartnerProfile() {
         borrower_domain: '',
         is_free_trail: false,
         free_trail_end_date: '',
+        // Installment plan fields
+        installment_applied: false,
+        installment_down_payment: 0,
+        installment_months: 0,
+        installment_monthly_amount: 0,
+        installment_remaining_balance: 0,
     });
 
     // Fetch Partner Plans on mount
@@ -336,6 +342,12 @@ export default function PartnerProfile() {
                 address_line_1: data.address_line_1 || '', // Map address_line_1 → address
                 partner_image: data.partner_image || '', // Map company_logo → partner_image
                 country_code: data.country_code || ((finalCountry === 'United States' || finalCountry === 'Canada') ? '+1' : ''),
+                // Normalize installment fields coming from backend (may be strings/null)
+                installment_applied: data.installment_applied === true || data.installment_applied === 'true' || data.installment_applied === 1 || data.installment_applied === '1',
+                installment_down_payment: Number(data.installment_down_payment || 0),
+                installment_months: Number(data.installment_months || 0),
+                installment_monthly_amount: Number(data.installment_monthly_amount || 0),
+                installment_remaining_balance: Number(data.installment_remaining_balance || 0),
             }));
             setWasFreeTrial(!!data.is_free_trail);
 
@@ -541,15 +553,17 @@ export default function PartnerProfile() {
 
                 if ((currentEnrollmentType || '').toString().toLowerCase() === 'installment') {
                     fees.installment_applied = true;
-                    fees.installment_total_amount = selectedPlan.total_amount || 0;
+                    fees.enrollment_amount = selectedPlan.total_amount || 0;
                     fees.installment_down_payment = 0;
                     fees.installment_months = 12;
-                    fees.enrollment_amount = '0.00';
+                    fees.installment_monthly_amount = (selectedPlan.total_amount || 0) / 12;
+                    fees.installment_remaining_balance = selectedPlan.total_amount || 0;
                 } else {
                     fees.installment_applied = false;
-                    fees.installment_total_amount = 0;
                     fees.installment_down_payment = 0;
                     fees.installment_months = 0;
+                    fees.installment_monthly_amount = 0;
+                    fees.installment_remaining_balance = 0;
                 }
             } else {
                 // Fallback for types not in plans (like Referral)
@@ -672,11 +686,40 @@ export default function PartnerProfile() {
 
                 const formDataToSend = new FormData();
 
+                // Determine whether this is an installment enrollment to decide
+                // whether to send installment payment data OR regular payment data.
+                const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === 'installment';
+
+                // Regular (non-installment) payment fields — skipped when installment is active
+                const regularPaymentFields = [
+                    'first_reg_amount',
+                    'first_reg_amount_2',
+                    'first_reg_payment',
+                    'first_reg_payment_2'
+                ];
+
+                // Installment payment fields — skipped when installment is NOT active
+                const installmentFields = [
+                    'installment_applied',
+                    'installment_down_payment',
+                    'installment_months',
+                    'installment_monthly_amount',
+                    'installment_remaining_balance'
+                ];
+
                 // Append all form fields with proper field name mapping
                 Object.entries(formData).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
                         // Skip partner_type and enrollment_type during update to prevent changes
                         if (id && (key === 'partner_type' || (key === 'enrollment_type' && !wasFreeTrial))) {
+                            return;
+                        }
+
+                        // Mutual exclusion: installment data vs regular payment data
+                        if (isInstallmentEnrollment && regularPaymentFields.includes(key)) {
+                            return;
+                        }
+                        if (!isInstallmentEnrollment && installmentFields.includes(key)) {
                             return;
                         }
 
@@ -742,6 +785,11 @@ export default function PartnerProfile() {
                             formDataToSend.append('is_free_trail', value ? '1' : '0');
                         } else if (key === 'free_trail_end_date') {
                             formDataToSend.append('free_trail_end_date', formData.is_free_trail && value ? value : '');
+                        } else if (key === 'installment_applied') {
+                            // Frontend-only flag - not sent to the API
+                        } else if (key === 'installment_down_payment' || key === 'installment_months' || key === 'installment_monthly_amount' || key === 'installment_remaining_balance') {
+                            // Always send installment numeric fields (even 0) so the backend can persist the full plan
+                            formDataToSend.append(key, (value === '' || value === null || value === undefined) ? 0 : value);
                         } else if (value !== '' && value !== null) {
                             formDataToSend.append(key, value);
                         }

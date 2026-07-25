@@ -759,7 +759,7 @@ export default function PartnerInformationSection({
                                                                             <i className="ri-hand-coin-line text-success"></i> Total Loan Amount:
                                                                         </span>
                                                                         <span className="info-value fw-semibold">
-                                                                            ${Number(formData.installment_total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            ${Number(formData.enrollment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
                                                                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -784,7 +784,9 @@ export default function PartnerInformationSection({
                                                                         </span>
                                                                         <span className="amount-value text-success fw-semibold">
                                                                             ${Number(
-                                                                                ((Number(formData.installment_total_amount) || 0) - (Number(formData.installment_down_payment) || 0)) / (Number(formData.installment_months) || 12)
+                                                                                formData.installment_monthly_amount !== undefined && formData.installment_monthly_amount !== ''
+                                                                                    ? formData.installment_monthly_amount
+                                                                                    : ((Number(formData.enrollment_amount) || 0) - (Number(formData.installment_down_payment) || 0)) / (Number(formData.installment_months) || 12)
                                                                             ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
@@ -793,7 +795,11 @@ export default function PartnerInformationSection({
                                                                             <i className="ri-calculator-line text-success"></i> Remaining Balance:
                                                                         </span>
                                                                         <span className="info-value fw-semibold">
-                                                                            ${Number((formData.installment_total_amount || 0) - (formData.installment_down_payment || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                            ${Number(
+                                                                                formData.installment_remaining_balance !== undefined && formData.installment_remaining_balance !== ''
+                                                                                    ? formData.installment_remaining_balance
+                                                                                    : ((Number(formData.enrollment_amount) || 0) - (Number(formData.installment_down_payment) || 0))
+                                                                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
                                                                     <div className="d-flex gap-2 mt-3">
@@ -809,6 +815,10 @@ export default function PartnerInformationSection({
                                                                             className="btn btn-sm btn-light border"
                                                                             onClick={() => {
                                                                                 handleInputChange({ target: { name: 'installment_applied', value: false } });
+                                                                                handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
+                                                                                handleInputChange({ target: { name: 'installment_months', value: 0 } });
+                                                                                handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
+                                                                                handleInputChange({ target: { name: 'installment_remaining_balance', value: 0 } });
                                                                                 handleInputChange({ target: { name: 'enrollment_type', value: '' } });
                                                                                 handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
                                                                                 handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
@@ -959,19 +969,20 @@ export default function PartnerInformationSection({
             <InstallmentDetailsModal
                 show={showInstallmentModal}
                 onHide={() => setShowInstallmentModal(false)}
-                totalAmount={selectedPlan?.total_amount || formData.total_subscription_amount || 0}
+                totalAmount={selectedPlan?.total_amount || formData.enrollment_amount || formData.total_subscription_amount || 0}
                 defaultMonths={selectedPlan?.total_installments_count || 12}
                 planLabel={enrollmentTypeName}
                 partnerType={partnerTypeName}
-                appliedTotalAmount={formData.installment_total_amount}
+                appliedTotalAmount={formData.enrollment_amount}
                 appliedDownPayment={formData.installment_down_payment}
                 appliedMonths={formData.installment_months}
                 appliedApplied={formData.installment_applied}
                 onApply={(data) => {
-                    handleInputChange({ target: { name: 'enrollment_amount', value: data.downPayment.toFixed(2) } });
-                    handleInputChange({ target: { name: 'installment_total_amount', value: data.totalAmount } });
+                    handleInputChange({ target: { name: 'enrollment_amount', value: data.totalAmount } });
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });
                     handleInputChange({ target: { name: 'installment_months', value: data.months } });
+                    handleInputChange({ target: { name: 'installment_monthly_amount', value: data.monthlyPayment } });
+                    handleInputChange({ target: { name: 'installment_remaining_balance', value: data.remainingBalance } });
                     handleInputChange({ target: { name: 'installment_applied', value: true } });
                 }}
             />
