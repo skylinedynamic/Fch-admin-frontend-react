@@ -21,6 +21,11 @@ export const processInvoicePayment = async (payload: any) => {
     return response.data;
 };
 
+export const fetchPartnerPaymentMethods = async () => {
+    const { data } = await apiClient.get('/payment/partner-payment-methods');
+    return data;
+};
+
 export const downloadInvoice = async (id: number | string) => {
     const { data } = await apiClient.get(`/common/invoices/${id}/download`);
     return data;
