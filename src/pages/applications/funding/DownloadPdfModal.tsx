@@ -339,14 +339,16 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
 
     {/* Custom Confirm Modal */}
     <div className="modal fade zoomIn" id="confirmPdfModal" ref={confirmModalRef} tabIndex={-1} aria-hidden="true" style={{ zIndex: 1060 }}>
-      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '600px' }}>
+      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
         <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
           
-          <div className="position-absolute top-0 end-0 p-3">
-            <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+          <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 10 }}>
+            <button type="button" className="btn btn-sm btn-icon text-muted border-0 bg-transparent" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowConfirmModal(false); }}>
+              <i className="ri-close-line fs-24"></i>
+            </button>
           </div>
 
-          <div className="modal-body p-4 p-md-5 text-center">
+          <div className="modal-body p-4 text-center">
             
             <div className="mx-auto mb-3 d-flex align-items-center justify-content-center" style={{ width: '72px', height: '72px', backgroundColor: '#fee2e2', borderRadius: '50%' }}>
               <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
@@ -370,7 +372,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                <li>Using a password ensures compliance with data security standards.</li>
             </ul>
 
-            <div className="d-flex gap-3 p-3 rounded-3 text-start mb-4" style={{ backgroundColor: '#fffbeb', color: '#b45309' }}>
+            <div className="d-flex gap-3 p-3 rounded-3 text-start mb-3" style={{ backgroundColor: '#fffbeb', color: '#b45309' }}>
               <div className="mt-1"><i className="ri-lightbulb-flash-line fs-20" style={{ color: '#d97706' }}></i></div>
               <div className="fs-13 fw-semibold">
                 We strongly recommend using password protection to keep borrower information safe and secure.
@@ -378,11 +380,11 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
             </div>
 
             <div className="d-flex gap-3 w-100 mt-2">
-              <button type="button" className="btn fw-semibold py-2" style={{ backgroundColor: '#f3f4f6', color: '#111827', width: '30%' }} onClick={() => setShowConfirmModal(false)}>
+              <button type="button" className="btn fw-semibold py-2 w-50" style={{ backgroundColor: '#f3f4f6', color: '#111827' }} onClick={() => setShowConfirmModal(false)}>
                 Cancel
               </button>
-              <button type="button" className="btn btn-danger fw-semibold d-flex align-items-center justify-content-center gap-2 py-2" style={{ backgroundColor: '#ef4444', border: 'none', width: '70%' }} onClick={confirmDownloadWithoutPassword}>
-                <i className="ri-download-2-line"></i> Yes, download without password
+              <button type="button" className="btn btn-danger fw-semibold d-flex align-items-center justify-content-center gap-2 py-2 w-50" style={{ backgroundColor: '#ef4444', border: 'none' }} onClick={confirmDownloadWithoutPassword}>
+                <i className="ri-download-2-line"></i> Yes, download
               </button>
             </div>
           </div>
