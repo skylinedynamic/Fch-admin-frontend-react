@@ -52,7 +52,7 @@ export default function PartnerInformationSection({
     const hasCustomEnrollment = (formData.enrollment_amount !== undefined && formData.enrollment_amount !== '') || (formData.payable_amount !== undefined && formData.payable_amount !== '');
     const hasCustomPlatformFee = (formData.monthly_platform_fee !== undefined && formData.monthly_platform_fee !== '') || (formData.recurring_amount !== undefined && formData.recurring_amount !== '') || (formData.platform_fee !== undefined && formData.platform_fee !== '');
 
-    const currentPaymentAmount = formData.enrollment_amount || formData.payable_amount || (selectedPlan?.payment_amount || formData.first_reg_amount || 0);
+    const currentPaymentAmount = formData.enrollment_amount || formData.payable_amount || (selectedPlan?.payment_amount || 0);
     const currentPlatformFee = formData.monthly_platform_fee || formData.recurring_amount || formData.platform_fee || (selectedPlan?.platform_fee || 0);
     const isOneTime = formData.enrollment_type === ENROLLMENT_TYPES.ONE_TIME_STR || formData.enrollment_type?.includes('One Time');
     const partnerTypeName = selectedPlan?.partner_type || formData.partner_type;

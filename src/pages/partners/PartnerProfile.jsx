@@ -546,8 +546,6 @@ export default function PartnerProfile() {
 
             if (selectedPlan) {
                 fees.enrollment_amount = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
-                fees.first_reg_amount = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
-                fees.first_reg_payment = selectedPlan.payment_amount !== null && selectedPlan.payment_amount !== undefined ? selectedPlan.payment_amount.toString() : '0';
                 fees.monthly_platform_fee = (selectedPlan.platform_fee || 0).toString();
                 fees.recurring_amount = (selectedPlan.platform_fee || 0).toString();
 
@@ -570,8 +568,6 @@ export default function PartnerProfile() {
                 fees.enrollment_amount = '0';
                 fees.monthly_platform_fee = '0';
                 fees.recurring_amount = '0';
-                fees.first_reg_amount = '0';
-                fees.first_reg_payment = '0';
             }
 
             setFormData(prev => ({
@@ -584,8 +580,6 @@ export default function PartnerProfile() {
             setFormData(prev => ({
                 ...prev,
                 enrollment_amount: value,
-                first_reg_amount: value,
-                first_reg_payment: value
             }));
             setErrors(prev => ({ ...prev, enrollment_amount: null }));
         } else if (name === 'monthly_platform_fee' || name === 'recurring_amount') {
@@ -627,9 +621,6 @@ export default function PartnerProfile() {
                 enrollment_type: formData.enrollment_type,
                 enrollment_amount: formData.enrollment_amount,
                 first_reg_date: formData.first_reg_date,
-                first_reg_amount: formData.first_reg_amount,
-                first_reg_payment: formData.first_reg_payment,
-                first_reg_payment_2: formData.first_reg_payment_2,
                 monthly_platform_fee: formData.monthly_platform_fee || formData.recurring_amount,
                 total_paid_amount: formData.total_paid_amount,
                 subscription_start_date: formData.subscription_start_date,
@@ -690,8 +681,8 @@ export default function PartnerProfile() {
                 // whether to send installment payment data OR regular payment data.
                 const isInstallmentEnrollment = (formData.enrollment_type || '').toString().toLowerCase() === 'installment';
 
-                // Regular (non-installment) payment fields — skipped when installment is active
-                const regularPaymentFields = [
+                // Obsolete payment fields — never sent to backend
+                const obsoletePaymentFields = [
                     'first_reg_amount',
                     'first_reg_amount_2',
                     'first_reg_payment',
@@ -715,8 +706,8 @@ export default function PartnerProfile() {
                             return;
                         }
 
-                        // Mutual exclusion: installment data vs regular payment data
-                        if (isInstallmentEnrollment && regularPaymentFields.includes(key)) {
+                        // Skip obsolete fields
+                        if (obsoletePaymentFields.includes(key)) {
                             return;
                         }
                         if (!isInstallmentEnrollment && installmentFields.includes(key)) {
