@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 // @ts-ignore
 import Modal from "bootstrap/js/dist/modal";
 import { toast } from "react-toastify";
+import DynamicActionModal from "../../../components/Common/Modals/DynamicActionModal";
 import "../../../../assets/css/funding-application.css";
 
 interface DownloadPdfModalProps {
@@ -11,19 +12,26 @@ interface DownloadPdfModalProps {
 }
 
 export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadPdfModalProps) {
-  const [withPassword, setWithPassword] = useState(false);
+  const [withPassword, setWithPassword] = useState(true);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(true);
   const [loadingType, setLoadingType] = useState<"application" | "signature" | "both" | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingDownloadType, setPendingDownloadType] = useState<"application" | "signature" | "both" | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalInstanceRef = useRef<Modal | null>(null);
+  const confirmModalRef = useRef<HTMLDivElement>(null);
+  const confirmModalInstanceRef = useRef<Modal | null>(null);
 
   useEffect(() => {
     if (!modalRef.current) return;
     if (!modalInstanceRef.current) {
       modalInstanceRef.current = new Modal(modalRef.current, { backdrop: "static", keyboard: false });
+    }
+    if (confirmModalRef.current && !confirmModalInstanceRef.current) {
+      confirmModalInstanceRef.current = new Modal(confirmModalRef.current, { backdrop: false, keyboard: false });
     }
 
     // Cleanup on unmount
@@ -31,6 +39,10 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
       if (modalInstanceRef.current) {
         modalInstanceRef.current.dispose();
         modalInstanceRef.current = null;
+      }
+      if (confirmModalInstanceRef.current) {
+        confirmModalInstanceRef.current.dispose();
+        confirmModalInstanceRef.current = null;
       }
       document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
       document.body.classList.remove('modal-open');
@@ -44,14 +56,14 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     if (!modal) return;
     if (show) {
       modal.show();
-      setWithPassword(false);
+      setWithPassword(true);
       setPassword(generatePasswordString());
       setShowPassword(true);
     } else {
       modal.hide();
       // Ensure backdrop is removed after hide animation completes
       setTimeout(() => {
-        if (!show) {
+        if (!show && !showConfirmModal) {
           document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
           document.body.classList.remove('modal-open');
           document.body.style.overflow = '';
@@ -60,6 +72,16 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
       }, 400);
     }
   }, [show]);
+
+  useEffect(() => {
+    const confirmModal = confirmModalInstanceRef.current;
+    if (!confirmModal) return;
+    if (showConfirmModal) {
+      confirmModal.show();
+    } else {
+      confirmModal.hide();
+    }
+  }, [showConfirmModal]);
 
   const generatePasswordString = () => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -78,10 +100,24 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   };
 
   const handleDownload = async (type: "application" | "signature" | "both") => {
-    if (withPassword && !password) { 
-      toast.error("Please enter or generate a password"); 
-      return; 
+    if (withPassword) {
+      if (!password.trim()) { 
+        toast.error("Please enter or generate a password"); 
+        return; 
+      }
+      if (password.length < 8) {
+        toast.error("Password must be at least 8 characters long");
+        return;
+      }
+    } else {
+      setPendingDownloadType(type);
+      setShowConfirmModal(true);
+      return;
     }
+    await executeDownload(type);
+  };
+
+  const executeDownload = async (type: "application" | "signature" | "both") => {
     setLoadingType(type);
     try {
       await onDownload(type, withPassword ? password : undefined);
@@ -97,10 +133,18 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
     } finally { setLoadingType(null); }
   };
 
-  const resetState = () => { setPassword(""); setLoadingType(null); setWithPassword(false); };
+  const confirmDownloadWithoutPassword = () => {
+    setShowConfirmModal(false);
+    if (pendingDownloadType) {
+      executeDownload(pendingDownloadType);
+    }
+  };
+
+  const resetState = () => { setPassword(""); setLoadingType(null); setWithPassword(true); setShowConfirmModal(false); setPendingDownloadType(null); };
   const handleClose = () => { if (!loadingType) { onHide(); resetState(); } };
 
   return (
+    <>
     <div className="modal fade flip" ref={modalRef} tabIndex={-1} aria-hidden="true">
       <div className="modal-dialog modal-dialog-centered modal-xl pdf-modal-dialog">
         <div className="modal-content border-0 shadow-lg pdf-modal-content">
@@ -205,6 +249,8 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                           className="form-control border-0 shadow-none font-monospace fs-14 px-0 h-100 bg-white pdf-modal-pw-input"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
+                          spellCheck="false"
+                          autoComplete="new-password"
                         />
                         <div className="d-flex h-100">
                           <button type="button" className="btn btn-link px-3 text-decoration-none rounded-0 h-100 pdf-modal-pw-btn" onClick={() => setShowPassword(!showPassword)}>
@@ -285,5 +331,64 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
         </div>
       </div>
     </div>
+    
+    {/* Custom Confirm Modal Backdrop */}
+    {showConfirmModal && (
+       <div className="modal-backdrop fade show" style={{ zIndex: 1059 }}></div>
+    )}
+
+    {/* Custom Confirm Modal */}
+    <div className="modal fade zoomIn" id="confirmPdfModal" ref={confirmModalRef} tabIndex={-1} aria-hidden="true" style={{ zIndex: 1060 }}>
+      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '600px' }}>
+        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+          
+          <div className="position-absolute top-0 end-0 p-3">
+            <button type="button" className="btn-close" onClick={() => setShowConfirmModal(false)}></button>
+          </div>
+
+          <div className="modal-body p-4 p-md-5 text-center">
+            
+            <div className="mx-auto mb-3 d-flex align-items-center justify-content-center" style={{ width: '72px', height: '72px', backgroundColor: '#fee2e2', borderRadius: '50%' }}>
+              <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                <i className="ri-shield-fill text-danger position-absolute" style={{ fontSize: '44px' }}></i>
+                <span className="text-white position-absolute fw-bold" style={{ fontSize: '22px', zIndex: 1, marginTop: '-2px' }}>!</span>
+              </div>
+            </div>
+            
+            <h4 className="mb-2 fw-bold text-dark">Download Without Password?</h4>
+            <p className="text-muted fs-14 mb-4 px-3">You are about to download the ZIP package without password protection.</p>
+            
+            <div className="d-flex align-items-center gap-3 p-3 rounded-3 mb-3 text-start" style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2' }}>
+              <i className="ri-error-warning-fill fs-18"></i>
+              <div className="fs-13">
+                <strong style={{ fontWeight: 600 }}>Security Risk:</strong> Your borrower's confidential information may be exposed.
+              </div>
+            </div>
+
+            <ul className="text-start text-muted fs-13 lh-lg mb-4 ps-3 pe-2">
+               <li>Anyone with the file can immediately view sensitive financial documents.</li>
+               <li>Using a password ensures compliance with data security standards.</li>
+            </ul>
+
+            <div className="d-flex gap-3 p-3 rounded-3 text-start mb-4" style={{ backgroundColor: '#fffbeb', color: '#b45309' }}>
+              <div className="mt-1"><i className="ri-lightbulb-flash-line fs-20" style={{ color: '#d97706' }}></i></div>
+              <div className="fs-13 fw-semibold">
+                We strongly recommend using password protection to keep borrower information safe and secure.
+              </div>
+            </div>
+
+            <div className="d-flex gap-3 w-100 mt-2">
+              <button type="button" className="btn fw-semibold py-2" style={{ backgroundColor: '#f3f4f6', color: '#111827', width: '30%' }} onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger fw-semibold d-flex align-items-center justify-content-center gap-2 py-2" style={{ backgroundColor: '#ef4444', border: 'none', width: '70%' }} onClick={confirmDownloadWithoutPassword}>
+                <i className="ri-download-2-line"></i> Yes, download without password
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </>
   );
 }
