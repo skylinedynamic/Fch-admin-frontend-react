@@ -11,7 +11,7 @@ import {
     LOG_TYPE_BORROWER_CREATE, LOG_TYPE_BORROWER_UPDATE, LOG_TYPE_BORROWER_CONTACT_UPDATE, LOG_TYPE_BORROWER_PAYMENT, LOG_TYPE_BUSINESS_UPDATE,
     LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE,
     LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
-    LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST,
+    LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST, ENTITY_TYPE_FUNDING_APPLICATION,
     LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
 } from '../../../config/appConfig';
 
@@ -19,7 +19,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '85px' }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -66,6 +66,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
                 if (entityType === ENTITY_TYPE_BORROWER || entityType === 'Client') params.borrower_id = entityId;
                 if (entityType === ENTITY_TYPE_PARTNER) params.partner_id = entityId;
                 if (entityType === ENTITY_TYPE_FUNDING_REQUEST) params.funding_request_id = entityId;
+                if (entityType === ENTITY_TYPE_FUNDING_APPLICATION) params.funding_application_id = entityId;
             }
 
             const response = await getActivityLogs(params);
@@ -215,14 +216,16 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     const getSubtitle = (activity) => {
-        if (activity.log_type === 'email') {
+        const logType = (activity.log_type || '').toLowerCase();
+        
+        if (logType === 'email' || logType === 'email sent') {
             const emails = Array.isArray(activity.to_emails)
                 ? activity.to_emails.join(', ')
                 : (activity.to_emails || 'N/A');
             return `To: ${emails} • Subject: ${activity.subject || 'No Subject'} • ${formatRelativeDate(activity.created_at)}`;
         }
 
-        if (activity.log_type === 'activity') {
+        if (logType === 'activity') {
             const ref = activity.reference || 'N/A';
             // Use activity_date (if available from scheduling), else fallback to created_at
             const dateToUse = activity.activity_date || activity.created_at;
@@ -291,11 +294,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
     const getTitle = (activity) => {
         let title = '';
+        const logType = (activity.log_type || '').toLowerCase();
         if (activity.event_label) {
             title = activity.event_label;
-        } else if (activity.log_type === 'email') {
+        } else if (logType === 'email' || logType === 'email sent') {
             title = activity.subject ? `Email Sent: ${activity.subject}` : 'Email Sent';
-        } else if (activity.log_type === 'activity') {
+        } else if (logType === 'activity') {
             const refType = activity.reference ? activity.reference : 'Activity';
             title = activity.subject ? `${refType}: ${activity.subject}` : `${refType} Logged`;
         } else {
@@ -392,12 +396,12 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card activity-sidebar-card d-flex flex-column w-100 h-100 mb-0" style={{ flex: 1, minHeight: 0, position: 'sticky', top: '145px', alignSelf: 'flex-start', zIndex: 10 }}>
+        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={{ height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
             {/* Card Header */}
-            <div className="card-header px-3 py-2 align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={{ position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
-                <h4 className="card-title mb-0">
+            <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={{ position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
+                <h5 className="card-title mb-0 fs-16">
                     <i className="ri-history-line align-middle me-2"></i>Activity
-                </h4>
+                </h5>
                 {!hideTopButtons && (
                     <div className="d-flex gap-2 chip-actions w-100 w-sm-auto justify-content-center justify-content-sm-end">
                         <button

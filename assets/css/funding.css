@@ -522,3 +522,5 @@
     background-color: #e2e5e9 !important;
     color: #333 !important;
 }
+/* Fix sticky elements by allowing overflow */
+.main-content, .page-content { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }

@@ -13,6 +13,7 @@ import ApplicationDetailsLoader from '../../../components/Loader/ApplicationDeta
 import ConfirmationModal from '../../../components/Common/Modals/ConfirmationModal';
 import FundedAmountModal from '../../../components/Common/Modals/FundedAmountModal';
 import DownloadPdfModal from './DownloadPdfModal';
+import ActivitySidebar from '../../../components/Common/Activity/ActivitySidebar';
 import { useAuthStore } from '../../../store/auth/authStore';
 import { usePermissions } from '../../../lib/auth/usePermissions';
 
@@ -539,7 +540,7 @@ export default function FundingApplicationDetails() {
 
     return (
         <>
-            <div className="page-content">
+            <div className="page-content" style={{ overflow: 'visible' }}>
                 <div className="container-fluid">
                     {/* Header */}
                     <div className="row pb-1 page-subheader-sticky bg-body">
@@ -574,9 +575,10 @@ export default function FundingApplicationDetails() {
                     </div>
 
 
-                    {/* Commission Section */}
                     <div className="row">
-                        <div className="col-12">
+                        {/* Left Column (Commission + Content) */}
+                        <div className="col-lg-8">
+                            {/* Commission Section */}
                             {isPartner ? (
                                 /* Partner View - Read Only */
                                 <div className="card shadow-sm border-0 mb-4 overflow-hidden">
@@ -979,146 +981,158 @@ export default function FundingApplicationDetails() {
                                     </div>
                                 )
                             )}
-                        </div>
-                    </div>
 
+                            {/* Steps & Main Content Row */}
+                            <div className="row">
+                                {/* Sidebar */}
+                                <div className="col-lg-4">
+                                    {/* Steps List */}
+                                    <div className="card">
+                                        <div className="card-header bg-white py-3">
+                                            <h6 className="card-title mb-0 fs-16">Application Progress Steps</h6>
+                                        </div>
+                                        <div className="list-group list-group-flush">
+                                            {STEPS.map((step) => (
+                                                <button
+                                                    key={step.id}
+                                                    type="button"
+                                                    className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
+                                                    onClick={() => setCurrentStep(step.id as StepType)}
+                                                >
+                                                    <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', fontSize: '13px', fontWeight: '600' }}>
+                                                        {step.id}
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <div className={`fw-medium fs-13 step-title-text ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '13px' }}>
+                                                            {step.title}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                    <div className="row">
-                        {/* Sidebar */}
-                        <div className="col-lg-3">
-                            {/* Steps List */}
-                            <div className="card">
-                                <div className="card-header bg-white py-3">
-                                    <h6 className="card-title mb-0 fs-16">Application Progress Steps</h6>
-                                </div>
-                                <div className="list-group list-group-flush">
-                                    {STEPS.map((step) => (
-                                        <button
-                                            key={step.id}
-                                            type="button"
-                                            className={`list-group-item list-group-item-action d-flex align-items-center ${currentStep === step.id ? 'active' : ''}`}
-                                            onClick={() => setCurrentStep(step.id as StepType)}
-                                        >
-                                            <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${currentStep === step.id ? 'bg-white text-primary' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px', fontSize: '13px', fontWeight: '600' }}>
-                                                {step.id}
-                                            </div>
-                                            <div className="flex-grow-1">
-                                                <div className={`fw-medium fs-13 step-title-text ${currentStep === step.id ? 'text-white' : 'text-dark'}`} style={{ fontSize: '13px' }}>
-                                                    {step.title}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                                    {/* Status Update Card */}
+                                    <div className="card">
+                                        <div className="card-body">
+                                            <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
 
-                            {/* Status Update Card */}
-                            <div className="card">
-                                <div className="card-body">
-                                    <h5 className="fs-15 fw-bold mb-3">Application Status</h5>
-
-                                    {isPartner ? (
-                                        /* Partner View - Read Only */
-                                        <>
-                                            <div className="mb-3">
-                                                <label className="form-label text-muted">Status</label>
-                                                <div className="p-0 rounded">
-                                                    <span className={`badge ${FUNDING_APPLICATION_STATUS_CLASS_MAP[status] || 'bg-primary-subtle text-primary'} fs-12 text-uppercase`}>
-                                                        {FUNDING_APPLICATION_STATUS_OPTIONS.find(opt => opt.value === status)?.label || status || 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="mb-3">
-                                                <label className="form-label text-muted">Status Notes</label>
-                                                <div className="p-3 bg-light rounded text-muted">
-                                                    {status_note || 'No notes available'}
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        /* Admin View - Editable */
-                                        <>
-                                            <div className="mb-3">
-                                                <label htmlFor="status-select" className="form-label text-muted">Status</label>
-                                                <Dropdown
-                                                    value={status}
-                                                    options={FUNDING_APPLICATION_STATUS_OPTIONS}
-                                                    onChange={(e) => setStatus(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Select status..."
-                                                    className="w-100"
-                                                    disabled={!hasPermission("update funding application") || isClosed}
-                                                />
-                                            </div>
-                                            <div className="mb-3">
-                                                <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
-                                                <textarea
-                                                    className={`form-control ${notesError ? 'is-invalid' : ''}`}
-                                                    id="status-notes"
-                                                    rows={3}
-                                                    placeholder="Add notes..."
-                                                    value={status_note}
-                                                    onChange={(e) => {
-                                                        setStatusNote(e.target.value);
-                                                        if (notesError) setNotesError('');
-                                                    }}
-                                                    disabled={!hasPermission("update funding application") || isClosed}
-                                                ></textarea>
-                                                {notesError && <div className="invalid-feedback">{notesError}</div>}
-                                            </div>
-                                            {hasPermission("update funding application") && !isClosed && (
-                                                <div className="d-grid">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-primary"
-                                                        onClick={handleUpdateClick}
-                                                        disabled={updateMutation.isPending}
-                                                    >
-                                                        {updateMutation.isPending ? 'Updating...' : 'Update Status'}
-                                                    </button>
-                                                </div>
+                                            {isPartner ? (
+                                                /* Partner View - Read Only */
+                                                <>
+                                                    <div className="mb-3">
+                                                        <label className="form-label text-muted">Status</label>
+                                                        <div className="p-0 rounded">
+                                                            <span className={`badge ${FUNDING_APPLICATION_STATUS_CLASS_MAP[status] || 'bg-primary-subtle text-primary'} fs-12 text-uppercase`}>
+                                                                {FUNDING_APPLICATION_STATUS_OPTIONS.find(opt => opt.value === status)?.label || status || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label className="form-label text-muted">Status Notes</label>
+                                                        <div className="p-3 bg-light rounded text-muted">
+                                                            {status_note || 'No notes available'}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                /* Admin View - Editable */
+                                                <>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="status-select" className="form-label text-muted">Status</label>
+                                                        <Dropdown
+                                                            value={status}
+                                                            options={FUNDING_APPLICATION_STATUS_OPTIONS}
+                                                            onChange={(e) => setStatus(e.value)}
+                                                            optionLabel="label"
+                                                            optionValue="value"
+                                                            placeholder="Select status..."
+                                                            className="w-100"
+                                                            disabled={!hasPermission("update funding application") || isClosed}
+                                                        />
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="status-notes" className="form-label text-muted">Status Notes <span className="text-danger">*</span></label>
+                                                        <textarea
+                                                            className={`form-control ${notesError ? 'is-invalid' : ''}`}
+                                                            id="status-notes"
+                                                            rows={3}
+                                                            placeholder="Add notes..."
+                                                            value={status_note}
+                                                            onChange={(e) => {
+                                                                setStatusNote(e.target.value);
+                                                                if (notesError) setNotesError('');
+                                                            }}
+                                                            disabled={!hasPermission("update funding application") || isClosed}
+                                                        ></textarea>
+                                                        {notesError && <div className="invalid-feedback">{notesError}</div>}
+                                                    </div>
+                                                    {hasPermission("update funding application") && !isClosed && (
+                                                        <div className="d-grid">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary"
+                                                                onClick={handleUpdateClick}
+                                                                disabled={updateMutation.isPending}
+                                                            >
+                                                                {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
-                                        </>
-                                    )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Main Content */}
+                                <div className="col-lg-8">
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <div className="d-flex align-items-center justify-content-between">
+                                                <h5 className="card-title mb-0">
+                                                    <i className={`${currentStepData?.icon} me-2`}></i>
+                                                    Step {currentStep} of {STEPS.length}: {currentStepData?.title}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                        <div className="card-body p-4">
+                                            {renderStepContent()}
+
+                                            <div className="d-flex justify-content-between mt-4 pt-3 border-top">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-light"
+                                                    onClick={() => setCurrentStep(Math.max(1, currentStep - 1) as StepType)}
+                                                    disabled={currentStep === 1}
+                                                >
+                                                    <i className="ri-arrow-left-line me-1"></i> Previous
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={() => setCurrentStep(Math.min(8, currentStep + 1) as StepType)}
+                                                    disabled={currentStep === 8}
+                                                >
+                                                    Next <i className="ri-arrow-right-line ms-1"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Main Content */}
-                        <div className="col-lg-9">
-                            <div className="card">
-                                <div className="card-header">
-                                    <div className="d-flex align-items-center justify-content-between">
-                                        <h5 className="card-title mb-0">
-                                            <i className={`${currentStepData?.icon} me-2`}></i>
-                                            Step {currentStep} of {STEPS.length}: {currentStepData?.title}
-                                        </h5>
-                                    </div>
-                                </div>
-                                <div className="card-body p-4">
-                                    {renderStepContent()}
-
-                                    <div className="d-flex justify-content-between mt-4 pt-3 border-top">
-                                        <button
-                                            type="button"
-                                            className="btn btn-light"
-                                            onClick={() => setCurrentStep(Math.max(1, currentStep - 1) as StepType)}
-                                            disabled={currentStep === 1}
-                                        >
-                                            <i className="ri-arrow-left-line me-1"></i> Previous
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            onClick={() => setCurrentStep(Math.min(8, currentStep + 1) as StepType)}
-                                            disabled={currentStep === 8}
-                                        >
-                                            Next <i className="ri-arrow-right-line ms-1"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Right Column (Activity Sidebar) */}
+                        <div className="col-lg-4" >
+                            <ActivitySidebar
+                                entityId={id}
+                                entityType="Funding Application"
+                                style={{ marginBottom: '-100px' }}
+                                loading={isLoading}
+                                borrowerEmail={app?.borrower?.email}
+                                stickyTopOffset="133px"
+                            />
                         </div>
                     </div>
                 </div>
