@@ -150,6 +150,7 @@ export interface ApplicationDocument {
 
 export interface FundingApplicationDetails {
     id: number;
+    application_number: string;
     partner_id: number;
     borrower_id: number;
     full_name: string;
@@ -226,4 +227,27 @@ export interface FundingApplicationDetails {
     currency?: string | null;
     currency_symbol?: string | null;
     conversion_rate?: string | number | null;
+    
+    certificates?: Certificate[];
+    download_histories?: DownloadHistory[];
+}
+
+export interface Certificate {
+    id: number;
+    certificate_id: string;
+    application_version: string;
+    executed_application_sha256: string;
+    signature_timestamp: string;
+    pdf_generation_timestamp: string;
+}
+
+export interface DownloadHistory {
+    id: number;
+    user_name: string;
+    user_type: string;
+    file_type: string;
+    action: string;
+    sha256_hash: string;
+    ip_address: string;
+    downloaded_at: string;
 }

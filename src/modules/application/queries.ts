@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query/queryKeys';
-import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest } from './services';
+import { getPreQualificationApplications, getFundingApplications, getPreQualificationApplicationDetails, updateApplicationStatus, updateFundingApplicationStatus, getFundingApplicationDetails, getFundingApplicationStats, getPreQualificationStats, saveFundingApplicationCommission, getFundingRequests, getFundingRequestDetails, updateFundingRequestStatus, assignLenderToFundingRequest, getFundingApplicationAuditHistory } from './services';
 
 export const usePreQualificationApplications = (params: any = {}) => {
   return useQuery({
@@ -32,6 +32,15 @@ export const useFundingApplicationDetails = (id: string | number) => {
     queryKey: queryKeys.application.detail(id),
     queryFn: () => getFundingApplicationDetails(id),
     enabled: !!id,
+  });
+};
+
+export const useFundingApplicationAuditHistory = (id: string, params: any = {}) => {
+  return useQuery({
+    queryKey: [...queryKeys.application.detail(id), 'audit-history', params],
+    queryFn: () => getFundingApplicationAuditHistory(id, params),
+    enabled: !!id,
+    placeholderData: (previousData) => previousData,
   });
 };
 
