@@ -214,6 +214,38 @@ export default function FundingApplicationAuditHistory() {
                                 </div>
                             )}
 
+                            {selectedRow.details?.device_type && (
+                                <>
+                                    <hr className="my-3 border-dashed" />
+                                    <h6 className="fs-14 fw-bold mb-3 text-dark">
+                                        <i className="ri-computer-line text-info align-middle me-1"></i>
+                                        Downloader Device Details
+                                    </h6>
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-md-4">
+                                            <span className="text-muted fs-12 d-block">Operating System</span>
+                                            <span className="fw-medium fs-13">{selectedRow.details.operating_system || 'N/A'}</span>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <span className="text-muted fs-12 d-block">Browser</span>
+                                            <span className="fw-medium fs-13">
+                                                {selectedRow.details.browser_name || 'N/A'} {selectedRow.details.browser_version !== 'Unknown' ? selectedRow.details.browser_version : ''}
+                                            </span>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <span className="text-muted fs-12 d-block">Device Type</span>
+                                            <span className="fw-medium fs-13">{selectedRow.details.device_type || 'N/A'}</span>
+                                        </div>
+                                        <div className="col-md-12">
+                                            <span className="text-muted fs-12 d-block">User Agent</span>
+                                            <div className="p-2 bg-light rounded font-monospace fs-12 text-break mt-1">
+                                                {selectedRow.details.user_agent || 'N/A'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
                             {(app as any).signature_data && (
                                 <>
                                     <hr className="my-3 border-dashed" />
