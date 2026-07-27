@@ -87,15 +87,15 @@ export const AuthorizeNetForm = ({ amount, invoice, selectedProvider, onPaymentS
     setProcessing(true);
     try {
       const response = await processUnifiedPayment({
-        provider_id: selectedProvider.id,
-        invoice_id: invoice.id,
-        payment_method_id: JSON.stringify({
+        payment_token: JSON.stringify({
           gateway: 'authorize_net',
           cardNumber: cardNumber.replace(/\s/g, ''),
           expMonth,
           expYear,
           cardCode,
         }),
+        invoice_id: invoice.id,
+        payment_method_id: selectedProvider.id,
       });
 
       if (response.status) {
@@ -172,15 +172,15 @@ export const SquareForm = ({ amount, invoice, selectedProvider, onPaymentSuccess
     setProcessing(true);
     try {
       const response = await processUnifiedPayment({
-        provider_id: selectedProvider.id,
-        invoice_id: invoice.id,
-        payment_method_id: JSON.stringify({
+        payment_token: JSON.stringify({
           gateway: 'square',
           cardNumber: cardNumber.replace(/\s/g, ''),
           expiry,
           cvv,
           postalCode,
         }),
+        invoice_id: invoice.id,
+        payment_method_id: selectedProvider.id,
       });
 
       if (response.status) {
@@ -257,14 +257,14 @@ export const EcryptForm = ({ amount, invoice, selectedProvider, onPaymentSuccess
     setProcessing(true);
     try {
       const response = await processUnifiedPayment({
-        provider_id: selectedProvider.id,
-        invoice_id: invoice.id,
-        payment_method_id: JSON.stringify({
+        payment_token: JSON.stringify({
           gateway: 'ecrypt',
           cardNumber: cardNumber.replace(/\s/g, ''),
           expiry,
           cvv,
         }),
+        invoice_id: invoice.id,
+        payment_method_id: selectedProvider.id,
       });
 
       if (response.status) {

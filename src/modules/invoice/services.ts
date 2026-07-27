@@ -26,7 +26,7 @@ export const fetchPartnerPaymentMethods = async () => {
     return data;
 };
 
-export const processUnifiedPayment = async (payload: { provider_id: number; invoice_id: number | string; payment_method_id: string }) => {
+export const processUnifiedPayment = async (payload: { payment_token: string; invoice_id: number | string; payment_method_id: number }) => {
     const response = await apiClient.post('/payment/process', payload);
     return response.data;
 };
