@@ -4906,3 +4906,308 @@ File: Custom Css File
     text-align: center;
   }
 }
+/* ============================================================
+   Payment Modal — ppm (wrapper) + pps (provider selector)
+   ============================================================ */
+
+/* ── Modal shell ── */
+.stripe-payment-modal.ppm-modal .modal-dialog {
+  max-width: 580px;
+}
+
+.stripe-payment-modal.ppm-modal .ppm-gateway-dialog {
+  max-width: 480px;
+}
+
+.ppm-content {
+  border-radius: 4px !important;
+  border: 1px solid #e9ebec !important;
+  box-shadow: 0 16px 48px rgba(16, 24, 40, 0.14), 0 2px 8px rgba(16, 24, 40, 0.06) !important;
+  overflow: hidden;
+}
+
+.ppm-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 1.5rem;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.ppm-card-body {
+  background: #f9fafb;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+/* ── Provider Selector: grid ── */
+.pps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 0.875rem;
+}
+
+/* ── Provider Selector: card ── */
+.pps-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1.5rem 1rem 1.25rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.pps-card:hover {
+  box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08), 0 1px 4px rgba(16, 24, 40, 0.04);
+}
+
+.pps-card-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafbfc;
+  border: 1px solid #eef0f4;
+  width: 100px;
+  height: 64px;
+  padding: 10px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pps-card-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pps-card-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+  background-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.04);
+  border: 1px solid rgba(var(--vz-primary-rgb, 0, 31, 63), 0.08);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.pps-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.pps-card-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #101828;
+  letter-spacing: -0.01em;
+}
+
+.pps-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.08);
+  color: var(--primary-color);
+  margin-top: 0.15rem;
+}
+
+.pps-card-desc {
+  font-size: 0.72rem;
+  color: #667085;
+  line-height: 1.4;
+  max-width: 155px;
+  margin-top: 0.15rem;
+}
+
+/* ── Provider Selector: skeleton ── */
+.pps-card-skeleton {
+  cursor: default;
+}
+
+.pps-card-skeleton:hover {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  border-color: #e4e7ec;
+}
+
+.pps-skeleton-logo {
+  width: 100px;
+  height: 64px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+.pps-skeleton-line {
+  width: 70%;
+  height: 13px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+.pps-skeleton-line-short {
+  width: 45%;
+  height: 10px;
+  margin-top: 2px;
+}
+
+@keyframes pps-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Provider Selector: empty / error ── */
+.pps-state {
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+}
+
+/* ── Gateway: provider logo display ── */
+.ppm-gateway-provider {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.ppm-gateway-logo-img {
+  max-height: 28px;
+  max-width: 100px;
+  object-fit: contain;
+}
+
+.ppm-gateway-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.04);
+  border: 1px solid rgba(var(--vz-primary-rgb, 0, 31, 63), 0.08);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* ── Gateway: card detail form fields ── */
+.card-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-detail-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.card-detail-row > div {
+  flex: 1;
+}
+
+.card-detail-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e3e8ee;
+  border-radius: 4px;
+  background-color: #ffffff;
+  font-size: 16px;
+  color: #424770;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.card-detail-input:focus {
+  outline: none;
+  border-color: rgba(var(--vz-primary-rgb, 0, 31, 63), 0.3);
+  box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb, 0, 31, 63), 0.08);
+}
+
+.card-detail-input::placeholder {
+  color: #aab7c4;
+}
+
+/* ── Gateway: checkout form skeleton ── */
+.ppm-form-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ppm-form-skeleton-label {
+  width: 40%;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+.ppm-form-skeleton-label-half {
+  width: 28%;
+}
+
+.ppm-form-skeleton-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+.ppm-form-skeleton-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.ppm-form-skeleton-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ppm-form-skeleton-col-small {
+  flex: 0 0 30%;
+}
+
+.ppm-form-skeleton-summary {
+  width: 100%;
+  height: 56px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}
+
+.ppm-form-skeleton-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: pps-shimmer 1.5s infinite ease-in-out;
+}

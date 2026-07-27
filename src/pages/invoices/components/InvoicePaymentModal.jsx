@@ -9,37 +9,35 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { getStripe } from '../../../lib/stripe';
-import { processInvoicePayment, fetchPartnerPaymentMethods } from '../../../modules/invoice/services';
-import { purchaseUserSeats } from '../../../modules/user/services';
+import { processUnifiedPayment } from '../../../modules/invoice/services';
 import { refreshSubscription } from '../../../lib/auth';
 import { toast } from 'react-toastify';
-import { ENTITY_TYPE_USER_MODEL, ENTITY_TYPE_EMPLOYEE } from '../../../config/appConfig';
+import PaymentProviderSelector from './PaymentProviderSelector';
+import { AuthorizeNetForm, SquareForm, EcryptForm } from './PaymentMethodForms';
 
 const isStripeProvider = (provider) => provider?.name?.toLowerCase() === 'stripe';
+const isAuthorizeNetProvider = (provider) => ['authorize.net', 'authorizenet', 'authorize'].includes(provider?.name?.toLowerCase());
+const isSquareProvider = (provider) => provider?.name?.toLowerCase() === 'square';
+const isEcryptProvider = (provider) => provider?.name?.toLowerCase() === 'ecrypt';
 
-const ProviderCard = ({ provider, onSelect }) => (
-  <button
-    type="button"
-    className="btn btn-light border w-100 p-3 mb-2 text-start d-flex align-items-center"
-    onClick={() => onSelect(provider)}
-  >
-    {provider.logo ? (
-      <img
-        src={provider.logo}
-        alt={provider.name}
-        style={{ maxHeight: '30px', maxWidth: '80px', objectFit: 'contain' }}
-        className="me-3"
-      />
-    ) : (
-      <span className="avatar-sm bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3">
-        <i className="ri-secure-payment-line fs-18"></i>
-      </span>
-    )}
-    <span className="fw-semibold">{provider.name}</span>
-    {provider.is_default && (
-      <span className="badge bg-success-subtle text-success ms-auto">Default</span>
-    )}
-  </button>
+const CheckoutSkeleton = () => (
+  <div className="ppm-form-skeleton">
+    <div className="ppm-form-skeleton-label" />
+    <div className="ppm-form-skeleton-input" />
+    <div className="ppm-form-skeleton-label ppm-form-skeleton-label-half" />
+    <div className="ppm-form-skeleton-row">
+      <div className="ppm-form-skeleton-col">
+        <div className="ppm-form-skeleton-label" />
+        <div className="ppm-form-skeleton-input" />
+      </div>
+      <div className="ppm-form-skeleton-col ppm-form-skeleton-col-small">
+        <div className="ppm-form-skeleton-label" />
+        <div className="ppm-form-skeleton-input" />
+      </div>
+    </div>
+    <div className="ppm-form-skeleton-summary" />
+    <div className="ppm-form-skeleton-btn" />
+  </div>
 );
 
 const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onCancel }) => {
@@ -52,14 +50,11 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     if (!stripe || !elements) return;
-
     setIsProcessing(true);
 
     try {
       const cardNumberElement = elements.getElement(CardNumberElement);
-
       const { error, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardNumberElement,
@@ -76,25 +71,11 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
         return;
       }
 
-      const isUserSeatPayment = invoice?.entity_type?.includes(ENTITY_TYPE_USER_MODEL) ||
-        invoice?.entity_type?.includes(ENTITY_TYPE_EMPLOYEE);
-
-      const payload = {
-        amount: Math.round(amount * 100), // convert to cents
-        currency: 'USD',
+      const response = await processUnifiedPayment({
+        provider_id: selectedProvider.id,
+        invoice_id: invoice.id,
         payment_method_id: paymentMethod.id,
-        description: `Invoice Payment #${invoice?.invoice_id} - ${invoice?.customer_name}`,
-        invoice_id: invoice?.id,
-        entity_id: invoice?.entity_id,
-        entity_type: invoice?.entity_type,
-        partner_id: invoice?.partner_id,
-        provider_id: selectedProvider?.id,
-        ...(isUserSeatPayment ? { user_id: invoice?.entity_id } : {})
-      };
-
-      const response = isUserSeatPayment
-        ? await purchaseUserSeats(payload)
-        : await processInvoicePayment(payload);
+      });
 
       if (response.status) {
         toast.success("Payment completed successfully!");
@@ -124,11 +105,7 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
             onBlur={() => setCardNumberFocused(false)}
             options={{
               style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': { color: '#aab7c4' },
-                },
+                base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } },
                 invalid: { color: '#9e2146' },
               },
             }}
@@ -145,11 +122,7 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
               onBlur={() => setCardExpiryFocused(false)}
               options={{
                 style: {
-                  base: {
-                    fontSize: '16px',
-                    color: '#424770',
-                    '::placeholder': { color: '#aab7c4' },
-                  },
+                  base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } },
                   invalid: { color: '#9e2146' },
                 },
               }}
@@ -164,11 +137,7 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
               onBlur={() => setCardCvcFocused(false)}
               options={{
                 style: {
-                  base: {
-                    fontSize: '16px',
-                    color: '#424770',
-                    '::placeholder': { color: '#aab7c4' },
-                  },
+                  base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } },
                   invalid: { color: '#9e2146' },
                 },
               }}
@@ -190,20 +159,11 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
       </div>
 
       <div className="hstack gap-2 justify-content-center">
-        <button
-          type="submit"
-          className="stripe-submit-btn"
-          disabled={!stripe || isProcessing}
-        >
+        <button type="submit" className="stripe-submit-btn" disabled={!stripe || isProcessing}>
           {isProcessing ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              Verifying...
-            </>
+            <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Verifying...</>
           ) : (
-            <>
-              <i className="ri-shield-check-line me-1"></i> Confirm & Pay
-            </>
+            <><i className="ri-shield-check-line me-1"></i> Confirm & Pay</>
           )}
         </button>
       </div>
@@ -214,18 +174,13 @@ const CheckoutForm = ({ amount, invoice, selectedProvider, onPaymentSuccess, onC
 export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }) {
   const modalRef = useRef(null);
   const modalInstanceRef = useRef(null);
-  const [providers, setProviders] = useState([]);
-  const [providersLoading, setProvidersLoading] = useState(false);
-  const [providerError, setProviderError] = useState(null);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [stripePromise, setStripePromise] = useState(null);
 
-  // Calculate amount safely
   const amount = invoice ? (typeof invoice.payment_amount === 'string'
     ? parseFloat(invoice.payment_amount.replace(/[^0-9.]/g, ''))
     : (parseFloat(invoice.payment_amount) || 0)) : 0;
 
-  // Initialize Bootstrap modal instance
   useEffect(() => {
     if (!modalRef.current) return;
     if (!modalInstanceRef.current) {
@@ -234,7 +189,6 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
         keyboard: false,
       });
     }
-
     return () => {
       if (modalInstanceRef.current) {
         modalInstanceRef.current.hide();
@@ -244,59 +198,22 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
     };
   }, []);
 
-  // Show/hide modal
   useEffect(() => {
     const modal = modalInstanceRef.current;
     if (!modal) return;
-    if (show) {
-      modal.show();
-    } else {
-      modal.hide();
+    if (show) { modal.show(); } else { modal.hide(); }
+  }, [show]);
+
+  useEffect(() => {
+    if (!show) {
+      setSelectedProvider(null);
+      setStripePromise(null);
     }
   }, [show]);
 
-  // Load active providers for the invoice's partner
-  useEffect(() => {
-    if (!show || !invoice) return;
-
-    const loadProviders = async () => {
-      setProvidersLoading(true);
-      setProviderError(null);
-      setSelectedProvider(null);
-
-      try {
-        const response = await fetchPartnerPaymentMethods();
-          if (response.status) {
-          const list = response.data || [];
-          setProviders(list);
-
-          if (list.length === 1) {
-            setSelectedProvider(list[0]);
-          }
-        } else {
-          setProviderError(response.message || 'Failed to load payment providers');
-          toast.error(response.message || 'Failed to load payment providers');
-        }
-      } catch (err) {
-        const message = err.response?.data?.message || 'Failed to load payment providers';
-        setProviderError(message);
-        toast.error(message);
-      } finally {
-        setProvidersLoading(false);
-      }
-    };
-
-    loadProviders();
-  }, [show, invoice?.id]);
-
-  // Initialize Stripe only when Stripe provider is selected
   useEffect(() => {
     if (selectedProvider && isStripeProvider(selectedProvider) && !stripePromise) {
-      const initStripe = async () => {
-        const promise = await getStripe();
-        setStripePromise(promise);
-      };
-      initStripe();
+      getStripe().then(setStripePromise);
     }
   }, [selectedProvider, stripePromise]);
 
@@ -309,76 +226,64 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
   };
 
   return (
-    <div className="modal fade stripe-payment-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content border-0 shadow-lg">
-          <div className="modal-header border-0 p-3 pb-0">
-            <h5 className="modal-title fs-16 fw-semibold">
-              {selectedProvider ? 'Complete Payment' : 'Select Payment Method'}
-            </h5>
-            <button type="button" className="btn-close" onClick={onHide}></button>
-          </div>
-          <div className="modal-body p-4 text-center pt-0">
-            {!selectedProvider ? (
-              <>
-                <div className="mb-3">
-                  <span className="avatar-title bg-primary bg-opacity-10 text-primary rounded-circle fs-1 d-inline-flex align-items-center justify-content-center" style={{ width: '64px', height: '64px' }}>
-                    <i className="ri-secure-payment-line"></i>
-                  </span>
-                </div>
-                <p className="stripe-modal-desc mb-4">
-                  Choose how you would like to pay <strong>USD ${amount.toFixed(2)}</strong> for invoice{' '}
-                  <strong>{invoice?.invoice_id}</strong>.
-                </p>
-
-                {providersLoading ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading payment providers...</span>
+    <div className="modal fade stripe-payment-modal ppm-modal" ref={modalRef} tabIndex="-1" aria-hidden="true">
+      <div className={`modal-dialog modal-dialog-centered${selectedProvider ? ' ppm-gateway-dialog' : ''}`}>
+        <div className="modal-content ppm-content">
+          {!selectedProvider ? (
+            <>
+              <div className="ppm-card-header">
+                <div className="d-flex align-items-center gap-3">
+                  <div className="avatar-sm flex-shrink-0">
+                    <div className="avatar-title bg-primary-subtle text-primary rounded fs-20 payment-method-avatar-title">
+                      <i className="ri-bank-card-2-line"></i>
                     </div>
-                    <p className="text-muted mt-2">Loading payment providers...</p>
                   </div>
-                ) : providerError ? (
-                  <div className="alert alert-danger" role="alert">
-                    {providerError}
+                  <div>
+                    <h5 className="mb-0 fs-15 fw-semibold text-dark">Select Payment Method</h5>
+                    <p className="text-muted mb-0 fs-12">
+                      Invoice #{invoice?.invoice_id} &middot; USD ${amount.toFixed(2)}
+                    </p>
                   </div>
-                ) : providers.length === 0 ? (
-                  <div className="alert alert-warning" role="alert">
-                    No active payment providers are available for this partner.
-                  </div>
-                ) : (
-                  <div className="text-start">
-                    {providers.map((provider) => (
-                      <ProviderCard
-                        key={provider.id}
-                        provider={provider}
-                        onSelect={handleProviderSelect}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="d-flex align-items-center mb-3">
+                </div>
+                <button type="button" className="btn-close" onClick={onHide}></button>
+              </div>
+
+              <div className="ppm-card-body">
+                <PaymentProviderSelector
+                  invoice={invoice}
+                  onSelect={handleProviderSelect}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ppm-card-header">
+                <div className="d-flex align-items-center gap-2">
                   <button
                     type="button"
                     className="btn btn-link text-muted p-0 text-decoration-none"
                     onClick={handleBackToProviders}
                   >
-                    <i className="ri-arrow-left-line me-1"></i> Change method
+                    <i className="ri-arrow-left-line fs-18"></i>
                   </button>
+                  <div>
+                    <h5 className="mb-0 fs-15 fw-semibold text-dark">Complete Payment</h5>
+                    <p className="text-muted mb-0 fs-12">
+                      {selectedProvider.name} &middot; Invoice #{invoice?.invoice_id} &middot; USD ${amount.toFixed(2)}
+                    </p>
+                  </div>
                 </div>
+                <button type="button" className="btn-close" onClick={onHide}></button>
+              </div>
 
-                <div className="d-flex align-items-center justify-content-center mb-4">
+              <div className="ppm-card-body">
+                <div className="ppm-gateway-provider">
                   {selectedProvider.logo ? (
-                    <img
-                      src={selectedProvider.logo}
-                      alt={selectedProvider.name}
-                      style={{ maxHeight: '40px', maxWidth: '120px', objectFit: 'contain' }}
-                    />
+                    <img src={selectedProvider.logo} alt={selectedProvider.name} className="ppm-gateway-logo-img" />
                   ) : (
-                    <span className="fw-bold fs-18">{selectedProvider.name}</span>
+                    <span className="ppm-gateway-icon">
+                      <i className="ri-secure-payment-line"></i>
+                    </span>
                   )}
                 </div>
 
@@ -394,23 +299,43 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
                       />
                     </Elements>
                   ) : (
-                    <div className="text-center py-4">
-                      <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Initializing Stripe...</span>
-                      </div>
-                      <p className="text-muted mt-2">Initializing Stripe...</p>
-                    </div>
+                    <CheckoutSkeleton />
                   )
+                ) : isAuthorizeNetProvider(selectedProvider) ? (
+                  <AuthorizeNetForm
+                    amount={amount}
+                    invoice={invoice}
+                    selectedProvider={selectedProvider}
+                    onPaymentSuccess={onSuccess}
+                    onCancel={onHide}
+                  />
+                ) : isSquareProvider(selectedProvider) ? (
+                  <SquareForm
+                    amount={amount}
+                    invoice={invoice}
+                    selectedProvider={selectedProvider}
+                    onPaymentSuccess={onSuccess}
+                    onCancel={onHide}
+                  />
+                ) : isEcryptProvider(selectedProvider) ? (
+                  <EcryptForm
+                    amount={amount}
+                    invoice={invoice}
+                    selectedProvider={selectedProvider}
+                    onPaymentSuccess={onSuccess}
+                    onCancel={onHide}
+                  />
                 ) : (
-                  <div className="alert alert-info" role="alert">
-                    <i className="ri-information-line me-2"></i>
-                    Payment through <strong>{selectedProvider.name}</strong> is currently handled outside of this interface.
-                    Please contact support to complete this payment.
+                  <div className="text-center py-4">
+                    <div className="alert alert-info mb-0">
+                      <i className="ri-information-line me-2"></i>
+                      Payment through <strong>{selectedProvider.name}</strong> is not yet supported in this interface.
+                    </div>
                   </div>
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -2003,3 +2003,62 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     width: 100%;
   }
 }
+
+/* ============================================================
+   Payment Provider Modal (pps) — Responsive Styles
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .ppm-card-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .ppm-card-body {
+    padding: 1rem;
+  }
+
+  .pps-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.625rem;
+  }
+
+  .pps-card {
+    padding: 1.15rem 0.75rem 1rem;
+  }
+
+  .pps-card-logo {
+    width: 84px;
+    height: 54px;
+    padding: 8px;
+  }
+
+  .pps-card-icon {
+    width: 54px;
+    height: 54px;
+  }
+
+  .pps-skeleton-logo {
+    width: 84px;
+    height: 54px;
+  }
+
+  .card-detail-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .pps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-detail-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .stripe-payment-modal.ppm-modal .modal-dialog {
+    margin: 0.5rem;
+  }
+}
