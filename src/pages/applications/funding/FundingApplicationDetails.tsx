@@ -642,7 +642,7 @@ export default function FundingApplicationDetails() {
                                 </div>
                                 <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
                                     {isHost && (
-                                        <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-info w-lg waves-effect">
+                                        <Link to={`/intake-review/funding-application/${id}/audit-history`} className="btn btn-primary w-lg waves-effect">
                                             <i className="ri-history-line align-middle me-1"></i> Audit History
                                         </Link>
                                     )}

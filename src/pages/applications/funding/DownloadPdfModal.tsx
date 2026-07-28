@@ -4,6 +4,7 @@ import Modal from "bootstrap/js/dist/modal";
 import { toast } from "react-toastify";
 import DynamicActionModal from "../../../components/Common/Modals/DynamicActionModal";
 import "../../../../assets/css/funding-application.css";
+import { PASSWORD_GENERATE_CHARS, PASSWORD_GENERATE_LENGTH } from "../../../config/appConfig";
 
 interface DownloadPdfModalProps {
   show: boolean;
@@ -84,9 +85,9 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   }, [showConfirmModal]);
 
   const generatePasswordString = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const chars = PASSWORD_GENERATE_CHARS;
     let p = "";
-    for (let i = 0; i < 14; i++) p += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < PASSWORD_GENERATE_LENGTH; i++) p += chars.charAt(Math.floor(Math.random() * chars.length));
     return p;
   };
 

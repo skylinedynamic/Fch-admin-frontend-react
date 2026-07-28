@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { useFundingApplicationDetails, useFundingApplicationAuditHistory } from '../../../modules/application/queries';
@@ -18,11 +18,34 @@ export default function FundingApplicationAuditHistory() {
     // Pagination state
     const [page, setPage] = useState<number>(1);
     const [perPage, setPerPage] = useState<number>(10);
+    const [sortField, setSortField] = useState<string>('downloaded_at');
+    const [sortOrder, setSortOrder] = useState<number>(-1);
+    const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
+    const [appliedSearch, setAppliedSearch] = useState<string>('');
 
     const { data: auditResponse, isLoading: isLoadingAudit, isFetching: isFetchingAudit } = useFundingApplicationAuditHistory(id || '', {
         page,
-        per_page: perPage
+        per_page: perPage,
+        sort_by: sortField,
+        sort_dir: sortOrder === 1 ? 'asc' : 'desc',
+        search: appliedSearch
     });
+
+    const handleApplyFilters = () => {
+        setAppliedSearch(globalFilterValue);
+        setPage(1);
+    };
+
+    const handleClearFilters = () => {
+        setGlobalFilterValue('');
+        setAppliedSearch('');
+        setPage(1);
+    };
+
+    useEffect(() => {
+        document.body.classList.add('table-page-fit-active');
+        return () => document.body.classList.remove('table-page-fit-active');
+    }, []);
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const auditData = auditResponse?.data || [];
@@ -48,18 +71,23 @@ export default function FundingApplicationAuditHistory() {
         }
     };
 
+    const formatDateTime = (dateString: string) => {
+        if (!dateString) return '';
+        return dateString; // Backend now provides perfectly formatted timezone-aware string
+    };
+
     return (
-        <div className="page-content" style={{ overflow: 'visible' }}>
+        <div className="page-content page-content-fit employee-section">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
+                <div className="row pb-1 mobile-sticky-header">
                     <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
+                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
                             <div className="flex-grow-1">
                                 <h4 className="fs-20 mb-1">
                                     Document Audit History
                                 </h4>
-                                <nav aria-label="breadcrumb">
+                                <nav aria-label="breadcrumb" className="d-block">
                                     <ol className="breadcrumb m-0">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
@@ -86,31 +114,63 @@ export default function FundingApplicationAuditHistory() {
                     </div>
                 </div>
 
-                <div className="row pt-3">
+                <div className="row row-table-fit mt-3">
 
 
                     <div className="col-12">
-                        <div className="card">
-                            <div className="card-body p-0">
-                                <div className="table-responsive table-card mt-0">
+                        <div className="card shadow-sm border-0">
+                            <div className="card-body">
+                                <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-xxl-8 col-sm-12">
+                                            <div className="search-box">
+                                                <input
+                                                    type="text"
+                                                    className="form-control search bg-light border-light"
+                                                    placeholder="Search history..."
+                                                    value={globalFilterValue}
+                                                    onChange={(e) => setGlobalFilterValue(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+                                                />
+                                                <i className="ri-search-line search-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div className="col-xxl-4 col-sm-12">
+                                            <div className="d-flex gap-2 h-100">
+                                                <button type="submit" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                </button>
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                                <div className="table-responsive table-card mt-1">
                                     {isLoading ? (
                                         <TableLoader rows={10} columns={new Array(8).fill({ style: { minWidth: '150px' } })} />
                                     ) : (
                                         <DataTable
                                             lazy
+                                            scrollable scrollHeight="flex" responsiveLayout="scroll"
                                             totalRecords={totalRecords}
                                             first={(page - 1) * perPage}
                                             onPage={onPage}
                                             value={auditData}
-                                            sortField="downloaded_at"
-                                            sortOrder={-1}
+                                            sortField={sortField}
+                                            sortOrder={sortOrder}
+                                            onSort={(e) => {
+                                                setSortField(e.sortField || 'downloaded_at');
+                                                setSortOrder(e.sortOrder || -1);
+                                            }}
                                             paginator
                                             rows={perPage}
                                             rowsPerPageOptions={[10, 25, 50]}
                                             className="p-datatable-sm p-datatable-hoverable-rows"
                                             emptyMessage="No history found."
                                         >
-                                        <Column field="downloaded_at" header="Date" body={(rowData) => <span className="text-nowrap">{new Date(rowData.downloaded_at).toLocaleString()}</span>} sortable></Column>
+                                        <Column field="downloaded_at" header="Date" body={(rowData) => <span className="text-nowrap">{formatDateTime(rowData.downloaded_at)}</span>} sortable></Column>
                                         <Column field="user_name" header="Name" body={(rowData) => (
                                             <span className="text-nowrap">
                                                 {rowData.user_name || 'System'} <span className="text-muted">({rowData.user_type ? rowData.user_type.charAt(0).toUpperCase() + rowData.user_type.slice(1) : 'System'})</span>
@@ -126,8 +186,8 @@ export default function FundingApplicationAuditHistory() {
                                         )} sortable></Column>
                                         <Column field="ip_address" header="IP Address" sortable></Column>
                                         <Column header="Action" body={(rowData) => (
-                                            <button className="btn btn-sm btn-info px-2" onClick={() => setSelectedRow(rowData)} title="View Details">
-                                                <i className="ri-eye-line align-middle"></i>
+                                            <button className="btn btn-sm btn-primary px-2 d-inline-flex align-items-center gap-1" onClick={() => setSelectedRow(rowData)} title="View Details">
+                                                <i className="ri-eye-line align-middle"></i> Details
                                             </button>
                                         )}></Column>
                                     </DataTable>
@@ -153,7 +213,7 @@ export default function FundingApplicationAuditHistory() {
                                 </div>
                                 <div className="col-md-6">
                                     <h6 className="text-muted fs-13 mb-1">Date</h6>
-                                    <p className="fw-medium mb-0 fs-14">{new Date(selectedRow.downloaded_at).toLocaleString()}</p>
+                                    <p className="fw-medium mb-0 fs-14">{formatDateTime(selectedRow.downloaded_at)}</p>
                                 </div>
                             </div>
 
@@ -385,7 +445,7 @@ export default function FundingApplicationAuditHistory() {
                             </span>
                         )}
                     </div>
-                    <button className="btn btn-secondary" onClick={() => setSelectedRow(null)}>Close</button>
+                    <button className="btn btn-light" onClick={() => setSelectedRow(null)}>Close</button>
                 </ModalFooter>
             </Modal>
         </div>

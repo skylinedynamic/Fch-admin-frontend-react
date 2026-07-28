@@ -61,3 +61,6 @@ export const LOG_TYPE_BUSINESS_UPDATE = 'business_update';
 export const LOG_TYPE_DOCUMENT_UPLOAD = 'document_upload';
 export const LOG_TYPE_CHECKLIST_UPDATE = 'checklist_update';
 export const LOG_TYPE_TASK_VERIFICATION = 'task_verification';
+
+export const PASSWORD_GENERATE_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+export const PASSWORD_GENERATE_LENGTH = 14;
