@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { useFundingApplicationDetails, useFundingApplicationAuditHistory } from '../../../modules/application/queries';
 import { downloadHistoryFile } from '../../../modules/application/services';
@@ -9,9 +9,14 @@ import { Column } from 'primereact/column';
 import { FilterMatchMode } from 'primereact/api';
 import TableLoader from '../../../components/Loader/TableLoader';
 import '../../../../assets/css/audit-history.css';
+import { useAuthStore } from '../../../store/auth/authStore';
 
 export default function FundingApplicationAuditHistory() {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const isHost = user?.is_host == true;
+
     const { data: apiResponse, isLoading: isLoadingApp, error } = useFundingApplicationDetails(id || '');
     const [selectedRow, setSelectedRow] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +53,12 @@ export default function FundingApplicationAuditHistory() {
         document.body.classList.add('table-page-fit-active');
         return () => document.body.classList.remove('table-page-fit-active');
     }, []);
+
+    useEffect(() => {
+        if (user && !isHost) {
+            navigate(`/intake-review/funding-application/${id}`);
+        }
+    }, [user, isHost, navigate, id]);
 
     const app = (apiResponse?.data || apiResponse || {}) as FundingApplicationDetailsType;
     const auditData = auditResponse?.data || [];
