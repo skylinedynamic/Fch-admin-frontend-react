@@ -78,19 +78,19 @@ export default function FundingApplicationAuditHistory() {
         <div className="page-content page-content-fit employee-section">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1 mobile-sticky-header">
+                <div className="row pb-1">
                     <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">
+                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between py-2 gap-3">
+                            <div className="flex-grow-1 overflow-hidden" style={{ width: '100%' }}>
+                                <h4 className="fs-20 mb-1 text-truncate">
                                     Document Audit History
                                 </h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
+                                <nav aria-label="breadcrumb" className="d-block w-100 overflow-hidden">
+                                    <ol className="breadcrumb m-0 flex-nowrap text-truncate">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
                                         <li className="breadcrumb-item"><Link to={`/intake-review/funding-application/${id}`}>Details</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page" style={{ display: 'flex', alignItems: 'center' }}>
+                                        <li className="breadcrumb-item active text-truncate" aria-current="page" style={{ display: 'flex', alignItems: 'center' }}>
                                             Audit History 
                                             {isLoading ? (
                                                 <span className="badge bg-primary-subtle ms-2 skeleton-line" style={{ width: '80px', height: '20px', display: 'inline-block' }}></span>
@@ -103,7 +103,7 @@ export default function FundingApplicationAuditHistory() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            <div className="page-actions flex-shrink-0 mt-3 mt-sm-0">
                                 <Link to={`/intake-review/funding-application/${id}`} className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
@@ -119,8 +119,8 @@ export default function FundingApplicationAuditHistory() {
                         <div className="card shadow-sm border-0">
                             <div className="card-body">
                                 <form onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
-                                    <div className="row g-3 mb-3">
-                                        <div className="col-xxl-8 col-sm-12">
+                                    <div className="row g-2 mb-3">
+                                        <div className="col-12 col-md">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -133,7 +133,7 @@ export default function FundingApplicationAuditHistory() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-xxl-4 col-sm-12">
+                                        <div className="col-12 col-md-4 col-xxl-3">
                                             <div className="d-flex gap-2 h-100">
                                                 <button type="submit" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
@@ -403,7 +403,7 @@ export default function FundingApplicationAuditHistory() {
                         </div>
                     )}
                 </ModalBody>
-                <ModalFooter className="justify-content-between">
+                <ModalFooter className="d-flex justify-content-between w-100">
                     <div>
                         {selectedRow?.details?.file_path && (
                             <button 
@@ -443,7 +443,9 @@ export default function FundingApplicationAuditHistory() {
                             </span>
                         )}
                     </div>
-                    <button className="btn btn-light" onClick={() => setIsModalOpen(false)}>Close</button>
+                    <div>
+                        <button className="btn btn-light" onClick={() => setIsModalOpen(false)}>Close</button>
+                    </div>
                 </ModalFooter>
             </Modal>
         </div>
