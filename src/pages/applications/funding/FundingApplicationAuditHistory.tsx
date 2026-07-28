@@ -8,6 +8,7 @@ import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { FilterMatchMode } from 'primereact/api';
 import TableLoader from '../../../components/Loader/TableLoader';
+import '../../../../assets/css/audit-history.css';
 
 export default function FundingApplicationAuditHistory() {
     const { id } = useParams();
@@ -86,7 +87,7 @@ export default function FundingApplicationAuditHistory() {
                                     Document Audit History
                                 </h4>
                                 <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0" style={{ flexWrap: 'wrap' }}>
+                                    <ol className="breadcrumb m-0 audit-history-breadcrumb">
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
                                         <li className="breadcrumb-item"><Link to={`/intake-review/funding-application/${id}`}>Details</Link></li>
@@ -103,7 +104,7 @@ export default function FundingApplicationAuditHistory() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-2 mt-lg-0 align-self-start">
+                            <div className="page-actions d-flex align-items-center gap-2 mt-2 mt-lg-0 audit-history-actions">
                                 <Link to={`/intake-review/funding-application/${id}`} className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
