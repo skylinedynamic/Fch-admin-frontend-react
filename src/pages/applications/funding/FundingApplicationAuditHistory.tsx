@@ -80,17 +80,17 @@ export default function FundingApplicationAuditHistory() {
                 {/* Header */}
                 <div className="row pb-1">
                     <div className="col-12">
-                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between py-2 gap-3">
-                            <div className="flex-grow-1 overflow-hidden" style={{ width: '100%' }}>
-                                <h4 className="fs-20 mb-1 text-truncate">
+                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
+                            <div className="flex-grow-1">
+                                <h4 className="fs-20 mb-1">
                                     Document Audit History
                                 </h4>
-                                <nav aria-label="breadcrumb" className="d-block w-100 overflow-hidden">
-                                    <ol className="breadcrumb m-0 flex-nowrap text-truncate">
+                                <nav aria-label="breadcrumb">
+                                    <ol className="breadcrumb m-0" style={{ flexWrap: 'wrap' }}>
                                         <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                                         <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
                                         <li className="breadcrumb-item"><Link to={`/intake-review/funding-application/${id}`}>Details</Link></li>
-                                        <li className="breadcrumb-item active text-truncate" aria-current="page" style={{ display: 'flex', alignItems: 'center' }}>
+                                        <li className="breadcrumb-item active" aria-current="page">
                                             Audit History 
                                             {isLoading ? (
                                                 <span className="badge bg-primary-subtle ms-2 skeleton-line" style={{ width: '80px', height: '20px', display: 'inline-block' }}></span>
@@ -103,7 +103,7 @@ export default function FundingApplicationAuditHistory() {
                                     </ol>
                                 </nav>
                             </div>
-                            <div className="page-actions flex-shrink-0 mt-3 mt-sm-0">
+                            <div className="page-actions d-flex align-items-center gap-2 mt-2 mt-lg-0 align-self-start">
                                 <Link to={`/intake-review/funding-application/${id}`} className="btn btn-outline-secondary w-lg waves-effect">
                                     <i className="ri-arrow-left-line align-middle me-1"></i> Back
                                 </Link>
