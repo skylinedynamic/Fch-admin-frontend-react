@@ -71,10 +71,7 @@ export default function FundingApplicationAuditHistory() {
         }
     };
 
-    const formatDateTime = (dateString: string) => {
-        if (!dateString) return '';
-        return dateString; // Backend now provides perfectly formatted timezone-aware string
-    };
+
 
     return (
         <div className="page-content page-content-fit employee-section">
@@ -170,7 +167,7 @@ export default function FundingApplicationAuditHistory() {
                                             className="p-datatable-sm p-datatable-hoverable-rows"
                                             emptyMessage="No history found."
                                         >
-                                        <Column field="downloaded_at" header="Date" body={(rowData) => <span className="text-nowrap">{formatDateTime(rowData.downloaded_at)}</span>} sortable></Column>
+                                        <Column field="downloaded_at" header="Date" body={(rowData) => <span className="text-nowrap">{rowData.downloaded_at}</span>} sortable></Column>
                                         <Column field="user_name" header="Name" body={(rowData) => (
                                             <span className="text-nowrap">
                                                 {rowData.user_name || 'System'} <span className="text-muted">({rowData.user_type ? rowData.user_type.charAt(0).toUpperCase() + rowData.user_type.slice(1) : 'System'})</span>
@@ -213,7 +210,7 @@ export default function FundingApplicationAuditHistory() {
                                 </div>
                                 <div className="col-md-6">
                                     <h6 className="text-muted fs-13 mb-1">Date</h6>
-                                    <p className="fw-medium mb-0 fs-14">{formatDateTime(selectedRow.downloaded_at)}</p>
+                                    <p className="fw-medium mb-0 fs-14">{selectedRow.downloaded_at}</p>
                                 </div>
                             </div>
 
@@ -338,7 +335,7 @@ export default function FundingApplicationAuditHistory() {
                                         </div>
                                         <div className="col-md-4">
                                             <span className="text-muted fs-12 d-block">Signature Timestamp</span>
-                                            <span className="fw-medium fs-13">{(app as any).signature_data.signed_at ? new Date((app as any).signature_data.signed_at).toLocaleString() : 'N/A'}</span>
+                                            <span className="fw-medium fs-13">{(app as any).signature_data?.signed_at || 'N/A'}</span>
                                         </div>
                                         <div className="col-md-12">
                                             <span className="text-muted fs-12 d-block">User Agent</span>
