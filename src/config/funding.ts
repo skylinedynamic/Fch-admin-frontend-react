@@ -61,12 +61,12 @@ export const FUNDING_STATUS_OPTIONS: SelectOption[] = [
 ];
 
 export const FUNDING_REVIEW_STATUS = {
-    PENDING: 'Pending',
-    IN_PROGRESS: 'In Progress',
-    APPROVED: 'Approved',
-    ACCEPTED: 'Accepted',
-    REJECTED: 'Rejected',
-    CANCELED: 'Canceled'
+    PENDING: 'Funding Request Pending',
+    IN_PROGRESS: 'Request In Progress',
+    APPROVED: 'Application Request Approved',
+    ACCEPTED: 'Funding Request Accepted',
+    REJECTED: 'Request Rejected',
+    CANCELED: 'Request Canceled'
 };
 
 export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
@@ -79,12 +79,12 @@ export const FUNDING_REVIEW_STATUS_COLORS: Record<string, string> = {
 };
 
 export const FUNDING_REVIEW_STATUS_OPTIONS = [
-    { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
-    { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
-    { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
-    { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
-    { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
-    { label: 'Canceled', value: FUNDING_REVIEW_STATUS.CANCELED }
+    { label: 'Funding Request Pending', value: FUNDING_REVIEW_STATUS.PENDING },
+    { label: 'Funding Request Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
+    { label: 'Request In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
+    { label: 'Application Request Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
+    { label: 'Request Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
+    { label: 'Request Canceled', value: FUNDING_REVIEW_STATUS.CANCELED }
 ];
 
 export const FUNDING_CATEGORY_OPTIONS: SelectOption[] = [
@@ -290,33 +290,33 @@ export const FUNDING_REVIEW_TIMELINE_STEPS = [
     },
     {
         key: FUNDING_REVIEW_STATUS.PENDING,
-        label: 'Pending',
+        label: FUNDING_REVIEW_STATUS.PENDING,
         icon: 'ri-time-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.ACCEPTED,
-        label: 'Accepted',
+        label: FUNDING_REVIEW_STATUS.ACCEPTED,
         icon: 'ri-checkbox-circle-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.IN_PROGRESS,
-        label: 'In Progress',
+        label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
         subtext: 'Under Review',
         icon: 'ri-user-3-fill',
     },
     {
         key: FUNDING_REVIEW_STATUS.APPROVED,
-        label: 'Approved',
+        label: FUNDING_REVIEW_STATUS.APPROVED,
         icon: 'ri-user-follow-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.REJECTED,
-        label: 'Rejected',
+        label: FUNDING_REVIEW_STATUS.REJECTED,
         icon: 'ri-user-unfollow-line',
     },
     {
         key: FUNDING_REVIEW_STATUS.CANCELED,
-        label: 'Canceled',
+        label: FUNDING_REVIEW_STATUS.CANCELED,
         icon: 'ri-stop-circle-line',
     },
 ];

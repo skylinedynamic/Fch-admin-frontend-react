@@ -151,10 +151,6 @@ export default function FundingRequestDetail() {
 
     const getStatusBadge = (status: string) => {
         const styles = getExactStatusStyles(status);
-        const displayStatus = status === FUNDING_REVIEW_STATUS.IN_PROGRESS ? 'In Progress' :
-            status === FUNDING_REVIEW_STATUS.REJECTED ? 'Rejected' :
-                status === FUNDING_REVIEW_STATUS.CANCELED ? 'Canceled' :
-                    status === 'PENDING' ? 'Pending' : status;
 
         return (
             <span
@@ -165,7 +161,7 @@ export default function FundingRequestDetail() {
                     border: `1px solid ${styles.border}`
                 }}
             >
-                {displayStatus}
+                {status}
             </span>
         );
     };
