@@ -144,6 +144,7 @@ export default function FundingApplicationDetails() {
                 toast.success('Status updated successfully');
                 setShowConfirmModal(false);
                 setNotesError('');
+                window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
                 setShowConfirmModal(false);
@@ -174,6 +175,7 @@ export default function FundingApplicationDetails() {
                 toast.success('Status updated successfully');
                 setShowFundedModal(false);
                 setNotesError('');
+                window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
                 if (error?.response?.data?.errors) {
@@ -279,6 +281,7 @@ export default function FundingApplicationDetails() {
         saveCommissionMutation.mutate(payload, {
             onSuccess: () => {
                 toast.success('Commission saved successfully');
+                window.dispatchEvent(new Event('refreshActivities'));
             },
             onError: (error: any) => {
                 if (error?.response?.data?.errors) {
@@ -1266,6 +1269,7 @@ export default function FundingApplicationDetails() {
                     }
                     // Refresh data after download to show latest activity logs
                     queryClient.invalidateQueries({ queryKey: queryKeys.application.detail(id || '') });
+                    window.dispatchEvent(new Event('refreshActivities'));
                 }}
             />
         </>

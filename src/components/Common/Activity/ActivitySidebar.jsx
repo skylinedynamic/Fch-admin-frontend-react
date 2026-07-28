@@ -12,7 +12,8 @@ import {
     LOG_TYPE_LEAD_CREATE, LOG_TYPE_LEAD_UPDATE, LOG_TYPE_LEAD_DETAILS_UPDATE, LOG_TYPE_LEAD_CONTACT_UPDATE,
     LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
     LOG_TYPE_TASK_VERIFICATION, ENTITY_TYPE_FUNDING_REQUEST, ENTITY_TYPE_FUNDING_APPLICATION,
-    LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE
+    LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
+    LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE
 } from '../../../config/appConfig';
 
 import { getFileIconConfig } from '../../../utils/fileIconConfig';
@@ -271,19 +272,19 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
+                        <span className="text-dark d-block">{prefix}</span>
                         <span className="d-inline-flex align-items-center flex-wrap gap-1 mt-1">
-                            <span style={{ color: getStatusColor(oldStatus), fontWeight: '700' }}>{oldStatus}</span>
+                            <span style={{ color: getStatusColor(oldStatus) }}>{oldStatus}</span>
                             <span className="text-muted px-1" style={{ fontSize: '11px' }}>→</span>
-                            <span style={{ color: getStatusColor(newStatus), fontWeight: '700' }}>{newStatus}</span>
+                            <span style={{ color: getStatusColor(newStatus) }}>{newStatus}</span>
                         </span>
                     </span>
                 );
             } else {
                 return (
                     <span className="d-block" style={{ lineHeight: '1.4' }}>
-                        <span className="text-dark fw-bold d-block">{prefix}</span>
-                        <span style={{ color: getStatusColor(statusPart), fontWeight: '700' }} className="d-block mt-1">{statusPart}</span>
+                        <span className="text-dark d-block">{prefix}</span>
+                        <span style={{ color: getStatusColor(statusPart) }} className="d-block mt-1">{statusPart}</span>
                     </span>
                 );
             }
@@ -338,9 +339,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             LOG_TYPE_INVOICE_CREATE,
             LOG_TYPE_DOCUMENT_UPLOAD,
             LOG_TYPE_CHECKLIST_UPDATE,
+            LOG_TYPE_PARTNER_CONTACT_UPDATE, LOG_TYPE_FUNDING_REQUEST_CREATE, 
+            LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE, LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE,
             LOG_TYPE_APPOINTMENT_CREATE, LOG_TYPE_APPOINTMENT_UPDATE, LOG_TYPE_APPOINTMENT_DELETE,
             LOG_TYPE_TASK_VERIFICATION,
-            LOG_TYPE_FUNDING_REQUEST_CREATE, LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE,
         ];
         if (commIconTypes.includes(logTypeRaw) && config) {
             return (
@@ -490,7 +492,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
 
                                                                 {/* Content */}
                                                                 <div className="flex-grow-1 ms-3">
-                                                                    <h6 className="fs-13 mb-0 fw-bold text-dark d-flex align-items-center flex-wrap gap-2">
+                                                                    <h6 className="fs-13 mb-0 text-dark d-flex align-items-center flex-wrap gap-2">
                                                                         <span>{getTitle(activity)}</span>
                                                                         {activity.properties?.visible_to_host == 1 && <span className="badge bg-danger-subtle text-danger" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to FCH</span>}
                                                                         {activity.properties?.visible_to_borrower == 1 && <span className="badge bg-info-subtle text-info" style={{ fontSize: '10px', padding: '3px 6px' }}>Send to Borrower</span>}

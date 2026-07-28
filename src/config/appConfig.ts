@@ -42,6 +42,7 @@ export const LOG_TYPE_LEAD_DETAILS_UPDATE = 'lead_details_update';
 export const LOG_TYPE_LEAD_CONTACT_UPDATE = 'lead_contact_update';
 export const LOG_TYPE_FUNDING_REQUEST_CREATE = 'funding_request_create';
 export const LOG_TYPE_FUNDING_REQUEST_STATUS_UPDATE = 'funding_request_status_update';
+export const LOG_TYPE_FUNDING_APPLICATION_STATUS_UPDATE = 'funding_application_status_update';
 export const LOG_TYPE_BATCH_PROCESS = 'batch_process';
 export const LOG_TYPE_INVOICE_CREATE = 'invoice_create';
 export const LOG_TYPE_USER_CREATE = 'user_create';
