@@ -13,6 +13,7 @@ export default function FundingApplicationAuditHistory() {
     const { id } = useParams();
     const { data: apiResponse, isLoading: isLoadingApp, error } = useFundingApplicationDetails(id || '');
     const [selectedRow, setSelectedRow] = useState<any>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     
     // Pagination state
@@ -183,7 +184,7 @@ export default function FundingApplicationAuditHistory() {
                                         )} sortable></Column>
                                         <Column field="ip_address" header="IP Address" sortable></Column>
                                         <Column header="Action" body={(rowData) => (
-                                            <button className="btn btn-sm btn-primary px-2 d-inline-flex align-items-center gap-1" onClick={() => setSelectedRow(rowData)} title="View Details">
+                                            <button className="btn btn-sm btn-primary px-2 d-inline-flex align-items-center gap-1" onClick={() => { setSelectedRow(rowData); setIsModalOpen(true); }} title="View Details">
                                                 <i className="ri-eye-line align-middle"></i> Details
                                             </button>
                                         )}></Column>
@@ -196,8 +197,8 @@ export default function FundingApplicationAuditHistory() {
                 </div>
             </div>
 
-            <Modal isOpen={selectedRow !== null} toggle={() => setSelectedRow(null)} size="lg" centered>
-                <ModalHeader toggle={() => setSelectedRow(null)} className="fs-16">Download Activity Details</ModalHeader>
+            <Modal isOpen={isModalOpen} toggle={() => setIsModalOpen(false)} onClosed={() => setSelectedRow(null)} size="lg" centered modalClassName="flip">
+                <ModalHeader toggle={() => setIsModalOpen(false)} className="fs-16">Download Activity Details</ModalHeader>
                 <ModalBody>
                     {selectedRow && (
                         <div>
@@ -442,7 +443,7 @@ export default function FundingApplicationAuditHistory() {
                             </span>
                         )}
                     </div>
-                    <button className="btn btn-light" onClick={() => setSelectedRow(null)}>Close</button>
+                    <button className="btn btn-light" onClick={() => setIsModalOpen(false)}>Close</button>
                 </ModalFooter>
             </Modal>
         </div>
