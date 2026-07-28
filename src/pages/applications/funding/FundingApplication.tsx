@@ -263,15 +263,18 @@ export default function FundingApplication() {
                                             />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <Calendar
-                                                value={dateRange}
-                                                onChange={(e: any) => setDateRange(e.value)}
-                                                selectionMode="range"
-                                                readOnlyInput
-                                                placeholder="Select Date Range"
-                                                className="w-100 employee-filter-dropdown"
-                                                showIcon
-                                            />
+                                            <div className="search-box">
+                                                <Calendar
+                                                    value={dateRange}
+                                                    onChange={(e: any) => setDateRange(e.value)}
+                                                    selectionMode="range"
+                                                    readOnlyInput
+                                                    placeholder="Select Date Range"
+                                                    className="w-100"
+                                                    inputClassName="form-control search bg-light border-light"
+                                                />
+                                                <i className="ri-calendar-2-line search-icon"></i>
+                                            </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">
