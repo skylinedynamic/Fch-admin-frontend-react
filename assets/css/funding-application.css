@@ -1,0 +1,38 @@
+/* DownloadPdfModal Custom Styles */
+.pdf-modal-dialog { max-width: 880px !important; }
+.pdf-modal-content { font-family: 'Inter', sans-serif; }
+.pdf-modal-header-icon { width: 48px; height: 48px; background: var(--primary-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.pdf-modal-close-btn { background-size: 0.8em; }
+.pdf-modal-section-title { font-size: 11px; letter-spacing: 1px; color: var(--primary-color); }
+.pdf-modal-card { background: #f8fafc; border: 1px solid #e2e8f0; }
+.pdf-modal-icon-dark { width: 44px; height: 44px; background: var(--primary-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.pdf-modal-badge { background: #f1f5f9; color: var(--primary-color); font-size: 11px; padding: 5px 12px; font-weight: 600; }
+.pdf-modal-desc-text { color: #64748b; }
+.pdf-modal-card-success { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.pdf-modal-icon-success { width: 44px; height: 44px; background: #16a34a; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.pdf-modal-badge-success { background: #f0fdf4; color: #16a34a; font-size: 11px; padding: 5px 12px; font-weight: 600; }
+.pdf-modal-notice-icon-bg { width: 36px; height: 36px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.pdf-modal-notice-icon { color: #4338ca; font-size: 16px; }
+.pdf-modal-security-pw { cursor: pointer; background: #f8fafc; border: 1px solid #e2e8f0; transition: all 0.2s ease; }
+.pdf-modal-security-pw.active { border-color: var(--primary-color); }
+.pdf-modal-security-nopw { cursor: pointer; background: #f0fdf4; border: 1px solid #bbf7d0; transition: all 0.2s ease; }
+.pdf-modal-security-nopw.active { border-color: var(--primary-color); }
+
+.pdf-modal-radio-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; flex-shrink: 0; transition: all 0.2s ease; }
+.pdf-modal-radio-dot.active { border: 7px solid var(--primary-color); }
+.pdf-modal-indent { padding-left: 34px; }
+.pdf-modal-pw-wrapper { border: 1px solid var(--primary-color); border-radius: 0; overflow: hidden; height: 46px; }
+.pdf-modal-pw-icon { color: var(--primary-color); }
+.pdf-modal-pw-input { color: var(--primary-color); border-radius: 0; font-weight: 500; }
+.pdf-modal-pw-btn { border: none !important; border-left: 1px solid var(--primary-color) !important; color: var(--primary-color) !important; border-radius: 0 !important; transition: all 0.2s ease; z-index: 1 !important; }
+.pdf-modal-pw-btn i { transition: all 0.2s ease; }
+.pdf-modal-pw-btn:hover, .pdf-modal-pw-btn:focus { background-color: transparent !important; border: none !important; border-left: 1px solid var(--primary-color) !important; box-shadow: none !important; z-index: 1 !important; color: var(--primary-color) !important; }
+
+.pdf-modal-pw-btn:active { opacity: 0.7; }
+.pdf-modal-footer { border-top: 1px solid transparent; flex-wrap: wrap !important; }
+.pdf-modal-download-actions { flex-wrap: wrap !important; justify-content: flex-end !important; }
+.pdf-modal-btn-cancel { background: #f1f5f9 !important; border: 1px solid transparent !important; color: #334155 !important; font-size: 14px; border-radius: 4px !important; }
+.pdf-modal-btn-cancel:hover { background: #e2e8f0 !important; color: #334155 !important; }
+.pdf-modal-btn-download { background: var(--primary-color) !important; border: 1px solid var(--primary-color) !important; color: #ffffff !important; font-size: 14px; border-radius: 4px !important; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06); }
+.pdf-modal-btn-download:hover { background: var(--primary-color) !important; color: #ffffff !important; border-color: var(--primary-color) !important; }
+.pdf-modal-warning-text { color: #F06548; }

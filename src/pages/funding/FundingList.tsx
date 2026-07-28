@@ -316,18 +316,16 @@ export default function FundingList() {
                                     ) : (
                                         <div className="row g-3 mb-2">
                                             <div className="col-xxl-3 col-sm-12">
-                                                <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
-                                                    <span className="input-group-text bg-transparent border-0 pe-1">
-                                                        <i className="ri-search-line text-muted opacity-75"></i>
-                                                    </span>
+                                                <div className="search-box h-100">
                                                     <input
                                                         type="text"
-                                                        className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
+                                                        className="form-control search bg-light border-light h-100"
                                                         placeholder="Search here..."
                                                         value={searchText}
                                                         onChange={(e) => setSearchText(e.target.value)}
                                                         onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                     />
+                                                    <i className="ri-search-line search-icon"></i>
                                                 </div>
                                             </div>
                                             <div className="col-xxl-2 col-sm-6">

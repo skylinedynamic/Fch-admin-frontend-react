@@ -7,7 +7,7 @@ import GlobalModals from '../Common/Modals/GlobalModals.jsx'
 
 export default function Layout() {
   return (
-    <div id="layout-wrapper">
+    <div id="layout-wrapper" style={{ overflow: 'visible' }}>
       <Header />
       <Sidebar />
       <div
@@ -16,7 +16,7 @@ export default function Layout() {
           document.body.classList.remove('vertical-sidebar-enable')
         }}
       />
-      <div className="main-content">
+      <div className="main-content" style={{ overflow: 'visible' }}>
         <Outlet />
         <Footer />
       </div>

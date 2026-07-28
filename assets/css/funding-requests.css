@@ -102,7 +102,7 @@
 
 /* ReviewProgressCard Auto-extracted inline styles */
 .fr-progress-style-3c782fa9 { width: 48px; height: 48px; background: #f8fafc; color: #1e293b; margin-right: 16px; }
-.fr-progress-style-3ded13b6 { color: #0f172a; }
+.fr-progress-style-3ded13b6 { color: var(--primary-color); }
 .fr-progress-style-484b8e41 { width: 76px; height: 76px; }
 .fr-progress-style-386cac71 { transform: rotate(-90deg); }
 .fr-progress-style-67aa90fa { font-size: 15px; line-height: 1; }

@@ -13,6 +13,8 @@ import StatisticsCard from '../../../components/Common/StatisticsCard';
 import StatisticsCardSkeleton from '../../../components/Common/StatisticsCardSkeleton';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { FundingApplication as FundingApplicationType, ApplicationQueryParams, ApplicationStatistics } from '../../../modules/application/types';
+import { downloadFundingApplication, downloadFundingSignature } from '../../../modules/application/services';
+import { toast } from 'react-toastify';
 
 import { APPLICATION_STATUS_OPTIONS, FUNDING_APPLICATION_STATUS_CLASS_MAP } from '../../../config/borrower';
 
@@ -188,7 +190,6 @@ export default function FundingApplication() {
     };
 
 
-
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
@@ -262,15 +263,18 @@ export default function FundingApplication() {
                                             />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <Calendar
-                                                value={dateRange}
-                                                onChange={(e: any) => setDateRange(e.value)}
-                                                selectionMode="range"
-                                                readOnlyInput
-                                                placeholder="Select Date Range"
-                                                className="w-100 employee-filter-dropdown"
-                                                showIcon
-                                            />
+                                            <div className="search-box">
+                                                <Calendar
+                                                    value={dateRange}
+                                                    onChange={(e: any) => setDateRange(e.value)}
+                                                    selectionMode="range"
+                                                    readOnlyInput
+                                                    placeholder="Select Date Range"
+                                                    className="w-100"
+                                                    inputClassName="form-control search bg-light border-light"
+                                                />
+                                                <i className="ri-calendar-2-line search-icon"></i>
+                                            </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">

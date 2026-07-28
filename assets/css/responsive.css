@@ -1930,3 +1930,30 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
     gap: 12px !important;
   }
 }
+
+/* ============================================================
+   PDF MODAL FOOTER RESPONSIVE
+   ============================================================ */
+@media (max-width: 991.98px) {
+    .pdf-modal-footer {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    
+    .pdf-modal-footer .pdf-modal-download-actions {
+        display: contents !important;
+    }
+    
+    .pdf-modal-footer .pdf-modal-btn-cancel,
+    .pdf-modal-footer .pdf-modal-download-actions .pdf-modal-btn-download {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        white-space: normal !important;
+        padding: 8px 4px !important;
+        font-size: 13px !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+}

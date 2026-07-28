@@ -13,7 +13,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { toast } from 'react-toastify';
 import TableLoader from '../../../components/Loader/TableLoader';
 import { formatCurrency } from '../../../utils/helper';
-import { FUNDING_REVIEW_STATUS } from '../../../config/funding';
+import { FUNDING_REVIEW_STATUS, FUNDING_REVIEW_STATUS_OPTIONS } from '../../../config/funding';
 
 export default function FundingSequence() {
     const { hasPermission } = usePermissions();
@@ -135,14 +135,17 @@ export default function FundingSequence() {
 
 
 
+    const statusClassMap: Record<string, string> = {
+        [FUNDING_REVIEW_STATUS.APPROVED]: 'bg-success-subtle text-success',
+        [FUNDING_REVIEW_STATUS.ACCEPTED]: 'bg-info-subtle text-info',
+        [FUNDING_REVIEW_STATUS.REJECTED]: 'bg-danger-subtle text-danger',
+        [FUNDING_REVIEW_STATUS.CANCELED]: 'bg-secondary-subtle text-secondary',
+        [FUNDING_REVIEW_STATUS.PENDING]: 'bg-warning-subtle text-warning',
+        [FUNDING_REVIEW_STATUS.IN_PROGRESS]: 'bg-primary-subtle text-primary',
+    };
+
     const statusBodyTemplate = (rowData: any) => {
-        let className = 'bg-secondary-subtle text-secondary';
-        if (rowData.status === FUNDING_REVIEW_STATUS.APPROVED) className = 'bg-success-subtle text-success';
-        if (rowData.status === FUNDING_REVIEW_STATUS.ACCEPTED) className = 'bg-info-subtle text-info';
-        if (rowData.status === FUNDING_REVIEW_STATUS.REJECTED) className = 'bg-danger-subtle text-danger';
-        if (rowData.status === FUNDING_REVIEW_STATUS.CANCELED) className = 'bg-secondary-subtle text-secondary';
-        if (rowData.status === FUNDING_REVIEW_STATUS.PENDING) className = 'bg-warning-subtle text-warning';
-        if (rowData.status === FUNDING_REVIEW_STATUS.IN_PROGRESS) className = 'bg-primary-subtle text-primary';
+        const className = statusClassMap[rowData.status] || 'bg-secondary-subtle text-secondary';
         return <span className={`badge ${className} text-uppercase`}>{rowData.status}</span>;
     };
 
@@ -161,14 +164,7 @@ export default function FundingSequence() {
         );
     };
 
-    const statusOptions = [
-        { label: 'Pending', value: FUNDING_REVIEW_STATUS.PENDING },
-        { label: 'Accepted', value: FUNDING_REVIEW_STATUS.ACCEPTED },
-        { label: 'In Progress', value: FUNDING_REVIEW_STATUS.IN_PROGRESS },
-        { label: 'Approved', value: FUNDING_REVIEW_STATUS.APPROVED },
-        { label: 'Rejected', value: FUNDING_REVIEW_STATUS.REJECTED },
-        { label: 'Canceled', value: FUNDING_REVIEW_STATUS.CANCELED },
-    ];
+
 
     return (
         <div className="page-content page-content-fit">
@@ -196,57 +192,51 @@ export default function FundingSequence() {
                                 <form className="table-filter" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
                                     <div className="row g-3 mb-3">
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <div className="input-group vendor-filter-input-group border-0 transition-all shadow-sm-hover bg-light rounded" style={{ backgroundColor: '#f3f6f9' }}>
-                                                <span className="input-group-text bg-transparent border-0 pe-1">
-                                                    <i className="ri-search-line text-muted opacity-75"></i>
-                                                </span>
+                                            <div className="search-box">
                                                 <input
                                                     type="text"
-                                                    className="form-control bg-transparent border-0 ps-1 fs-13 shadow-none"
+                                                    className="form-control search bg-light border-light"
                                                     placeholder="Search borrower or partner name..."
                                                     value={searchText}
                                                     onChange={(e) => setSearchText(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                                                 />
+                                                <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <div className="h-100">
-                                                <Dropdown
-                                                    value={selectedStatus}
-                                                    options={[{ label: 'All Status', value: '' }, ...statusOptions.map(o => ({ ...o, value: o.value || '' }))]}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    onChange={(e) => setSelectedStatus(e.value)}
-                                                    filter
-                                                    filterBy="label"
-                                                    placeholder="All Status"
-                                                    className="w-100 bg-light border-light h-100"
-                                                />
-                                            </div>
+                                            <Dropdown
+                                                value={selectedStatus}
+                                                options={[{ label: 'All Status', value: '' }, ...FUNDING_REVIEW_STATUS_OPTIONS]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                onChange={(e) => setSelectedStatus(e.value)}
+                                                filter
+                                                filterBy="label"
+                                                placeholder="All Status"
+                                                className="w-100 employee-filter-dropdown"
+                                            />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
-                                            <div className="h-100">
-                                                <Dropdown
-                                                    value={selectedFundingSequenceId}
-                                                    options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    onChange={(e) => setSelectedFundingSequenceId(e.value)}
-                                                    filter
-                                                    filterBy="label"
-                                                    placeholder="All Funding Types"
-                                                    className="w-100 bg-light border-light h-100"
-                                                />
-                                            </div>
+                                            <Dropdown
+                                                value={selectedFundingSequenceId}
+                                                options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                onChange={(e) => setSelectedFundingSequenceId(e.value)}
+                                                filter
+                                                filterBy="label"
+                                                placeholder="All Funding Types"
+                                                className="w-100 employee-filter-dropdown"
+                                            />
                                         </div>
                                         <div className="col-lg-3 col-md-6 col-12">
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill align-bottom"></i> Filters
+                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn-clear flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line align-bottom"></i> Clear
+                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
                                                 </button>
                                             </div>
                                         </div>

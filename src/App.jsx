@@ -40,6 +40,7 @@ import FundingApplication from './pages/applications/funding/FundingApplication.
 import FundingApplicationDetails from './pages/applications/funding/FundingApplicationDetails.tsx';
 import FundingSequence from './pages/applications/funding-request/FundingSequence.tsx';
 import FundingRequestDetail from './pages/applications/funding-request/FundingRequestDetail.tsx';
+import FundingApplicationAuditHistory from './pages/applications/funding/FundingApplicationAuditHistory.tsx';
 import Settings from './pages/settings/Settings.tsx';
 import ChangeRequests from './pages/applications/change-requests/ChangeRequests.tsx';
 import CreditProfileRequests from './pages/applications/credit-profile-requests/CreditProfileRequests.tsx';
@@ -327,6 +328,7 @@ export default function App() {
               <Route element={<PermissionRoute permission="view funding application" />}>
                 <Route path="funding-application" element={<FundingApplication />} />
                 <Route path="funding-application/:id" element={<FundingApplicationDetails />} />
+                <Route path="funding-application/:id/audit-history" element={<FundingApplicationAuditHistory />} />
               </Route>
 
               <Route element={<PermissionRoute permission="view funding request" />}>
