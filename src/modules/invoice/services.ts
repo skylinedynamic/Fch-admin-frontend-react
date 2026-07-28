@@ -31,6 +31,11 @@ export const processUnifiedPayment = async (payload: { payment_token: string; in
     return response.data;
 };
 
+export const initiateSubscriptionPayment = async (payload: { invoice_id: number | string }) => {
+    const response = await apiClient.post('/payment/initiate-subscription', payload);
+    return response.data;
+};
+
 export const downloadInvoice = async (id: number | string) => {
     const { data } = await apiClient.get(`/common/invoices/${id}/download`);
     return data;
