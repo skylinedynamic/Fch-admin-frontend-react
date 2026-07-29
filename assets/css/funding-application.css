@@ -36,3 +36,83 @@
 .pdf-modal-btn-download { background: var(--primary-color) !important; border: 1px solid var(--primary-color) !important; color: #ffffff !important; font-size: 14px; border-radius: 4px !important; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06); }
 .pdf-modal-btn-download:hover { background: var(--primary-color) !important; color: #ffffff !important; border-color: var(--primary-color) !important; }
 .pdf-modal-warning-text { color: #F06548; }
+
+.pdf-download-missing-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0f172a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  width: max-content;
+  max-width: 300px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+  text-align: left;
+  border: 1px solid rgba(226, 232, 240, 0.08);
+  pointer-events: none;
+}
+
+.pdf-download-missing-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #E2E8F0;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.pdf-download-missing-tooltip-desc {
+  font-size: 12.5px;
+  color: #94A3B8;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.pdf-download-missing-tooltip-divider {
+  height: 1px;
+  background-color: rgba(226, 232, 240, 0.08);
+  margin: 10px 0;
+}
+
+.pdf-download-missing-tooltip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdf-download-missing-tooltip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #E2E8F0;
+}
+
+.pdf-download-missing-tooltip-item-text {
+  line-height: 1.3;
+}
+
+.pdf-download-missing-tooltip-item-label {
+  font-weight: 600;
+}
+
+.pdf-download-missing-tooltip-item-value {
+  color: #94A3B8;
+  font-size: 11.5px;
+  display: block;
+  margin-top: 2px;
+}
+
+.pdf-download-missing-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #0f172a;
+}
