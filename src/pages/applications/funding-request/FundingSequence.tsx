@@ -185,13 +185,13 @@ export default function FundingSequence() {
                     </div>
                 </div>
 
-                <div className="row row-table-fit mt-3">
-                    <div className="col-lg-12">
-                        <div className="card">
+                <div className="row row-table-fit funding-sequnce-section">
+                    <div className="col-12">
+                        <div className="card shadow-sm border-0">
                             <div className="card-body">
-                                <form className="table-filter" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
-                                    <div className="row g-3 mb-3">
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                <form className="table-filter mb-1" onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}>
+                                    <div className="row g-3 mb-2">
+                                        <div className="col-xxl-5 col-sm-12">
                                             <div className="search-box">
                                                 <input
                                                     type="text"
@@ -204,39 +204,43 @@ export default function FundingSequence() {
                                                 <i className="ri-search-line search-icon"></i>
                                             </div>
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
-                                            <Dropdown
-                                                value={selectedStatus}
-                                                options={[{ label: 'All Status', value: '' }, ...FUNDING_REVIEW_STATUS_OPTIONS]}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                onChange={(e) => setSelectedStatus(e.value)}
-                                                filter
-                                                filterBy="label"
-                                                placeholder="All Status"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
+                                        <div className="col-xxl-2 col-sm-6">
+                                            <div>
+                                                <Dropdown
+                                                    value={selectedStatus}
+                                                    options={[{ label: 'All Status', value: '' }, ...FUNDING_REVIEW_STATUS_OPTIONS.map(o => ({ ...o, value: o.value || '' }))]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(e) => setSelectedStatus(e.value)}
+                                                    filter
+                                                    filterBy="label"
+                                                    placeholder="All Status"
+                                                    className="w-100 bg-light border-light"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
-                                            <Dropdown
-                                                value={selectedFundingSequenceId}
-                                                options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                onChange={(e) => setSelectedFundingSequenceId(e.value)}
-                                                filter
-                                                filterBy="label"
-                                                placeholder="All Funding Types"
-                                                className="w-100 employee-filter-dropdown"
-                                            />
+                                        <div className="col-xxl-2 col-sm-6">
+                                            <div className="h-100">
+                                                <Dropdown
+                                                    value={selectedFundingSequenceId}
+                                                    options={[{ label: 'All Funding Types', value: '' }, ...fundingTypes.map((ft: any) => ({ label: ft.name, value: ft.id }))]}
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    onChange={(e) => setSelectedFundingSequenceId(e.value)}
+                                                    filter
+                                                    filterBy="label"
+                                                    placeholder="All Funding Types"
+                                                    className="w-100 bg-light border-light"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="col-lg-3 col-md-6 col-12">
+                                        <div className="col-xxl-3 col-sm-12">
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
-                                                    <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+                                                <button type="button" className="btn btn-warning flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleApplyFilters}>
+                                                    <i className="ri-equalizer-fill align-bottom"></i> Filters
                                                 </button>
-                                                <button type="button" className="btn btn-default flex-grow-1" onClick={handleClearFilters}>
-                                                    <i className="ri-close-line me-1 align-bottom"></i> Clear
+                                                <button type="button" className="btn-clear flex-grow-1 fs-13 d-flex align-items-center justify-content-center gap-2" onClick={handleClearFilters}>
+                                                    <i className="ri-close-line align-bottom"></i> Clear
                                                 </button>
                                             </div>
                                         </div>

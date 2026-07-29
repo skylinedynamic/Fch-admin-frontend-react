@@ -20,7 +20,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '85px' }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '85px', disableSticky = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -398,9 +398,9 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
     };
 
     return (
-        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={{ height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
+        <div className="card activity-sidebar-card d-flex flex-column w-100 mb-0 shadow-sm border-0" style={disableSticky ? { border: 'none', flexGrow: 1, minHeight: 0 } : { height: `calc(100vh - ${stickyTopOffset})`, position: 'sticky', top: stickyTopOffset, zIndex: 10 }}>
             {/* Card Header */}
-            <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={{ position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
+            <div className="card-header align-items-center justify-content-between d-flex flex-column flex-sm-row gap-2 flex-shrink-0" style={disableSticky ? { backgroundColor: '#fff' } : { position: 'sticky', top: '0', zIndex: 11, backgroundColor: '#fff' }}>
                 <h5 className="card-title mb-0 fs-16">
                     <i className="ri-history-line align-middle me-2"></i>Activity
                 </h5>
@@ -429,10 +429,10 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
             </div>
 
             {/* Card Body with Scrollbar */}
-            <div className="card-body p-0 pb-4 d-flex flex-column" style={{ minHeight: 0 }}>
+            <div className="card-body p-0 pb-4 d-flex flex-column" style={disableSticky ? { minHeight: 0, flexGrow: 1 } : { minHeight: 0 }}>
                 <div
                     className="activity-scroll-container flex-grow-1"
-                    style={{
+                    style={disableSticky ? { padding: '12px 16px', overflowY: 'auto', overflowX: 'hidden', minHeight: 0 } : {
                         overflowY: 'auto',
                         overflowX: 'hidden',
                         padding: '12px 16px',

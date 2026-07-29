@@ -336,7 +336,7 @@ export const FUNDING_REVIEW_TIMELINE_STEPS = [
 
 export const FUNDING_REVIEW_GUIDELINE_CARDS = [
     {
-        label: 'Pending',
+        label: FUNDING_REVIEW_STATUS.PENDING,
         desc: 'Request submitted and waiting for review.',
         bg: '#f0fdf4',
         border: '#bbf7d0',
@@ -344,7 +344,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-time-line'
     },
     {
-        label: 'Accepted',
+        label: FUNDING_REVIEW_STATUS.ACCEPTED,
         desc: 'Review completed successfully.',
         bg: '#fefce8',
         border: '#fef08a',
@@ -352,7 +352,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-check-line'
     },
     {
-        label: 'In Progress',
+        label: FUNDING_REVIEW_STATUS.IN_PROGRESS,
         desc: 'Admin can reviewing the request.',
         bg: '#eff6ff',
         border: '#bfdbfe',
@@ -360,7 +360,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-shield-user-fill'
     },
     {
-        label: 'Approved',
+        label: FUNDING_REVIEW_STATUS.APPROVED,
         desc: 'Borrower can start funding application.',
         bg: '#f0fdf4',
         border: '#bbf7d0',
@@ -368,7 +368,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-check-line'
     },
     {
-        label: 'Rejected',
+        label: FUNDING_REVIEW_STATUS.REJECTED,
         desc: 'Request declined missing information.',
         bg: '#fef2f2',
         border: '#fecaca',
@@ -376,7 +376,7 @@ export const FUNDING_REVIEW_GUIDELINE_CARDS = [
         icon: 'ri-close-line'
     },
     {
-        label: 'Canceled',
+        label: FUNDING_REVIEW_STATUS.CANCELED,
         desc: 'Request has been canceled.',
         bg: '#fef2f2',
         border: '#fecaca',

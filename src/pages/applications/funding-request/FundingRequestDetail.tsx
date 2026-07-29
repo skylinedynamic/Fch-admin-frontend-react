@@ -583,7 +583,8 @@ export default function FundingRequestDetail() {
 
                         </div>
                         {/* Right sticky column — pure CSS sticky */}
-                        <div className="col-lg-4 d-flex flex-column gap-3 fr-style-30509dca">
+                        <div className="col-lg-4" style={{ position: 'sticky', top: '133px', height: 'calc(100vh - 133px)', zIndex: 10 }}>
+                            <div className="d-flex flex-column gap-3 fr-style-30509dca" style={{ height: '100%', paddingBottom: '20px' }}>
                             {isHost && (
                                 <div className="card shadow-sm border-0 mb-0 rounded-3 flex-shrink-0">
                                     <div className="card-header bg-white border-0 pt-4 pb-0">
@@ -602,26 +603,27 @@ export default function FundingRequestDetail() {
                                         {/* Status Row */}
                                         <div className="mb-3">
                                             <label className="form-label fs-13 fw-semibold mb-2">Status</label>
-                                            <div className="d-flex gap-2 align-items-center">
-                                                <div className="flex-grow-1 fr-status-dropdown-wrap">
+                                            <div className="d-flex gap-2" style={{ height: '42px' }}>
+                                                <div className="flex-grow-1" style={{ minWidth: 0, height: '100%' }}>
                                                     <Dropdown
                                                         value={selectedStatus}
                                                         options={FUNDING_REVIEW_STATUS_OPTIONS}
                                                         onChange={(e) => setSelectedStatus(e.value)}
-                                                        className={`w-100 d-flex align-items-center fr-status-dropdown ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
+                                                        className={`w-100 d-flex align-items-center h-100 ${selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED ? 'bg-light border-0' : ''}`}
                                                         placeholder="Select a Status"
                                                         pt={{
-                                                            root: { className: 'w-100 rounded fr-status-dropdown-root' },
-                                                            input: { className: 'fs-14 py-0 d-flex align-items-center fr-status-dropdown-input' },
+                                                            root: { className: 'w-100 rounded h-100' },
+                                                            input: { className: 'fs-14 d-flex align-items-center h-100 text-truncate', style: { minHeight: '42px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', paddingRight: '2rem' } },
                                                             item: { className: 'fs-14' }
                                                         }}
                                                     />
                                                 </div>
+                                                
                                                 {/* Show Confirm button in same row ONLY if not Rejected */}
                                                 {selectedStatus !== FUNDING_REVIEW_STATUS.REJECTED && (
                                                     <button
                                                         type="button"
-                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-2 px-4 fr-style-59ff025d fr-confirm-btn"
+                                                        className="btn btn-dark fw-medium waves-effect waves-light d-flex align-items-center justify-content-center gap-1 px-3 h-100 flex-shrink-0"
                                                         onClick={() => {
                                                             if (selectedStatus === FUNDING_REVIEW_STATUS.APPROVED) {
                                                                 if (isHost && assignedLenderIds.length === 0) {
@@ -637,7 +639,7 @@ export default function FundingRequestDetail() {
                                                         }}
                                                         disabled={updateStatusMutation.isPending}
                                                     >
-                                                        Confirm <i className="ri-arrow-right-line ms-1"></i>
+                                                        Confirm <i className="ri-arrow-right-line"></i>
                                                     </button>
                                                 )}
                                             </div>
@@ -695,7 +697,9 @@ export default function FundingRequestDetail() {
                                 partnerEmail={review.partner?.user?.email || review.partner?.email}
                                 hostEmail={review.host_email}
                                 isHost={isHost}
+                                disableSticky={true}
                             />
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -748,17 +752,27 @@ export default function FundingRequestDetail() {
                                     </div>
 
                                     {/* Status Transition */}
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <span className="fs-13 text-muted fw-medium">Status Change</span>
-                                        <div className="d-flex align-items-center gap-2">
+                                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                        <span className="fs-13 text-muted fw-medium flex-shrink-0">Status Change</span>
+                                        <div className="d-flex align-items-center justify-content-sm-end flex-wrap gap-2 text-start text-sm-end">
                                             <span
-                                                className="badge fs-12 bg-primary-subtle text-primary px-2 py-1"
+                                                className="badge fs-12 px-2 py-1"
+                                                style={{
+                                                    backgroundColor: getExactStatusStyles(review?.status || '').bg,
+                                                    color: getExactStatusStyles(review?.status || '').iconBg,
+                                                    border: `1px solid ${getExactStatusStyles(review?.status || '').border}`
+                                                }}
                                             >
                                                 {review?.status === 'IN_PROGRESS' ? 'In Progress' : review?.status}
                                             </span>
                                             <i className="ri-arrow-right-line text-muted fs-12"></i>
                                             <span
-                                                className="badge fs-12 bg-dark text-white px-2 py-1"
+                                                className="badge fs-12 px-2 py-1"
+                                                style={{
+                                                    backgroundColor: getExactStatusStyles(selectedStatus).bg,
+                                                    color: getExactStatusStyles(selectedStatus).iconBg,
+                                                    border: `1px solid ${getExactStatusStyles(selectedStatus).border}`
+                                                }}
                                             >
                                                 {selectedStatus === 'IN_PROGRESS' ? 'In Progress' : selectedStatus}
                                             </span>
@@ -797,7 +811,7 @@ export default function FundingRequestDetail() {
                                     {updateStatusMutation.isPending ? (
                                         <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...</>
                                     ) : (
-                                        <><i className="ri-checkbox-circle-line me-1"></i> {selectedStatus === FUNDING_REVIEW_STATUS.APPROVED && !isHost ? "Approve" : `Confirm ${selectedStatus}`}</>
+                                        <><i className="ri-checkbox-circle-line me-1"></i> Confirm</>
                                     )}
                                 </button>
                             </div>

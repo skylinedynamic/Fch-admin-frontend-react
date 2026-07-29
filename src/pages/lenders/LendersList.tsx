@@ -172,7 +172,7 @@ export default function LendersList() {
                 </div>
 
                 {/* Filters and Table */}
-                <div className="row row-table-fit mt-3">
+                <div className="row row-table-fit lenders-account-section">
                     <div className="col-lg-12">
                         <div className="card shadow-sm border-0">
                             <div className="card-body">
