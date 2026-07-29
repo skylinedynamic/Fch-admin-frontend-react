@@ -4972,9 +4972,9 @@ File: Custom Css File
   justify-content: center;
   background-color: #fafbfc;
   border: 1px solid #eef0f4;
-  width: 100px;
-  height: 64px;
-  padding: 10px;
+  width: 120px;
+  height: 76px;
+  padding: 8px;
   border-radius: 4px;
   flex-shrink: 0;
   overflow: hidden;
@@ -5010,7 +5010,7 @@ File: Custom Css File
 
 .pps-card-name {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #101828;
   letter-spacing: -0.01em;
 }
@@ -5049,8 +5049,8 @@ File: Custom Css File
 }
 
 .pps-skeleton-logo {
-  width: 100px;
-  height: 64px;
+  width: 120px;
+  height: 76px;
   border-radius: 4px;
   background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
   background-size: 200% 100%;
@@ -5093,8 +5093,8 @@ File: Custom Css File
 }
 
 .ppm-gateway-logo-img {
-  max-height: 28px;
-  max-width: 100px;
+  max-height: 48px;
+  max-width: 150px;
   object-fit: contain;
 }
 

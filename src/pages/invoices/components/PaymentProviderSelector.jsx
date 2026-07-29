@@ -37,9 +37,6 @@ function ProviderCard({ provider, onClick }) {
       </div>
       <div className="pps-card-body">
         <span className="pps-card-name">{provider.name}</span>
-        {provider.is_default && (
-          <span className="pps-card-badge">Default</span>
-        )}
       </div>
     </div>
   );

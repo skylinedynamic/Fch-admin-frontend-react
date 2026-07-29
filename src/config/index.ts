@@ -39,4 +39,5 @@ export { APP_CONFIG } from './appConfig';
 
 // Score Calculation labels
 export { STATIC_TIER_LABELS, SCORE_CATEGORIES, SCORE_MODELS, SCORE_FACTORS, type ScoreTierLabel } from './capitalAccessOptions';
-
+// Payment descriptions
+export { getProviderDesc } from './paymentDesc';

@@ -156,9 +156,9 @@ export default function InvoicePaymentModal({ show, onHide, onSuccess, invoice }
                   />
                 ) : (
                   <div className="text-center py-4">
-                    <div className="alert alert-info mb-0">
+                    <div className="alert alert-success mb-0 text-start">
                       <i className="ri-information-line me-2"></i>
-                      Payment through <strong>{selectedProvider.name}</strong> is not yet supported in this interface.
+                      Please complete your payment via <strong>{selectedProvider.name}</strong>. An admin or partner will manually verify and record your payment status in the system.
                     </div>
                   </div>
                 )}

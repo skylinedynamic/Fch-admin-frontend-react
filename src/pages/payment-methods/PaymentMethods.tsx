@@ -5,47 +5,7 @@ import { fetchAdminProviders, updateAdminProvider } from '../../modules/payment-
 import type { PaymentProvider } from '../../modules/payment-method';
 import PaymentMethodsLoader from '../../components/Loader/PaymentMethodsLoader';
 import PaymentMethodStatusModal from '../../components/Common/Modals/PaymentMethodStatusModal';
-
-// Static image imports
-import stripeLogo from '../../../assets/images/payment_provider/stripe_logo.png';
-import squareLogo from '../../../assets/images/payment_provider/square.png';
-import ecryptLogo from '../../../assets/images/payment_provider/ecrypt.png';
-import authorizeLogo from '../../../assets/images/payment_provider/authorization.png';
-
-const getProviderLogo = (name: string, slug?: string): string => {
-    const key = (slug || name || '').toLowerCase().replace(/[\s\.]/g, '');
-    switch (key) {
-        case 'stripe':
-            return stripeLogo;
-        case 'square':
-            return squareLogo;
-        case 'ecrypt':
-            return ecryptLogo;
-        case 'authorize':
-        case 'authorizenet':
-        case 'authorization':
-            return authorizeLogo;
-        default:
-            return '';
-    }
-};
-
-const getProviderDesc = (name: string): string => {
-    switch (name?.toLowerCase()) {
-        case 'stripe':
-            return 'Processes credit cards, digital wallets, Apple Pay, and Google Pay transactions.';
-        case 'square':
-            return 'Accepts digital terminal configurations, point-of-sale card payments, and online checkout integrations.';
-        case 'ecrypt':
-            return 'Manages high-volume ACH transfers, direct bank routing, and secure electronic check processing.';
-        case 'authorize.net':
-        case 'authorizenet':
-        case 'authorize':
-            return 'Provides secure card processing, merchant accounts, and advanced fraud detection suites.';
-        default:
-            return 'Configure merchant options and status parameters for checkout integrations.';
-    }
-};
+import { getProviderDesc } from '../../config';
 
 export default function PaymentMethods(): React.JSX.Element {
     const [providers, setProviders] = useState<PaymentProvider[]>([]);
@@ -157,7 +117,7 @@ export default function PaymentMethods(): React.JSX.Element {
                                             <div className="d-flex align-items-center gap-4 flex-wrap">
                                                 <div className="payment-method-logo-box">
                                                     <img 
-                                                        src={getProviderLogo(provider.name, provider.slug)} 
+                                                        src={provider.logo || ''} 
                                                         alt={`${provider.name} Logo`} 
                                                         className="payment-method-logo-img"
                                                     />
