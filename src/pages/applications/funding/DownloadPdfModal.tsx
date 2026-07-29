@@ -8,11 +8,34 @@ import { PASSWORD_GENERATE_CHARS, PASSWORD_GENERATE_LENGTH } from "../../../conf
 
 interface DownloadPdfModalProps {
   show: boolean;
+  hasSignature?: boolean;
   onHide: () => void;
   onDownload: (type: "application" | "signature" | "both", password?: string) => Promise<void>;
 }
 
-export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadPdfModalProps) {
+const MissingRequirementTooltip = ({ missingItem }: { missingItem: string }) => (
+  <div className="pdf-download-missing-tooltip">
+    <div className="pdf-download-missing-tooltip-header">
+      <i className="ri-error-warning-fill" style={{ color: '#EF4444', fontSize: '18px' }}></i>
+      <span>Failed Requirements</span>
+    </div>
+    <div className="pdf-download-missing-tooltip-desc">
+      The borrower has not yet signed this application. Therefore, the signature certificate cannot be downloaded.
+    </div>
+    <div className="pdf-download-missing-tooltip-divider"></div>
+    <div className="pdf-download-missing-tooltip-list">
+      <div className="pdf-download-missing-tooltip-item">
+        <i className="ri-close-circle-fill" style={{ color: '#EF4444', marginTop: '2px' }}></i>
+        <div className="pdf-download-missing-tooltip-item-text">
+          <span className="pdf-download-missing-tooltip-item-label">Signature Certificate: </span>
+          <span className="pdf-download-missing-tooltip-item-value">{missingItem}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export default function DownloadPdfModal({ show, hasSignature = true, onHide, onDownload }: DownloadPdfModalProps) {
   const [withPassword, setWithPassword] = useState(true);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(true);
@@ -20,6 +43,7 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
   const [isCopied, setIsCopied] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingDownloadType, setPendingDownloadType] = useState<"application" | "signature" | "both" | null>(null);
+  const [hoveredBtn, setHoveredBtn] = useState<'signature' | 'both' | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalInstanceRef = useRef<Modal | null>(null);
@@ -190,17 +214,23 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 </div>
 
                 {/* Signature Card */}
-                <div className="d-flex flex-column p-3 mb-3 pdf-modal-card-success">
+                <div className={`d-flex flex-column p-3 mb-3 ${hasSignature ? 'pdf-modal-card-success' : 'pdf-modal-card'}`} style={!hasSignature ? { backgroundColor: '#fef2f2', border: '1px dashed #fca5a5' } : {}}>
                   <div className="d-flex gap-3">
-                    <div className="flex-shrink-0 pdf-modal-icon-success">
-                      <i className="ri-shield-check-line text-white fs-20"></i>
+                    <div className={`flex-shrink-0 ${hasSignature ? 'pdf-modal-icon-success' : 'd-flex align-items-center justify-content-center rounded-circle'}`} style={!hasSignature ? { width: '40px', height: '40px', backgroundColor: '#fee2e2' } : {}}>
+                      <i className={`${hasSignature ? 'ri-shield-check-line text-white' : 'ri-error-warning-fill text-danger'} fs-20`}></i>
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between align-items-start mb-1">
-                        <div className="fw-bold fs-14 text-dark">Signature Certificate</div>
-                        <span className="badge rounded-1 pdf-modal-badge-success">PDF</span>
+                        <div className={`fw-bold fs-14 ${hasSignature ? 'text-dark' : 'text-danger'}`}>Signature Certificate</div>
+                        {hasSignature ? (
+                          <span className="badge rounded-1 pdf-modal-badge-success">PDF</span>
+                        ) : (
+                          <span className="badge rounded-1 bg-danger text-white">Not Set</span>
+                        )}
                       </div>
-                      <div className="text-muted fs-13 lh-sm pdf-modal-desc-text">Electronic signature and consent certificate for the applicant.</div>
+                      <div className={`fs-13 lh-sm pdf-modal-desc-text ${hasSignature ? 'text-muted' : 'text-danger'}`} style={!hasSignature ? { opacity: 0.8 } : {}}>
+                        {hasSignature ? 'Electronic signature and consent certificate for the applicant.' : 'Signature has not been collected yet.'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -310,22 +340,44 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
                 )}
                 Download Application
               </button>
-              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('signature')} disabled={loadingType !== null}>
-                {loadingType === 'signature' ? (
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                ) : (
-                  <i className="ri-file-download-line fs-16"></i>
+              <span 
+                className="d-inline-block position-relative" 
+                tabIndex={0} 
+                style={!hasSignature ? { cursor: 'not-allowed' } : {}}
+                onMouseEnter={() => !hasSignature && setHoveredBtn('signature')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                {hoveredBtn === 'signature' && !hasSignature && (
+                  <MissingRequirementTooltip missingItem="The borrower has not signed this application yet." />
                 )}
-                Download Signature Certificate
-              </button>
-              <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('both')} disabled={loadingType !== null}>
-                {loadingType === 'both' ? (
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                ) : (
-                  <i className="ri-download-2-line fs-16"></i>
+                <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('signature')} disabled={loadingType !== null || !hasSignature} style={!hasSignature ? { pointerEvents: 'none' } : {}}>
+                  {loadingType === 'signature' ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <i className="ri-file-download-line fs-16"></i>
+                  )}
+                  Download Signature Certificate
+                </button>
+              </span>
+              <span 
+                className="d-inline-block position-relative" 
+                tabIndex={0} 
+                style={!hasSignature ? { cursor: 'not-allowed' } : {}}
+                onMouseEnter={() => !hasSignature && setHoveredBtn('both')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                {hoveredBtn === 'both' && !hasSignature && (
+                  <MissingRequirementTooltip missingItem="The ZIP package requires a signed application." />
                 )}
-                Download All ZIP
-              </button>
+                <button type="button" className="btn px-3 py-2 fw-semibold text-white d-flex align-items-center justify-content-center gap-2 pdf-modal-btn-download text-nowrap" onClick={() => handleDownload('both')} disabled={loadingType !== null || !hasSignature} style={!hasSignature ? { pointerEvents: 'none' } : {}}>
+                  {loadingType === 'both' ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <i className="ri-download-2-line fs-16"></i>
+                  )}
+                  Download All ZIP
+                </button>
+              </span>
             </div>
           </div>
 
@@ -338,7 +390,9 @@ export default function DownloadPdfModal({ show, onHide, onDownload }: DownloadP
        <div className="modal-backdrop fade show" style={{ zIndex: 1059 }}></div>
     )}
 
-    {/* Custom Confirm Modal */}
+
+
+      {/* Custom Confirm Modal */}
     <div className="modal fade zoomIn" id="confirmPdfModal" ref={confirmModalRef} tabIndex={-1} aria-hidden="true" style={{ zIndex: 1060 }}>
       <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
         <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px', overflow: 'hidden' }}>

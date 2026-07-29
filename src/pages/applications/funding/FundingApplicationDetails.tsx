@@ -1257,6 +1257,7 @@ export default function FundingApplicationDetails() {
             />
 
             <DownloadPdfModal
+                hasSignature={!!((app as any)?.signature_data) || !!(app?.certificates && app.certificates.length > 0)}
                 show={showDownloadModal}
                 onHide={() => setShowDownloadModal(false)}
                 onDownload={async (type, password) => {
