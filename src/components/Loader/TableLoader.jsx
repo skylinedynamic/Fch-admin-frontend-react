@@ -23,7 +23,7 @@ export default function TableLoader({ rows = 8, columns = 6, showHeader = true }
             <Column
                 key={i}
                 body={skeletonBody}
-                header={headerBody()}
+                header={headerBody}
                 style={col.style}
                 headerStyle={col.headerStyle}
             />
@@ -33,7 +33,7 @@ export default function TableLoader({ rows = 8, columns = 6, showHeader = true }
             <Column
                 key={i}
                 body={skeletonBody}
-                header={headerBody()}
+                header={headerBody}
             />
         ));
     }
