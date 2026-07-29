@@ -1827,13 +1827,16 @@ header#page-topbar .navbar-header .logo-sm .sidebar-logo-sm {
 }
 
 @media (max-width: 767.98px) {
-    .table-filter .btn {
-        width: 100%;
+    .table-filter .btn,
+    .table-filter .btn-clear {
+        flex: 1 1 0 !important; /* Force equal width */
         margin-top: 5px;
+        min-width: 0 !important;
     }
 
     .table-filter .d-flex.gap-2 {
-        flex-direction: column;
+        flex-direction: row !important;
+        width: 100%;
     }
 }
 
