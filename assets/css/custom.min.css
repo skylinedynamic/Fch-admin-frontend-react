@@ -3069,7 +3069,6 @@
 
 .page-content-fit .p-datatable-table {
   border-collapse: separate !important;
-  min-width: max-content !important;
 }
 
 /* Sticky header fix for PrimeReact in flex layout */
