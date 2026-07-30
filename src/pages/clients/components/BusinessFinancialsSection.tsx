@@ -105,7 +105,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
             // Unformat values before sending to API
             const apiData = { ...formData };
             delete apiData.years_in_business; // Do not send computed read-only field to API
-            
+
             CURRENCY_FIELDS.forEach(field => {
                 if (apiData[field]) {
                     apiData[field] = unformatNumber(apiData[field]);
@@ -358,7 +358,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     <div className="">
                         <label className="form-label">Years in Business</label>
                         <div className="form-control bg-light" style={{ minHeight: '38.39px', display: 'flex', alignItems: 'center' }}>
-                            {formData?.years_in_business || 'Not Set'}
+                            {formData?.years_in_business || 'Not set to business start date'}
                         </div>
                     </div>
                 </div>
