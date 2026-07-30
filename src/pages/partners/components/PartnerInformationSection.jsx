@@ -9,7 +9,7 @@ import { PAYMENT_TYPE_OPTIONS, ENROLLMENT_TYPES, PARTNER_TYPES } from '../../../
 import { formatPhoneNumber } from '../../../utils/formatters';
 import avatarDefault from "../../../../assets/images/users/avatar-1.jpg";
 import { FileManagerModal } from '../../../components/FileManagerModal/FileManagerModal';
-import InstallmentDetailsModal from './InstallmentDetailsModal';
+import InstallmentDetailsModal from '../../../components/Common/Payment/InstallmentDetailsModal';
 import { toast } from 'react-toastify';
 import { getCountryPhoneInfo } from '../../../config/locations';
 import { buildStorageUrl } from '../../../utils/imageHelpers';
@@ -756,7 +756,7 @@ export default function PartnerInformationSection({
                                                                 <>
                                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                                         <span className="info-label">
-                                                                            <i className="ri-hand-coin-line text-success"></i> Total Loan Amount:
+                                                                            <i className="ri-hand-coin-line text-success"></i> Total Enrollment Amount:
                                                                         </span>
                                                                         <span className="info-value fw-semibold">
                                                                             ${Number(formData.enrollment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -790,18 +790,6 @@ export default function PartnerInformationSection({
                                                                             ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                        <span className="info-label">
-                                                                            <i className="ri-calculator-line text-success"></i> Remaining Balance:
-                                                                        </span>
-                                                                        <span className="info-value fw-semibold">
-                                                                            ${Number(
-                                                                                formData.installment_remaining_balance !== undefined && formData.installment_remaining_balance !== ''
-                                                                                    ? formData.installment_remaining_balance
-                                                                                    : ((Number(formData.enrollment_amount) || 0) - (Number(formData.installment_down_payment) || 0))
-                                                                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                        </span>
-                                                                    </div>
                                                                     <div className="d-flex gap-2 mt-3">
                                                                         <button
                                                                             type="button"
@@ -818,7 +806,6 @@ export default function PartnerInformationSection({
                                                                                 handleInputChange({ target: { name: 'installment_down_payment', value: 0 } });
                                                                                 handleInputChange({ target: { name: 'installment_months', value: 0 } });
                                                                                 handleInputChange({ target: { name: 'installment_monthly_amount', value: 0 } });
-                                                                                handleInputChange({ target: { name: 'installment_remaining_balance', value: 0 } });
                                                                                 handleInputChange({ target: { name: 'enrollment_type', value: '' } });
                                                                                 handleInputChange({ target: { name: 'enrollment_amount', value: '' } });
                                                                                 handleInputChange({ target: { name: 'monthly_platform_fee', value: '' } });
@@ -982,7 +969,6 @@ export default function PartnerInformationSection({
                     handleInputChange({ target: { name: 'installment_down_payment', value: data.downPayment } });
                     handleInputChange({ target: { name: 'installment_months', value: data.months } });
                     handleInputChange({ target: { name: 'installment_monthly_amount', value: data.monthlyPayment } });
-                    handleInputChange({ target: { name: 'installment_remaining_balance', value: data.remainingBalance } });
                     handleInputChange({ target: { name: 'installment_applied', value: true } });
                 }}
             />

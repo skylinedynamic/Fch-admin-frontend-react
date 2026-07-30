@@ -15,7 +15,10 @@ export const SUBSCRIPTION_STATUS_COLORS: { [key: string]: string } = {
     [STATUS_PENDING]: 'warning'
 };
 
+export const ENROLLMENT_TYPE_ONE_TIME = 'One Time Payment';
+export const ENROLLMENT_TYPE_INSTALLMENT = 'Installment';
+
 export const ENROLLMENT_TYPE_OPTIONS = [
-    { label: 'One Time Payment', value: 'One Time Payment' },
-    { label: 'Installment', value: 'Installment' }
+    { label: ENROLLMENT_TYPE_ONE_TIME, value: ENROLLMENT_TYPE_ONE_TIME },
+    { label: ENROLLMENT_TYPE_INSTALLMENT, value: ENROLLMENT_TYPE_INSTALLMENT }
 ];

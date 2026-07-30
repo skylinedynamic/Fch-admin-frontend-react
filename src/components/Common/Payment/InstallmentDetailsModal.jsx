@@ -144,7 +144,7 @@ export default function InstallmentDetailsModal({
                             <div className="col-lg-7 idm-inputs-panel">
 
                                 <div className="idm-form-group">
-                                    <label className="idm-label">Total Loan Amount</label>
+                                    <label className="idm-label">Total Enrollment Amount</label>
                                     <div className="idm-input-wrap">
                                         <span className="idm-prefix">$</span>
                                         <input
@@ -236,10 +236,6 @@ export default function InstallmentDetailsModal({
                                         <span className="idm-breakdown-key">Down Payment</span>
                                         <span className="idm-breakdown-val">${formatCurrency(numericDown)}</span>
                                     </div>
-                                    <div className="idm-breakdown-row">
-                                        <span className="idm-breakdown-key">Remaining Balance</span>
-                                        <span className="idm-breakdown-val">${formatCurrency(remainingBalance)}</span>
-                                    </div>
                                     <div className="idm-breakdown-row idm-breakdown-row--total">
                                         <span className="idm-breakdown-key">Total Payable</span>
                                         <span className="idm-breakdown-val idm-breakdown-val--total">${formatCurrency(totalPayable)}</span>
@@ -270,7 +266,6 @@ export default function InstallmentDetailsModal({
                                             downPayment: numericDown,
                                             months,
                                             monthlyPayment: perMonthAmount,
-                                            remainingBalance
                                         });
                                     }
                                     onHide();

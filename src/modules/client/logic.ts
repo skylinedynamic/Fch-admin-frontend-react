@@ -1,5 +1,6 @@
 import type { Client, BorrowerPlan } from './types';
 import { locationData, getCountryPhoneInfo } from '../../config/locations';
+import { ENROLLMENT_TYPE_INSTALLMENT, ENROLLMENT_TYPE_ONE_TIME } from '../../config/subscriptionConfig';
 
 const normalizeDate = (dateStr: any): string | undefined => {
     if (!dateStr) return undefined;
@@ -99,16 +100,32 @@ export const mapClientPayload = (formData: Client, isHost: boolean, nonHostPlan?
         }
     }
 
-    payload.amount = amount;
-    payload.enrollment_payment = amount;
+    payload.enrollment_amount = Number(formData.enrollment_amount || amount || 0);
     payload.enrollment_type = enrollment_type;
-    payload.payment_amount = amount;
     payload.entity_type = 'Borrower';
     payload.is_partner_paying = !isHost && String(payload.plan_id) !== '5';
     payload.status = formData.status;
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
-    delete (payload as any).enrollment_amount;
+    // Strip legacy/unwanted fields
+    delete (payload as any).amount;
+    delete (payload as any).payment_amount;
+    delete (payload as any).enrollment_payment;
+    delete (payload as any).installment_applied;
+
+    const isInstallment = (enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+
+    if (!isInstallment) {
+        delete payload.installment_down_payment;
+        delete payload.installment_months;
+        delete payload.installment_monthly_amount;
+        delete payload.installment_remaining_balance;
+    } else {
+        payload.installment_remaining_balance = Math.max(0, Number(payload.enrollment_amount || 0) - Number(formData.installment_down_payment || 0));
+        payload.installment_down_payment = Number(formData.installment_down_payment || 0);
+        payload.installment_months = Number(formData.installment_months || 12);
+        payload.installment_monthly_amount = Number(formData.installment_monthly_amount || 0);
+    }
 
     return payload;
 };
@@ -156,19 +173,35 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
                 ? 0
                 : (typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount));
 
-            payload.amount = isNaN(amount) ? 0 : amount;
-            payload.payment_amount = payload.amount;
-            payload.enrollment_payment = payload.amount;
+            payload.enrollment_payment = isNaN(amount) ? 0 : amount;
         } else if (payload.plan_id) {
-            payload.amount = 0;
-            payload.payment_amount = 0;
             payload.enrollment_payment = 0;
         }
     }
 
     payload.country_code = getCountryPhoneInfo(formData.country)?.prefix || '';
 
-    delete (payload as any).enrollment_amount;
+    const isInstallment = (formData.enrollment_type || '').toString().toLowerCase() === ENROLLMENT_TYPE_INSTALLMENT.toLowerCase();
+
+    // Pass only enrollment_amount in payload, stripping other amount and temp properties
+    delete (payload as any).amount;
+    delete (payload as any).payment_amount;
+    delete (payload as any).enrollment_payment;
+    delete (payload as any).installment_applied;
+
+    payload.enrollment_amount = Number(formData.enrollment_amount || 0);
+
+    if (!isInstallment) {
+        delete payload.installment_down_payment;
+        delete payload.installment_months;
+        delete payload.installment_monthly_amount;
+        delete payload.installment_remaining_balance;
+    } else {
+        payload.installment_remaining_balance = Math.max(0, Number(formData.enrollment_amount || 0) - Number(formData.installment_down_payment || 0));
+        payload.installment_down_payment = Number(formData.installment_down_payment || 0);
+        payload.installment_months = Number(formData.installment_months || 12);
+        payload.installment_monthly_amount = Number(formData.installment_monthly_amount || 0);
+    }
 
     // 'current_selection' is a frontend-only placeholder used when the borrower already
     // has a plan that could not be matched to a known plan ID.
@@ -176,9 +209,7 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
     // entirely so the backend's exists:subscription_plans,id rule is never triggered.
     if (payload.plan_id === 'current_selection') {
         delete payload.plan_id;
-        delete payload.amount;
-        delete payload.payment_amount;
-        delete payload.enrollment_payment;
+        delete payload.enrollment_amount;
     }
 
     return payload;
@@ -189,7 +220,7 @@ export const mapClientUpdatePayload = (formData: Client, isHost: boolean): Parti
  */
 export const calculateEnrollmentDetails = (plan: BorrowerPlan, isHost: boolean) => {
     const installments = plan.total_installments_count ||
-        (plan.enrollment_type && plan.enrollment_type.includes('One Time') ? 1 : (isHost ? 6 : 1));
+        (plan.enrollment_type === ENROLLMENT_TYPE_ONE_TIME ? 1 : (isHost ? 6 : 1));
 
     const totalAmount = plan.total_amount || plan.payment_amount;
     const price = typeof plan.payment_amount === 'string' ? parseFloat(plan.payment_amount) : plan.payment_amount;
