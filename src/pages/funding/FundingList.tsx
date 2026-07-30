@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -261,44 +262,32 @@ export default function FundingList() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <div className="btn-group">
-                                    {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
-                                        <>
-                                            <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
-                                            <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <span className="visually-hidden">Toggle Dropdown</span>
-                                            </button>
-                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
-                                                        <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </>
-                                    ) : (
-                                        <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
-                                            <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Funding" 
+                    breadcrumbs={[{ label: 'Funding' }]} 
+                >
+                    <div className="btn-group">
+                        {Array.isArray(selectedFundings) && selectedFundings.length > 0 ? (
+                            <>
+                                <button type="button" className="btn bg-success text-white fw-medium">Actions</button>
+                                <button type="button" className="btn bg-success text-white fw-medium dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span className="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <button type="button" className="dropdown-item text-danger" onClick={openDeleteModal}>
+                                            <i className="ri-delete-bin-6-line me-1 align-bottom"></i> Delete Selected
+                                        </button>
+                                    </li>
+                                </ul>
+                            </>
+                        ) : (
+                            <Link to="/funding/create" className="btn btn-primary fw-medium waves-effect waves-light">
+                                <i className="ri-add-fill me-1 align-bottom"></i> Add Funding
+                            </Link>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row row-table-fit credit-account-section">
                     <div className="col-12">

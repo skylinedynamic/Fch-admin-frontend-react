@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams, useLocation, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PageHeader from '../common/PageHeader';
 import { getLead, createLeadDetails, updateLeadDetails, updateLeadContactInfo, convertLead, fetchGlobalStats } from '../../modules/leads/services';
 import { fetchReferralPartners } from '../../modules/contact/services';
 import { allUsers } from '../../modules/partner/services';
 import { usePermissions } from '../../lib/auth/usePermissions';
 import { useAuthStore } from '../../store/auth/authStore';
-import { Navigate } from 'react-router-dom';
 import ProfileMetricCard from '../../components/Common/ProfileMetricCard';
 import ProfileMetricCardSkeleton from '../../components/Common/ProfileMetricCardSkeleton';
 import EmailComposeModal from '../../components/Common/Modals/EmailComposeModal';
@@ -515,41 +515,33 @@ export default function LeadDetails() {
             <div className="page-content">
                 <div className="container-fluid">
                     {/* Page Title */}
-                    <div className="row page-subheader-sticky bg-body">
-                        <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                                <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Lead Profile</h4>
-                                    <nav aria-label="breadcrumb">
-                                        <ol className="breadcrumb m-0">
-                                            <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/leads">Leads</Link></li>
-                                            <li className="breadcrumb-item active">Lead Profile</li>
-                                        </ol>
-                                    </nav>
-                                </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                    {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && !formData.convert_to && (
-                                        <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={isSaving || isLoading}>
-                                            {isSaving ? (
-                                                <>
-                                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
-                                                </>
-                                            )}
-                                        </button>
+                    <PageHeader 
+                        title="Lead Profile" 
+                        breadcrumbs={[
+                            { label: 'Leads', path: '/leads' },
+                            { label: 'Lead Profile' }
+                        ]} 
+                    >
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            <Link to="/leads" className="btn btn-outline-secondary w-lg waves-effect">
+                                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                            </Link>
+                            {((id && hasPermission('update leads')) || (!id && hasPermission('create leads'))) && !formData.convert_to && (
+                                <button className="btn btn-primary w-lg waves-effect" onClick={handleSave} disabled={isSaving || isLoading}>
+                                    {isSaving ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ri-save-3-line align-middle me-1"></i> {id ? 'Update' : 'Save'}
+                                        </>
                                     )}
-                                </div>
-                            </div>
+                                </button>
+                            )}
                         </div>
-                    </div>
+                    </PageHeader>
 
                     {/* Metrics Strip */}
                     <div className="row pt-1">

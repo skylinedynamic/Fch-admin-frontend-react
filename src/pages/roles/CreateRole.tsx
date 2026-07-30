@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PageHeader from '../common/PageHeader'
 import { useGroupedPermissions, useCreateRole } from '../../modules/role/queries'
 import type { ApiModulePermissions } from '../../modules/role/types'
 import PermissionCardsLoader from '../../components/Loader/PermissionCardsLoader'
@@ -164,38 +165,31 @@ export default function CreateRole() {
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <div className="row pb-1 page-subheader-sticky bg-body">
-          <div className="col-12">
-            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Create Roles &amp; Permissions</h4>
-                <nav aria-label="breadcrumb" className="d-block">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">Create Roles &amp; Permissions</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
-                  <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                </button>
-                <button type="button" className="btn btn-primary w-lg" onClick={handleSave} disabled={creating}>
-                  {creating ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm align-middle me-2" aria-hidden="true"></span>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="ri-save-3-line align-middle me-1"></i> Save
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        <PageHeader 
+          title="Create Roles & Permissions" 
+          breadcrumbs={[
+            { label: 'Roles & Permissions', path: '/roles-permissions' },
+            { label: 'Create' }
+          ]} 
+        >
+          <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <button type="button" className="btn btn-outline-secondary w-lg" onClick={() => navigate(-1)}>
+              <i className="ri-arrow-left-line align-middle me-1"></i> Back
+            </button>
+            <button type="button" className="btn btn-primary w-lg" onClick={handleSave} disabled={creating}>
+              {creating ? (
+                <>
+                  <span className="spinner-border spinner-border-sm align-middle me-2" aria-hidden="true"></span>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <i className="ri-save-3-line align-middle me-1"></i> Save
+                </>
+              )}
+            </button>
           </div>
-        </div >
+        </PageHeader>
 
         <div className="row">
           <div className="col-xxl-12">

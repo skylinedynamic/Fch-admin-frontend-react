@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useResource } from '../../modules/resource/queries';
 import ResourceDetailLoader from '../../components/Loader/ResourceDetailLoader';
 import { Container, Row, Col, Card, CardHeader, CardBody, Button } from 'reactstrap';
@@ -28,27 +29,17 @@ const ResourceServiceDetail: React.FC = () => {
         <div className="page-content resource-detail-container">
             <Container fluid>
                 {/* Page Header & Breadcrumbs */}
-                <div className="row">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{resource.title}</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/resources">Resources</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{resource.title}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <Link to="/resources" className="btn btn-primary fw-medium">
-                                    <i className="ri-arrow-left-line me-1 align-bottom"></i> Back
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title={resource.title} 
+                    breadcrumbs={[
+                        { label: 'Resources', path: '/resources' },
+                        { label: resource.title }
+                    ]} 
+                >
+                    <Link to="/resources" className="btn btn-primary fw-medium">
+                        <i className="ri-arrow-left-line me-1 align-bottom"></i> Back
+                    </Link>
+                </PageHeader>
 
                 {/* Refined Symmetrical Briefing */}
                 <Card className="border-0 shadow-sm mb-4 rounded-0">

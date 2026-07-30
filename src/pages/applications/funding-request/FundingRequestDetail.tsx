@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { useFundingRequestDetails, useUpdateFundingRequestStatus, useAssignLenderToFundingRequest } from '../../../modules/application';
-import { toast } from 'react-toastify';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import FundingRequestDetailLoader from './components/FundingRequestDetailLoader';
 import { getFileConfig } from '../../../config/fileTypeConfig';
@@ -17,7 +17,7 @@ import { formatCurrency } from '../../../utils/helper';
 import ReviewProgressCard from './components/ReviewProgressCard';
 import LenderMatchStats from './components/LenderMatchStats';
 import '../../../../assets/css/funding-requests.css';
-
+import { toast } from 'react-toastify';
 
 import { useAuthStore } from '../../../store/auth/authStore';
 import { getDocStatusBadgeConfig } from '../../../utils/badgeHelper';
@@ -172,27 +172,19 @@ export default function FundingRequestDetail() {
 
                 <div className="container-fluid">
                     {/* Header */}
-                    <div className="row pb-1 page-subheader-sticky bg-body">
-                        <div className="col-12">
-                            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                                <div className="flex-grow-1">
-                                    <h4 className="fs-20 mb-1">Funding Request Details</h4>
-                                    <nav aria-label="breadcrumb">
-                                        <ol className="breadcrumb m-0">
-                                            <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                            <li className="breadcrumb-item"><Link to="/intake-review/funding-request">Funding Requests</Link></li>
-                                            <li className="breadcrumb-item active" aria-current="page">Details</li>
-                                        </ol>
-                                    </nav>
-                                </div>
-                                <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                    <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
-                                        <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                    </Link>
-                                </div>
-                            </div>
+                    <PageHeader 
+                        title="Funding Request Details" 
+                        breadcrumbs={[
+                            { label: 'Funding Requests', path: '/intake-review/funding-request' },
+                            { label: 'Details' }
+                        ]} 
+                    >
+                        <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                            <Link to="/intake-review/funding-request" className="btn btn-outline-secondary w-lg waves-effect">
+                                <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                            </Link>
                         </div>
-                    </div>
+                    </PageHeader>
                     <div className="row">
                         <div className="col-lg-8">
                             <ReviewProgressCard

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -169,21 +170,10 @@ export default function FundingSequence() {
     return (
         <div className="page-content page-content-fit">
             <div className="container-fluid">
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Funding Requests</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Funding Requests</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Funding Requests" 
+                    breadcrumbs={[{ label: 'Funding Requests' }]} 
+                />
 
                 <div className="row row-table-fit funding-sequnce-section">
                     <div className="col-12">

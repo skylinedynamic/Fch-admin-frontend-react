@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PageHeader from '../common/PageHeader'
 import { useRoles, useDeleteRole } from '../../modules/role/queries'
 import newDocImg from "../../../assets/images/new-document.png"
 import RolesGridLoader from '../../components/Loader/RolesGridLoader'
@@ -136,26 +137,18 @@ export default function RolesPermissions() {
   return (
     <div id="roles-permissions-page" className="page-content">
       <div className="container-fluid">
-        <div className="row pb-1 page-subheader-sticky bg-body">
-          <div className="col-12">
-            <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-              <div className="flex-grow-1">
-                <h4 className="fs-20 mb-1">Roles &amp; Permissions</h4>
-                <nav aria-label="breadcrumb" className="d-block">
-                  <ol className="breadcrumb m-0">
-                    <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">Roles &amp; Permissions</li>
-                  </ol>
-                </nav>
-              </div>
-              <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <Link to="/roles-permissions/create" className="btn btn-primary fw-medium w-100 w-lg-auto">
-                  <i className="ri-add-fill me-1 align-bottom"></i> Add Role
-                </Link>
-              </div>
-            </div>
+        <PageHeader 
+          title="Roles & Permissions" 
+          breadcrumbs={[
+            { label: 'Roles & Permissions' }
+          ]} 
+        >
+          <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <Link to="/roles-permissions/create" className="btn btn-primary fw-medium w-100 w-lg-auto">
+              <i className="ri-add-fill me-1 align-bottom"></i> Add Role
+            </Link>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="row">
           <div className="col-xxl-12">

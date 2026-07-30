@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import PageHeader from '../../../common/PageHeader';
 import { Dropdown } from 'primereact/dropdown';
 import { toast } from 'react-toastify';
 import FormLoader from '../../../../components/Loader/FormLoader';
@@ -143,46 +144,39 @@ export default function CreditAccountForm() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Page Header */}
-                <div className="row page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-18 fw-semibold mb-1">{isEditMode ? 'Edit Credit Account' : 'Add New Credit Account'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/" className="text-muted">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/credit-accounts" className="text-muted">Credit Accounts</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{isEditMode ? 'Edit' : 'Add'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/credit-accounts" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                {((isEditMode && hasPermission('update credit accounts')) || (!isEditMode && hasPermission('create credit accounts'))) && (
-                                    <button
-                                        type="submit"
-                                        form="credit-account-form"
-                                        className="btn btn-primary waves-effect"
-                                        disabled={loading || initialLoading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                                {isEditMode ? 'Updating...' : 'Saving...'}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Create Account'}
-                                            </>
-                                        )}
-                                    </button>
+                <PageHeader 
+                    title={isEditMode ? 'Edit Credit Account' : 'Add Credit Account'} 
+                    breadcrumbs={[
+                        { label: 'Credit Builder' },
+                        { label: 'Credit Accounts', path: '/credit-accounts' },
+                        { label: isEditMode ? 'Edit' : 'Create' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to="/credit-accounts" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        {(hasPermission('create credit accounts') || hasPermission('update credit accounts')) && (
+                            <button
+                                type="submit"
+                                form="credit-account-form"
+                                className="btn btn-primary w-lg waves-effect"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        {isEditMode ? 'Updating...' : 'Saving...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ri-save-line align-middle me-1"></i> {isEditMode ? 'Save Changes' : 'Create Account'}
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </button>
+                        )}
                     </div>
-                </div>
+                </PageHeader>
 
                 {initialLoading ? (
                     <div className="row">

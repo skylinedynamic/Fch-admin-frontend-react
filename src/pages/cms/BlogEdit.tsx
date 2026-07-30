@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
@@ -209,43 +210,36 @@ export default function BlogEdit() {
         <div className="page-content blog-edit-section">
             <div className="container-fluid">
                 {/* Page Header - Sticky Subheader Pattern */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">{id ? (blogLoading ? 'Loading Blog...' : 'Edit Blog') : 'Create Blog'}</h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item">CMS</li>
-                                        <li className="breadcrumb-item"><Link to="/cms/blogs">Blogs</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">{id ? 'Edit' : 'Create'}</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                                <Link to="/cms/blogs" className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                                <button
-                                    type="submit"
-                                    form="blog-form"
-                                    className="btn btn-primary w-lg waves-effect"
-                                    disabled={saveBlogMutation.isPending || blogLoading}
-                                >
-                                    {saveBlogMutation.isPending ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>{id ? 'Update' : 'Publish'}</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                {/* Page Header - Sticky Subheader Pattern */}
+                <PageHeader 
+                    title={id ? (blogLoading ? 'Loading Blog...' : 'Edit Blog') : 'Create Blog'} 
+                    breadcrumbs={[
+                        { label: 'CMS' },
+                        { label: 'Blogs', path: '/cms/blogs' },
+                        { label: id ? 'Edit' : 'Create' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to="/cms/blogs" className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
+                        <button
+                            type="submit"
+                            form="blog-form"
+                            className="btn btn-primary w-lg waves-effect"
+                            disabled={saveBlogMutation.isPending || blogLoading}
+                        >
+                            {saveBlogMutation.isPending ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>{id ? 'Update' : 'Publish'}</>
+                            )}
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 {id && blogLoading ? (
                     <CmsFormLoader showHeader={false} rowClassName="row mt-n3" />

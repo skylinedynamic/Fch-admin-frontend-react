@@ -20,7 +20,7 @@ import { getFileIconConfig } from '../../../utils/fileIconConfig';
 import { getAvatarConfig } from '../../../utils/activityIconConfig';
 import { FUNDING_REVIEW_STATUS_COLORS } from '../../../config/funding';
 
-export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '85px', disableSticky = false }) {
+export default function ActivitySidebar({ entityId, entityType, partnerId, borrowerEmail, partnerEmail, hostEmail, isHost, profileImage = null, loading: externalLoading = false, hideTopButtons = false, stickyTopOffset = '145px', disableSticky = false }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -145,7 +145,7 @@ export default function ActivitySidebar({ entityId, entityType, partnerId, borro
         };
         window.addEventListener('refreshActivities', handleRefresh);
         return () => window.removeEventListener('refreshActivities', handleRefresh);
-    }, [entityId, entityType]);
+    }, [entityId, entityType, partnerEmail, borrowerEmail, hostEmail]);
 
     useEffect(() => {
         window._activityEntityContext = {

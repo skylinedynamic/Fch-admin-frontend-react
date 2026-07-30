@@ -2784,6 +2784,13 @@
   overflow: hidden !important;
 }
 
+@media (min-width: 992px) {
+  .table-page-fit-active .page-subheader-sticky {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
 .page-content-fit {
   flex: 1 !important;
   display: flex !important;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DataTable } from '../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useGroupedResources, useDeleteResource } from '../../modules/resource/queries';
 import { ResourceItem } from '../../modules/resource/types';
 import DeleteConfirmationModal from '../../components/Common/Modals/DeleteConfirmationModal';
@@ -94,28 +95,16 @@ export default function ManageResources() {
     return (
         <div className="page-content">
             <div className="container-fluid">
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Manage Resources</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Resources</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="mt-0">
-                                <button className="btn btn-primary fw-medium" onClick={() => {
-                                    navigate('/resources/create', { state: { type: activeTab } });
-                                }}>
-                                    <i className="ri-add-line me-1 align-bottom"></i> Add Resource
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Manage Resources" 
+                    breadcrumbs={[{ label: 'Resources' }]} 
+                >
+                    <button className="btn btn-primary fw-medium" onClick={() => {
+                        navigate('/resources/create', { state: { type: activeTab } });
+                    }}>
+                        <i className="ri-add-line me-1 align-bottom"></i> Add Resource
+                    </button>
+                </PageHeader>
 
                 <div className="row mt-4">
                     <div className="col-12">

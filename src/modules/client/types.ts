@@ -105,6 +105,7 @@ export type ClientFilterParams = {
     assigned_user_id?: string | number; // Kept for compatibility if used elsewhere
     assign_id?: string | number; // Used in Clients.jsx
     current_tier?: string | number; // Used in Clients.jsx
+    status?: string;
 };
 
 export type ClientProfileStats = {

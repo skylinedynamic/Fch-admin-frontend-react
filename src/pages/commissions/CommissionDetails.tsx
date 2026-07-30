@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import PageHeader from '../common/PageHeader';
 import { useCommission, useProcessPayout } from '../../modules/commission/queries';
 import { toast } from 'react-toastify';
 import { CommissionDetail } from '../../modules/commission/types';
@@ -89,30 +90,22 @@ export default function CommissionDetails() {
         <div className="page-content">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row pb-1 page-subheader-sticky bg-body">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1 fw-semibold">Commission Details</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/commissions">Commissions</Link></li>
-                                        <li className="breadcrumb-item active">Details</li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-0">
-                                <button
-                                    onClick={() => navigate(-1)}
-                                    className="btn btn-soft-secondary waves-effect"
-                                >
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </button>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Commission Details" 
+                    breadcrumbs={[
+                        { label: 'Commissions', path: '/commissions' },
+                        { label: 'Details' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-0">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="btn btn-soft-secondary waves-effect"
+                        >
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </button>
                     </div>
-                </div>
+                </PageHeader>
 
                 {/* Key Metrics Stats Row */}
                 <div className="row mb-4">

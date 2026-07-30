@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../../common/PageHeader';
 import { DataTable } from '../../../components/Table/DataTableWrapper';
 import { Column } from 'primereact/column';
 import { Dropdown } from 'primereact/dropdown';
@@ -239,22 +240,10 @@ export default function PreQualificationApplication() {
         <div className="page-content page-content-fit">
             <div className="container-fluid">
                 {/* Header Section */}
-                <div className="row pb-1 mobile-sticky-header">
-                    <div className="col-12">
-                        <div className="d-flex align-items-center justify-content-between flex-row py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">Pre-Qualification Applications</h4>
-                                <nav aria-label="breadcrumb" className="d-block">
-                                    <ol className="breadcrumb m-0">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">Pre-Qualification Applications</li>
-                                    </ol>
-                                </nav>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
+                <PageHeader 
+                    title="Pre-Qualification Applications" 
+                    breadcrumbs={[{ label: 'Pre-Qualification Applications' }]} 
+                />
 
                 {/* Statistics Cards */}
                 <div className="row pre-qual-section">
@@ -320,18 +309,21 @@ export default function PreQualificationApplication() {
                                                 className="w-100 employee-filter-dropdown"
                                             />
                                         </div>
-                                        <div className={`col-xxl-${isHost ? '2' : '3'} col-sm-4`}>
-                                            <Calendar
-                                                value={dateRange}
-                                                onChange={(e: any) => setDateRange(e.value)}
-                                                selectionMode="range"
-                                                readOnlyInput
-                                                placeholder="Select Date Range"
-                                                className="w-100 employee-filter-dropdown"
-                                                showIcon
-                                            />
+                                        <div className={`col-xxl-${isHost ? '3' : '4'} col-sm-4`}>
+                                            <div className="search-box">
+                                                <Calendar
+                                                    value={dateRange}
+                                                    onChange={(e: any) => setDateRange(e.value)}
+                                                    selectionMode="range"
+                                                    readOnlyInput
+                                                    placeholder="Select Date Range"
+                                                    className="w-100"
+                                                    inputClassName="form-control search bg-light border-light"
+                                                />
+                                                <i className="ri-calendar-2-line search-icon"></i>
+                                            </div>
                                         </div>
-                                        <div className="col-xxl-3 col-sm-12">
+                                        <div className="col-xxl-2 col-sm-12">
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-warning flex-grow-1" onClick={handleApplyFilters}>
                                                     <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters

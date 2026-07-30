@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+import PageHeader from '../../common/PageHeader';
 import { useFundingApplicationDetails, useFundingApplicationAuditHistory } from '../../../modules/application/queries';
 import { downloadHistoryFile } from '../../../modules/application/services';
 import { FundingApplicationDetails as FundingApplicationDetailsType } from '../../../modules/application/types';
@@ -90,39 +91,20 @@ export default function FundingApplicationAuditHistory() {
         <div className="page-content page-content-fit employee-section">
             <div className="container-fluid">
                 {/* Header */}
-                <div className="row pb-1">
-                    <div className="col-12">
-                        <div className="d-flex align-items-lg-center flex-lg-row flex-column py-2">
-                            <div className="flex-grow-1">
-                                <h4 className="fs-20 mb-1">
-                                    Document Audit History
-                                </h4>
-                                <nav aria-label="breadcrumb">
-                                    <ol className="breadcrumb m-0 audit-history-breadcrumb">
-                                        <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
-                                        <li className="breadcrumb-item"><Link to="/intake-review/funding-application">Funding Applications</Link></li>
-                                        <li className="breadcrumb-item"><Link to={`/intake-review/funding-application/${id}`}>Details</Link></li>
-                                        <li className="breadcrumb-item active" aria-current="page">
-                                            Audit History 
-                                            {isLoading ? (
-                                                <span className="badge bg-primary-subtle ms-2 skeleton-line" style={{ width: '80px', height: '20px', display: 'inline-block' }}></span>
-                                            ) : (
-                                                <span className="badge bg-primary-subtle text-primary ms-2 fs-12">
-                                                    ({totalRecords} Downloads)
-                                                </span>
-                                            )}
-                                        </li>
-                                    </ol>
-                                </nav>
-                            </div>
-                            <div className="page-actions d-flex align-items-center gap-2 mt-2 mt-lg-0 audit-history-actions">
-                                <Link to={`/intake-review/funding-application/${id}`} className="btn btn-outline-secondary w-lg waves-effect">
-                                    <i className="ri-arrow-left-line align-middle me-1"></i> Back
-                                </Link>
-                            </div>
-                        </div>
+                <PageHeader 
+                    title="Document Audit History" 
+                    breadcrumbs={[
+                        { label: 'Funding Applications', path: '/intake-review/funding-application' },
+                        { label: 'Details', path: `/intake-review/funding-application/${id}` },
+                        { label: 'Document Audit History' }
+                    ]} 
+                >
+                    <div className="page-actions d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <Link to={`/intake-review/funding-application/${id}`} className="btn btn-outline-secondary w-lg waves-effect">
+                            <i className="ri-arrow-left-line align-middle me-1"></i> Back
+                        </Link>
                     </div>
-                </div>
+                </PageHeader>
 
                 <div className="row row-table-fit mt-3">
 
