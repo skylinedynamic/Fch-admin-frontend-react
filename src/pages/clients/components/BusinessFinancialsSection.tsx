@@ -32,7 +32,7 @@ const unformatNumber = (val: any) => {
     return String(val).replace(/,/g, '');
 };
 
-const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'current_business_debt'];
+const CURRENCY_FIELDS = ['monthly_revenue', 'avg_bank_balance', 'average_monthly_deposits', 'annual_revenue', 'annual_personal_income', 'current_business_debt'];
 
 interface BusinessFinancialsSectionProps {
     clientId?: string | null;
@@ -214,7 +214,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="average_monthly_deposits" className="form-label">Average Monthly Deposits</label>
                         <div className="input-group">
@@ -233,7 +233,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="monthly_deposit_count" className="form-label">Monthly Deposit Count</label>
                         <input
@@ -249,7 +249,7 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                     </div>
                 </div>
 
-                <div className="col-lg-4">
+                <div className="col-md-6">
                     <div className="">
                         <label htmlFor="annual_revenue" className="form-label">Annual Revenue</label>
                         <div className="input-group">
@@ -264,6 +264,24 @@ const BusinessFinancialsSection = forwardRef<BusinessFinancialsSectionRef, Busin
                                 onChange={handleInputChange}
                             />
                             {errors.annual_revenue && <div className="invalid-feedback">{errors.annual_revenue}</div>}
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-6">
+                    <div className="">
+                        <label htmlFor="annual_personal_income" className="form-label">Annual Personal Income</label>
+                        <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.annual_personal_income ? 'is-invalid' : ''}`}
+                                id="annual_personal_income"
+                                name="annual_personal_income"
+                                placeholder="0.00"
+                                value={formData.annual_personal_income || ''}
+                                onChange={handleInputChange}
+                            />
+                            {errors.annual_personal_income && <div className="invalid-feedback">{errors.annual_personal_income}</div>}
                         </div>
                     </div>
                 </div>

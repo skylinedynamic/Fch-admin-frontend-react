@@ -52,6 +52,7 @@ export type Client = {
     average_monthly_deposits?: string | number;
     monthly_deposit_count?: string | number;
     annual_revenue?: string | number;
+    annual_personal_income?: string | number;
     profit_margin?: string | number;
     current_business_debt?: string | number;
     fico_score?: string | number;
