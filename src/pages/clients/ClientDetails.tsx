@@ -504,7 +504,7 @@ export default function ClientDetails() {
                                             Business Financials
                                         </button>
                                     </li>
-                                    <li className="nav-item">
+                                    {/* <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.CHECKLIST ? 'active' : ''}`}
                                             onClick={() => handleTabChange(ENROLLMENT_TABS.CHECKLIST)}
@@ -514,7 +514,7 @@ export default function ClientDetails() {
                                         >
                                             Document Checklist
                                         </button>
-                                    </li>
+                                    </li> */}
                                     <li className="nav-item">
                                         <button
                                             className={`nav-link ${activeTab === ENROLLMENT_TABS.DOCUMENTS ? 'active' : ''}`}
