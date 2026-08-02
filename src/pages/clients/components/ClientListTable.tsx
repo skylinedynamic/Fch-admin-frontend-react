@@ -122,6 +122,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
     const {
         data: clientsData,
         isLoading: clientsLoading,
+        isFetching: clientsFetching,
         error: clientsError
     } = useClients(queryParams);
 
@@ -393,7 +394,8 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             ) : (
                 <div className="table-responsive table-card mt-1">
                     <DataTable<Client[]>
-                        scrollable scrollHeight="flex" value={clients as Client[]} paginator lazy totalRecords={totalRecords}
+                        loading={clientsFetching}
+                        value={clients as Client[]} paginator lazy totalRecords={totalRecords}
                         first={(page - 1) * perPage} rows={perPage} rowsPerPageOptions={[10, 25, 50, 100]}
                         sortMode="single" sortField={sortField} sortOrder={sortOrder === 'asc' ? 1 : -1}
                         filterDisplay="menu" filters={filters} onFilter={onFilter} onPage={onPage} onSort={onSort}
