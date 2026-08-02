@@ -246,6 +246,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                 onChange={(e) => options.filterApplyCallback(e.value)}
                 optionLabel="label"
                 optionValue="value"
+                filter
                 filterBy="label"
                 placeholder="Select Status"
                 className="p-column-filter"
@@ -262,6 +263,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
             onChange={(e) => options.filterApplyCallback(e.value)}
             optionLabel="label"
             optionValue="value"
+            filter
             filterBy="label"
             placeholder="Select Tier"
             className="p-column-filter"
@@ -346,6 +348,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                                 options={[{ label: 'All Tiers', value: '' }, ...tiersList]}
                                 optionLabel="label"
                                 optionValue="value"
+                                filter
                                 filterBy="label"
                                 placeholder="All Tiers"
                                 className="w-100 bg-light border-light"
@@ -359,6 +362,7 @@ const ClientListTable: React.FC<ClientListTableProps> = ({
                                 options={[{ label: 'All Statuses', value: '' }, ...BORROWER_STATUS]}
                                 optionLabel="label"
                                 optionValue="value"
+                                filter
                                 filterBy="label"
                                 placeholder="All Statuses"
                                 className="w-100 bg-light border-light"
